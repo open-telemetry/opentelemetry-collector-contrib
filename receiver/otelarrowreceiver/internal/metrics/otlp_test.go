@@ -114,19 +114,56 @@ func TestExport_ErrorConsumer(t *testing.T) {
 }
 
 func TestExport_AdmissionRequestTooLarge(t *testing.T) {
-	md := testdata.GenerateMetrics(10)
-	metricsSink := newTestSink()
-	req := pmetricotlp.NewExportRequestFromMetrics(md)
-	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
+	t.Run("with data points", func(t *testing.T) {
+		md := testdata.GenerateMetrics(10)
+		metricsSink := newTestSink()
+		req := pmetricotlp.NewExportRequestFromMetrics(md)
+		metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
 
-	go metricsSink.unblock()
-	resp, err := metricsClient.Export(t.Context(), req)
-	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = rejecting request, request is too large")
-	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
+		go metricsSink.unblock()
+		resp, err := metricsClient.Export(t.Context(), req)
+		assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = rejecting request, request is too large")
+		assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 
-	// One self-tracing spans is issued.
-	require.NoError(t, selfProv.ForceFlush(t.Context()))
-	require.Len(t, selfExp.GetSpans(), 1)
+		// One self-tracing spans is issued.
+		require.NoError(t, selfProv.ForceFlush(t.Context()))
+		require.Len(t, selfExp.GetSpans(), 1)
+	})
+
+	t.Run("with metadata only", func(t *testing.T) {
+		// Create metrics with metadata but no actual data points.
+		// This should still go through admission control based on size.
+		md := pmetric.NewMetrics()
+		for range 100 {
+			rm := md.ResourceMetrics().AppendEmpty()
+			// Add large attributes to the resource.
+			for range 10 {
+				rm.Resource().Attributes().PutStr(
+					"large.attribute.key.that.takes.space",
+					"This is a large attribute value that demonstrates metadata can be significant even without data points",
+				)
+			}
+			// Add scope but no metrics.
+			sm := rm.ScopeMetrics().AppendEmpty()
+			sm.Scope().SetName("test-scope")
+		}
+
+		require.Equal(t, 0, md.DataPointCount(), "Test setup: should have no data points")
+
+		sizer := &pmetric.ProtoMarshaler{}
+		sizeBytes := sizer.MetricsSize(md)
+		require.Greater(t, sizeBytes, maxBytes, "Test setup: metadata size should exceed admission limit")
+
+		req := pmetricotlp.NewExportRequestFromMetrics(md)
+		metricsSink := newTestSink()
+		metricsClient, _, _ := makeMetricsServiceClient(t, metricsSink)
+
+		// No need to call unblock() - request is rejected by admission control
+		// before ConsumeMetrics is ever called.
+		_, err := metricsClient.Export(t.Context(), req)
+		// Should be rejected by admission control due to size, not accepted with early return.
+		assert.ErrorContains(t, err, "rejecting request", "Should be rejected by admission control")
+	})
 }
 
 func TestExport_AdmissionLimitExceeded(t *testing.T) {
