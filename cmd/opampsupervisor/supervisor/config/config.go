@@ -223,6 +223,17 @@ type Agent struct {
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
+	// FallbackConfig is the path to a fallback configuration file to use when
+	// the OpAMP server is unreachable.
+	FallbackConfig string `mapstructure:"fallback_config"`
+	// FallbackStartupTimeout is how long to wait for initial connection to the
+	// OpAMP server before using the fallback configuration. If not set or zero,
+	// fallback on startup is disabled.
+	FallbackStartupTimeout time.Duration `mapstructure:"fallback_startup_timeout"`
+	// FallbackRuntimeTimeout is how long to allow disconnection from the OpAMP
+	// server during runtime before switching to the fallback configuration.
+	// If not set or zero, fallback during runtime is disabled.
+	FallbackRuntimeTimeout time.Duration `mapstructure:"fallback_runtime_timeout"`
 }
 
 func (a Agent) Validate() error {
@@ -264,7 +275,39 @@ func (a Agent) Validate() error {
 		return errors.New("agent::use_hup_config_reload is not supported on Windows")
 	}
 
+	if err := a.validateFallbackConfig(); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (a Agent) validateFallbackConfig() error {
+	// If no fallback config is specified, no validation is needed
+	if a.FallbackConfig == "" {
+		return nil
+	}
+
+	// Validate that the fallback config file exists
+	if _, err := os.Stat(a.FallbackConfig); err != nil {
+		return fmt.Errorf("could not stat agent::fallback_config path: %w", err)
+	}
+
+	// Validate that at least one timeout is configured when fallback is enabled
+	if a.FallbackStartupTimeout < 0 {
+		return errors.New("agent::fallback_startup_timeout must be non-negative")
+	}
+	// Validate that the runtime timeout is non-negative or zero when fallback is enabled
+	if a.FallbackRuntimeTimeout < 0 {
+		return errors.New("agent::fallback_runtime_timeout must be non-negative")
+	}
+
+	return nil
+}
+
+// FallbackEnabled returns true if fallback configuration is enabled.
+func (a Agent) FallbackEnabled() bool {
+	return a.FallbackConfig != ""
 }
 
 type SpecialConfigFile string

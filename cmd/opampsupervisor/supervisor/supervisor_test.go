@@ -2281,3 +2281,271 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 	close(startSignal)
 	wg.Wait()
 }
+
+func TestSupervisor_composeFallbackConfig(t *testing.T) {
+	const fallbackConfigInput = `receivers:
+  nop:
+exporters:
+  nop:
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+`
+
+	const expectedMergedConfig = `exporters:
+    nop: null
+extensions:
+    opamp:
+        capabilities:
+            reports_available_components: false
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 1234
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receivers:
+    nop: null
+service:
+    extensions:
+        - opamp
+    pipelines:
+        logs:
+            exporters:
+                - nop
+            receivers:
+                - nop
+    telemetry:
+        logs:
+            encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
+        resource:
+            service.name: otelcol
+`
+
+	const expectedMergedConfigWithOwnTelemetry = `exporters:
+    nop: null
+extensions:
+    opamp:
+        capabilities:
+            reports_available_components: false
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 1234
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receivers:
+    nop: null
+service:
+    extensions:
+        - opamp
+    pipelines:
+        logs:
+            exporters:
+                - nop
+            receivers:
+                - nop
+    telemetry:
+        logs:
+            encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
+        metrics:
+            readers:
+                - periodic:
+                    exporter:
+                        otlp:
+                            endpoint: http://localhost:4318
+        resource:
+            service.name: otelcol
+`
+
+	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+
+	tests := []struct {
+		name               string
+		fallbackConfig     string
+		ownTelemetryConfig string
+		wantErr            bool
+		wantErrContains    string
+		wantChanged        bool
+		wantConfig         string
+	}{
+		{
+			name:           "fallback config with opamp extension and telemetry configs added",
+			fallbackConfig: fallbackConfigInput,
+			wantErr:        false,
+			wantChanged:    true,
+			wantConfig:     expectedMergedConfig,
+		},
+		{
+			name:               "fallback config with own telemetry merged",
+			fallbackConfig:     fallbackConfigInput,
+			ownTelemetryConfig: "service:\n  telemetry:\n    metrics:\n      readers:\n        - periodic:\n            exporter:\n              otlp:\n                endpoint: http://localhost:4318\n",
+			wantErr:            false,
+			wantChanged:        true,
+			wantConfig:         expectedMergedConfigWithOwnTelemetry,
+		},
+		{
+			name:            "invalid YAML in fallback config",
+			fallbackConfig:  "invalid: yaml: content: [",
+			wantErr:         true,
+			wantErrContains: "could not load fallback config",
+			wantChanged:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fallbackConfigPath := filepath.Join(t.TempDir(), "fallback_config.yaml")
+			require.NoError(t, os.WriteFile(fallbackConfigPath, []byte(tt.fallbackConfig), 0o600))
+
+			s := Supervisor{
+				telemetrySettings: newNopTelemetrySettings(),
+				persistentState:   &persistentState{InstanceID: testUUID},
+				pidProvider:       staticPIDProvider(1234),
+				config: config.Supervisor{
+					Storage: config.Storage{
+						Directory: t.TempDir(),
+					},
+					Agent: config.Agent{
+						FallbackConfig: fallbackConfigPath,
+					},
+				},
+				hasNewConfig:                   make(chan struct{}, 1),
+				agentConfigOwnTelemetrySection: &atomic.Value{},
+				cfgState:                       &atomic.Value{},
+			}
+
+			agentDesc := &atomic.Value{}
+			agentDesc.Store(&protobufs.AgentDescription{
+				IdentifyingAttributes: []*protobufs.KeyValue{
+					{
+						Key: "service.name",
+						Value: &protobufs.AnyValue{
+							Value: &protobufs.AnyValue_StringValue{
+								StringValue: "otelcol",
+							},
+						},
+					},
+				},
+			})
+			s.agentDescription = agentDesc
+
+			// Store own telemetry config if provided
+			if tt.ownTelemetryConfig != "" {
+				s.agentConfigOwnTelemetrySection.Store(tt.ownTelemetryConfig)
+			}
+
+			require.NoError(t, s.createTemplates())
+
+			configChanged, err := s.composeFallbackConfig()
+
+			if tt.wantErr {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.wantErrContains)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.wantChanged, configChanged)
+
+			cfgState := s.cfgState.Load().(*configState)
+			require.NotNil(t, cfgState)
+
+			gotConfig := strings.ReplaceAll(cfgState.mergedConfig, "\r\n", "\n")
+			require.Equal(t, tt.wantConfig, gotConfig)
+		})
+	}
+
+	t.Run("fallback config file not found", func(t *testing.T) {
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			persistentState:   &persistentState{InstanceID: testUUID},
+			pidProvider:       staticPIDProvider(1234),
+			config: config.Supervisor{
+				Storage: config.Storage{
+					Directory: t.TempDir(),
+				},
+				Agent: config.Agent{
+					FallbackConfig: "/nonexistent/path/fallback_config.yaml",
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+		}
+
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{})
+		s.agentDescription = agentDesc
+
+		require.NoError(t, s.createTemplates())
+
+		configChanged, err := s.composeFallbackConfig()
+		require.Error(t, err)
+		require.ErrorContains(t, err, "could not read fallback config file")
+		require.False(t, configChanged)
+	})
+
+	t.Run("second call with same config returns configChanged false", func(t *testing.T) {
+		fallbackConfigPath := filepath.Join(t.TempDir(), "fallback_config.yaml")
+		require.NoError(t, os.WriteFile(fallbackConfigPath, []byte(fallbackConfigInput), 0o600))
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			persistentState:   &persistentState{InstanceID: testUUID},
+			pidProvider:       staticPIDProvider(1234),
+			config: config.Supervisor{
+				Storage: config.Storage{
+					Directory: t.TempDir(),
+				},
+				Agent: config.Agent{
+					FallbackConfig: fallbackConfigPath,
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+		}
+
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "service.name",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "otelcol",
+						},
+					},
+				},
+			},
+		})
+		s.agentDescription = agentDesc
+
+		require.NoError(t, s.createTemplates())
+
+		// First call should return configChanged=true
+		configChanged, err := s.composeFallbackConfig()
+		require.NoError(t, err)
+		require.True(t, configChanged)
+
+		// Second call with same config should return configChanged=false
+		configChanged, err = s.composeFallbackConfig()
+		require.NoError(t, err)
+		require.False(t, configChanged)
+	})
+}
