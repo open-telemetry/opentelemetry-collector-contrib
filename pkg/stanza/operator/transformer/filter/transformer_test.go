@@ -185,8 +185,11 @@ func TestTransformer(t *testing.T) {
 
 			filtered := true
 			mockOutput := testutil.NewMockOperator("output")
-			mockOutput.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(_ mock.Arguments) {
-				filtered = false
+			mockOutput.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+				entries := args.Get(1).([]*entry.Entry)
+				if len(entries) > 0 {
+					filtered = false
+				}
 			})
 
 			op.(*Transformer).OutputOperators = []operator.Operator{mockOutput}
@@ -208,8 +211,9 @@ func TestFilterDropRatio(t *testing.T) {
 
 	processedEntries := 0
 	mockOutput := testutil.NewMockOperator("output")
-	mockOutput.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(_ mock.Arguments) {
-		processedEntries++
+	mockOutput.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+		entries := args.Get(1).([]*entry.Entry)
+		processedEntries += len(entries)
 	})
 
 	filterOperator, ok := op.(*Transformer)
@@ -242,4 +246,37 @@ func TestFilterDropRatio(t *testing.T) {
 	}
 
 	require.Equal(t, 10, processedEntries)
+}
+
+func TestFilterDoesNotSplitBatches(t *testing.T) {
+	cfg := NewConfigWithID("test")
+	cfg.Expression = `body.message == "drop_me"`
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.NewMockOperator("output")
+	mockOutput.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+	filterOperator := op.(*Transformer)
+	filterOperator.OutputOperators = []operator.Operator{mockOutput}
+
+	testEntries := []*entry.Entry{
+		{Body: map[string]any{"message": "keep_me"}},
+		{Body: map[string]any{"message": "keep_me_too"}},
+		{Body: map[string]any{"message": "drop_me"}},
+		{Body: map[string]any{"message": "also_keep"}},
+	}
+
+	err = filterOperator.ProcessBatch(t.Context(), testEntries)
+	require.NoError(t, err)
+
+	// Verify that ProcessBatch was called exactly once, proving the batch was not split
+	mockOutput.AssertNumberOfCalls(t, "ProcessBatch", 1)
+
+	// Verify that 3 entries were passed (one was filtered out)
+	calls := mockOutput.Calls
+	require.Len(t, calls, 1)
+	passedEntries := calls[0].Arguments.Get(1).([]*entry.Entry)
+	require.Len(t, passedEntries, 3)
 }
