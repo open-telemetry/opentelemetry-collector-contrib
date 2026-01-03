@@ -20,6 +20,9 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
+	// Get defaults from the factory to use in test expectations
+	defaults := createDefaultConfig().(*Config)
+
 	tests := []struct {
 		id          component.ID
 		expected    component.Config
@@ -32,20 +35,24 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "own-node-only"),
 			expected: &Config{
-				Node:        "node-1",
-				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-				ObservePods: true,
+				Node:                   "node-1",
+				APIConfig:              k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+				ObservePods:            true,
+				ObservePodPhases:       defaults.ObservePodPhases,
+				ContainerTerminatedTTL: defaults.ContainerTerminatedTTL,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "observe-all"),
 			expected: &Config{
-				Node:             "",
-				APIConfig:        k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
-				ObservePods:      true,
-				ObserveNodes:     true,
-				ObserveServices:  true,
-				ObserveIngresses: true,
+				Node:                   "",
+				APIConfig:              k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
+				ObservePods:            true,
+				ObserveNodes:           true,
+				ObserveServices:        true,
+				ObserveIngresses:       true,
+				ObservePodPhases:       defaults.ObservePodPhases,
+				ContainerTerminatedTTL: defaults.ContainerTerminatedTTL,
 			},
 		},
 		{
@@ -55,6 +62,40 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_no_observing"),
 			expectedErr: "one of observe_pods, observe_nodes, observe_services and observe_ingresses must be true",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_pod_phase"),
+			expectedErr: `invalid pod phase "Rnning" in observe_pod_phases`,
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_empty_pod_phases"),
+			expectedErr: "observe_pod_phases must specify at least one phase when observe_pods is true",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "all-containers"),
+			expected: &Config{
+				APIConfig:              k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ObservePods:            true,
+				ObservePodPhases:       defaults.ObservePodPhases,
+				ContainerTerminatedTTL: defaults.ContainerTerminatedTTL,
+				ObserveAllContainers:   true,
+			},
+		},
+		{
+			// It's valid to explicitly set observe_init_containers with observe_all_containers (redundant but not conflicting)
+			id: component.NewIDWithName(metadata.Type, "all-containers-explicit-init"),
+			expected: &Config{
+				APIConfig:              k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ObservePods:            true,
+				ObservePodPhases:       defaults.ObservePodPhases,
+				ContainerTerminatedTTL: defaults.ContainerTerminatedTTL,
+				ObserveAllContainers:   true,
+				ObserveInitContainers:  true,
+			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_all_containers_with_phases"),
+			expectedErr: "observe_all_containers cannot be used with observe_pod_phases",
 		},
 	}
 	for _, tt := range tests {

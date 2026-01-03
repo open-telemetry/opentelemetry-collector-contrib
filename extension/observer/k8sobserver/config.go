@@ -5,9 +5,25 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
+
+// isValidPodPhase returns true if the phase is a valid Kubernetes pod phase.
+func isValidPodPhase(phase string) bool {
+	switch phase {
+	case "Pending", "Running", "Succeeded", "Failed", "Unknown":
+		return true
+	default:
+		return false
+	}
+}
+
+// DefaultContainerTerminatedTTL is the default time-to-live for terminated container endpoints.
+// 15m should be enough to collect logs from crashed containers and terminated containers (like init containers).
+const DefaultContainerTerminatedTTL = 15 * time.Minute
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
@@ -40,12 +56,51 @@ type Config struct {
 	ObserveIngresses bool `mapstructure:"observe_ingresses"`
 	// Namespaces limits the namespaces for the observed resources. By default, all namespaces will be observed.
 	Namespaces []string `mapstructure:"namespaces"`
+	// ObservePodPhases specifies which pod phases to observe. Only pods in the listed phases
+	// will have endpoints created. Valid values are: Pending, Running, Succeeded, Failed, Unknown.
+	// Default is ["Running"] to maintain backward compatibility.
+	// Note: Terminated init containers are visible in Running pods (within ContainerTerminatedTTL).
+	// Include "Pending" only if you need to observe init containers while they're still running.
+	ObservePodPhases []string `mapstructure:"observe_pod_phases"`
+	// ObserveInitContainers determines whether to report init container endpoints.
+	// Only effective when ObservePods is true. To observe running init containers,
+	// "Pending" must be included in ObservePodPhases. `false` by default.
+	ObserveInitContainers bool `mapstructure:"observe_init_containers"`
+	// ContainerTerminatedTTL controls how long after termination a container
+	// endpoint remains observable. Running containers are always observed.
+	// Terminated containers (both init and regular) are only observed if they
+	// terminated within this duration. This prevents keeping receivers open
+	// indefinitely for completed or crashed containers, while still allowing
+	// time for log collection. Default is 15 minutes.
+	ContainerTerminatedTTL time.Duration `mapstructure:"container_terminated_ttl"`
+	// ObserveAllContainers is a convenience option that enables comprehensive container
+	// log collection. When true, it automatically enables ObserveInitContainers and
+	// adds "Pending" to ObservePodPhases (if not already present). This simplifies
+	// configuration for users who want to collect logs from all containers including
+	// init containers and crashed containers. Default is false.
+	ObserveAllContainers bool `mapstructure:"observe_all_containers"`
 }
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
 	if !cfg.ObservePods && !cfg.ObserveNodes && !cfg.ObserveServices && !cfg.ObserveIngresses {
 		return errors.New("one of observe_pods, observe_nodes, observe_services and observe_ingresses must be true")
+	}
+	if cfg.ObservePods && len(cfg.ObservePodPhases) == 0 {
+		return errors.New("observe_pod_phases must specify at least one phase when observe_pods is true")
+	}
+	for _, phase := range cfg.ObservePodPhases {
+		if !isValidPodPhase(phase) {
+			return fmt.Errorf("invalid pod phase %q in observe_pod_phases: valid values are Pending, Running, Succeeded, Failed, Unknown", phase)
+		}
+	}
+	// observe_all_containers is a convenience option that automatically adds Pending
+	// to observe_pod_phases. If the user also customizes observe_pod_phases, we cannot
+	// determine their intent (e.g., did they want only Failed pods, or Failed + Pending?).
+	if cfg.ObserveAllContainers {
+		if len(cfg.ObservePodPhases) != 1 || cfg.ObservePodPhases[0] != "Running" {
+			return errors.New("observe_all_containers cannot be used with observe_pod_phases; use observe_init_containers and observe_pod_phases for fine-grained control")
+		}
 	}
 	return nil
 }

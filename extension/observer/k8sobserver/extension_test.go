@@ -339,6 +339,53 @@ func TestExtensionObserveNodes(t *testing.T) {
 	obs.StopListAndWatch()
 }
 
+func TestExtensionObserveAllContainers(t *testing.T) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	config.ObserveAllContainers = true
+	mockServiceHost(t, config)
+
+	set := extensiontest.NewNopSettings(factory.Type())
+	set.ID = component.NewID(metadata.Type)
+	ext, err := newObserver(config, set)
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	obs := ext.(*k8sObserver)
+
+	// Verify observe_all_containers enabled init container observation
+	assert.True(t, obs.handler.observeInitContainers, "observe_all_containers should enable init container observation")
+
+	// Verify Pending phase was added
+	assert.True(t, obs.handler.observePodPhases["Pending"], "observe_all_containers should add Pending to observed phases")
+	assert.True(t, obs.handler.observePodPhases["Running"], "Running phase should still be observed")
+}
+
+func TestExtensionObserveAllContainersWithExistingPending(t *testing.T) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	config.ObserveAllContainers = true
+	config.ObservePodPhases = []string{"Running", "Pending"} // Pending already present
+	mockServiceHost(t, config)
+
+	set := extensiontest.NewNopSettings(factory.Type())
+	set.ID = component.NewID(metadata.Type)
+	ext, err := newObserver(config, set)
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	obs := ext.(*k8sObserver)
+
+	// Verify Pending is not duplicated
+	pendingCount := 0
+	for phase := range obs.handler.observePodPhases {
+		if phase == "Pending" {
+			pendingCount++
+		}
+	}
+	assert.Equal(t, 1, pendingCount, "Pending should not be duplicated")
+}
+
 func TestExtensionObserveIngresses(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)

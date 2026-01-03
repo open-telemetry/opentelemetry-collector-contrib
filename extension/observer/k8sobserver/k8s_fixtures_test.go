@@ -11,7 +11,8 @@ import (
 )
 
 // newPod is a helper function for creating Pods for testing.
-func newPod(name, host string) *v1.Pod {
+func newPod(name string) *v1.Pod {
+	host := "localhost"
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
@@ -40,7 +41,7 @@ func newPod(name, host string) *v1.Pod {
 }
 
 var (
-	pod1V1 = newPod("pod1", "localhost")
+	pod1V1 = newPod("pod1")
 	pod1V2 = func() *v1.Pod {
 		pod := pod1V1.DeepCopy()
 		pod.Labels["pod-version"] = "2"
@@ -62,6 +63,27 @@ var container2 = v1.Container{
 	Ports: []v1.ContainerPort{
 		{Name: "https", HostPort: 0, ContainerPort: 443, Protocol: v1.ProtocolTCP, HostIP: ""},
 	},
+}
+
+var initContainer1 = v1.Container{
+	Name:  "init-1",
+	Image: "init-image-1",
+}
+
+var initContainerWithPort = v1.Container{
+	Name:  "init-with-port",
+	Image: "init-image-with-port",
+	Ports: []v1.ContainerPort{
+		{Name: "init-http", ContainerPort: 8080, Protocol: v1.ProtocolTCP},
+	},
+}
+
+var initContainerWithPortStatus = v1.ContainerStatus{
+	Name: "init-with-port",
+	State: v1.ContainerState{
+		Terminated: &v1.ContainerStateTerminated{ExitCode: 0, FinishedAt: metav1.Now()},
+	},
+	ContainerID: "containerd://init-with-port-id",
 }
 
 var container1StatusWaiting = v1.ContainerStatus{
@@ -88,8 +110,64 @@ var container2StatusRunning = v1.ContainerStatus{
 	ContainerID: "containerd://a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
 }
 
+var container2StatusTerminated = v1.ContainerStatus{
+	Name: "container-2",
+	State: v1.ContainerState{
+		Terminated: &v1.ContainerStateTerminated{ExitCode: 1, Reason: "Error", FinishedAt: metav1.Now()},
+	},
+	Ready:       false,
+	Image:       "container-image-2",
+	Started:     pointerBool(false),
+	ContainerID: "containerd://container-2-terminated-id",
+}
+
+var initContainerStatusRunning = v1.ContainerStatus{
+	Name: "init-1",
+	State: v1.ContainerState{
+		Running: &v1.ContainerStateRunning{StartedAt: metav1.Now()},
+	},
+	ContainerID: "containerd://init-running-id",
+}
+
+var initContainerStatusTerminated = v1.ContainerStatus{
+	Name: "init-1",
+	State: v1.ContainerState{
+		Terminated: &v1.ContainerStateTerminated{ExitCode: 0, FinishedAt: metav1.Now()},
+	},
+	ContainerID: "containerd://init-terminated-id",
+}
+
+var containerStatusCrashLoopBackOff = v1.ContainerStatus{
+	Name: "crashloop-container",
+	State: v1.ContainerState{
+		Waiting: &v1.ContainerStateWaiting{
+			Reason:  "CrashLoopBackOff",
+			Message: "back-off 5m0s restarting failed container",
+		},
+	},
+	LastTerminationState: v1.ContainerState{
+		Terminated: &v1.ContainerStateTerminated{
+			ExitCode:   1,
+			Reason:     "Error",
+			FinishedAt: metav1.Now(),
+		},
+	},
+	Ready:        false,
+	RestartCount: 5,
+	Image:        "crashloop-image",
+	ContainerID:  "containerd://crashloop-container-id",
+}
+
+var containerCrashLoop = v1.Container{
+	Name:  "crashloop-container",
+	Image: "crashloop-image",
+	Ports: []v1.ContainerPort{
+		{Name: "http", ContainerPort: 8080, Protocol: v1.ProtocolTCP},
+	},
+}
+
 var podWithNamedPorts = func() *v1.Pod {
-	pod := newPod("pod-2", "localhost")
+	pod := newPod("pod-2")
 	pod.Labels = map[string]string{
 		"env": "prod",
 	}
@@ -100,6 +178,63 @@ var podWithNamedPorts = func() *v1.Pod {
 	pod.Spec.Containers = []v1.Container{
 		container1,
 		container2,
+	}
+	return pod
+}()
+
+var podPendingWithRunningInit = func() *v1.Pod {
+	pod := newPod("pod-init-pending")
+	pod.Status.Phase = v1.PodPending
+	pod.Status.PodIP = ""
+	pod.Status.InitContainerStatuses = []v1.ContainerStatus{
+		initContainerStatusRunning,
+	}
+	pod.Spec.InitContainers = []v1.Container{
+		initContainer1,
+	}
+	return pod
+}()
+
+var podRunningWithTerminatedInit = func() *v1.Pod {
+	pod := newPod("pod-init-running")
+	pod.Status.InitContainerStatuses = []v1.ContainerStatus{
+		initContainerStatusTerminated,
+	}
+	pod.Spec.InitContainers = []v1.Container{
+		initContainer1,
+	}
+	return pod
+}()
+
+var podRunningWithTerminatedContainer = func() *v1.Pod {
+	pod := newPod("pod-terminated-container")
+	pod.Status.ContainerStatuses = []v1.ContainerStatus{
+		container2StatusTerminated,
+	}
+	pod.Spec.Containers = []v1.Container{
+		container2,
+	}
+	return pod
+}()
+
+var podRunningWithInitContainerWithPort = func() *v1.Pod {
+	pod := newPod("pod-init-with-port")
+	pod.Status.InitContainerStatuses = []v1.ContainerStatus{
+		initContainerWithPortStatus,
+	}
+	pod.Spec.InitContainers = []v1.Container{
+		initContainerWithPort,
+	}
+	return pod
+}()
+
+var podWithCrashLoopBackOff = func() *v1.Pod {
+	pod := newPod("pod-crashloop")
+	pod.Status.ContainerStatuses = []v1.ContainerStatus{
+		containerStatusCrashLoopBackOff,
+	}
+	pod.Spec.Containers = []v1.Container{
+		containerCrashLoop,
 	}
 	return pod
 }()
