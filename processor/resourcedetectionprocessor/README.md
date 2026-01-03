@@ -116,6 +116,17 @@ processors:
     override: false
 ```
 
+#### Docker Socket Permissions
+
+Since version 0.40.0, official OpenTelemetry Collector images run as a non-root user. To access the Docker socket, you need to configure appropriate permissions:
+
+- **Linux**: Grant access to the `docker` group (e.g., `--group-add <docker-gid>` or set `runAsGroup` in Kubernetes)
+- **Windows**: Ensure appropriate named pipe permissions
+
+For detailed permission configuration options and security considerations, see the [Docker Stats receiver documentation](../../receiver/dockerstatsreceiver/README.md#docker-socket-permissions).
+
+For more information, see [issue #11791](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11791).
+
 ### Heroku metadata
 
 When [Heroku dyno metadata is active](https://devcenter.heroku.com/articles/dyno-metadata), Heroku applications publish information through environment variables.
