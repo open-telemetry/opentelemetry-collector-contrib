@@ -2995,22 +2995,29 @@ func TestStatus(t *testing.T) {
 
 				var err error
 				var resp *http.Response
+				var body []byte
 
 				if ts.eventually {
 					assert.EventuallyWithT(t, func(tt *assert.CollectT) {
-						resp, err = client.Get(stepURL)
-						require.NoError(tt, err)
-						assert.Equal(tt, ts.expectedStatusCode, resp.StatusCode)
+						localResp, localErr := client.Get(stepURL)
+						require.NoError(tt, localErr)
+						defer localResp.Body.Close()
+						assert.Equal(tt, ts.expectedStatusCode, localResp.StatusCode)
 					}, time.Second, 10*time.Millisecond)
+					// Make a final request to get the body for assertions
+					resp, err = client.Get(stepURL)
+					require.NoError(t, err)
+					body, err = io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					require.NoError(t, resp.Body.Close())
 				} else {
 					resp, err = client.Get(stepURL)
 					require.NoError(t, err)
+					body, err = io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					require.NoError(t, resp.Body.Close())
 					assert.Equal(t, ts.expectedStatusCode, resp.StatusCode)
 				}
-
-				body, err := io.ReadAll(resp.Body)
-				require.NoError(t, err)
-				defer resp.Body.Close()
 
 				assert.Contains(t, string(body), ts.expectedBody)
 
