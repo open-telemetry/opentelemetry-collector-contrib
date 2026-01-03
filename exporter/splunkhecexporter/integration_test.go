@@ -238,7 +238,8 @@ type testCfg struct {
 
 func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	settings := exportertest.NewNopSettings(metadata.Type)
-	c := newLogsClient(settings, config)
+	c, err := newLogsClient(settings, config)
+	require.NoError(t, err)
 	var logs plog.Logs
 	if test.config.index != "main" {
 		logs = prepareLogsNonDefaultParams(test.config.index, test.config.source, test.config.sourcetype, test.config.event)
@@ -249,7 +250,7 @@ func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	httpClient := createInsecureClient()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger}
 
-	err := c.pushLogData(t.Context(), logs)
+	err = c.pushLogData(t.Context(), logs)
 	require.NoError(t, err, "Must not error while sending Logs data")
 	waitForEventToBeIndexed()
 
@@ -266,13 +267,14 @@ func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 
 func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	settings := exportertest.NewNopSettings(metadata.Type)
-	c := newMetricsClient(settings, config)
+	c, err := newMetricsClient(settings, config)
+	require.NoError(t, err)
 	metricData := prepareMetricsData(test.config.event)
 
 	httpClient := createInsecureClient()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger}
 
-	err := c.pushMetricsData(t.Context(), metricData)
+	err = c.pushMetricsData(t.Context(), metricData)
 	require.NoError(t, err, "Must not error while sending Metrics data")
 	waitForEventToBeIndexed()
 
@@ -282,13 +284,14 @@ func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 
 func tracesTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	settings := exportertest.NewNopSettings(metadata.Type)
-	c := newTracesClient(settings, config)
+	c, err := newTracesClient(settings, config)
+	require.NoError(t, err)
 	tracesData := prepareTracesData(test.config.index, test.config.source, test.config.sourcetype)
 
 	httpClient := createInsecureClient()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger}
 
-	err := c.pushTraceData(t.Context(), tracesData)
+	err = c.pushTraceData(t.Context(), tracesData)
 	require.NoError(t, err, "Must not error while sending Trace data")
 	waitForEventToBeIndexed()
 

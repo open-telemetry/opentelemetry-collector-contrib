@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -57,9 +58,14 @@ type client struct {
 	bufferPool        bufferPool
 	exporterName      string
 	meter             metric.Meter
+	eventsSent        metric.Int64Counter
 }
 
-func newClient(set exporter.Settings, cfg *Config, maxContentLength uint) *client {
+func newClient(set exporter.Settings, cfg *Config, maxContentLength uint) (*client, error) {
+	builder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, nil
+	}
 	return &client{
 		config:            cfg,
 		logger:            set.Logger,
@@ -68,18 +74,19 @@ func newClient(set exporter.Settings, cfg *Config, maxContentLength uint) *clien
 		bufferPool:        newBufferPool(maxContentLength, !cfg.DisableCompression),
 		exporterName:      set.ID.String(),
 		meter:             metadata.Meter(set.TelemetrySettings),
-	}
+		eventsSent:        builder.SplunkEventsCreated,
+	}, nil
 }
 
-func newLogsClient(set exporter.Settings, cfg *Config) *client {
+func newLogsClient(set exporter.Settings, cfg *Config) (*client, error) {
 	return newClient(set, cfg, cfg.MaxContentLengthLogs)
 }
 
-func newTracesClient(set exporter.Settings, cfg *Config) *client {
+func newTracesClient(set exporter.Settings, cfg *Config) (*client, error) {
 	return newClient(set, cfg, cfg.MaxContentLengthTraces)
 }
 
-func newMetricsClient(set exporter.Settings, cfg *Config) *client {
+func newMetricsClient(set exporter.Settings, cfg *Config) (*client, error) {
 	return newClient(set, cfg, cfg.MaxContentLengthMetrics)
 }
 
@@ -212,6 +219,8 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 						// TODO record this drop as a metric
 						continue
 					}
+
+					c.eventsSent.Add(context.Background(), 1, metric.WithAttributeSet(attribute.NewSet(attribute.String("index", event.Index), attribute.String("sourcetype", event.SourceType), attribute.String("host", event.Host))))
 
 					// JSON encoding event and writing to buffer.
 					var err error
