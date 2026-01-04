@@ -214,7 +214,7 @@ func TestGetProxyAddress(t *testing.T) {
 				t.Setenv("HTTPS_PROXY", "")
 			}
 
-			result := getProxyAddress(tc.proxyAddress)
+			result := GetProxyAddress(tc.proxyAddress)
 			assert.Equal(t, tc.expected, result)
 		})
 	}
@@ -235,14 +235,44 @@ func TestGetProxyURL(t *testing.T) {
 			expectNil:   false,
 		},
 		{
+			name:        "Valid proxy URL with IPv6",
+			proxyAddr:   "http://[::1]:8080",
+			expectError: false,
+			expectNil:   false,
+		},
+		{
+			name:        "Valid proxy URL with full IPv6",
+			proxyAddr:   "http://[2001:db8::1]:3128",
+			expectError: false,
+			expectNil:   false,
+		},
+		{
 			name:        "Empty proxy address",
 			proxyAddr:   "",
 			expectError: false,
 			expectNil:   true,
 		},
 		{
-			name:        "Invalid proxy URL",
+			name:        "Invalid proxy URL - missing scheme",
 			proxyAddr:   "://invalid",
+			expectError: true,
+			expectNil:   false,
+		},
+		{
+			name:        "Invalid proxy URL - bad IPv6",
+			proxyAddr:   "http://[%10::1]",
+			expectError: true,
+			expectNil:   false,
+		},
+		{
+			name:        "Invalid proxy URL - bad escape",
+			proxyAddr:   "http://%41:8080/",
+			expectError: true,
+			expectNil:   false,
+		},
+		{
+			name:        "Invalid proxy URL - space in host",
+			proxyAddr:   "http://a b.com/",
 			expectError: true,
 			expectNil:   false,
 		},
@@ -250,7 +280,7 @@ func TestGetProxyURL(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			url, err := getProxyURL(tc.proxyAddr)
+			url, err := GetProxyURL(tc.proxyAddr)
 
 			if tc.expectError {
 				assert.Error(t, err)
