@@ -129,6 +129,13 @@ The tilde `~` character is also replaced even though it is a safe character, to 
 
 [unicode_chars]: https://en.wikipedia.org/wiki/List_of_Unicode_characters
 
+## Filename length handling
+
+When creating storage files, the extension derives file names from the type and name of the component using the extension (after sanitizing unsafe characters as described above).
+
+In some environments, especially when component names are long or deeply nested, the resulting file name may exceed the maximum file name length allowed by the operating system. Previously, this could cause the extension to fail with a “filename too long” error.
+
+The extension now automatically truncates generated file names when necessary to ensure they stay within OS limits. Truncation is applied after sanitization and preserves uniqueness to avoid collisions between different components.
 
 ## Troubleshooting
 

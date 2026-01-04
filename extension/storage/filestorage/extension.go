@@ -10,12 +10,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/truncate"
 )
 
 type localFileStorage struct {
@@ -75,6 +78,14 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 
 	// Try to create client, handling panics if recreate is enabled
 	client, err := lfs.createClientWithPanicRecovery(absoluteName)
+
+	// If the error is due to filename being too long, truncate and try again
+	if errors.Is(err, syscall.ENAMETOOLONG) {
+		absoluteName := filepath.Join(lfs.cfg.Directory, truncate.Truncate(rawName))
+		client, err = lfs.createClientWithPanicRecovery(absoluteName)
+	}
+
+	// return error if still not successful
 	if err != nil {
 		return nil, err
 	}
