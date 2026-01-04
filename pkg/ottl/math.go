@@ -43,14 +43,55 @@ func (p *Parser[K]) evaluateAddSubTerm(term *addSubTerm) (Getter[K], error) {
 }
 
 func (p *Parser[K]) evaluateMathValue(val *mathValue) (Getter[K], error) {
+	// we have to handle unary plus/minus here because the lexer cannot
+	// differentiate between binary and unary operators
 	switch {
+	case val.UnaryOp != nil && *val.UnaryOp == sub && val.Literal != nil:
+		baseGetter, err := p.newGetter(value{Literal: val.Literal})
+		if err != nil {
+			return nil, err
+		}
+		return negateGetter(baseGetter), nil
+	case val.UnaryOp != nil && *val.UnaryOp == sub && val.SubExpression != nil:
+		baseGetter, err := p.evaluateMathExpression(val.SubExpression)
+		if err != nil {
+			return nil, err
+		}
+		return negateGetter(baseGetter), nil
+	case val.UnaryOp != nil && *val.UnaryOp == add && val.Literal != nil:
+		// Unary plus: no-op to be explicit about it
+		return p.newGetter(value{Literal: val.Literal})
+	case val.UnaryOp != nil && *val.UnaryOp == add && val.SubExpression != nil:
+		// Unary plus: no-op to be explicit about it
+		return p.evaluateMathExpression(val.SubExpression)
 	case val.Literal != nil:
 		return p.newGetter(value{Literal: val.Literal})
 	case val.SubExpression != nil:
 		return p.evaluateMathExpression(val.SubExpression)
+	default:
+		return nil, fmt.Errorf("unsupported mathematical value %v", val)
 	}
+}
 
-	return nil, fmt.Errorf("unsupported mathematical value %v", val)
+func negateGetter[K any](baseGetter Getter[K]) Getter[K] {
+	return exprGetter[K]{
+		expr: Expr[K]{
+			exprFunc: func(ctx context.Context, tCtx K) (any, error) {
+				x, err := baseGetter.Get(ctx, tCtx)
+				if err != nil {
+					return nil, err
+				}
+				switch v := x.(type) {
+				case int64:
+					return -v, nil
+				case float64:
+					return -v, nil
+				default:
+					return nil, fmt.Errorf("unsupported unary minus operation on type %T", x)
+				}
+			},
+		},
+	}
 }
 
 func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter[K] {
