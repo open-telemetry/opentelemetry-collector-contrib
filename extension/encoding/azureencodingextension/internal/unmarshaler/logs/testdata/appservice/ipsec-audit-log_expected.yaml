@@ -1,0 +1,54 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.WEB/SITES/MY-DEMO-APP
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.operation.name
+                value:
+                  stringValue: Authorization
+              - key: azure.category
+                value:
+                  stringValue: AppServiceIPSecAuditLogs
+              - key: source.address
+                value:
+                  stringValue: 42.42.42.42
+              - key: source.port
+                value:
+                  intValue: "12345"
+              - key: http.request.header.host
+                value:
+                  stringValue: test.azurewebsites.net
+              - key: azure.auth.event.details
+                value:
+                  stringValue: Denied by 0.0.0.0/0 rule.
+              - key: azure.app_service.endpoint
+                value:
+                  stringValue: "False"
+              - key: http.request.header.x-azure-fdid
+                value:
+                  stringValue: FDID
+              - key: http.request.header.x-fd-healthprobe
+                value:
+                  stringValue: HEALTH_PROBE
+              - key: http.request.header.x-forwarded-for
+                value:
+                  stringValue: FORWARDED_FOR
+              - key: http.request.header.x-forwarded-host
+                value:
+                  stringValue: FORWARDED_HOST
+            body:
+              stringValue: Denied
+            timeUnixNano: "1713960372000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

@@ -1,4 +1,4 @@
-name: 'Update contrib to the latest core source'
+name: "Update contrib to the latest core source"
 on:
   workflow_dispatch:
   schedule:
@@ -28,20 +28,25 @@ jobs:
           exec > >(tee log.out) 2>&1
           LAST_COMMIT="$(git -C ./opentelemetry-collector/ rev-parse HEAD)"
           cd opentelemetry-collector-contrib
+          # Extract current collector version tag from go.mod
+          CURRENT_VERSION="$(grep 'go.opentelemetry.io/collector v' cmd/otelcontribcol/go.mod | sed -E 's/.*(v[0-9]+\.[0-9]+\.[0-9]+).*/\1/' | head -1)"
           git config user.name otelbot
           git config user.email 197425009+otelbot@users.noreply.github.com
           branch="otelbot/update-otel-$(date +%s)"
           git checkout -b "$branch"
           make genotelcontribcol
-          echo "LAST_COMMIT=$LAST_COMMIT" >> "$GITHUB_ENV"
-          echo "BRANCH_NAME=$branch" >> "$GITHUB_ENV"
+          {
+            echo "CURRENT_VERSION=$CURRENT_VERSION"
+            echo "LAST_COMMIT=$LAST_COMMIT"
+            echo "BRANCH_NAME=$branch"
+          } >> "$GITHUB_ENV"
       - name: Gets packages from links with retries
         uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3.0.2
-        with:  
+        with:
           retry_wait_seconds: 1800
           timeout_minutes: 120
           max_attempts: 2
-          retry_on: error 
+          retry_on: error
           command: |
             exec > >(tee -a log.out) 2>&1
             cd opentelemetry-collector-contrib
@@ -56,7 +61,12 @@ jobs:
           exec > >(tee -a log.out) 2>&1
           cd opentelemetry-collector-contrib
           git push --set-upstream origin ${{ env.BRANCH_NAME }}
-          gh pr create --base main --title "[chore] Update core dependencies" --body "This PR updates the opentelemetry-collector modules to open-telemetry/opentelemetry-collector@${{ env.LAST_COMMIT }}" --draft
+          gh pr create --base main --title "[chore] Update core dependencies" --body "$(cat <<'EOF'
+          This PR updates the opentelemetry-collector dependencies to open-telemetry/opentelemetry-collector@${{ env.LAST_COMMIT }}.
+
+          Changes included in this PR: https://github.com/open-telemetry/opentelemetry-collector/compare/${{ env.CURRENT_VERSION }}...${{ env.LAST_COMMIT }}
+          EOF
+          )" --draft
         env:
           GITHUB_TOKEN: ${{ steps.otelbot-token.outputs.token }}
       - name: File an issue if the workflow failed
@@ -64,7 +74,7 @@ jobs:
         run: |
           job_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json jobs -q '.jobs[] | select(.name == "update-otel") | .url')"
           body="$(printf '[Link to job log](%s)
-          
+
           <details>
           <summary>Last 100 lines of log</summary>
 

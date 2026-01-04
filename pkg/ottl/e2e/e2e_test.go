@@ -1443,6 +1443,30 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "df8d09e93f874900a99b8775cc15b6c7")
 			},
 		},
+		{
+			statement: `set(attributes["test"], Bool(1))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", true)
+			},
+		},
+		{
+			statement: `set(attributes["test"], Bool("1"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", true)
+			},
+		},
+		{
+			statement: `set(attributes["test"], Bool(true))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", true)
+			},
+		},
+		{
+			statement: `set(attributes["test"], Bool("true"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", true)
+			},
+		},
 	}
 
 	for _, tt := range tests {

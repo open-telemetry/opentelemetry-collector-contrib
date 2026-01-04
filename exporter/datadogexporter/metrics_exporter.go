@@ -39,7 +39,7 @@ type metricsExporter struct {
 	agntConfig       *config.AgentConfig
 	ctx              context.Context
 	metricsAPI       *datadogV2.MetricsApi
-	tr               *otlpmetrics.Translator
+	tr               otlpmetrics.Provider
 	scrubber         scrub.Scrubber
 	retrier          *clientutil.Retrier
 	onceMetadata     *sync.Once
@@ -79,7 +79,7 @@ func newMetricsExporter(
 		options = append(options, otlpmetrics.WithInferDeltaInterval())
 	}
 
-	tr, err := otlpmetrics.NewTranslator(params.TelemetrySettings, attrsTranslator, options...)
+	tr, err := otlpmetrics.NewDefaultTranslator(params.TelemetrySettings, attrsTranslator, options...)
 	if err != nil {
 		return nil, err
 	}

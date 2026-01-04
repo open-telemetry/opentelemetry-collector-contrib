@@ -5,7 +5,6 @@ package coralogixexporter
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
@@ -28,6 +27,8 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/validation"
 )
 
 func TestNewTracesExporter(t *testing.T) {
@@ -230,6 +231,8 @@ func (m *mockTracesServer) Export(ctx context.Context, req ptraceotlp.ExportRequ
 		return ptraceotlp.NewExportResponse(), errors.New("invalid authorization header")
 	}
 
+	assertAcceptEncodingGzip(m.t, md)
+
 	m.recvCount += req.Traces().SpanCount()
 	resp := ptraceotlp.NewExportResponse()
 	if m.partialSuccess != nil {
@@ -260,6 +263,27 @@ func getTraceID(s string) [16]byte {
 	var id [16]byte
 	copy(id[:], s)
 	return id
+}
+
+func getLoggedInvalidSpanSamples(t *testing.T, entry observer.LoggedEntry) []validation.InvalidSpanDetail {
+	t.Helper()
+	raw, ok := entry.ContextMap()["samples"]
+	require.True(t, ok, "samples field missing")
+
+	if samples, isTyped := raw.([]validation.InvalidSpanDetail); isTyped {
+		return samples
+	}
+
+	rawSlice, ok := raw.([]any)
+	require.True(t, ok, "samples field type mismatch")
+
+	result := make([]validation.InvalidSpanDetail, 0, len(rawSlice))
+	for _, item := range rawSlice {
+		detail, ok := item.(validation.InvalidSpanDetail)
+		require.True(t, ok, "invalid span detail type mismatch")
+		result = append(result, detail)
+	}
+	return result
 }
 
 func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
@@ -324,10 +348,6 @@ func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
 
 	entries := observed.All()
 	found := false
-	expectedTraceIDs := []string{
-		hex.EncodeToString(traceID1[:]),
-		hex.EncodeToString(traceID2[:]),
-	}
 	for _, entry := range entries {
 		if entry.Message != "Partial success response from Coralogix" ||
 			entry.Level != zapcore.ErrorLevel ||
@@ -336,22 +356,95 @@ func TestTracesExporter_PushTraces_PartialSuccess(t *testing.T) {
 			continue
 		}
 
-		traceIDs, ok := entry.ContextMap()["trace_ids"].([]any)
-		assert.True(t, ok, "trace_ids should be a slice")
-		assert.Len(t, traceIDs, 2, "Should have exactly 2 trace IDs after deduplication")
-
-		seenIDs := make(map[string]bool)
-		for _, id := range traceIDs {
-			actualID := id.(string)
-			assert.False(t, seenIDs[actualID], "Duplicate trace ID found in log message")
-			seenIDs[actualID] = true
-			assert.Contains(t, expectedTraceIDs, actualID, "Logged trace ID should be in expected trace IDs")
-		}
+		// For unknown errors, we just log basic fields without validation details
+		// Trace IDs are now only in the samples, not as a separate field
 		found = true
 	}
-	assert.True(t, found, "Expected partial success log with correct fields and trace IDs")
+	assert.True(t, found, "Expected partial success log with correct fields")
 }
 
+// Removed TestTracesExporter_PushTraces_LogsInvalidSpanDetails test
+// We no longer do proactive validation scanning for performance reasons.
+// Validation details are only collected when partial success errors occur.
+
+func TestTracesExporter_PushTraces_PartialSuccess_InvalidDurationDetails(t *testing.T) {
+	endpoint, stopFn, mockSrv := startMockOtlpTracesServer(t)
+	defer stopFn()
+
+	cfg := &Config{
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
+			},
+		},
+		PrivateKey: "test-key",
+	}
+
+	exp, err := newTracesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
+	require.NoError(t, err)
+
+	err = exp.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = exp.shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	core, observed := observer.New(zapcore.DebugLevel)
+	exp.settings.Logger = zap.New(core)
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "broken-service")
+	rs.Resource().Attributes().PutStr("k8s.pod.name", "pod-1")
+
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().SetName("test-scope")
+
+	// Add one invalid span
+	invalidSpan := ss.Spans().AppendEmpty()
+	invalidSpan.SetName("invalid-span")
+	invalidSpan.SetTraceID(getTraceID("trace-invalid"))
+	invalidSpan.SetSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	invalidSpan.SetStartTimestamp(200)
+	invalidSpan.SetEndTimestamp(100)
+
+	partialSuccess := ptraceotlp.NewExportPartialSuccess()
+	partialSuccess.SetErrorMessage("Invalid span duration detected")
+	partialSuccess.SetRejectedSpans(1)
+	mockSrv.partialSuccess = &partialSuccess
+
+	err = exp.pushTraces(t.Context(), traces)
+	require.NoError(t, err)
+
+	entries := observed.All()
+	foundError := false
+	for _, entry := range entries {
+		if entry.Message != "Partial success response from Coralogix" || entry.Level != zapcore.ErrorLevel {
+			continue
+		}
+		foundError = true
+		assert.Equal(t, int64(1), entry.ContextMap()["rejected_spans"])
+		assert.Equal(t, "Invalid span duration detected", entry.ContextMap()["message"])
+		assert.Equal(t, string(validation.ErrorTypeInvalidDuration), entry.ContextMap()["partial_success_type"])
+		samples := getLoggedInvalidSpanSamples(t, entry)
+		require.Len(t, samples, 1)
+		sample := samples[0]
+		assert.Equal(t, "invalid-span", sample.SpanDetails.SpanName)
+		assert.Equal(t, "test-scope", sample.SpanDetails.InstrumentationScopeName)
+		assert.Equal(t, int64(-100), sample.DurationNano) // Duration is negative
+		assert.Equal(t, "broken-service", sample.SpanDetails.ResourceAttributes["service.name"])
+		assert.Equal(t, "pod-1", sample.SpanDetails.ResourceAttributes["k8s.pod.name"])
+	}
+	assert.True(t, foundError, "Expected partial success log containing invalid span details")
+}
+
+// Removed TestCollectInvalidDurationSpans test
+// This function has been moved to the validation package
+// See validation/traces_test.go for tests
 func BenchmarkTracesExporter_PushTraces(b *testing.B) {
 	endpoint, stopFn, mockSrv := startMockOtlpTracesServer(b)
 	defer stopFn()

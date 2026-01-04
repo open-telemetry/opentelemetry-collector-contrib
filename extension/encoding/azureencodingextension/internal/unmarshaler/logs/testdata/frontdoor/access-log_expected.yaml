@@ -1,0 +1,113 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/OPENTELEMETRY-AZURE-SUB/RESOURCEGROUPS/OPENTELEMETRY-FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/OPENTELEMETRY-FRONTDOOR-PROFILE
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Cdn/Profiles/AccessLog/Write
+              - key: azure.category
+                value:
+                  stringValue: FrontDoorAccessLog
+              - key: http.request.size
+                value:
+                  intValue: "60"
+              - key: http.response.size
+                value:
+                  intValue: "1624"
+              - key: client.port
+                value:
+                  intValue: "55262"
+              - key: http.response.status_code
+                value:
+                  intValue: "200"
+              - key: azure.time_to_first_byte
+                value:
+                  doubleValue: 0.035
+              - key: azure.request.duration
+                value:
+                  doubleValue: 0.035
+              - key: url.full
+                value:
+                  stringValue: https://opentelemetry-test-fmagg0exgdcfhefq.z01.azurefd.net:443/
+              - key: url.port
+                value:
+                  intValue: "443"
+              - key: url.scheme
+                value:
+                  stringValue: https
+              - key: url.domain
+                value:
+                  stringValue: opentelemetry-test-fmagg0exgdcfhefq.z01.azurefd.net
+              - key: url.path
+                value:
+                  stringValue: /
+              - key: azure.service.request.id
+                value:
+                  stringValue: 20250424T131428Z-17587c8c466d76czhC1PARprs40000000q8g00000000d67w
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: network.protocol.version
+                value:
+                  stringValue: 2.0.0.0
+              - key: network.protocol.name
+                value:
+                  stringValue: https
+              - key: tls.server.name
+                value:
+                  stringValue: opentelemetry-test-fmagg0exgdcfhefq.z01.azurefd.net
+              - key: user_agent.original
+                value:
+                  stringValue: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0
+              - key: client.address
+                value:
+                  stringValue: 2001:1c00:3280:6700:fbfa:bf04:1296:ebfc
+              - key: network.peer.address
+                value:
+                  stringValue: 2001:1c00:3280:6700:fbfa:bf04:1296:ebfc
+              - key: azure.cdn.edge.name
+                value:
+                  stringValue: PAR
+              - key: azure.cdn.cache.outcome
+                value:
+                  stringValue: CONFIG_NOCACHE
+              - key: tls.curve
+                value:
+                  stringValue: 0x11ec:X25519:prime256v1:secp384r1:secp521r1:0x0100:0x0101
+              - key: tls.cipher
+                value:
+                  stringValue: TLS_AES_256_GCM_SHA384
+              - key: tls.protocol.name
+                value:
+                  stringValue: TLS
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.3"
+              - key: http.request.header.host
+                value:
+                  stringValue: opentelemetry-test-fmagg0exgdcfhefq.z01.azurefd.net
+              - key: network.local.address
+                value:
+                  stringValue: opentelemetry-test-fmagg0exgdcfhefq.z01.azurefd.net
+              - key: server.address
+                value:
+                  stringValue: 23.100.1.29
+              - key: server.port
+                value:
+                  intValue: "443"
+            body: {}
+            timeUnixNano: "1745500468000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"google.golang.org/grpc/encoding/gzip"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
@@ -51,6 +52,7 @@ func TestLoadConfig(t *testing.T) {
 					ClientConfig: configgrpc.ClientConfig{
 						Compression: configcompression.TypeGzip,
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				Metrics: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
@@ -58,12 +60,14 @@ func TestLoadConfig(t *testing.T) {
 						Compression:     configcompression.TypeGzip,
 						WriteBufferSize: 512 * 1024,
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				Logs: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
 						Endpoint:    "https://",
 						Compression: configcompression.TypeGzip,
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				Traces: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
@@ -80,6 +84,7 @@ func TestLoadConfig(t *testing.T) {
 						WaitForReady:    false,
 						BalancerName:    "",
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   true,
@@ -103,6 +108,7 @@ func TestLoadConfig(t *testing.T) {
 					ClientConfig: configgrpc.ClientConfig{
 						Compression: configcompression.TypeGzip,
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				Metrics: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
@@ -110,12 +116,14 @@ func TestLoadConfig(t *testing.T) {
 						Compression:     configcompression.TypeGzip,
 						WriteBufferSize: 512 * 1024,
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				Logs: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
 						Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx:4317",
 						Compression: configcompression.TypeGzip,
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				Traces: TransportConfig{
 					ClientConfig: configgrpc.ClientConfig{
@@ -132,6 +140,7 @@ func TestLoadConfig(t *testing.T) {
 						WaitForReady:    false,
 						BalancerName:    "",
 					},
+					AcceptEncoding: gzip.Name,
 				},
 				AppNameAttributes:   []string{"service.namespace", "k8s.namespace.name"},
 				SubSystemAttributes: []string{"service.name", "k8s.deployment.name", "k8s.statefulset.name", "k8s.daemonset.name", "k8s.cronjob.name", "k8s.job.name", "k8s.container.name"},
@@ -440,6 +449,41 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	})
 }
 
+func TestGetAcceptEncoding(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		acceptEncoding   string
+		expectedEncoding string
+	}{
+		{
+			name:             "empty_returns_empty",
+			acceptEncoding:   "",
+			expectedEncoding: "",
+		},
+		{
+			name:             "explicit_gzip",
+			acceptEncoding:   gzip.Name,
+			expectedEncoding: gzip.Name,
+		},
+		{
+			name:             "custom_encoding",
+			acceptEncoding:   "snappy",
+			expectedEncoding: "snappy",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &TransportConfig{
+				AcceptEncoding: tt.acceptEncoding,
+			}
+			assert.Equal(t, tt.expectedEncoding, cfg.GetAcceptEncoding())
+		})
+	}
+}
+
 func TestConfigValidation(t *testing.T) {
 	t.Parallel()
 
@@ -503,6 +547,45 @@ func TestConfigValidation(t *testing.T) {
 				Domain:     "coralogix.com",
 				PrivateKey: "test-key",
 				AppName:    "test-app",
+			},
+			expectedErr: "",
+		},
+		{
+			name: "valid_gzip_accept_encoding",
+			config: &Config{
+				Protocol:   "grpc",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+				Traces: TransportConfig{
+					AcceptEncoding: gzip.Name,
+				},
+			},
+			expectedErr: "",
+		},
+		{
+			name: "invalid_accept_encoding",
+			config: &Config{
+				Protocol:   "grpc",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+				Traces: TransportConfig{
+					AcceptEncoding: "invalid-encoding",
+				},
+			},
+			expectedErr: "traces.accept_encoding: unsupported compression encoding",
+		},
+		{
+			name: "empty_accept_encoding_is_valid",
+			config: &Config{
+				Protocol:   "grpc",
+				Domain:     "coralogix.com",
+				PrivateKey: "test-key",
+				AppName:    "test-app",
+				Traces: TransportConfig{
+					AcceptEncoding: "",
+				},
 			},
 			expectedErr: "",
 		},

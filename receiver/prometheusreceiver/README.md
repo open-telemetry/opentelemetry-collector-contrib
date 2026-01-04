@@ -86,8 +86,6 @@ receivers:
 The prometheus receiver also supports additional top-level options:
 
 - **trim_metric_suffixes**: [**Experimental**] When set to true, this enables trimming unit and some counter type suffixes from metric names. For example, it would cause `singing_duration_seconds_total` to be trimmed to `singing_duration`. This can be useful when trying to restore the original metric names used in OpenTelemetry instrumentation. Defaults to false.
-- **use_start_time_metric**: When set to true, this enables retrieving the start time of all counter metrics from the process_start_time_seconds metric. This is only correct if all counters on that endpoint started after the process start time, and the process is the only actor exporting the metric after the process started. It should not be used in "exporters" which export counters that may have started before the process itself. Use only if you know what you are doing, as this may result in incorrect rate calculations. Defaults to false. Deprecated; use metricstarttime processor instead.
-- **start_time_metric_regex**: The regular expression for the start time metric, and is only applied when use_start_time_metric is enabled.  Defaults to process_start_time_seconds. Deprecated; use metricstarttime processor instead.
 - **report_extra_scrape_metrics**: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`. Deprecated; use the feature gate `receiver.prometheusreceiver.EnableReportExtraScrapeMetrics` instead.
 
 Example configuration:
@@ -257,28 +255,19 @@ More info about querying `/api/v1/` and the data format that is returned can be 
 "--feature-gates=receiver.prometheusreceiver.EnableReportExtraScrapeMetrics"
 ```
 
-- `receiver.prometheusreceiver.UseCreatedMetric`: Start time for Summary, Histogram 
-  and Sum metrics can be retrieved from `_created` metrics. Currently, this behaviour
-  is disabled by default. To enable it, use the following feature gate option:
+- `receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig`: When enabled, the
+  `report_extra_scrape_metrics` configuration option is ignored, and extra scrape metrics are
+  controlled solely by the `EnableReportExtraScrapeMetrics` feature gate. The intention is
+  to have extra scrape metrics all the time in the future:
 
 ```shell
-"--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
+"--feature-gates=receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig"
 ```
+
 - `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion`: Enables the Prometheus feature flag [created-timestamps-zero-injection](https://prometheus.io/docs/prometheus/latest/feature_flags/#created-timestamps-zero-injection). Currently, this behaviour is disabled by default due to worse CPU performance with higher metric volumes. To enable it, use the following feature gate option:
 
 ```shell
 "--feature-gates=receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion"
-```
-- `receiver.prometheusreceiver.UseCollectorStartTimeFallback`:  enables using
-  the collector start time as the metric start time if the
-  process_start_time_seconds metric yields no result (for example if targets
-  expose no process_start_time_seconds metric). This is useful when the collector
-  start time is a good approximation of the process start time - for example in
-  serverless workloads when the collector is deployed as a sidecar. To enable it,
-  use the following feature gate option:
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.UseCollectorStartTimeFallback"
 ```
 - `receiver.prometheusreceiver.EnableNativeHistograms` (Stable, enabled by default): Converts scraped native histogram metrics into OpenTelemetry exponential histograms. **Note:** You still need to configure `scrape_native_histograms: true` in your Prometheus scrape config to actually scrape native histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
 
