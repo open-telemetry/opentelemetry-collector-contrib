@@ -213,3 +213,26 @@ export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service
 ## Entity Events
 
 **Entity Events as logs are experimental** and might eventually be replaced by the result of [the OTEP](https://github.com/open-telemetry/oteps/blob/main/text/entities/0256-entities-data-model.md#entity-events). For now, the hostmetrics receiver can send the host entity event as a log records. By default, the hostmetrics receiver sends periodic EntityState events every 5 minutes. You can change that by setting `metadata_collection_interval`. Entity Events as logs are experimental. The result of the OTEP might eventually replace that.
+
+## Performance
+
+### Benchmark Tests
+
+The hostmetricsreceiver includes comprehensive benchmark tests for all scrapers. The benchmarks measure the performance of each scraper:
+
+- **CPU**: `Benchmark_ScrapeCpuMetrics`
+- **Disk**: `Benchmark_ScrapeDiskMetrics`
+- **Filesystem**: `Benchmark_ScrapeFileSystemMetrics`
+- **Load**: `Benchmark_ScrapeLoadMetrics`
+- **Memory**: `Benchmark_ScrapeMemoryMetrics`
+- **Network**: `Benchmark_ScrapeNetworkMetrics`
+- **NFS**: `Benchmark_ScrapeNFSMetrics` (Linux only)
+- **Paging**: `Benchmark_ScrapePagingMetrics`
+- **Process**: `Benchmark_ScrapeProcessMetrics`
+- **Processes**: `Benchmark_ScrapeProcessesMetrics`
+- **System**: `Benchmark_ScrapeSystemMetrics`
+- **Uptime**: `Benchmark_ScrapeUptimeMetrics`
+- **Combined**: `Benchmark_ScrapeSystemAndProcessMetrics`
+
+For the latest benchmark results, see the [GitHub Actions workflow runs](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml).
+
