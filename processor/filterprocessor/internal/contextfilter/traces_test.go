@@ -41,6 +41,45 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 		errorMode        ottl.ErrorMode
 	}{
 		{
+			name: "drop everything by resource attributes",
+			conditions: []string{
+				`resource.attributes["host.name"] == "localhost"`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "nothing drop by resource",
+			conditions: []string{
+				`resource.attributes["host.name"] == "wrong"`,
+			},
+			want: func(_ ptrace.Traces) {
+				// Nothing should be filtered, original data remains
+			},
+		},
+		{
+			name: "drop everything by resource",
+			conditions: []string{
+				`resource.schema_url == "test_schema_url"`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "drop everything by scope name",
+			conditions: []string{
+				`scope.name == "scope"`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "nothing drop by scope",
+			conditions: []string{
+				`scope.version == "2"`,
+			},
+			want: func(_ ptrace.Traces) {
+				// Nothing should be filtered, original data remains
+			},
+		},
+		{
 			name: "drop spans",
 			conditions: []string{
 				`span.name == "operationA"`,
@@ -101,26 +140,28 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(), common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
+			pc, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(),
+				common.WithSpanParser(filterottl.StandardSpanFuncs()),
+				common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()),
+				common.WithTraceCommonParsers(filterottl.StandardResourceFuncs()))
 			assert.NoError(t, err)
-			got, err := collection.ParseContextConditions(common.ContextConditions{Conditions: tt.conditions, ErrorMode: tt.errorMode})
+
+			consumer, err := pc.ParseContextConditions(common.ContextConditions{Conditions: tt.conditions, ErrorMode: tt.errorMode})
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err, "error parsing conditions")
-			finalTraces := constructTraces()
-			consumeErr := got.ConsumeTraces(t.Context(), finalTraces)
-			switch {
-			case tt.filterEverything && !tt.wantErr:
+
+			td := constructTraces()
+			consumeErr := consumer.ConsumeTraces(t.Context(), td)
+			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, consumeErr)
-			case tt.wantErr:
-				assert.Error(t, consumeErr)
-			default:
+			} else {
 				assert.NoError(t, consumeErr)
 				exTd := constructTraces()
 				tt.want(exTd)
-				assert.Equal(t, exTd, finalTraces)
+				assert.Equal(t, exTd, td)
 			}
 		})
 	}
@@ -209,7 +250,11 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(), common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()), common.WithTraceErrorMode(tt.errorMode))
+			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(),
+				common.WithSpanParser(filterottl.StandardSpanFuncs()),
+				common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()),
+				common.WithTraceErrorMode(tt.errorMode),
+				common.WithTraceCommonParsers(filterottl.StandardResourceFuncs()))
 			assert.NoError(t, err)
 
 			var consumers []common.TracesConsumer
@@ -236,13 +281,12 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 				assert.NoError(t, e, "error parsing conditions")
 			}
 
-			finalTraces := constructTraces()
-
+			td := constructTraces()
 			for _, consumer := range consumers {
-				if err := consumer.ConsumeTraces(t.Context(), finalTraces); err != nil {
+				if err := consumer.ConsumeTraces(t.Context(), td); err != nil {
 					// ErrSkipProcessingData is expected behavior, continue to validate
 					if errors.Is(err, processorhelper.ErrSkipProcessingData) {
-						break
+						continue
 					}
 					// Unexpected error, fail the test
 					assert.NoError(t, err)
@@ -252,113 +296,7 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 
 			exTd := constructTraces()
 			tt.want(exTd)
-			assert.Equal(t, exTd, finalTraces)
-		})
-	}
-}
-
-func Test_ProcessTraces_InferredResourceContext(t *testing.T) {
-	tests := []struct {
-		condition          string
-		filteredEverything bool
-		want               func(td ptrace.Traces)
-	}{
-		{
-			condition:          `resource.attributes["host.name"] == "localhost"`,
-			filteredEverything: true,
-			want: func(_ ptrace.Traces) {
-				// Everything should be filtered out
-			},
-		},
-		{
-			condition:          `resource.attributes["host.name"] == "wrong"`,
-			filteredEverything: false,
-			want: func(_ ptrace.Traces) {
-				// Nothing should be filtered, original data remains
-			},
-		},
-		{
-			condition:          `resource.schema_url == "test_schema_url"`,
-			filteredEverything: true,
-			want: func(_ ptrace.Traces) {
-				// Everything should be filtered out since schema_url matches
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.condition, func(t *testing.T) {
-			td := constructTraces()
-
-			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(), common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
-			assert.NoError(t, err)
-
-			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
-			assert.NoError(t, err)
-
-			err = consumer.ConsumeTraces(t.Context(), td)
-
-			if tt.filteredEverything {
-				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
-			} else {
-				assert.NoError(t, err)
-				exTd := constructTraces()
-				tt.want(exTd)
-				assert.Equal(t, exTd, td)
-			}
-		})
-	}
-}
-
-func Test_ProcessTraces_InferredScopeContext(t *testing.T) {
-	tests := []struct {
-		condition          string
-		filteredEverything bool
-		want               func(td ptrace.Traces)
-	}{
-		{
-			condition:          `scope.name == "scope"`,
-			filteredEverything: true,
-			want: func(_ ptrace.Traces) {
-				// Everything should be filtered out since scope name matches
-			},
-		},
-		{
-			condition:          `scope.version == "2"`,
-			filteredEverything: false,
-			want: func(_ ptrace.Traces) {
-				// Nothing should be filtered, original data remains
-			},
-		},
-		{
-			condition:          `scope.schema_url == "test_schema_url"`,
-			filteredEverything: true,
-			want: func(_ ptrace.Traces) {
-				// Everything should be filtered out since schema_url matches
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.condition, func(t *testing.T) {
-			td := constructTraces()
-
-			collection, err := common.NewTraceParserCollection(componenttest.NewNopTelemetrySettings(), common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
-			assert.NoError(t, err)
-
-			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
-			assert.NoError(t, err)
-
-			err = consumer.ConsumeTraces(t.Context(), td)
-
-			if tt.filteredEverything {
-				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
-			} else {
-				assert.NoError(t, err)
-				exTd := constructTraces()
-				tt.want(exTd)
-				assert.Equal(t, exTd, td)
-			}
+			assert.Equal(t, exTd, td)
 		})
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
@@ -194,23 +195,23 @@ type baseContext interface {
 	ProfilesConsumer
 }
 
-func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
+func withCommonParsers[R any](resourceFunctions map[string]ottl.Factory[ottlresource.TransformContext]) ottl.ParserCollectionOption[R] {
 	return func(pc *ottl.ParserCollection[R]) error {
-		rp, err := ottlresource.NewParser(ResourceFunctions(), pc.Settings, ottlresource.EnablePathContextNames())
+		rp, err := ottlresource.NewParser(resourceFunctions, pc.Settings, ottlresource.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
-		sp, err := ottlscope.NewParser(ScopeFunctions(), pc.Settings, ottlscope.EnablePathContextNames())
-		if err != nil {
-			return err
-		}
-
-		err = ottl.WithParserCollectionContext(ottlresource.ContextName, &rp, ottl.WithConditionConverter[ottlresource.TransformContext, R](parseResourceContextConditions))(pc)
+		sp, err := ottlscope.NewParser(filterottl.StandardScopeFuncs(), pc.Settings, ottlscope.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
 
-		err = ottl.WithParserCollectionContext(ottlscope.ContextName, &sp, ottl.WithConditionConverter[ottlscope.TransformContext, R](parseScopeContextConditions))(pc)
+		err = ottl.WithParserCollectionContext(ottlresource.ContextName, &rp, ottl.WithConditionConverter[ottlresource.TransformContext, R](convertResourceConditions))(pc)
+		if err != nil {
+			return err
+		}
+
+		err = ottl.WithParserCollectionContext(ottlscope.ContextName, &sp, ottl.WithConditionConverter[ottlscope.TransformContext, R](convertScopeConditions))(pc)
 		if err != nil {
 			return err
 		}
@@ -219,7 +220,7 @@ func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
 	}
 }
 
-func parseResourceContextConditions[R any](
+func convertResourceConditions[R any](
 	pc *ottl.ParserCollection[R],
 	conditions ottl.ConditionsGetter,
 	parsedConditions []*ottl.Condition[ottlresource.TransformContext],
@@ -234,7 +235,7 @@ func parseResourceContextConditions[R any](
 	return result.(R), nil
 }
 
-func parseScopeContextConditions[R any](
+func convertScopeConditions[R any](
 	pc *ottl.ParserCollection[R],
 	conditions ottl.ConditionsGetter,
 	parsedConditions []*ottl.Condition[ottlscope.TransformContext],

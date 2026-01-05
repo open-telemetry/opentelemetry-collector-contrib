@@ -339,67 +339,67 @@ func (cfg *Config) validateExplicitContextConfig() error {
 		return errors.New("cannot use ottl conditions and include/exclude for logs at the same time")
 	}
 
-	var errors error
+	var errs error
 
 	if cfg.Traces.ResourceConditions != nil {
 		_, err := filterottl.NewBoolExprForResource(cfg.Metrics.ResourceConditions, cfg.resourceFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		errors = multierr.Append(errors, err)
+		errs = multierr.Append(errs, err)
 	}
 
 	if cfg.Traces.SpanConditions != nil {
 		_, err := filterottl.NewBoolExprForSpan(cfg.Traces.SpanConditions, cfg.spanFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		errors = multierr.Append(errors, err)
+		errs = multierr.Append(errs, err)
 	}
 
 	if cfg.Traces.SpanEventConditions != nil {
 		_, err := filterottl.NewBoolExprForSpanEvent(cfg.Traces.SpanEventConditions, cfg.spanEventFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		errors = multierr.Append(errors, err)
+		errs = multierr.Append(errs, err)
 	}
 
 	if cfg.Metrics.ResourceConditions != nil {
 		_, err := filterottl.NewBoolExprForResource(cfg.Metrics.ResourceConditions, cfg.resourceFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		errors = multierr.Append(errors, err)
+		errs = multierr.Append(errs, err)
 	}
 
 	if cfg.Metrics.MetricConditions != nil {
 		_, err := filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, cfg.metricFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		errors = multierr.Append(errors, err)
+		errs = multierr.Append(errs, err)
 	}
 
 	if cfg.Metrics.DataPointConditions != nil {
 		_, err := filterottl.NewBoolExprForDataPoint(cfg.Metrics.DataPointConditions, cfg.dataPointFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		errors = multierr.Append(errors, err)
+		errs = multierr.Append(errs, err)
 	}
 
 	if cfg.Logs.ResourceConditions != nil {
 		_, err := filterottl.NewBoolExprForResource(cfg.Metrics.ResourceConditions, cfg.resourceFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		errors = multierr.Append(errors, err)
+		errs = multierr.Append(errs, err)
 	}
 
 	if cfg.Logs.LogConditions != nil {
 		_, err := filterottl.NewBoolExprForLog(cfg.Logs.LogConditions, cfg.logFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		errors = multierr.Append(errors, err)
+		errs = multierr.Append(errs, err)
 	}
 
 	if cfg.Profiles.ResourceConditions != nil {
 		_, err := filterottl.NewBoolExprForResource(cfg.Metrics.ResourceConditions, cfg.resourceFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		errors = multierr.Append(errors, err)
+		errs = multierr.Append(errs, err)
 	}
 
 	if cfg.Profiles.ProfileConditions != nil {
 		_, err := filterottl.NewBoolExprForProfile(cfg.Profiles.ProfileConditions, cfg.profileFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
-		errors = multierr.Append(errors, err)
+		errs = multierr.Append(errs, err)
 	}
 
 	if cfg.Logs.LogConditions != nil && cfg.Logs.Include != nil {
-		errors = multierr.Append(errors, cfg.Logs.Include.validate())
+		errs = multierr.Append(errs, cfg.Logs.Include.validate())
 	}
 
 	if cfg.Logs.LogConditions != nil && cfg.Logs.Exclude != nil {
-		errors = multierr.Append(errors, cfg.Logs.Exclude.validate())
+		errs = multierr.Append(errs, cfg.Logs.Exclude.validate())
 	}
 
-	return errors
+	return errs
 }
 
 func (cfg *Config) validateInferredContextConfig() error {
@@ -423,7 +423,7 @@ func (cfg *Config) validateInferredContextConfig() error {
 		return errors.New(`cannot use context inferred profile conditions "profile_conditions" and the settings "profiles.resource", "profiles.profile" at the same time`)
 	}
 
-	var errors error
+	var errs error
 
 	if len(cfg.TraceConditions) > 0 {
 		pc, err := cfg.newTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()})
@@ -433,7 +433,7 @@ func (cfg *Config) validateInferredContextConfig() error {
 		for _, cs := range cfg.TraceConditions {
 			_, err = pc.ParseContextConditions(cs)
 			if err != nil {
-				errors = multierr.Append(errors, err)
+				errs = multierr.Append(errs, err)
 			}
 		}
 	}
@@ -444,9 +444,9 @@ func (cfg *Config) validateInferredContextConfig() error {
 			return err
 		}
 		for _, cs := range cfg.MetricConditions {
-			_, err := pc.ParseContextConditions(cs)
+			_, err = pc.ParseContextConditions(cs)
 			if err != nil {
-				errors = multierr.Append(errors, err)
+				errs = multierr.Append(errs, err)
 			}
 		}
 	}
@@ -459,7 +459,7 @@ func (cfg *Config) validateInferredContextConfig() error {
 		for _, cs := range cfg.LogConditions {
 			_, err = pc.ParseContextConditions(cs)
 			if err != nil {
-				errors = multierr.Append(errors, err)
+				errs = multierr.Append(errs, err)
 			}
 		}
 	}
@@ -472,25 +472,43 @@ func (cfg *Config) validateInferredContextConfig() error {
 		for _, cs := range cfg.ProfileConditions {
 			_, err = pc.ParseContextConditions(cs)
 			if err != nil {
-				errors = multierr.Append(errors, err)
+				errs = multierr.Append(errs, err)
 			}
 		}
 	}
-	return errors
+	return errs
 }
 
 func (cfg *Config) newTraceParserCollection(telemetrySettings component.TelemetrySettings) (*common.TraceParserCollection, error) {
-	return common.NewTraceParserCollection(telemetrySettings, common.WithSpanParser(cfg.spanFunctions), common.WithSpanEventParser(cfg.spanEventFunctions), common.WithTraceErrorMode(cfg.ErrorMode))
+	return common.NewTraceParserCollection(telemetrySettings,
+		common.WithSpanParser(cfg.spanFunctions),
+		common.WithSpanEventParser(cfg.spanEventFunctions),
+		common.WithTraceErrorMode(cfg.ErrorMode),
+		common.WithTraceCommonParsers(cfg.resourceFunctions),
+	)
 }
 
 func (cfg *Config) newMetricParserCollection(telemetrySettings component.TelemetrySettings) (*common.MetricParserCollection, error) {
-	return common.NewMetricParserCollection(telemetrySettings, common.WithMetricParser(cfg.metricFunctions), common.WithDataPointParser(cfg.dataPointFunctions), common.WithMetricErrorMode(cfg.ErrorMode))
+	return common.NewMetricParserCollection(telemetrySettings,
+		common.WithMetricParser(cfg.metricFunctions),
+		common.WithDataPointParser(cfg.dataPointFunctions),
+		common.WithMetricErrorMode(cfg.ErrorMode),
+		common.WithMetricCommonParsers(cfg.resourceFunctions),
+	)
 }
 
 func (cfg *Config) newLogParserCollection(telemetrySettings component.TelemetrySettings) (*common.LogParserCollection, error) {
-	return common.NewLogParserCollection(telemetrySettings, common.WithLogParser(cfg.logFunctions), common.WithLogErrorMode(cfg.ErrorMode))
+	return common.NewLogParserCollection(telemetrySettings,
+		common.WithLogParser(cfg.logFunctions),
+		common.WithLogErrorMode(cfg.ErrorMode),
+		common.WithLogCommonParsers(cfg.resourceFunctions),
+	)
 }
 
 func (cfg *Config) newProfileParserCollection(telemetrySettings component.TelemetrySettings) (*common.ProfileParserCollection, error) {
-	return common.NewProfileParserCollection(telemetrySettings, common.WithProfileParser(cfg.profileFunctions), common.WithProfileErrorMode(cfg.ErrorMode))
+	return common.NewProfileParserCollection(telemetrySettings,
+		common.WithProfileParser(cfg.profileFunctions),
+		common.WithProfileErrorMode(cfg.ErrorMode),
+		common.WithProfileCommonParsers(cfg.resourceFunctions),
+	)
 }

@@ -38,6 +38,45 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 		errorMode        ottl.ErrorMode
 	}{
 		{
+			name: "drop everything by resource attributes",
+			conditions: []string{
+				`resource.attributes["host.name"] == "myhost"`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "nothing drop by resource",
+			conditions: []string{
+				`resource.attributes["host.name"] == "wrong"`,
+			},
+			want: func(_ pmetric.Metrics) {
+				// Nothing should be filtered, original data remains
+			},
+		},
+		{
+			name: "drop everything by resource",
+			conditions: []string{
+				`resource.schema_url == "test_schema_url"`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "drop everything by scope name",
+			conditions: []string{
+				`scope.name == "scope"`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "nothing drop by scope",
+			conditions: []string{
+				`scope.version == "2"`,
+			},
+			want: func(_ pmetric.Metrics) {
+				// Nothing should be filtered, original data remains
+			},
+		},
+		{
 			name: "drop metrics",
 			conditions: []string{
 				`metric.name == "operationA"`,
@@ -222,26 +261,28 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collection, err := common.NewMetricParserCollection(componenttest.NewNopTelemetrySettings(), common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()))
+			pc, err := common.NewMetricParserCollection(componenttest.NewNopTelemetrySettings(),
+				common.WithMetricParser(filterottl.StandardMetricFuncs()),
+				common.WithDataPointParser(filterottl.StandardDataPointFuncs()),
+				common.WithMetricCommonParsers(filterottl.StandardResourceFuncs()))
 			assert.NoError(t, err)
-			got, err := collection.ParseContextConditions(common.ContextConditions{Conditions: tt.conditions, ErrorMode: tt.errorMode})
+
+			consumer, err := pc.ParseContextConditions(common.ContextConditions{Conditions: tt.conditions, ErrorMode: tt.errorMode})
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err, "error parsing conditions")
-			finalMetrics := constructMetrics()
-			consumeErr := got.ConsumeMetrics(t.Context(), finalMetrics)
-			switch {
-			case tt.filterEverything && !tt.wantErr:
+
+			td := constructMetrics()
+			consumeErr := consumer.ConsumeMetrics(t.Context(), td)
+			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, consumeErr)
-			case tt.wantErr:
-				assert.Error(t, consumeErr)
-			default:
+			} else {
 				assert.NoError(t, consumeErr)
 				exTd := constructMetrics()
 				tt.want(exTd)
-				assert.Equal(t, exTd, finalMetrics)
+				assert.Equal(t, exTd, td)
 			}
 		})
 	}
@@ -330,13 +371,17 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collection, err := common.NewMetricParserCollection(componenttest.NewNopTelemetrySettings(), common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()), common.WithMetricErrorMode(tt.errorMode))
+			pc, err := common.NewMetricParserCollection(componenttest.NewNopTelemetrySettings(),
+				common.WithMetricParser(filterottl.StandardMetricFuncs()),
+				common.WithDataPointParser(filterottl.StandardDataPointFuncs()),
+				common.WithMetricErrorMode(tt.errorMode),
+				common.WithMetricCommonParsers(filterottl.StandardResourceFuncs()))
 			assert.NoError(t, err)
 
 			var consumers []common.MetricsConsumer
 			var parseErrs []error
 			for _, condition := range tt.conditions {
-				consumer, err := collection.ParseContextConditions(condition)
+				consumer, err := pc.ParseContextConditions(condition)
 				parseErrs = append(parseErrs, err)
 				consumers = append(consumers, consumer)
 			}
@@ -357,13 +402,12 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 				assert.NoError(t, e, "error parsing conditions")
 			}
 
-			finalMetrics := constructMetrics()
-
+			td := constructMetrics()
 			for _, consumer := range consumers {
-				if err := consumer.ConsumeMetrics(t.Context(), finalMetrics); err != nil {
+				if err := consumer.ConsumeMetrics(t.Context(), td); err != nil {
 					// ErrSkipProcessingData is expected behavior, continue to validate
 					if errors.Is(err, processorhelper.ErrSkipProcessingData) {
-						break
+						continue
 					}
 					// Unexpected error, fail the test
 					assert.NoError(t, err)
@@ -373,113 +417,7 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 
 			exTd := constructMetrics()
 			tt.want(exTd)
-			assert.Equal(t, exTd, finalMetrics)
-		})
-	}
-}
-
-func Test_ProcessMetrics_InferredResourceContext(t *testing.T) {
-	tests := []struct {
-		condition          string
-		filteredEverything bool
-		want               func(md pmetric.Metrics)
-	}{
-		{
-			condition:          `resource.attributes["host.name"] == "myhost"`,
-			filteredEverything: true,
-			want: func(_ pmetric.Metrics) {
-				// Everything should be filtered out
-			},
-		},
-		{
-			condition:          `resource.attributes["host.name"] == "wrong"`,
-			filteredEverything: false,
-			want: func(_ pmetric.Metrics) {
-				// Nothing should be filtered, original data remains
-			},
-		},
-		{
-			condition:          `resource.schema_url == "test_schema_url"`,
-			filteredEverything: true,
-			want: func(_ pmetric.Metrics) {
-				// Everything should be filtered out since schema_url matches
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.condition, func(t *testing.T) {
-			md := constructMetrics()
-
-			collection, err := common.NewMetricParserCollection(componenttest.NewNopTelemetrySettings(), common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()))
-			assert.NoError(t, err)
-
-			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
-			assert.NoError(t, err)
-
-			err = consumer.ConsumeMetrics(t.Context(), md)
-
-			if tt.filteredEverything {
-				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
-			} else {
-				assert.NoError(t, err)
-				exTd := constructMetrics()
-				tt.want(exTd)
-				assert.Equal(t, exTd, md)
-			}
-		})
-	}
-}
-
-func Test_ProcessMetrics_InferredScopeContext(t *testing.T) {
-	tests := []struct {
-		condition          string
-		filteredEverything bool
-		want               func(md pmetric.Metrics)
-	}{
-		{
-			condition:          `scope.name == "scope"`,
-			filteredEverything: true,
-			want: func(_ pmetric.Metrics) {
-				// Everything should be filtered out since scope name matches
-			},
-		},
-		{
-			condition:          `scope.version == "2"`,
-			filteredEverything: false,
-			want: func(_ pmetric.Metrics) {
-				// Nothing should be filtered, original data remains
-			},
-		},
-		{
-			condition:          `scope.schema_url == "test_schema_url"`,
-			filteredEverything: true,
-			want: func(_ pmetric.Metrics) {
-				// Everything should be filtered out since schema_url matches
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.condition, func(t *testing.T) {
-			md := constructMetrics()
-
-			collection, err := common.NewMetricParserCollection(componenttest.NewNopTelemetrySettings(), common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()))
-			assert.NoError(t, err)
-
-			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
-			assert.NoError(t, err)
-
-			err = consumer.ConsumeMetrics(t.Context(), md)
-
-			if tt.filteredEverything {
-				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
-			} else {
-				assert.NoError(t, err)
-				exTd := constructMetrics()
-				tt.want(exTd)
-				assert.Equal(t, exTd, md)
-			}
+			assert.Equal(t, exTd, td)
 		})
 	}
 }

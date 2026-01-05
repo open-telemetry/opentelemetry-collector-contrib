@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
@@ -119,9 +120,12 @@ func WithTraceErrorMode(errorMode ottl.ErrorMode) TraceParserCollectionOption {
 	return TraceParserCollectionOption(ottl.WithParserCollectionErrorMode[TracesConsumer](errorMode))
 }
 
+func WithTraceCommonParsers(functions map[string]ottl.Factory[ottlresource.TransformContext]) TraceParserCollectionOption {
+	return TraceParserCollectionOption(withCommonParsers[TracesConsumer](functions))
+}
+
 func NewTraceParserCollection(settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[TracesConsumer]{
-		withCommonContextParsers[TracesConsumer](),
 		ottl.EnableParserCollectionModifiedPathsLogging[TracesConsumer](true),
 	}
 

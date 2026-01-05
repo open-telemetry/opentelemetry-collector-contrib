@@ -28,6 +28,38 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 		errorMode        ottl.ErrorMode
 	}{
 		{
+			name: "drop everything by resource attributes",
+			conditions: []string{
+				`resource.attributes["host.name"] == "localhost"`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "nothing drop by resource",
+			conditions: []string{
+				`resource.attributes["host.name"] == "wrong"`,
+			},
+			want: func(_ pprofile.Profiles) {
+				// Nothing should be filtered, original data remains
+			},
+		},
+		{
+			name: "drop everything by scope name",
+			conditions: []string{
+				`IsMatch(scope.name, "scope*")`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "nothing drop by scope",
+			conditions: []string{
+				`scope.version == "2"`,
+			},
+			want: func(_ pprofile.Profiles) {
+				// Nothing should be filtered, original data remains
+			},
+		},
+		{
 			name: "drop profiles",
 			conditions: []string{
 				`profile.original_payload_format == "legacy"`,
@@ -79,26 +111,27 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collection, err := common.NewProfileParserCollection(componenttest.NewNopTelemetrySettings(), common.WithProfileParser(filterottl.StandardProfileFuncs()))
+			collection, err := common.NewProfileParserCollection(componenttest.NewNopTelemetrySettings(),
+				common.WithProfileParser(filterottl.StandardProfileFuncs()),
+				common.WithProfileCommonParsers(filterottl.StandardResourceFuncs()))
 			assert.NoError(t, err)
-			got, err := collection.ParseContextConditions(common.ContextConditions{Conditions: tt.conditions, ErrorMode: tt.errorMode})
+
+			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: tt.conditions, ErrorMode: tt.errorMode})
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err, "error parsing conditions")
-			finalProfiles := constructProfiles()
-			consumeErr := got.ConsumeProfiles(t.Context(), finalProfiles)
-			switch {
-			case tt.filterEverything && !tt.wantErr:
+
+			td := constructProfiles()
+			consumeErr := consumer.ConsumeProfiles(t.Context(), td)
+			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, consumeErr)
-			case tt.wantErr:
-				assert.Error(t, consumeErr)
-			default:
+			} else {
 				assert.NoError(t, consumeErr)
 				exTd := constructProfiles()
 				tt.want(exTd)
-				assert.Equal(t, exTd, finalProfiles)
+				assert.Equal(t, exTd, td)
 			}
 		})
 	}
@@ -193,7 +226,10 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collection, err := common.NewProfileParserCollection(componenttest.NewNopTelemetrySettings(), common.WithProfileParser(filterottl.StandardProfileFuncs()), common.WithProfileErrorMode(tt.errorMode))
+			collection, err := common.NewProfileParserCollection(componenttest.NewNopTelemetrySettings(),
+				common.WithProfileParser(filterottl.StandardProfileFuncs()),
+				common.WithProfileErrorMode(tt.errorMode),
+				common.WithProfileCommonParsers(filterottl.StandardResourceFuncs()))
 			assert.NoError(t, err)
 
 			var consumers []common.ProfilesConsumer
@@ -226,7 +262,7 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 				if err := consumer.ConsumeProfiles(t.Context(), finalProfiles); err != nil {
 					// ErrSkipProcessingData is expected behavior, continue to validate
 					if errors.Is(err, processorhelper.ErrSkipProcessingData) {
-						break
+						continue
 					}
 					// Unexpected error, fail the test
 					assert.NoError(t, err)
@@ -237,98 +273,6 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 			exTd := constructProfiles()
 			tt.want(exTd)
 			assert.Equal(t, exTd, finalProfiles)
-		})
-	}
-}
-
-func Test_ProcessProfiles_InferredResourceContext(t *testing.T) {
-	tests := []struct {
-		condition          string
-		filteredEverything bool
-		want               func(pprofile.Profiles)
-	}{
-		{
-			condition:          `resource.attributes["host.name"] == "localhost"`,
-			filteredEverything: true,
-			want: func(_ pprofile.Profiles) {
-				// Everything should be filtered out
-			},
-		},
-		{
-			condition:          `resource.attributes["host.name"] == "wrong"`,
-			filteredEverything: false,
-			want: func(_ pprofile.Profiles) {
-				// Nothing should be filtered, original data remains
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.condition, func(t *testing.T) {
-			td := constructProfiles()
-
-			collection, err := common.NewProfileParserCollection(componenttest.NewNopTelemetrySettings(), common.WithProfileParser(filterottl.StandardProfileFuncs()))
-			assert.NoError(t, err)
-
-			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
-			assert.NoError(t, err)
-
-			err = consumer.ConsumeProfiles(t.Context(), td)
-
-			if tt.filteredEverything {
-				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
-			} else {
-				assert.NoError(t, err)
-				exTd := constructProfiles()
-				tt.want(exTd)
-				assert.Equal(t, exTd, td)
-			}
-		})
-	}
-}
-
-func Test_ProcessProfiles_InferredScopeContext(t *testing.T) {
-	tests := []struct {
-		condition          string
-		filteredEverything bool
-		want               func(pprofile.Profiles)
-	}{
-		{
-			condition:          `IsMatch(scope.name, "scope*")`,
-			filteredEverything: true,
-			want: func(_ pprofile.Profiles) {
-				// Everything should be filtered out since scope name matches
-			},
-		},
-		{
-			condition:          `scope.version == "2"`,
-			filteredEverything: false,
-			want: func(_ pprofile.Profiles) {
-				// Nothing should be filtered, original data remains
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.condition, func(t *testing.T) {
-			td := constructProfiles()
-
-			collection, err := common.NewProfileParserCollection(componenttest.NewNopTelemetrySettings(), common.WithProfileParser(filterottl.StandardProfileFuncs()))
-			assert.NoError(t, err)
-
-			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
-			assert.NoError(t, err)
-
-			err = consumer.ConsumeProfiles(t.Context(), td)
-
-			if tt.filteredEverything {
-				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
-			} else {
-				assert.NoError(t, err)
-				exTd := constructProfiles()
-				tt.want(exTd)
-				assert.Equal(t, exTd, td)
-			}
 		})
 	}
 }

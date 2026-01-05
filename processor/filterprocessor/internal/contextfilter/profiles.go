@@ -14,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
 type ProfilesConsumer interface {
@@ -71,9 +72,12 @@ func WithProfileErrorMode(errorMode ottl.ErrorMode) ProfileParserCollectionOptio
 	return ProfileParserCollectionOption(ottl.WithParserCollectionErrorMode[ProfilesConsumer](errorMode))
 }
 
+func WithProfileCommonParsers(functions map[string]ottl.Factory[ottlresource.TransformContext]) ProfileParserCollectionOption {
+	return ProfileParserCollectionOption(withCommonParsers[ProfilesConsumer](functions))
+}
+
 func NewProfileParserCollection(settings component.TelemetrySettings, options ...ProfileParserCollectionOption) (*ProfileParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[ProfilesConsumer]{
-		withCommonContextParsers[ProfilesConsumer](),
 		ottl.EnableParserCollectionModifiedPathsLogging[ProfilesConsumer](true),
 	}
 

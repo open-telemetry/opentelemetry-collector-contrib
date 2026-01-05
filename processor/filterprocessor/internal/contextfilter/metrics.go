@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
 type MetricsConsumer interface {
@@ -202,9 +203,12 @@ func WithMetricErrorMode(errorMode ottl.ErrorMode) MetricParserCollectionOption 
 	return MetricParserCollectionOption(ottl.WithParserCollectionErrorMode[MetricsConsumer](errorMode))
 }
 
+func WithMetricCommonParsers(functions map[string]ottl.Factory[ottlresource.TransformContext]) MetricParserCollectionOption {
+	return MetricParserCollectionOption(withCommonParsers[MetricsConsumer](functions))
+}
+
 func NewMetricParserCollection(settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[MetricsConsumer]{
-		withCommonContextParsers[MetricsConsumer](),
 		ottl.EnableParserCollectionModifiedPathsLogging[MetricsConsumer](true),
 	}
 

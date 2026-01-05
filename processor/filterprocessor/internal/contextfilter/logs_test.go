@@ -42,6 +42,45 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 		errorMode        ottl.ErrorMode
 	}{
 		{
+			name: "drop everything by resource attributes",
+			conditions: []string{
+				`resource.attributes["host.name"] == "localhost"`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "nothing drop by resource",
+			conditions: []string{
+				`resource.attributes["host.name"] == "wrong"`,
+			},
+			want: func(_ plog.Logs) {
+				// Nothing should be filtered, original data remains
+			},
+		},
+		{
+			name: "drop everything by resource",
+			conditions: []string{
+				`resource.schema_url == "test_schema_url"`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "drop everything by scope name",
+			conditions: []string{
+				`scope.name == "scope"`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "nothing drop by scope",
+			conditions: []string{
+				`scope.version == "2"`,
+			},
+			want: func(_ plog.Logs) {
+				// Nothing should be filtered, original data remains
+			},
+		},
+		{
 			name: "drop logs",
 			conditions: []string{
 				`log.body == "operationA"`,
@@ -90,26 +129,27 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collection, err := common.NewLogParserCollection(componenttest.NewNopTelemetrySettings(), common.WithLogParser(filterottl.StandardLogFuncs()))
+			pc, err := common.NewLogParserCollection(componenttest.NewNopTelemetrySettings(),
+				common.WithLogParser(filterottl.StandardLogFuncs()),
+				common.WithLogCommonParsers(filterottl.StandardResourceFuncs()))
 			assert.NoError(t, err)
-			got, err := collection.ParseContextConditions(common.ContextConditions{Conditions: tt.conditions, ErrorMode: tt.errorMode})
+
+			consumer, err := pc.ParseContextConditions(common.ContextConditions{Conditions: tt.conditions, ErrorMode: tt.errorMode})
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err, "error parsing conditions")
-			finalLogs := constructLogs()
-			consumeErr := got.ConsumeLogs(t.Context(), finalLogs)
-			switch {
-			case tt.filterEverything && !tt.wantErr:
+
+			td := constructLogs()
+			consumeErr := consumer.ConsumeLogs(t.Context(), td)
+			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, consumeErr)
-			case tt.wantErr:
-				assert.Error(t, consumeErr)
-			default:
+			} else {
 				assert.NoError(t, consumeErr)
 				exTd := constructLogs()
 				tt.want(exTd)
-				assert.Equal(t, exTd, finalLogs)
+				assert.Equal(t, exTd, td)
 			}
 		})
 	}
@@ -198,13 +238,16 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collection, err := common.NewLogParserCollection(componenttest.NewNopTelemetrySettings(), common.WithLogParser(filterottl.StandardLogFuncs()), common.WithLogErrorMode(tt.errorMode))
+			pc, err := common.NewLogParserCollection(componenttest.NewNopTelemetrySettings(),
+				common.WithLogParser(filterottl.StandardLogFuncs()),
+				common.WithLogErrorMode(tt.errorMode),
+				common.WithLogCommonParsers(filterottl.StandardResourceFuncs()))
 			assert.NoError(t, err)
 
 			var consumers []common.LogsConsumer
 			var parseErrs []error
 			for _, condition := range tt.conditions {
-				consumer, err := collection.ParseContextConditions(condition)
+				consumer, err := pc.ParseContextConditions(condition)
 				parseErrs = append(parseErrs, err)
 				consumers = append(consumers, consumer)
 			}
@@ -225,13 +268,12 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 				assert.NoError(t, e, "error parsing conditions")
 			}
 
-			finalLogs := constructLogs()
-
+			td := constructLogs()
 			for _, consumer := range consumers {
-				if err := consumer.ConsumeLogs(t.Context(), finalLogs); err != nil {
+				if err := consumer.ConsumeLogs(t.Context(), td); err != nil {
 					// ErrSkipProcessingData is expected behavior, continue to validate
 					if errors.Is(err, processorhelper.ErrSkipProcessingData) {
-						break
+						continue
 					}
 					// Unexpected error, fail the test
 					assert.NoError(t, err)
@@ -241,113 +283,7 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 
 			exTd := constructLogs()
 			tt.want(exTd)
-			assert.Equal(t, exTd, finalLogs)
-		})
-	}
-}
-
-func Test_ProcessLogs_InferredResourceContext(t *testing.T) {
-	tests := []struct {
-		condition          string
-		filteredEverything bool
-		want               func(td plog.Logs)
-	}{
-		{
-			condition:          `resource.attributes["host.name"] == "localhost"`,
-			filteredEverything: true,
-			want: func(_ plog.Logs) {
-				// Everything should be filtered out
-			},
-		},
-		{
-			condition:          `resource.attributes["host.name"] == "wrong"`,
-			filteredEverything: false,
-			want: func(_ plog.Logs) {
-				// Nothing should be filtered, original data remains
-			},
-		},
-		{
-			condition:          `resource.schema_url == "test_schema_url"`,
-			filteredEverything: true,
-			want: func(_ plog.Logs) {
-				// Everything should be filtered out since schema_url matches
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.condition, func(t *testing.T) {
-			td := constructLogs()
-
-			collection, err := common.NewLogParserCollection(componenttest.NewNopTelemetrySettings(), common.WithLogParser(filterottl.StandardLogFuncs()))
-			assert.NoError(t, err)
-
-			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
-			assert.NoError(t, err)
-
-			err = consumer.ConsumeLogs(t.Context(), td)
-
-			if tt.filteredEverything {
-				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
-			} else {
-				assert.NoError(t, err)
-				exTd := constructLogs()
-				tt.want(exTd)
-				assert.Equal(t, exTd, td)
-			}
-		})
-	}
-}
-
-func Test_ProcessLogs_InferredScopeContext(t *testing.T) {
-	tests := []struct {
-		condition          string
-		filteredEverything bool
-		want               func(td plog.Logs)
-	}{
-		{
-			condition:          `scope.name == "scope"`,
-			filteredEverything: true,
-			want: func(_ plog.Logs) {
-				// Everything should be filtered out since scope name matches
-			},
-		},
-		{
-			condition:          `scope.version == "2"`,
-			filteredEverything: false,
-			want: func(_ plog.Logs) {
-				// Nothing should be filtered, original data remains
-			},
-		},
-		{
-			condition:          `scope.schema_url == "test_schema_url"`,
-			filteredEverything: true,
-			want: func(_ plog.Logs) {
-				// Everything should be filtered out since schema_url matches
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.condition, func(t *testing.T) {
-			td := constructLogs()
-
-			collection, err := common.NewLogParserCollection(componenttest.NewNopTelemetrySettings(), common.WithLogParser(filterottl.StandardLogFuncs()))
-			assert.NoError(t, err)
-
-			consumer, err := collection.ParseContextConditions(common.ContextConditions{Conditions: []string{tt.condition}})
-			assert.NoError(t, err)
-
-			err = consumer.ConsumeLogs(t.Context(), td)
-
-			if tt.filteredEverything {
-				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
-			} else {
-				assert.NoError(t, err)
-				exTd := constructLogs()
-				tt.want(exTd)
-				assert.Equal(t, exTd, td)
-			}
+			assert.Equal(t, exTd, td)
 		})
 	}
 }
