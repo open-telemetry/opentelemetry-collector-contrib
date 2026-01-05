@@ -889,15 +889,15 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 	})
 }
 
-func setupSignalHandler(ctx context.Context, t testing.TB, signalCallback func()) {
-	t.Helper()
+func setupSignalHandler(ctx context.Context, tb testing.TB, signalCallback func()) {
+	tb.Helper()
 
 	sigChan := make(chan os.Signal, 1)
 	// Notify sigChan when SIGHUP is received
 	signal.Notify(sigChan, syscall.SIGHUP)
 
 	go func() {
-		t.Cleanup(func() {
+		tb.Cleanup(func() {
 			signal.Stop(sigChan)
 		})
 
