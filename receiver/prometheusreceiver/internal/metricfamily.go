@@ -81,6 +81,9 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 
 // includesMetric returns true if the metric is part of the family
 func (mf *metricFamily) includesMetric(metricName string) bool {
+	if mf.mtype == pmetric.MetricTypeSum {
+		return normalizeMetricName(metricName) == mf.metadata.MetricFamily
+	}
 	if mf.mtype != pmetric.MetricTypeGauge {
 		// If it is a merged family type, then it should match the
 		// family name when suffixes are trimmed.

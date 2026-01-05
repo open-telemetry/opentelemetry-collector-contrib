@@ -56,13 +56,10 @@ func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrap
 	// try with suffixes trimmed, in-case it is a "merged" metric type.
 	normalizedName := normalizeMetricName(metricName)
 	if metadata, ok := mc.GetMetadata(normalizedName); ok {
-		// unless it's a merged OM counter (_total and _created) in which case
-		// we want to use the _total name instead of the normalized name
+		if isOMCounterCreatedLine(metricName, normalizedName, mc) {
+			return &metadata, normalizedName + metricSuffixTotal
+		}
 		if metadata.Type == model.MetricTypeCounter {
-			// re-normalize the _created name to expected corresponding _total name
-			if strings.HasSuffix(metricName, metricSuffixCreated) {
-				metricName = normalizedName + metricSuffixTotal
-			}
 			return &metadata, metricName
 		}
 		return &metadata, normalizedName
@@ -72,6 +69,19 @@ func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrap
 		MetricFamily: metricName,
 		Type:         model.MetricTypeUnknown,
 	}, metricName
+}
+
+// isOMCounterCreatedLine determines whether a metric is a _created line for a counter appended by an om-text parser
+// these assumptions are made
+// 1. the metric name of an OM counter line would always have either _total or _created as a suffix
+// 2. the omptextarser stores metadata of every om text line using the counter's normalized name (i.e foo_counter_total => foo_counter, foo_counter_created => foo_counter)
+// 3. the promtextparser stores metadata without normalization of metric name
+func isOMCounterCreatedLine(metricName, normalizedMetricName string, mc scrape.MetricMetadataStore) bool {
+	if !strings.HasSuffix(metricName, metricSuffixCreated) {
+		return false
+	}
+	md, ok := mc.GetMetadata(normalizedMetricName)
+	return ok && md.Type == model.MetricTypeCounter
 }
 
 type emptyMetadataStore struct{}

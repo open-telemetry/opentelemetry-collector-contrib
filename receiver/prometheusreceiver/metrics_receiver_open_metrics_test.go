@@ -390,6 +390,7 @@ func TestCreatedMetric(t *testing.T) {
 			},
 			validateFunc: verifyCreatedTimeMetric(verifyOpts{true, false, false, nil}),
 		},
+
 		{
 			name: "counter reversed",
 			pages: []mockPrometheusResponse{
