@@ -779,6 +779,10 @@ func TestOpAMPAgent_Dependencies(t *testing.T) {
 }
 
 func TestOpAMPAgent_onCommand(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows since SIGHUP isn't a recognized signal")
+	}
+
 	t.Run("remote restarts not enabled by feature gate", func(t *testing.T) {
 		agent := opampAgent{
 			logger:                zaptest.NewLogger(t),

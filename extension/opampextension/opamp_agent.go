@@ -476,7 +476,8 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 func (o *opampAgent) onCommand(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 	cmdType := command.GetType()
 	if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
-		if o.remoteRestartsEnabled && o.capabilities.AcceptsRestartCommand {
+		// the SIGHUP signal doesn't exist in windows, so we'll just short circuit if this is running on a windows system.
+		if o.remoteRestartsEnabled && o.capabilities.AcceptsRestartCommand && runtime.GOOS != "windows" {
 			o.logger.Info("received remote config — sending SIGHUP to reload")
 			collectorProcess, err := os.FindProcess(os.Getpid())
 			if err != nil {
