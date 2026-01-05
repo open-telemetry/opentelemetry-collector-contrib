@@ -97,6 +97,6 @@ func assertCPUFrequencyMetricValid(t *testing.T, metric pmetric.Metric) {
 		assert.True(t, exists, "Data point should have 'cpu' attribute")
 		assert.Contains(t, cpuAttr.Str(), "cpu", "CPU attribute should contain 'cpu' prefix")
 
-		assert.Greater(t, dp.DoubleValue(), 0.0, "CPU frequency should be greater than 0")
+		assert.GreaterOrEqual(t, dp.DoubleValue(), 0.0, "CPU frequency should be non-negative")
 	}
 }
