@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -363,12 +364,7 @@ func TestAutodiscoverAccountIdentifiers(t *testing.T) {
 			if input.IncludeLinkedAccounts == nil || !*input.IncludeLinkedAccounts {
 				return false
 			}
-			for _, accountID := range input.AccountIdentifiers {
-				if accountID == testAccountID {
-					return true
-				}
-			}
-			return false
+			return slices.Contains(input.AccountIdentifiers, testAccountID)
 		}),
 		mock.Anything,
 	).Return(
