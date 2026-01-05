@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -99,13 +99,13 @@ func TestLoadConfig(t *testing.T) {
 						Sizer:        exporterhelper.RequestSizerTypeItems,
 					}),
 				}),
-				OtelAttrsToHec: splunk.HecToOtelAttrs{
+				OtelAttrsToHec: translator.HecToOtelAttrs{
 					Source:     "mysource",
 					SourceType: "mysourcetype",
 					Index:      "myindex",
 					Host:       "myhost",
 				},
-				HecFields: OtelToHecFields{
+				HecFields: translator.OtelToHecFields{
 					SeverityText:   "myseverityfield",
 					SeverityNumber: "myseveritynumfield",
 				},
