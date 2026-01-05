@@ -156,6 +156,68 @@ func TestExtractTLSVersion(t *testing.T) {
 	}
 }
 
+func TestExtractFirstKey(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		expectedKey string
+		expectError string
+	}{
+		{
+			name:        "Minified JSON",
+			input:       `{"key", "value"}`,
+			expectedKey: "key",
+		},
+		{
+			name: "Formatted JSON",
+			input: `{
+						"key", "value"
+					}`,
+			expectedKey: "key",
+		},
+		{
+			name: "Formatted multi-key returns first key",
+			input: `{
+						"keyA", "value",
+						"keyB", "value"
+					}`,
+			expectedKey: "keyA",
+		},
+		{
+			name:        "Key with array",
+			input:       `{"key" : [] }`,
+			expectedKey: "key",
+		},
+		{
+			name:        "Invalid JSON - non JSON input",
+			input:       `Key value`,
+			expectError: "invalid JSON payload, failed to find the JSON opening",
+		},
+		{
+			name:        "Invalid format - malformed with no proper elements",
+			input:       `{ key }`,
+			expectError: "invalid JSON payload, expected a JSON key but found none",
+		},
+		{
+			name:        "Invalid format - incomplete JSON object",
+			input:       `{ "key }`,
+			expectError: "invalid JSON payload",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			key, err := extractFirstKey([]byte(tt.input))
+			if tt.expectError != "" {
+				require.ErrorContains(t, err, tt.expectError)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedKey, key)
+			}
+		})
+	}
+}
+
 // errorReader is a reader that always returns an error
 type errorReader struct {
 	err error

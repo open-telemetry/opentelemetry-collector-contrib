@@ -515,7 +515,7 @@ func extractFirstKey(data []byte) (string, error) {
 		pos++
 	}
 	if pos >= n || data[pos] != '{' {
-		return "", errors.New("invalid JSON payload, failed to find the opening bracket")
+		return "", errors.New("invalid JSON payload, failed to find the JSON opening")
 	}
 
 	// advance to opening quote
@@ -524,7 +524,7 @@ func extractFirstKey(data []byte) (string, error) {
 		pos++
 	}
 	if pos >= n || data[pos] != '"' {
-		return "", errors.New("invalid JSON payload, expected a key but found none")
+		return "", errors.New("invalid JSON payload, expected a JSON key but found none")
 	}
 
 	// extract the first key
