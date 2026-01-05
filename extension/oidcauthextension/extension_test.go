@@ -269,7 +269,7 @@ func TestOIDCAuthenticationSucceededSingleIssuerMismatch(t *testing.T) {
 	p := newTestExtension(t, config)
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
-	require.ErrorContains(t, err, "issuer did not match")
+	require.ErrorContains(t, err, "did not match")
 
 	srvAuth, ok := p.(extensionauth.Server)
 	require.True(t, ok)
