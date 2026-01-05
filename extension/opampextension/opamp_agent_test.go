@@ -6,7 +6,6 @@ package opampextension
 import (
 	"context"
 	"errors"
-	"go.uber.org/zap/zaptest"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -30,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"

@@ -5,11 +5,11 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/featuregate"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/metadata"
 )
