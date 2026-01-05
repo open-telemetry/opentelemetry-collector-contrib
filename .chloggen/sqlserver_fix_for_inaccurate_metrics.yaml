@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/postgresql
+component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Accuracy improvements for top-query metrics
@@ -16,7 +16,7 @@ issues: []
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  PostgreSQL metrics reporting is improved by reducing the warm-up delay and providing accurate insights sooner.
+  SQLServer metrics reporting is improved by reducing the warm-up delay and providing accurate insights sooner.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
