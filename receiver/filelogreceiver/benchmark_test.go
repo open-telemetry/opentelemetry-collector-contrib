@@ -80,7 +80,7 @@ func BenchmarkReceiverWithMultipleFiles(b *testing.B) {
 func benchmarkReadMultipleFiles(b *testing.B, numFiles, linesPerFile int) {
 	logFileGenerator := testutil.NewLogFileGenerator(b)
 	var logFilePaths []string
-	for i := 0; i < numFiles; i++ {
+	for range numFiles {
 		logFilePaths = append(logFilePaths, logFileGenerator.GenerateLogFile(linesPerFile))
 	}
 
