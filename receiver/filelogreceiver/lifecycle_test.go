@@ -119,7 +119,7 @@ func TestReceiverMultipleStartStop(t *testing.T) {
 
 	sink := new(consumertest.LogsSink)
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		t.Run(fmt.Sprintf("cycle_%d", i), func(t *testing.T) {
 			receiver, err := factory.CreateLogs(ctx, receivertest.NewNopSettings(metadata.Type), cfg, sink)
 			require.NoError(t, err)
