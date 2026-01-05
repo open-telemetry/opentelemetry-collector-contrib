@@ -754,11 +754,11 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		totalElapsedTimeVal := s.retrieveValue(row, totalElapsedTime, &errs, retrieveFloat).(float64) / 1_000_000
 
-		// If execution count in the db is 1 that would mean there is no past records to compare with.
+		// If execution count in the DB is 1 that would mean there is no past records to compare with to find a delta.
 		// We just send down the metrics corresponding to that single execution as it is.
-		// If execution count is not 1 then we send down the delta values.
-		execCount := executionCountVal.(int64)
-		if execCount != 1 {
+		// If execution count in DB is not 1 then we send down the delta values.
+		execCountInDB := executionCountVal.(int64)
+		if execCountInDB != 1 {
 			executionCountVal = executionCountValDiff
 			logicalReadsVal = logicalReadsValDiff
 			logicalWritesVal = logicalWritesValDiff
