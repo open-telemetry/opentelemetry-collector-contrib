@@ -41,7 +41,7 @@ func newFilterProfilesProcessor(set processor.Settings, cfg *Config) (*filterPro
 	fpp.telemetry = fpt
 
 	if len(cfg.ProfileConditions) > 0 {
-		pc, collectionErr := common.NewProfileParserCollection(set.TelemetrySettings, common.WithProfileParser(filterottl.StandardProfileFuncs()))
+		pc, collectionErr := cfg.newProfileParserCollection(set.TelemetrySettings)
 		if collectionErr != nil {
 			return nil, collectionErr
 		}

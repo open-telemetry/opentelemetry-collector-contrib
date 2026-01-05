@@ -45,7 +45,7 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 	fsp.telemetry = fpt
 
 	if len(cfg.TraceConditions) > 0 {
-		pc, collectionErr := common.NewTraceParserCollection(set.TelemetrySettings, common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
+		pc, collectionErr := cfg.newTraceParserCollection(set.TelemetrySettings)
 		if collectionErr != nil {
 			return nil, collectionErr
 		}

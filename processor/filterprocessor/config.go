@@ -426,7 +426,7 @@ func (cfg *Config) validateInferredContextConfig() error {
 	var errors error
 
 	if len(cfg.TraceConditions) > 0 {
-		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(cfg.spanFunctions), common.WithSpanEventParser(cfg.spanEventFunctions), common.WithTraceErrorMode(cfg.ErrorMode))
+		pc, err := cfg.newTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()})
 		if err != nil {
 			return err
 		}
@@ -439,7 +439,7 @@ func (cfg *Config) validateInferredContextConfig() error {
 	}
 
 	if len(cfg.MetricConditions) > 0 {
-		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(cfg.metricFunctions), common.WithDataPointParser(cfg.dataPointFunctions), common.WithMetricErrorMode(cfg.ErrorMode))
+		pc, err := cfg.newMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()})
 		if err != nil {
 			return err
 		}
@@ -452,7 +452,7 @@ func (cfg *Config) validateInferredContextConfig() error {
 	}
 
 	if len(cfg.LogConditions) > 0 {
-		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(cfg.logFunctions), common.WithLogErrorMode(cfg.ErrorMode))
+		pc, err := cfg.newLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()})
 		if err != nil {
 			return err
 		}
@@ -465,7 +465,7 @@ func (cfg *Config) validateInferredContextConfig() error {
 	}
 
 	if len(cfg.ProfileConditions) > 0 {
-		pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(cfg.profileFunctions), common.WithProfileErrorMode(cfg.ErrorMode))
+		pc, err := cfg.newProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()})
 		if err != nil {
 			return err
 		}
@@ -477,4 +477,20 @@ func (cfg *Config) validateInferredContextConfig() error {
 		}
 	}
 	return errors
+}
+
+func (cfg *Config) newTraceParserCollection(telemetrySettings component.TelemetrySettings) (*common.TraceParserCollection, error) {
+	return common.NewTraceParserCollection(telemetrySettings, common.WithSpanParser(cfg.spanFunctions), common.WithSpanEventParser(cfg.spanEventFunctions), common.WithTraceErrorMode(cfg.ErrorMode))
+}
+
+func (cfg *Config) newMetricParserCollection(telemetrySettings component.TelemetrySettings) (*common.MetricParserCollection, error) {
+	return common.NewMetricParserCollection(telemetrySettings, common.WithMetricParser(cfg.metricFunctions), common.WithDataPointParser(cfg.dataPointFunctions), common.WithMetricErrorMode(cfg.ErrorMode))
+}
+
+func (cfg *Config) newLogParserCollection(telemetrySettings component.TelemetrySettings) (*common.LogParserCollection, error) {
+	return common.NewLogParserCollection(telemetrySettings, common.WithLogParser(cfg.logFunctions), common.WithLogErrorMode(cfg.ErrorMode))
+}
+
+func (cfg *Config) newProfileParserCollection(telemetrySettings component.TelemetrySettings) (*common.ProfileParserCollection, error) {
+	return common.NewProfileParserCollection(telemetrySettings, common.WithProfileParser(cfg.profileFunctions), common.WithProfileErrorMode(cfg.ErrorMode))
 }

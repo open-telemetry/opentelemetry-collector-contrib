@@ -43,7 +43,7 @@ func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProc
 	flp.telemetry = fpt
 
 	if len(cfg.LogConditions) > 0 {
-		pc, collectionErr := common.NewLogParserCollection(set.TelemetrySettings, common.WithLogParser(filterottl.StandardLogFuncs()))
+		pc, collectionErr := cfg.newLogParserCollection(set.TelemetrySettings)
 		if collectionErr != nil {
 			return nil, collectionErr
 		}

@@ -49,7 +49,7 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 	fsp.telemetry = fpt
 
 	if len(cfg.MetricConditions) > 0 {
-		pc, collectionErr := common.NewMetricParserCollection(set.TelemetrySettings, common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()))
+		pc, collectionErr := cfg.newMetricParserCollection(set.TelemetrySettings)
 		if collectionErr != nil {
 			return nil, collectionErr
 		}
