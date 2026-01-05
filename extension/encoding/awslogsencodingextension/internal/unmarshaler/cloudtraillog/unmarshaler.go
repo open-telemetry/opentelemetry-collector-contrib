@@ -22,6 +22,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
+// readerBufferSize defines the buffer size for buffered readers.
+const readerBufferSize = 128 * 1024 // 128KB buffer size
+
 type CloudTrailLogUnmarshaler struct {
 	buildInfo component.BuildInfo
 }
@@ -143,7 +146,7 @@ func NewCloudTrailLogUnmarshaler(buildInfo component.BuildInfo) *CloudTrailLogUn
 }
 
 func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	bufferedReader := bufio.NewReaderSize(reader, 64*1024)
+	bufferedReader := bufio.NewReaderSize(reader, readerBufferSize)
 
 	// Peek into the first 64 bytes to determine the type of CloudTrail log
 	peekBytes, err := bufferedReader.Peek(64)
