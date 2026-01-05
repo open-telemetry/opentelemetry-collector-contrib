@@ -25,9 +25,9 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/component/componenttest v0.142.1-0.20260105153205-84f07c4ff3db
-	go.opentelemetry.io/collector/consumer/consumertest v0.142.1-0.20260105153205-84f07c4ff3db
-	go.opentelemetry.io/collector/processor/processortest v0.142.1-0.20260105153205-84f07c4ff3db
+	go.opentelemetry.io/collector/component/componenttest v0.143.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.143.0
+	go.opentelemetry.io/collector/processor/processortest v0.143.0
 	golang.org/x/time v0.13.0
 )
 
@@ -62,12 +62,12 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.142.1-0.20260105153205-84f07c4ff3db // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.142.1-0.20260105153205-84f07c4ff3db // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.142.1-0.20260105153205-84f07c4ff3db // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.142.1-0.20260105153205-84f07c4ff3db // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.143.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.143.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.143.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.143.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.49.0 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.142.1-0.20260105153205-84f07c4ff3db // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.143.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect

@@ -7,11 +7,11 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.11
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.49.0
-	go.opentelemetry.io/collector/component/componenttest v0.142.1-0.20260105153205-84f07c4ff3db
+	go.opentelemetry.io/collector/component/componenttest v0.143.0
 	go.opentelemetry.io/collector/confmap v1.49.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.142.1-0.20260105153205-84f07c4ff3db
+	go.opentelemetry.io/collector/confmap/xconfmap v0.143.0
 	go.opentelemetry.io/collector/extension v1.49.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.142.1-0.20260105153205-84f07c4ff3db
+	go.opentelemetry.io/collector/extension/extensiontest v0.143.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 )
