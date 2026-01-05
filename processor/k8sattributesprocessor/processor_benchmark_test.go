@@ -58,7 +58,7 @@ func BenchmarkProcessTraces(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := p.ConsumeTraces(ctx, traces)
 		require.NoError(b, err)
 	}
@@ -105,7 +105,7 @@ func BenchmarkProcessMetrics(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := p.ConsumeMetrics(ctx, metrics)
 		require.NoError(b, err)
 	}
@@ -149,7 +149,7 @@ func BenchmarkProcessLogs(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := p.ConsumeLogs(ctx, logs)
 		require.NoError(b, err)
 	}
@@ -192,7 +192,7 @@ func BenchmarkProcessProfiles(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := p.ConsumeProfiles(ctx, profiles)
 		require.NoError(b, err)
 	}
@@ -226,7 +226,7 @@ func BenchmarkProcessTracesMultipleResources(b *testing.B) {
 	})
 
 	traces := ptrace.NewTraces()
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		rs := traces.ResourceSpans().AppendEmpty()
 		rs.Resource().Attributes().PutStr("service.name", "test-service")
 		spans := rs.ScopeSpans().AppendEmpty().Spans()
@@ -239,7 +239,7 @@ func BenchmarkProcessTracesMultipleResources(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := p.ConsumeTraces(ctx, traces)
 		require.NoError(b, err)
 	}
