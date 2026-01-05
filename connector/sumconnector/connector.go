@@ -54,13 +54,13 @@ func (c *sum) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 
 			for k := 0; k < scopeSpan.Spans().Len(); k++ {
 				span := scopeSpan.Spans().At(k)
-				sCtx := ottlspan.NewTransformContextPtr(span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
+				sCtx := ottlspan.NewTransformContextPtr(resourceSpan, scopeSpan, span)
 				multiError = errors.Join(multiError, spansSummer.update(ctx, span.Attributes(), sCtx))
 				sCtx.Close()
 
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
-					eCtx := ottlspanevent.NewTransformContextPtr(event, span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
+					eCtx := ottlspanevent.NewTransformContextPtr(resourceSpan, scopeSpan, span, event)
 					multiError = errors.Join(multiError, spanEventsSummer.update(ctx, event.Attributes(), eCtx))
 					eCtx.Close()
 				}
@@ -182,7 +182,7 @@ func (c *sum) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
 				logRecord := scopeLogs.LogRecords().At(k)
 
-				lCtx := ottllog.NewTransformContextPtr(logRecord, scopeLogs.Scope(), resourceLog.Resource(), scopeLogs, resourceLog)
+				lCtx := ottllog.NewTransformContextPtr(resourceLog, scopeLogs, logRecord)
 				multiError = errors.Join(multiError, summer.update(ctx, logRecord.Attributes(), lCtx))
 				lCtx.Close()
 			}
