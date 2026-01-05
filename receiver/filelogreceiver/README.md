@@ -261,16 +261,6 @@ are provided.
 
 ## Testing
 
-### Test Coverage
-
-The filelog receiver has **100% test coverage** with 70+ test cases covering:
-- All configuration options
-- Complete component lifecycle with context propagation
-- File reading, rotation, and storage persistence
-- Consumer contract compliance
-
-Coverage is tracked via the [codecov badge](#file-log-receiver) in the status section above.
-
 ### Benchmarks
 
 Performance benchmarks are available for the logs signal:
