@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	cloud.google.com/go/storage v1.58.0
 	github.com/goccy/go-json v0.10.5
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.143.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.49.0
 	go.opentelemetry.io/collector/component v1.49.0

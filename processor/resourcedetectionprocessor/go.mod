@@ -15,10 +15,10 @@ require (
 	github.com/hashicorp/consul/api v1.32.1
 	github.com/hetznercloud/hcloud-go/v2 v2.33.0
 	github.com/linode/go-metadata v0.2.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.142.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.142.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.142.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.143.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.36
 	github.com/shirou/gopsutil/v4 v4.25.11
 	github.com/stretchr/testify v1.11.1

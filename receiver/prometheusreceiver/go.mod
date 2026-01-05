@@ -10,11 +10,11 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.142.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.142.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.142.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.142.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.143.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.4
 	github.com/prometheus/exporter-toolkit v0.15.0
@@ -193,12 +193,12 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.142.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.142.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.142.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.142.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.142.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.142.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.143.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.143.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.143.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.143.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.143.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.143.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/ovh/go-ovh v1.9.0 // indirect

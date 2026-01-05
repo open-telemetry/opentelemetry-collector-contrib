@@ -8,11 +8,11 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/grafana/loki/pkg/push v0.0.0-20240514112848-a1b1eeb09583
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.142.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.142.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.142.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.142.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.143.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.143.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.49.0
 	go.opentelemetry.io/collector/component/componentstatus v0.143.0

@@ -4,8 +4,8 @@ go 1.24.0
 
 require (
 	github.com/lightstep/go-expohisto v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.142.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.143.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.49.0
 	go.opentelemetry.io/collector/component v1.49.0
