@@ -143,6 +143,20 @@ func TestScrape_CpuPhysicalCount(t *testing.T) {
 			},
 			expectedMetricCount: 1,
 		},
+		{
+			name: "System CPU Physical count disabled",
+			metricsConfig: metadata.MetricsBuilderConfig{
+				Metrics: metadata.MetricsConfig{
+					SystemCPUTime: metadata.MetricConfig{
+						Enabled: false,
+					},
+					SystemCPUPhysicalCount: metadata.MetricConfig{
+						Enabled: false,
+					},
+				},
+			},
+			expectedMetricCount: 0,
+		},
 	}
 
 	for _, test := range testCases {
@@ -164,6 +178,68 @@ func TestScrape_CpuPhysicalCount(t *testing.T) {
 				metric := metrics.At(0)
 
 				assertCPUPysicalCountMetricValid(t, metric)
+			}
+		})
+	}
+}
+
+func TestScrape_CpuLogicalCount(t *testing.T) {
+	type testCase struct {
+		name                string
+		metricsConfig       metadata.MetricsBuilderConfig
+		expectedMetricCount int
+	}
+
+	testCases := []testCase{
+		{
+			name: "System CPU Logical count enabled",
+			metricsConfig: metadata.MetricsBuilderConfig{
+				Metrics: metadata.MetricsConfig{
+					SystemCPUTime: metadata.MetricConfig{
+						Enabled: false,
+					},
+					SystemCPULogicalCount: metadata.MetricConfig{
+						Enabled: true,
+					},
+				},
+			},
+			expectedMetricCount: 1,
+		},
+		{
+			name: "System CPU Logical count disabled",
+			metricsConfig: metadata.MetricsBuilderConfig{
+				Metrics: metadata.MetricsConfig{
+					SystemCPUTime: metadata.MetricConfig{
+						Enabled: false,
+					},
+					SystemCPULogicalCount: metadata.MetricConfig{
+						Enabled: false,
+					},
+				},
+			},
+			expectedMetricCount: 0,
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: test.metricsConfig})
+
+			err := scraper.start(t.Context(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize CPU scraper: %v", err)
+
+			md, err := scraper.scrape(t.Context())
+			require.NoError(t, err, "Failed to scrape metrics: %v", err)
+
+			assert.Equal(t, test.expectedMetricCount, md.MetricCount())
+
+			if md.MetricCount() > 0 {
+				metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+				metric := metrics.At(0)
+
+				assertCPULogicalCountMetricValid(t, metric)
 			}
 		})
 	}
@@ -410,6 +486,18 @@ func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Met
 		pcommon.NewValueStr(metadata.AttributeStateSteal.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 7, "state",
 		pcommon.NewValueStr(metadata.AttributeStateWait.String()))
+}
+
+func assertCPULogicalCountMetricValid(t *testing.T, metric pmetric.Metric) {
+	assert.Equal(t, "system.cpu.logical.count", metric.Name())
+	assert.Equal(t, "Number of available logical CPUs.", metric.Description())
+	assert.Equal(t, "{cpu}", metric.Unit())
+	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+	assert.False(t, metric.Sum().IsMonotonic())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
+	assert.Equal(t, 1, metric.Sum().DataPoints().Len())
+	dataPoint := metric.Sum().DataPoints().At(0)
+	assert.Greater(t, dataPoint.IntValue(), int64(0), "Logical CPU count should be greater than 0")
 }
 
 func assertCPUPysicalCountMetricValid(t *testing.T, metric pmetric.Metric) {
