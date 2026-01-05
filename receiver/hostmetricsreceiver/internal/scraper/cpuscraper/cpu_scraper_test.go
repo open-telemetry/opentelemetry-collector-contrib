@@ -507,7 +507,7 @@ func assertCPULogicalCountMetricValid(t *testing.T, metric pmetric.Metric) {
 	assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
 	assert.Equal(t, 1, metric.Sum().DataPoints().Len())
 	dataPoint := metric.Sum().DataPoints().At(0)
-	assert.Greater(t, dataPoint.IntValue(), int64(0), "Logical CPU count should be greater than 0")
+	assert.Positive(t, dataPoint.IntValue(), "Logical CPU count should be greater than 0")
 }
 
 func assertCPUPysicalCountMetricValid(t *testing.T, metric pmetric.Metric) {
@@ -519,7 +519,7 @@ func assertCPUPysicalCountMetricValid(t *testing.T, metric pmetric.Metric) {
 	assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
 	assert.Equal(t, 1, metric.Sum().DataPoints().Len())
 	dataPoint := metric.Sum().DataPoints().At(0)
-	assert.Greater(t, dataPoint.IntValue(), int64(0), "Pyhsical CPU count should be greater than 0")
+	assert.Positive(t, dataPoint.IntValue(), "Pyhsical CPU count should be greater than 0")
 }
 
 func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
