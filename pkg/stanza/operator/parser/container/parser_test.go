@@ -855,3 +855,61 @@ func TestMaxLogSizeRecombine(t *testing.T) {
 		})
 	}
 }
+func TestUnlimitedBatchSize(t *testing.T) {
+	const (
+		numPartialEntries = 1100
+	)
+
+	filePath := "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log"
+
+	makeCRIOEntry := func(content, tag string) *entry.Entry {
+		return &entry.Entry{
+			Body: fmt.Sprintf("2024-04-13T07:59:37.505201169-10:00 stdout %s %s", tag, content),
+			Attributes: map[string]any{
+				attrs.LogFilePath: filePath,
+			},
+		}
+	}
+
+	ctx := t.Context()
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = true
+	cfg.MaxLogSize = 0
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, op.Stop()) }()
+
+	r := op.(*Parser)
+	fake := testutil.NewFakeOutput(t)
+	r.OutputOperators = []operator.Operator{fake}
+
+	input := make([]*entry.Entry, 0, numPartialEntries+1)
+	for i := 0; i < numPartialEntries; i++ {
+		input = append(input, makeCRIOEntry(fmt.Sprintf("part%d", i), "P"))
+	}
+	input = append(input, makeCRIOEntry("final", "F"))
+
+	for _, e := range input {
+		require.NoError(t, r.Process(ctx, e))
+	}
+
+	select {
+	case e := <-fake.Received:
+		body, ok := e.Body.(string)
+		require.True(t, ok)
+		require.Contains(t, body, "part0", "Should contain first partial entry")
+		require.Contains(t, body, "part1099", "Should contain last partial entry (1100th)")
+		require.Contains(t, body, "final", "Should contain final entry")
+		partCount := strings.Count(body, "part")
+		require.Equal(t, numPartialEntries, partCount, "All %d partial entries should be in single combined log", numPartialEntries)
+	case <-time.After(3 * time.Second):
+		require.FailNow(t, "Timed out waiting for combined entry")
+	}
+
+	select {
+	case e := <-fake.Received:
+		require.FailNow(t, "Received unexpected second entry - batch was incorrectly split: %+v", e)
+	default:
+	}
+}
