@@ -561,7 +561,7 @@ func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls la
 	return nil
 }
 
-func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes bool) {
+func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes bool) int {
 	metric := pmetric.NewMetric()
 	// Trims type and unit suffixes from metric name
 	name := mf.name
@@ -622,10 +622,11 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 	}
 
 	if pointCount == 0 {
-		return
+		return 0
 	}
 
 	metric.MoveTo(metrics.AppendEmpty())
+	return pointCount
 }
 
 func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {

@@ -197,6 +197,7 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 		labels.EmptyLabels(), // no external labels
 		settings,
 		obsrecv,
+		nil,   // telemetryBuilder
 		false, // trimSuffixes
 		false, // useMetadata
 	)
