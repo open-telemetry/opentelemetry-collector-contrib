@@ -1102,6 +1102,8 @@ func TestExporterMetrics(t *testing.T) {
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		// Explicitly set scope mapping mode to ecs for this test.
+		scopeA.Scope().Attributes().PutStr(elasticsearch.MappingModeAttributeName, "ecs")
 		metricSlice := scopeA.Metrics()
 		fooMetric := metricSlice.AppendEmpty()
 		fooMetric.SetName("metric.foo")
@@ -1223,7 +1225,8 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.Negative().SetOffset(1)
 		fooDp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
 
-		err := exporter.ConsumeMetrics(t.Context(), metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		err := exporter.ConsumeMetrics(ctx, metrics)
 		assert.NoError(t, err)
 	})
 
@@ -1260,7 +1263,8 @@ func TestExporterMetrics(t *testing.T) {
 		barOtherDp := barDps.AppendEmpty()
 		barOtherDp.SetDoubleValue(1.0)
 
-		err := exporter.ConsumeMetrics(t.Context(), metrics)
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		err := exporter.ConsumeMetrics(ctx, metrics)
 		assert.NoError(t, err)
 
 		expected := []itemRequest{
@@ -1470,7 +1474,7 @@ func TestExporterMetrics(t *testing.T) {
 			"elasticsearch.mapping.hints": []string{"_doc_count"},
 		})
 
-		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
 		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 
 		expected := []itemRequest{
