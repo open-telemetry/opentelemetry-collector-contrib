@@ -47,7 +47,7 @@ const (
 	OTTLCondition PolicyType = "ottl_condition"
 	// BytesLimiting allows all traces until the specified byte limits are satisfied.
 	BytesLimiting PolicyType = "bytes_limiting"
-  // TraceFlags sample traces which have specific trace flags set.
+	// TraceFlags sample traces which have specific trace flags set.
 	TraceFlags PolicyType = "trace_flags"
 )
 
