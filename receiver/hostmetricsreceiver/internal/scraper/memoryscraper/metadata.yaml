@@ -17,6 +17,25 @@ attributes:
     enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
 
 metrics:
+
+  system.darwin.memory.compressor.pages:
+    enabled: false
+    description: Number of memory pages currently occupied by the macOS compressor (Pages occupied by compressor from vm_stat).
+    unit: "1"
+    stability:
+      level: development
+    gauge:
+      value_type: int
+
+  system.darwin.memory.pressure:
+    enabled: false
+    description: macOS memory pressure level reported by sysctl kern.memorystatus_vm_pressure_level.
+    unit: "1"
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      
   system.linux.memory.available:
     enabled: false
     description: An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)
@@ -81,3 +100,4 @@ metrics:
     gauge:
       value_type: double
     attributes: [state]
+

@@ -59,6 +59,12 @@ var MapAttributeState = map[string]AttributeState{
 }
 
 var MetricsInfo = metricsInfo{
+	SystemDarwinMemoryCompressorPages: metricInfo{
+		Name: "system.darwin.memory.compressor.pages",
+	},
+	SystemDarwinMemoryPressure: metricInfo{
+		Name: "system.darwin.memory.pressure",
+	},
 	SystemLinuxMemoryAvailable: metricInfo{
 		Name: "system.linux.memory.available",
 	},
@@ -80,16 +86,116 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	SystemLinuxMemoryAvailable metricInfo
-	SystemLinuxMemoryDirty     metricInfo
-	SystemMemoryLimit          metricInfo
-	SystemMemoryPageSize       metricInfo
-	SystemMemoryUsage          metricInfo
-	SystemMemoryUtilization    metricInfo
+	SystemDarwinMemoryCompressorPages metricInfo
+	SystemDarwinMemoryPressure        metricInfo
+	SystemLinuxMemoryAvailable        metricInfo
+	SystemLinuxMemoryDirty            metricInfo
+	SystemMemoryLimit                 metricInfo
+	SystemMemoryPageSize              metricInfo
+	SystemMemoryUsage                 metricInfo
+	SystemMemoryUtilization           metricInfo
 }
 
 type metricInfo struct {
 	Name string
+}
+
+type metricSystemDarwinMemoryCompressorPages struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.darwin.memory.compressor.pages metric with initial data.
+func (m *metricSystemDarwinMemoryCompressorPages) init() {
+	m.data.SetName("system.darwin.memory.compressor.pages")
+	m.data.SetDescription("Number of memory pages currently occupied by the macOS compressor (Pages occupied by compressor from vm_stat).")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSystemDarwinMemoryCompressorPages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemDarwinMemoryCompressorPages) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemDarwinMemoryCompressorPages) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemDarwinMemoryCompressorPages(cfg MetricConfig) metricSystemDarwinMemoryCompressorPages {
+	m := metricSystemDarwinMemoryCompressorPages{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemDarwinMemoryPressure struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.darwin.memory.pressure metric with initial data.
+func (m *metricSystemDarwinMemoryPressure) init() {
+	m.data.SetName("system.darwin.memory.pressure")
+	m.data.SetDescription("macOS memory pressure level reported by sysctl kern.memorystatus_vm_pressure_level.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSystemDarwinMemoryPressure) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemDarwinMemoryPressure) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemDarwinMemoryPressure) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemDarwinMemoryPressure(cfg MetricConfig) metricSystemDarwinMemoryPressure {
+	m := metricSystemDarwinMemoryPressure{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricSystemLinuxMemoryAvailable struct {
@@ -401,17 +507,19 @@ func newMetricSystemMemoryUtilization(cfg MetricConfig) metricSystemMemoryUtiliz
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                           MetricsBuilderConfig // config of the metrics builder.
-	startTime                        pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                  int                  // maximum observed number of metrics per resource.
-	metricsBuffer                    pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                        component.BuildInfo  // contains version information.
-	metricSystemLinuxMemoryAvailable metricSystemLinuxMemoryAvailable
-	metricSystemLinuxMemoryDirty     metricSystemLinuxMemoryDirty
-	metricSystemMemoryLimit          metricSystemMemoryLimit
-	metricSystemMemoryPageSize       metricSystemMemoryPageSize
-	metricSystemMemoryUsage          metricSystemMemoryUsage
-	metricSystemMemoryUtilization    metricSystemMemoryUtilization
+	config                                  MetricsBuilderConfig // config of the metrics builder.
+	startTime                               pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                         int                  // maximum observed number of metrics per resource.
+	metricsBuffer                           pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                               component.BuildInfo  // contains version information.
+	metricSystemDarwinMemoryCompressorPages metricSystemDarwinMemoryCompressorPages
+	metricSystemDarwinMemoryPressure        metricSystemDarwinMemoryPressure
+	metricSystemLinuxMemoryAvailable        metricSystemLinuxMemoryAvailable
+	metricSystemLinuxMemoryDirty            metricSystemLinuxMemoryDirty
+	metricSystemMemoryLimit                 metricSystemMemoryLimit
+	metricSystemMemoryPageSize              metricSystemMemoryPageSize
+	metricSystemMemoryUsage                 metricSystemMemoryUsage
+	metricSystemMemoryUtilization           metricSystemMemoryUtilization
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -433,16 +541,18 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                           mbc,
-		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                    pmetric.NewMetrics(),
-		buildInfo:                        settings.BuildInfo,
-		metricSystemLinuxMemoryAvailable: newMetricSystemLinuxMemoryAvailable(mbc.Metrics.SystemLinuxMemoryAvailable),
-		metricSystemLinuxMemoryDirty:     newMetricSystemLinuxMemoryDirty(mbc.Metrics.SystemLinuxMemoryDirty),
-		metricSystemMemoryLimit:          newMetricSystemMemoryLimit(mbc.Metrics.SystemMemoryLimit),
-		metricSystemMemoryPageSize:       newMetricSystemMemoryPageSize(mbc.Metrics.SystemMemoryPageSize),
-		metricSystemMemoryUsage:          newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
-		metricSystemMemoryUtilization:    newMetricSystemMemoryUtilization(mbc.Metrics.SystemMemoryUtilization),
+		config:                                  mbc,
+		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                           pmetric.NewMetrics(),
+		buildInfo:                               settings.BuildInfo,
+		metricSystemDarwinMemoryCompressorPages: newMetricSystemDarwinMemoryCompressorPages(mbc.Metrics.SystemDarwinMemoryCompressorPages),
+		metricSystemDarwinMemoryPressure:        newMetricSystemDarwinMemoryPressure(mbc.Metrics.SystemDarwinMemoryPressure),
+		metricSystemLinuxMemoryAvailable:        newMetricSystemLinuxMemoryAvailable(mbc.Metrics.SystemLinuxMemoryAvailable),
+		metricSystemLinuxMemoryDirty:            newMetricSystemLinuxMemoryDirty(mbc.Metrics.SystemLinuxMemoryDirty),
+		metricSystemMemoryLimit:                 newMetricSystemMemoryLimit(mbc.Metrics.SystemMemoryLimit),
+		metricSystemMemoryPageSize:              newMetricSystemMemoryPageSize(mbc.Metrics.SystemMemoryPageSize),
+		metricSystemMemoryUsage:                 newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
+		metricSystemMemoryUtilization:           newMetricSystemMemoryUtilization(mbc.Metrics.SystemMemoryUtilization),
 	}
 
 	for _, op := range options {
@@ -509,6 +619,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricSystemDarwinMemoryCompressorPages.emit(ils.Metrics())
+	mb.metricSystemDarwinMemoryPressure.emit(ils.Metrics())
 	mb.metricSystemLinuxMemoryAvailable.emit(ils.Metrics())
 	mb.metricSystemLinuxMemoryDirty.emit(ils.Metrics())
 	mb.metricSystemMemoryLimit.emit(ils.Metrics())
@@ -534,6 +646,16 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordSystemDarwinMemoryCompressorPagesDataPoint adds a data point to system.darwin.memory.compressor.pages metric.
+func (mb *MetricsBuilder) RecordSystemDarwinMemoryCompressorPagesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemDarwinMemoryCompressorPages.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemDarwinMemoryPressureDataPoint adds a data point to system.darwin.memory.pressure metric.
+func (mb *MetricsBuilder) RecordSystemDarwinMemoryPressureDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemDarwinMemoryPressure.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemLinuxMemoryAvailableDataPoint adds a data point to system.linux.memory.available metric.

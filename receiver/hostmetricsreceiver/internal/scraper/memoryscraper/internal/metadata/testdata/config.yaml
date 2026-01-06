@@ -1,6 +1,10 @@
 default:
 all_set:
   metrics:
+    system.darwin.memory.compressor.pages:
+      enabled: true
+    system.darwin.memory.pressure:
+      enabled: true
     system.linux.memory.available:
       enabled: true
     system.linux.memory.dirty:
@@ -15,6 +19,10 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    system.darwin.memory.compressor.pages:
+      enabled: false
+    system.darwin.memory.pressure:
+      enabled: false
     system.linux.memory.available:
       enabled: false
     system.linux.memory.dirty:

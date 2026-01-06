@@ -60,6 +60,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
+			mb.RecordSystemDarwinMemoryCompressorPagesDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSystemDarwinMemoryPressureDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSystemLinuxMemoryAvailableDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -100,6 +106,30 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "system.darwin.memory.compressor.pages":
+					assert.False(t, validatedMetrics["system.darwin.memory.compressor.pages"], "Found a duplicate in the metrics slice: system.darwin.memory.compressor.pages")
+					validatedMetrics["system.darwin.memory.compressor.pages"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of memory pages currently occupied by the macOS compressor (Pages occupied by compressor from vm_stat).", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.darwin.memory.pressure":
+					assert.False(t, validatedMetrics["system.darwin.memory.pressure"], "Found a duplicate in the metrics slice: system.darwin.memory.pressure")
+					validatedMetrics["system.darwin.memory.pressure"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "macOS memory pressure level reported by sysctl kern.memorystatus_vm_pressure_level.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "system.linux.memory.available":
 					assert.False(t, validatedMetrics["system.linux.memory.available"], "Found a duplicate in the metrics slice: system.linux.memory.available")
 					validatedMetrics["system.linux.memory.available"] = true
