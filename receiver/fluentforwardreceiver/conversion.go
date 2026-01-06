@@ -103,7 +103,7 @@ func parseToAttributeValue(val any, dest pcommon.Value) {
 	case uint64:
 		// handle overflow of uint64 to int64
 		if r > math.MaxInt64 {
-			dest.SetStr(fmt.Sprintf("%v", r))
+			dest.SetStr(strconv.FormatUint(r, 10))
 			return
 		}
 		dest.SetInt(int64(r))
