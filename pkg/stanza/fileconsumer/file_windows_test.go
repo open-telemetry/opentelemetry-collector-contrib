@@ -33,9 +33,14 @@ func TestNormalizePath(t *testing.T) {
 			expected: `\\?\UNC\server\share\file.txt`,
 		},
 		{
-			name:     "Corrupted UNC path (single backslash)",
-			input:    `\networkShare2\BLAM\Logs\stdout_46_2025.log`,
-			expected: `\\?\UNC\networkShare2\BLAM\Logs\stdout_46_2025.log`,
+			name:     "UNC path with forward slashes",
+			input:    `\\server\share/path/to/file.txt`,
+			expected: `\\?\UNC\server\share\path\to\file.txt`,
+		},
+		{
+			name:     "UNC path with dot segments",
+			input:    `\\server\share\path\.\to\..\file.txt`,
+			expected: `\\?\UNC\server\share\path\file.txt`,
 		},
 		{
 			name:     "Regular local path",
@@ -46,6 +51,26 @@ func TestNormalizePath(t *testing.T) {
 			name:     "Relative path",
 			input:    `.\test\file.txt`,
 			expected: `test\file.txt`,
+		},
+		{
+			name:     "Absolute path on current drive (single backslash start)",
+			input:    `\Users\test\file.txt`,
+			expected: `\Users\test\file.txt`,
+		},
+		{
+			name:     "Local path starting with single backslash and subdirectories",
+			input:    `\Program Files\app\data.log`,
+			expected: `\Program Files\app\data.log`,
+		},
+		{
+			name:     "Extended-length local path",
+			input:    `\\?\C:\very\long\path\file.txt`,
+			expected: `\\?\C:\very\long\path\file.txt`,
+		},
+		{
+			name:     "Empty path",
+			input:    ``,
+			expected: ``,
 		},
 	}
 

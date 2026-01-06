@@ -17,8 +17,9 @@ func (*Manager) readLostFiles(context.Context) {
 
 // normalizePath ensures Windows UNC paths are properly formatted for os.Open().
 // It converts UNC paths to extended-length format (\\?\UNC\server\share\path)
-// for reliable file access on Windows.
-// Returns the normalized path and a boolean indicating if path corruption was detected.
+// for reliable file access on Windows. Extended-length paths bypass path parsing
+// and provide more reliable access to network shares.
+// Returns the normalized path and a boolean (always false, kept for API compatibility).
 func normalizePath(path string) (string, bool) {
 	if path == "" {
 		return path, false
@@ -30,20 +31,14 @@ func normalizePath(path string) (string, bool) {
 	}
 
 	// Convert proper UNC paths (\\server\share) to extended-length format
+	// Note: We check for exactly 2 leading backslashes to identify UNC paths
 	if len(path) >= 2 && path[0] == '\\' && path[1] == '\\' {
-		return `\\?\UNC\` + filepath.Clean(path[2:]), false
+		// Extract the path after the \\ prefix and clean it
+		cleaned := filepath.Clean(path[2:])
+		return `\\?\UNC\` + cleaned, false
 	}
 
-	// Handle corrupted UNC path that lost one backslash (\server\share)
-	// This can happen after certain path operations
-	if path[0] == '\\' {
-		// Check if it looks like a UNC path: \hostname\share\...
-		if idx := strings.Index(path[1:], "\\"); idx > 0 {
-			// Has at least \server\share pattern, treat as UNC
-			return `\\?\UNC\` + filepath.Clean(path[1:]), true
-		}
-	}
-
-	// For non-UNC paths, just clean normally
+	// For non-UNC paths (including paths starting with single backslash which are
+	// valid local paths on the current drive), just clean normally
 	return filepath.Clean(path), false
 }
