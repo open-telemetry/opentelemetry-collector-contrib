@@ -14,7 +14,6 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 )
 
 const (
@@ -96,7 +95,7 @@ func handleConnection(conn *connection, attr pcommon.Map) {
 	shared.PutInt(string(conventions.ServerPortKey), conn.ServerPort, attr)
 
 	if conn.Protocol != nil {
-		if protoName, ok := vpcflowlog.ProtocolName(uint32(*conn.Protocol)); ok {
+		if protoName, ok := shared.ProtocolName(uint32(*conn.Protocol)); ok {
 			attr.PutStr(string(conventions.NetworkTransportKey), protoName)
 		}
 	}

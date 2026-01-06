@@ -23,6 +23,7 @@ cmd/golden/                                                      @open-telemetry
 cmd/opampsupervisor/                                             @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
 cmd/otelcontribcol/                                              @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                              @open-telemetry/collector-contrib-approvers
+cmd/schemagen/                                                   @open-telemetry/collector-contrib-approvers
 cmd/telemetrygen/                                                @open-telemetry/collector-contrib-approvers @mx-psi @codeboten @Erog38 @bogdan-st
 confmap/provider/aesprovider/                                    @open-telemetry/collector-contrib-approvers @kuiperda
 confmap/provider/googlesecretmanagerprovider/                    @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @psx95 @braydonk @ridwanmsharif
@@ -183,12 +184,12 @@ pkg/translator/azurelogs/                                        @open-telemetry
 pkg/translator/faro/                                             @open-telemetry/collector-contrib-approvers @mar4uk @rlankfo
 pkg/translator/jaeger/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @frzifus
 pkg/translator/loki/                                             @open-telemetry/collector-contrib-approvers @gouthamve @mar4uk
-pkg/translator/opencensus/                                       @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/pprof/                                            @open-telemetry/collector-contrib-approvers @florianl
 pkg/translator/prometheus/                                       @open-telemetry/collector-contrib-approvers @dashpole @bertysentry @ArthurSens
 pkg/translator/prometheusremotewrite/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 pkg/translator/signalfx/                                         @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/translator/skywalking/                                       @open-telemetry/collector-contrib-approvers @JaredTan95
+pkg/translator/splunk/                                           @open-telemetry/collector-contrib-approvers @atoulme @dmitryax @crobert-1
 pkg/translator/zipkin/                                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
 pkg/winperfcounters/                                             @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @alxbl @pjanotti
 pkg/xk8stest/                                                    @open-telemetry/collector-contrib-approvers @crobert-1
