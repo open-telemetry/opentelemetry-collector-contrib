@@ -335,7 +335,16 @@ receivers:
 
 Then query `/api/v1/targets` to see target status and any scrape errors.
 
-- **Enable debug logs**: Turn on debug-level logs in the collector to surface detailed scrape errors in logs (see "Debugging Tips").
+- **Enable debug logs**: You can also enable debug-level logs in the collector to see detailed scrape errors in logs:
+
+```yaml
+service:
+  telemetry:
+    logs:
+      level: debug  # Use with caution in production
+```
+
+This will surface detailed scrape errors and help diagnose connectivity or configuration issues.
 
 #### High CPU Usage
 
