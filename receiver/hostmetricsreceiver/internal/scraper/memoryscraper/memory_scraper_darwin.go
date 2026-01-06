@@ -21,31 +21,21 @@ import (
 )
 
 // recordSystemSpecificMetrics is called from scrape() in memory_scraper.go.
-// Darwin implementation records:
-//
-// - system.darwin.memory.pressure
-// - system.darwin.memory.compressor.pages
-//
-// Failures are non-fatal: log debug and continue.
 func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, _ *mem.VirtualMemoryStat) {
-	// 1) macOS memory pressure (sysctl kern.memorystatus_vm_pressure_level)
 	pressure, err := readMemorystatusVMPressureLevel(context.Background())
 	if err != nil {
 		s.settings.Logger.Debug("failed to read macOS memory pressure level",
 			zap.Error(err),
 		)
 	} else {
-		// Generated from: system.darwin.memory.pressure
 		s.mb.RecordSystemDarwinMemoryPressureDataPoint(now, pressure)
 	}
-	// 2) Pages occupied by compressor (vm_stat)
 	pages, err := readVMStatCompressorPages(context.Background())
 	if err != nil {
 		s.settings.Logger.Debug("failed to read macOS compressor pages occupied",
 			zap.Error(err),
 		)
 	} else {
-		// Generated from: system.darwin.memory.compressor.pages
 		s.mb.RecordSystemDarwinMemoryCompressorPagesDataPoint(now, pages)
 	}
 }
