@@ -36,18 +36,16 @@ var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 
 // TransformContext represents a span and its associated hierarchy.
 type TransformContext struct {
-	span                 ptrace.Span
-	instrumentationScope pcommon.InstrumentationScope
-	resource             pcommon.Resource
-	cache                pcommon.Map
-	scopeSpans           ptrace.ScopeSpans
-	resourceSpans        ptrace.ResourceSpans
+	resourceSpans ptrace.ResourceSpans
+	scopeSpans    ptrace.ScopeSpans
+	span          ptrace.Span
+	cache         pcommon.Map
 }
 
 // MarshalLogObject serializes the TransformContext into a zapcore.ObjectEncoder for logging.
 func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
-	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
-	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
+	err := encoder.AddObject("resource", logging.Resource(tCtx.GetResource()))
+	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.GetInstrumentationScope())))
 	err = errors.Join(err, encoder.AddObject("span", logging.Span(tCtx.span)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
 	return err
@@ -56,31 +54,13 @@ func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) er
 // TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
 
-// Deprecated: [v0.142.0] Use NewTransformContextPtr.
-func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans, options ...TransformContextOption) TransformContext {
-	tc := TransformContext{
-		span:                 span,
-		instrumentationScope: instrumentationScope,
-		resource:             resource,
-		cache:                pcommon.NewMap(),
-		scopeSpans:           scopeSpans,
-		resourceSpans:        resourceSpans,
-	}
-	for _, opt := range options {
-		opt(&tc)
-	}
-	return tc
-}
-
 // NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
 func NewTransformContextPtr(resourceSpans ptrace.ResourceSpans, scopeSpans ptrace.ScopeSpans, span ptrace.Span, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
-	tCtx.span = span
-	tCtx.instrumentationScope = scopeSpans.Scope()
-	tCtx.resource = resourceSpans.Resource()
-	tCtx.scopeSpans = scopeSpans
 	tCtx.resourceSpans = resourceSpans
+	tCtx.scopeSpans = scopeSpans
+	tCtx.span = span
 	for _, opt := range options {
 		opt(tCtx)
 	}
@@ -90,12 +70,10 @@ func NewTransformContextPtr(resourceSpans ptrace.ResourceSpans, scopeSpans ptrac
 // Close the current TransformContext.
 // After this function returns this instance cannot be used.
 func (tCtx *TransformContext) Close() {
-	tCtx.span = ptrace.Span{}
-	tCtx.instrumentationScope = pcommon.InstrumentationScope{}
-	tCtx.resource = pcommon.Resource{}
-	tCtx.cache.Clear()
-	tCtx.scopeSpans = ptrace.ScopeSpans{}
 	tCtx.resourceSpans = ptrace.ResourceSpans{}
+	tCtx.scopeSpans = ptrace.ScopeSpans{}
+	tCtx.span = ptrace.Span{}
+	tCtx.cache.Clear()
 	tcPool.Put(tCtx)
 }
 
@@ -106,12 +84,12 @@ func (tCtx *TransformContext) GetSpan() ptrace.Span {
 
 // GetInstrumentationScope returns the instrumentation scope from the TransformContext.
 func (tCtx *TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return tCtx.instrumentationScope
+	return tCtx.scopeSpans.Scope()
 }
 
 // GetResource returns the resource from the TransformContext.
 func (tCtx *TransformContext) GetResource() pcommon.Resource {
-	return tCtx.resource
+	return tCtx.resourceSpans.Resource()
 }
 
 // GetResourceSchemaURLItem returns the schema URL item for the resource from the TransformContext.
