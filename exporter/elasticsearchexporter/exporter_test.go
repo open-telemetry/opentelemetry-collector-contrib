@@ -1027,7 +1027,9 @@ func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
 
 	// start exporter so bulk indexers are initialized
 	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
+	defer func() {
+		require.NoError(t, exp.Shutdown(t.Context()))
+	}()
 
 	// send a simple log record without any client metadata or scope attribute
 	logs := plog.NewLogs()
