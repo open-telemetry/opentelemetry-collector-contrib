@@ -21,6 +21,6 @@ func pathExcluded(excludes []string, path string) bool {
 }
 
 // fixUNCPath is a no-op on non-Windows platforms
-func fixUNCPath(pattern, match string) string {
+func fixUNCPath(_, match string) string {
 	return match
 }
