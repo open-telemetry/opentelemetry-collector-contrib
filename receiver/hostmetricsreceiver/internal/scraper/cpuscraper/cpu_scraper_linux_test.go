@@ -9,50 +9,29 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 )
 
 func TestScrape_CpuFrequency(t *testing.T) {
 	type testCase struct {
-		name                string
-		metricsConfig       metadata.MetricsBuilderConfig
-		expectedMetricCount int
+		name             string
+		enabledFrequency bool
 	}
 
 	testCases := []testCase{
 		{
-			name: "System CPU Frequency enabled",
-			metricsConfig: metadata.MetricsBuilderConfig{
-				Metrics: metadata.MetricsConfig{
-					SystemCPUTime: metadata.MetricConfig{
-						Enabled: false,
-					},
-					SystemCPUFrequency: metadata.MetricConfig{
-						Enabled: true,
-					},
-				},
-			},
-			expectedMetricCount: 1,
+			name:             "System CPU Frequency enabled",
+			enabledFrequency: true,
 		},
 		{
-			name: "System CPU Frequency disabled",
-			metricsConfig: metadata.MetricsBuilderConfig{
-				Metrics: metadata.MetricsConfig{
-					SystemCPUTime: metadata.MetricConfig{
-						Enabled: false,
-					},
-					SystemCPUFrequency: metadata.MetricConfig{
-						Enabled: false,
-					},
-				},
-			},
-			expectedMetricCount: 0,
+			name:             "System CPU Frequency disabled",
+			enabledFrequency: false,
 		},
 	}
 
@@ -60,7 +39,12 @@ func TestScrape_CpuFrequency(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: test.metricsConfig})
+			cfg := metadata.DefaultMetricsBuilderConfig()
+			cfg.Metrics.SystemCPUTime.Enabled = false
+			cfg.Metrics.SystemCPUFrequency.Enabled = test.enabledFrequency
+
+			scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type),
+				&Config{MetricsBuilderConfig: cfg})
 
 			err := scraper.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize CPU scraper: %v", err)
@@ -68,35 +52,65 @@ func TestScrape_CpuFrequency(t *testing.T) {
 			md, err := scraper.scrape(t.Context())
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-			assert.Equal(t, test.expectedMetricCount, md.MetricCount())
+			expectedMetricCount := 0
+			if test.enabledFrequency {
+				expectedMetricCount++
+			}
 
-			if md.MetricCount() > 0 {
-				metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-				metric := metrics.At(0)
+			require.Equal(t, expectedMetricCount, md.MetricCount(),
+				"Expected %d metrics but got %d", expectedMetricCount, md.MetricCount())
 
-				assertCPUFrequencyMetricValid(t, metric)
+			if expectedMetricCount == 0 {
+				return
+			}
+
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			reportedMetrics := make(map[string]int)
+
+			for _, metric := range metrics.All() {
+				reportedMetrics[metric.Name()]++
+
+				switch metric.Name() {
+				case "system.cpu.frequency":
+					require.True(t, test.enabledFrequency,
+						"CPU frequency metric found but test expects it disabled")
+					assertCPUFrequencyMetricValid(t, metric)
+				default:
+					require.Fail(t, "unexpected-metric", "Unexpected metric %q found", metric.Name())
+				}
+			}
+
+			for metricName, count := range reportedMetrics {
+				require.Equal(t, 1, count, "Metric %q reported %d times, expected 1", metricName, count)
+			}
+
+			if test.enabledFrequency {
+				_, found := reportedMetrics["system.cpu.frequency"]
+				require.True(t, found, "CPU frequency metric is enabled but not found")
 			}
 		})
 	}
 }
 
 func assertCPUFrequencyMetricValid(t *testing.T, metric pmetric.Metric) {
-	assert.Equal(t, "system.cpu.frequency", metric.Name())
-	assert.Equal(t, "Current frequency of the CPU core in Hz.", metric.Description())
-	assert.Equal(t, "Hz", metric.Unit())
-	assert.Equal(t, pmetric.MetricTypeGauge, metric.Type())
+	expected := pmetric.NewMetric()
+	expected.SetName("system.cpu.frequency")
+	expected.SetDescription("Current frequency of the CPU core in Hz.")
+	expected.SetUnit("Hz")
+	expected.SetEmptyGauge()
+	internal.AssertDescriptorEqual(t, expected, metric)
 
 	numCPUs := runtime.NumCPU()
-	assert.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), numCPUs,
+	require.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), numCPUs,
 		"Should have at least one frequency data point per CPU")
 
 	if metric.Gauge().DataPoints().Len() > 0 {
 		dp := metric.Gauge().DataPoints().At(0)
 
 		cpuAttr, exists := dp.Attributes().Get("cpu")
-		assert.True(t, exists, "Data point should have 'cpu' attribute")
-		assert.Contains(t, cpuAttr.Str(), "cpu", "CPU attribute should contain 'cpu' prefix")
+		require.True(t, exists, "Data point should have 'cpu' attribute")
+		require.Contains(t, cpuAttr.Str(), "cpu", "CPU attribute should contain 'cpu' prefix")
 
-		assert.GreaterOrEqual(t, dp.DoubleValue(), 0.0, "CPU frequency should be non-negative")
+		require.GreaterOrEqual(t, dp.DoubleValue(), 0.0, "CPU frequency should be non-negative")
 	}
 }
