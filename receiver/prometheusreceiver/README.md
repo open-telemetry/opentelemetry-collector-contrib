@@ -136,7 +136,8 @@ exporters:
   otlp:
     endpoint: otel-collector:4317
     tls:
-      insecure: true
+      insecure: false
+      # For local testing only you may set `insecure: true`, but avoid this in production.
   prometheusremotewrite:
     endpoint: https://prometheus:9090/api/v1/write
 
@@ -333,6 +334,8 @@ receivers:
 ```
 
 Then query `/api/v1/targets` to see target status and any scrape errors.
+
+- **Enable debug logs**: Turn on debug-level logs in the collector to surface detailed scrape errors in logs (see "Debugging Tips").
 
 #### High CPU Usage
 
