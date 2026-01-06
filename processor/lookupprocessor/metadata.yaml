@@ -3,7 +3,7 @@ type: lookup
 status:
   class: processor
   stability:
-    development: [logs, metrics, traces]
+    development: [logs]
   distributions: [contrib]
   codeowners:
     active: [jsvd]
