@@ -1141,6 +1141,26 @@ func TestDropLargeTraces(t *testing.T) {
 
 	allSampledTraces := nextConsumer.AllTraces()
 	assert.Len(t, allSampledTraces, 1)
+
+	// Verify that the config can be changed without restarting the processor.
+	processor.(*tailSamplingSpanProcessor).SetMaximumTraceSizeBytes(1 << 20)
+	controller.waitForTick()
+
+	largeOnly := ptrace.NewTraces()
+	// Create a another large trace as ConsumeTraces is not guaranteed to preserve the trace.
+	largeTrace = largeOnly.ResourceSpans().AppendEmpty()
+	ss = largeTrace.ScopeSpans().AppendEmpty()
+	sp = ss.Spans().AppendEmpty()
+	sp.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 6}))
+	sp.Attributes().PutStr("foo", largeValue)
+
+	require.NoError(t, processor.ConsumeTraces(t.Context(), largeOnly))
+	controller.waitForTick()
+	controller.waitForTick()
+
+	allSampledTraces = nextConsumer.AllTraces()
+	// The sink will still contain the original trace.
+	assert.Len(t, allSampledTraces, 2)
 }
 
 // TestDeleteQueueCleared verifies that all in memory traces are removed from
