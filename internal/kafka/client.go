@@ -30,11 +30,6 @@ func convertToSaramaCompressionLevel(level configcompression.Level) int {
 	return int(level)
 }
 
-var saramaInitialOffsets = map[string]int64{
-	configkafka.EarliestOffset: sarama.OffsetOldest,
-	configkafka.LatestOffset:   sarama.OffsetNewest,
-}
-
 // NewSaramaClient returns a new Kafka client with the given configuration.
 func NewSaramaClient(ctx context.Context, config configkafka.ClientConfig) (sarama.Client, error) {
 	saramaConfig, err := newSaramaClientConfig(ctx, config)
