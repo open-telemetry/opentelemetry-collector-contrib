@@ -31,15 +31,6 @@ This processor is useful for reducing trace data volume while preserving meaning
 ```yaml
 processors:
   leafspanpruning:
-    # Optional include/exclude filters (same as span processor)
-    include:
-      span_names: ["SELECT.*", "INSERT.*"]
-      match_type: regexp
-    exclude:
-      attributes:
-        - key: "db.statement"
-          value: "important_query"
-
     # Attributes to use for grouping similar leaf spans (supports glob patterns)
     # Spans with the same name AND same values for matching attributes will be grouped
     # Examples:
@@ -66,9 +57,7 @@ processors:
 ## Configuration Options
 
 | Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `include` | MatchProperties | nil | Optional filter to include only specific spans for pruning |
-| `exclude` | MatchProperties | nil | Optional filter to exclude specific spans from pruning |
+|-----|--|---------|-------|
 | `group_by_attributes` | []string | [] | Attribute patterns for grouping (supports glob patterns like `db.*`) |
 | `min_spans_to_aggregate` | int | 2 | Minimum group size before aggregation occurs |
 | `summary_span_name_suffix` | string | "_aggregated" | Suffix appended to summary span names |
@@ -79,7 +68,7 @@ processors:
 The `group_by_attributes` field supports glob patterns for matching attribute keys:
 
 | Pattern | Matches |
-|---------|---------|
+|-----|--|
 | `db.*` | `db.operation`, `db.name`, `db.statement`, etc. |
 | `http.request.*` | `http.request.method`, `http.request.header.content-type`, etc. |
 | `rpc.*` | `rpc.method`, `rpc.service`, `rpc.system`, etc. |

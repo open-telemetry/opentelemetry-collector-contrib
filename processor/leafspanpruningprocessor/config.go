@@ -7,17 +7,10 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 )
 
 // Config defines the configuration for the leaf span pruning processor.
-// Prior to any actions being applied, each span is compared against
-// the include properties and then the exclude properties if they are specified.
-// This determines if a span is eligible for pruning or not.
 type Config struct {
-	filterconfig.MatchConfig `mapstructure:",squash"`
-
 	// GroupByAttributes specifies which span attributes to use for grouping
 	// similar leaf spans. Spans with the same name AND same values for these
 	// attributes will be grouped together.

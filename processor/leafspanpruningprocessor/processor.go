@@ -16,10 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 // spanInfo holds a span and its location within the trace data structure
@@ -52,16 +48,10 @@ type attributePattern struct {
 type leafSpanPruningProcessor struct {
 	config            *Config
 	logger            *zap.Logger
-	skipExpr          expr.BoolExpr[*ottlspan.TransformContext]
 	attributePatterns []attributePattern
 }
 
 func newLeafSpanPruningProcessor(set processor.Settings, cfg *Config) (*leafSpanPruningProcessor, error) {
-	skipExpr, err := filterspan.NewSkipExpr(&cfg.MatchConfig)
-	if err != nil {
-		return nil, err
-	}
-
 	// Compile glob patterns for group_by_attributes
 	patterns := make([]attributePattern, 0, len(cfg.GroupByAttributes))
 	for _, pattern := range cfg.GroupByAttributes {
@@ -78,7 +68,6 @@ func newLeafSpanPruningProcessor(set processor.Settings, cfg *Config) (*leafSpan
 	return &leafSpanPruningProcessor{
 		config:            cfg,
 		logger:            set.Logger,
-		skipExpr:          skipExpr,
 		attributePatterns: patterns,
 	}, nil
 }
@@ -132,20 +121,10 @@ func (p *leafSpanPruningProcessor) processTrace(ctx context.Context, spans []spa
 		return nil
 	}
 
-	// Step 2: Filter leaf spans based on include/exclude config
-	eligibleLeafSpans, err := p.filterEligibleSpans(ctx, leafSpans)
-	if err != nil {
-		return err
-	}
+	// Step 2: Group similar leaf spans by name + configured attributes
+	groups := p.groupSimilarSpans(leafSpans)
 
-	if len(eligibleLeafSpans) == 0 {
-		return nil
-	}
-
-	// Step 3: Group similar leaf spans by name + configured attributes
-	groups := p.groupSimilarSpans(eligibleLeafSpans)
-
-	// Step 4: For each group meeting minimum threshold, create summary span and remove originals
+	// Step 3: For each group meeting minimum threshold, create summary span and remove originals
 	for _, group := range groups {
 		if len(group.spans) >= p.config.MinSpansToAggregate {
 			p.aggregateGroup(group)
@@ -175,28 +154,6 @@ func (p *leafSpanPruningProcessor) findLeafSpans(spans []spanInfo) []spanInfo {
 	}
 
 	return leafSpans
-}
-
-// filterEligibleSpans applies include/exclude filters to leaf spans
-func (p *leafSpanPruningProcessor) filterEligibleSpans(ctx context.Context, spans []spanInfo) ([]spanInfo, error) {
-	if p.skipExpr == nil {
-		return spans, nil
-	}
-
-	var eligible []spanInfo
-	for _, info := range spans {
-		tCtx := ottlspan.NewTransformContextPtr(info.resourceSpans, info.scopeSpans, info.span)
-		skip, err := p.skipExpr.Eval(ctx, tCtx)
-		tCtx.Close()
-		if err != nil {
-			return nil, err
-		}
-		if !skip {
-			eligible = append(eligible, info)
-		}
-	}
-
-	return eligible, nil
 }
 
 // groupSimilarSpans groups spans by name and configured attributes
