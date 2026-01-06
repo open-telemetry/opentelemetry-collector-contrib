@@ -259,6 +259,12 @@ resourceLogs:
                         value:
                           kvlistValue:
                             values:
+                              - key: path
+                                value:
+                                  stringValue: /
+                              - key: arn
+                                value:
+                                  stringValue: arn:aws:iam::123456789012:user/Richard
                               - key: userId
                                 value:
                                   stringValue: AIDA6ON6E4XEP7EXAMPLE
@@ -268,12 +274,6 @@ resourceLogs:
                               - key: userName
                                 value:
                                   stringValue: Richard
-                              - key: path
-                                value:
-                                  stringValue: /
-                              - key: arn
-                                value:
-                                  stringValue: arn:aws:iam::123456789012:user/Richard
             body: {}
             timeUnixNano: "1689801909000000000"
           - attributes:
@@ -418,18 +418,6 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: state
-                        value:
-                          stringValue: Start
-                      - key: eventSource
-                        value:
-                          stringValue: ssm.amazonaws.com
-                      - key: eventName
-                        value:
-                          stringValue: UpdateInstanceInformation
-                      - key: insightType
-                        value:
-                          stringValue: ApiCallRateInsight
                       - key: insightContext
                         value:
                           kvlistValue:
@@ -452,6 +440,18 @@ resourceLogs:
                                               - key: average
                                                 value:
                                                   doubleValue: 669
+                      - key: state
+                        value:
+                          stringValue: Start
+                      - key: eventSource
+                        value:
+                          stringValue: ssm.amazonaws.com
+                      - key: eventName
+                        value:
+                          stringValue: UpdateInstanceInformation
+                      - key: insightType
+                        value:
+                          stringValue: ApiCallRateInsight
             body: {}
             timeUnixNano: "1672627860000000000"
           - attributes:
@@ -534,12 +534,12 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: isMultiRegionTrail
-                        value:
-                          boolValue: true
                       - key: name
                         value:
                           stringValue: myTrail2
+                      - key: isMultiRegionTrail
+                        value:
+                          boolValue: true
             body: {}
             timeUnixNano: "1689802503000000000"
           - attributes:

@@ -40,6 +40,26 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareOptions...))
 }
 
+func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_EmptyRecords(t *testing.T) {
+	t.Parallel()
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	reader := readLogFile(t, filesDirectory, "cloudtrail_log_empty.json")
+	logs, err := unmarshaler.UnmarshalAWSLogs(reader)
+	require.NoError(t, err)
+
+	// Read the expected logs from the file
+	expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, "cloudtrail_log_empty_expected.yaml"))
+	require.NoError(t, err)
+
+	compareOptions := []plogtest.CompareLogsOption{
+		plogtest.IgnoreResourceLogsOrder(),
+		plogtest.IgnoreScopeLogsOrder(),
+		plogtest.IgnoreLogRecordsOrder(),
+	}
+
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareOptions...))
+}
+
 func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest(t *testing.T) {
 	t.Parallel()
 
@@ -82,21 +102,12 @@ func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest(t *testing.T) {
 	}
 }
 
-func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_EmptyRecords(t *testing.T) {
-	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
-	reader := bytes.NewReader([]byte(`{"Records": []}`))
-	logs, err := unmarshaler.UnmarshalAWSLogs(reader)
-	require.NoError(t, err)
-	require.Equal(t, 0, logs.ResourceLogs().Len())
-}
-
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidJSON(t *testing.T) {
 	t.Parallel()
 	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
 	reader := bytes.NewReader([]byte(`{invalid-json}`))
 	_, err := unmarshaler.UnmarshalAWSLogs(reader)
-	require.ErrorContains(t, err, "failed to unmarshal payload as CloudTrail logs")
+	require.ErrorContains(t, err, "failed to extract the first JSON key")
 }
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidTimestamp(t *testing.T) {
@@ -118,7 +129,7 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_ReadError(t *testing.T) {
 	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
 	reader := &errorReader{err: errors.New("read failed")}
 	_, err := unmarshaler.UnmarshalAWSLogs(reader)
-	require.ErrorContains(t, err, "failed to read CloudTrail logs")
+	require.ErrorContains(t, err, "failed to peek into CloudTrail log")
 }
 
 func TestExtractTLSVersion(t *testing.T) {
@@ -141,6 +152,68 @@ func TestExtractTLSVersion(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			result := extractTLSVersion(test.input)
 			require.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestExtractFirstKey(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		expectedKey string
+		expectError string
+	}{
+		{
+			name:        "Minified JSON",
+			input:       `{"key", "value"}`,
+			expectedKey: "key",
+		},
+		{
+			name: "Formatted JSON",
+			input: `{
+						"key", "value"
+					}`,
+			expectedKey: "key",
+		},
+		{
+			name: "Formatted multi-key returns first key",
+			input: `{
+						"keyA", "value",
+						"keyB", "value"
+					}`,
+			expectedKey: "keyA",
+		},
+		{
+			name:        "Key with array",
+			input:       `{"key" : [] }`,
+			expectedKey: "key",
+		},
+		{
+			name:        "Invalid JSON - non JSON input",
+			input:       `Key value`,
+			expectError: "invalid JSON payload, failed to find the JSON opening",
+		},
+		{
+			name:        "Invalid format - malformed with no proper elements",
+			input:       `{ key }`,
+			expectError: "invalid JSON payload, expected a JSON key but found none",
+		},
+		{
+			name:        "Invalid format - incomplete JSON object",
+			input:       `{ "key }`,
+			expectError: "invalid JSON payload",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			key, err := extractFirstKey([]byte(tt.input))
+			if tt.expectError != "" {
+				require.ErrorContains(t, err, tt.expectError)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedKey, key)
+			}
 		})
 	}
 }
