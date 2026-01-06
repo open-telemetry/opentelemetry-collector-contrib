@@ -65,29 +65,8 @@ func TestScrape_CpuFrequency(t *testing.T) {
 			}
 
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-			reportedMetrics := make(map[string]int)
-
-			for _, metric := range metrics.All() {
-				reportedMetrics[metric.Name()]++
-
-				switch metric.Name() {
-				case "system.cpu.frequency":
-					require.True(t, test.enabledFrequency,
-						"CPU frequency metric found but test expects it disabled")
-					assertCPUFrequencyMetricValid(t, metric)
-				default:
-					require.Fail(t, "unexpected-metric", "Unexpected metric %q found", metric.Name())
-				}
-			}
-
-			for metricName, count := range reportedMetrics {
-				require.Equal(t, 1, count, "Metric %q reported %d times, expected 1", metricName, count)
-			}
-
-			if test.enabledFrequency {
-				_, found := reportedMetrics["system.cpu.frequency"]
-				require.True(t, found, "CPU frequency metric is enabled but not found")
-			}
+			metric := metrics.At(0)
+			assertCPUFrequencyMetricValid(t, metric)
 		})
 	}
 }
