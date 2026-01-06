@@ -1,0 +1,60 @@
+{
+  "records": [
+    {
+      "time": "2025-09-17T14:22:45.9876543Z",
+      "resourceId": "/subscriptions/ABCD1234-5678-90EF-1234-567890ABCDEF/resourceGroups/random-rg/providers/Microsoft.Storage/storageAccounts/randomstor/blobServices/default",
+      "category": "StorageRead",
+      "operationName": "ListBlobs",
+      "operationVersion": "2022-05-01",
+      "schemaVersion": "2.1",
+      "statusCode": 500,
+      "statusText": "Error",
+      "durationMs": 42,
+      "callerIpAddress": "172.16.254.1",
+      "correlationId": "f1e2d3c4-b5a6-7890-1234-56789abcdef0",
+      "identity": {
+        "type": "DelegationSAS",
+        "tokenHash": "system-delegation(ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890),SasSignature(1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF)",
+        "authorization": [
+          {
+            "action": "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read",
+            "roleAssignmentId": "abcdef12-3456-7890-abcd-ef1234567890",
+            "roleDefinitionId": "12345678-90ab-cdef-1234-567890abcdef",
+            "principals": [
+              {
+                "id": "7890abcd-ef12-3456-7890-abcd12345678",
+                "type": "User"
+              }
+            ],
+            "denyAssignmentId": "",
+            "type": "RBAC",
+            "result": "Denied",
+            "reason": "NoPolicy"
+          }
+        ],
+        "requester": {
+          "objectId": "abcdef12-3456-7890-abcd-ef1234567890",
+          "tenantId": "12345678-90ab-cdef-1234-567890abcdef"
+        }
+      },
+      "location": "centralus",
+      "properties": {
+        "accountName": "randomstor",
+        "userAgentHeader": "APN/2.0 Azure Blob FS/4.0 (Oracle,Inc. JavaJRE 17.0.2; Windows 11.0.22000/amd64; SunJSSE-2.0; UNKNOWN/UNKNOWN) unknown",
+        "clientRequestId": "0917-142245-abc987-v2n--77--66--5:abcdef12-3456-7890-abcd-ef1234567890:12345678-90ab-cdef-1234-567890abcdef:::GF:1",
+        "serviceType": "blob",
+        "objectKey": "/randomstor/randomuser/randomdata.csv",
+        "lastModifiedTime": "2025/09/16 13:11:22.6543210",
+        "metricResponseType": "Error",
+        "serverLatencyMs": 33,
+        "requestHeaderSize": 2048,
+        "responseHeaderSize": 1024,
+        "tlsVersion": "TLS 1.2",
+        "accessTier": "Cool"
+      },
+      "uri": "https://randomstor.dfs.core.windows.net/randomuser/randomdata.csv?upn=true&action=write&timeout=120&st=2025-09-17T14%3A12%3A45Z&sv=2022-05-01&ske=2025-09-17T16%3A12%3A45Z&sig=RANDOMSIG&sktid=abcdef12-3456-7890-abcd-ef1234567890&se=2025-09-17T15%3A22%3A45Z&sdd=1&skoid=12345678-90ab-cdef-1234-567890abcdef&spr=https&sks=a&skt=2025-09-17T14%3A12%3A45Z&sp=rw&skv=2025-09-17&sr=c",
+      "protocol": "HTTPS",
+      "resourceType": "Microsoft.Storage/storageAccounts/blobServices"
+    }
+  ]
+}
