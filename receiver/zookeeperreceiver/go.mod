@@ -8,14 +8,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper v0.142.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
-	go.opentelemetry.io/collector/component v1.48.0
-	go.opentelemetry.io/collector/component/componenttest v0.142.0
-	go.opentelemetry.io/collector/confmap v1.48.0
-	go.opentelemetry.io/collector/consumer v1.48.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.142.0
-	go.opentelemetry.io/collector/receiver v1.48.0
-	go.opentelemetry.io/collector/receiver/receivertest v0.142.0
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.142.0
+	go.opentelemetry.io/collector/component v1.48.1-0.20251231114627-ad49dc64648d
+	go.opentelemetry.io/collector/component/componenttest v0.142.1-0.20251231114627-ad49dc64648d
+	go.opentelemetry.io/collector/confmap v1.48.1-0.20251231114627-ad49dc64648d
+	go.opentelemetry.io/collector/consumer v1.48.1-0.20251231114627-ad49dc64648d
+	go.opentelemetry.io/collector/consumer/consumertest v0.142.1-0.20251231114627-ad49dc64648d
+	go.opentelemetry.io/collector/receiver v1.48.1-0.20251231114627-ad49dc64648d
+	go.opentelemetry.io/collector/receiver/receivertest v0.142.1-0.20251231114627-ad49dc64648d
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.142.1-0.20251231114627-ad49dc64648d
 	go.uber.org/goleak v1.3.0
 )
 
@@ -76,17 +76,17 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/config/confignet v1.48.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.142.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.142.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.48.0 // indirect
-	go.opentelemetry.io/collector/filter v0.142.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.48.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.142.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.48.0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.142.0 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.142.0 // indirect
-	go.opentelemetry.io/collector/scraper v0.142.0 // indirect
+	go.opentelemetry.io/collector/config/confignet v1.48.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.142.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.142.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/featuregate v1.48.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/filter v0.142.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/pdata v1.48.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.142.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/pipeline v1.48.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.142.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.142.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/scraper v0.142.1-0.20251231114627-ad49dc64648d // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.34.0 // indirect
@@ -100,9 +100,9 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
-	google.golang.org/grpc v1.77.0 // indirect
-	google.golang.org/protobuf v1.36.10 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
+	google.golang.org/grpc v1.78.0 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

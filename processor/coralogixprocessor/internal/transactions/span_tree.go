@@ -59,7 +59,7 @@ func buildSpanTree(spans []ptrace.Span, logger *zap.Logger) *spanNode {
 		}
 
 		rootSpan = earliestSpan
-		logger.Warn("No root span found in trace, using earliest span as root",
+		logger.Debug("No root span found in trace, using earliest span as root",
 			zap.String("selectedRootSpanID", rootSpan.span.SpanID().String()))
 	}
 

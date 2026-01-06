@@ -1,0 +1,36 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.WEB/SITES/MY-DEMO-APP
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.region
+          value:
+            stringValue: East US
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Web/sites/auth
+              - key: azure.category
+                value:
+                  stringValue: AppServiceAuthenticationLogs
+              - key: azure.app_service.site.name
+                value:
+                  stringValue: azmon-test2
+              - key: azure.app_service.task.name
+                value:
+                  stringValue: MiddlewareWarning
+            body:
+              stringValue: Cannot deserialize app setting WEBSITE_AUTH_AAD_ACL, value is Microsoft.Web.Hosting.EasyAuth.JwtClaimChecksV1
+            timeUnixNano: "1693001647673853500"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

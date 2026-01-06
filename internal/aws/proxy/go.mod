@@ -6,8 +6,8 @@ require (
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.142.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/config/confignet v1.48.0
-	go.opentelemetry.io/collector/config/configtls v1.48.0
+	go.opentelemetry.io/collector/config/confignet v1.48.1-0.20251231114627-ad49dc64648d
+	go.opentelemetry.io/collector/config/configtls v1.48.1-0.20251231114627-ad49dc64648d
 	go.uber.org/zap v1.27.1
 )
 
@@ -17,7 +17,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/google/go-tpm v0.9.7 // indirect
+	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
@@ -26,10 +26,10 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.48.0 // indirect
-	go.opentelemetry.io/collector/confmap v1.48.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.142.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.48.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.48.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/confmap v1.48.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.142.1-0.20251231114627-ad49dc64648d // indirect
+	go.opentelemetry.io/collector/featuregate v1.48.1-0.20251231114627-ad49dc64648d // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
