@@ -304,3 +304,113 @@ Avoid attributes that:
 * **Are optional or inconsistently applied** – if an attribute is only present in some spans, this can fragment metric streams (e.g., one stream with the attribute and one without).
 
 Instead, use attributes that are stable, present in all spans, and meaningfully distinguish each stream. Good examples include `cluster_id`, `region`, or `deployment_environment`.
+
+## Troubleshooting span metrics high cardinality
+
+High cardinality issues in span metrics commonly manifest in APM dashboards as an excessive number of service operations with non-unique names. Examples include URIs with unique identifiers (e.g., `GET /product/1YMWWN1N4O`) or HTTP parameters with random values (e.g., `GET /?_ga=GA1.2.569539246.1760114706`). These patterns render operation lists difficult to interpret and ineffective for monitoring purposes.
+
+This issue stems from violations of [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/), which require span names to have low cardinality (e.g. [HTTP span name specs](https://opentelemetry.io/docs/specs/semconv/http/http-spans/#name)).
+Beyond degrading APM interfaces with numerous non-meaningful operation names, this problem leads to metric time series explosion, resulting in significant performance degradation and increased costs.
+
+The span metrics connector provides an optional circuit breaker through the `aggregation_cardinality_limit` attribute (disabled by default) to mitigate cardinality explosion. While this feature addresses performance and cost concerns, it does not resolve the underlying issue of semantically meaningless operation names.
+
+**Fixing high cardinality span name issues**
+
+The ideal long-term solution is to modify the OpenTelemetry instrumentation code to comply with semantic conventions, preventing the generation of non-compliant high cardinality span names.
+
+However, deploying updated instrumentation libraries can be time-consuming, often requiring an immediate interim solution to restore observability backend functionality.
+
+An effective short-term solution is to implement a span sanitization layer within the observability ingestion pipeline. This can be achieved by using the OpenTelemetry Collector Transform Processor's [`set_semconv_span_name()` function](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#set_semconv_span_name) immediately before the Span Metrics Connector to enforce semantic conventions on span names.
+
+<details>
+
+<summary>Simple example OpenTelemetry Collector configuration to prevent span metrics cardinality explosion:</summary>
+
+```yaml
+receivers:
+  otlp:
+  ...
+
+processors:
+  transform/sanitize_spans:
+    error_mode: ignore
+    trace_statements:
+      # Sanitize all span names to prevent span metrics cardinality explosion
+      # caused by non-compliant high cardinality span names
+      - set_semconv_span_name("1.37.0")
+  ...
+
+connectors:
+  spanmetrics:
+
+exporters:
+  otlphttp/observability-backend:
+  ...
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [transform/sanitize_spans, ...]
+      exporters: [otlphttp/observability-backend, spanmetrics]
+    metrics:
+      receivers: [otlp, spanmetrics]
+      processors: [...]
+      exporters: [otlphttp/observability-backend]
+    # ...
+```
+</details>
+
+Aggressive span name sanitization may be overly restrictive for instrumentations with incomplete resource attributes. For instance, HTTP service operations may be reduced to generic names like `GET` and `POST` when HTTP spans lack the `http.route` attribute. This information loss can impact the monitoring of critical business operations.
+
+To preserve operation granularity, you can manually set the `http.route` attribute when detailed operation names are required. The missing `http.route` value can typically be derived through pattern matching on other span attributes such as `http.target` or `url.full`.
+
+Example OpenTelemetry Collector configuration that prevents cardinality explosion while preserving meaningful operation names:
+
+```yaml
+receivers:
+  otlp:
+  ...
+
+processors:
+  transform/sanitize_spans:
+    error_mode: ignore
+    trace_statements:
+      # Fix incomplete semconv of critical operation spans to keep meaningful span metrics operation names, 
+      # fix missing `http.route`, `http.request.method`...
+
+      # Fix operation `GET /api/products/{productId}` on service `frontend` adding missing `http.route` 
+      - set(span.attributes["http.route"], "/api/products/{productId}") where 
+        span.kind == SPAN_KIND_SERVER and
+        resource.attributes["service.name"] == "frontend" and 
+        resource.attributes["service.namespace"] == "astroshop" and
+        span.attributes["http.route"] == nil and
+        IsMatch(span.attributes["http.target"], "\\/api\\/products\\/.*") # e.g. /api/products/1YMWWN1N4O
+
+      # Fix other critical operations
+      ...
+
+      # Sanitize all span names to prevent span metrics cardinality explosion
+      # caused by non-compliant high cardinality span names
+      - set_semconv_span_name("1.37.0")
+  ...
+
+connectors:
+  spanmetrics:
+
+exporters:
+  otlphttp/observability-backend:
+  ...
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [transform/sanitize_spans, ...]
+      exporters: [otlphttp/observability-backend, spanmetrics]
+    metrics:
+      receivers: [otlp, spanmetrics]
+      processors: [...]
+      exporters: [otlphttp/observability-backend]
+    # ...
+```
