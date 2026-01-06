@@ -631,6 +631,70 @@ func TestScrapeTopQueries(t *testing.T) {
 	assert.Equal(t, float64(12), planTime)
 }
 
+func TestExplainQuery(t *testing.T) {
+	testCases := []struct {
+		name           string
+		query          string
+		queryID        string
+		expectedSQL    string
+		mockPlanResult string
+	}{
+		{
+			name:           "query with no parameters",
+			query:          "SELECT * FROM users",
+			queryID:        "12345",
+			expectedSQL:    "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12345 AS SELECT * FROM users;EXPLAIN(FORMAT JSON) EXECUTE otel_12345;",
+			mockPlanResult: `[{"Plan":{"Node Type":"Seq Scan","Relation Name":"users"}}]`,
+		},
+		{
+			name:           "query with single parameter",
+			query:          "SELECT * FROM users WHERE id = $1",
+			queryID:        "12346",
+			expectedSQL:    "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12346 AS SELECT * FROM users WHERE id = $1;EXPLAIN(FORMAT JSON) EXECUTE otel_12346(null);",
+			mockPlanResult: `[{"Plan":{"Node Type":"Index Scan","Relation Name":"users"}}]`,
+		},
+		{
+			name:           "query with multiple parameters",
+			query:          "SELECT * FROM orders WHERE user_id = $1 AND status = $2 AND created_at > $3",
+			queryID:        "12347",
+			expectedSQL:    "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_12347 AS SELECT * FROM orders WHERE user_id = $1 AND status = $2 AND created_at > $3;EXPLAIN(FORMAT JSON) EXECUTE otel_12347(null, null, null);",
+			mockPlanResult: `[{"Plan":{"Node Type":"Index Scan","Relation Name":"orders"}}]`,
+		},
+		{
+			name:           "query with hyphenated queryID",
+			query:          "SELECT * FROM products WHERE id = $1",
+			queryID:        "abc-def-123",
+			expectedSQL:    "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_abc_def_123 AS SELECT * FROM products WHERE id = $1;EXPLAIN(FORMAT JSON) EXECUTE otel_abc_def_123(null);",
+			mockPlanResult: `[{"Plan":{"Node Type":"Index Scan","Relation Name":"products"}}]`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			require.NoError(t, err)
+			defer db.Close()
+
+			logger, err := zap.NewProduction()
+			require.NoError(t, err)
+
+			client := &postgreSQLClient{
+				client:  db,
+				closeFn: func() error { return nil },
+			}
+
+			// Expect the EXPLAIN query
+			mock.ExpectQuery(tc.expectedSQL).WillReturnRows(
+				sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow(tc.mockPlanResult),
+			)
+
+			plan, err := client.explainQuery(tc.query, tc.queryID, logger)
+			require.NoError(t, err)
+			require.NotEmpty(t, plan)
+		})
+	}
+}
+
 type (
 	mockClientFactory       struct{ mock.Mock }
 	mockClient              struct{ mock.Mock }
