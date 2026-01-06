@@ -1,0 +1,10 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.cloudtrail
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+          version: test-version
