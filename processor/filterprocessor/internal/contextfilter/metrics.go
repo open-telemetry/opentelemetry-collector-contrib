@@ -247,5 +247,8 @@ func convertDataPointConditions(pc *ottl.ParserCollection[MetricsConsumer], cond
 
 func (mpc *MetricParserCollection) ParseContextConditions(contextConditions ContextConditions) (MetricsConsumer, error) {
 	pc := ottl.ParserCollection[MetricsConsumer](*mpc)
+	if contextConditions.Context != "" {
+		return pc.ParseConditionsWithContext(string(contextConditions.Context), contextConditions, true)
+	}
 	return pc.ParseConditions(contextConditions)
 }

@@ -6,9 +6,11 @@ package filterprocessor // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -316,6 +318,90 @@ type ProfileFilters struct {
 	// If any condition resolves to true, the profile will be dropped.
 	// Supports `and`, `or`, and `()`
 	ProfileConditions []string `mapstructure:"profile"`
+}
+
+// Unmarshal is used internally by mapstructure to parse the filterprocessor configuration (Config),
+// adding support to structured and flat configuration styles.
+// When the flat configuration style is used, all conditions are grouped into a common.ContextConditions
+// object, with empty [common.ContextConditions.Context] value.
+// On the other hand, structured configurations are parsed following the mapstructure Config format.
+//
+// Example of flat configuration:
+//
+//	log_conditions:
+//	  - resource.attributes["key1"] == "value"
+//	  - resource.attributes["key2"] == "value"
+//
+// Example of structured configuration:
+//
+//	log_conditions:
+//	  - context: "resource"
+//	    statements:
+//	      - attributes["key1"] == "value"
+//	      - attributes["key2"] == "value"
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if conf == nil {
+		return nil
+	}
+
+	contextConditionsFields := map[string]*[]common.ContextConditions{
+		"trace_conditions":   &cfg.TraceConditions,
+		"metric_conditions":  &cfg.MetricConditions,
+		"log_conditions":     &cfg.LogConditions,
+		"profile_conditions": &cfg.ProfileConditions,
+	}
+
+	contextConditionsPatch := map[string]any{}
+	for fieldName := range contextConditionsFields {
+		if !conf.IsSet(fieldName) {
+			continue
+		}
+		rawVal := conf.Get(fieldName)
+		values, ok := rawVal.([]any)
+		if !ok {
+			return fmt.Errorf("invalid %s type, expected: array, got: %t", fieldName, rawVal)
+		}
+		if len(values) == 0 {
+			continue
+		}
+
+		conditionsConfigs := make([]any, 0, len(values))
+		var basicStatements []any
+		for _, value := range values {
+			// Array of strings means it's a basic configuration style
+			if reflect.TypeOf(value).Kind() == reflect.String {
+				if len(conditionsConfigs) > 0 {
+					return errors.New("configuring multiple configuration styles is not supported, please use only Basic configuration or only Advanced configuration")
+				}
+				basicStatements = append(basicStatements, value)
+			} else {
+				if len(basicStatements) > 0 {
+					return errors.New("configuring multiple configuration styles is not supported, please use only Basic configuration or only Advanced configuration")
+				}
+				conditionsConfigs = append(conditionsConfigs, value)
+			}
+		}
+
+		if len(basicStatements) > 0 {
+			conditionsConfigs = append(conditionsConfigs, map[string]any{"conditions": basicStatements})
+		}
+
+		contextConditionsPatch[fieldName] = conditionsConfigs
+	}
+
+	if len(contextConditionsPatch) > 0 {
+		err := conf.Merge(confmap.NewFromStringMap(contextConditionsPatch))
+		if err != nil {
+			return err
+		}
+	}
+
+	err := conf.Unmarshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	return err
 }
 
 var _ component.Config = (*Config)(nil)

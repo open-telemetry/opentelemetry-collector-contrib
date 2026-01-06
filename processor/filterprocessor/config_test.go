@@ -4,7 +4,9 @@
 package filterprocessor
 
 import (
+	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -862,9 +864,6 @@ func TestLogSeverity_severityValidate(t *testing.T) {
 }
 
 func TestLoadingConfigOTTL(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_ottl.yaml"))
-	require.NoError(t, err)
-
 	tests := []struct {
 		id           component.ID
 		expected     *Config
@@ -1033,6 +1032,77 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "context_conditions_error_mode"),
+			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
+				TraceConditions: []common.ContextConditions{
+					{
+						Conditions: []string{`span.attributes["test"] == "pass"`},
+						ErrorMode:  ottl.SilentError,
+					},
+				},
+				MetricConditions: []common.ContextConditions{
+					{
+						Conditions: []string{`metric.name == "pass"`},
+						ErrorMode:  ottl.SilentError,
+					},
+				},
+				LogConditions: []common.ContextConditions{
+					{
+						Conditions: []string{`log.attributes["test"] == "pass"`},
+						ErrorMode:  ottl.PropagateError,
+					},
+				},
+				ProfileConditions: []common.ContextConditions{
+					{
+						Conditions: []string{`profile.attributes["test"] == "pass"`},
+						ErrorMode:  ottl.SilentError,
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "flat_style"),
+			expected: &Config{
+				ErrorMode:         ottl.PropagateError,
+				TraceConditions:   getInferredContextConditions("span"),
+				MetricConditions:  getInferredContextConditions("datapoint"),
+				LogConditions:     getInferredContextConditions("log"),
+				ProfileConditions: getInferredContextConditions("profile"),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "advance_style"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceConditions: []common.ContextConditions{
+					getDefinedContextConditions("span"),
+					getDefinedContextConditions("spanevent"),
+					getDefinedContextConditions("scope"),
+					getDefinedContextConditions("resource"),
+				},
+				MetricConditions: []common.ContextConditions{
+					{
+						Conditions: []string{`name == "pass"`},
+						Context:    "metric",
+					},
+					getDefinedContextConditions("datapoint"),
+					getDefinedContextConditions("scope"),
+					getDefinedContextConditions("resource"),
+				},
+				LogConditions: []common.ContextConditions{
+					getDefinedContextConditions("log"),
+					getDefinedContextConditions("scope"),
+					getDefinedContextConditions("resource"),
+				},
+				ProfileConditions: []common.ContextConditions{
+					getDefinedContextConditions("profile"),
+					getDefinedContextConditions("scope"),
+					getDefinedContextConditions("resource"),
+				},
+			},
+		},
+		{
 			id:           component.NewIDWithName(metadata.Type, "mix_trace_conditions"),
 			errorMessage: `cannot use context inferred trace conditions "trace_conditions" and the settings "traces.resource", "traces.span", "traces.spanevent" at the same time`,
 		},
@@ -1076,6 +1146,9 @@ func TestLoadingConfigOTTL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_ottl.yaml"))
+			require.NoError(t, err)
+
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
@@ -1084,10 +1157,11 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
+				err = xconfmap.Validate(cfg)
+				assert.Error(t, err)
+
 				if tt.errorMessage != "" {
-					assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
-				} else {
-					assert.Error(t, xconfmap.Validate(cfg))
+					assert.EqualError(t, err, tt.errorMessage)
 				}
 			} else {
 				assert.NoError(t, xconfmap.Validate(cfg))
@@ -1095,5 +1169,70 @@ func TestLoadingConfigOTTL(t *testing.T) {
 				assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 			}
 		})
+	}
+}
+
+func Test_UnknownErrorMode(t *testing.T) {
+	id := component.NewIDWithName(metadata.Type, "unknown_error_mode")
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_ottl.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(id.String())
+	require.NoError(t, err)
+	assert.ErrorContains(t, sub.Unmarshal(cfg), "unknown error mode test")
+}
+
+func Test_UnknownContext(t *testing.T) {
+	id := component.NewIDWithName(metadata.Type, "unknown_context")
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_ottl.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(id.String())
+	require.NoError(t, err)
+	assert.ErrorContains(t, sub.Unmarshal(cfg), "unknown context abc")
+}
+
+func Test_MixedConfigurationStyles(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_ottl.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "mixed_advance_and_flat_styles").String())
+	require.NoError(t, err)
+	assert.ErrorContains(t, sub.Unmarshal(cfg), "configuring multiple configuration styles is not supported")
+}
+
+func getInferredContextConditions(prefix string) []common.ContextConditions {
+	return []common.ContextConditions{
+		{
+			Conditions: getConditionStrings(prefix),
+		},
+	}
+}
+
+func getDefinedContextConditions(prefix string) common.ContextConditions {
+	return common.ContextConditions{
+		Conditions: getConditionStrings(""),
+		Context:    common.ContextID(prefix),
+	}
+}
+
+func getConditionStrings(prefix string) []string {
+	if prefix != "" && !strings.HasSuffix(prefix, ".") {
+		prefix += "."
+	}
+	return []string{
+		fmt.Sprintf(`%sattributes["test"] == "pass"`, prefix),
+		fmt.Sprintf(`%sattributes["another"] == "pass"`, prefix),
 	}
 }

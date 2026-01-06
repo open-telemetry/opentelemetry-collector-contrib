@@ -164,5 +164,8 @@ func convertSpanEventConditions(pc *ottl.ParserCollection[TracesConsumer], condi
 
 func (tpc *TraceParserCollection) ParseContextConditions(contextConditions ContextConditions) (TracesConsumer, error) {
 	pc := ottl.ParserCollection[TracesConsumer](*tpc)
+	if contextConditions.Context != "" {
+		return pc.ParseConditionsWithContext(string(contextConditions.Context), contextConditions, true)
+	}
 	return pc.ParseConditions(contextConditions)
 }

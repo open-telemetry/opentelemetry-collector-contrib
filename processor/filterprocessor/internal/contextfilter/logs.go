@@ -107,5 +107,8 @@ func convertLogConditions(pc *ottl.ParserCollection[LogsConsumer], conditions ot
 
 func (lpc *LogParserCollection) ParseContextConditions(contextConditions ContextConditions) (LogsConsumer, error) {
 	pc := ottl.ParserCollection[LogsConsumer](*lpc)
+	if contextConditions.Context != "" {
+		return pc.ParseConditionsWithContext(string(contextConditions.Context), contextConditions, true)
+	}
 	return pc.ParseConditions(contextConditions)
 }

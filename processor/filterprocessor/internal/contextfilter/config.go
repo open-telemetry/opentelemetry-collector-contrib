@@ -38,7 +38,8 @@ func (c *ContextID) UnmarshalText(text []byte) error {
 
 // ContextConditions is a wrapper struct for OTTL conditions.
 type ContextConditions struct {
-	Conditions []string `mapstructure:"conditions"`
+	Context    ContextID `mapstructure:"context"`
+	Conditions []string  `mapstructure:"conditions"`
 	// ErrorMode determines how the processor reacts to errors that occur while processing
 	// this group of conditions. When provided, it overrides the default Config ErrorMode.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`

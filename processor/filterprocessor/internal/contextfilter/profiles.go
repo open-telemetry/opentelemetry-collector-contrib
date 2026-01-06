@@ -107,5 +107,8 @@ func convertProfileConditions(pc *ottl.ParserCollection[ProfilesConsumer], condi
 
 func (ppc *ProfileParserCollection) ParseContextConditions(contextConditions ContextConditions) (ProfilesConsumer, error) {
 	pc := ottl.ParserCollection[ProfilesConsumer](*ppc)
+	if contextConditions.Context != "" {
+		return pc.ParseConditionsWithContext(string(contextConditions.Context), contextConditions, true)
+	}
 	return pc.ParseConditions(contextConditions)
 }
