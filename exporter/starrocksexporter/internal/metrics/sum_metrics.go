@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -47,10 +48,12 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 			attrsJSON, _ := internal.AttributesToJSON(dp.Attributes())
 			exemplarsJSON, _ := convertExemplarsJSON(dp.Exemplars())
 
+			timestamp := dp.Timestamp().AsTime()
+			startTimestamp := dp.StartTimestamp().AsTime()
 			values := []interface{}{
 				serviceName,
 				model.metricName,
-				dp.Timestamp().AsTime(),
+				time.Time(timestamp),
 				resAttrJSON,
 				model.metadata.ResURL,
 				model.metadata.ScopeInstr.Name(),
@@ -61,7 +64,7 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 				model.metricDescription,
 				model.metricUnit,
 				attrsJSON,
-				dp.StartTimestamp().AsTime(),
+				time.Time(startTimestamp),
 				getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType()),
 				uint32(dp.Flags()),
 				exemplarsJSON,

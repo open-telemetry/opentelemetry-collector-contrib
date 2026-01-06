@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -57,10 +58,12 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 			}
 			quantilesJSON, _ := json.Marshal(quantiles)
 
+			timestamp := dp.Timestamp().AsTime()
+			startTimestamp := dp.StartTimestamp().AsTime()
 			values := []interface{}{
 				serviceName,
 				model.metricName,
-				dp.Timestamp().AsTime(),
+				time.Time(timestamp),
 				resAttrJSON,
 				model.metadata.ResURL,
 				model.metadata.ScopeInstr.Name(),
@@ -71,7 +74,7 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 				model.metricDescription,
 				model.metricUnit,
 				attrsJSON,
-				dp.StartTimestamp().AsTime(),
+				time.Time(startTimestamp),
 				dp.Count(),
 				dp.Sum(),
 				string(quantilesJSON),
