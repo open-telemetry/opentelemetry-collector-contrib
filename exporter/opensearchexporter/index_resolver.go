@@ -14,13 +14,24 @@ import (
 // indexResolver handles dynamic index name resolution for logs and traces
 type indexResolver struct {
 	placeholderPattern *regexp.Regexp
+	defaultPrefix      string
+	defaultDataset     string
+	defaultNamespace   string
 }
 
 // newIndexResolver creates a new index resolver instance
-func newIndexResolver() *indexResolver {
+func newIndexResolver(defaultPrefix, defaultDataset, defaultNamespace string) *indexResolver {
 	return &indexResolver{
 		placeholderPattern: regexp.MustCompile(`%\{([^}]+)\}`),
+		defaultPrefix:      defaultPrefix,
+		defaultDataset:     defaultDataset,
+		defaultNamespace:   defaultNamespace,
 	}
+}
+
+// getDefaultIndexName provides default index naming for backward compatibility
+func (r *indexResolver) getDefaultIndexName() string {
+	return strings.Join([]string{r.defaultPrefix, r.defaultDataset, r.defaultNamespace}, "-")
 }
 
 // extractPlaceholderKeys extracts unique placeholder keys from the index pattern
@@ -74,6 +85,9 @@ func (*indexResolver) collectScopeAttributes(scope pcommon.InstrumentationScope,
 
 // resolveIndexName handles the common logic for resolving index names with placeholders
 func (r *indexResolver) resolveIndexName(indexPattern, fallback string, itemAttrs pcommon.Map, keys []string, scopeAttributes, resourceAttributes map[string]string, timeSuffix string) string {
+	if indexPattern == "" {
+		return r.getDefaultIndexName() + timeSuffix
+	}
 	itemAttributes := make(map[string]string)
 	for _, key := range keys {
 		if v, ok := itemAttrs.Get(key); ok {
@@ -120,9 +134,4 @@ func convertGoTimeFormat(format string) string {
 	f = strings.ReplaceAll(f, "mm", "04")
 	f = strings.ReplaceAll(f, "ss", "05")
 	return f
-}
-
-// getIndexName provides default index naming for backward compatibility
-func getIndexName(dataset, namespace, defaultPrefix string) string {
-	return strings.Join([]string{defaultPrefix, dataset, namespace}, "-")
 }

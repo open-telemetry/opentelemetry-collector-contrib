@@ -52,7 +52,7 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 		httpSettings:  cfg.ClientConfig,
 		model:         model,
 		config:        cfg,
-		indexResolver: newIndexResolver(),
+		indexResolver: newIndexResolver("ss4o_logs", cfg.Dataset, cfg.Namespace),
 	}
 }
 

@@ -43,7 +43,7 @@ func newSSOTracesExporter(cfg *Config, set exporter.Settings) *ssoTracesExporter
 		model:         model,
 		httpSettings:  cfg.ClientConfig,
 		config:        cfg,
-		indexResolver: newIndexResolver(),
+		indexResolver: newIndexResolver("ss4o_traces", cfg.Dataset, cfg.Namespace),
 	}
 }
 

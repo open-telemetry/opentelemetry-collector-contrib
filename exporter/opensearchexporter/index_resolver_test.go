@@ -11,7 +11,7 @@ import (
 )
 
 func TestIndexResolver_ResolveIndex(t *testing.T) {
-	resolver := newIndexResolver()
+	resolver := newIndexResolver("ss4o_logs", "default", "namespace")
 	ts := time.Date(2025, 6, 7, 0, 0, 0, 0, time.UTC)
 
 	tests := []struct {
@@ -142,21 +142,13 @@ func TestIndexResolver_ResolveIndex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var index string
-			if tt.indexPattern == "" {
-				// Handle empty index case
-				indexName := getIndexName("default", "namespace", "ss4o_logs")
-				timeSuffix := resolver.calculateTimeSuffix(tt.timeFormat, ts)
-				index = indexName + timeSuffix
-			} else {
-				keys := resolver.extractPlaceholderKeys(tt.indexPattern)
-				itemMap := pcommon.NewMap()
-				for k, v := range tt.itemAttrs {
-					itemMap.PutStr(k, v)
-				}
-				timeSuffix := resolver.calculateTimeSuffix(tt.timeFormat, ts)
-				index = resolver.resolveIndexName(tt.indexPattern, tt.fallback, itemMap, keys, tt.scopeAttrs, tt.resourceAttrs, timeSuffix)
+			keys := resolver.extractPlaceholderKeys(tt.indexPattern)
+			itemMap := pcommon.NewMap()
+			for k, v := range tt.itemAttrs {
+				itemMap.PutStr(k, v)
 			}
+			timeSuffix := resolver.calculateTimeSuffix(tt.timeFormat, ts)
+			index := resolver.resolveIndexName(tt.indexPattern, tt.fallback, itemMap, keys, tt.scopeAttrs, tt.resourceAttrs, timeSuffix)
 			if index != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, index)
 			}
