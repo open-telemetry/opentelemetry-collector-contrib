@@ -594,7 +594,16 @@ func (s *mappingModeSessions) StartSession(ctx context.Context, mappingMode Mapp
 	if session := s.sessions[int(mappingMode)]; session != nil {
 		return session
 	}
-	session := s.indexers[int(mappingMode)].StartSession(ctx)
+	idx := s.indexers[int(mappingMode)]
+	if idx == nil {
+		// Return an error session instead of panicking when the indexer
+		// for the requested mapping mode was not initialized.
+		errSession := errBulkIndexerSession{err: fmt.Errorf("no bulk indexer for mapping mode %v", mappingMode)}
+		s.sessions[int(mappingMode)] = errSession
+		s.sessionList = append(s.sessionList, errSession)
+		return errSession
+	}
+	session := idx.StartSession(ctx)
 	s.sessions[mappingMode] = session
 	s.sessionList = append(s.sessionList, session)
 	return session
