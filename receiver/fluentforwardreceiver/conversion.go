@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"time"
 
 	"github.com/tinylib/msgp/msgp"
@@ -100,6 +101,11 @@ func parseToAttributeValue(val any, dest pcommon.Value) {
 	case string:
 		dest.SetStr(r)
 	case uint64:
+		// handle overflow of uint64 to int64
+		if r > math.MaxInt64 {
+			dest.SetStr(fmt.Sprintf("%v", r))
+			return
+		}
 		dest.SetInt(int64(r))
 	case int64:
 		dest.SetInt(r)
@@ -123,6 +129,9 @@ func parseToAttributeValue(val any, dest pcommon.Value) {
 func timeFromTimestamp(ts any) (time.Time, error) {
 	switch v := ts.(type) {
 	case uint64:
+		if v > math.MaxInt64 {
+			return time.Time{}, fmt.Errorf("timestamp value overflow: %v", v)
+		}
 		return time.Unix(int64(v), 0), nil
 	case int64:
 		return time.Unix(v, 0), nil
