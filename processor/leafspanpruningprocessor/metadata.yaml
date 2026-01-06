@@ -1,0 +1,15 @@
+type: leafspanpruning
+
+status:
+  class: processor
+  stability:
+    alpha: [traces]
+  distributions: [contrib]
+  codeowners:
+    active: [portertech]
+
+tests:
+  config:
+    group_by_attributes:
+      - "db.operation"
+    min_spans_to_aggregate: 2
