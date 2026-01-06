@@ -167,7 +167,7 @@ The Elasticsearch exporter supports several document schemas and preprocessing
 behaviours, which may be configured through the following settings:
 
 - `mapping`:
-  - `mode` (default=otel): The default mapping mode. Valid modes are:
+  - `mode` (DEPRECATED): The mapping mode can no longer be supplied via config file. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. If not specified via these methods, the default mapping mode is `otel`. Valid modes are:
     - `none`
     - `ecs`
     - `otel`
@@ -175,13 +175,13 @@ behaviours, which may be configured through the following settings:
     - `bodymap`
   - `allowed_modes` (defaults to all mapping modes): A list of allowed mapping modes.
 
-The mapping mode can also be controlled via the client metadata key `X-Elastic-Mapping-Mode`,
-e.g. via HTTP headers, gRPC metadata. This will override the configured `mapping::mode`.
+The mapping mode can be controlled via the client metadata key `X-Elastic-Mapping-Mode`,
+e.g. via HTTP headers, gRPC metadata.
 It is possible to restrict which mapping modes may be requested by configuring
 `mapping::allowed_modes`, which defaults to all mapping modes. Keep in mind that not all
 processors or exporter configurations will maintain client metadata.
 
-Finally, the mapping mode can be controlled via the scope attribute `elastic.mapping.mode`.
+The mapping mode can also be controlled via the scope attribute `elastic.mapping.mode`.
 If specified, this takes precedence over the `X-Elastic-Mapping-Mode` client metadata.
 If any scope has an invalid mapping mode, the exporter will reject the entire batch.
 The attribute will be excluded from the final document.
