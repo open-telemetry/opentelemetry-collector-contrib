@@ -28,7 +28,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 
 	oCfg := cfg.(*Config)
-	assert.Equal(t, 2, oCfg.MinSpansToAggregate)
+	assert.Equal(t, 5, oCfg.MinSpansToAggregate)
 	assert.Equal(t, "_aggregated", oCfg.SummarySpanNameSuffix)
 	assert.Equal(t, "aggregation.", oCfg.AggregationAttributePrefix)
 }

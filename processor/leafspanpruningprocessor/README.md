@@ -47,7 +47,7 @@ processors:
       - "http.method"
 
     # Minimum number of similar leaf spans required before aggregation
-    # Default: 2
+    # Default: 5
     min_spans_to_aggregate: 3
 
     # Suffix appended to create summary span name
@@ -69,7 +69,7 @@ processors:
 | Field | Type | Default | Description |
 |-----|--|---------|-------|
 | `group_by_attributes` | []string | [] | Attribute patterns for grouping (supports glob patterns like `db.*`) |
-| `min_spans_to_aggregate` | int | 2 | Minimum group size before aggregation occurs |
+| `min_spans_to_aggregate` | int | 5 | Minimum group size before aggregation occurs |
 | `summary_span_name_suffix` | string | "_aggregated" | Suffix appended to summary span names |
 | `aggregation_attribute_prefix` | string | "aggregation." | Prefix for aggregation statistics attributes |
 | `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for histogram buckets |

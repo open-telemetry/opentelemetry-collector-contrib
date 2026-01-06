@@ -1,7 +1,7 @@
 leafspanpruning:
   group_by_attributes:
     - "db.operation"
-  min_spans_to_aggregate: 2
+  min_spans_to_aggregate: 5
   summary_span_name_suffix: "_aggregated"
   aggregation_attribute_prefix: "aggregation."
 

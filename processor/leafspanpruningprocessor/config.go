@@ -24,7 +24,7 @@ type Config struct {
 
 	// MinSpansToAggregate is the minimum number of similar leaf spans required
 	// before aggregation occurs. If a group has fewer spans, they are left unchanged.
-	// Default: 2
+	// Default: 5
 	MinSpansToAggregate int `mapstructure:"min_spans_to_aggregate"`
 
 	// SummarySpanNameSuffix is appended to the original span name to create

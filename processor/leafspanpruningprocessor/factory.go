@@ -27,7 +27,7 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		MinSpansToAggregate:        2,
+		MinSpansToAggregate:        5,
 		SummarySpanNameSuffix:      "_aggregated",
 		AggregationAttributePrefix: "aggregation.",
 		AggregationHistogramBuckets: []time.Duration{

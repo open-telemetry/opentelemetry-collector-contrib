@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				GroupByAttributes:           []string{"db.operation"},
-				MinSpansToAggregate:         2,
+				MinSpansToAggregate:         5,
 				SummarySpanNameSuffix:       "_aggregated",
 				AggregationAttributePrefix:  "aggregation.",
 				AggregationHistogramBuckets: defaultHistogramBuckets,
