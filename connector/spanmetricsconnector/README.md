@@ -309,7 +309,7 @@ Instead, use attributes that are stable, present in all spans, and meaningfully 
 
 High cardinality issues in span metrics commonly manifest in APM dashboards as an excessive number of service operations with non-unique names. Examples include URIs with unique identifiers (e.g., `GET /product/1YMWWN1N4O`) or HTTP parameters with random values (e.g., `GET /?_ga=GA1.2.569539246.1760114706`). These patterns render operation lists difficult to interpret and ineffective for monitoring purposes.
 
-This issue stems from violations of OpenTelemetry semantic conventions, which require span names to have low cardinality.
+This issue stems from violations of [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/), which require span names to have low cardinality (e.g. [HTTP span name specs](https://opentelemetry.io/docs/specs/semconv/http/http-spans/#name)).
 Beyond degrading APM interfaces with numerous non-meaningful operation names, this problem leads to metric time series explosion, resulting in significant performance degradation and increased costs.
 
 The span metrics connector provides an optional circuit breaker through the `aggregation_cardinality_limit` attribute (disabled by default) to mitigate cardinality explosion. While this feature addresses performance and cost concerns, it does not resolve the underlying issue of semantically meaningless operation names.
