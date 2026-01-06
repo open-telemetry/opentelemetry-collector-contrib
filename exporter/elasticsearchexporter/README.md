@@ -190,6 +190,83 @@ Valid mapping modes are:
 
 See below for a description of each mapping mode.
 
+#### Migration: Setting mapping mode via client metadata or scope attribute
+
+Since the `mapping::mode` config option is deprecated, use one of the following methods to set the mapping mode:
+
+**Option 1: Using client metadata via headers_setter extension**
+
+This approach passes the mapping mode as a client metadata key that the Elasticsearch exporter reads.
+
+```yaml
+extensions:
+  headers_setter:
+    headers:
+      - key: X-Elastic-Mapping-Mode
+        value: otel  # or: none, ecs, raw, bodymap
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        include_metadata: true
+
+processors:
+  batch:
+    metadata_keys:
+      - X-Elastic-Mapping-Mode
+
+exporters:
+  elasticsearch:
+    endpoint: https://elasticsearch:9200
+    auth:
+      authenticator: headers_setter
+
+service:
+  extensions: [headers_setter]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [elasticsearch]
+```
+
+**Option 2: Using scope attribute via transform processor**
+
+This approach sets the `elastic.mapping.mode` scope attribute on the telemetry data.
+
+```yaml
+processors:
+  transform:
+    log_statements:
+      - context: scope
+        statements:
+          - set(attributes["elastic.mapping.mode"], "otel")
+    trace_statements:
+      - context: scope
+        statements:
+          - set(attributes["elastic.mapping.mode"], "otel")
+    metric_statements:
+      - context: scope
+        statements:
+          - set(attributes["elastic.mapping.mode"], "otel")
+
+exporters:
+  elasticsearch:
+    endpoint: https://elasticsearch:9200
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [transform]
+      exporters: [elasticsearch]
+```
+
+> [!NOTE]
+> The scope attribute `elastic.mapping.mode` takes precedence over the `X-Elastic-Mapping-Mode` client metadata.
+> The attribute will be excluded from the final document sent to Elasticsearch.
+
 #### OTel mapping mode
 
 The default and recommended "OTel-native" mapping mode.
