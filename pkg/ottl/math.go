@@ -47,6 +47,18 @@ func (p *Parser[K]) evaluateMathValue(val *mathValue) (Getter[K], error) {
 	// differentiate between binary and unary operators
 	switch {
 	case val.UnaryOp != nil && *val.UnaryOp == sub && val.Literal != nil:
+		// If the literal is numeric, fold the sign into the literal
+		if val.Literal.Float != nil {
+			neg := -(*val.Literal.Float)
+			newLit := &mathExprLiteral{Float: &neg}
+			return p.newGetter(value{Literal: newLit})
+		}
+		if val.Literal.Int != nil {
+			neg := -(*val.Literal.Int)
+			newLit := &mathExprLiteral{Int: &neg}
+			return p.newGetter(value{Literal: newLit})
+		}
+		// Non-numeric literals fall back to dynamic negation
 		baseGetter, err := p.newGetter(value{Literal: val.Literal})
 		if err != nil {
 			return nil, err
