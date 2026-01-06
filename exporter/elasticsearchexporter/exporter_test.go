@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -45,6 +46,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestExporterLogs(t *testing.T) {
@@ -993,6 +997,59 @@ func TestExporterLogs(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
+	rec := newBulkRecorder()
+	server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+		rec.Record(docs)
+		// Ensure the produced index corresponds to OTel mapping (contains ".otel-")
+		require.GreaterOrEqual(t, len(docs), 1)
+		assert.Contains(t, string(docs[0].Action), ".otel-")
+		return itemsAllOK(docs)
+	})
+
+	// prepare observed logger to capture warning
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	params := exportertest.NewNopSettings(metadata.Type)
+	params.Logger = zap.New(observedZapCore)
+
+	// create config that sets Mapping.Mode (deprecated) to ecs
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoints = []string{server.URL}
+		cfg.QueueBatchConfig.Get().NumConsumers = 1
+		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
+		cfg.Mapping.Mode = "ecs"
+	})
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	f := NewFactory()
+	exp, err := f.CreateLogs(t.Context(), params, cfg)
+	require.NoError(t, err)
+
+	// start exporter so bulk indexers are initialized
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, exp.Shutdown(context.Background())) })
+
+	// send a simple log record without any client metadata or scope attribute
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
+	lr.Body().SetStr("hello")
+
+	require.NoError(t, exp.ConsumeLogs(t.Context(), logs))
+	rec.WaitItems(1)
+
+	// verify a warning was emitted about mapping mode coming from config
+	found := false
+	for _, entry := range observedLogs.All() {
+		if strings.Contains(entry.Message, "mapping mode can no longer be supplied via config file") {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected warning about deprecated mapping mode in config")
 }
 
 func TestExporterMetrics(t *testing.T) {
