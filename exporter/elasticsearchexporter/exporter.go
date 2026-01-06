@@ -629,7 +629,10 @@ func (e *elasticsearchExporter) getRequestMappingMode(ctx context.Context) (Mapp
 	values := client.FromContext(ctx).Metadata.Get(metadataKey)
 	switch n := len(values); n {
 	case 0:
-		return e.defaultMappingMode, nil
+		if e.defaultMappingMode != MappingNone {
+			e.set.Logger.Warn("mapping mode can no longer be supplied via config file. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead.")
+		}
+		return MappingNone, nil
 	case 1:
 		mode, err := e.parseMappingMode(values[0])
 		if err != nil {
