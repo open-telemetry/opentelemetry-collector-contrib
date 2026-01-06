@@ -59,6 +59,8 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 		// partitions in case partitioning is enabled.
 		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
 		kgo.ProducerLinger(cfg.Linger),
+		kgo.ProducerBatchMaxBytes(int32(cfg.MaxMessageBytes)),
+		kgo.MaxBufferedRecords(cfg.FlushMaxMessages),
 	)...)
 	if err != nil {
 		return nil, err
@@ -75,16 +77,6 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 		opts = append(opts, kgo.DisableIdempotentWrite(), kgo.RequiredAcks(kgo.LeaderAck()))
 	}
 
-	// Configure max message size
-	if cfg.MaxMessageBytes > 0 {
-		opts = append(opts, kgo.ProducerBatchMaxBytes(
-			int32(cfg.MaxMessageBytes),
-		))
-	}
-	// Configure batch size
-	if cfg.FlushMaxMessages > 0 {
-		opts = append(opts, kgo.MaxBufferedRecords(cfg.FlushMaxMessages))
-	}
 	// Configure auto topic creation
 	if cfg.AllowAutoTopicCreation {
 		opts = append(opts, kgo.AllowAutoTopicCreation())
