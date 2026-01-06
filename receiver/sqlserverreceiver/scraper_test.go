@@ -429,7 +429,6 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	assert.True(t, actualLogs.LogRecordCount() == 1)
 	collectQueryHash, _ := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("sqlserver.query_hash")
 	assert.Equal(t, hex.EncodeToString([]byte("0x37849E874171E3F4")), collectQueryHash.Str(), "Metrics for the record with 1 execution_count in db should be reported always regardless of cache record presence")
-
 }
 
 func TestQueryTextAndPlanQuery(t *testing.T) {
