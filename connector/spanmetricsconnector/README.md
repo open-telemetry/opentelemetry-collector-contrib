@@ -324,7 +324,7 @@ An effective short-term solution is to implement a span sanitization layer withi
 
 <details>
 
-<summary>Silmple example OpenTelemetry Collector configuration to prevent span metrics cardinality explosion:</summary>
+<summary>Simple example OpenTelemetry Collector configuration to prevent span metrics cardinality explosion:</summary>
 
 ```yaml
 receivers:
