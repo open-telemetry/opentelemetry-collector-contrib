@@ -5,7 +5,6 @@ package lookupprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -19,11 +18,6 @@ import (
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
-
-var (
-	errTracesNotSupported  = errors.New("lookup processor does not support traces yet")
-	errMetricsNotSupported = errors.New("lookup processor does not support metrics yet")
-)
 
 var Type = metadata.Type
 
@@ -89,8 +83,6 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
 		f.createDefaultConfig,
-		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
-		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
 		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
 	)
 }
@@ -101,24 +93,6 @@ func (*lookupProcessorFactory) createDefaultConfig() component.Config {
 			Type: "noop",
 		},
 	}
-}
-
-func (*lookupProcessorFactory) createTracesProcessor(
-	_ context.Context,
-	_ processor.Settings,
-	_ component.Config,
-	_ consumer.Traces,
-) (processor.Traces, error) {
-	return nil, errTracesNotSupported
-}
-
-func (*lookupProcessorFactory) createMetricsProcessor(
-	_ context.Context,
-	_ processor.Settings,
-	_ component.Config,
-	_ consumer.Metrics,
-) (processor.Metrics, error) {
-	return nil, errMetricsNotSupported
 }
 
 func (f *lookupProcessorFactory) createLogsProcessor(
