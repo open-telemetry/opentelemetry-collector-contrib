@@ -192,46 +192,9 @@ See below for a description of each mapping mode.
 
 #### Migration: Setting mapping mode via client metadata or scope attribute
 
-Since the `mapping::mode` config option is deprecated, use one of the following methods to set the mapping mode:
+Since the `mapping::mode` config option is deprecated, use the following method to set the mapping mode:
 
-**Option 1: Using client metadata via headers_setter extension**
-
-This approach passes the mapping mode as a client metadata key that the Elasticsearch exporter reads.
-
-```yaml
-extensions:
-  headers_setter:
-    headers:
-      - key: X-Elastic-Mapping-Mode
-        value: otel  # or: none, ecs, raw, bodymap
-
-receivers:
-  otlp:
-    protocols:
-      http:
-        include_metadata: true
-
-processors:
-  batch:
-    metadata_keys:
-      - X-Elastic-Mapping-Mode
-
-exporters:
-  elasticsearch:
-    endpoint: https://elasticsearch:9200
-    auth:
-      authenticator: headers_setter
-
-service:
-  extensions: [headers_setter]
-  pipelines:
-    logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [elasticsearch]
-```
-
-**Option 2: Using scope attribute via transform processor**
+**Use scope attribute via transform processor**
 
 This approach sets the `elastic.mapping.mode` scope attribute on the telemetry data.
 
