@@ -828,13 +828,12 @@ func TestExporterLogs(t *testing.T) {
 		})
 		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
 		for i := range 3 {
-			logRecord := plog.NewLogRecord()
-			logRecord.Attributes().PutInt("idx", int64(i))
 			// build logs from record and send with mapping mode in client metadata
 			logs := plog.NewLogs()
 			rl := logs.ResourceLogs().AppendEmpty()
 			sl := rl.ScopeLogs().AppendEmpty()
-			logRecord.CopyTo(sl.LogRecords().AppendEmpty())
+			logRecord := sl.LogRecords().AppendEmpty()
+			logRecord.Attributes().PutInt("idx", int64(i))
 			mustSendLogsWithCtx(ctx, t, exporter, logs)
 		}
 
