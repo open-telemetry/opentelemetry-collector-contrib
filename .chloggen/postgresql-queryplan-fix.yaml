@@ -10,7 +10,7 @@ component: receiver/postgresql
 note: Fix query plan EXPLAIN to use raw query with $N placeholders instead of obfuscated query with ? placeholders
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [#45190]
+issues: [45190]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
@@ -18,7 +18,6 @@ issues: [#45190]
 subtext: |
   Previously, the EXPLAIN query was using obfuscated queries with ? placeholders, which PostgreSQL does not recognize.
   Now uses the raw query with $1, $2 placeholders that PostgreSQL expects.
-  Also orders top query results by calls DESC.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
