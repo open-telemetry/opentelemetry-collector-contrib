@@ -227,7 +227,10 @@ func (c *franzConsumer) consumeLoop(ctx context.Context) {
 
 	for {
 		// Consume messages until the ctx is cancelled (the client is closed).
-		// Returns all the internally buffered records.
+		// NOTE(marclop) we should make the fetch size configurable. It returns
+		// all the internally buffered records. This isn't something that's
+		// configurable in Sarama, and theoretically the max records to iterate
+		// on is a factor of default / max (byte) fetch size.
 		if !c.consume(ctx, -1) {
 			return
 		}
