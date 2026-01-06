@@ -144,10 +144,11 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					timestamp = r.ObservedTimestamp()
 				}
 
+				logTime := timestamp.AsTime()
 				columnValues := make([]interface{}, 0, 16)
 				columnValues = append(columnValues,
 					serviceName,
-					timestamp.AsTime(),
+					time.Time(logTime),
 					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
 					uint8(r.Flags()),

@@ -114,10 +114,11 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					return fmt.Errorf("failed to convert links: %w", err)
 				}
 
+				startTime := span.StartTimestamp().AsTime()
 				values := []interface{}{
 					serviceName,
 					span.Name(),
-					span.StartTimestamp().AsTime(),
+					time.Time(startTime),
 					traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(span.SpanID()),
 					traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID()),

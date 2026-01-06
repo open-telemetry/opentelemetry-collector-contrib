@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -51,10 +52,12 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 			positiveBuckets, _ := json.Marshal(dp.Positive().BucketCounts().AsRaw())
 			negativeBuckets, _ := json.Marshal(dp.Negative().BucketCounts().AsRaw())
 
+			timestamp := dp.Timestamp().AsTime()
+			startTimestamp := dp.StartTimestamp().AsTime()
 			values := []interface{}{
 				serviceName,
 				model.metricName,
-				dp.Timestamp().AsTime(),
+				time.Time(timestamp),
 				resAttrJSON,
 				model.metadata.ResURL,
 				model.metadata.ScopeInstr.Name(),
@@ -65,7 +68,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 				model.metricDescription,
 				model.metricUnit,
 				attrsJSON,
-				dp.StartTimestamp().AsTime(),
+				time.Time(startTimestamp),
 				dp.Count(),
 				dp.Sum(),
 				int32(dp.Scale()),
