@@ -1064,26 +1064,13 @@ func TestExporterMetrics(t *testing.T) {
 		dpSum := pmetric.NewNumberDataPoint()
 		dpSum.SetDoubleValue(123.456)
 		dpSum.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-2 * time.Second)))
-		// build metrics and send with ctx
-		metrics1 := pmetric.NewMetrics()
-		scopeMetrics1 := metrics1.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-		metric1 := scopeMetrics1.Metrics().AppendEmpty()
-		metric1.SetEmptySum()
-		metric1.SetName("sum")
-		dpSum.CopyTo(metric1.Sum().DataPoints().AppendEmpty())
-		mustSendMetricsWithCtx(ctx, t, exporter, metrics1)
+		mustSendMetricSumDataPointsWithCtx(ctx, t, exporter, dpSum)
 
 		dpGauge := pmetric.NewNumberDataPoint()
 		dpGauge.SetDoubleValue(123.456)
 		// Keep timestamp different to avoid metric grouping putting them in same doc
 		dpGauge.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
-		metrics2 := pmetric.NewMetrics()
-		scopeMetrics2 := metrics2.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-		metric2 := scopeMetrics2.Metrics().AppendEmpty()
-		metric2.SetEmptyGauge()
-		metric2.SetName("gauge")
-		dpGauge.CopyTo(metric2.Gauge().DataPoints().AppendEmpty())
-		mustSendMetricsWithCtx(ctx, t, exporter, metrics2)
+		mustSendMetricGaugeDataPointsWithCtx(ctx, t, exporter, dpGauge)
 
 		rec.WaitItems(2)
 	})
@@ -2957,7 +2944,7 @@ func mustSendLogsWithCtx(
 	require.NoError(t, err)
 }
 
-func mustSendMetricSumDataPoints(t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
+func mustSendMetricSumDataPointsWithCtx(ctx context.Context, t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
 	metrics := pmetric.NewMetrics()
 	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	metric := scopeMetrics.Metrics().AppendEmpty()
@@ -2966,10 +2953,10 @@ func mustSendMetricSumDataPoints(t *testing.T, exporter exporter.Metrics, dataPo
 	for _, dataPoint := range dataPoints {
 		dataPoint.CopyTo(metric.Sum().DataPoints().AppendEmpty())
 	}
-	mustSendMetrics(t, exporter, metrics)
+	mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 }
 
-func mustSendMetricGaugeDataPoints(t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
+func mustSendMetricGaugeDataPointsWithCtx(ctx context.Context, t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
 	metrics := pmetric.NewMetrics()
 	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	metric := scopeMetrics.Metrics().AppendEmpty()
@@ -2978,7 +2965,7 @@ func mustSendMetricGaugeDataPoints(t *testing.T, exporter exporter.Metrics, data
 	for _, dataPoint := range dataPoints {
 		dataPoint.CopyTo(metric.Gauge().DataPoints().AppendEmpty())
 	}
-	mustSendMetrics(t, exporter, metrics)
+	mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 }
 
 func mustSendMetrics(t *testing.T, exporter exporter.Metrics, metrics pmetric.Metrics) {
