@@ -6,4 +6,4 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [jsvd]
+    active: [jsvd, dehaansa, VihasMakwana]
