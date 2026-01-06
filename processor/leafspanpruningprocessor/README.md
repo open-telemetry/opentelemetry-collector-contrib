@@ -18,6 +18,11 @@ The Leaf Span Pruning Processor identifies duplicate or similar leaf spans withi
 
 **Leaf spans** are spans that are not referenced as a parent by any other span in the trace. They typically represent the last actions in an execution call stack (e.g., individual database queries, HTTP calls to external services).
 
+Spans are grouped by:
+1. **Span name** - spans must have the same name
+2. **Status code** - spans must have the same status (OK, Error, or Unset)
+3. **Configured attributes** - spans must have matching values for attributes specified in `group_by_attributes`
+
 This processor is useful for reducing trace data volume while preserving meaningful information about repeated operations.
 
 ## Use Cases
@@ -93,7 +98,7 @@ When leaf spans are aggregated, the summary span includes:
 - **ParentSpanID**: Same as original spans (common parent)
 - **StartTimestamp**: Earliest start time of all spans in the group
 - **EndTimestamp**: Latest end time of all spans in the group
-- **Status**: Error if any span had error; OK if all were OK; Unset otherwise
+- **Status**: Same as original spans (spans are grouped by status code)
 
 ### Aggregation Attributes
 The following attributes are added to the summary span:
@@ -148,27 +153,35 @@ service:
 
 ### Before Processing
 
-A trace with repeated database queries:
+A trace with repeated database queries (some failing):
 ```
 root-span (parent)
-├── SELECT (leaf) - duration: 10ms, db.operation: select
-├── SELECT (leaf) - duration: 15ms, db.operation: select
-├── SELECT (leaf) - duration: 12ms, db.operation: select
-└── INSERT (leaf) - duration: 20ms, db.operation: insert
+├── SELECT (leaf) - duration: 10ms, db.operation: select, status: OK
+├── SELECT (leaf) - duration: 15ms, db.operation: select, status: OK
+├── SELECT (leaf) - duration: 12ms, db.operation: select, status: OK
+├── SELECT (leaf) - duration: 50ms, db.operation: select, status: Error
+├── SELECT (leaf) - duration: 45ms, db.operation: select, status: Error
+└── INSERT (leaf) - duration: 20ms, db.operation: insert, status: OK
 ```
 
 ### After Processing (with `min_spans_to_aggregate: 2`)
 
 ```
 root-span (parent)
-├── SELECT_aggregated (summary)
+├── SELECT_aggregated (summary, status: OK)
 │   - aggregation.span_count: 3
 │   - aggregation.duration_min_ns: 10000000
 │   - aggregation.duration_max_ns: 15000000
 │   - aggregation.duration_avg_ns: 12333333
-│   - aggregation.duration_total_ns: 37000000
+├── SELECT_aggregated (summary, status: Error)
+│   - aggregation.span_count: 2
+│   - aggregation.duration_min_ns: 45000000
+│   - aggregation.duration_max_ns: 50000000
+│   - aggregation.duration_avg_ns: 47500000
 └── INSERT (unchanged - only 1 span, below threshold)
 ```
+
+Note: Spans with different status codes are grouped separately, preserving error information.
 
 ## Limitations
 

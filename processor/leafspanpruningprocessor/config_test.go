@@ -6,6 +6,7 @@ package leafspanpruningprocessor
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,6 +15,20 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/leafspanpruningprocessor/internal/metadata"
 )
+
+var defaultHistogramBuckets = []time.Duration{
+	5 * time.Millisecond,
+	10 * time.Millisecond,
+	25 * time.Millisecond,
+	50 * time.Millisecond,
+	100 * time.Millisecond,
+	250 * time.Millisecond,
+	500 * time.Millisecond,
+	time.Second,
+	2500 * time.Millisecond,
+	5 * time.Second,
+	10 * time.Second,
+}
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -26,19 +41,21 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				GroupByAttributes:          []string{"db.operation"},
-				MinSpansToAggregate:        2,
-				SummarySpanNameSuffix:      "_aggregated",
-				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:           []string{"db.operation"},
+				MinSpansToAggregate:         2,
+				SummarySpanNameSuffix:       "_aggregated",
+				AggregationAttributePrefix:  "aggregation.",
+				AggregationHistogramBuckets: defaultHistogramBuckets,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "custom"),
 			expected: &Config{
-				GroupByAttributes:          []string{"db.operation", "db.name"},
-				MinSpansToAggregate:        3,
-				SummarySpanNameSuffix:      "_batch",
-				AggregationAttributePrefix: "batch.",
+				GroupByAttributes:           []string{"db.operation", "db.name"},
+				MinSpansToAggregate:         3,
+				SummarySpanNameSuffix:       "_batch",
+				AggregationAttributePrefix:  "batch.",
+				AggregationHistogramBuckets: defaultHistogramBuckets,
 			},
 		},
 	}

@@ -181,11 +181,15 @@ func (p *leafSpanPruningProcessor) groupSimilarSpans(spans []spanInfo) []spanGro
 	return result
 }
 
-// buildGroupKey creates a grouping key from span name and matching attributes
+// buildGroupKey creates a grouping key from span name, status, and matching attributes
 // Attributes are matched using glob patterns from the configuration
 func (p *leafSpanPruningProcessor) buildGroupKey(span ptrace.Span) string {
 	var builder strings.Builder
 	builder.WriteString(span.Name())
+
+	// Include status code in grouping key
+	builder.WriteString("|status=")
+	builder.WriteString(span.Status().Code().String())
 
 	attrs := span.Attributes()
 
@@ -313,6 +317,9 @@ func (p *leafSpanPruningProcessor) createSummarySpan(group spanGroup, stats aggr
 	// Copy attributes from template
 	templateSpan.Attributes().CopyTo(newSpan.Attributes())
 
+	// Copy status from template
+	templateSpan.Status().CopyTo(newSpan.Status())
+
 	// Add aggregation statistics as attributes
 	prefix := p.config.AggregationAttributePrefix
 	newSpan.Attributes().PutInt(prefix+"span_count", stats.count)
@@ -337,9 +344,6 @@ func (p *leafSpanPruningProcessor) createSummarySpan(group spanGroup, stats aggr
 			bucketCountsSlice.AppendEmpty().SetInt(count)
 		}
 	}
-
-	// Set status: if any span had error, summary has error
-	p.aggregateStatus(group.spans, newSpan)
 }
 
 // findTimeRange finds the earliest start and latest end timestamps in a group
@@ -364,36 +368,6 @@ func (p *leafSpanPruningProcessor) findTimeRange(spans []spanInfo) (pcommon.Time
 	}
 
 	return earliestStart, latestEnd
-}
-
-// aggregateStatus sets the summary span status based on original spans
-// If any span had an error, the summary has an error
-func (p *leafSpanPruningProcessor) aggregateStatus(spans []spanInfo, summarySpan ptrace.Span) {
-	hasError := false
-	hasOk := false
-	var errorMessage string
-
-	for _, info := range spans {
-		status := info.span.Status()
-		switch status.Code() {
-		case ptrace.StatusCodeError:
-			hasError = true
-			if errorMessage == "" {
-				errorMessage = status.Message()
-			}
-		case ptrace.StatusCodeOk:
-			hasOk = true
-		}
-	}
-
-	if hasError {
-		summarySpan.Status().SetCode(ptrace.StatusCodeError)
-		summarySpan.Status().SetMessage(errorMessage)
-	} else if hasOk {
-		summarySpan.Status().SetCode(ptrace.StatusCodeOk)
-	} else {
-		summarySpan.Status().SetCode(ptrace.StatusCodeUnset)
-	}
 }
 
 // generateSpanID creates a new random span ID

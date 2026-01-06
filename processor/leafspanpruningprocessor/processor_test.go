@@ -162,7 +162,7 @@ func TestLeafSpanPruning_SingleSpanTrace(t *testing.T) {
 }
 
 func TestLeafSpanPruning_StatusAggregation(t *testing.T) {
-	// Test: if any span has error, summary should have error
+	// Test: spans with different status codes should be in separate groups
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.MinSpansToAggregate = 2
@@ -170,14 +170,49 @@ func TestLeafSpanPruning_StatusAggregation(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithErrorSpan(t)
+	// Create trace with 4 OK spans and 2 Error spans (same name)
+	td := createTestTraceWithMixedStatusSpans(t)
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 7, originalSpanCount) // 1 parent + 4 OK + 2 Error
 
 	err = tp.ConsumeTraces(t.Context(), td)
 	require.NoError(t, err)
 
-	summarySpan := findSpanByNameSuffix(td, "_aggregated")
-	require.NotNil(t, summarySpan)
-	assert.Equal(t, ptrace.StatusCodeError, summarySpan.Status().Code())
+	// After: 1 parent + 1 OK summary (4 spans) + 1 Error summary (2 spans)
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 3, finalSpanCount)
+
+	// Verify we have both an OK summary and an Error summary
+	okSummary := findSpanByNameAndStatus(td, "_aggregated", ptrace.StatusCodeOk)
+	require.NotNil(t, okSummary)
+	okCount, _ := okSummary.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(4), okCount.Int())
+
+	errorSummary := findSpanByNameAndStatus(td, "_aggregated", ptrace.StatusCodeError)
+	require.NotNil(t, errorSummary)
+	errorCount, _ := errorSummary.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(2), errorCount.Int())
+}
+
+func TestLeafSpanPruning_StatusBelowThreshold(t *testing.T) {
+	// Test: 1 OK span + 1 Error span should not aggregate (each group below threshold)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithErrorSpan(t) // Creates 1 OK + 1 Error span
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 3, originalSpanCount) // 1 parent + 1 OK + 1 Error
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// Should remain unchanged - neither group meets threshold
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 3, finalSpanCount)
 }
 
 func TestLeafSpanPruning_DurationStats(t *testing.T) {
@@ -436,6 +471,66 @@ func findSpanByNameSuffix(td ptrace.Traces, suffix string) ptrace.Span {
 		}
 	}
 	return ptrace.Span{}
+}
+
+func findSpanByNameAndStatus(td ptrace.Traces, nameSuffix string, statusCode ptrace.StatusCode) ptrace.Span {
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		ilss := rss.At(i).ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			spans := ilss.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				if strings.HasSuffix(span.Name(), nameSuffix) && span.Status().Code() == statusCode {
+					return span
+				}
+			}
+		}
+	}
+	return ptrace.Span{}
+}
+
+func createTestTraceWithMixedStatusSpans(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	// Parent span
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("parent")
+
+	// 4 leaf spans with OK status
+	for i := 0; i < 4; i++ {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.Status().SetCode(ptrace.StatusCodeOk)
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	// 2 leaf spans with Error status
+	for i := 0; i < 2; i++ {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.Status().SetCode(ptrace.StatusCodeError)
+		span.Status().SetMessage("query failed")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	return td
 }
 
 // Glob pattern matching tests
@@ -706,7 +801,13 @@ func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
 			traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 			parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
 
-			// Create spans with varying durations
+			// Create parent span
+			parentSpan := spans.AppendEmpty()
+			parentSpan.SetName("parent")
+			parentSpan.SetTraceID(traceID)
+			parentSpan.SetSpanID(parentSpanID)
+
+			// Create leaf spans with varying durations
 			for i, duration := range tt.spanDurations {
 				span := spans.AppendEmpty()
 				span.SetName("test-span")
@@ -728,6 +829,8 @@ func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
 			cfg := &Config{
 				GroupByAttributes:           []string{"db.operation"},
 				MinSpansToAggregate:         tt.minSpansToAggregate,
+				SummarySpanNameSuffix:       "_aggregated",
+				AggregationAttributePrefix:  "aggregation.",
 				AggregationHistogramBuckets: tt.buckets,
 			}
 
