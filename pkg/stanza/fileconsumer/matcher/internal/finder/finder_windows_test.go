@@ -28,7 +28,7 @@ func TestFixUNCPath(t *testing.T) {
 			name:     "UNC pattern with corrupted match (FQDN)",
 			pattern:  `\\cloud.local\Logs\*.txt`,
 			match:    `\cloud.local\Logs\file.txt`,
-			expected: `\\cloud.local\\Logs\file.txt`,
+			expected: `\\cloud.local\Logs\file.txt`,
 		},
 		{
 			name:     "UNC pattern with uncorrupted match",
