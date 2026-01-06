@@ -4,7 +4,10 @@
 package leafspanpruningprocessor
 
 import (
+	"context"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -652,4 +655,139 @@ func createTestTraceWithDbAndHttpAttrs(t *testing.T) ptrace.Traces {
 	}
 
 	return td
+}
+
+func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                          string
+		buckets                       []time.Duration
+		expectedBuckets               []float64
+		spanDurations                 []time.Duration
+		expectedBucketCounts          []int64
+		minSpansToAggregate           int
+		expectedSpanCount             int
+		shouldHaveHistogramAttributes bool
+	}{
+		{
+			name: "aggregate 3 spans with histogram",
+			buckets: []time.Duration{
+				10 * time.Millisecond,
+				50 * time.Millisecond,
+				100 * time.Millisecond,
+			},
+			expectedBuckets: []float64{0.01, 0.05, 0.1},
+			spanDurations: []time.Duration{
+				5 * time.Millisecond,   // Should fall in bucket 0 (<=10ms)
+				15 * time.Millisecond,  // Should fall in bucket 1 (<=50ms)
+				25 * time.Millisecond,  // Should fall in bucket 1 (<=50ms)
+				75 * time.Millisecond,  // Should fall in bucket 2 (<=100ms)
+				150 * time.Millisecond, // Should fall in bucket 3 (+Inf)
+			},
+			expectedBucketCounts:          []int64{1, 3, 4, 5},
+			minSpansToAggregate:           2,
+			expectedSpanCount:             2, // 1 original + 1 summary
+			shouldHaveHistogramAttributes: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a simple trace
+			td := ptrace.NewTraces()
+			rs := td.ResourceSpans().AppendEmpty()
+			rs.Resource().Attributes().PutStr("service.name", "test-service")
+
+			// Create spans with specified durations
+			ils := rs.ScopeSpans().AppendEmpty()
+			spans := ils.Spans()
+
+			traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+			parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+			// Create spans with varying durations
+			for i, duration := range tt.spanDurations {
+				span := spans.AppendEmpty()
+				span.SetName("test-span")
+				span.SetTraceID(traceID)
+				span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+				span.SetParentSpanID(parentSpanID)
+				span.SetKind(ptrace.SpanKindInternal)
+
+				startTime := pcommon.Timestamp(1000000000)
+				endTime := pcommon.Timestamp(1000000000 + int64(duration))
+				span.SetStartTimestamp(startTime)
+				span.SetEndTimestamp(endTime)
+
+				// Add attributes to ensure they don't interfere with grouping
+				span.Attributes().PutStr("db.operation", "SELECT")
+			}
+
+			// Create processor with custom buckets
+			cfg := &Config{
+				GroupByAttributes:           []string{"db.operation"},
+				MinSpansToAggregate:         tt.minSpansToAggregate,
+				AggregationHistogramBuckets: tt.buckets,
+			}
+
+			ctx := context.Background()
+			set := processortest.NewNopSettings(metadata.Type)
+
+			p, err := newLeafSpanPruningProcessor(set, cfg)
+			assert.NoError(t, err)
+
+			resultTd, err := p.processTraces(ctx, td)
+			assert.NoError(t, err)
+
+			// Get the spans
+			spanCount := 0
+			rss := resultTd.ResourceSpans()
+			for i := 0; i < rss.Len(); i++ {
+				rs := rss.At(i)
+				ilss := rs.ScopeSpans()
+				for j := 0; j < ilss.Len(); j++ {
+					ils := ilss.At(j)
+					spans := ils.Spans()
+					spanCount += spans.Len()
+				}
+			}
+
+			// Verify we have the expected number of spans
+			assert.Equal(t, tt.expectedSpanCount, spanCount)
+
+			// If we have a summary span, check its histogram attributes
+			var summarySpan ptrace.Span
+			foundSummary := false
+			rss = resultTd.ResourceSpans()
+			for i := 0; i < rss.Len() && !foundSummary; i++ {
+				rs := rss.At(i)
+				ilss := rs.ScopeSpans()
+				for j := 0; j < ilss.Len() && !foundSummary; j++ {
+					ils := ilss.At(j)
+					spans := ils.Spans()
+					for k := 0; k < spans.Len(); k++ {
+						span := spans.At(k)
+						if strings.Contains(span.Name(), "_aggregated") {
+							summarySpan = span
+							foundSummary = true
+							break
+						}
+					}
+				}
+			}
+
+			// If we are expecting histogram attributes, verify them
+			if tt.shouldHaveHistogramAttributes {
+				// Check if bucket bounds are present and correct
+				bounds, exists := summarySpan.Attributes().Get("aggregation.histogram_bucket_bounds_s")
+				assert.True(t, exists)
+				assert.Equal(t, len(tt.expectedBuckets), bounds.Slice().Len())
+
+				counts, exists := summarySpan.Attributes().Get("aggregation.histogram_bucket_counts")
+				assert.True(t, exists)
+				assert.Equal(t, len(tt.expectedBucketCounts), counts.Slice().Len())
+			}
+		})
+	}
 }

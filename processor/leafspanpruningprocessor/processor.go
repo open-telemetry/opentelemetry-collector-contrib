@@ -33,10 +33,11 @@ type spanGroup struct {
 
 // aggregationStats holds statistics for a group of spans
 type aggregationStats struct {
-	count       int64
-	minDuration time.Duration
-	maxDuration time.Duration
-	sumDuration time.Duration
+	count        int64
+	minDuration  time.Duration
+	maxDuration  time.Duration
+	sumDuration  time.Duration
+	bucketCounts []int64
 }
 
 // attributePattern holds a compiled glob pattern for matching attribute keys
@@ -245,6 +246,11 @@ func (p *leafSpanPruningProcessor) aggregateGroup(group spanGroup) {
 func (p *leafSpanPruningProcessor) calculateStats(spans []spanInfo) aggregationStats {
 	stats := aggregationStats{count: int64(len(spans))}
 
+	// Initialize histogram bucket counts
+	if len(p.config.AggregationHistogramBuckets) > 0 {
+		stats.bucketCounts = make([]int64, len(p.config.AggregationHistogramBuckets)+1)
+	}
+
 	for i, info := range spans {
 		startTime := info.span.StartTimestamp().AsTime()
 		endTime := info.span.EndTimestamp().AsTime()
@@ -262,6 +268,22 @@ func (p *leafSpanPruningProcessor) calculateStats(spans []spanInfo) aggregationS
 			}
 		}
 		stats.sumDuration += duration
+
+		// Update histogram bucket counts (cumulative)
+		if len(p.config.AggregationHistogramBuckets) > 0 {
+			// Find which bucket this duration belongs to
+			bucketIndex := len(p.config.AggregationHistogramBuckets) // default to +Inf bucket
+			for j, bucket := range p.config.AggregationHistogramBuckets {
+				if duration <= bucket {
+					bucketIndex = j
+					break
+				}
+			}
+			// Increment all buckets from bucketIndex to the end (cumulative histogram)
+			for j := bucketIndex; j < len(stats.bucketCounts); j++ {
+				stats.bucketCounts[j]++
+			}
+		}
 	}
 
 	return stats
@@ -299,6 +321,21 @@ func (p *leafSpanPruningProcessor) createSummarySpan(group spanGroup, stats aggr
 	newSpan.Attributes().PutInt(prefix+"duration_total_ns", int64(stats.sumDuration))
 	if stats.count > 0 {
 		newSpan.Attributes().PutInt(prefix+"duration_avg_ns", int64(stats.sumDuration)/stats.count)
+	}
+
+	// Add histogram attributes if enabled
+	if len(p.config.AggregationHistogramBuckets) > 0 {
+		// Add bucket bounds (in seconds)
+		bucketBoundsSlice := newSpan.Attributes().PutEmptySlice(prefix + "histogram_bucket_bounds_s")
+		for _, bucket := range p.config.AggregationHistogramBuckets {
+			bucketBoundsSlice.AppendEmpty().SetDouble(float64(bucket) / float64(time.Second))
+		}
+
+		// Add bucket counts
+		bucketCountsSlice := newSpan.Attributes().PutEmptySlice(prefix + "histogram_bucket_counts")
+		for _, count := range stats.bucketCounts {
+			bucketCountsSlice.AppendEmpty().SetInt(count)
+		}
 	}
 
 	// Set status: if any span had error, summary has error

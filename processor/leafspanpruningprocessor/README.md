@@ -52,6 +52,11 @@ processors:
     # Prefix for aggregation statistics attributes
     # Default: "aggregation."
     aggregation_attribute_prefix: "batch."
+
+    # Upper bounds for histogram buckets (latency distribution)
+    # Default: [5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+    # Set to empty list to disable histogram
+    aggregation_histogram_buckets: [10ms, 50ms, 100ms, 500ms, 1s]
 ```
 
 ## Configuration Options
@@ -62,6 +67,7 @@ processors:
 | `min_spans_to_aggregate` | int | 2 | Minimum group size before aggregation occurs |
 | `summary_span_name_suffix` | string | "_aggregated" | Suffix appended to summary span names |
 | `aggregation_attribute_prefix` | string | "aggregation." | Prefix for aggregation statistics attributes |
+| `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for histogram buckets |
 
 ### Glob Pattern Support
 
@@ -99,6 +105,20 @@ The following attributes are added to the summary span:
 | `aggregation.duration_max_ns` | int64 | Maximum duration in nanoseconds |
 | `aggregation.duration_avg_ns` | int64 | Average duration in nanoseconds |
 | `aggregation.duration_total_ns` | int64 | Total duration in nanoseconds |
+| `aggregation.histogram_bucket_bounds_s` | []float64 | Bucket upper bounds in seconds (excludes +Inf) |
+| `aggregation.histogram_bucket_counts` | []int64 | Cumulative count per bucket (includes +Inf bucket) |
+
+### Histogram Buckets
+
+The histogram provides a latency distribution of the aggregated spans. The buckets are cumulative, meaning each bucket count includes all spans with duration less than or equal to the bucket boundary.
+
+**Example** with buckets `[10ms, 50ms, 100ms]` and 5 spans with durations `[5ms, 15ms, 25ms, 75ms, 150ms]`:
+- `histogram_bucket_bounds_s`: `[0.01, 0.05, 0.1]`
+- `histogram_bucket_counts`: `[1, 3, 4, 5]`
+  - Bucket 0 (≤10ms): 1 span (5ms)
+  - Bucket 1 (≤50ms): 3 spans (5ms, 15ms, 25ms)
+  - Bucket 2 (≤100ms): 4 spans (5ms, 15ms, 25ms, 75ms)
+  - Bucket 3 (+Inf): 5 spans (all)
 
 ## Pipeline Placement
 

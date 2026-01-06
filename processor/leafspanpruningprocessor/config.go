@@ -5,6 +5,7 @@ package leafspanpruningprocessor // import "github.com/open-telemetry/openteleme
 
 import (
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -35,6 +36,12 @@ type Config struct {
 	// added to the summary span.
 	// Default: "aggregation."
 	AggregationAttributePrefix string `mapstructure:"aggregation_attribute_prefix"`
+
+	// AggregationHistogramBuckets defines the upper bounds for histogram buckets
+	// used to track latency distributions of aggregated spans.
+	// Example: [5*time.Millisecond, 10*time.Millisecond, 100*time.Millisecond]
+	// Default: [5*time.Millisecond, 10*time.Millisecond, 25*time.Millisecond, 50*time.Millisecond, 100*time.Millisecond, 250*time.Millisecond, 500*time.Millisecond, time.Second, 2500*time.Millisecond, 5*time.Second, 10*time.Second]
+	AggregationHistogramBuckets []time.Duration `mapstructure:"aggregation_histogram_buckets"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -44,5 +51,16 @@ func (cfg *Config) Validate() error {
 	if cfg.MinSpansToAggregate < 2 {
 		return errors.New("min_spans_to_aggregate must be at least 2")
 	}
+
+	// Validate histogram buckets
+	for i, bucket := range cfg.AggregationHistogramBuckets {
+		if bucket <= 0 {
+			return errors.New("histogram bucket values must be positive")
+		}
+		if i > 0 && bucket <= cfg.AggregationHistogramBuckets[i-1] {
+			return errors.New("histogram buckets must be sorted in ascending order")
+		}
+	}
+
 	return nil
 }
