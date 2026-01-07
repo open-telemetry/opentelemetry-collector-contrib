@@ -192,6 +192,9 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	if cfg.MaxBatchRequestParallelism != nil {
 		concurrency = *cfg.MaxBatchRequestParallelism
 	}
+	if concurrency < 1 {
+		concurrency = 1
+	}
 
 	// Set the desired number of consumers as a metric for the exporter.
 	telemetry.setNumberConsumer(context.Background(), int64(concurrency))
