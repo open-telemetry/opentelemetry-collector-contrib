@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("leafspanpruning")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/leafspanpruningprocessor"
+	Type      = component.MustNewType("spanpruning")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 )
 
 const (

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package leafspanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/leafspanpruningprocessor"
+package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 
 import (
 	"time"
@@ -24,7 +24,7 @@ type aggregationData struct {
 
 // calculateAggregationData computes statistics and time range in a single pass
 // Takes []*spanNode instead of []spanInfo to avoid intermediate conversions
-func (p *leafSpanPruningProcessor) calculateAggregationData(nodes []*spanNode) aggregationData {
+func (p *spanPruningProcessor) calculateAggregationData(nodes []*spanNode) aggregationData {
 	data := aggregationData{
 		count: int64(len(nodes)),
 	}

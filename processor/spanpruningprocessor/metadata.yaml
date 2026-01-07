@@ -1,4 +1,4 @@
-type: leafspanpruning
+type: spanpruning
 
 status:
   class: processor

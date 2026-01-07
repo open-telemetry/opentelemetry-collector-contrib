@@ -1,11 +1,11 @@
-leafspanpruning:
+spanpruning:
   group_by_attributes:
     - "db.operation"
   min_spans_to_aggregate: 5
   summary_span_name_suffix: "_aggregated"
   aggregation_attribute_prefix: "aggregation."
 
-leafspanpruning/custom:
+spanpruning/custom:
   group_by_attributes:
     - "db.operation"
     - "db.name"

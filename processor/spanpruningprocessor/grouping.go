@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package leafspanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/leafspanpruningprocessor"
+package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 
 import (
 	"sort"
@@ -22,7 +22,7 @@ var builderPool = sync.Pool{
 // buildGroupKey creates a grouping key from span name, status, and matching attributes
 // Attributes are matched using glob patterns from the configuration
 // Uses a pooled string builder to reduce allocations in hot path
-func (p *leafSpanPruningProcessor) buildGroupKey(span ptrace.Span) string {
+func (p *spanPruningProcessor) buildGroupKey(span ptrace.Span) string {
 	builder := builderPool.Get().(*strings.Builder)
 	builder.Reset()
 	defer builderPool.Put(builder)
@@ -67,7 +67,7 @@ func (p *leafSpanPruningProcessor) buildGroupKey(span ptrace.Span) string {
 
 // buildParentGroupKey creates a grouping key for parent spans using only name and status
 // (attributes are not considered for parent aggregation)
-func (p *leafSpanPruningProcessor) buildParentGroupKey(span ptrace.Span) string {
+func (p *spanPruningProcessor) buildParentGroupKey(span ptrace.Span) string {
 	builder := builderPool.Get().(*strings.Builder)
 	builder.Reset()
 	defer builderPool.Put(builder)
@@ -80,7 +80,7 @@ func (p *leafSpanPruningProcessor) buildParentGroupKey(span ptrace.Span) string 
 
 // buildLeafGroupKey creates a grouping key for leaf spans using tree node parent pointer
 // Renamed from buildLeafGroupKeyFromNode for clarity
-func (p *leafSpanPruningProcessor) buildLeafGroupKey(node *spanNode) string {
+func (p *spanPruningProcessor) buildLeafGroupKey(node *spanNode) string {
 	// Use cached group key if available
 	if node.groupKey != "" {
 		return node.groupKey
@@ -106,7 +106,7 @@ func (p *leafSpanPruningProcessor) buildLeafGroupKey(node *spanNode) string {
 }
 
 // groupLeafNodesByKey groups leaf nodes by their grouping key
-func (p *leafSpanPruningProcessor) groupLeafNodesByKey(leafNodes []*spanNode) map[string][]*spanNode {
+func (p *spanPruningProcessor) groupLeafNodesByKey(leafNodes []*spanNode) map[string][]*spanNode {
 	// Pre-size map based on expected number of groups (assume ~1/4 unique groups)
 	groups := make(map[string][]*spanNode, len(leafNodes)/4+1)
 	for _, node := range leafNodes {

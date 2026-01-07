@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package leafspanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/leafspanpruningprocessor"
+package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -31,7 +31,7 @@ type traceTree struct {
 // buildTraceTree constructs a tree structure from a list of spans
 // Handles incomplete traces: orphans (missing parents), multiple roots, no root
 // Also identifies leaf nodes during construction to avoid a separate pass
-func (p *leafSpanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
+func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	tree := &traceTree{
 		nodeByID: make(map[pcommon.SpanID]*spanNode, len(spans)),
 	}
@@ -105,7 +105,7 @@ func (t *traceTree) getLeaves() []*spanNode {
 
 // findEligibleParentNodes finds parent nodes whose ALL children are marked for removal
 // Uses the markedForRemoval field on nodes instead of map lookups for better performance
-func (p *leafSpanPruningProcessor) findEligibleParentNodes(tree *traceTree) []*spanNode {
+func (p *spanPruningProcessor) findEligibleParentNodes(tree *traceTree) []*spanNode {
 	eligibleParents := make([]*spanNode, 0, len(tree.nodeByID)/10)
 
 	for _, node := range tree.nodeByID {
@@ -119,7 +119,7 @@ func (p *leafSpanPruningProcessor) findEligibleParentNodes(tree *traceTree) []*s
 }
 
 // isEligibleForParentAggregation checks if a node can be aggregated as a parent
-func (p *leafSpanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool {
+func (p *spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool {
 	// Must have children (not a leaf)
 	if node.isLeaf {
 		return false

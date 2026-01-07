@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/leafspanpruningprocessor
+module github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor
 
 go 1.24.0
 

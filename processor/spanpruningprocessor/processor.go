@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package leafspanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/leafspanpruningprocessor"
+package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 
 import (
 	"context"
@@ -25,14 +25,14 @@ type attributePattern struct {
 	glob glob.Glob
 }
 
-// leafSpanPruningProcessor is the leaf span pruning processor implementation
-type leafSpanPruningProcessor struct {
+// spanPruningProcessor is the leaf span pruning processor implementation
+type spanPruningProcessor struct {
 	config            *Config
 	logger            *zap.Logger
 	attributePatterns []attributePattern
 }
 
-func newLeafSpanPruningProcessor(set processor.Settings, cfg *Config) (*leafSpanPruningProcessor, error) {
+func newSpanPruningProcessor(set processor.Settings, cfg *Config) (*spanPruningProcessor, error) {
 	// Compile glob patterns for group_by_attributes
 	patterns := make([]attributePattern, 0, len(cfg.GroupByAttributes))
 	for _, pattern := range cfg.GroupByAttributes {
@@ -45,14 +45,14 @@ func newLeafSpanPruningProcessor(set processor.Settings, cfg *Config) (*leafSpan
 		})
 	}
 
-	return &leafSpanPruningProcessor{
+	return &spanPruningProcessor{
 		config:            cfg,
 		logger:            set.Logger,
 		attributePatterns: patterns,
 	}, nil
 }
 
-func (p *leafSpanPruningProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	// Group spans by TraceID
 	traceSpans := p.groupSpansByTraceID(td)
 
@@ -67,7 +67,7 @@ func (p *leafSpanPruningProcessor) processTraces(ctx context.Context, td ptrace.
 }
 
 // groupSpansByTraceID collects all spans organized by trace ID
-func (p *leafSpanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon.TraceID][]spanInfo {
+func (p *spanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon.TraceID][]spanInfo {
 	traceSpans := make(map[pcommon.TraceID][]spanInfo)
 
 	rss := td.ResourceSpans()
@@ -94,7 +94,7 @@ func (p *leafSpanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pco
 // processTrace processes a single trace using two-phase approach:
 // Phase 1: Analyze aggregations bottom-up (identify leaf groups, then eligible parents)
 // Phase 2: Execute aggregations top-down (create parent summaries first, then children)
-func (p *leafSpanPruningProcessor) processTrace(ctx context.Context, spans []spanInfo) error {
+func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInfo) error {
 	// Build trace tree
 	tree := p.buildTraceTree(spans)
 	if len(tree.nodeByID) == 0 {
@@ -118,7 +118,7 @@ func (p *leafSpanPruningProcessor) processTrace(ctx context.Context, spans []spa
 
 // analyzeAggregationsWithTree performs Phase 1 using tree structure
 // Uses markedForRemoval field on nodes instead of separate map for better performance
-func (p *leafSpanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[string]aggregationGroup {
+func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[string]aggregationGroup {
 	// Step 1: Get pre-computed leaf nodes
 	leafNodes := tree.getLeaves()
 	if len(leafNodes) == 0 {

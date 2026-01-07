@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package leafspanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/leafspanpruningprocessor"
+package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 
 import (
 	"crypto/rand"
@@ -32,7 +32,7 @@ func generateSpanID() pcommon.SpanID {
 }
 
 // buildAggregationPlan orders aggregation groups for top-down execution
-func (p *leafSpanPruningProcessor) buildAggregationPlan(groups map[string]aggregationGroup) aggregationPlan {
+func (p *spanPruningProcessor) buildAggregationPlan(groups map[string]aggregationGroup) aggregationPlan {
 	// Convert map to slice with pre-allocation
 	groupSlice := make([]aggregationGroup, 0, len(groups))
 	for _, group := range groups {
@@ -54,7 +54,7 @@ func (p *leafSpanPruningProcessor) buildAggregationPlan(groups map[string]aggreg
 
 // executeAggregations performs Phase 2: top-down creation of summary spans
 // Optimized to batch span removals instead of calling RemoveIf repeatedly
-func (p *leafSpanPruningProcessor) executeAggregations(plan aggregationPlan) {
+func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) {
 	// Track which parent SpanID should map to which summary SpanID
 	// Pre-size based on expected number of nodes being aggregated
 	parentReplacements := make(map[pcommon.SpanID]pcommon.SpanID, len(plan.groups)*4)
@@ -104,7 +104,7 @@ func (p *leafSpanPruningProcessor) executeAggregations(plan aggregationPlan) {
 }
 
 // createSummarySpanWithParent creates a summary span with a specific parent SpanID
-func (p *leafSpanPruningProcessor) createSummarySpanWithParent(group aggregationGroup, data aggregationData, parentSpanID pcommon.SpanID) ptrace.Span {
+func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGroup, data aggregationData, parentSpanID pcommon.SpanID) ptrace.Span {
 	// Use the first node as a template
 	templateNode := group.nodes[0]
 	templateSpan := templateNode.span

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package leafspanpruningprocessor
+package spanpruningprocessor
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/leafspanpruningprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 )
 
 func TestNewTraces(t *testing.T) {
@@ -837,7 +837,7 @@ func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
 			ctx := context.Background()
 			set := processortest.NewNopSettings(metadata.Type)
 
-			p, err := newLeafSpanPruningProcessor(set, cfg)
+			p, err := newSpanPruningProcessor(set, cfg)
 			assert.NoError(t, err)
 
 			resultTd, err := p.processTraces(ctx, td)

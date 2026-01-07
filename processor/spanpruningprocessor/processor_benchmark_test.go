@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package leafspanpruningprocessor
+package spanpruningprocessor
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/leafspanpruningprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 )
 
 // BenchmarkProcessTrace_SmallTrace benchmarks processing a small trace (10 spans)
@@ -37,7 +37,7 @@ func benchmarkProcessTrace(b *testing.B, numSpans, minSpans int) {
 	cfg.MinSpansToAggregate = minSpans
 	cfg.GroupByAttributes = []string{"http.*"}
 
-	proc, err := newLeafSpanPruningProcessor(processortest.NewNopSettings(metadata.Type), cfg)
+	proc, err := newSpanPruningProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 	if err != nil {
 		b.Fatal(err)
 	}
