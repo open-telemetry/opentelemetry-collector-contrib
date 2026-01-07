@@ -15,12 +15,6 @@ import (
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
 )
 
 // makeLabels builds a labels.Labels with the given total number of labels.
@@ -52,36 +46,6 @@ func BenchmarkExtractAttributes(b *testing.B) {
 			}
 		})
 	}
-}
-
-// setupMetricsReceiverBench creates a receiver instance for benchmarks. It mirrors setupMetricsReceiver
-// but accepts testing.B/TB so it can be used from benchmarks.
-func setupMetricsReceiverBench(tb testing.TB) *prometheusRemoteWriteReceiver {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	prwReceiverIfc, err := factory.CreateMetrics(tb.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	if err != nil {
-		tb.Fatalf("failed to create metrics receiver: %v", err)
-	}
-	prw := prwReceiverIfc.(*prometheusRemoteWriteReceiver)
-
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             component.MustNewID("test"),
-		Transport:              "http",
-		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
-	})
-	if err != nil {
-		tb.Fatalf("failed to create obsreport: %v", err)
-	}
-	prw.obsrecv = obsrecv
-
-	// Ensure LRU is purged when benchmark finishes
-	if tb, ok := tb.(interface{ Cleanup(func()) }); ok {
-		tb.Cleanup(func() { prw.rmCache.Purge() })
-	}
-
-	return prw
 }
 
 // makeWriteV2Request builds a deterministic writev2.Request with the requested number of series,
@@ -146,7 +110,7 @@ func BenchmarkRemoteWrite(b *testing.B) {
 				name := fmt.Sprintf("S%d_Samples%d_C%d", sz, samples, conc)
 				b.Run(name, func(b *testing.B) {
 					b.ReportAllocs()
-					prw := setupMetricsReceiverBench(b)
+					prw := setupMetricsReceiver(b)
 
 					// Precompute payload (raw proto) to focus on receiver translation cost.
 					req := makeWriteV2Request(sz, samples, extraLabelsSize)
