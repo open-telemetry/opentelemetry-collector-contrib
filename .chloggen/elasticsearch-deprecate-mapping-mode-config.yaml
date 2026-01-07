@@ -16,7 +16,7 @@ issues: [45246]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The `mapping::mode` config option is now deprecated and will soonbe ignored. Instead, use
+  The `mapping::mode` config option is now deprecated and will soon be ignored. Instead, use
   the `X-Elastic-Mapping-Mode` client metadata key (via headers_setter extension) or the
   `elastic.mapping.mode` scope attribute to control the mapping mode per-request.
   See the README for migration instructions.
