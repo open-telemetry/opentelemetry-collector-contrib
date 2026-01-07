@@ -14,7 +14,7 @@
 
 ## Overview
 
-The Leaf Span Pruning Processor identifies duplicate or similar leaf spans within a single trace, groups them, and replaces each group with a single aggregated summary span.
+The Leaf Span Pruning Processor identifies duplicate or similar leaf spans within a single trace, groups them, and replaces each group with a single aggregated summary span. When leaf spans are aggregated, the processor also recursively aggregates their parent spans if all children of those parents are being aggregated.
 
 **Leaf spans** are spans that are not referenced as a parent by any other span in the trace. They typically represent the last actions in an execution call stack (e.g., individual database queries, HTTP calls to external services).
 
@@ -22,6 +22,9 @@ Spans are grouped by:
 1. **Span name** - spans must have the same name
 2. **Status code** - spans must have the same status (OK, Error, or Unset)
 3. **Configured attributes** - spans must have matching values for attributes specified in `group_by_attributes`
+4. **Parent span name** - leaf spans must share the same parent span name to be grouped together
+
+Parent spans are eligible for aggregation when all of their children are aggregated, they share the same name and status code, and they are not root spans.
 
 This processor is useful for reducing trace data volume while preserving meaningful information about repeated operations.
 
