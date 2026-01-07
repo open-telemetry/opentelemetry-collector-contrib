@@ -109,10 +109,6 @@ type ConsumerConfig struct {
 	// The minimum bytes per fetch from Kafka (default "1")
 	MinFetchSize int32 `mapstructure:"min_fetch_size"`
 
-	// The default bytes per fetch from Kafka (default "1048576")
-	// Only used with Sarama client. Use MaxFetchSize for franz-go.
-	DefaultFetchSize int32 `mapstructure:"default_fetch_size"`
-
 	// The maximum bytes per fetch from Kafka (default "1048576")
 	MaxFetchSize int32 `mapstructure:"max_fetch_size"`
 
@@ -148,7 +144,6 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 		MinFetchSize:          1,
 		MaxFetchSize:          1048576,
 		MaxFetchWait:          250 * time.Millisecond,
-		DefaultFetchSize:      1048576,
 		MaxPartitionFetchSize: 1048576,
 	}
 }

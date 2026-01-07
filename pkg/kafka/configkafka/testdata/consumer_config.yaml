@@ -8,7 +8,6 @@ kafka/full:
     enable: false
     interval: 10m
   min_fetch_size: 10
-  default_fetch_size: 1024
   max_fetch_size: 4096
   max_fetch_wait: 1s
   max_partition_fetch_size: 4096
