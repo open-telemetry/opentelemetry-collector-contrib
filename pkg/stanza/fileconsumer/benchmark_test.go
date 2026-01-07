@@ -338,3 +338,47 @@ func BenchmarkConsumeFiles(b *testing.B) {
 		})
 	}
 }
+
+func BenchmarkPollManyFiles(b *testing.B) {
+	fileCounts := []int{100, 500, 1000, 2000, 2500, 3000}
+	for _, numFiles := range fileCounts {
+		b.Run(fmt.Sprintf("Files_%d", numFiles), func(b *testing.B) {
+			rootDir := b.TempDir()
+
+			for i := range numFiles {
+				path := filepath.Join(rootDir, fmt.Sprintf("file%04d.log", i))
+				f := filetest.OpenFile(b, path)
+				_, err := f.WriteString(path + "\n")
+				require.NoError(b, err)
+				require.NoError(b, f.Close())
+			}
+
+			cfg := NewConfig()
+			cfg.Include = []string{filepath.Join(rootDir, "*.log")}
+			cfg.StartAt = "beginning"
+			cfg.MaxConcurrentFiles = numFiles * 2
+			cfg.PollInterval = time.Microsecond
+
+			set := componenttest.NewNopTelemetrySettings()
+			callback := func(context.Context, [][]byte, map[string]any, int64, []int64) error {
+				return nil
+			}
+
+			op, err := cfg.Build(set, callback)
+			require.NoError(b, err)
+
+			ctx := b.Context()
+			persister := testutil.NewUnscopedMockPersister()
+			op.instantiateTracker(ctx, persister)
+			op.persister = persister
+
+			op.poll(ctx)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				op.poll(ctx)
+			}
+		})
+	}
+}

@@ -94,7 +94,7 @@ func (a *archive) FindFiles(ctx context.Context, fps []*fingerprint.Fingerprint)
 				// we've already found a match for this index, continue
 				continue
 			}
-			if md := data.Match(fp, fileset.StartsWith); md != nil {
+			if md := data.Match(fp, fileset.CompareModeStartsWith); md != nil {
 				// update the matched metada for the index
 				matchedMetadata[j] = md
 				archiveModified = true
