@@ -114,6 +114,7 @@ jobs:
         component:
           - receiver/k8sclusterreceiver
           - processor/k8sattributesprocessor
+          - processor/resourcedetectionprocessor
           - receiver/kubeletstatsreceiver
           - receiver/k8sobjectsreceiver
           - extension/observer/k8sobserver
