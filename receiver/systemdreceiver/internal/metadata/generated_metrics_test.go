@@ -72,6 +72,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSystemdServiceCPUTimeDataPoint(ts, 1, AttributeCPUModeSystem)
 
+			allMetricsCount++
+			mb.RecordSystemdServiceRestartsDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemdUnitStateDataPoint(ts, 1, AttributeSystemdUnitActiveStateActive)
@@ -117,6 +120,20 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("cpu.mode")
 					assert.True(t, ok)
 					assert.Equal(t, "system", attrVal.Str())
+				case "systemd.service.restarts":
+					assert.False(t, validatedMetrics["systemd.service.restarts"], "Found a duplicate in the metrics slice: systemd.service.restarts")
+					validatedMetrics["systemd.service.restarts"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of automatic restarts for the service.", ms.At(i).Description())
+					assert.Equal(t, "{restarts}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "systemd.unit.state":
 					assert.False(t, validatedMetrics["systemd.unit.state"], "Found a duplicate in the metrics slice: systemd.unit.state")
 					validatedMetrics["systemd.unit.state"] = true
