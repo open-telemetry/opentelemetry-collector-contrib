@@ -122,9 +122,9 @@ type ConsumerConfig struct {
 
 	// RebalanceStrategy specifies the strategy to use for partition assignment.
 	// Possible values are "range", "roundrobin", and "sticky", and
-	// "cooperative-sticky" (franz-go only).
+	// "cooperative-sticky".
 	//
-	// Defaults to "cooperative-sticky" for franz-go, "range" for Sarama.
+	// Defaults to "cooperative-sticky"
 	GroupRebalanceStrategy string `mapstructure:"group_rebalance_strategy,omitempty"`
 
 	// GroupInstanceID specifies the ID of the consumer
@@ -161,11 +161,11 @@ func (c ConsumerConfig) Validate() error {
 
 	if c.GroupRebalanceStrategy != "" {
 		switch c.GroupRebalanceStrategy {
-		case sarama.RangeBalanceStrategyName, sarama.RoundRobinBalanceStrategyName, sarama.StickyBalanceStrategyName:
+		case "range", "roundrobin", "sticky", "cooperative-sticky":
 			// Valid
 		default:
 			return fmt.Errorf(
-				"rebalance_strategy should be one of 'range', 'roundrobin', or 'sticky'. configured value %v",
+				"rebalance_strategy should be one of 'range', 'roundrobin', 'sticky', or 'cooperative-sticky'. configured value %v",
 				c.GroupRebalanceStrategy,
 			)
 		}
