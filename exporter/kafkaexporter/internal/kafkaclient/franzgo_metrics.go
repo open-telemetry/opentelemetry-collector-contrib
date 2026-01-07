@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
@@ -81,7 +82,12 @@ func (fpm FranzProducerMetrics) OnBrokerThrottle(meta kgo.BrokerMetadata, thrott
 
 var _ kgo.HookBrokerE2E = FranzProducerMetrics{}
 
-func (fpm FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, _ int16, e2e kgo.BrokerE2E) {
+func (fpm FranzProducerMetrics) OnBrokerE2E(meta kgo.BrokerMetadata, key int16, e2e kgo.BrokerE2E) {
+	// Do not pollute producer metrics with non-produce requests
+	if kmsg.Key(key) != kmsg.Produce {
+		return
+	}
+
 	outcome := "success"
 	if e2e.Err() != nil {
 		outcome = "failure"
