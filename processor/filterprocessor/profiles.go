@@ -5,6 +5,7 @@ package filterprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -45,14 +46,14 @@ func newFilterProfilesProcessor(set processor.Settings, cfg *Config) (*filterPro
 		if collectionErr != nil {
 			return nil, collectionErr
 		}
-		var errors error
+		var errs error
 		for _, cs := range cfg.ProfileConditions {
 			profileConsumer, parseErr := pc.ParseContextConditions(cs)
-			errors = multierr.Append(errors, parseErr)
+			errs = multierr.Append(errs, parseErr)
 			fpp.consumers = append(fpp.consumers, profileConsumer)
 		}
-		if errors != nil {
-			return nil, errors
+		if errs != nil {
+			return nil, errs
 		}
 		return fpp, nil
 	}
@@ -82,20 +83,21 @@ func (fpp *filterProfileProcessor) processProfiles(ctx context.Context, pd pprof
 
 	sampleCountBeforeFilters := pd.SampleCount()
 	var processedProfiles pprofile.Profiles
-	var errors error
+	var errs error
 	if len(fpp.consumers) > 0 {
-		processedProfiles, errors = fpp.processConditions(ctx, pd)
+		processedProfiles, errs = fpp.processConditions(ctx, pd)
 	} else {
-		processedProfiles, errors = fpp.processSkipExpression(ctx, pd)
+		processedProfiles, errs = fpp.processSkipExpression(ctx, pd)
 	}
 
 	sampleCountAfterFilters := processedProfiles.SampleCount()
 	fpp.telemetry.record(ctx, int64(sampleCountBeforeFilters-sampleCountAfterFilters))
 
-	if errors != nil {
-		fpp.logger.Error("failed processing profiles", zap.Error(errors))
-		return processedProfiles, errors
+	if errs != nil && !errors.Is(errs, processorhelper.ErrSkipProcessingData) {
+		fpp.logger.Error("failed processing profiles", zap.Error(errs))
+		return processedProfiles, errs
 	}
+
 	if processedProfiles.ResourceProfiles().Len() == 0 {
 		return processedProfiles, processorhelper.ErrSkipProcessingData
 	}
@@ -104,13 +106,13 @@ func (fpp *filterProfileProcessor) processProfiles(ctx context.Context, pd pprof
 
 func (fpp *filterProfileProcessor) processSkipExpression(ctx context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) {
 	dic := pd.Dictionary()
-	var errors error
+	var errs error
 	pd.ResourceProfiles().RemoveIf(func(rp pprofile.ResourceProfiles) bool {
 		resource := rp.Resource()
 		if fpp.skipResourceExpr != nil {
 			skip, err := fpp.skipResourceExpr.Eval(ctx, ottlresource.NewTransformContext(resource, rp))
 			if err != nil {
-				errors = multierr.Append(errors, err)
+				errs = multierr.Append(errs, err)
 				return false
 			}
 			if skip {
@@ -125,7 +127,7 @@ func (fpp *filterProfileProcessor) processSkipExpression(ctx context.Context, pd
 			sp.Profiles().RemoveIf(func(profile pprofile.Profile) bool {
 				skip, err := fpp.skipProfileExpr.Eval(ctx, ottlprofile.NewTransformContext(profile, dic, scope, resource, sp, rp))
 				if err != nil {
-					errors = multierr.Append(errors, err)
+					errs = multierr.Append(errs, err)
 					return false
 				}
 				if skip {
@@ -137,16 +139,16 @@ func (fpp *filterProfileProcessor) processSkipExpression(ctx context.Context, pd
 		})
 		return rp.ScopeProfiles().Len() == 0
 	})
-	return pd, errors
+	return pd, errs
 }
 
 func (fpp *filterProfileProcessor) processConditions(ctx context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) {
-	var errors error
+	var errs error
 	for _, consumer := range fpp.consumers {
 		err := consumer.ConsumeProfiles(ctx, pd)
 		if err != nil {
-			errors = multierr.Append(errors, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
-	return pd, errors
+	return pd, errs
 }

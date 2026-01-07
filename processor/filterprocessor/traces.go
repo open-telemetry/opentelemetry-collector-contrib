@@ -5,6 +5,7 @@ package filterprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -49,14 +50,14 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 		if collectionErr != nil {
 			return nil, collectionErr
 		}
-		var errors error
+		var errs error
 		for _, cs := range cfg.TraceConditions {
 			metricConsumer, parseErr := pc.ParseContextConditions(cs)
-			errors = multierr.Append(errors, parseErr)
+			errs = multierr.Append(errs, parseErr)
 			fsp.consumers = append(fsp.consumers, metricConsumer)
 		}
-		if errors != nil {
-			return nil, errors
+		if errs != nil {
+			return nil, errs
 		}
 		return fsp, nil
 	}
@@ -115,21 +116,22 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 
 	spanCountBeforeFilters := td.SpanCount()
 
-	var errors error
+	var errs error
 	var processedTraces ptrace.Traces
 	if len(fsp.consumers) > 0 {
-		processedTraces, errors = fsp.processConditions(ctx, td)
+		processedTraces, errs = fsp.processConditions(ctx, td)
 	} else {
-		processedTraces, errors = fsp.processSkipExpression(ctx, td)
+		processedTraces, errs = fsp.processSkipExpression(ctx, td)
 	}
 
 	spanCountAfterFilters := td.SpanCount()
 	fsp.telemetry.record(ctx, int64(spanCountBeforeFilters-spanCountAfterFilters))
 
-	if errors != nil {
-		fsp.logger.Error("failed processing traces", zap.Error(errors))
-		return processedTraces, errors
+	if errs != nil && !errors.Is(errs, processorhelper.ErrSkipProcessingData) {
+		fsp.logger.Error("failed processing traces", zap.Error(errs))
+		return processedTraces, errs
 	}
+
 	if processedTraces.ResourceSpans().Len() == 0 {
 		return processedTraces, processorhelper.ErrSkipProcessingData
 	}
@@ -137,13 +139,13 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 }
 
 func (fsp *filterSpanProcessor) processSkipExpression(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	var errors error
+	var errs error
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		resource := rs.Resource()
 		if fsp.skipResourceExpr != nil {
 			skip, err := fsp.skipResourceExpr.Eval(ctx, ottlresource.NewTransformContext(resource, rs))
 			if err != nil {
-				errors = multierr.Append(errors, err)
+				errs = multierr.Append(errs, err)
 				return false
 			}
 			if skip {
@@ -159,7 +161,7 @@ func (fsp *filterSpanProcessor) processSkipExpression(ctx context.Context, td pt
 				if fsp.skipSpanExpr != nil {
 					skip, err := fsp.skipSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ss, rs))
 					if err != nil {
-						errors = multierr.Append(errors, err)
+						errs = multierr.Append(errs, err)
 						return false
 					}
 					if skip {
@@ -170,7 +172,7 @@ func (fsp *filterSpanProcessor) processSkipExpression(ctx context.Context, td pt
 					span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
 						skip, err := fsp.skipSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvent, span, scope, resource, ss, rs))
 						if err != nil {
-							errors = multierr.Append(errors, err)
+							errs = multierr.Append(errs, err)
 							return false
 						}
 						return skip
@@ -182,16 +184,16 @@ func (fsp *filterSpanProcessor) processSkipExpression(ctx context.Context, td pt
 		})
 		return rs.ScopeSpans().Len() == 0
 	})
-	return td, errors
+	return td, errs
 }
 
 func (fsp *filterSpanProcessor) processConditions(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	var errors error
+	var errs error
 	for _, consumer := range fsp.consumers {
 		err := consumer.ConsumeTraces(ctx, td)
 		if err != nil {
-			errors = multierr.Append(errors, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
-	return td, errors
+	return td, errs
 }
