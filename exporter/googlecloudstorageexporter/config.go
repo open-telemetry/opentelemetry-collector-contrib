@@ -5,6 +5,7 @@ package googlecloudstorageexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
@@ -88,7 +89,7 @@ func (c *bucketConfig) Validate() error {
 
 func (c *partitionConfig) Validate() error {
 	if _, err := strftime.New(c.Format); err != nil {
-		return errFormatInvalid
+		return fmt.Errorf("%w: %s", errFormatInvalid, err)
 	}
 	return nil
 }
