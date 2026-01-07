@@ -11,14 +11,14 @@ SELECT TOP(@top)
     ISNULL(s.host_name, '') AS host_name,
     r.command,
     SUBSTRING(o.TEXT, (r.statement_start_offset / 2) + 1, (
-                                                              (
-                                                                  CASE r.statement_end_offset
-                                                                      WHEN - 1
-                                                                          THEN DATALENGTH(o.TEXT)
-                                                                      ELSE r.statement_end_offset
-                                                                      END - r.statement_start_offset
-                                                                  ) / 2
-                                                              ) + 1) AS statement_text,
+        (
+          CASE r.statement_end_offset
+              WHEN - 1
+                  THEN DATALENGTH(o.TEXT)
+              ELSE r.statement_end_offset
+              END - r.statement_start_offset
+          ) / 2
+        ) + 1) AS statement_text,
     r.blocking_session_id,
     ISNULL(r.wait_type, '') AS wait_type,
     r.wait_time,
