@@ -1,0 +1,37 @@
+name: ci-scope
+
+on:
+  workflow_call:
+    outputs:
+      matrix:
+        description: "The calculated JSON matrix"
+        value: ${{ jobs.compute.outputs.matrix }}
+
+jobs:
+  compute:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.scope.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Compute Scope
+        id: scope
+        shell: bash
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.base_ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          MAX_JOBS: 10
+          FORCE_FULL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+          FULL_MATRIX: >-
+            [
+              "receiver-0", "receiver-1", "receiver-2", "receiver-3",
+              "processor-0", "processor-1",
+              "exporter-0", "exporter-1", "exporter-2", "exporter-3",
+              "extension", "connector", "internal", "pkg",
+              "cmd-0", "other"
+            ]
+        run: ./.github/workflows/scripts/compute-ci-scope.sh

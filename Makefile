@@ -14,7 +14,13 @@ COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 GROUP ?= all
-FOR_GROUP_TARGET=for-$(GROUP)-target
+# If GROUP contains a slash (e.g. "receiver/hostmetrics"), target it directly.
+# If GROUP is a name (e.g. "receiver-0"), map it to "for-receiver-0-target".
+ifneq ($(findstring /,$(GROUP)),)
+    FOR_GROUP_TARGET=$(GROUP)
+else
+    FOR_GROUP_TARGET=for-$(GROUP)-target
+endif
 
 FIND_MOD_ARGS=-type f -name "go.mod"
 TO_MOD_DIR=dirname {} \; | sort | grep -E '^./'

@@ -24,6 +24,10 @@ concurrency:
 permissions: read-all
 
 jobs:
+  ci-scope:
+    uses: ./.github/workflows/ci-scope.yml
+    if: ${{ github.actor != 'dependabot[bot]' }}
+
   setup-environment:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     strategy:
@@ -75,30 +79,17 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   windows-unittest-matrix:
-    needs: [setup-environment]
+    needs: [setup-environment, ci-scope]
     strategy:
       fail-fast: false
       matrix:
-        group:
-          - receiver-0
-          - receiver-1
-          - receiver-2
-          - receiver-3
-          - processor-0
-          - processor-1
-          - exporter-0
-          - exporter-1
-          - exporter-2
-          - exporter-3
-          - extension
-          - connector
-          - internal
-          - pkg
-          - cmd-0
-          - other
-        os: [windows-2025, windows-11-arm]
+        group: ${{ fromJson(needs.ci-scope.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
-    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    if: ${{ 
+        github.actor != 'dependabot[bot]' && 
+        (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') &&
+        (needs.ci-scope.outputs.matrix != '[]' && needs.ci-scope.outputs.matrix != '')
+      }}
     env:
       # Limit memory usage via GC environment variables to avoid OOM on GH runners, especially for `cmd/otelcontribcol`,
       # see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28682#issuecomment-1802296776
@@ -128,7 +119,7 @@ jobs:
       - name: Run Unit Tests
         id: tests
         if: github.ref != 'refs/heads/main'
-        run: make -j2 gotest GROUP=${{ matrix.group }}
+        run: make -j2 gotest GROUP="${{ matrix.group }}"
 
       # JUnit tests are super long, so we only run them on pushes to the main branch.
       # This is used for automation that automatically creates issues for flaky tests that are
@@ -137,7 +128,7 @@ jobs:
         id: tests-with-junit
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         continue-on-error: true # Allow uploading artifacts even if the test fails
-        run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
+        run: make gotest-with-junit-and-cover GROUP="${{ matrix.group }}"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
