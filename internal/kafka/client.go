@@ -30,11 +30,6 @@ func convertToSaramaCompressionLevel(level configcompression.Level) int {
 	return int(level)
 }
 
-var saramaInitialOffsets = map[string]int64{
-	configkafka.EarliestOffset: sarama.OffsetOldest,
-	configkafka.LatestOffset:   sarama.OffsetNewest,
-}
-
 // NewSaramaClient returns a new Kafka client with the given configuration.
 func NewSaramaClient(ctx context.Context, config configkafka.ClientConfig) (sarama.Client, error) {
 	saramaConfig, err := newSaramaClientConfig(ctx, config)
@@ -51,36 +46,6 @@ func NewSaramaClusterAdminClient(ctx context.Context, config configkafka.ClientC
 		return nil, err
 	}
 	return sarama.NewClusterAdmin(config.Brokers, saramaConfig)
-}
-
-// NewSaramaConsumerGroup returns a new Kafka consumer group with the given configuration.
-func NewSaramaConsumerGroup(
-	ctx context.Context,
-	clientConfig configkafka.ClientConfig,
-	consumerConfig configkafka.ConsumerConfig,
-) (sarama.ConsumerGroup, error) {
-	saramaConfig, err := newSaramaClientConfig(ctx, clientConfig)
-	if err != nil {
-		return nil, err
-	}
-	saramaConfig.Consumer.Group.Session.Timeout = consumerConfig.SessionTimeout
-	saramaConfig.Consumer.Group.Heartbeat.Interval = consumerConfig.HeartbeatInterval
-	saramaConfig.Consumer.Fetch.Min = consumerConfig.MinFetchSize
-	saramaConfig.Consumer.Fetch.Default = consumerConfig.DefaultFetchSize
-	saramaConfig.Consumer.Fetch.Max = consumerConfig.MaxFetchSize
-	saramaConfig.Consumer.MaxWaitTime = consumerConfig.MaxFetchWait
-	saramaConfig.Consumer.Offsets.AutoCommit.Enable = consumerConfig.AutoCommit.Enable
-	saramaConfig.Consumer.Offsets.AutoCommit.Interval = consumerConfig.AutoCommit.Interval
-	saramaConfig.Consumer.Offsets.Initial = saramaInitialOffsets[consumerConfig.InitialOffset]
-	// Set the rebalance strategy
-	rebalanceStrategy := rebalanceStrategy(consumerConfig.GroupRebalanceStrategy)
-	if rebalanceStrategy != nil {
-		saramaConfig.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{rebalanceStrategy}
-	}
-	if consumerConfig.GroupInstanceID != "" {
-		saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
-	}
-	return sarama.NewConsumerGroup(clientConfig.Brokers, consumerConfig.GroupID, saramaConfig)
 }
 
 // NewSaramaSyncProducer returns a new synchronous Kafka producer with the given configuration.
@@ -156,17 +121,4 @@ func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig)
 	}
 	configureSaramaAuthentication(ctx, config.Authentication, saramaConfig)
 	return saramaConfig, nil
-}
-
-func rebalanceStrategy(strategy string) sarama.BalanceStrategy {
-	switch strategy {
-	case sarama.RangeBalanceStrategyName:
-		return sarama.NewBalanceStrategyRange()
-	case sarama.StickyBalanceStrategyName:
-		return sarama.NewBalanceStrategySticky()
-	case sarama.RoundRobinBalanceStrategyName:
-		return sarama.NewBalanceStrategyRoundRobin()
-	default:
-		return nil
-	}
 }
