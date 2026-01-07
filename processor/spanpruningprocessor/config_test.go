@@ -98,6 +98,7 @@ func TestConfig_Validate(t *testing.T) {
 				MinSpansToAggregate:        2,
 				AggregationSpanNameSuffix:  "_aggregated",
 				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
 			},
 			expectError: false,
 		},
@@ -119,6 +120,72 @@ func TestConfig_Validate(t *testing.T) {
 			name: "min_spans_to_aggregate negative",
 			config: &Config{
 				MinSpansToAggregate: -1,
+			},
+			expectError: true,
+		},
+		{
+			name: "empty aggregation_span_name_suffix",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationSpanNameSuffix:  "",
+				AggregationAttributePrefix: "aggregation.",
+			},
+			expectError: true,
+		},
+		{
+			name: "whitespace-only aggregation_span_name_suffix",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationSpanNameSuffix:  "   ",
+				AggregationAttributePrefix: "aggregation.",
+			},
+			expectError: true,
+		},
+		{
+			name: "empty aggregation_attribute_prefix",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationSpanNameSuffix:  "_aggregated",
+				AggregationAttributePrefix: "",
+			},
+			expectError: true,
+		},
+		{
+			name: "whitespace-only aggregation_attribute_prefix",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationSpanNameSuffix:  "_aggregated",
+				AggregationAttributePrefix: "   ",
+			},
+			expectError: true,
+		},
+		{
+			name: "empty group_by_attributes pattern",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationSpanNameSuffix:  "_aggregated",
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation", ""},
+			},
+			expectError: true,
+		},
+		{
+			name: "whitespace-only group_by_attributes pattern",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationSpanNameSuffix:  "_aggregated",
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation", "   "},
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid glob pattern in group_by_attributes",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationSpanNameSuffix:  "_aggregated",
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation", "[invalid*"},
 			},
 			expectError: true,
 		},

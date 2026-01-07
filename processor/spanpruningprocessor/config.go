@@ -5,8 +5,11 @@ package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
+	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -60,6 +63,28 @@ func (cfg *Config) Validate() error {
 
 	if cfg.MaxParentDepth < -1 {
 		return errors.New("max_parent_depth must be -1 (unlimited) or >= 0")
+	}
+
+	// Validate AggregationSpanNameSuffix
+	if strings.TrimSpace(cfg.AggregationSpanNameSuffix) == "" {
+		return errors.New("aggregation_span_name_suffix cannot be empty")
+	}
+
+	// Validate AggregationAttributePrefix
+	if strings.TrimSpace(cfg.AggregationAttributePrefix) == "" {
+		return errors.New("aggregation_attribute_prefix cannot be empty")
+	}
+
+	// Validate GroupByAttributes glob patterns
+	for i, pattern := range cfg.GroupByAttributes {
+		if strings.TrimSpace(pattern) == "" {
+			return fmt.Errorf("group_by_attributes[%d] cannot be empty", i)
+		}
+		// Try to compile the same way processor.go does to catch invalid syntax early
+		_, err := glob.Compile(pattern)
+		if err != nil {
+			return fmt.Errorf("invalid glob pattern at group_by_attributes[%d]: %q: %w", i, pattern, err)
+		}
 	}
 
 	// Validate histogram buckets
