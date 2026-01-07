@@ -12,12 +12,11 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/shirou/gopsutil/v4/mem"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+	"golang.org/x/sys/unix"
 )
 
 // recordSystemSpecificMetrics is called from scrape() in memory_scraper.go.
@@ -40,25 +39,13 @@ func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, _ *me
 	}
 }
 
-func readMemorystatusVMPressureLevel(ctx context.Context) (int64, error) {
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-	defer cancel()
-
-	out, err := exec.CommandContext(ctx, "/usr/sbin/sysctl", "-n", "kern.memorystatus_vm_pressure_level").Output()
+func readMemorystatusVMPressureLevel(_ context.Context) (int64, error) {
+	val, err := unix.SysctlUint32("kern.memorystatus_vm_pressure_level")
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to read sysctl kern.memorystatus_vm_pressure_level: %w", err)
 	}
 
-	s := strings.TrimSpace(string(out))
-	if s == "" {
-		return 0, errors.New("empty sysctl output for kern.memorystatus_vm_pressure_level")
-	}
-
-	v, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("parse int from %q: %w", s, err)
-	}
-	return v, nil
+	return int64(val), nil
 }
 
 // vm_stat line example:
