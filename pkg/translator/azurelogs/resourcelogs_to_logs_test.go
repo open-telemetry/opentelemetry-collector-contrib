@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -105,7 +104,7 @@ func TestExtractRawAttributes(t *testing.T) {
 	level := json.Number("Informational")
 	location := "location"
 
-	identity := any("someone")
+	identity := json.RawMessage(`"someone"`)
 
 	properties := map[string]any{
 		"a": float64(1),
@@ -176,25 +175,25 @@ func TestExtractRawAttributes(t *testing.T) {
 				DurationMs:        &goodDuration,
 				CallerIPAddress:   &callerIPAddress,
 				CorrelationID:     &correlationID,
-				Identity:          &identity,
+				Identity:          identity,
 				Level:             &level,
 				Location:          &location,
 				Properties:        propertiesRaw,
 			},
 			expected: map[string]any{
-				azureTenantID:                             "tenant.id",
-				azureOperationName:                        "operation.name",
-				azureOperationVersion:                     "operation.version",
-				azureCategory:                             "category",
-				azureCorrelationID:                        correlationID,
-				azureResultType:                           "result.type",
-				azureResultSignature:                      "result.signature",
-				azureResultDescription:                    "result.description",
-				azureDuration:                             int64(1234),
-				string(conventions.NetworkPeerAddressKey): "127.0.0.1",
-				azureIdentity:                             "someone",
-				string(conventions.CloudRegionKey):        "location",
-				azureProperties:                           properties,
+				azureTenantID:          "tenant.id",
+				azureOperationName:     "operation.name",
+				azureOperationVersion:  "operation.version",
+				azureCategory:          "category",
+				azureCorrelationID:     correlationID,
+				azureResultType:        "result.type",
+				azureResultSignature:   "result.signature",
+				azureResultDescription: "result.description",
+				azureDuration:          int64(1234),
+				"network.peer.address": "127.0.0.1",
+				azureIdentity:          "someone",
+				"cloud.region":         "location",
+				azureProperties:        properties,
 			},
 		},
 		{
@@ -260,11 +259,41 @@ func TestExtractRawAttributes(t *testing.T) {
 				azureProperties:    "{\"a\": 1, \"b\": true, \"c\": 1.23, \"d\": \"ok\"}",
 			},
 		},
+		{
+			name: "unknown fields",
+			log: &azureLogRecord{
+				Time:          "",
+				ResourceID:    "resource.id",
+				OperationName: "operation.name",
+				Category:      "category",
+				DurationMs:    &badDuration,
+			},
+			expected: map[string]any{
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
+			},
+		},
+		{
+			name: "primitive properties with unknown",
+			log: &azureLogRecord{
+				Time:          "",
+				ResourceID:    "resource.id",
+				OperationName: "operation.name",
+				Category:      "category",
+				DurationMs:    &badDuration,
+				Properties:    stringPropertiesRaw,
+			},
+			expected: map[string]any{
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
+				azureProperties:    "str",
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, extractRawAttributes(tt.log))
+			assert.Equal(t, tt.expected, extractRawAttributes(tt.log, nil))
 		})
 	}
 }
@@ -272,7 +301,7 @@ func TestExtractRawAttributes(t *testing.T) {
 func TestUnmarshalLogs_AzureCdnAccessLog(t *testing.T) {
 	t.Parallel()
 
-	dir := "testdata/azurecdnaccesslog"
+	dir := "testdata/cdnaccesslog"
 	tests := map[string]struct {
 		logFilename      string
 		expectedFilename string
@@ -313,7 +342,7 @@ func TestUnmarshalLogs_AzureCdnAccessLog(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -354,7 +383,7 @@ func TestUnmarshalLogs_FrontDoorWebApplicationFirewallLog(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -395,7 +424,48 @@ func TestUnmarshalLogs_FrontDoorAccessLog(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestUnmarshalLogs_VNetFlowLog(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/azurevnetflowlog"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+		expectsErr       string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+
+			if test.expectsErr != "" {
+				require.ErrorContains(t, err, test.expectsErr)
+				return
+			}
+
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -408,58 +478,66 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 	t.Parallel()
 
 	logsDir := "testdata"
-	expectedDir := "testdata/expected"
+	expectedDir := "testdata"
 	tests := map[string]struct {
 		logFilename      string
 		expectedFilename string
 	}{
 		"app_logs": {
-			logFilename:      "log-appserviceapplogs.json",
-			expectedFilename: "service-app-expected.yaml",
+			logFilename:      "appservicelog/appservice_applogs.json",
+			expectedFilename: "appservicelog/appservice_applogs_expected.yaml",
 		},
 		"audit_logs": {
-			logFilename:      "log-appserviceauditlogs.json",
-			expectedFilename: "audit-logs-expected.yaml",
+			logFilename:      "appservicelog/appservice_auditlogs.json",
+			expectedFilename: "appservicelog/appservice_auditlogs_expected.yaml",
 		},
 		"audit_logs_2": {
-			logFilename:      "log-appserviceipsecauditlogs.json",
-			expectedFilename: "audit-logs-2-expected.yaml",
+			logFilename:      "appservicelog/appservice_ipsecauditlogs.json",
+			expectedFilename: "appservicelog/appservice_ipsecauditlogs_expected.yaml",
 		},
 		"console_logs": {
-			logFilename:      "log-appserviceconsolelogs.json",
-			expectedFilename: "console-logs-expected.yaml",
+			logFilename:      "appservicelog/appservice_consolelogs.json",
+			expectedFilename: "appservicelog/appservice_consolelogs_expected.yaml",
 		},
 		"http_logs": {
-			logFilename:      "log-appservicehttplogs.json",
-			expectedFilename: "http-logs-expected.yaml",
+			logFilename:      "appservicelog/appservice_httplogs.json",
+			expectedFilename: "appservicelog/appservice_httplogs_expected.yaml",
 		},
 		"platform_logs": {
-			logFilename:      "log-appserviceplatformlogs.json",
-			expectedFilename: "platform-logs-expected.yaml",
+			logFilename:      "appservicelog/appservice_platformlogs.json",
+			expectedFilename: "appservicelog/appservice_platformlogs_expected.yaml",
 		},
 		"front_door_health_probe_logs": {
-			logFilename:      "log-frontdoorhealthprobelog.json",
-			expectedFilename: "front-door-health-probe-log-expected.yaml",
+			logFilename:      "frontdoorhealthprobelog/valid_1.json",
+			expectedFilename: "frontdoorhealthprobelog/valid_1_expected.yaml",
 		},
 		"log_bad_time": {
-			logFilename:      "log-bad-time.json",
-			expectedFilename: "log-bad-time-expected.yaml",
+			logFilename:      "cornercases/bad_time.json",
+			expectedFilename: "cornercases/bad_time_expected.yaml",
 		},
 		"log_bad_level": {
-			logFilename:      "log-bad-level.json",
-			expectedFilename: "log-bad-level-expected.yaml",
+			logFilename:      "cornercases/bad_level.json",
+			expectedFilename: "cornercases/bad_level_expected.yaml",
 		},
 		"log_maximum": {
-			logFilename:      "log-maximum.json",
-			expectedFilename: "log-maximum-expected.yaml",
+			logFilename:      "cornercases/maximum.json",
+			expectedFilename: "cornercases/maximum_expected.yaml",
 		},
 		"log_minimum": {
-			logFilename:      "log-minimum.json",
-			expectedFilename: "log-minimum-expected.yaml",
+			logFilename:      "cornercases/minimum.json",
+			expectedFilename: "cornercases/minimum_expected.yaml",
 		},
 		"log_minimum_2": {
-			logFilename:      "log-minimum-2.json",
-			expectedFilename: "log-minimum-2-expected.yaml",
+			logFilename:      "cornercases/minimum-2.json",
+			expectedFilename: "cornercases/minimum-2_expected.yaml",
+		},
+		"log_identity_as_string": {
+			logFilename:      "cornercases/identity_as_string.json",
+			expectedFilename: "cornercases/identity_as_string_expected.yaml",
+		},
+		"log_identity_as_object": {
+			logFilename:      "cornercases/identity_as_object.json",
+			expectedFilename: "cornercases/identity_as_object_expected.yaml",
 		},
 	}
 
@@ -478,7 +556,41 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(expectedDir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestUnmarshalLogs_Recommendation(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/recommendation"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }

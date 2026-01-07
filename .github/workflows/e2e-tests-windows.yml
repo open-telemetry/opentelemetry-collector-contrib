@@ -32,27 +32,20 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     steps:
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
-        id: go-setup
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Generate otelcontribcol files
         run: make genotelcontribcol
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: ./bin/*
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   supervisor-test:
     strategy:
@@ -66,20 +59,12 @@ jobs:
       CGO_ENABLED: ${{ matrix.os == 'windows-11-arm' && '0' || '' }}
     needs: [collector-build]
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
-        id: go-setup
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Download Collector Binary
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: bin/
@@ -87,6 +72,7 @@ jobs:
         run: |
           cd cmd/opampsupervisor
           go test -v --tags=e2e
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   windows-supervisor-service-test:
     strategy:
@@ -98,23 +84,15 @@ jobs:
     needs: [collector-build]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
-        id: go-setup
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Ensure required ports in the dynamic range are available
         run: |
           & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
       - name: Download Collector Binary
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: bin/
@@ -133,3 +111,4 @@ jobs:
         run: |
           Remove-Service opampsupervisor
           Remove-Item HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Application\opampsupervisor
+      - run: ./.github/workflows/scripts/check-disk-space.sh

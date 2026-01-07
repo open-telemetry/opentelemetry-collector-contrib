@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -32,7 +33,7 @@ type Config struct {
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	MappingsSettings          `mapstructure:"mapping"`
-	QueueConfig               exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueConfig               configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// The Observability indices would follow the recommended for immutable data stream ingestion pattern using
 	// the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
@@ -60,15 +61,13 @@ type Config struct {
 }
 
 var (
-	errConfigNoEndpoint              = errors.New("endpoint must be specified")
-	errDatasetNoValue                = errors.New("dataset must be specified")
-	errNamespaceNoValue              = errors.New("namespace must be specified")
-	errBulkActionInvalid             = errors.New("bulk_action can either be `create` or `index`")
-	errMappingModeInvalid            = errors.New("mapping.mode is invalid")
-	errLogsIndexInvalidPlaceholder   = errors.New("logs_index can only have one attribute or context key placeholder")
-	errLogsIndexTimeFormatInvalid    = errors.New("logs_index_time_format contains unsupported or invalid tokens")
-	errTracesIndexInvalidPlaceholder = errors.New("traces_index can only have one attribute or context key placeholder")
-	errTracesIndexTimeFormatInvalid  = errors.New("traces_index_time_format contains unsupported or invalid tokens")
+	errConfigNoEndpoint             = errors.New("endpoint must be specified")
+	errDatasetNoValue               = errors.New("dataset must be specified")
+	errNamespaceNoValue             = errors.New("namespace must be specified")
+	errBulkActionInvalid            = errors.New("bulk_action can either be `create` or `index`")
+	errMappingModeInvalid           = errors.New("mapping.mode is invalid")
+	errLogsIndexTimeFormatInvalid   = errors.New("logs_index_time_format contains unsupported or invalid tokens")
+	errTracesIndexTimeFormatInvalid = errors.New("traces_index_time_format contains unsupported or invalid tokens")
 )
 
 type MappingsSettings struct {
@@ -163,26 +162,10 @@ func (cfg *Config) Validate() error {
 		multiErr = append(multiErr, errNamespaceNoValue)
 	}
 
-	// Validate logs index configuration only contains one placeholder
-	if cfg.LogsIndex != "" {
-		placeholderCount := strings.Count(cfg.LogsIndex, "%{")
-		if placeholderCount > 1 {
-			multiErr = append(multiErr, errLogsIndexInvalidPlaceholder)
-		}
-	}
-
 	// Validate LogsIndexTimeFormat if set
 	if cfg.LogsIndexTimeFormat != "" {
 		if err := validateTimeFormat(cfg.LogsIndexTimeFormat); err != nil {
 			multiErr = append(multiErr, errLogsIndexTimeFormatInvalid)
-		}
-	}
-
-	// Validate traces index configuration only contains one placeholder
-	if cfg.TracesIndex != "" {
-		placeholderCount := strings.Count(cfg.TracesIndex, "%{")
-		if placeholderCount > 1 {
-			multiErr = append(multiErr, errTracesIndexInvalidPlaceholder)
 		}
 	}
 

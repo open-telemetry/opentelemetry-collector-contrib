@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	pubsub "cloud.google.com/go/pubsub/apiv1"
+	pubsub "cloud.google.com/go/pubsub/v2/apiv1"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -34,7 +34,7 @@ func newSubscriberClient(ctx context.Context, config *Config, userAgent string) 
 		return nil, fmt.Errorf("failed preparing the gRPC client options to PubSub: %w", err)
 	}
 
-	client, err := pubsub.NewSubscriberClient(ctx, clientOptions...)
+	client, err := pubsub.NewSubscriptionAdminClient(ctx, clientOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating the gRPC client to PubSub: %w", err)
 	}

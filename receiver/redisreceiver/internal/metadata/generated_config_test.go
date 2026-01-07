@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -68,6 +67,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisMemoryUsed:                           MetricConfig{Enabled: true},
 					RedisMemoryUsedMemoryOverhead:             MetricConfig{Enabled: true},
 					RedisMemoryUsedMemoryStartup:              MetricConfig{Enabled: true},
+					RedisMode:                                 MetricConfig{Enabled: true},
 					RedisNetInput:                             MetricConfig{Enabled: true},
 					RedisNetOutput:                            MetricConfig{Enabled: true},
 					RedisRdbChangesSinceLastSave:              MetricConfig{Enabled: true},
@@ -75,6 +75,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisReplicationOffset:                    MetricConfig{Enabled: true},
 					RedisReplicationReplicaOffset:             MetricConfig{Enabled: true},
 					RedisRole:                                 MetricConfig{Enabled: true},
+					RedisSentinelMasters:                      MetricConfig{Enabled: true},
+					RedisSentinelRunningScripts:               MetricConfig{Enabled: true},
+					RedisSentinelScriptsQueueLength:           MetricConfig{Enabled: true},
+					RedisSentinelSimulateFailureFlags:         MetricConfig{Enabled: true},
+					RedisSentinelTiltSinceSeconds:             MetricConfig{Enabled: true},
+					RedisSentinelTotalTilt:                    MetricConfig{Enabled: true},
 					RedisSlavesConnected:                      MetricConfig{Enabled: true},
 					RedisTrackingTotalKeys:                    MetricConfig{Enabled: true},
 					RedisUptime:                               MetricConfig{Enabled: true},
@@ -131,6 +137,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisMemoryUsed:                           MetricConfig{Enabled: false},
 					RedisMemoryUsedMemoryOverhead:             MetricConfig{Enabled: false},
 					RedisMemoryUsedMemoryStartup:              MetricConfig{Enabled: false},
+					RedisMode:                                 MetricConfig{Enabled: false},
 					RedisNetInput:                             MetricConfig{Enabled: false},
 					RedisNetOutput:                            MetricConfig{Enabled: false},
 					RedisRdbChangesSinceLastSave:              MetricConfig{Enabled: false},
@@ -138,6 +145,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisReplicationOffset:                    MetricConfig{Enabled: false},
 					RedisReplicationReplicaOffset:             MetricConfig{Enabled: false},
 					RedisRole:                                 MetricConfig{Enabled: false},
+					RedisSentinelMasters:                      MetricConfig{Enabled: false},
+					RedisSentinelRunningScripts:               MetricConfig{Enabled: false},
+					RedisSentinelScriptsQueueLength:           MetricConfig{Enabled: false},
+					RedisSentinelSimulateFailureFlags:         MetricConfig{Enabled: false},
+					RedisSentinelTiltSinceSeconds:             MetricConfig{Enabled: false},
+					RedisSentinelTotalTilt:                    MetricConfig{Enabled: false},
 					RedisSlavesConnected:                      MetricConfig{Enabled: false},
 					RedisTrackingTotalKeys:                    MetricConfig{Enabled: false},
 					RedisUptime:                               MetricConfig{Enabled: false},

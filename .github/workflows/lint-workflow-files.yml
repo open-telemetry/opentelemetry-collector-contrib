@@ -19,19 +19,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
-        id: go-setup
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
 
       - name: Run Actionlint
         run: |
@@ -44,3 +35,5 @@ jobs:
       - name: All linting checks passed
         if: success()
         run: echo "✅ All linting checks passed."
+
+      - run: ./.github/workflows/scripts/check-disk-space.sh
