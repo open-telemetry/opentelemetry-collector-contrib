@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
@@ -63,19 +63,19 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	switch strings.ToLower(infra.Status.PlatformStatus.Type) {
 	case "aws":
 		d.rb.SetCloudProvider(conventions.CloudProviderAWS.Value.AsString())
-		d.rb.SetCloudPlatform(conventions.CloudPlatformAWSOpenshift.Value.AsString())
+		d.rb.SetCloudPlatform(conventions.CloudPlatformAWSOpenShift.Value.AsString())
 		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.Aws.Region))
 	case "azure":
 		d.rb.SetCloudProvider(conventions.CloudProviderAzure.Value.AsString())
-		d.rb.SetCloudPlatform(conventions.CloudPlatformAzureOpenshift.Value.AsString())
+		d.rb.SetCloudPlatform(conventions.CloudPlatformAzureOpenShift.Value.AsString())
 		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.Azure.CloudName))
 	case "gcp":
 		d.rb.SetCloudProvider(conventions.CloudProviderGCP.Value.AsString())
-		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPOpenshift.Value.AsString())
+		d.rb.SetCloudPlatform(conventions.CloudPlatformGCPOpenShift.Value.AsString())
 		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.GCP.Region))
 	case "ibmcloud":
-		d.rb.SetCloudProvider(conventions.CloudProviderIbmCloud.Value.AsString())
-		d.rb.SetCloudPlatform(conventions.CloudPlatformIbmCloudOpenshift.Value.AsString())
+		d.rb.SetCloudProvider(conventions.CloudProviderIBMCloud.Value.AsString())
+		d.rb.SetCloudPlatform(conventions.CloudPlatformIBMCloudOpenShift.Value.AsString())
 		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.IBMCloud.Location))
 	case "openstack":
 		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.OpenStack.CloudName))

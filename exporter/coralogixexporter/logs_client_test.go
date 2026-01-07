@@ -229,6 +229,8 @@ func (m *mockLogsServer) Export(ctx context.Context, req plogotlp.ExportRequest)
 		return plogotlp.NewExportResponse(), errors.New("invalid authorization header")
 	}
 
+	assertAcceptEncodingGzip(m.t, md)
+
 	m.recvCount += req.Logs().LogRecordCount()
 	resp := plogotlp.NewExportResponse()
 	if m.partialSuccess != nil {

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	backoff "github.com/cenkalti/backoff/v5"
@@ -89,8 +90,7 @@ type ResourceProvider struct {
 	logger           *zap.Logger
 	timeout          time.Duration
 	detectors        []Detector
-	detectedResource *resourceResult
-	mu               sync.RWMutex
+	detectedResource atomic.Pointer[resourceResult]
 
 	// Refresh loop control
 	refreshInterval time.Duration
@@ -114,20 +114,11 @@ func NewResourceProvider(logger *zap.Logger, timeout time.Duration, detectors ..
 }
 
 func (p *ResourceProvider) Get(_ context.Context, _ *http.Client) (pcommon.Resource, string, error) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	resource := pcommon.NewResource()
-	schemaURL := ""
-	var err error
-
-	if p.detectedResource != nil {
-		resource = p.detectedResource.resource
-		schemaURL = p.detectedResource.schemaURL
-		err = p.detectedResource.err
+	result := p.detectedResource.Load()
+	if result != nil {
+		return result.resource, result.schemaURL, result.err
 	}
-
-	return resource, schemaURL, err
+	return pcommon.NewResource(), "", nil
 }
 
 // Refresh recomputes the resource, replacing any previous result.
@@ -136,9 +127,7 @@ func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) err
 	defer cancel()
 
 	res, schemaURL, err := p.detectResource(ctx)
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	prev := p.detectedResource
+	prev := p.detectedResource.Load()
 
 	// Check if we have a previous successful snapshot
 	hadPrevSuccess := prev != nil && prev.err == nil && !IsEmptyResource(prev.resource)
@@ -153,7 +142,12 @@ func (p *ResourceProvider) Refresh(ctx context.Context, client *http.Client) err
 	}
 
 	// Accept the new snapshot (even if empty, as long as there was no error).
-	p.detectedResource = &resourceResult{resource: res, schemaURL: schemaURL, err: err}
+	p.detectedResource.Store(&resourceResult{
+		resource:  res,
+		schemaURL: schemaURL,
+		err:       err,
+	})
+
 	return err
 }
 
@@ -266,12 +260,19 @@ func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 	}
 
 	toAttr := to.Attributes()
-	for k, v := range from.Attributes().All() {
+	fromAttr := from.Attributes()
+	if toAttr.Len() == 0 {
+		toAttr.EnsureCapacity(fromAttr.Len())
+		fromAttr.CopyTo(toAttr)
+		return
+	}
+
+	for k, v := range fromAttr.All() {
 		if overrideTo {
 			v.CopyTo(toAttr.PutEmpty(k))
 		} else {
-			if _, found := toAttr.Get(k); !found {
-				v.CopyTo(toAttr.PutEmpty(k))
+			if targetVal, found := toAttr.GetOrPutEmpty(k); !found {
+				v.CopyTo(targetVal)
 			}
 		}
 	}
