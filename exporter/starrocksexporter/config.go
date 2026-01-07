@@ -65,6 +65,8 @@ type Config struct {
 	MaxIdleConns int `mapstructure:"max_idle_conns"`
 	// ConnMaxLifetime is the maximum amount of time a connection may be reused.
 	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"`
+	// ConnMaxIdleTime is the maximum amount of time a connection may be idle before being closed.
+	ConnMaxIdleTime time.Duration `mapstructure:"conn_max_idle_time"`
 }
 
 type MetricTablesConfig struct {
@@ -90,7 +92,8 @@ const (
 	defaultExpHistogramSuffix = "_exponential_histogram"
 	defaultMaxOpenConns       = 10
 	defaultMaxIdleConns       = 5
-	defaultConnMaxLifetime    = 5 * time.Minute
+	defaultConnMaxLifetime    = 1 * time.Minute
+	defaultConnMaxIdleTime    = 20 * time.Second
 )
 
 var (
@@ -114,6 +117,7 @@ func createDefaultConfig() component.Config {
 		MaxOpenConns:     defaultMaxOpenConns,
 		MaxIdleConns:     defaultMaxIdleConns,
 		ConnMaxLifetime:  defaultConnMaxLifetime,
+		ConnMaxIdleTime:  defaultConnMaxIdleTime,
 		MetricsTables: MetricTablesConfig{
 			Gauge:                metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultGaugeSuffix},
 			Sum:                  metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultSumSuffix},
@@ -188,6 +192,7 @@ func (cfg *Config) buildStarRocksDB() (*sql.DB, error) {
 	db.SetMaxOpenConns(cfg.MaxOpenConns)
 	db.SetMaxIdleConns(cfg.MaxIdleConns)
 	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
 
 	// Test the connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

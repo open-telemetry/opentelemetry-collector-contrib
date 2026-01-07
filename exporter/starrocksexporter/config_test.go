@@ -36,6 +36,7 @@ func TestConfig_DefaultValues(t *testing.T) {
 	assert.Equal(t, defaultMaxOpenConns, starRocksCfg.MaxOpenConns)
 	assert.Equal(t, defaultMaxIdleConns, starRocksCfg.MaxIdleConns)
 	assert.Equal(t, defaultConnMaxLifetime, starRocksCfg.ConnMaxLifetime)
+	assert.Equal(t, defaultConnMaxIdleTime, starRocksCfg.ConnMaxIdleTime)
 }
 
 func TestConfig_Validate(t *testing.T) {
