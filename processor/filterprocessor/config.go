@@ -336,7 +336,7 @@ type ProfileFilters struct {
 //
 //	log_conditions:
 //	  - context: "resource"
-//	    statements:
+//	    conditions:
 //	      - attributes["key1"] == "value"
 //	      - attributes["key2"] == "value"
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
