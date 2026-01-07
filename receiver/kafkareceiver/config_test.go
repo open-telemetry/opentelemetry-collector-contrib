@@ -32,98 +32,38 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewIDWithName(metadata.Type, ""),
+			id: component.NewIDWithName(metadata.Type, "legacy_topic"),
 			expected: &Config{
 				ClientConfig: func() configkafka.ClientConfig {
 					config := configkafka.NewDefaultClientConfig()
-					config.Brokers = []string{"foo:123", "bar:456"}
-					config.ResolveCanonicalBootstrapServersOnly = true
-					config.ClientID = "the_client_id"
 					return config
 				}(),
 				ConsumerConfig: func() configkafka.ConsumerConfig {
 					config := configkafka.NewDefaultConsumerConfig()
-					config.GroupID = "the_group_id"
 					return config
 				}(),
 				Logs: TopicEncodingConfig{
-					Topic:    "spans",
-					Encoding: "otlp_proto",
+					// if deprecated topic is set and topics is not set
+					// give precedence to topic
+					topicAlias: "legacy_logs",
+					Topics:     []string{"legacy_logs"},
+					Encoding:   "otlp_proto",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:    "spans",
-					Encoding: "otlp_proto",
+					topicAlias: "legacy_metric",
+					Topics:     []string{"legacy_metric"},
+					Encoding:   "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:    "spans",
-					Encoding: "otlp_proto",
+					topicAlias: "legacy_spans",
+					Topics:     []string{"legacy_spans"},
+					Encoding:   "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "spans",
-					Encoding: "otlp_proto",
+					topicAlias: "legacy_profile",
+					Topics:     []string{"legacy_profile"},
+					Encoding:   "otlp_proto",
 				},
-				Topic: "spans",
-				ErrorBackOff: configretry.BackOffConfig{
-					Enabled: false,
-				},
-				Telemetry: TelemetryConfig{
-					Metrics: MetricsConfig{
-						KafkaReceiverRecordsDelay: MetricConfig{
-							Enabled: true,
-						},
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "legacy_topic"),
-			expected: &Config{
-				ClientConfig:   configkafka.NewDefaultClientConfig(),
-				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
-				Logs: TopicEncodingConfig{
-					Topic:    "legacy_topic",
-					Encoding: "otlp_proto",
-				},
-				Metrics: TopicEncodingConfig{
-					Topic:    "metrics_topic",
-					Encoding: "otlp_proto",
-				},
-				Traces: TopicEncodingConfig{
-					Topic:    "legacy_topic",
-					Encoding: "otlp_proto",
-				},
-				Profiles: TopicEncodingConfig{
-					Topic:    "legacy_topic",
-					Encoding: "otlp_proto",
-				},
-				Topic: "legacy_topic",
-				ErrorBackOff: configretry.BackOffConfig{
-					Enabled: false,
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "legacy_encoding"),
-			expected: &Config{
-				ClientConfig:   configkafka.NewDefaultClientConfig(),
-				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
-				Logs: TopicEncodingConfig{
-					Topic:    "otlp_logs",
-					Encoding: "legacy_encoding",
-				},
-				Metrics: TopicEncodingConfig{
-					Topic:    "otlp_metrics",
-					Encoding: "metrics_encoding",
-				},
-				Traces: TopicEncodingConfig{
-					Topic:    "otlp_spans",
-					Encoding: "legacy_encoding",
-				},
-				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
-					Encoding: "legacy_encoding",
-				},
-				Encoding: "legacy_encoding",
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled: false,
 				},
@@ -159,19 +99,19 @@ func TestLoadConfig(t *testing.T) {
 					return config
 				}(),
 				Logs: TopicEncodingConfig{
-					Topic:    "logs",
+					Topics:   []string{"logs"}, // topics is given precedence if it is set
 					Encoding: "direct",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:    "otlp_metrics",
+					Topics:   []string{"otlp_metrics"},
 					Encoding: "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:    "otlp_spans",
+					Topics:   []string{"otlp_spans"},
 					Encoding: "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
+					Topics:   []string{"otlp_profiles"},
 					Encoding: "otlp_proto",
 				},
 				ErrorBackOff: configretry.BackOffConfig{
@@ -194,19 +134,19 @@ func TestLoadConfig(t *testing.T) {
 					return config
 				}(),
 				Logs: TopicEncodingConfig{
-					Topic:    "otlp_logs",
+					Topics:   []string{"otlp_logs"},
 					Encoding: "otlp_proto",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:    "otlp_metrics",
+					Topics:   []string{"otlp_metrics"},
 					Encoding: "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:    "otlp_spans",
+					Topics:   []string{"otlp_spans"},
 					Encoding: "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
+					Topics:   []string{"otlp_profiles"},
 					Encoding: "otlp_proto",
 				},
 				ErrorBackOff: configretry.BackOffConfig{
@@ -220,19 +160,19 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   configkafka.NewDefaultClientConfig(),
 				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
 				Logs: TopicEncodingConfig{
-					Topic:    "otlp_logs",
+					Topics:   []string{"otlp_logs"},
 					Encoding: "otlp_proto",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:    "otlp_metrics",
+					Topics:   []string{"otlp_metrics"},
 					Encoding: "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:    "otlp_spans",
+					Topics:   []string{"otlp_spans"},
 					Encoding: "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
+					Topics:   []string{"otlp_profiles"},
 					Encoding: "otlp_proto",
 				},
 				MessageMarking: MessageMarking{
@@ -251,19 +191,19 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   configkafka.NewDefaultClientConfig(),
 				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
 				Logs: TopicEncodingConfig{
-					Topic:    "otlp_logs",
+					Topics:   []string{"otlp_logs"},
 					Encoding: "otlp_proto",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:    "otlp_metrics",
+					Topics:   []string{"otlp_metrics"},
 					Encoding: "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:    "otlp_spans",
+					Topics:   []string{"otlp_spans"},
 					Encoding: "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
+					Topics:   []string{"otlp_profiles"},
 					Encoding: "otlp_proto",
 				},
 				MessageMarking: MessageMarking{
@@ -282,19 +222,19 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   configkafka.NewDefaultClientConfig(),
 				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
 				Logs: TopicEncodingConfig{
-					Topic:    "otlp_logs",
+					Topics:   []string{"otlp_logs"},
 					Encoding: "otlp_proto",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:    "otlp_metrics",
+					Topics:   []string{"otlp_metrics"},
 					Encoding: "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:    "otlp_spans",
+					Topics:   []string{"otlp_spans"},
 					Encoding: "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
+					Topics:   []string{"otlp_profiles"},
 					Encoding: "otlp_proto",
 				},
 				MessageMarking: MessageMarking{
@@ -313,22 +253,22 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   configkafka.NewDefaultClientConfig(),
 				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
 				Logs: TopicEncodingConfig{
-					Topic:        "^logs-.*",
-					ExcludeTopic: "^logs-(test|dev)$",
-					Encoding:     "otlp_proto",
+					Topics:        []string{"^logs-.*"},
+					ExcludeTopics: []string{"^logs-(test|dev)$"},
+					Encoding:      "otlp_proto",
 				},
 				Metrics: TopicEncodingConfig{
-					Topic:        "^metrics-.*",
-					ExcludeTopic: "^metrics-internal-.*$",
-					Encoding:     "otlp_proto",
+					Topics:        []string{"^metrics-.*"},
+					ExcludeTopics: []string{"^metrics-internal-.*$"},
+					Encoding:      "otlp_proto",
 				},
 				Traces: TopicEncodingConfig{
-					Topic:        "^traces-.*",
-					ExcludeTopic: "^traces-debug-.*$",
-					Encoding:     "otlp_proto",
+					Topics:        []string{"^traces-.*"},
+					ExcludeTopics: []string{"^traces-debug-.*$"},
+					Encoding:      "otlp_proto",
 				},
 				Profiles: TopicEncodingConfig{
-					Topic:    "otlp_profiles",
+					Topics:   []string{"otlp_profiles"},
 					Encoding: "otlp_proto",
 				},
 				ErrorBackOff: configretry.BackOffConfig{
@@ -363,9 +303,9 @@ func TestConfigValidate(t *testing.T) {
 			name: "valid config with regex and exclude_topic",
 			config: &Config{
 				Logs: TopicEncodingConfig{
-					Topic:        "^logs-.*",
-					ExcludeTopic: "^logs-test$",
-					Encoding:     "otlp_proto",
+					Topics:        []string{"^logs-.*"},
+					ExcludeTopics: []string{"^logs-test$"},
+					Encoding:      "otlp_proto",
 				},
 			},
 			expectedErr: "",
@@ -374,51 +314,73 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid config with non-regex topic and exclude_topic for logs",
 			config: &Config{
 				Logs: TopicEncodingConfig{
-					Topic:        "logs",
-					ExcludeTopic: "^logs-test$",
-					Encoding:     "otlp_proto",
+					Topics:        []string{"logs"},
+					ExcludeTopics: []string{"^logs-test$"},
+					Encoding:      "otlp_proto",
 				},
 			},
-			expectedErr: "logs.exclude_topic is configured but logs.topic does not use regex pattern (must start with '^')",
+			expectedErr: "logs.exclude_topics is configured but none of the configured logs.topics use regex pattern (must start with '^')",
 		},
 		{
 			name: "invalid config with non-regex topic and exclude_topic for metrics",
 			config: &Config{
 				Metrics: TopicEncodingConfig{
-					Topic:        "metrics",
-					ExcludeTopic: "^metrics-test$",
-					Encoding:     "otlp_proto",
+					Topics:        []string{"metrics"},
+					ExcludeTopics: []string{"^metrics-test$"},
+					Encoding:      "otlp_proto",
 				},
 			},
-			expectedErr: "metrics.exclude_topic is configured but metrics.topic does not use regex pattern (must start with '^')",
+			expectedErr: "metrics.exclude_topics is configured but none of the configured metrics.topics use regex pattern (must start with '^')",
 		},
 		{
 			name: "invalid config with non-regex topic and exclude_topic for traces",
 			config: &Config{
 				Traces: TopicEncodingConfig{
-					Topic:        "traces",
-					ExcludeTopic: "^traces-test$",
-					Encoding:     "otlp_proto",
+					Topics:        []string{"traces"},
+					ExcludeTopics: []string{"^traces-test$"},
+					Encoding:      "otlp_proto",
 				},
 			},
-			expectedErr: "traces.exclude_topic is configured but traces.topic does not use regex pattern (must start with '^')",
+			expectedErr: "traces.exclude_topics is configured but none of the configured traces.topics use regex pattern (must start with '^')",
+		},
+		{
+			name: "invalid config when both topic and topics are set",
+			config: &Config{
+				Logs: TopicEncodingConfig{
+					Topic:    "legacy_log",
+					Topics:   []string{"logs"},
+					Encoding: "otlp_proto",
+				},
+			},
+			expectedErr: "both logs.topic and logs.topics cannot be set",
+		},
+		{
+			name: "invalid config when both exclude_topic and exclude_topics are set",
+			config: &Config{
+				Logs: TopicEncodingConfig{
+					ExcludeTopic:  "^logs-[invalid(regex",
+					ExcludeTopics: []string{"^logs-[invalid(regex"},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "both logs.exclude_topic and logs.exclude_topics cannot be set",
 		},
 		{
 			name: "invalid config with non-regex topic and exclude_topic for profiles",
 			config: &Config{
 				Profiles: TopicEncodingConfig{
-					Topic:        "profiles",
-					ExcludeTopic: "^profiles-test$",
-					Encoding:     "otlp_proto",
+					Topics:        []string{"profiles"},
+					ExcludeTopics: []string{"^profiles-test$"},
+					Encoding:      "otlp_proto",
 				},
 			},
-			expectedErr: "profiles.exclude_topic is configured but profiles.topic does not use regex pattern (must start with '^')",
+			expectedErr: "profiles.exclude_topics is configured but none of the configured profiles.topics use regex pattern (must start with '^')",
 		},
 		{
 			name: "valid config without exclude_topic",
 			config: &Config{
 				Logs: TopicEncodingConfig{
-					Topic:    "logs",
+					Topics:   []string{"logs"},
 					Encoding: "otlp_proto",
 				},
 			},
@@ -428,12 +390,56 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid config with invalid regex in exclude_topic",
 			config: &Config{
 				Logs: TopicEncodingConfig{
-					Topic:        "^logs-.*",
-					ExcludeTopic: "^logs-[invalid(regex",
-					Encoding:     "otlp_proto",
+					Topics:        []string{"^logs-.*"},
+					ExcludeTopics: []string{"^logs-[invalid(regex"},
+					Encoding:      "otlp_proto",
 				},
 			},
 			expectedErr: "logs.exclude_topic contains invalid regex pattern",
+		},
+		{
+			name: "invalid config with empty string in exclude_topics for logs",
+			config: &Config{
+				Logs: TopicEncodingConfig{
+					Topics:        []string{"^logs-.*"},
+					ExcludeTopics: []string{""},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "logs.exclude_topics contains empty string",
+		},
+		{
+			name: "invalid config with empty string in exclude_topics for metrics",
+			config: &Config{
+				Metrics: TopicEncodingConfig{
+					Topics:        []string{"^metrics-.*"},
+					ExcludeTopics: []string{"", "^metrics-test$"},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "metrics.exclude_topics contains empty string",
+		},
+		{
+			name: "invalid config with empty string in exclude_topics for traces",
+			config: &Config{
+				Traces: TopicEncodingConfig{
+					Topics:        []string{"^traces-.*"},
+					ExcludeTopics: []string{"^traces-test$", ""},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "traces.exclude_topics contains empty string",
+		},
+		{
+			name: "invalid config with empty string in exclude_topics for profiles",
+			config: &Config{
+				Profiles: TopicEncodingConfig{
+					Topics:        []string{"^profiles-.*"},
+					ExcludeTopics: []string{""},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "profiles.exclude_topics contains empty string",
 		},
 	}
 

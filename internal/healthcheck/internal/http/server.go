@@ -57,10 +57,14 @@ func NewServer(
 
 	if legacyConfig.UseV2 {
 		srv.httpConfig = config.ServerConfig
+		includeAttributes := true // default for backward compatibility
+		if config.Status.Enabled {
+			includeAttributes = config.Status.IncludeAttributes
+		}
 		if componentHealthConfig != nil {
-			srv.responder = componentHealthResponder(&now, componentHealthConfig)
+			srv.responder = componentHealthResponder(&now, componentHealthConfig, includeAttributes)
 		} else {
-			srv.responder = defaultResponder(&now)
+			srv.responder = defaultResponder(&now, includeAttributes)
 		}
 		if config.Status.Enabled {
 			srv.mux.Handle(config.Status.Path, srv.statusHandler())
@@ -86,7 +90,7 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 	var err error
 	s.startTimestamp = time.Now()
 
-	s.httpServer, err = s.httpConfig.ToServer(ctx, host, s.telemetry, s.mux)
+	s.httpServer, err = s.httpConfig.ToServer(ctx, host.GetExtensions(), s.telemetry, s.mux)
 	if err != nil {
 		return err
 	}

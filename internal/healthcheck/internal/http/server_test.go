@@ -156,6 +156,16 @@ type teststep struct {
 }
 
 func TestStatus(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	// They don't accept context.Context and are managed by the transport's lifecycle,
+	// not our test lifecycle. They'll be cleaned up when the transport is garbage collected.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
 	var server *Server
 	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
@@ -2948,18 +2958,30 @@ func TestStatus(t *testing.T) {
 			)
 
 			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
-			defer func() { require.NoError(t, server.Shutdown(t.Context())) }()
+			ts := httptest.NewServer(server.mux)
 
-			var url string
+			// Ensure cleanup happens in the correct order
+			defer func() {
+				ts.Close()
+				http.DefaultTransport.(*http.Transport).CloseIdleConnections()
+				require.NoError(t, server.Shutdown(t.Context()))
+			}()
+
+			var path string
 			if tc.legacyConfig.UseV2 {
-				url = fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Status.Path)
+				path = tc.config.Status.Path
 			} else {
-				url = fmt.Sprintf("http://%s%s", tc.legacyConfig.Endpoint, tc.legacyConfig.Path)
+				path = tc.legacyConfig.Path
 			}
+			url := ts.URL + path
 
-			transport := &http.Transport{DisableKeepAlives: true}
-			client := &http.Client{Transport: transport}
+			// Create a custom client with aggressive timeouts
+			transport := &http.Transport{DisableKeepAlives: true, MaxConnsPerHost: 1}
 			defer transport.CloseIdleConnections()
+			client := &http.Client{
+				Timeout:   100 * time.Millisecond,
+				Transport: transport,
+			}
 
 			for _, ts := range tc.teststeps {
 				if ts.step != nil {
@@ -2988,7 +3010,7 @@ func TestStatus(t *testing.T) {
 
 				body, err := io.ReadAll(resp.Body)
 				require.NoError(t, err)
-				resp.Body.Close()
+				defer resp.Body.Close()
 
 				assert.Contains(t, string(body), ts.expectedBody)
 
@@ -3052,6 +3074,16 @@ func assertStatusSimple(
 }
 
 func TestConfig(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	// They don't accept context.Context and are managed by the transport's lifecycle,
+	// not our test lifecycle. They'll be cleaned up when the transport is garbage collected.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
 	var server *Server
 	confMap, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -3129,12 +3161,27 @@ func TestConfig(t *testing.T) {
 			)
 
 			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
-			defer func() { require.NoError(t, server.Shutdown(t.Context())) }()
+			ts := httptest.NewServer(server.mux)
 
-			transport := &http.Transport{DisableKeepAlives: true}
+			// Ensure cleanup happens in the correct order
+			defer func() {
+				ts.Close()
+				require.NoError(t, server.Shutdown(t.Context()))
+			}()
+
+			// Use a single client for all requests in this test
+			transport := &http.Transport{
+				DisableKeepAlives:   true,
+				MaxIdleConnsPerHost: -1,
+				DisableCompression:  true,
+				MaxConnsPerHost:     -1,
+				IdleConnTimeout:     1 * time.Millisecond,
+				TLSHandshakeTimeout: 1 * time.Millisecond,
+			}
 			client := &http.Client{Transport: transport}
 			defer transport.CloseIdleConnections()
-			url := fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Config.Path)
+
+			url := ts.URL + tc.config.Config.Path
 
 			if tc.setup != nil {
 				tc.setup()
@@ -3172,8 +3219,9 @@ func TestStatusVerboseIncludesAttributes(t *testing.T) {
 		},
 		Config: PathConfig{Enabled: false},
 		Status: PathConfig{
-			Enabled: true,
-			Path:    "/status",
+			Enabled:           true,
+			Path:              "/status",
+			IncludeAttributes: true,
 		},
 	}
 
@@ -3244,3 +3292,152 @@ func TestStatusVerboseIncludesAttributes(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, expectedAttrs, exporterStatus.Attributes)
 }
+<<<<<<< HEAD
+=======
+
+func TestStatusNonVerboseExcludesAttributes(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
+
+	config := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		Config: PathConfig{Enabled: false},
+		Status: PathConfig{
+			Enabled:           true,
+			Path:              "/status",
+			IncludeAttributes: true,
+		},
+	}
+
+	aggregator := status.NewAggregator(status.PriorityPermanent)
+	server := NewServer(
+		config,
+		LegacyConfig{UseV2: true},
+		nil,
+		componenttest.NewNopTelemetrySettings(),
+		aggregator,
+	)
+
+	require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+	ts := httptest.NewServer(server.mux)
+
+	defer func() {
+		ts.Close()
+		require.NoError(t, server.Shutdown(t.Context()))
+	}()
+
+	testhelpers.SeedAggregator(aggregator, metrics.InstanceIDs(), componentstatus.StatusOK)
+
+	attrs := pcommon.NewMap()
+	attrs.PutStr("error_msg", "test error")
+	aggregator.RecordStatus(
+		metrics.ExporterID,
+		componentstatus.NewEvent(
+			componentstatus.StatusRecoverableError,
+			componentstatus.WithError(assert.AnError),
+			componentstatus.WithAttributes(attrs),
+		),
+	)
+
+	transport := &http.Transport{DisableKeepAlives: true}
+	client := &http.Client{Transport: transport}
+	defer transport.CloseIdleConnections()
+
+	// Request without verbose parameter - attributes should not be included
+	resp, err := client.Get(ts.URL + config.Status.Path)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	st := &serializableStatus{}
+	require.NoError(t, json.Unmarshal(body, st))
+
+	// Attributes should be empty map when verbose is false
+	assert.Empty(t, st.Attributes)
+}
+
+func TestStatusExcludesAttributesWhenConfigDisabled(t *testing.T) {
+	// These goroutines are part of the http.Client's connection pool management.
+	opts := []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop"),
+	}
+	goleak.VerifyNone(t, opts...)
+
+	metrics := testhelpers.NewPipelineMetadata(pipeline.SignalMetrics)
+
+	config := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		Config: PathConfig{Enabled: false},
+		Status: PathConfig{
+			Enabled:           true,
+			Path:              "/status",
+			IncludeAttributes: false,
+		},
+	}
+
+	aggregator := status.NewAggregator(status.PriorityPermanent)
+	server := NewServer(
+		config,
+		LegacyConfig{UseV2: true},
+		nil,
+		componenttest.NewNopTelemetrySettings(),
+		aggregator,
+	)
+
+	require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
+	ts := httptest.NewServer(server.mux)
+
+	defer func() {
+		ts.Close()
+		require.NoError(t, server.Shutdown(t.Context()))
+	}()
+
+	testhelpers.SeedAggregator(aggregator, metrics.InstanceIDs(), componentstatus.StatusOK)
+
+	attrs := pcommon.NewMap()
+	attrs.PutStr("error_msg", "test error")
+	aggregator.RecordStatus(
+		metrics.ExporterID,
+		componentstatus.NewEvent(
+			componentstatus.StatusRecoverableError,
+			componentstatus.WithError(assert.AnError),
+			componentstatus.WithAttributes(attrs),
+		),
+	)
+
+	transport := &http.Transport{DisableKeepAlives: true}
+	client := &http.Client{Transport: transport}
+	defer transport.CloseIdleConnections()
+
+	// Request with verbose parameter but include_attributes=false - attributes should not be included
+	resp, err := client.Get(ts.URL + config.Status.Path + "?verbose")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	st := &serializableStatus{}
+	require.NoError(t, json.Unmarshal(body, st))
+
+	// Attributes should be empty map when include_attributes is false
+	assert.Empty(t, st.Attributes)
+}
+>>>>>>> 7d8855abce4fbde6f9029beb662dcccd35d5e33d
