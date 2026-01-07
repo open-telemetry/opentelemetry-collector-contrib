@@ -17,12 +17,20 @@ import (
 const (
 	LatestOffset   = "latest"
 	EarliestOffset = "earliest"
+)
 
-	// Group Rebalance Strategies
-	RangeBalanceStrategy             = "range"
-	RoundRobinBalanceStrategy        = "roundrobin"
-	StickyBalanceStrategy            = "sticky"
-	CooperativeStickyBalanceStrategy = "cooperative-sticky"
+// GroupRebalanceStrategy defines the strategy to use for partition assignment.
+type GroupRebalanceStrategy string
+
+const (
+	// RangeBalanceStrategy assigns partitions on a per-topic basis.
+	RangeBalanceStrategy GroupRebalanceStrategy = "range"
+	// RoundRobinBalanceStrategy assigns partitions to all consumers in a round-robin fashion.
+	RoundRobinBalanceStrategy GroupRebalanceStrategy = "roundrobin"
+	// StickyBalanceStrategy attempts to preserve previous assignments when rebalancing.
+	StickyBalanceStrategy GroupRebalanceStrategy = "sticky"
+	// CooperativeStickyBalanceStrategy is similar to sticky but uses cooperative rebalancing.
+	CooperativeStickyBalanceStrategy GroupRebalanceStrategy = "cooperative-sticky"
 )
 
 type ClientConfig struct {
@@ -126,12 +134,11 @@ type ConsumerConfig struct {
 	// per partition (default "1048576")
 	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
 
-	// RebalanceStrategy specifies the strategy to use for partition assignment.
-	// Possible values are "range", "roundrobin", and "sticky", and
-	// "cooperative-sticky".
+	// GroupRebalanceStrategy specifies the strategy to use for partition assignment.
+	// Possible values are "range", "roundrobin", "sticky", and "cooperative-sticky".
 	//
 	// Defaults to "cooperative-sticky"
-	GroupRebalanceStrategy string `mapstructure:"group_rebalance_strategy,omitempty"`
+	GroupRebalanceStrategy GroupRebalanceStrategy `mapstructure:"group_rebalance_strategy,omitempty"`
 
 	// GroupInstanceID specifies the ID of the consumer
 	GroupInstanceID string `mapstructure:"group_instance_id,omitempty"`
