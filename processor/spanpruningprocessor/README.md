@@ -253,3 +253,29 @@ root
 - Requires complete traces for accurate leaf detection
 - Summary span inherits attributes from the first span in the group
 - Parent spans are only aggregated when ALL their children are aggregated
+
+## Telemetry
+
+The processor emits the following metrics to help monitor its operation:
+
+### Counters
+
+| Metric | Description |
+|--------|-------------|
+| `otelcol_processor_spanpruning_spans_received` | Total number of spans received by the processor |
+| `otelcol_processor_spanpruning_spans_pruned` | Total number of spans removed by aggregation |
+| `otelcol_processor_spanpruning_aggregations_created` | Total number of aggregation summary spans created |
+| `otelcol_processor_spanpruning_traces_processed` | Total number of traces processed |
+
+### Histograms
+
+| Metric | Description |
+|--------|-------------|
+| `otelcol_processor_spanpruning_aggregation_group_size` | Distribution of the number of spans per aggregation group |
+| `otelcol_processor_spanpruning_processing_duration` | Time taken to process each batch of traces (in milliseconds) |
+
+These metrics can be used to:
+- Monitor the effectiveness of span pruning (compare `spans_received` vs `spans_pruned`)
+- Track the compression ratio achieved by aggregation
+- Identify processing bottlenecks via `processing_duration`
+- Understand aggregation patterns via `aggregation_group_size`
