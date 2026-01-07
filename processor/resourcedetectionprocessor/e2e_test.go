@@ -132,8 +132,7 @@ func TestE2ESystemDetector(t *testing.T) {
 			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
 
 			pmetrictest.ChangeResourceAttributeValue("host.name", replaceWithStar),
-			pmetrictest.ChangeResourceAttributeValue("host.id", replaceWithStar),
-			pmetrictest.ChangeResourceAttributeValue("host.arch", replaceWithArch),
+			pmetrictest.ChangeResourceAttributeValue("host.arch", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("os.version", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("os.description", replaceWithStar),
 		),
@@ -142,11 +141,6 @@ func TestE2ESystemDetector(t *testing.T) {
 }
 
 func replaceWithStar(_ string) string {
-	return "*"
-}
-
-func replaceWithArch(_ string) string {
-	// Replace architecture with wildcard since tests can run on different platforms
 	return "*"
 }
 
