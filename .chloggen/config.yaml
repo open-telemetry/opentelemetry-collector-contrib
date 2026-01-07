@@ -13,6 +13,7 @@ components:
     - cmd/opampsupervisor
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
+    - cmd/schemagen
     - cmd/telemetrygen
     - connector/count
     - connector/datadog
@@ -136,6 +137,7 @@ components:
     - internal/healthcheck
     - internal/k8sconfig
     - internal/k8sinventory
+    - internal/k8sleaderelectortest
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders

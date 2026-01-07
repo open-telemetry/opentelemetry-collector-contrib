@@ -4,6 +4,7 @@ cmd/golden cmd/golden
 cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
+cmd/schemagen cmd/schemagen
 cmd/telemetrygen cmd/telemetrygen
 confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
@@ -131,6 +132,7 @@ internal/grpcutil internal/grpcutil
 internal/healthcheck internal/healthcheck
 internal/k8sconfig internal/k8sconfig
 internal/k8sinventory internal/k8sinventory
+internal/k8sleaderelectortest internal/k8sleaderelectortest
 internal/kafka internal/kafka
 internal/kubelet internal/kubelet
 internal/metadataproviders internal/metadataproviders

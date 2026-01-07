@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -676,7 +677,7 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
-			cfg.QueueSettings.Enabled = false
+			cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 			sfxExp, err := NewFactory().CreateMetrics(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
 			ctx := t.Context()
@@ -775,7 +776,7 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers.Set("test_header_", configopaque.String(tt.name))
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			cfg.QueueSettings.Enabled = false
+			cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 			sfxExp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(componentmetadata.Type), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(t.Context(), componenttest.NewNopHost()))

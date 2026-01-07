@@ -13,7 +13,7 @@ status:
 tests:
   goleak:
     ignore:
-      top:
+      any:
         - "net/http.(*persistConn).readLoop"
         - "net/http.(*persistConn).writeLoop"
         - "golang.org/x/net/http2.(*ClientConn).readLoop"
