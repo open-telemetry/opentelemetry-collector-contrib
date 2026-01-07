@@ -51,7 +51,7 @@ The OpenSearch exporter supports dynamic index names for both logs and traces us
   - Multiple placeholders are supported per index name
   - The value is looked up from item attributes (log/span), scope attributes, and resource attributes (in that precedence order)
   - If the key is missing, the fallback value is used
-  - Generated index names must adhere to [OpenSearch index naming restrictions](https://docs.opensearch.org/docs/latest/api-reference/index-apis/create-index/#index-naming-restrictions)
+  - Generated index names must adhere to [OpenSearch index naming restrictions](https://docs.opensearch.org/latest/api-reference/index-apis/create-index/#index-naming-restrictions)
 
 **Time Suffix Format:**
 
