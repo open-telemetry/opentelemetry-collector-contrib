@@ -104,17 +104,17 @@ When leaf spans are aggregated, the summary span includes:
 - **Status**: Same as original spans (spans are grouped by status code)
 
 ### Aggregation Attributes
-The following attributes are added to the summary span:
+The following attributes are added to the summary span (shown with default `aggregation_attribute_prefix: "aggregation."`):
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `aggregation.span_count` | int64 | Number of spans that were aggregated |
-| `aggregation.duration_min_ns` | int64 | Minimum duration in nanoseconds |
-| `aggregation.duration_max_ns` | int64 | Maximum duration in nanoseconds |
-| `aggregation.duration_avg_ns` | int64 | Average duration in nanoseconds |
-| `aggregation.duration_total_ns` | int64 | Total duration in nanoseconds |
-| `aggregation.histogram_bucket_bounds_s` | []float64 | Bucket upper bounds in seconds (excludes +Inf) |
-| `aggregation.histogram_bucket_counts` | []int64 | Cumulative count per bucket (includes +Inf bucket) |
+| `<prefix>span_count` | int64 | Number of spans that were aggregated |
+| `<prefix>duration_min_ns` | int64 | Minimum duration in nanoseconds |
+| `<prefix>duration_max_ns` | int64 | Maximum duration in nanoseconds |
+| `<prefix>duration_avg_ns` | int64 | Average duration in nanoseconds |
+| `<prefix>duration_total_ns` | int64 | Total duration in nanoseconds |
+| `<prefix>histogram_bucket_bounds_s` | []float64 | Bucket upper bounds in seconds (excludes +Inf) |
+| `<prefix>histogram_bucket_counts` | []int64 | Cumulative count per bucket (includes +Inf bucket) |
 
 ### Histogram Buckets
 
