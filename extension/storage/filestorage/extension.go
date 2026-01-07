@@ -5,6 +5,8 @@ package filestorage // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -17,8 +19,6 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/truncate"
 )
 
 type localFileStorage struct {
@@ -81,7 +81,9 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 
 	// If the error is due to filename being too long, truncate and try again
 	if errors.Is(err, syscall.ENAMETOOLONG) {
-		absoluteName := filepath.Join(lfs.cfg.Directory, truncate.Truncate(rawName))
+		lfs.logger.Warn("filename too long, using hashed filename instead",
+			zap.String("originalFile", absoluteName), zap.String("component", rawName))
+		absoluteName := filepath.Join(lfs.cfg.Directory, hash(rawName))
 		client, err = lfs.createClientWithPanicRecovery(absoluteName)
 	}
 
@@ -227,4 +229,12 @@ func (lfs *localFileStorage) cleanup(compactionDirectory string) error {
 			zap.Error(errors.Join(errs...)))
 	}
 	return nil
+}
+
+// hash ensures the filename is within filesystem limits.
+// On most systems, the maximum file name length is 255 bytes.
+// We use a SHA-256 hash to generate a fixed-length filename (64 characters).
+func hash(name string) string {
+	hashID := sha256.Sum256([]byte(name))
+	return hex.EncodeToString(hashID[:]) // filename safe
 }

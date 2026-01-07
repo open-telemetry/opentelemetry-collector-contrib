@@ -7,7 +7,7 @@ change_type: bug_fix
 component: extension/file_storage
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Handle filename too long error in file storage extension by truncating the filename.
+note: Handle filename too long error in file storage extension by using the sha256 of the attempted filename instead.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44039]
