@@ -269,6 +269,51 @@ func Test_evaluateMathExpression(t *testing.T) {
 			input:    "2.0 * -1.5",
 			expected: -3.0,
 		},
+		{
+			name:     "unary minus with int path",
+			input:    "-one",
+			expected: int64(-1),
+		},
+		{
+			name:     "complex unary operation with int paths",
+			input:    "-two + -one + -1",
+			expected: int64(-4),
+		},
+		{
+			name:     "unary minus with float path",
+			input:    "-three.one",
+			expected: -3.1,
+		},
+		{
+			name:     "complex unary operation with float paths",
+			input:    "-three.one + -one + -1.0",
+			expected: -5.1,
+		},
+		{
+			name:     "unary minus with subexpression",
+			input:    "-(1 + 1)",
+			expected: int64(-2),
+		},
+		{
+			name:     "unary plus with subexpression",
+			input:    "+(-1 + -1)",
+			expected: int64(-2),
+		},
+		{
+			name:     "unary minus with function",
+			input:    "-Sum([1, 2, 3])",
+			expected: int64(-6),
+		},
+		{
+			name:     "unary plus int no-op",
+			input:    "+2",
+			expected: int64(2),
+		},
+		{
+			name:     "unary plus float no-op",
+			input:    "+3.1",
+			expected: 3.1,
+		},
 	}
 
 	functions := CreateFactoryMap(
