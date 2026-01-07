@@ -1,0 +1,157 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package leafspanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/leafspanpruningprocessor"
+
+import (
+	"crypto/rand"
+	"sort"
+	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+)
+
+// aggregationGroup represents a group of spans to be aggregated
+type aggregationGroup struct {
+	spans         []spanInfo
+	level         int            // tree level (0 = leaf, 1 = parent of leaf, etc.)
+	summarySpanID pcommon.SpanID // SpanID of the summary span (assigned before creation)
+}
+
+// aggregationPlan holds all aggregations ordered for top-down execution
+type aggregationPlan struct {
+	groups []aggregationGroup
+}
+
+// generateSpanID creates a new random span ID
+func generateSpanID() pcommon.SpanID {
+	var id [8]byte
+	_, _ = rand.Read(id[:])
+	return pcommon.SpanID(id)
+}
+
+// buildAggregationPlan orders aggregation groups for top-down execution
+func (p *leafSpanPruningProcessor) buildAggregationPlan(groups map[string]aggregationGroup) aggregationPlan {
+	// Convert map to slice with pre-allocation
+	groupSlice := make([]aggregationGroup, 0, len(groups))
+	for _, group := range groups {
+		groupSlice = append(groupSlice, group)
+	}
+
+	// Sort by level descending (highest level first = top-down)
+	sort.Slice(groupSlice, func(i, j int) bool {
+		return groupSlice[i].level > groupSlice[j].level
+	})
+
+	// Pre-assign SpanIDs for all summary spans
+	for i := range groupSlice {
+		groupSlice[i].summarySpanID = generateSpanID()
+	}
+
+	return aggregationPlan{groups: groupSlice}
+}
+
+// executeAggregations performs Phase 2: top-down creation of summary spans
+// Optimized to batch span removals instead of calling RemoveIf repeatedly
+func (p *leafSpanPruningProcessor) executeAggregations(plan aggregationPlan) {
+	// Track which parent SpanID should map to which summary SpanID
+	parentReplacements := make(map[pcommon.SpanID]pcommon.SpanID)
+
+	// Track spans to remove per ScopeSpans for batch removal
+	spansToRemove := make(map[ptrace.ScopeSpans]map[pcommon.SpanID]struct{})
+
+	for _, group := range plan.groups {
+		// Calculate statistics and time range in single pass
+		data := p.calculateAggregationData(group.spans)
+
+		// Determine the parent SpanID for the summary span
+		// Use the first span's parent as template
+		originalParentID := group.spans[0].span.ParentSpanID()
+
+		// Check if the parent is being replaced by a summary span
+		summaryParentID := originalParentID
+		if replacementID, exists := parentReplacements[originalParentID]; exists {
+			summaryParentID = replacementID
+		}
+
+		// Create summary span with correct parent
+		p.createSummarySpanWithParent(group, data, summaryParentID)
+
+		// Record that these original span IDs should be replaced by the summary span ID
+		for _, info := range group.spans {
+			parentReplacements[info.span.SpanID()] = group.summarySpanID
+		}
+
+		// Mark original spans for removal (batch per ScopeSpans)
+		for _, info := range group.spans {
+			scopeSpans := info.scopeSpans
+			if spansToRemove[scopeSpans] == nil {
+				spansToRemove[scopeSpans] = make(map[pcommon.SpanID]struct{})
+			}
+			spansToRemove[scopeSpans][info.span.SpanID()] = struct{}{}
+		}
+	}
+
+	// Batch remove all marked spans in a single pass per ScopeSpans
+	for scopeSpans, spanIDs := range spansToRemove {
+		scopeSpans.Spans().RemoveIf(func(span ptrace.Span) bool {
+			_, shouldRemove := spanIDs[span.SpanID()]
+			return shouldRemove
+		})
+	}
+}
+
+// createSummarySpanWithParent creates a summary span with a specific parent SpanID
+func (p *leafSpanPruningProcessor) createSummarySpanWithParent(group aggregationGroup, data aggregationData, parentSpanID pcommon.SpanID) ptrace.Span {
+	// Use the first span as a template
+	templateSpan := group.spans[0].span
+	scopeSpans := group.spans[0].scopeSpans
+
+	// Create new span in the same ScopeSpans as the first span
+	newSpan := scopeSpans.Spans().AppendEmpty()
+
+	// Copy basic properties from template
+	newSpan.SetName(templateSpan.Name() + p.config.SummarySpanNameSuffix)
+	newSpan.SetTraceID(templateSpan.TraceID())
+	newSpan.SetSpanID(group.summarySpanID)
+	newSpan.SetParentSpanID(parentSpanID)
+	newSpan.SetKind(templateSpan.Kind())
+
+	// Set timestamps from aggregation data
+	newSpan.SetStartTimestamp(data.earliestStart)
+	newSpan.SetEndTimestamp(data.latestEnd)
+
+	// Copy attributes from template
+	templateSpan.Attributes().CopyTo(newSpan.Attributes())
+
+	// Copy status from template
+	templateSpan.Status().CopyTo(newSpan.Status())
+
+	// Add aggregation statistics as attributes
+	prefix := p.config.AggregationAttributePrefix
+	newSpan.Attributes().PutInt(prefix+"span_count", data.count)
+	newSpan.Attributes().PutInt(prefix+"duration_min_ns", int64(data.minDuration))
+	newSpan.Attributes().PutInt(prefix+"duration_max_ns", int64(data.maxDuration))
+	newSpan.Attributes().PutInt(prefix+"duration_total_ns", int64(data.sumDuration))
+	if data.count > 0 {
+		newSpan.Attributes().PutInt(prefix+"duration_avg_ns", int64(data.sumDuration)/data.count)
+	}
+
+	// Add histogram attributes if enabled
+	if len(p.config.AggregationHistogramBuckets) > 0 {
+		// Add bucket bounds (in seconds)
+		bucketBoundsSlice := newSpan.Attributes().PutEmptySlice(prefix + "histogram_bucket_bounds_s")
+		for _, bucket := range p.config.AggregationHistogramBuckets {
+			bucketBoundsSlice.AppendEmpty().SetDouble(float64(bucket) / float64(time.Second))
+		}
+
+		// Add bucket counts
+		bucketCountsSlice := newSpan.Attributes().PutEmptySlice(prefix + "histogram_bucket_counts")
+		for _, count := range data.bucketCounts {
+			bucketCountsSlice.AppendEmpty().SetInt(count)
+		}
+	}
+
+	return newSpan
+}
