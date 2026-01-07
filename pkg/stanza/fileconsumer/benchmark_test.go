@@ -299,7 +299,6 @@ func BenchmarkConsumeFiles(b *testing.B) {
 				require.NoError(b, err)
 			}
 
-			b.ResetTimer()
 			for b.Loop() {
 				for _, f := range files {
 					_, err := f.WriteString(severalLines.String())
@@ -367,7 +366,6 @@ func BenchmarkFingerprintComparison(b *testing.B) {
 			targetContent := []byte(strings.Repeat(fmt.Sprintf("content%d ", size-1), 100))
 			targetFp := fingerprint.New(targetContent)
 
-			b.ResetTimer()
 			for b.Loop() {
 				// Simulate the linear search that happens in fileset.Match()
 				found := false
@@ -412,7 +410,6 @@ func BenchmarkFilesetMatch(b *testing.B) {
 			// Target is the last one (worst case)
 			targetFp := metadatas[size-1].Fingerprint
 
-			b.ResetTimer()
 			for b.Loop() {
 				// Reset the fileset for each iteration
 				fs := fileset.New[*reader.Metadata](size)
@@ -470,8 +467,7 @@ func BenchmarkRealisticPolling(b *testing.B) {
 			op.poll(b.Context())
 
 			// Now simulate ongoing polling where files are being re-checked
-			// This is the hot path that causes linear CPU scaling
-			b.ResetTimer()
+			// This is the hot path that causes linear CPU scalingf
 			for b.Loop() {
 				// Simulate a poll cycle - this is what happens repeatedly in production
 				// The manager will:
