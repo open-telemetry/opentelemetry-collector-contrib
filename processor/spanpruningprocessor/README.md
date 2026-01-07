@@ -49,7 +49,7 @@ processors:
       - "db.*"
       - "http.method"
 
-    # Minimum number of similar spans required before aggregation
+    # Minimum number of similar leaf spans required before aggregation
     # Default: 5
     min_spans_to_aggregate: 3
 
