@@ -46,35 +46,35 @@ resourceLogs:
               - key: azure.firewall.site
                 value:
                   stringValue: Global
-              - key: azure.firewall.event.details
+              - key: azure.firewall.evaluation.details
                 value:
                   kvlistValue:
                     values:
-                      - key: file
-                        value:
-                          stringValue: rules/REQUEST-920-PROTOCOL-ENFORCEMENT.conf
-                      - key: line
-                        value:
-                          stringValue: "791"
                       - key: message
                         value:
                           stringValue: Warning. Pattern match "^[\\d.:]+$" at REQUEST_HEADERS:Host ....
                       - key: data
                         value:
                           stringValue: 127.0.0.1
+                      - key: file
+                        value:
+                          stringValue: rules/REQUEST-920-PROTOCOL-ENFORCEMENT.conf
+                      - key: line
+                        value:
+                          stringValue: "791"
               - key: host.name
                 value:
                   stringValue: 127.0.0.1
-              - key: azure.firewall.transaction.id
+              - key: azure.service.request.id
                 value:
                   stringValue: "16861477007022634343"
               - key: azure.firewall.policy.id
                 value:
                   stringValue: /subscriptions/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/resourceGroups/PEERINGTEST/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/perListener
-              - key: azure.firewall.policy.scope
+              - key: azure.firewall.policy.scope.type
                 value:
                   stringValue: Listener
-              - key: azure.firewall.policy.scope.name
+              - key: azure.firewall.policy.object.name
                 value:
                   stringValue: httpListener1
             body:

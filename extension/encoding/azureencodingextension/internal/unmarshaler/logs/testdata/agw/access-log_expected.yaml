@@ -9,58 +9,6 @@ resourceLogs:
             stringValue: azure.resource.log
         - key: cloud.resource_id
           value:
-            stringValue: /SUBSCRIPTIONS/MYSUBSCRIPTIONID/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.NETWORK/APPLICATIONGATEWAYS/INVALIDNUMBERSJSON
-        - key: service.instance.id
-          value:
-            stringValue: ApplicationGatewayRole_IN_0
-    scopeLogs:
-      - logRecords:
-          - attributes:
-              - key: azure.category
-                value:
-                  stringValue: ApplicationGatewayAccessLog
-              - key: azure.operation.name
-                value:
-                  stringValue: ApplicationGatewayAccess
-              - key: client.address
-                value:
-                  stringValue: 191.96.249.97
-              - key: client.port
-                value:
-                  intValue: "46886"
-              - key: http.response.status_code
-                value:
-                  intValue: "400"
-              - key: http.request.size
-                value:
-                  intValue: "0"
-              - key: http.response.size
-                value:
-                  intValue: "361"
-              - key: azure.request.duration
-                value:
-                  doubleValue: 0.097
-              - key: azure.agw.latency
-                value:
-                  doubleValue: 0.097
-              - key: azure.service.request.id
-                value:
-                  stringValue: bd7cdecf9580c7fb154644a703a694d6
-            body: {}
-            timeUnixNano: "1493234858000000000"
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
-          version: test-version
-  - resource:
-      attributes:
-        - key: cloud.provider
-          value:
-            stringValue: azure
-        - key: cloudevents.event_source
-          value:
-            stringValue: azure.resource.log
-        - key: cloud.resource_id
-          value:
             stringValue: /SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/PEERINGTEST/PROVIDERS/MICROSOFT.NETWORK/APPLICATIONGATEWAYS/Application-Gateway-Name
         - key: service.instance.id
           value:
@@ -301,7 +249,7 @@ resourceLogs:
               - key: azure.agw.latency
                 value:
                   doubleValue: 0
-              - key: azure.firewall.latency
+              - key: azure.firewall.evaluation.duration
                 value:
                   doubleValue: 0
               - key: security_rule.ruleset.mode
@@ -491,6 +439,58 @@ resourceLogs:
                   stringValue: ERRORINFO_NO_ERROR
             body: {}
             timeUnixNano: "1686589119000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/MYSUBSCRIPTIONID/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.NETWORK/APPLICATIONGATEWAYS/INVALIDNUMBERSJSON
+        - key: service.instance.id
+          value:
+            stringValue: ApplicationGatewayRole_IN_0
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: ApplicationGatewayAccessLog
+              - key: azure.operation.name
+                value:
+                  stringValue: ApplicationGatewayAccess
+              - key: client.address
+                value:
+                  stringValue: 191.96.249.97
+              - key: client.port
+                value:
+                  intValue: "46886"
+              - key: http.response.status_code
+                value:
+                  intValue: "400"
+              - key: http.request.size
+                value:
+                  intValue: "0"
+              - key: http.response.size
+                value:
+                  intValue: "361"
+              - key: azure.request.duration
+                value:
+                  doubleValue: 0.097
+              - key: azure.agw.latency
+                value:
+                  doubleValue: 0.097
+              - key: azure.service.request.id
+                value:
+                  stringValue: bd7cdecf9580c7fb154644a703a694d6
+            body: {}
+            timeUnixNano: "1493234858000000000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

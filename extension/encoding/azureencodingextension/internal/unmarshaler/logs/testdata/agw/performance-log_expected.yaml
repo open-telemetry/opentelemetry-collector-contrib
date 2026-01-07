@@ -24,22 +24,22 @@ resourceLogs:
                   stringValue: ApplicationGatewayPerformance
               - key: azure.agw.backend.healthy.count
                 value:
-                  intValue: 4
+                  intValue: "4"
               - key: azure.agw.backend.unhealthy.count
                 value:
-                  intValue: 0
+                  intValue: "0"
               - key: azure.agw.request.count
                 value:
-                  intValue: 185
+                  intValue: "185"
               - key: azure.agw.backend.latency
                 value:
-                  intValue: 0
+                  intValue: "0"
               - key: azure.agw.request.failed
                 value:
-                  intValue: 0
+                  intValue: "0"
               - key: azure.agw.throughput
                 value:
-                  intValue: 119427
+                  intValue: "119427"
             body: {}
             timeUnixNano: "1460160000000000000"
         scope:

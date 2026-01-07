@@ -16,6 +16,9 @@ resourceLogs:
         - key: service.namespace
           value:
             stringValue: sb-namespace
+        - key: service.name
+          value:
+            stringValue: sbq
         - key: deployment.environment.name
           value:
             stringValue: PROD
@@ -28,21 +31,18 @@ resourceLogs:
               - key: azure.category
                 value:
                   stringValue: DiagnosticErrorLogs
-              - key: azure.messaging.scale_unit
+              - key: azure.autoscale.unit
                 value:
                   stringValue: PROD-BM1-401
-              - key: azure.activity.id
+              - key: log.record.uid
                 value:
                   stringValue: eb21994e-ecf5-4d41-86ad-74cc21488f6f
               - key: azure.operation.name
                 value:
                   stringValue: SendMessage
-              - key: azure.messaging.entity.name
+              - key: messaging.system
                 value:
-                  stringValue: sbq
-              - key: azure.messaging.entity.type
-                value:
-                  stringValue: Queue
+                  stringValue: servicebus
               - key: azure.messaging.task.name
                 value:
                   stringValue: DiagnosticErrorLogsShoebox
@@ -52,8 +52,10 @@ resourceLogs:
               - key: azure.messaging.error.count
                 value:
                   intValue: "56"
-            body:
-              stringValue: ClientError
+              - key: error.type
+                value:
+                  stringValue: ClientError
+            body: {}
             severityNumber: 17
             severityText: Error
             timeUnixNano: "1609533606000000000"

@@ -15,7 +15,7 @@ import (
 
 const (
 	// OpenTelemetry attribute name for Azure Storage account name
-	attributeStorageAccountName = "azure.storage.account.name"
+	attributeStorageAccountName = "azure.storage.namespace"
 
 	// OpenTelemetry attribute name for the service associated with this request (blob, table, files or queue)
 	attributeStorageServiceType = "azure.storage.service.type"
@@ -27,16 +27,16 @@ const (
 	attributeStorageObjectKey = "azure.storage.object.key"
 
 	// OpenTelemetry attribute name for the source tier of the storage account
-	attributeStorageSourceAccessTier = "azure.storage.source.access.tier"
-
-	// OpenTelemetry attribute name for the x-ms-client-request-id header value of the request
-	attributeHTTPClientRequestID = "http.request.header.x-ms-client-request-id"
+	attributeStorageSourceAccessTier = "azure.storage.source.access_tier"
 
 	// OpenTelemetry attribute name for the size of the request header expressed in bytes
 	attributeHTTPRequestHeaderSize = "http.request.header.size"
 
 	// OpenTelemetry attribute name for the size of the response header expressed in bytes
 	attributeHTTPResponseHeaderSize = "http.response.header.size"
+
+	// OpenTelemetry attribute name for HTTP Response Status Text
+	attributeHTTPResponseStatusText = "http.response.status_text"
 
 	// OpenTelemetry attribute name for Azure HTTP Response Duration,
 	// this is server-side duration of operation, excluding network time
@@ -93,7 +93,7 @@ func (r *azureStorageBlobLog) PutCommonAttributes(attrs pcommon.Map, body pcommo
 func (r *azureStorageBlobLog) PutProperties(attrs pcommon.Map, _ pcommon.Value) error {
 	unmarshaler.AttrPutStrIf(attrs, attributeStorageAccountName, r.Properties.AccountName)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.UserAgentOriginalKey), r.Properties.UserAgentHeader)
-	unmarshaler.AttrPutStrIf(attrs, attributeHTTPClientRequestID, r.Properties.ClientRequestID)
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.AzureServiceRequestIDKey), r.Properties.ClientRequestID)
 	unmarshaler.AttrPutFloatNumberIf(attrs, attributeAzureResponseDuration, r.Properties.ServerLatencyMs)
 	unmarshaler.AttrPutStrIf(attrs, attributeStorageServiceType, r.Properties.ServiceType)
 	unmarshaler.AttrPutIntNumberIf(attrs, attributeStorageOperationCount, r.Properties.OperationCount)

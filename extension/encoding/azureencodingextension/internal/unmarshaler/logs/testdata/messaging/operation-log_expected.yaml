@@ -25,16 +25,19 @@ resourceLogs:
               - key: azure.category
                 value:
                   stringValue: OperationalLogs
-              - key: azure.messaging.scale_unit
+              - key: azure.autoscale.unit
                 value:
                   stringValue: PROD-BL2-002
-              - key: azure.activity.id
+              - key: log.record.uid
                 value:
                   stringValue: 5caef1dc-732b-4c9f-a940-a585a28d20e6
-              - key: azure.messaging.status
+              - key: messaging.system
                 value:
-                  stringValue: Succeeded
-              - key: azure.messaging.caller
+                  stringValue: servicebus
+              - key: azure.operation.name
+                value:
+                  stringValue: Retrieve Namespace
+              - key: client.type
                 value:
                   stringValue: Resource Provider
               - key: url.full
@@ -52,7 +55,7 @@ resourceLogs:
               - key: url.query
                 value:
                   stringValue: api-version=2016-07
-              - key: azure.messaging.tracking_id
+              - key: azure.service.request.id
                 value:
                   stringValue: 5caef1dc-732b-4c9f-a940-a585a28d20e6_G6
             body: {}
@@ -61,18 +64,24 @@ resourceLogs:
               - key: azure.category
                 value:
                   stringValue: OperationalLogs
-              - key: azure.messaging.scale_unit
+              - key: azure.autoscale.unit
                 value:
                   stringValue: PROD-BL2-002
-              - key: azure.activity.id
+              - key: log.record.uid
                 value:
                   stringValue: 5caef1dc-732b-4c9f-a940-a585a28d20e6
-              - key: azure.messaging.status
+              - key: messaging.system
                 value:
-                  stringValue: Failed
-              - key: azure.messaging.caller
+                  stringValue: servicebus
+              - key: azure.operation.name
+                value:
+                  stringValue: Retrieve Namespace
+              - key: client.type
                 value:
                   stringValue: Resource Provider
+              - key: error.type
+                value:
+                  stringValue: Failed
               - key: url.full
                 value:
                   stringValue: https://mynamespace.servicebus.windows.net/f8096791adb448579ee83d30e006a13e/?api-version=2016-07
@@ -88,7 +97,7 @@ resourceLogs:
               - key: url.query
                 value:
                   stringValue: api-version=2016-07
-              - key: azure.messaging.tracking_id
+              - key: azure.service.request.id
                 value:
                   stringValue: 5caef1dc-732b-4c9f-a940-a585a28d20e6_G6
               - key: error.code

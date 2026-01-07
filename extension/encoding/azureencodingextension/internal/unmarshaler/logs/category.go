@@ -83,9 +83,6 @@ const (
 	// OpenTelemetry attribute name for Azure Result Description,
 	// from `resultDescription` field in Azure Log Record
 	attributesAzureResultDescription = "azure.result.description"
-
-	// OpenTelemetry attribute name for Azure activity ID that logged the message
-	attributeAzureActivityID = "azure.activity.id"
 )
 
 // Common Non-SemConv attributes that are used in "properties" fields across multiple
@@ -93,12 +90,6 @@ const (
 const (
 	// OpenTelemetry attribute name for "Host" HTTP Header value
 	attributeHTTPHeaderHost = "http.request.header.host"
-
-	// OpenTelemetry attribute name for "Referer" HTTP Header value
-	attributeHTTPHeaderReferer = "http.request.header.referer"
-
-	// OpenTelemetry attribute name for HTTP Response Status Text
-	attributeHTTPResponseStatusText = "http.response.status_text"
 
 	// OpenTelemetry attribute name for the WAF action taken on the request
 	attributeSecurityRuleActionKey = "security_rule.action"
@@ -108,9 +99,6 @@ const (
 
 	// OpenTelemetry attribute name for Error Code
 	attributeErrorCode = "error.code"
-
-	// OpenTelemetry attribute name for Event Name
-	attributeEventName = "event.name"
 
 	// OpenTelemetry attribute name for Azure HTTP Request Duration,
 	// from `durationMs` field in Azure Log Record

@@ -57,27 +57,24 @@ const (
 
 	// OpenTelemetry attribute name for the length of time (in seconds)
 	// that it takes for the request to be processed by the WAF
-	attributeAzureFirewallLatency = "azure.firewall.latency"
+	attributeAzureFirewallLatency = "azure.firewall.evaluation.duration"
 
 	// OpenTelemetry attribute name for the site to which the firewall log was generated,
 	// currently, only "Global" is listed because rules are global
 	attributeAzureFirewallSite = "azure.firewall.site"
 
-	// OpenTelemetry attribute name for unique ID for a given firewall transaction
-	attributeAzureFirewallTransactionID = "azure.firewall.transaction.id"
-
 	// OpenTelemetry attribute name for detailed information about the firewall triggering event
-	attributeAzureFirewallEventDetails = "azure.firewall.event.details"
+	attributeAzureFirewallEventDetails = "azure.firewall.evaluation.details"
 
 	// OpenTelemetry attribute name for the unique ID of the Firewall Policy
 	// associated with the Application Gateway, Listener, or Path
 	attributeAzureFirewallPolicyID = "azure.firewall.policy.id"
 
 	// OpenTelemetry attribute name for the location of the policy ("Global", "Listener", or "Location")
-	attributeAzureFirewallPolicyScope = "azure.firewall.policy.scope"
+	attributeAzureFirewallPolicyScope = "azure.firewall.policy.scope.type"
 
 	// OpenTelemetry attribute name for the name of the object where the policy is applied
-	attributeAzureFirewallPolicyScopeName = "azure.firewall.policy.scope.name"
+	attributeAzureFirewallPolicyScopeName = "azure.firewall.policy.object.name"
 )
 
 // See https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/web-application-firewall/ag/web-application-firewall-logs.md
@@ -255,7 +252,7 @@ func (r *azureApplicationGatewayFirewallLog) PutProperties(attrs pcommon.Map, bo
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureFirewallSite, r.Properties.Site)
 	unmarshaler.AttrPutMapIf(attrs, attributeAzureFirewallEventDetails, r.Properties.Details)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.HostNameKey), r.Properties.HostName)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureFirewallTransactionID, r.Properties.TransactionID)
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.AzureServiceRequestIDKey), r.Properties.TransactionID)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureFirewallPolicyID, r.Properties.PolicyID)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureFirewallPolicyScope, r.Properties.PolicyScope)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureFirewallPolicyScopeName, r.Properties.PolicyScopeName)

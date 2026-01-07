@@ -16,6 +16,9 @@ resourceLogs:
         - key: service.namespace
           value:
             stringValue: some-namespace
+        - key: service.name
+          value:
+            stringValue: some-eventhub
         - key: deployment.environment.name
           value:
             stringValue: PROD
@@ -28,31 +31,28 @@ resourceLogs:
               - key: azure.category
                 value:
                   stringValue: ApplicationMetricsLogs
-              - key: azure.messaging.scale_unit
+              - key: azure.autoscale.unit
                 value:
                   stringValue: PROD-BL-VAZ704
-              - key: azure.activity.id
+              - key: log.record.uid
                 value:
                   stringValue: 827dd245-4318-4307-9d1f-a8ac07e36804
               - key: azure.operation.name
                 value:
                   stringValue: IncomingBytes
-              - key: azure.messaging.entity.name
+              - key: messaging.system
                 value:
-                  stringValue: some-eventhub
-              - key: azure.messaging.entity.type
-                value:
-                  stringValue: EventHub
-              - key: azure.messaging.partition_id
+                  stringValue: eventhubs
+              - key: messaging.destination.partition.id
                 value:
                   stringValue: "0"
               - key: network.protocol.name
                 value:
                   stringValue: amqp
-              - key: azure.messaging.auth.type
+              - key: azure.auth.type
                 value:
                   stringValue: SAS
-              - key: azure.messaging.auth.id
+              - key: azure.auth.id
                 value:
                   stringValue: namespace-sas
               - key: network.connection.type
@@ -61,14 +61,10 @@ resourceLogs:
               - key: client.address
                 value:
                   stringValue: 10.0.0.1
-              - key: azure.messaging.count
+              - key: messaging.message.count
                 value:
                   intValue: "199038"
-              - key: azure.messaging.application.group_name
-                value:
-                  stringValue: myappgroup2
-            body:
-              stringValue: Success
+            body: {}
             timeUnixNano: "1609533606000000000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension

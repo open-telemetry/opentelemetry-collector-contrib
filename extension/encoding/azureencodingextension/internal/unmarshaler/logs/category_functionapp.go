@@ -15,7 +15,10 @@ import (
 
 const (
 	// OpenTelemetry attribute name for Event ID
-	attributeEventID = "event.id"
+	attributeAzureEventID = "azure.event.id"
+
+	// OpenTelemetry attribute name for Event Name
+	attributeAzureEventName = "azure.event.name"
 )
 
 // Sometimes Azure sends invalid JSON as a string with a single-quoted keys/values
@@ -118,9 +121,9 @@ func (r *azureFunctionAppLog) PutProperties(attrs pcommon.Map, body pcommon.Valu
 	}
 
 	// If we were able to parse Properties - put all known fields to attributes
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureActivityID, properties.ActivityID)
-	unmarshaler.AttrPutStrIf(attrs, attributeEventName, properties.EventName)
-	unmarshaler.AttrPutIntNumberIf(attrs, attributeEventID, properties.EventID)
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.LogRecordUIDKey), properties.ActivityID)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureEventName, properties.EventName)
+	unmarshaler.AttrPutIntNumberIf(attrs, attributeAzureEventID, properties.EventID)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.FaaSInvocationIDKey), properties.FunctionInvocationID)
 	// According to SemConv this attribute for Azure should be in form `<FUNCAPP>/<FUNC>`
 	// For clear func name we will use faas.invoked_name attribute

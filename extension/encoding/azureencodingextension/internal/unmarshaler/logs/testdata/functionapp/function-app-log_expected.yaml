@@ -28,15 +28,15 @@ resourceLogs:
               - key: azure.operation.name
                 value:
                   stringValue: Microsoft.Web/sites/functions/log
-              - key: event.name
-                value:
-                  stringValue: FunctionCompleted
-              - key: event.id
-                value:
-                  intValue: "7"
               - key: faas.invoked_provider
                 value:
                   stringValue: azure
+              - key: azure.event.name
+                value:
+                  stringValue: FunctionCompleted
+              - key: azure.event.id
+                value:
+                  intValue: "7"
               - key: faas.invocation_id
                 value:
                   stringValue: 9f8e7d6c-5b4a-3c2d-1e0f-abcdef123456
@@ -51,7 +51,7 @@ resourceLogs:
                   stringValue: a1b2c3d4-e5f6-7890-abcd-1234567890ef
               - key: host.image.version
                 value:
-                  stringValue: "4.22.1.0"
+                  stringValue: 4.22.1.0
               - key: process.pid
                 value:
                   intValue: "101"
@@ -125,15 +125,15 @@ resourceLogs:
               - key: azure.operation.name
                 value:
                   stringValue: Microsoft.Web/sites/functions/log
-              - key: event.name
-                value:
-                  stringValue: FunctionStarted
-              - key: event.id
-                value:
-                  intValue: "2"
               - key: faas.invoked_provider
                 value:
                   stringValue: azure
+              - key: azure.event.name
+                value:
+                  stringValue: FunctionStarted
+              - key: azure.event.id
+                value:
+                  intValue: "2"
               - key: faas.invocation_id
                 value:
                   stringValue: abcdef12-3456-7890-abcd-1234567890ab
@@ -148,7 +148,7 @@ resourceLogs:
                   stringValue: b2c3d4e5-f6a7-8901-bcde-2345678901ab
               - key: host.image.version
                 value:
-                  stringValue: "4.22.1.0"
+                  stringValue: 4.22.1.0
               - key: process.pid
                 value:
                   intValue: "102"
@@ -189,15 +189,15 @@ resourceLogs:
               - key: azure.operation.name
                 value:
                   stringValue: Microsoft.Web/sites/functions/log
-              - key: event.name
-                value:
-                  stringValue: FunctionStarted
-              - key: event.id
-                value:
-                  intValue: "2"
               - key: faas.invoked_provider
                 value:
                   stringValue: azure
+              - key: azure.event.name
+                value:
+                  stringValue: FunctionStarted
+              - key: azure.event.id
+                value:
+                  intValue: "2"
               - key: faas.invocation_id
                 value:
                   stringValue: abcdef12-3456-7890-abcd-1234567890ab
@@ -212,7 +212,7 @@ resourceLogs:
                   stringValue: b2c3d4e5-f6a7-8901-bcde-2345678901ab
               - key: host.image.version
                 value:
-                  stringValue: "4.22.1.0"
+                  stringValue: 4.22.1.0
               - key: process.pid
                 value:
                   intValue: "102"
@@ -256,10 +256,10 @@ resourceLogs:
               - key: faas.invoked_provider
                 value:
                   stringValue: azure
-              - key: event.name
+              - key: azure.event.name
                 value:
                   stringValue: FunctionStarted
-              - key: event.id
+              - key: azure.event.id
                 value:
                   intValue: "2"
               - key: faas.invocation_id
@@ -276,7 +276,7 @@ resourceLogs:
                   stringValue: b2c3d4e5-f6a7-8901-bcde-2345678901ab
               - key: host.image.version
                 value:
-                  stringValue: "4.22.1.0"
+                  stringValue: 4.22.1.0
               - key: process.pid
                 value:
                   intValue: "102"

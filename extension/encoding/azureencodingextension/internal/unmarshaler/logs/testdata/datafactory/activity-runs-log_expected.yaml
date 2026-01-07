@@ -25,10 +25,10 @@ resourceLogs:
               - key: azure.correlation_id
                 value:
                   stringValue: 99428920-8ec1-4adf-944f-940b3f531519
-              - key: azure.datafactory.start_time
+              - key: azure.datafactory.activity.start_time
                 value:
                   stringValue: "2020-11-04T19:23:06.5819112Z"
-              - key: azure.datafactory.end_time
+              - key: azure.datafactory.activity.end_time
                 value:
                   stringValue: "1601-01-01T00:00:00Z"
               - key: azure.datafactory.activity.run_id
@@ -47,6 +47,22 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: staging
+                        value:
+                          kvlistValue: {}
+                      - key: compute
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: coreCount
+                                value:
+                                  doubleValue: 8
+                              - key: computeType
+                                value:
+                                  stringValue: General
+                      - key: dataFlowETag
+                        value:
+                          stringValue: 78004df7-0000-0500-0000-5f7d51d50000
                       - key: dataflow
                         value:
                           kvlistValue:
@@ -70,22 +86,6 @@ resourceLogs:
                                       - key: sink1
                                         value:
                                           kvlistValue: {}
-                      - key: staging
-                        value:
-                          kvlistValue: {}
-                      - key: compute
-                        value:
-                          kvlistValue:
-                            values:
-                              - key: coreCount
-                                value:
-                                  doubleValue: 8
-                              - key: computeType
-                                value:
-                                  stringValue: General
-                      - key: dataFlowETag
-                        value:
-                          stringValue: 78004df7-0000-0500-0000-5f7d51d50000
               - key: error.target
                 value:
                   stringValue: dataflow1

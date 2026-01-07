@@ -25,7 +25,7 @@ resourceLogs:
               - key: azure.correlation_id
                 value:
                   stringValue: 06a5be36-ad33-4cc7-88dd-139d038c9066
-              - key: azure.datafactory.start_time
+              - key: azure.datafactory.trigger.start_time
                 value:
                   stringValue: "2020-11-04T21:48:00.1695402Z"
               - key: azure.datafactory.trigger.run_id
@@ -37,10 +37,10 @@ resourceLogs:
               - key: azure.datafactory.trigger.type
                 value:
                   stringValue: ScheduleTrigger
-              - key: azure.datafactory.trigger.event
+              - key: azure.datafactory.trigger.event_payload
                 value:
                   stringValue: ScheduleTrigger - 2020-11-04T21:48:00.1695402Z
-              - key: azure.datafactory.pipeline.status
+              - key: azure.datafactory.pipeline.state
                 value:
                   stringValue: Succeeded
               - key: azure.datafactory.parameters
@@ -57,33 +57,33 @@ resourceLogs:
                         value:
                           kvlistValue:
                             values:
-                              - key: trackingId
-                                value:
-                                  stringValue: 3af57bb0-44cc-49a9-8c24-a03f319988af
                               - key: clientTrackingId
                                 value:
                                   stringValue: 08585970804052975818107475697CU19
-                              - key: name
+                              - key: status
                                 value:
-                                  stringValue: Trigger_421B8CAF-BE66-42CF-83DA-E3028693F304
+                                  stringValue: Succeeded
                               - key: startTime
                                 value:
                                   stringValue: "2020-11-04T21:48:00.1695402Z"
-                              - key: scheduledTime
+                              - key: trackingId
                                 value:
-                                  stringValue: "2020-11-04T21:48:00Z"
+                                  stringValue: 3af57bb0-44cc-49a9-8c24-a03f319988af
                               - key: originHistoryName
                                 value:
                                   stringValue: 08585970804052975818107475697CU19
                               - key: code
                                 value:
                                   stringValue: OK
-                              - key: status
+                              - key: name
                                 value:
-                                  stringValue: Succeeded
+                                  stringValue: Trigger_421B8CAF-BE66-42CF-83DA-E3028693F304
                               - key: endTime
                                 value:
                                   stringValue: "2020-11-04T21:48:00.1695402Z"
+                              - key: scheduledTime
+                                value:
+                                  stringValue: "2020-11-04T21:48:00Z"
             body: {}
             severityNumber: 9
             severityText: Informational

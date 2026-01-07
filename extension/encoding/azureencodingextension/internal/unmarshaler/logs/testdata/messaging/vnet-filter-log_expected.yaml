@@ -28,13 +28,16 @@ resourceLogs:
               - key: azure.category
                 value:
                   stringValue: VNetAndIPFilteringLogs
-              - key: azure.messaging.scale_unit
+              - key: azure.autoscale.unit
                 value:
                   stringValue: PROD-BL2-002
-              - key: azure.activity.id
+              - key: log.record.uid
                 value:
                   stringValue: 5caef1dc-732b-4c9f-a940-a585a28d20e6
-              - key: event.name
+              - key: messaging.system
+                value:
+                  stringValue: servicebus
+              - key: azure.operation.name
                 value:
                   stringValue: Retrieve Namespace
               - key: client.address
@@ -43,10 +46,10 @@ resourceLogs:
               - key: security_rule.action
                 value:
                   stringValue: Accept Connection
-              - key: azure.messaging.reason
+              - key: security_rule.evaluation.reason
                 value:
                   stringValue: IP is accepted by IPAddress filter.
-              - key: azure.messaging.count
+              - key: security_rule.evaluation.count
                 value:
                   intValue: "1"
             body: {}

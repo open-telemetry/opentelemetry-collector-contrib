@@ -20,14 +20,7 @@ import (
 // Non-SemConv attributes that are used for common Azure Messaging Log Record fields
 const (
 	// OpenTelemetry attribute name for Azure Scale Unit name
-	attributeAzureMSScaleUnit = "azure.messaging.scale_unit"
-
-	// OpenTelemetry attribute name for Azure Entity name
-	// Might be either EventHub name or Queue name as well as other, non-service related entities
-	attributeAzureMSEntityName = "azure.messaging.entity.name"
-
-	// OpenTelemetry attribute name for Azure Entity type (e.g. EventHub, Queue, etc.)
-	attributeAzureMSEntityType = "azure.messaging.entity.type"
+	attributeAzureMSScaleUnit = "azure.autoscale.unit"
 )
 
 // Non-SemConv attributes specific for each Azure Messaging Log Record types
@@ -38,39 +31,27 @@ const (
 	// OpenTelemetry attribute name for Azure Messaging Error Count
 	attributeAzureMSErrorCount = "azure.messaging.error.count"
 
-	// OpenTelemetry attribute name for Azure Messaging Entity Child Name
-	attributeAzureMSEntityChildName = "azure.messaging.entity.child_name"
-
-	// OpenTelemetry attribute name for Azure Messaging Entity Child Type
-	attributeAzureMSEntityChildType = "azure.messaging.entity.child_type"
-
 	// OpenTelemetry attribute name for Partition ID
-	attributeAzureMSPartitionID = "azure.messaging.partition_id"
+	attributeMessagingPartitionID = "messaging.destination.partition.id"
 
 	// OpenTelemetry attribute name for Azure Messaging Auth Type (Microsoft Entra ID or SAS Policy)
-	attributeAzureMSAuthType = "azure.messaging.auth.type"
+	attributeAzureAuthType = "azure.auth.type"
 
 	// OpenTelemetry attribute name for Azure Messaging Auth ID (Microsoft Entra application ID or SAS policy name)
-	attributeAzureMSAuthID = "azure.messaging.auth.id"
+	attributeAzureAuthID = "azure.auth.id"
 
-	// OpenTelemetry attribute name for Azure Messaging Count
+	// OpenTelemetry attribute name for Messaging Message Count
 	// Total number of operations performed during the aggregated period of 1 minute
-	attributeAzureMSCount = "azure.messaging.count"
-
-	// OpenTelemetry attribute name for the status of activity (success or failure)
-	attributeAzureMSStatus = "azure.messaging.status"
+	attributeMessagingMessageCount = "messaging.message.count"
 
 	// OpenTelemetry attribute name for the caller of operation (the Azure portal or management client)
-	attributeAzureMSCaller = "azure.messaging.caller"
+	attributeClientType = "client.type"
 
 	// OpenTelemetry attribute name for the reason why the action was done
-	attributeAzureMSReason = "azure.messaging.reason"
+	attributeSecurityEvaluationReason = "security_rule.evaluation.reason"
 
-	// OpenTelemetry attribute name for the Tracking ID of the operation
-	attributeAzureMSTrackingID = "azure.messaging.tracking_id"
-
-	// OpenTelemetry attribute name for Azure Messaging Application Group Name
-	attributeAzureMSAppGroupName = "azure.messaging.application.group_name"
+	// OpenTelemetry attribute name for the number of times taken by security rule
+	attributeSecurityEvaluationCount = "security_rule.evaluation.count"
 )
 
 // azureMSCommon it's common struct for all Azure Messaging Audit logs,
@@ -97,6 +78,7 @@ func (r *azureMSCommon) GetResource() logsResourceAttributes {
 		Environment:     r.Environment,
 		SubscriptionID:  r.SubscriptionID,
 		SeviceNamespace: r.NamespaceName,
+		ServiceName:     r.EntityName,
 	}
 }
 
@@ -124,10 +106,32 @@ func (*azureMSCommon) GetLevel() (plog.SeverityNumber, string, bool) {
 
 func (r *azureMSCommon) PutCommonAttributes(attrs pcommon.Map, _ pcommon.Value) {
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSScaleUnit, r.ScaleUnit)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureActivityID, r.ActivityID)
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.LogRecordUIDKey), r.ActivityID)
 	unmarshaler.AttrPutStrIf(attrs, unmarshaler.AttributeAzureOperationName, r.ActivityName)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSEntityName, r.EntityName)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSEntityType, r.EntityType)
+	// EntityType is actually the messaging system name,
+	// so we'll try to map it to SemConv "messaging.system" attribute
+	messagingSystem := ""
+	if r.EntityType != "" {
+		messagingSystem = strings.ToLower(r.EntityType)
+		switch messagingSystem {
+		case "eventhub":
+			messagingSystem = conventions.MessagingSystemEventHubs.Value.AsString()
+		case "servicebus", "queue":
+			messagingSystem = conventions.MessagingSystemServiceBus.Value.AsString()
+		}
+	}
+	// If EntityType is not set or empty - we'll use ResourceID to detect messaging system
+	if messagingSystem == "" && r.ResourceID != "" {
+		resourceIDLower := strings.ToLower(r.ResourceID)
+		switch {
+		case strings.Contains(resourceIDLower, "/microsoft.servicebus/"):
+			messagingSystem = conventions.MessagingSystemServiceBus.Value.AsString()
+		case strings.Contains(resourceIDLower, "/microsoft.eventhub/"):
+			messagingSystem = conventions.MessagingSystemEventHubs.Value.AsString()
+		}
+	}
+
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.MessagingSystemKey), messagingSystem)
 }
 
 func (*azureMSCommon) PutProperties(_ pcommon.Map, _ pcommon.Value) error {
@@ -161,8 +165,7 @@ func (r *azureMSDiagnosticErrorLog) PutCommonAttributes(attrs pcommon.Map, body 
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSTaskName, r.TaskName)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.ErrorMessageKey), r.ErrorMessage)
 	unmarshaler.AttrPutIntNumberIf(attrs, attributeAzureMSErrorCount, r.ErrorCount)
-
-	body.SetStr(r.OperationResult)
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.ErrorTypeKey), r.OperationResult)
 }
 
 type azureMSApplicationMetricsLogProperties struct {
@@ -218,21 +221,24 @@ func (r *azureMSApplicationMetricsLog) PutCommonAttributes(attrs pcommon.Map, bo
 	r.azureMSCommon.PutCommonAttributes(attrs, body)
 
 	// Then put custom top-level attributes
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSEntityChildType, r.ChildEntityType)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSEntityChildName, r.ChildEntityName)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSPartitionID, r.PartitionID)
+	// We will skip "ChildEntityType" and "ChildEntityName" for now,
+	// as they are not documented and available sample data doesn't provide meaningful values
+	unmarshaler.AttrPutStrIf(attrs, attributeMessagingPartitionID, r.PartitionID)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.NetworkProtocolNameKey), strings.ToLower(r.Protocol))
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSAuthType, r.AuthType)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSAuthID, r.AuthID)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureAuthType, r.AuthType)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureAuthID, r.AuthID)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.NetworkConnectionTypeKey), r.NetworkType)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.ClientAddressKey), r.ClientIP)
-	unmarshaler.AttrPutIntNumberIf(attrs, attributeAzureMSCount, r.Count)
+	unmarshaler.AttrPutIntNumberIf(attrs, attributeMessagingMessageCount, r.Count)
 
-	body.SetStr(r.Outcome)
+	if r.Outcome != "" && !strings.EqualFold(r.Outcome, "success") {
+		unmarshaler.AttrPutStrIf(attrs, string(conventions.ErrorTypeKey), r.Outcome)
+	}
 }
 
-func (r *azureMSApplicationMetricsLog) PutProperties(attrs pcommon.Map, _ pcommon.Value) error {
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSAppGroupName, r.Properties.ApplicationGroupName)
+func (*azureMSApplicationMetricsLog) PutProperties(_ pcommon.Map, _ pcommon.Value) error {
+	// We will skip "ApplicationGroupName" for now,
+	// as they it not documented and available sample data doesn't provide meaningful values
 
 	return nil
 }
@@ -290,15 +296,17 @@ func (r *azureMSOperationalLog) PutCommonAttributes(attrs pcommon.Map, body pcom
 	r.azureMSCommon.PutCommonAttributes(attrs, body)
 
 	// Then put custom top-level attributes
-	unmarshaler.AttrPutStrIf(attrs, attributeEventName, r.EntityName)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSStatus, r.Status)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSCaller, r.Caller)
+	unmarshaler.AttrPutStrIf(attrs, unmarshaler.AttributeAzureOperationName, r.EventName)
+	unmarshaler.AttrPutStrIf(attrs, attributeClientType, r.Caller)
+	if r.Status != "" && !strings.EqualFold(r.Status, "succeeded") {
+		unmarshaler.AttrPutStrIf(attrs, string(conventions.ErrorTypeKey), r.Status)
+	}
 }
 
 func (r *azureMSOperationalLog) PutProperties(attrs pcommon.Map, _ pcommon.Value) error {
 	// SubscriptionId and Namespace are already in top-level attributes, so skip them here
 	unmarshaler.AttrPutURLParsed(attrs, r.Properties.ViaURL)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSTrackingID, r.Properties.TrackingID)
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.AzureServiceRequestIDKey), r.Properties.TrackingID)
 	unmarshaler.AttrPutStrIf(attrs, attributeErrorCode, r.Properties.ErrorCode)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.ErrorMessageKey), r.Properties.ErrorMessage)
 
@@ -328,13 +336,15 @@ func (r *azureMSRuntimeAuditLog) PutCommonAttributes(attrs pcommon.Map, body pco
 
 	// Then put custom top-level attributes
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSTaskName, r.TaskName)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSStatus, r.Status)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.NetworkProtocolNameKey), strings.ToLower(r.Protocol))
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSAuthType, r.AuthType)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSAuthID, r.AuthID)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureAuthType, r.AuthType)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureAuthID, r.AuthID)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.NetworkConnectionTypeKey), r.NetworkType)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.ClientAddressKey), r.ClientIP)
-	unmarshaler.AttrPutIntNumberIf(attrs, attributeAzureMSCount, r.Count)
+	unmarshaler.AttrPutIntNumberIf(attrs, attributeMessagingMessageCount, r.Count)
+	if r.Status != "" && !strings.EqualFold(r.Status, "success") {
+		unmarshaler.AttrPutStrIf(attrs, string(conventions.ErrorTypeKey), r.Status)
+	}
 	// Put unparsed properties to log.Body as common approach
 	body.SetStr(r.Properties)
 }
@@ -354,9 +364,9 @@ func (r *azureMSVNetAndIPFilteringLog) PutCommonAttributes(attrs pcommon.Map, bo
 	r.azureMSCommon.PutCommonAttributes(attrs, body)
 
 	// Then put custom top-level attributes
-	unmarshaler.AttrPutStrIf(attrs, attributeEventName, r.EventName)
+	unmarshaler.AttrPutStrIf(attrs, unmarshaler.AttributeAzureOperationName, r.EventName)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.ClientAddressKey), r.IPAddress)
 	unmarshaler.AttrPutStrIf(attrs, attributeSecurityRuleActionKey, r.Action)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSReason, r.Reason)
-	unmarshaler.AttrPutIntNumberIf(attrs, attributeAzureMSCount, r.Count)
+	unmarshaler.AttrPutStrIf(attrs, attributeSecurityEvaluationReason, r.Reason)
+	unmarshaler.AttrPutIntNumberIf(attrs, attributeSecurityEvaluationCount, r.Count)
 }

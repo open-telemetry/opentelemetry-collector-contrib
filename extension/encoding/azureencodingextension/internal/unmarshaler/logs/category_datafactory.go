@@ -14,11 +14,25 @@ import (
 )
 
 const (
-	// OpenTelemetry attribute name for Data Factory start time of the activity runs in timespan UTC format
-	attributeDataFactoryStartTime = "azure.datafactory.start_time"
+	// OpenTelemetry attribute name for Data Factory start time of the trigger
+	// (representing the initiation of a pipeline) runs in UTC format
+	attributeDataFactoryTriggerStartTime = "azure.datafactory.trigger.start_time"
 
-	// OpenTelemetry attribute name for Data Factory end time the activity runs in timespan UTC format
-	attributeDataFactoryEndTime = "azure.datafactory.end_time"
+	// OpenTelemetry attribute name for Data Factory end time the trigger
+	// (representing the initiation of a pipeline) runs in UTC format
+	attributeDataFactoryTriggerEndTime = "azure.datafactory.trigger.end_time"
+
+	// OpenTelemetry attribute name for Data Factory start time of the pipeline runs in UTC format
+	attributeDataFactoryPipelineStartTime = "azure.datafactory.pipeline.start_time"
+
+	// OpenTelemetry attribute name for Data Factory end time the pipeline runs in UTC format
+	attributeDataFactoryPipelineEndTime = "azure.datafactory.pipeline.end_time"
+
+	// OpenTelemetry attribute name for Data Factory start time of the activity runs (steps in pipeline) in UTC format
+	attributeDataFactoryActivityStartTime = "azure.datafactory.activity.start_time"
+
+	// OpenTelemetry attribute name for Data Factory end time the activity runs (steps in pipeline) in UTC format
+	attributeDataFactoryActivityEndTime = "azure.datafactory.activity.end_time"
 
 	// OpenTelemetry attribute name for Data Factory User Properties
 	attributeDataFactoryUserProperties = "azure.datafactory.user_properties"
@@ -66,10 +80,10 @@ const (
 	attributeDataFactoryTriggerType = "azure.datafactory.trigger.type"
 
 	// OpenTelemetry attribute name for Data Factory Trigger Event
-	attributeDataFactoryTriggerEvent = "azure.datafactory.trigger.event"
+	attributeDataFactoryTriggerEventPayload = "azure.datafactory.trigger.event_payload"
 
 	// OpenTelemetry attribute name for Data Factory Pipeline run final status ("Succeeded" or "Failed")
-	attributeDataFactoryPipelineStatus = "azure.datafactory.pipeline.status"
+	attributeDataFactoryPipelineState = "azure.datafactory.pipeline.state"
 
 	// OpenTelemetry attribute name for Error Target
 	attributeErrorTarget = "error.target"
@@ -105,15 +119,6 @@ type azureDataFactoryBaseLog struct {
 	DiagnosticLevel json.Number `json:"Level"`
 
 	Properties azureDataFactoryProperties `json:"properties"`
-}
-
-func (r *azureDataFactoryBaseLog) PutCommonAttributes(attrs pcommon.Map, body pcommon.Value) {
-	// Put common attributes first
-	r.azureLogRecordBase.PutCommonAttributes(attrs, body)
-
-	// Then put custom top-level attributes
-	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryStartTime, r.StartTime)
-	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryEndTime, r.EndTime)
 }
 
 func (r *azureDataFactoryBaseLog) PutProperties(attrs pcommon.Map, _ pcommon.Value) error {
@@ -165,7 +170,11 @@ type azureDataFactoryActivityRunsLog struct {
 
 func (r *azureDataFactoryActivityRunsLog) PutCommonAttributes(attrs pcommon.Map, body pcommon.Value) {
 	// Put common attributes first
-	r.azureDataFactoryBaseLog.PutCommonAttributes(attrs, body)
+	r.azureLogRecordBase.PutCommonAttributes(attrs, body)
+
+	// Then put custom top-level attributes
+	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryActivityStartTime, r.StartTime)
+	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryActivityEndTime, r.EndTime)
 
 	// Then put custom top-level attributes
 	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryActivityRunID, r.ActivityRunID)
@@ -186,12 +195,16 @@ type azureDataFactoryPipelineRunsLog struct {
 
 func (r *azureDataFactoryPipelineRunsLog) PutCommonAttributes(attrs pcommon.Map, body pcommon.Value) {
 	// Put common attributes first
-	r.azureDataFactoryBaseLog.PutCommonAttributes(attrs, body)
+	r.azureLogRecordBase.PutCommonAttributes(attrs, body)
+
+	// Then put custom top-level attributes
+	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryPipelineStartTime, r.StartTime)
+	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryPipelineEndTime, r.EndTime)
 
 	// Then put custom top-level attributes
 	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryPipelineRunID, r.PipelineRunID)
 	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryPipelineName, r.PipelineName)
-	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryPipelineStatus, r.Status)
+	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryPipelineState, r.Status)
 }
 
 // See https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/data-factory/monitor-data-factory-reference.md#pipeline-run-log-attributes
@@ -208,12 +221,16 @@ type azureDataFactoryTriggerRunsLog struct {
 
 func (r *azureDataFactoryTriggerRunsLog) PutCommonAttributes(attrs pcommon.Map, body pcommon.Value) {
 	// Put common attributes first
-	r.azureDataFactoryBaseLog.PutCommonAttributes(attrs, body)
+	r.azureLogRecordBase.PutCommonAttributes(attrs, body)
+
+	// Then put custom top-level attributes
+	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryTriggerStartTime, r.StartTime)
+	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryTriggerEndTime, r.EndTime)
 
 	// Then put custom top-level attributes
 	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryTriggerRunID, r.TriggerID)
 	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryTriggerName, r.TriggerName)
 	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryTriggerType, r.TriggerType)
-	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryTriggerEvent, r.TriggerEvent)
-	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryPipelineStatus, r.Status)
+	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryTriggerEventPayload, r.TriggerEvent)
+	unmarshaler.AttrPutStrIf(attrs, attributeDataFactoryPipelineState, r.Status)
 }
