@@ -17,6 +17,12 @@ import (
 const (
 	LatestOffset   = "latest"
 	EarliestOffset = "earliest"
+
+	// Group Rebalance Strategies
+	RangeBalanceStrategy             = "range"
+	RoundRobinBalanceStrategy        = "roundrobin"
+	StickyBalanceStrategy            = "sticky"
+	CooperativeStickyBalanceStrategy = "cooperative-sticky"
 )
 
 type ClientConfig struct {
@@ -161,11 +167,12 @@ func (c ConsumerConfig) Validate() error {
 
 	if c.GroupRebalanceStrategy != "" {
 		switch c.GroupRebalanceStrategy {
-		case "range", "roundrobin", "sticky", "cooperative-sticky":
+		case RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy:
 			// Valid
 		default:
 			return fmt.Errorf(
-				"rebalance_strategy should be one of 'range', 'roundrobin', 'sticky', or 'cooperative-sticky'. configured value %v",
+				"rebalance_strategy should be one of '%s', '%s', '%s', or '%s'. configured value %v",
+				RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy,
 				c.GroupRebalanceStrategy,
 			)
 		}
