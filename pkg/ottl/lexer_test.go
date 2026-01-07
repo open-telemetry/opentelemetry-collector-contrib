@@ -184,6 +184,13 @@ func Test_lexer(t *testing.T) {
 			{"Int", "1"},
 			{"Punct", "]"},
 		}},
+		{"Dynamic path with unary operation", `-attributes["foo"]`, false, []result{
+			{typ: "OpAddSub", val: "-"},
+			{"Lowercase", "attributes"},
+			{"Punct", "["},
+			{"String", `"foo"`},
+			{"Punct", "]"},
+		}},		
 		{"Float variations with trailing dot", "1. 2. 3.", false, []result{
 			{"Float", "1."},
 			{"Float", "2."},
