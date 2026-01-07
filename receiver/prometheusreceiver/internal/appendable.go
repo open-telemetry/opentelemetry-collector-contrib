@@ -5,7 +5,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"regexp"
 
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
@@ -16,12 +15,10 @@ import (
 
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
 type appendable struct {
-	sink                 consumer.Metrics
-	useStartTimeMetric   bool
-	useMetadata          bool
-	trimSuffixes         bool
-	startTimeMetricRegex *regexp.Regexp
-	externalLabels       labels.Labels
+	sink           consumer.Metrics
+	useMetadata    bool
+	trimSuffixes   bool
+	externalLabels labels.Labels
 
 	settings receiver.Settings
 	obsrecv  *receiverhelper.ObsReport
@@ -31,8 +28,6 @@ type appendable struct {
 func NewAppendable(
 	sink consumer.Metrics,
 	set receiver.Settings,
-	useStartTimeMetric bool,
-	startTimeMetricRegex *regexp.Regexp,
 	useMetadata bool,
 	externalLabels labels.Labels,
 	trimSuffixes bool,
@@ -43,14 +38,12 @@ func NewAppendable(
 	}
 
 	return &appendable{
-		sink:                 sink,
-		settings:             set,
-		useStartTimeMetric:   useStartTimeMetric,
-		useMetadata:          useMetadata,
-		startTimeMetricRegex: startTimeMetricRegex,
-		externalLabels:       externalLabels,
-		obsrecv:              obsrecv,
-		trimSuffixes:         trimSuffixes,
+		sink:           sink,
+		settings:       set,
+		useMetadata:    useMetadata,
+		externalLabels: externalLabels,
+		obsrecv:        obsrecv,
+		trimSuffixes:   trimSuffixes,
 	}, nil
 }
 
