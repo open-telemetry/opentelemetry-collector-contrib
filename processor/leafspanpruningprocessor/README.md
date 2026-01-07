@@ -151,9 +151,11 @@ service:
 
 ## Example
 
-### Before Processing
+### Basic Example
 
 A trace with repeated database queries (some failing):
+
+**Before Processing:**
 ```
 root-span (parent)
 ├── SELECT (leaf) - duration: 10ms, db.operation: select, status: OK
@@ -164,8 +166,7 @@ root-span (parent)
 └── INSERT (leaf) - duration: 20ms, db.operation: insert, status: OK
 ```
 
-### After Processing (with `min_spans_to_aggregate: 2`)
-
+**After Processing (with `min_spans_to_aggregate: 2`):**
 ```
 root-span (parent)
 ├── SELECT_aggregated (summary, status: OK)
@@ -183,8 +184,61 @@ root-span (parent)
 
 Note: Spans with different status codes are grouped separately, preserving error information.
 
+### Recursive Parent Aggregation Example
+
+When leaf spans are aggregated, the processor also checks if their parent spans can be aggregated. Parent spans are eligible for aggregation when:
+1. All of their children are being aggregated
+2. They share the same name and status code with other eligible parents
+3. They are not root spans (must have a parent)
+4. At least 2 parents meet the criteria
+
+**Before Processing (with `min_spans_to_aggregate: 2`, `group_by_attributes: ["db.op"]`):**
+```
+root
+├── handler (status: OK)
+│   └── SELECT (db.op=select, status: OK) ───┐
+├── handler (status: OK)                      │ leaf group A: 3 OK SELECTs
+│   └── SELECT (db.op=select, status: OK) ───┤
+├── handler (status: OK)                      │
+│   └── SELECT (db.op=select, status: OK) ───┘
+├── handler (status: Error)
+│   └── SELECT (db.op=select, status: Error) ┐ leaf group B: 2 Error SELECTs
+├── handler (status: Error)                   │
+│   └── SELECT (db.op=select, status: Error) ┘
+├── handler (status: OK)
+│   └── INSERT (db.op=insert, status: OK) ──── only 1, below threshold
+└── worker (status: OK)
+    └── SELECT (db.op=select, status: OK) ──── different parent name
+```
+
+**After Processing:**
+```
+root
+├── handler_aggregated (status: OK, span_count: 3)
+│   └── SELECT_aggregated (status: OK, span_count: 3)
+├── handler_aggregated (status: Error, span_count: 2)
+│   └── SELECT_aggregated (status: Error, span_count: 2)
+├── handler (status: OK)
+│   └── INSERT (status: OK) ─────────────────────────── unchanged
+└── worker (status: OK)
+    └── SELECT (status: OK) ─────────────────────────── unchanged
+```
+
+**Why each span was handled this way:**
+
+| Span | Result | Reason |
+|------|--------|--------|
+| 3x handler (OK) with SELECT children | Aggregated | All children aggregated, same name+status |
+| 3x SELECT (OK) under handler | Aggregated | Same name + status + attributes + parent name |
+| 2x handler (Error) with SELECT children | Aggregated | All children aggregated, same name+status |
+| 2x SELECT (Error) under handler | Aggregated | Same name + status + attributes + parent name |
+| handler (OK) with INSERT child | Unchanged | Child not aggregated (only 1 INSERT) |
+| INSERT (OK) | Unchanged | Below threshold (only 1 span) |
+| worker (OK) | Unchanged | Child not aggregated |
+| SELECT (OK) under worker | Unchanged | Different parent name than other SELECTs |
+
 ## Limitations
 
-- Only processes leaf spans (spans with no children)
 - Requires complete traces for accurate leaf detection
 - Summary span inherits attributes from the first span in the group
+- Parent spans are only aggregated when ALL their children are aggregated

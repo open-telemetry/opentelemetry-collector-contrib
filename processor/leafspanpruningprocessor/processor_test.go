@@ -894,3 +894,501 @@ func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
 		})
 	}
 }
+
+// TestLeafSpanPruning_RecursiveParentAggregation tests that parent spans are aggregated
+// when all their children are aggregated
+func TestLeafSpanPruning_RecursiveParentAggregation(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.GroupByAttributes = []string{"db.op"}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// Create the complex trace from the plan example
+	td := createTestTraceWithRecursiveAggregation(t)
+
+	// Before: 1 root + 3 OK handlers + 3 OK SELECTs + 2 Error handlers + 2 Error SELECTs + 1 OK handler + 1 INSERT + 1 worker + 1 SELECT = 15 spans
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 15, originalSpanCount)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// After: 1 root + 1 OK handler_aggregated + 1 OK SELECT_aggregated + 1 Error handler_aggregated + 1 Error SELECT_aggregated + 1 OK handler + 1 INSERT + 1 worker + 1 SELECT = 9 spans
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 9, finalSpanCount)
+
+	// Verify aggregated spans exist
+	handlerOKAgg, found := findSpanByName(td, "handler_aggregated", "Ok")
+	require.True(t, found, "OK handler_aggregated should exist")
+
+	handlerErrorAgg, found := findSpanByName(td, "handler_aggregated", "Error")
+	require.True(t, found, "Error handler_aggregated should exist")
+
+	selectOKAgg, found := findSpanByName(td, "SELECT_aggregated", "Ok")
+	require.True(t, found, "OK SELECT_aggregated should exist")
+
+	selectErrorAgg, found := findSpanByName(td, "SELECT_aggregated", "Error")
+	require.True(t, found, "Error SELECT_aggregated should exist")
+
+	// Verify span counts
+	handlerOKCount, _ := handlerOKAgg.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(3), handlerOKCount.Int())
+
+	handlerErrorCount, _ := handlerErrorAgg.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(2), handlerErrorCount.Int())
+
+	selectOKCount, _ := selectOKAgg.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(3), selectOKCount.Int())
+
+	selectErrorCount, _ := selectErrorAgg.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(2), selectErrorCount.Int())
+
+	// Verify parent-child relationships
+	// SELECT_aggregated (OK) should be child of handler_aggregated (OK)
+	assert.Equal(t, handlerOKAgg.SpanID(), selectOKAgg.ParentSpanID())
+
+	// SELECT_aggregated (Error) should be child of handler_aggregated (Error)
+	assert.Equal(t, handlerErrorAgg.SpanID(), selectErrorAgg.ParentSpanID())
+
+	// Verify non-aggregated spans still exist
+	_, foundInsert := findSpanByExactName(td, "INSERT")
+	require.True(t, foundInsert, "INSERT span should still exist")
+
+	_, foundWorker := findSpanByExactName(td, "worker")
+	require.True(t, foundWorker, "worker span should still exist")
+}
+
+// TestLeafSpanPruning_ParentNotAggregatedIfChildrenMixed tests that parents are not
+// aggregated if some children are aggregated but others are not
+func TestLeafSpanPruning_ParentNotAggregatedIfChildrenMixed(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithMixedChildren(t)
+
+	// Before: 1 root + 2 handlers + 3 SELECTs + 1 INSERT = 7 spans
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 7, originalSpanCount)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// After: 1 root + 2 handlers + 1 SELECT_aggregated + 1 INSERT = 5 spans
+	// Handlers should NOT be aggregated because one has a non-aggregated child (INSERT)
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 5, finalSpanCount)
+
+	// Verify handler_aggregated does NOT exist
+	_, found := findSpanByExactName(td, "handler_aggregated")
+	assert.False(t, found, "handler_aggregated should NOT exist")
+
+	// Verify SELECT_aggregated exists
+	selectAgg, found := findSpanByExactName(td, "SELECT_aggregated")
+	require.True(t, found, "SELECT_aggregated should exist")
+
+	selectCount, _ := selectAgg.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(3), selectCount.Int())
+
+	// Verify original handler spans still exist
+	handlers := findAllSpansByExactName(td, "handler")
+	assert.Equal(t, 2, len(handlers), "both handler spans should still exist")
+}
+
+// TestLeafSpanPruning_RootSpansNotAggregated tests that root spans (with no parent)
+// are never aggregated
+func TestLeafSpanPruning_RootSpansNotAggregated(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithMultipleRoots(t)
+
+	// Before: 3 root spans + 6 leaf spans (2 per root) = 9 spans
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 9, originalSpanCount)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// After: 3 root spans + 1 SELECT_aggregated = 4 spans
+	// Root spans should NOT be aggregated even though all children are aggregated
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 4, finalSpanCount)
+
+	// Verify all root spans still exist
+	roots := findAllSpansByExactName(td, "root")
+	assert.Equal(t, 3, len(roots), "all root spans should still exist")
+
+	// Verify SELECT_aggregated exists
+	selectAgg, found := findSpanByExactName(td, "SELECT_aggregated")
+	require.True(t, found, "SELECT_aggregated should exist")
+
+	selectCount, _ := selectAgg.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(6), selectCount.Int())
+}
+
+// TestLeafSpanPruning_ThreeLevelAggregation tests aggregation across three levels
+func TestLeafSpanPruning_ThreeLevelAggregation(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithThreeLevels(t)
+
+	// Before: 1 root + 2 middleware + 4 handlers (2 per middleware) + 8 SELECTs (2 per handler) = 15 spans
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 15, originalSpanCount)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// After: 1 root + 1 middleware_aggregated + 1 handler_aggregated + 1 SELECT_aggregated = 4 spans
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 4, finalSpanCount)
+
+	// Verify all aggregated spans exist
+	middlewareAgg, found := findSpanByExactName(td, "middleware_aggregated")
+	require.True(t, found, "middleware_aggregated should exist")
+
+	handlerAgg, found := findSpanByExactName(td, "handler_aggregated")
+	require.True(t, found, "handler_aggregated should exist")
+
+	selectAgg, found := findSpanByExactName(td, "SELECT_aggregated")
+	require.True(t, found, "SELECT_aggregated should exist")
+
+	// Verify parent-child relationships
+	// handler_aggregated should be child of middleware_aggregated
+	assert.Equal(t, middlewareAgg.SpanID(), handlerAgg.ParentSpanID())
+
+	// SELECT_aggregated should be child of handler_aggregated
+	assert.Equal(t, handlerAgg.SpanID(), selectAgg.ParentSpanID())
+
+	// Verify span counts
+	middlewareCount, _ := middlewareAgg.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(2), middlewareCount.Int())
+
+	handlerCount, _ := handlerAgg.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(4), handlerCount.Int())
+
+	selectCount, _ := selectAgg.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(8), selectCount.Int())
+}
+
+// Helper functions for new tests
+
+func createTestTraceWithRecursiveAggregation(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	rootSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	// Root span
+	root := ss.Spans().AppendEmpty()
+	root.SetTraceID(traceID)
+	root.SetSpanID(rootSpanID)
+	root.SetName("root")
+	root.Status().SetCode(ptrace.StatusCodeOk)
+
+	// 3x handler (OK) -> SELECT (OK, db.op=select)
+	for i := 0; i < 3; i++ {
+		handlerID := pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0})
+		handler := ss.Spans().AppendEmpty()
+		handler.SetTraceID(traceID)
+		handler.SetSpanID(handlerID)
+		handler.SetParentSpanID(rootSpanID)
+		handler.SetName("handler")
+		handler.Status().SetCode(ptrace.StatusCodeOk)
+
+		selectSpan := ss.Spans().AppendEmpty()
+		selectSpan.SetTraceID(traceID)
+		selectSpan.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		selectSpan.SetParentSpanID(handlerID)
+		selectSpan.SetName("SELECT")
+		selectSpan.Attributes().PutStr("db.op", "select")
+		selectSpan.Status().SetCode(ptrace.StatusCodeOk)
+		selectSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		selectSpan.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	// 2x handler (Error) -> SELECT (Error, db.op=select)
+	for i := 0; i < 2; i++ {
+		handlerID := pcommon.SpanID([8]byte{4, byte(i), 0, 0, 0, 0, 0, 0})
+		handler := ss.Spans().AppendEmpty()
+		handler.SetTraceID(traceID)
+		handler.SetSpanID(handlerID)
+		handler.SetParentSpanID(rootSpanID)
+		handler.SetName("handler")
+		handler.Status().SetCode(ptrace.StatusCodeError)
+
+		selectSpan := ss.Spans().AppendEmpty()
+		selectSpan.SetTraceID(traceID)
+		selectSpan.SetSpanID(pcommon.SpanID([8]byte{5, byte(i), 0, 0, 0, 0, 0, 0}))
+		selectSpan.SetParentSpanID(handlerID)
+		selectSpan.SetName("SELECT")
+		selectSpan.Attributes().PutStr("db.op", "select")
+		selectSpan.Status().SetCode(ptrace.StatusCodeError)
+		selectSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		selectSpan.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	// 1x handler (OK) -> INSERT (OK, db.op=insert) - below threshold
+	handlerID := pcommon.SpanID([8]byte{6, 0, 0, 0, 0, 0, 0, 0})
+	handler := ss.Spans().AppendEmpty()
+	handler.SetTraceID(traceID)
+	handler.SetSpanID(handlerID)
+	handler.SetParentSpanID(rootSpanID)
+	handler.SetName("handler")
+	handler.Status().SetCode(ptrace.StatusCodeOk)
+
+	insertSpan := ss.Spans().AppendEmpty()
+	insertSpan.SetTraceID(traceID)
+	insertSpan.SetSpanID(pcommon.SpanID([8]byte{7, 0, 0, 0, 0, 0, 0, 0}))
+	insertSpan.SetParentSpanID(handlerID)
+	insertSpan.SetName("INSERT")
+	insertSpan.Attributes().PutStr("db.op", "insert")
+	insertSpan.Status().SetCode(ptrace.StatusCodeOk)
+	insertSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	insertSpan.SetEndTimestamp(pcommon.Timestamp(1000000100))
+
+	// 1x worker (OK) -> SELECT (OK, db.op=select) - different parent name
+	workerID := pcommon.SpanID([8]byte{8, 0, 0, 0, 0, 0, 0, 0})
+	worker := ss.Spans().AppendEmpty()
+	worker.SetTraceID(traceID)
+	worker.SetSpanID(workerID)
+	worker.SetParentSpanID(rootSpanID)
+	worker.SetName("worker")
+	worker.Status().SetCode(ptrace.StatusCodeOk)
+
+	selectSpan := ss.Spans().AppendEmpty()
+	selectSpan.SetTraceID(traceID)
+	selectSpan.SetSpanID(pcommon.SpanID([8]byte{9, 0, 0, 0, 0, 0, 0, 0}))
+	selectSpan.SetParentSpanID(workerID)
+	selectSpan.SetName("SELECT")
+	selectSpan.Attributes().PutStr("db.op", "select")
+	selectSpan.Status().SetCode(ptrace.StatusCodeOk)
+	selectSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	selectSpan.SetEndTimestamp(pcommon.Timestamp(1000000100))
+
+	return td
+}
+
+func createTestTraceWithMixedChildren(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	rootSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	// Root span
+	root := ss.Spans().AppendEmpty()
+	root.SetTraceID(traceID)
+	root.SetSpanID(rootSpanID)
+	root.SetName("root")
+
+	// Handler 1 with 3 SELECTs (will be aggregated)
+	handler1ID := pcommon.SpanID([8]byte{2, 0, 0, 0, 0, 0, 0, 0})
+	handler1 := ss.Spans().AppendEmpty()
+	handler1.SetTraceID(traceID)
+	handler1.SetSpanID(handler1ID)
+	handler1.SetParentSpanID(rootSpanID)
+	handler1.SetName("handler")
+	handler1.Status().SetCode(ptrace.StatusCodeOk)
+
+	for i := 0; i < 3; i++ {
+		selectSpan := ss.Spans().AppendEmpty()
+		selectSpan.SetTraceID(traceID)
+		selectSpan.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		selectSpan.SetParentSpanID(handler1ID)
+		selectSpan.SetName("SELECT")
+		selectSpan.Status().SetCode(ptrace.StatusCodeOk)
+		selectSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		selectSpan.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	// Handler 2 with 1 INSERT (not aggregated - mixed children)
+	handler2ID := pcommon.SpanID([8]byte{4, 0, 0, 0, 0, 0, 0, 0})
+	handler2 := ss.Spans().AppendEmpty()
+	handler2.SetTraceID(traceID)
+	handler2.SetSpanID(handler2ID)
+	handler2.SetParentSpanID(rootSpanID)
+	handler2.SetName("handler")
+	handler2.Status().SetCode(ptrace.StatusCodeOk)
+
+	insertSpan := ss.Spans().AppendEmpty()
+	insertSpan.SetTraceID(traceID)
+	insertSpan.SetSpanID(pcommon.SpanID([8]byte{5, 0, 0, 0, 0, 0, 0, 0}))
+	insertSpan.SetParentSpanID(handler2ID)
+	insertSpan.SetName("INSERT")
+	insertSpan.Status().SetCode(ptrace.StatusCodeOk)
+	insertSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	insertSpan.SetEndTimestamp(pcommon.Timestamp(1000000100))
+
+	return td
+}
+
+func createTestTraceWithMultipleRoots(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
+	// 3 root spans, each with 2 SELECT children
+	for i := 0; i < 3; i++ {
+		rootID := pcommon.SpanID([8]byte{byte(i + 1), 0, 0, 0, 0, 0, 0, 0})
+		root := ss.Spans().AppendEmpty()
+		root.SetTraceID(traceID)
+		root.SetSpanID(rootID)
+		root.SetName("root")
+		root.Status().SetCode(ptrace.StatusCodeOk)
+
+		for j := 0; j < 2; j++ {
+			selectSpan := ss.Spans().AppendEmpty()
+			selectSpan.SetTraceID(traceID)
+			selectSpan.SetSpanID(pcommon.SpanID([8]byte{byte(i + 4), byte(j), 0, 0, 0, 0, 0, 0}))
+			selectSpan.SetParentSpanID(rootID)
+			selectSpan.SetName("SELECT")
+			selectSpan.Status().SetCode(ptrace.StatusCodeOk)
+			selectSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+			selectSpan.SetEndTimestamp(pcommon.Timestamp(1000000100))
+		}
+	}
+
+	return td
+}
+
+func createTestTraceWithThreeLevels(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	rootSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	// Root span
+	root := ss.Spans().AppendEmpty()
+	root.SetTraceID(traceID)
+	root.SetSpanID(rootSpanID)
+	root.SetName("root")
+
+	spanIDCounter := byte(2)
+
+	// 2 middleware spans
+	for i := 0; i < 2; i++ {
+		middlewareID := pcommon.SpanID([8]byte{spanIDCounter, 0, 0, 0, 0, 0, 0, 0})
+		spanIDCounter++
+
+		middleware := ss.Spans().AppendEmpty()
+		middleware.SetTraceID(traceID)
+		middleware.SetSpanID(middlewareID)
+		middleware.SetParentSpanID(rootSpanID)
+		middleware.SetName("middleware")
+		middleware.Status().SetCode(ptrace.StatusCodeOk)
+
+		// Each middleware has 2 handler spans
+		for j := 0; j < 2; j++ {
+			handlerID := pcommon.SpanID([8]byte{spanIDCounter, 0, 0, 0, 0, 0, 0, 0})
+			spanIDCounter++
+
+			handler := ss.Spans().AppendEmpty()
+			handler.SetTraceID(traceID)
+			handler.SetSpanID(handlerID)
+			handler.SetParentSpanID(middlewareID)
+			handler.SetName("handler")
+			handler.Status().SetCode(ptrace.StatusCodeOk)
+
+			// Each handler has 2 SELECT spans
+			for k := 0; k < 2; k++ {
+				selectSpan := ss.Spans().AppendEmpty()
+				selectSpan.SetTraceID(traceID)
+				selectSpan.SetSpanID(pcommon.SpanID([8]byte{spanIDCounter, 0, 0, 0, 0, 0, 0, 0}))
+				spanIDCounter++
+				selectSpan.SetParentSpanID(handlerID)
+				selectSpan.SetName("SELECT")
+				selectSpan.Status().SetCode(ptrace.StatusCodeOk)
+				selectSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+				selectSpan.SetEndTimestamp(pcommon.Timestamp(1000000100))
+			}
+		}
+	}
+
+	return td
+}
+
+func findSpanByName(td ptrace.Traces, nameSubstring string, statusCode string) (ptrace.Span, bool) {
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		ilss := rs.ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			ils := ilss.At(j)
+			spans := ils.Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				if strings.Contains(span.Name(), nameSubstring) && span.Status().Code().String() == statusCode {
+					return span, true
+				}
+			}
+		}
+	}
+	return ptrace.Span{}, false
+}
+
+func findSpanByExactName(td ptrace.Traces, name string) (ptrace.Span, bool) {
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		ilss := rs.ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			ils := ilss.At(j)
+			spans := ils.Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				if span.Name() == name {
+					return span, true
+				}
+			}
+		}
+	}
+	return ptrace.Span{}, false
+}
+
+func findAllSpansByExactName(td ptrace.Traces, name string) []ptrace.Span {
+	var result []ptrace.Span
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		ilss := rs.ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			ils := ilss.At(j)
+			spans := ils.Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				if span.Name() == name {
+					result = append(result, span)
+				}
+			}
+		}
+	}
+	return result
+}
