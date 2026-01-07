@@ -2,7 +2,7 @@ spanpruning:
   group_by_attributes:
     - "db.operation"
   min_spans_to_aggregate: 5
-  summary_span_name_suffix: "_aggregated"
+  aggregation_span_name_suffix: "_aggregated"
   aggregation_attribute_prefix: "aggregation."
 
 spanpruning/custom:
@@ -10,5 +10,5 @@ spanpruning/custom:
     - "db.operation"
     - "db.name"
   min_spans_to_aggregate: 3
-  summary_span_name_suffix: "_batch"
+  aggregation_span_name_suffix: "_batch"
   aggregation_attribute_prefix: "batch."

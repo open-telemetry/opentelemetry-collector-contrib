@@ -829,7 +829,7 @@ func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
 			cfg := &Config{
 				GroupByAttributes:           []string{"db.operation"},
 				MinSpansToAggregate:         tt.minSpansToAggregate,
-				SummarySpanNameSuffix:       "_aggregated",
+				AggregationSpanNameSuffix:   "_aggregated",
 				AggregationAttributePrefix:  "aggregation.",
 				AggregationHistogramBuckets: tt.buckets,
 			}

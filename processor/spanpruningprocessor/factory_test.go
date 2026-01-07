@@ -29,7 +29,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 	oCfg := cfg.(*Config)
 	assert.Equal(t, 5, oCfg.MinSpansToAggregate)
-	assert.Equal(t, "_aggregated", oCfg.SummarySpanNameSuffix)
+	assert.Equal(t, "_aggregated", oCfg.AggregationSpanNameSuffix)
 	assert.Equal(t, "aggregation.", oCfg.AggregationAttributePrefix)
 }
 

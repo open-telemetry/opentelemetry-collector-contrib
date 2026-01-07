@@ -33,10 +33,10 @@ type Config struct {
 	// Default: 1
 	MaxParentDepth int `mapstructure:"max_parent_depth"`
 
-	// SummarySpanNameSuffix is appended to the original span name to create
-	// the summary span name.
+	// AggregationSpanNameSuffix is appended to the original span name to create
+	// the aggregation span name.
 	// Default: "_aggregated"
-	SummarySpanNameSuffix string `mapstructure:"summary_span_name_suffix"`
+	AggregationSpanNameSuffix string `mapstructure:"aggregation_span_name_suffix"`
 
 	// AggregationAttributePrefix is the prefix for aggregation attributes
 	// added to the summary span.

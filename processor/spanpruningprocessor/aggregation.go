@@ -114,7 +114,7 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 	newSpan := scopeSpans.Spans().AppendEmpty()
 
 	// Copy basic properties from template
-	newSpan.SetName(templateSpan.Name() + p.config.SummarySpanNameSuffix)
+	newSpan.SetName(templateSpan.Name() + p.config.AggregationSpanNameSuffix)
 	newSpan.SetTraceID(templateSpan.TraceID())
 	newSpan.SetSpanID(group.summarySpanID)
 	newSpan.SetParentSpanID(parentSpanID)

@@ -39,7 +39,7 @@ This processor is useful for reducing trace data volume while preserving meaning
 ```yaml
 processors:
   spanpruning:
-    # Attributes to use for grouping similar spans (supports glob patterns)
+    # Attributes to use for grouping similar leaf spans (supports glob patterns)
     # Spans with the same name AND same values for matching attributes will be grouped
     # Examples:
     #   - "db.*" matches db.operation, db.name, db.statement, etc.
@@ -59,9 +59,9 @@ processors:
     # Default: 1
     max_parent_depth: 1
 
-    # Suffix appended to create summary span name
+    # Suffix appended to create aggregation span name
     # Default: "_aggregated"
-    summary_span_name_suffix: "_batch"
+    aggregation_span_name_suffix: "_batch"
 
     # Prefix for aggregation statistics attributes
     # Default: "aggregation."
@@ -80,7 +80,7 @@ processors:
 | `group_by_attributes` | []string | [] | Attribute patterns for grouping (supports glob patterns like `db.*`) |
 | `min_spans_to_aggregate` | int | 5 | Minimum group size before aggregation occurs |
 | `max_parent_depth` | int | 1 | Max depth of parent aggregation (0=none, -1=unlimited) |
-| `summary_span_name_suffix` | string | "_aggregated" | Suffix appended to summary span names |
+| `aggregation_span_name_suffix` | string | "_aggregated" | Suffix appended to aggregation span names |
 | `aggregation_attribute_prefix` | string | "aggregation." | Prefix for aggregation statistics attributes |
 | `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for histogram buckets |
 
