@@ -51,12 +51,6 @@ opensearch/dynamic_log_indexing:
   logs_index_fallback: "default-service"
   logs_index_time_format: "yyyy.MM.dd"
 
-opensearch/invalid_dynamic_log_indexing:
-  http:
-    endpoint: https://opensearch.example.com:9200
-  logs_index: "otel-logs-%{service.name}-%{invalid.placeholder}"
-  logs_index_fallback: "default-service"
-
 opensearch/log_index_time_format_valid:
   http:
     endpoint: https://opensearch.example.com:9200
@@ -98,12 +92,6 @@ opensearch/traces_index_valid:
   traces_index: "otel-traces-%{service.name}"
   traces_index_fallback: "default-service"
   traces_index_time_format: "yyyy.MM.dd"
-
-opensearch/traces_index_invalid_placeholder:
-  http:
-    endpoint: https://opensearch.example.com:9200
-  traces_index: "otel-traces-%{service.name}-%{invalid.placeholder}"
-  traces_index_fallback: "default-service"
 
 opensearch/traces_index_time_format_valid:
   http:
