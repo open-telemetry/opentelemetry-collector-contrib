@@ -137,6 +137,8 @@ In some environments, especially when component names are long or deeply nested,
 
 The extension now automatically truncates generated file names when necessary to ensure they stay within OS limits. Truncation is applied after sanitization and preserves uniqueness to avoid collisions between different components.
 
+To determine which truncated file corresponds to a specific component, check the extension logs. The logs include mappings between component identifiers (type and full name) and the generated file names, allowing you to match components to their stored files.
+
 ## Troubleshooting
 
 _Currently, the File Storage extension uses [bbolt](https://github.com/etcd-io/bbolt) to store and read data on disk. The
