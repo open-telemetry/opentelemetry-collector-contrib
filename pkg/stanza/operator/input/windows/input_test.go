@@ -315,6 +315,7 @@ func TestInputIncludeLogRecordOriginal(t *testing.T) {
 			"record_id":   uint64(0),
 			"system_time": "2024-01-01T00:00:00Z",
 			"task":        "",
+			"version":     uint8(0),
 		},
 		Attributes: map[string]any{
 			"log.record.original": eventXML.Original,
@@ -380,6 +381,7 @@ func TestInputIncludeLogRecordOriginalFalse(t *testing.T) {
 			"record_id":   uint64(0),
 			"system_time": "2024-01-01T00:00:00Z",
 			"task":        "",
+			"version":     uint8(0),
 		},
 		Attributes: nil,
 	}
