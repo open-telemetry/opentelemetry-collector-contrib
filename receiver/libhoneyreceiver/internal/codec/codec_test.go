@@ -563,8 +563,8 @@ func TestGetEncoder(t *testing.T) {
 
 func TestBuildLibhoneyEventFromMap_SamplerateTypes(t *testing.T) {
 	tests := []struct {
-		name             string
-		rawEvent         map[string]any
+		name               string
+		rawEvent           map[string]any
 		expectedSampleRate int
 	}{
 		{
