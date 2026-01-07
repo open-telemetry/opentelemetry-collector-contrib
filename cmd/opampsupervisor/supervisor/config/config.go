@@ -392,11 +392,6 @@ func DefaultSupervisor() Supervisor {
 				OutputPaths:      []string{"stdout"},
 				ErrorOutputPaths: []string{"stderr"},
 			},
-			Resource: supervisorresource.Config{
-				Detection: &supervisorresource.DetectionConfig{
-					Detectors: []any{"env"},
-				},
-			},
 		},
 	}
 }

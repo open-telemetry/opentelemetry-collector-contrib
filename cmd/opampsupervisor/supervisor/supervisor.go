@@ -74,15 +74,6 @@ var (
 	lastRecvOwnTelemetryConfigFile = "last_recv_own_telemetry_config.dat"
 
 	errNonMatchingInstanceUID = errors.New("received collector instance UID does not match expected UID set by the supervisor")
-
-	// supervisorVersion can be overridden at build time via
-	// -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor.supervisorVersion=<version>"
-	supervisorVersion   = "latest"
-	supervisorBuildInfo = component.BuildInfo{
-		Command:     "opamp-supervisor",
-		Description: "OpenTelemetry OpAMP Supervisor",
-		Version:     supervisorVersion,
-	}
 )
 
 const (
@@ -259,7 +250,11 @@ func initTelemetrySettings(ctx context.Context, logger *zap.Logger, cfg config.T
 		readers = []telemetryconfig.MetricReader{}
 	}
 
-	sdkRes, err := supervisorresource.New(ctx, supervisorBuildInfo, &cfg.Resource)
+	sdkRes, err := supervisorresource.New(ctx, component.BuildInfo{
+		Command:     "opamp-supervisor",
+		Description: "OpenTelemetry OpAMP Supervisor",
+		Version:     "latest",
+	}, &cfg.Resource)
 	if err != nil {
 		return telemetrySettings{}, fmt.Errorf("failed to create telemetry resource: %w", err)
 	}

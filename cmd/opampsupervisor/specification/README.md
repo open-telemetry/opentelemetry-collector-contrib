@@ -243,6 +243,10 @@ telemetry:
     # schema_url: https://opentelemetry.io/schemas/1.24.0
 
     # Resource detection from cloud providers and host environment
+    # Note: Detectors run first, then static attributes are applied.
+    # Static attributes (from attributes, attributes_list, or inline) will override
+    # any attributes detected by detectors with the same name.
+    # The order of detectors in the list does not affect precedence.
     detection:
       # List of detectors to run
       # Available detectors: env, host, aws, aws/ec2, aws/ecs, aws/eks, aws/lambda, gcp, azure

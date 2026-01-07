@@ -19,8 +19,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap/zapcore"
-
-	supervisorresource "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/resource"
 )
 
 func simpleError(err string) func() string {
@@ -745,11 +743,6 @@ telemetry:
 							Level:            zapcore.WarnLevel,
 							OutputPaths:      []string{"stdout"},
 							ErrorOutputPaths: []string{"stderr"},
-						},
-						Resource: supervisorresource.Config{
-							Detection: &supervisorresource.DetectionConfig{
-								Detectors: []any{"env"},
-							},
 						},
 					},
 				}
