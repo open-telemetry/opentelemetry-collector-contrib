@@ -56,10 +56,10 @@ func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrap
 	// try with suffixes trimmed, in-case it is a "merged" metric type.
 	normalizedName := normalizeMetricName(metricName)
 	if metadata, ok := mc.GetMetadata(normalizedName); ok {
-		if isOMCounterCreatedLine(metricName, normalizedName, mc) {
-			return &metadata, normalizedName + metricSuffixTotal
-		}
 		if metadata.Type == model.MetricTypeCounter {
+			if strings.HasSuffix(metricName, metricSuffixCreated) {
+				return &metadata, normalizedName + metricSuffixTotal
+			}
 			return &metadata, metricName
 		}
 		return &metadata, normalizedName

@@ -247,7 +247,7 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		if _, ok := t.mc.GetMetadata(mn); !ok {
 			fn = normalizeMetricName(mn)
 			if isOMCounterCreatedLine(mn, fn, t.mc) {
-				fn = fn + metricSuffixTotal
+				fn += metricSuffixTotal
 			}
 		}
 		fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
