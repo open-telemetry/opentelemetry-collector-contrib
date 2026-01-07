@@ -20,15 +20,8 @@ import (
 
 // spanInfo holds a span and its location within the trace data structure
 type spanInfo struct {
-	span          ptrace.Span
-	scopeSpans    ptrace.ScopeSpans
-	resourceSpans ptrace.ResourceSpans
-}
-
-// spanGroup holds a group of similar leaf spans for aggregation
-type spanGroup struct {
-	spans    []spanInfo
-	groupKey string
+	span       ptrace.Span
+	scopeSpans ptrace.ScopeSpans
 }
 
 // aggregationStats holds statistics for a group of spans
@@ -40,13 +33,10 @@ type aggregationStats struct {
 	bucketCounts []int64
 }
 
-// aggregationGroup represents a group of spans to be aggregated with a placeholder for the summary span
+// aggregationGroup represents a group of spans to be aggregated
 type aggregationGroup struct {
 	spans         []spanInfo
-	groupKey      string
-	isParent      bool           // true if this is a parent aggregation (not leaf)
 	level         int            // tree level (0 = leaf, 1 = parent of leaf, etc.)
-	summarySpan   ptrace.Span    // placeholder for created summary span
 	summarySpanID pcommon.SpanID // SpanID of the summary span (assigned before creation)
 }
 
@@ -57,8 +47,20 @@ type aggregationPlan struct {
 
 // attributePattern holds a compiled glob pattern for matching attribute keys
 type attributePattern struct {
-	pattern string
-	glob    glob.Glob
+	glob glob.Glob
+}
+
+// spanNode represents a span in the trace tree with parent/child relationships
+type spanNode struct {
+	info     spanInfo
+	parent   *spanNode
+	children []*spanNode
+}
+
+// traceTree represents a complete trace as a tree structure
+type traceTree struct {
+	nodeByID map[pcommon.SpanID]*spanNode
+	orphans  []*spanNode // spans whose parent is not in the trace
 }
 
 type leafSpanPruningProcessor struct {
@@ -76,8 +78,7 @@ func newLeafSpanPruningProcessor(set processor.Settings, cfg *Config) (*leafSpan
 			return nil, fmt.Errorf("invalid glob pattern %q: %w", pattern, err)
 		}
 		patterns = append(patterns, attributePattern{
-			pattern: pattern,
-			glob:    g,
+			glob: g,
 		})
 	}
 
@@ -117,9 +118,8 @@ func (p *leafSpanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pco
 				span := spans.At(k)
 				traceID := span.TraceID()
 				traceSpans[traceID] = append(traceSpans[traceID], spanInfo{
-					span:          span,
-					scopeSpans:    ils,
-					resourceSpans: rs,
+					span:       span,
+					scopeSpans: ils,
 				})
 			}
 		}
@@ -128,12 +128,79 @@ func (p *leafSpanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pco
 	return traceSpans
 }
 
+// buildTraceTree constructs a tree structure from a list of spans
+// Handles incomplete traces: orphans (missing parents), multiple roots, no root
+func (p *leafSpanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
+	tree := &traceTree{
+		nodeByID: make(map[pcommon.SpanID]*spanNode),
+	}
+
+	if len(spans) == 0 {
+		return tree
+	}
+
+	// First pass: create nodes for all spans
+	for _, info := range spans {
+		node := &spanNode{info: info}
+		tree.nodeByID[info.span.SpanID()] = node
+	}
+
+	// Second pass: identify root(s) and link parent-child relationships
+	var rootCount int
+	for _, node := range tree.nodeByID {
+		parentID := node.info.span.ParentSpanID()
+		if parentID.IsEmpty() {
+			// This is a root span (no parent)
+			rootCount++
+		} else if parent, exists := tree.nodeByID[parentID]; exists {
+			// Link to parent
+			node.parent = parent
+			parent.children = append(parent.children, node)
+		} else {
+			// Parent not in trace - this is an orphan
+			tree.orphans = append(tree.orphans, node)
+		}
+	}
+
+	// Log warnings for incomplete traces
+	if rootCount > 1 {
+		p.logger.Debug("multiple root spans found",
+			zap.Int("rootCount", rootCount))
+	} else if rootCount == 0 && len(tree.orphans) > 0 {
+		p.logger.Debug("no root span found, trace may be incomplete")
+	}
+
+	if len(tree.orphans) > 0 {
+		p.logger.Debug("orphaned spans detected",
+			zap.Int("orphanCount", len(tree.orphans)))
+	}
+
+	return tree
+}
+
+// findLeafNodes returns all nodes with no children (leaf spans)
+func (t *traceTree) findLeafNodes() []*spanNode {
+	var leaves []*spanNode
+	for _, node := range t.nodeByID {
+		if len(node.children) == 0 {
+			leaves = append(leaves, node)
+		}
+	}
+	return leaves
+}
+
 // processTrace processes a single trace using two-phase approach:
 // Phase 1: Analyze aggregations bottom-up (identify leaf groups, then eligible parents)
 // Phase 2: Execute aggregations top-down (create parent summaries first, then children)
 func (p *leafSpanPruningProcessor) processTrace(ctx context.Context, spans []spanInfo, td ptrace.Traces) error {
+	// Build trace tree
+	tree := p.buildTraceTree(spans)
+	if len(tree.nodeByID) == 0 {
+		return nil
+	}
+
 	// Phase 1: Analyze aggregations (bottom-up)
-	aggregationGroups := p.analyzeAggregations(spans)
+	aggregationGroups := p.analyzeAggregationsWithTree(tree)
 	if len(aggregationGroups) == 0 {
 		return nil
 	}
@@ -145,52 +212,6 @@ func (p *leafSpanPruningProcessor) processTrace(ctx context.Context, spans []spa
 	p.executeAggregations(plan)
 
 	return nil
-}
-
-// findLeafSpans identifies spans that have no children
-func (p *leafSpanPruningProcessor) findLeafSpans(spans []spanInfo) []spanInfo {
-	// Build set of all span IDs that are referenced as parents
-	parentSpanIDs := make(map[pcommon.SpanID]struct{})
-	for _, info := range spans {
-		parentID := info.span.ParentSpanID()
-		if !parentID.IsEmpty() {
-			parentSpanIDs[parentID] = struct{}{}
-		}
-	}
-
-	// Leaf spans are those whose SpanID is NOT in parentSpanIDs
-	var leafSpans []spanInfo
-	for _, info := range spans {
-		if _, isParent := parentSpanIDs[info.span.SpanID()]; !isParent {
-			leafSpans = append(leafSpans, info)
-		}
-	}
-
-	return leafSpans
-}
-
-// groupSimilarLeafSpansWithParent groups leaf spans by name, attributes, and parent span name
-func (p *leafSpanPruningProcessor) groupSimilarLeafSpansWithParent(leafSpans []spanInfo, spanByID map[pcommon.SpanID]spanInfo) []spanGroup {
-	groups := make(map[string]*spanGroup)
-
-	for _, info := range leafSpans {
-		key := p.buildLeafGroupKeyWithParent(info.span, spanByID)
-		if group, exists := groups[key]; exists {
-			group.spans = append(group.spans, info)
-		} else {
-			groups[key] = &spanGroup{
-				spans:    []spanInfo{info},
-				groupKey: key,
-			}
-		}
-	}
-
-	// Convert map to slice
-	result := make([]spanGroup, 0, len(groups))
-	for _, g := range groups {
-		result = append(result, *g)
-	}
-	return result
 }
 
 // buildGroupKey creates a grouping key from span name, status, and matching attributes
@@ -323,60 +344,63 @@ func (p *leafSpanPruningProcessor) buildParentGroupKey(span ptrace.Span) string 
 	return builder.String()
 }
 
-// buildLeafGroupKeyWithParent creates a grouping key for leaf spans including parent span name
-// This ensures that leaf spans with different parents are not grouped together
-func (p *leafSpanPruningProcessor) buildLeafGroupKeyWithParent(span ptrace.Span, spanByID map[pcommon.SpanID]spanInfo) string {
+// buildLeafGroupKeyFromNode creates a grouping key for leaf spans using tree node parent pointer
+func (p *leafSpanPruningProcessor) buildLeafGroupKeyFromNode(node *spanNode) string {
 	var builder strings.Builder
 
 	// Include parent span name to separate groups by parent
-	parentID := span.ParentSpanID()
-	if !parentID.IsEmpty() {
-		if parentInfo, exists := spanByID[parentID]; exists {
-			builder.WriteString("parent=")
-			builder.WriteString(parentInfo.span.Name())
-			builder.WriteString("|")
-		}
+	if node.parent != nil {
+		builder.WriteString("parent=")
+		builder.WriteString(node.parent.info.span.Name())
+		builder.WriteString("|")
 	}
 
 	// Include regular group key (name + status + attributes)
-	builder.WriteString(p.buildGroupKey(span))
+	builder.WriteString(p.buildGroupKey(node.info.span))
 
 	return builder.String()
 }
 
-// analyzeAggregations performs Phase 1: bottom-up analysis to identify all aggregation groups
-func (p *leafSpanPruningProcessor) analyzeAggregations(spans []spanInfo) map[string]aggregationGroup {
-	// Step 1: Build spanByID map (needed for parent lookups)
-	spanByID := make(map[pcommon.SpanID]spanInfo)
-	for _, info := range spans {
-		spanByID[info.span.SpanID()] = info
+// groupLeafNodesByKey groups leaf nodes by their grouping key
+func (p *leafSpanPruningProcessor) groupLeafNodesByKey(leafNodes []*spanNode) map[string][]*spanNode {
+	groups := make(map[string][]*spanNode)
+	for _, node := range leafNodes {
+		key := p.buildLeafGroupKeyFromNode(node)
+		groups[key] = append(groups[key], node)
 	}
+	return groups
+}
 
-	// Step 2: Find leaf spans
-	leafSpans := p.findLeafSpans(spans)
-	if len(leafSpans) == 0 {
+// analyzeAggregationsWithTree performs Phase 1 using tree structure
+func (p *leafSpanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[string]aggregationGroup {
+	// Step 1: Find leaf nodes (nodes with no children)
+	leafNodes := tree.findLeafNodes()
+	if len(leafNodes) == 0 {
 		return nil
 	}
 
-	// Step 3: Group similar leaf spans (including parent information)
-	leafGroups := p.groupSimilarLeafSpansWithParent(leafSpans, spanByID)
+	// Step 2: Group similar leaf nodes
+	leafGroups := p.groupLeafNodesByKey(leafNodes)
 
-	// Step 4: Filter groups meeting minimum threshold
+	// Step 3: Filter groups meeting minimum threshold
 	aggregationGroups := make(map[string]aggregationGroup)
-	spansToRemove := make(map[pcommon.SpanID]string) // spanID -> groupKey
+	nodesToRemove := make(map[pcommon.SpanID]string) // spanID -> groupKey
 
-	for _, group := range leafGroups {
-		if len(group.spans) >= p.config.MinSpansToAggregate {
-			groupKey := group.groupKey
+	for groupKey, nodes := range leafGroups {
+		if len(nodes) >= p.config.MinSpansToAggregate {
+			// Convert nodes to spanInfo slice
+			spans := make([]spanInfo, len(nodes))
+			for i, node := range nodes {
+				spans[i] = node.info
+			}
+
 			aggregationGroups[groupKey] = aggregationGroup{
-				spans:    group.spans,
-				groupKey: groupKey,
-				isParent: false,
-				level:    0,
+				spans: spans,
+				level: 0,
 			}
 			// Mark these spans for removal
-			for _, info := range group.spans {
-				spansToRemove[info.span.SpanID()] = groupKey
+			for _, node := range nodes {
+				nodesToRemove[node.info.span.SpanID()] = groupKey
 			}
 		}
 	}
@@ -385,34 +409,38 @@ func (p *leafSpanPruningProcessor) analyzeAggregations(spans []spanInfo) map[str
 		return nil
 	}
 
-	// Step 5: Walk up the tree to find eligible parent spans recursively
+	// Step 4: Walk up the tree to find eligible parent spans recursively
 	level := 1
 	for {
-		parentCandidates := p.findEligibleParents(spans, spansToRemove, spanByID)
+		parentCandidates := p.findEligibleParentNodes(tree, nodesToRemove)
 		if len(parentCandidates) == 0 {
-			break // No more eligible parents
+			break
 		}
 
 		// Group parent candidates by name + status
-		parentGroups := make(map[string][]spanInfo)
-		for _, parentInfo := range parentCandidates {
-			parentKey := p.buildParentGroupKey(parentInfo.span)
-			parentGroups[parentKey] = append(parentGroups[parentKey], parentInfo)
+		parentGroups := make(map[string][]*spanNode)
+		for _, node := range parentCandidates {
+			parentKey := p.buildParentGroupKey(node.info.span)
+			parentGroups[parentKey] = append(parentGroups[parentKey], node)
 		}
 
-		// Add parent groups (no minimum threshold for parents)
+		// Add parent groups (at least 2 parents to aggregate)
 		foundNewParents := false
-		for parentKey, parentSpans := range parentGroups {
-			if len(parentSpans) >= 2 { // At least 2 parents to aggregate
+		for parentKey, nodes := range parentGroups {
+			if len(nodes) >= 2 {
+				// Convert nodes to spanInfo slice
+				spans := make([]spanInfo, len(nodes))
+				for i, node := range nodes {
+					spans[i] = node.info
+				}
+
 				aggregationGroups[parentKey] = aggregationGroup{
-					spans:    parentSpans,
-					groupKey: parentKey,
-					isParent: true,
-					level:    level,
+					spans: spans,
+					level: level,
 				}
 				// Mark these parent spans for removal
-				for _, info := range parentSpans {
-					spansToRemove[info.span.SpanID()] = parentKey
+				for _, node := range nodes {
+					nodesToRemove[node.info.span.SpanID()] = parentKey
 				}
 				foundNewParents = true
 			}
@@ -427,46 +455,37 @@ func (p *leafSpanPruningProcessor) analyzeAggregations(spans []spanInfo) map[str
 	return aggregationGroups
 }
 
-// findEligibleParents finds parent spans whose ALL children will be removed
-func (p *leafSpanPruningProcessor) findEligibleParents(spans []spanInfo, spansToRemove map[pcommon.SpanID]string, spanByID map[pcommon.SpanID]spanInfo) []spanInfo {
-	// Build parent -> children map
-	childrenByParent := make(map[pcommon.SpanID][]pcommon.SpanID)
-	for _, info := range spans {
-		parentID := info.span.ParentSpanID()
-		if !parentID.IsEmpty() {
-			childrenByParent[parentID] = append(childrenByParent[parentID], info.span.SpanID())
-		}
-	}
+// findEligibleParentNodes finds parent nodes whose ALL children are marked for removal
+func (p *leafSpanPruningProcessor) findEligibleParentNodes(tree *traceTree, nodesToRemove map[pcommon.SpanID]string) []*spanNode {
+	var eligibleParents []*spanNode
 
-	// Find parents whose ALL children will be removed
-	var eligibleParents []spanInfo
-	for parentID, childIDs := range childrenByParent {
+	for _, node := range tree.nodeByID {
+		// Skip if node has no children (it's a leaf)
+		if len(node.children) == 0 {
+			continue
+		}
+
+		// Skip if node is root (no parent)
+		if node.parent == nil {
+			continue
+		}
+
+		// Skip if already marked for removal
+		if _, alreadyMarked := nodesToRemove[node.info.span.SpanID()]; alreadyMarked {
+			continue
+		}
+
 		// Check if ALL children are marked for removal
 		allChildrenRemoved := true
-		for _, childID := range childIDs {
-			if _, willRemove := spansToRemove[childID]; !willRemove {
+		for _, child := range node.children {
+			if _, willRemove := nodesToRemove[child.info.span.SpanID()]; !willRemove {
 				allChildrenRemoved = false
 				break
 			}
 		}
 
 		if allChildrenRemoved {
-			parentInfo, exists := spanByID[parentID]
-			if !exists {
-				continue
-			}
-
-			// Skip if parent is root (has no parent)
-			if parentInfo.span.ParentSpanID().IsEmpty() {
-				continue
-			}
-
-			// Skip if parent is already marked for removal
-			if _, alreadyMarked := spansToRemove[parentID]; alreadyMarked {
-				continue
-			}
-
-			eligibleParents = append(eligibleParents, parentInfo)
+			eligibleParents = append(eligibleParents, node)
 		}
 	}
 
@@ -514,7 +533,7 @@ func (p *leafSpanPruningProcessor) executeAggregations(plan aggregationPlan) {
 		}
 
 		// Create summary span with correct parent
-		summarySpan := p.createSummarySpanWithParent(group, stats, summaryParentID)
+		p.createSummarySpanWithParent(group, stats, summaryParentID)
 
 		// Record that these original span IDs should be replaced by the summary span ID
 		for _, info := range group.spans {
@@ -525,9 +544,6 @@ func (p *leafSpanPruningProcessor) executeAggregations(plan aggregationPlan) {
 		for _, info := range group.spans {
 			info.span.SetName("")
 		}
-
-		// Store the created summary span for reference
-		group.summarySpan = summarySpan
 	}
 
 	// Remove marked spans from their scope spans

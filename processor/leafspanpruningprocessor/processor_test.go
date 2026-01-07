@@ -1392,3 +1392,188 @@ func findAllSpansByExactName(td ptrace.Traces, name string) []ptrace.Span {
 	}
 	return result
 }
+
+// Tree-based edge case tests
+
+func TestLeafSpanPruning_OrphanSpans(t *testing.T) {
+	// Test: orphan spans (parent not in trace) should still be processed as potential leaves
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithOrphanSpans(t)
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 4, originalSpanCount) // 1 root + 3 orphan leaf spans
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// Orphan spans with same name should still be aggregated
+	// 3 orphan SELECT spans -> 1 summary + 1 root
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 2, finalSpanCount)
+
+	summarySpan := findSpanByNameSuffix(td, "_aggregated")
+	require.NotNil(t, summarySpan)
+
+	attrs := summarySpan.Attributes()
+	spanCount, _ := attrs.Get("aggregation.span_count")
+	assert.Equal(t, int64(3), spanCount.Int())
+}
+
+func TestLeafSpanPruning_MultipleRootSpans(t *testing.T) {
+	// Test: multiple root spans (no parent) in a trace should be handled gracefully
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithMultipleRootsTree(t)
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 5, originalSpanCount) // 2 roots + 3 leaf spans under first root
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// The 3 leaf spans under first root should aggregate
+	// Final: 2 roots + 1 summary = 3
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 3, finalSpanCount)
+
+	summarySpan := findSpanByNameSuffix(td, "_aggregated")
+	require.NotNil(t, summarySpan)
+
+	attrs := summarySpan.Attributes()
+	spanCount, _ := attrs.Get("aggregation.span_count")
+	assert.Equal(t, int64(3), spanCount.Int())
+}
+
+func TestLeafSpanPruning_NoRootSpan(t *testing.T) {
+	// Test: trace with no root span (all spans have parents not in trace)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithNoRoot(t)
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 3, originalSpanCount) // 3 orphan leaf spans (all point to missing parent)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// Should still aggregate the 3 orphan spans
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 1, finalSpanCount) // 1 summary
+
+	summarySpan := findSpanByNameSuffix(td, "_aggregated")
+	require.NotNil(t, summarySpan)
+
+	attrs := summarySpan.Attributes()
+	spanCount, _ := attrs.Get("aggregation.span_count")
+	assert.Equal(t, int64(3), spanCount.Int())
+}
+
+// Helper functions for tree edge case tests
+
+func createTestTraceWithOrphanSpans(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	rootSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+	missingParentID := pcommon.SpanID([8]byte{99, 0, 0, 0, 0, 0, 0, 0}) // Not in trace
+
+	// Root span
+	rootSpan := ss.Spans().AppendEmpty()
+	rootSpan.SetTraceID(traceID)
+	rootSpan.SetSpanID(rootSpanID)
+	rootSpan.SetName("root")
+	rootSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	rootSpan.SetEndTimestamp(pcommon.Timestamp(1000000500))
+
+	// 3 orphan leaf spans (parent not in trace)
+	for i := 0; i < 3; i++ {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(missingParentID) // Parent not in trace
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000100))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000200))
+	}
+
+	return td
+}
+
+func createTestTraceWithMultipleRootsTree(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	root1SpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+	root2SpanID := pcommon.SpanID([8]byte{2, 0, 0, 0, 0, 0, 0, 0})
+
+	// First root span (earlier timestamp)
+	root1 := ss.Spans().AppendEmpty()
+	root1.SetTraceID(traceID)
+	root1.SetSpanID(root1SpanID)
+	root1.SetName("root1")
+	root1.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	root1.SetEndTimestamp(pcommon.Timestamp(1000000500))
+
+	// Second root span (later timestamp)
+	root2 := ss.Spans().AppendEmpty()
+	root2.SetTraceID(traceID)
+	root2.SetSpanID(root2SpanID)
+	root2.SetName("root2")
+	root2.SetStartTimestamp(pcommon.Timestamp(1000000100))
+	root2.SetEndTimestamp(pcommon.Timestamp(1000000600))
+
+	// 3 leaf spans under first root
+	for i := 0; i < 3; i++ {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(root1SpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000100))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000200))
+	}
+
+	return td
+}
+
+func createTestTraceWithNoRoot(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	missingParentID := pcommon.SpanID([8]byte{99, 0, 0, 0, 0, 0, 0, 0}) // Not in trace
+
+	// 3 orphan leaf spans all pointing to missing parent
+	for i := 0; i < 3; i++ {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(missingParentID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000100 + uint64(i*10)))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000200 + uint64(i*10)))
+	}
+
+	return td
+}
