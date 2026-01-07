@@ -111,11 +111,11 @@ func generateTestTrace(numSpans, leafSpansPerParent int) ptrace.Traces {
 		leafSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		leafSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(10 * time.Millisecond)))
 		leafSpan.Status().SetCode(ptrace.StatusCodeOk)
-		
+
 		// Add some attributes
 		leafSpan.Attributes().PutStr("http.method", "GET")
 		leafSpan.Attributes().PutStr("http.url", "/api/data")
-		
+
 		spanID++
 	}
 
@@ -126,7 +126,7 @@ func generateTestTrace(numSpans, leafSpansPerParent int) ptrace.Traces {
 func generateTestSpans(numSpans, leafSpansPerParent int) []spanInfo {
 	td := generateTestTrace(numSpans, leafSpansPerParent)
 	spans := make([]spanInfo, 0, numSpans)
-	
+
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		ilss := rss.At(i).ScopeSpans()
@@ -140,6 +140,6 @@ func generateTestSpans(numSpans, leafSpansPerParent int) []spanInfo {
 			}
 		}
 	}
-	
+
 	return spans
 }

@@ -47,4 +47,3 @@ func TestFactory_CreateTracesProcessor(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, tp)
 }
-

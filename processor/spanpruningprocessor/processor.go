@@ -136,7 +136,7 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 		if len(nodes) >= p.config.MinSpansToAggregate {
 			aggregationGroups[groupKey] = aggregationGroup{
 				nodes: nodes,
-				level: 0,
+				depth: 0,
 			}
 			// Mark nodes for removal using field instead of map
 			for _, node := range nodes {
@@ -150,8 +150,18 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 	}
 
 	// Step 4: Walk up the tree to find eligible parent spans recursively
-	level := 1
+	// Respect MaxParentDepth: 0 = no parent aggregation, -1 = unlimited, >0 = limit
+	if p.config.MaxParentDepth == 0 {
+		return aggregationGroups
+	}
+
+	depth := 1
 	for {
+		// Check if we've reached the maximum parent depth limit
+		if p.config.MaxParentDepth > 0 && depth > p.config.MaxParentDepth {
+			break
+		}
+
 		parentCandidates := p.findEligibleParentNodes(tree)
 		if len(parentCandidates) == 0 {
 			break
@@ -170,7 +180,7 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 			if len(nodes) >= 2 {
 				aggregationGroups[parentKey] = aggregationGroup{
 					nodes: nodes,
-					level: level,
+					depth: depth,
 				}
 				// Mark parent nodes for removal
 				for _, node := range nodes {
@@ -183,7 +193,7 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 		if !foundNewParents {
 			break
 		}
-		level++
+		depth++
 	}
 
 	return aggregationGroups

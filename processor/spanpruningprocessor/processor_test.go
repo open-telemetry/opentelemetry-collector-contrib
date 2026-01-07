@@ -1042,6 +1042,7 @@ func TestLeafSpanPruning_ThreeLevelAggregation(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.MinSpansToAggregate = 2
+	cfg.MaxParentDepth = -1 // unlimited for this test
 
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)

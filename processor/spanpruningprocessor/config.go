@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// Config defines the configuration for the leaf span pruning processor.
+// Config defines the configuration for the span pruning processor.
 type Config struct {
 	// GroupByAttributes specifies which span attributes to use for grouping
 	// similar leaf spans. Spans with the same name AND same values for these
@@ -26,6 +26,12 @@ type Config struct {
 	// before aggregation occurs. If a group has fewer spans, they are left unchanged.
 	// Default: 5
 	MinSpansToAggregate int `mapstructure:"min_spans_to_aggregate"`
+
+	// MaxParentDepth limits how deep parent span aggregation can go above the leaf spans.
+	// Set to 0 to only aggregate leaf spans (no parent aggregation).
+	// Set to -1 for unlimited depth.
+	// Default: 1
+	MaxParentDepth int `mapstructure:"max_parent_depth"`
 
 	// SummarySpanNameSuffix is appended to the original span name to create
 	// the summary span name.
@@ -50,6 +56,10 @@ var _ component.Config = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if cfg.MinSpansToAggregate < 2 {
 		return errors.New("min_spans_to_aggregate must be at least 2")
+	}
+
+	if cfg.MaxParentDepth < -1 {
+		return errors.New("max_parent_depth must be -1 (unlimited) or >= 0")
 	}
 
 	// Validate histogram buckets

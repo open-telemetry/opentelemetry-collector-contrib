@@ -17,7 +17,7 @@ import (
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
-// NewFactory returns a new factory for the Leaf Span Pruning processor.
+// NewFactory returns a new factory for the Span Pruning processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
@@ -28,6 +28,7 @@ func NewFactory() processor.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		MinSpansToAggregate:        5,
+		MaxParentDepth:             1,
 		SummarySpanNameSuffix:      "_aggregated",
 		AggregationAttributePrefix: "aggregation.",
 		AggregationHistogramBuckets: []time.Duration{

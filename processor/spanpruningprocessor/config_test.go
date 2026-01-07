@@ -43,6 +43,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				GroupByAttributes:           []string{"db.operation"},
 				MinSpansToAggregate:         5,
+				MaxParentDepth:              1,
 				SummarySpanNameSuffix:       "_aggregated",
 				AggregationAttributePrefix:  "aggregation.",
 				AggregationHistogramBuckets: defaultHistogramBuckets,
@@ -53,6 +54,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				GroupByAttributes:           []string{"db.operation", "db.name"},
 				MinSpansToAggregate:         3,
+				MaxParentDepth:              1,
 				SummarySpanNameSuffix:       "_batch",
 				AggregationAttributePrefix:  "batch.",
 				AggregationHistogramBuckets: defaultHistogramBuckets,

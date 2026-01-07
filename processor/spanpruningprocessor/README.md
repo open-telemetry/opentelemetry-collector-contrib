@@ -53,6 +53,12 @@ processors:
     # Default: 5
     min_spans_to_aggregate: 3
 
+    # Maximum depth of parent span aggregation above leaf spans
+    # 0 = only aggregate leaf spans (no parent aggregation)
+    # -1 = unlimited depth
+    # Default: 1
+    max_parent_depth: 1
+
     # Suffix appended to create summary span name
     # Default: "_aggregated"
     summary_span_name_suffix: "_batch"
@@ -73,6 +79,7 @@ processors:
 |-----|--|---------|-------|
 | `group_by_attributes` | []string | [] | Attribute patterns for grouping (supports glob patterns like `db.*`) |
 | `min_spans_to_aggregate` | int | 5 | Minimum group size before aggregation occurs |
+| `max_parent_depth` | int | 1 | Max depth of parent aggregation (0=none, -1=unlimited) |
 | `summary_span_name_suffix` | string | "_aggregated" | Suffix appended to summary span names |
 | `aggregation_attribute_prefix` | string | "aggregation." | Prefix for aggregation statistics attributes |
 | `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for histogram buckets |

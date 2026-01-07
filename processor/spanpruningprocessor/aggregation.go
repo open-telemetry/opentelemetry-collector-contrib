@@ -15,7 +15,7 @@ import (
 // aggregationGroup represents a group of spans to be aggregated
 type aggregationGroup struct {
 	nodes         []*spanNode    // nodes to aggregate (replaces []spanInfo for efficiency)
-	level         int            // tree level (0 = leaf, 1 = parent of leaf, etc.)
+	depth         int            // tree depth (0 = leaf, 1 = parent of leaf, etc.)
 	summarySpanID pcommon.SpanID // SpanID of the summary span (assigned before creation)
 }
 
@@ -39,9 +39,9 @@ func (p *spanPruningProcessor) buildAggregationPlan(groups map[string]aggregatio
 		groupSlice = append(groupSlice, group)
 	}
 
-	// Sort by level descending (highest level first = top-down)
+	// Sort by depth descending (highest depth first = top-down)
 	sort.Slice(groupSlice, func(i, j int) bool {
-		return groupSlice[i].level > groupSlice[j].level
+		return groupSlice[i].depth > groupSlice[j].depth
 	})
 
 	// Pre-assign SpanIDs for all summary spans
