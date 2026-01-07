@@ -4,6 +4,8 @@
 package cloudtraillog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -19,6 +21,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
+
+// readerBufferSize defines the buffer size for buffered readers.
+const readerBufferSize = 128 * 1024 // 128KB buffer size
 
 type CloudTrailLogUnmarshaler struct {
 	buildInfo component.BuildInfo
@@ -141,34 +146,56 @@ func NewCloudTrailLogUnmarshaler(buildInfo component.BuildInfo) *CloudTrailLogUn
 }
 
 func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	decompressedBuf, err := io.ReadAll(reader)
+	bufferedReader := bufio.NewReaderSize(reader, readerBufferSize)
+
+	// Peek into the first 64 bytes to determine the type of CloudTrail log
+	peekBytes, err := bufferedReader.Peek(64)
 	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to read CloudTrail logs: %w", err)
+		if !errors.Is(err, io.EOF) {
+			return plog.Logs{}, fmt.Errorf("failed to peek into CloudTrail log: %w", err)
+		}
 	}
 
-	var cloudTrailLog CloudTrailLog
-	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as CloudTrail logs: %w", err)
+	firstKey, err := extractFirstKey(peekBytes)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to extract the first JSON key: %w", err)
 	}
 
-	if cloudTrailLog.Records != nil {
-		return u.processRecords(cloudTrailLog.Records)
+	decoder := gojson.NewDecoder(bufferedReader)
+
+	// Records indicates a CloudTrail log file
+	if firstKey == "Records" {
+		return u.processRecords(decoder)
 	}
 
 	// Try to parse as a CloudTrail digest record
+	// Note - Digest files are relatively small and has fields at root level.
 	var cloudTrailDigest CloudTrailDigest
-	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailDigest); err != nil {
+	if err := decoder.Decode(&cloudTrailDigest); err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as a CloudTrail digest: %w", err)
 	}
 
 	return u.processDigestRecord(cloudTrailDigest)
 }
 
-func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (plog.Logs, error) {
+// processRecords is specialized in processing CloudTrail log records.
+// Implementation works with a gojson.Decoder to efficiently stream through potentially large log files.
+func (u *CloudTrailLogUnmarshaler) processRecords(decoder *gojson.Decoder) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
-	if len(records) == 0 {
-		return logs, nil
+	// Check opening bracket
+	if token, err := decoder.Token(); err != nil || token != gojson.Delim('{') {
+		return plog.Logs{}, fmt.Errorf("expected '{': %w", err)
+	}
+
+	// Move to Records array
+	if _, err := decoder.Token(); err != nil {
+		return plog.Logs{}, fmt.Errorf("expected 'Records' key: %w", err)
+	}
+
+	// Check for array opening
+	if token, err := decoder.Token(); err != nil || token != gojson.Delim('[') {
+		return plog.Logs{}, fmt.Errorf("expected '[': %w", err)
 	}
 
 	// Create a single resource logs entry for all records
@@ -176,14 +203,27 @@ func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (p
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	u.setCommonScopeAttributes(scopeLogs)
 
-	// Set resource attributes based on the first record
-	// (all records have the same account ID and region)
-	u.setResourceAttributes(resourceLogs.Resource().Attributes(), records[0])
+	logRecords := scopeLogs.LogRecords()
+	// Pre-allocate space for log records to improve performance
+	logRecords.EnsureCapacity(100)
 
-	for i := range records {
-		record := &records[i]
-		logRecord := scopeLogs.LogRecords().AppendEmpty()
-		if err := u.setLogRecord(logRecord, record); err != nil {
+	var record CloudTrailRecord
+	init := true
+
+	for decoder.More() {
+		record = CloudTrailRecord{}
+		err := decoder.Decode(&record)
+		if err != nil {
+			return plog.Logs{}, err
+		}
+
+		if init {
+			u.setResourceAttributes(resourceLogs.Resource().Attributes(), record)
+			init = false
+		}
+
+		logRecord := logRecords.AppendEmpty()
+		if err := u.setLogRecord(logRecord, &record); err != nil {
 			return plog.Logs{}, err
 		}
 	}
@@ -191,6 +231,7 @@ func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (p
 	return logs, nil
 }
 
+// processDigestRecord is specialized in processing CloudTrail digest records
 func (u *CloudTrailLogUnmarshaler) processDigestRecord(record CloudTrailDigest) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
@@ -464,4 +505,40 @@ func extractTLSVersion(tlsVersion string) string {
 		return tlsVersion[4:]
 	}
 	return tlsVersion
+}
+
+// extractFirstKey extracts the first JSON key from byte array without parsing it.
+// This improves performance as there's no need to parse the entire JSON structure to extract the first key.
+func extractFirstKey(data []byte) (string, error) {
+	pos := 0
+	n := len(data)
+
+	// skip any spaces
+	for pos < n && data[pos] <= ' ' {
+		pos++
+	}
+	if pos >= n || data[pos] != '{' {
+		return "", errors.New("invalid JSON payload, failed to find the JSON opening")
+	}
+
+	// advance to opening quote
+	pos++
+	for pos < n && data[pos] <= ' ' {
+		pos++
+	}
+	if pos >= n || data[pos] != '"' {
+		return "", errors.New("invalid JSON payload, expected a JSON key but found none")
+	}
+
+	// extract the first key
+	pos++
+	keyStart := pos
+	for pos < n {
+		if data[pos] == '"' {
+			return string(data[keyStart:pos]), nil
+		}
+		pos++
+	}
+
+	return "", errors.New("invalid JSON payload")
 }
