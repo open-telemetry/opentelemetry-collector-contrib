@@ -55,7 +55,12 @@ func createTracesProcessor(
 ) (processor.Traces, error) {
 	pCfg := cfg.(*Config)
 
-	p, err := newSpanPruningProcessor(set, pCfg)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := newSpanPruningProcessor(set, pCfg, telemetryBuilder)
 	if err != nil {
 		return nil, err
 	}
@@ -66,5 +71,6 @@ func createTracesProcessor(
 		cfg,
 		nextConsumer,
 		p.processTraces,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithShutdown(p.shutdown))
 }

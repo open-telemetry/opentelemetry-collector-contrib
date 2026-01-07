@@ -6,12 +6,15 @@ package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 )
 
 // spanInfo holds a span and its location within the trace data structure
@@ -30,9 +33,10 @@ type spanPruningProcessor struct {
 	config            *Config
 	logger            *zap.Logger
 	attributePatterns []attributePattern
+	telemetryBuilder  *metadata.TelemetryBuilder
 }
 
-func newSpanPruningProcessor(set processor.Settings, cfg *Config) (*spanPruningProcessor, error) {
+func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuilder *metadata.TelemetryBuilder) (*spanPruningProcessor, error) {
 	// Compile glob patterns for group_by_attributes
 	patterns := make([]attributePattern, 0, len(cfg.GroupByAttributes))
 	for _, pattern := range cfg.GroupByAttributes {
@@ -49,18 +53,45 @@ func newSpanPruningProcessor(set processor.Settings, cfg *Config) (*spanPruningP
 		config:            cfg,
 		logger:            set.Logger,
 		attributePatterns: patterns,
+		telemetryBuilder:  telemetryBuilder,
 	}, nil
 }
 
+// shutdown is called when the processor is being stopped
+func (p *spanPruningProcessor) shutdown(_ context.Context) error {
+	p.telemetryBuilder.Shutdown()
+	return nil
+}
+
 func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	start := time.Now()
+
+	// Count incoming spans
+	totalSpans := int64(0)
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		for j := 0; j < td.ResourceSpans().At(i).ScopeSpans().Len(); j++ {
+			totalSpans += int64(td.ResourceSpans().At(i).ScopeSpans().At(j).Spans().Len())
+		}
+	}
+	p.telemetryBuilder.ProcessorSpanpruningSpansReceived.Add(ctx, totalSpans)
+
 	// Group spans by TraceID
 	traceSpans := p.groupSpansByTraceID(td)
 
 	// Process each trace independently
+	tracesProcessed := int64(0)
 	for _, spans := range traceSpans {
 		if err := p.processTrace(ctx, spans); err != nil {
 			return td, err
 		}
+		tracesProcessed++
+	}
+
+	// Record telemetry only when actual work was done
+	if tracesProcessed > 0 {
+		p.telemetryBuilder.ProcessorSpanpruningTracesProcessed.Add(ctx, tracesProcessed)
+		p.telemetryBuilder.ProcessorSpanpruningProcessingDuration.Record(ctx,
+			float64(time.Since(start).Milliseconds()))
 	}
 
 	return td, nil
@@ -110,8 +141,15 @@ func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInf
 	// Phase 2: Build aggregation plan (order top-down)
 	plan := p.buildAggregationPlan(aggregationGroups)
 
-	// Phase 3: Execute aggregations (top-down)
-	p.executeAggregations(plan)
+	// Phase 3: Execute aggregations (top-down) and record pruned spans
+	prunedCount := p.executeAggregations(plan)
+
+	// Record telemetry after aggregation is complete
+	p.telemetryBuilder.ProcessorSpanpruningSpansPruned.Add(ctx, int64(prunedCount))
+	p.telemetryBuilder.ProcessorSpanpruningAggregationsCreated.Add(ctx, int64(len(plan.groups)))
+	for _, group := range plan.groups {
+		p.telemetryBuilder.ProcessorSpanpruningAggregationGroupSize.Record(ctx, int64(len(group.nodes)))
+	}
 
 	return nil
 }

@@ -37,7 +37,13 @@ func benchmarkProcessTrace(b *testing.B, numSpans, minSpans int) {
 	cfg.MinSpansToAggregate = minSpans
 	cfg.GroupByAttributes = []string{"http.*"}
 
-	proc, err := newSpanPruningProcessor(processortest.NewNopSettings(metadata.Type), cfg)
+	set := processortest.NewNopSettings(metadata.Type)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	proc, err := newSpanPruningProcessor(set, cfg, telemetryBuilder)
 	if err != nil {
 		b.Fatal(err)
 	}

@@ -56,13 +56,15 @@ func (p *spanPruningProcessor) buildAggregationPlan(groups map[string]aggregatio
 
 // executeAggregations performs Phase 2: top-down creation of summary spans
 // Optimized to batch span removals instead of calling RemoveIf repeatedly
-func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) {
+// Returns the count of spans that were pruned (aggregated)
+func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 	// Track which parent SpanID should map to which summary SpanID
 	// Pre-size based on expected number of nodes being aggregated
 	parentReplacements := make(map[pcommon.SpanID]pcommon.SpanID, len(plan.groups)*4)
 
 	// Track spans to remove per ScopeSpans for batch removal
 	spansToRemove := make(map[ptrace.ScopeSpans]map[pcommon.SpanID]struct{})
+	prunedCount := 0
 
 	for _, group := range plan.groups {
 		// Calculate statistics and time range in single pass
@@ -94,6 +96,7 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) {
 			}
 			spansToRemove[scopeSpans][node.span.SpanID()] = struct{}{}
 		}
+		prunedCount += len(group.nodes)
 	}
 
 	// Batch remove all marked spans in a single pass per ScopeSpans
@@ -103,6 +106,8 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) {
 			return shouldRemove
 		})
 	}
+
+	return prunedCount
 }
 
 // createSummarySpanWithParent creates a summary span with a specific parent SpanID

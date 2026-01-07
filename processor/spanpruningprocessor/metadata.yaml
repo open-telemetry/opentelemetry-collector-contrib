@@ -8,6 +8,52 @@ status:
   codeowners:
     active: [portertech]
 
+telemetry:
+  metrics:
+    # Counters
+    processor_spanpruning_spans_received:
+      enabled: true
+      description: Total spans received by the processor
+      unit: "{spans}"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    processor_spanpruning_spans_pruned:
+      enabled: true
+      description: Total spans pruned/removed by aggregation
+      unit: "{spans}"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    processor_spanpruning_aggregations_created:
+      enabled: true
+      description: Total aggregation summary spans created
+      unit: "{spans}"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    processor_spanpruning_traces_processed:
+      enabled: true
+      description: Total traces processed
+      unit: "{traces}"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    # Histograms
+    processor_spanpruning_aggregation_group_size:
+      enabled: true
+      description: Distribution of spans per aggregation group
+      unit: "{spans}"
+      stability: { level: development }
+      histogram: { value_type: int }
+
+    processor_spanpruning_processing_duration:
+      enabled: true
+      description: Time to process each batch of traces
+      unit: ms
+      stability: { level: development }
+      histogram: { value_type: double }
+
 tests:
   config:
     group_by_attributes:

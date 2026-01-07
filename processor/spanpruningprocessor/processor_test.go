@@ -837,7 +837,10 @@ func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
 			ctx := context.Background()
 			set := processortest.NewNopSettings(metadata.Type)
 
-			p, err := newSpanPruningProcessor(set, cfg)
+			telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+			require.NoError(t, err)
+
+			p, err := newSpanPruningProcessor(set, cfg, telemetryBuilder)
 			assert.NoError(t, err)
 
 			resultTd, err := p.processTraces(ctx, td)
