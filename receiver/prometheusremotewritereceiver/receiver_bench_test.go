@@ -133,7 +133,6 @@ func encodeProto(req *writev2.Request) []byte {
 
 const (
 	extraLabelsSize = 10
-	warmUpSize      = 20
 )
 
 func BenchmarkRemoteWrite(b *testing.B) {
@@ -152,14 +151,6 @@ func BenchmarkRemoteWrite(b *testing.B) {
 					// Precompute payload (raw proto) to focus on receiver translation cost.
 					req := makeWriteV2Request(sz, samples, extraLabelsSize)
 					payload := encodeProto(req)
-
-					// Warmup
-					for range warmUpSize {
-						r := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(payload))
-						r.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
-						w := httptest.NewRecorder()
-						prw.handlePRW(w, r)
-					}
 
 					b.ResetTimer()
 
