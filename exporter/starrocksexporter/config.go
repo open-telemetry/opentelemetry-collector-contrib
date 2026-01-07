@@ -90,10 +90,10 @@ const (
 	defaultSummarySuffix      = "_summary"
 	defaultHistogramSuffix    = "_histogram"
 	defaultExpHistogramSuffix = "_exponential_histogram"
-	defaultMaxOpenConns       = 10
-	defaultMaxIdleConns       = 5
-	defaultConnMaxLifetime    = 1 * time.Minute
-	defaultConnMaxIdleTime    = 20 * time.Second
+	defaultMaxOpenConns       = 3
+	defaultMaxIdleConns       = 1
+	defaultConnMaxLifetime    = 5 * time.Minute
+	defaultConnMaxIdleTime    = 30 * time.Second
 )
 
 var (
