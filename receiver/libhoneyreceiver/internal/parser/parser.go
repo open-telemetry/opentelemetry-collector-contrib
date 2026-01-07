@@ -197,6 +197,8 @@ func addSpanEventsToSpan(sp ptrace.Span, events []libhoneyevent.LibhoneyEvent, a
 			case int64, int16, int32:
 				intv := lval.(int64)
 				newEvent.Attributes().PutInt(lkey, intv)
+			case uint64:
+				newEvent.Attributes().PutInt(lkey, int64(lval))
 			case float64:
 				newEvent.Attributes().PutDouble(lkey, lval)
 			case bool:
@@ -283,6 +285,8 @@ func addSpanLinksToSpan(sp ptrace.Span, links []libhoneyevent.LibhoneyEvent, alr
 			case int64, int16, int32:
 				intv := lval.(int64)
 				newLink.Attributes().PutInt(lkey, intv)
+			case uint64:
+				newLink.Attributes().PutInt(lkey, int64(lval))
 			case float64:
 				newLink.Attributes().PutDouble(lkey, lval)
 			case bool:
