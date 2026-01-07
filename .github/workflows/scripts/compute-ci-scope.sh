@@ -11,15 +11,15 @@ set -euo pipefail
 # 4. Recursively finds modules that depend on the modified modules
 #    (e.g., if 'pkg/ottl' changes, we must test 'processor/filterprocessor').
 # 5. Groups the resulting modules into a fixed number of "buckets"
-#    (MAX_JOBS) to prevent spawning hundreds of concurrent CI jobs.
+#    (TARGET_CONCURRENCY) to prevent spawning hundreds of concurrent CI jobs.
 #
 #
 # Environment variables:
-#   FULL_MATRIX (Required in CI): JSON array of the fallback/full group list.
+#   ALL_TEST_GROUPS (Required in CI): JSON array of the fallback/full group list.
 #   PR_HEAD     (Optional): SHA of the PR tip. Defaults to 'HEAD' locally.
 #   BASE_REF    (Optional): Branch target. Defaults to 'main' locally.
-#   MAX_JOBS    (Optional): Max concurrent buckets. Defaults to 10.
-#   FORCE_FULL  (Optional): Set to "true" to force full matrix output.
+#   TARGET_CONCURRENCY    (Optional): Max concurrent buckets. Defaults to 10.
+#   FORCE_ALL  (Optional): Set to "true" to force full matrix output.
 # ======================================================================================
 
 # Ensure we are in the repo root
@@ -33,25 +33,31 @@ cd "${repo_root}"
 # -----------------------------------------------------------------------------
 # Define local variables
 # -----------------------------------------------------------------------------
-# If not running in GitHub Actions, set defaults for local testing
 if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
-  echo ":: Local detection: Running in LOCAL mode" >&2
+  # If not running in GitHub Actions, set defaults for local testing.
+  echo "Running in local mode." >&2
   export EVENT_NAME="pull_request"
   export BASE_REF="${BASE_REF:-main}" # Default to comparing against main
   export PR_HEAD="${PR_HEAD:-HEAD}"
   export GITHUB_OUTPUT="/dev/stdout" # Print results to console
 
-  # Mock FULL_MATRIX if not provided locally
-  if [[ -z "${FULL_MATRIX:-}" ]]; then
-    FULL_MATRIX='["receiver-0","receiver-1","receiver-2","receiver-3","processor-0","processor-1","exporter-0","exporter-1","exporter-2","exporter-3","extension","connector","internal","pkg","cmd-0","other"]'
+  # Mock ALL_TEST_GROUPS if not provided locally
+  if [[ -z "${ALL_TEST_GROUPS:-}" ]]; then
+    ALL_TEST_GROUPS='["receiver-0","receiver-1","receiver-2","receiver-3","processor-0","processor-1","exporter-0","exporter-1","exporter-2","exporter-3","extension","connector","internal","pkg","cmd-0","other"]'
+  fi
+  # Mock CRITICAL_FILES if not provided locally
+  if [[ -z "${CRITICAL_FILES:-}" ]]; then
+    CRITICAL_FILES='["Makefile", "Makefile.Common", ".golangci.yml", ".github/workflows/", "internal/tools/", "versions.yaml"]'
   fi
 else
-  # In CI, FULL_MATRIX is mandatory
-  : "${FULL_MATRIX:?The FULL_MATRIX environment variable is required}"
+  # In CI, these are mandatory.
+  : "${ALL_TEST_GROUPS:?The ALL_TEST_GROUPS environment variable is required}"
+  : "${CRITICAL_FILES:?The CRITICAL_FILES environment variable is required}"
 fi
 
-# Config
-MAX_JOBS=${MAX_JOBS:-10}
+# Sanitize inputs
+ALL_TEST_GROUPS="$(echo "${ALL_TEST_GROUPS}" | tr -d '\n' | tr -s ' ')"
+TARGET_CONCURRENCY=${TARGET_CONCURRENCY:-10}
 GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/stdout}"
 
 # -----------------------------------------------------------------------------
@@ -60,7 +66,7 @@ GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/stdout}"
 exit_full_mode() {
   echo "Reason: $1" >&2
   echo "Selecting FULL Matrix." >&2
-  echo "matrix=${FULL_MATRIX}" >> "$GITHUB_OUTPUT"
+  echo "matrix=${ALL_TEST_GROUPS}" >> "$GITHUB_OUTPUT"
   exit 0
 }
 
@@ -78,7 +84,7 @@ exit_scoped_mode() {
 # -----------------------------------------------------------------------------
 
 # Manual label override
-if [[ "${FORCE_FULL:-}" == "true" ]]; then
+if [[ "${FORCE_ALL:-}" == "true" ]]; then
   exit_full_mode "Manual override detected (Label: 'ci:full')."
 fi
 
@@ -110,11 +116,12 @@ fi
 # -----------------------------------------------------------------------------
 # Check if there are changes to infrastructure files
 # -----------------------------------------------------------------------------
-infra_regex='^(Makefile|Makefile\.Common|Makefile\.Weaver|\.golangci\.ya?ml|\.github/workflows/|internal/tools/|internal/buildscripts/|versions\.yaml|distributions\.yaml|renovate\.json|\.codecov\.yml)'
 
-if echo "${changed_files}" | grep -Eq "$infra_regex"; then
-  exit_full_mode "Critical infrastructure files changed."
-fi
+while IFS= read -r pattern; do
+  if echo "${changed_files}" | grep -q "$pattern"; then
+    exit_full_mode "At least one critical file changed: $pattern."
+  fi
+done < <(echo "$CRITICAL_FILES" | jq -r '.[]')
 
 # -----------------------------------------------------------------------------
 # Get dependencies of the modules changed
@@ -191,11 +198,11 @@ done
 # Bucket results so we can launch multiple workers on CI
 # -----------------------------------------------------------------------------
 declare -a buckets
-for ((i=0; i<MAX_JOBS; i++)); do buckets[$i]=""; done
+for ((i=0; i<TARGET_CONCURRENCY; i++)); do buckets[$i]=""; done
 
 idx=0
 for dir in "${!affected_dirs[@]}"; do
-  bucket_id=$((idx % MAX_JOBS))
+  bucket_id=$((idx % TARGET_CONCURRENCY))
   if [[ -z "${buckets[$bucket_id]}" ]]; then
     buckets[$bucket_id]="${dir}"
   else
