@@ -41,8 +41,31 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "with_partition"),
+			expected: &Config{
+				Encoding: func() *component.ID {
+					id := component.MustNewID("test")
+					return &id
+				}(),
+				Bucket: bucketConfig{
+					Name:       "test-bucket",
+					Region:     "test-region",
+					ProjectID:  "test-project-id",
+					FilePrefix: "logs",
+					Partition: partitionConfig{
+						Format: "year=%Y",
+						Prefix: "my-logs",
+					},
+				},
+			},
+		},
+		{
 			id:          component.NewIDWithName(metadata.Type, "empty_bucket_name"),
 			expectedErr: "bucket: name is required",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_partition_format"),
+			expectedErr: "bucket::partition: invalid format:",
 		},
 	}
 
@@ -60,7 +83,7 @@ func TestValidate(t *testing.T) {
 
 			err = xconfmap.Validate(cfg)
 			if tt.expectedErr != "" {
-				require.EqualError(t, err, tt.expectedErr)
+				require.ErrorContains(t, err, tt.expectedErr)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.expected, cfg)

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lestrrat-go/strftime"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -77,6 +78,29 @@ func TestNewStorageExporter(t *testing.T) {
 				},
 			},
 			expectsErr: "failed to determine project ID",
+		},
+		"partition format valid and provider works": {
+			cfg: &Config{
+				Bucket: bucketConfig{
+					ProjectID: "test",
+					Region:    "test",
+					Partition: partitionConfig{
+						Format: "year=%Y",
+					},
+				},
+			},
+		},
+		"partition format invalid and provider fails": {
+			cfg: &Config{
+				Bucket: bucketConfig{
+					ProjectID: "test",
+					Region:    "test",
+					Partition: partitionConfig{
+						Format: "year=%invalid",
+					},
+				},
+			},
+			expectsErr: "failed to parse partition format",
 		},
 	}
 
@@ -191,46 +215,9 @@ func TestUploadFile(t *testing.T) {
 	})
 }
 
-func TestConvertStrftimeToGo(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name: "empty",
-		},
-		{
-			name:     "no tokens",
-			input:    "plain text",
-			expected: "plain text",
-		},
-		{
-			name:     "all tokens",
-			input:    "%Y-%m-%d %H:%M:%S",
-			expected: "2006-01-02 15:04:05",
-		},
-		{
-			name:     "partial content",
-			input:    "year=%Y/month=%m",
-			expected: "year=2006/month=01",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			require.Equal(t, tt.expected, convertStrftimeToGo(tt.input))
-		})
-	}
-}
-
 func TestGenerateFilename(t *testing.T) {
 	// Fixed time for testing: 2023-10-25 14:30:00 UTC
 	fixedTime := time.Date(2023, 10, 25, 14, 30, 0, 0, time.UTC)
-	nowFunc := func() time.Time {
-		return fixedTime
-	}
 
 	tests := []struct {
 		name             string
@@ -289,8 +276,14 @@ func TestGenerateFilename(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			partition := convertStrftimeToGo(tt.partitionFormat)
-			got := generateFilename(tt.uniqueID, tt.filePrefix, tt.partitionPrefix, partition, nowFunc)
+
+			var partitionFormat *strftime.Strftime
+			if tt.partitionFormat != "" {
+				var err error
+				partitionFormat, err = strftime.New(tt.partitionFormat)
+				require.NoError(t, err)
+			}
+			got := generateFilename(tt.uniqueID, tt.filePrefix, tt.partitionPrefix, partitionFormat, fixedTime)
 			require.Equal(t, tt.expectedFilename, got)
 		})
 	}

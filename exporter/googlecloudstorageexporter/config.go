@@ -5,7 +5,9 @@ package googlecloudstorageexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"errors"
+	"fmt"
 
+	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
@@ -32,8 +34,8 @@ type bucketConfig struct {
 	// 		Result: ".../logs_UUID"
 	FilePrefix string `mapstructure:"file_prefix"`
 
-	// Partition configures the time-based partitionFormat and file prefix.
-	Partition partitionConfig `mapstructure:"partitionFormat"`
+	// Partition configures the time-based partition format and file prefix.
+	Partition partitionConfig `mapstructure:"partition"`
 
 	// ReuseIfExists decides if the bucket should be used if it already
 	// exists. If it is set to false, an error will be thrown if the
@@ -76,6 +78,13 @@ func createDefaultConfig() component.Config {
 func (c *bucketConfig) Validate() error {
 	if c.Name == "" {
 		return errors.New("name is required")
+	}
+	return nil
+}
+
+func (c *partitionConfig) Validate() error {
+	if _, err := strftime.New(c.Format); err != nil {
+		return fmt.Errorf("invalid format: %w", err)
 	}
 	return nil
 }

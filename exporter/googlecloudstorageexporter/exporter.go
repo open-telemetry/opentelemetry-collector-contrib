@@ -14,6 +14,7 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
+	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -28,7 +29,7 @@ type storageExporter struct {
 	storageClient   *storage.Client
 	bucketHandle    *storage.BucketHandle
 	logger          *zap.Logger
-	partitionFormat string
+	partitionFormat *strftime.Strftime
 }
 
 var _ exporter.Logs = (*storageExporter)(nil)
@@ -70,28 +71,21 @@ func newStorageExporter(
 		}
 	}
 
+	var partitionFormat *strftime.Strftime
+	if cfg.Bucket.Partition.Format != "" {
+		var err error
+		partitionFormat, err = strftime.New(cfg.Bucket.Partition.Format)
+		if err != nil {
+			// should not happen here, prevented by config.Validate
+			return nil, fmt.Errorf("failed to parse partition format: %w", err)
+		}
+	}
+
 	return &storageExporter{
 		cfg:             cfg,
 		logger:          logger,
-		partitionFormat: convertStrftimeToGo(cfg.Bucket.Partition.Format),
+		partitionFormat: partitionFormat,
 	}, nil
-}
-
-// convertStrftimeToGo converts strftime format specifiers (e.g., %Y, %m, %d)
-// to Go's time layout format.
-func convertStrftimeToGo(format string) string {
-	if format == "" {
-		return ""
-	}
-	replacer := strings.NewReplacer(
-		"%Y", "2006", // Year with century
-		"%m", "01", // Month (01-12)
-		"%d", "02", // Day (01-31)
-		"%H", "15", // Hour (00-23)
-		"%M", "04", // Minute (00-59)
-		"%S", "05", // Second (00-60)
-	)
-	return replacer.Replace(format)
 }
 
 func isBucketConflictError(err error) bool {
@@ -163,8 +157,9 @@ func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 // generateFilename returns the name of the file to be uploaded.
 // It starts from a unique ID, and prepends the partitionFormat and the prefix to it.
 func generateFilename(
-	uniqueID, filePrefix, partitionPrefix, partitionFormat string,
-	now func() time.Time,
+	uniqueID, filePrefix, partitionPrefix string,
+	partitionFormat *strftime.Strftime,
+	now time.Time,
 ) string {
 	filename := uniqueID
 	if filePrefix != "" {
@@ -175,8 +170,8 @@ func generateFilename(
 		}
 	}
 
-	if partitionFormat != "" {
-		partition := now().UTC().Format(partitionFormat)
+	if partitionFormat != nil {
+		partition := partitionFormat.FormatString(now)
 		if !strings.HasSuffix(partition, "/") {
 			partition += "/"
 		}
@@ -201,7 +196,13 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 	// if we have multiple files coming, we need to make sure the name is unique so they do
 	// not overwrite each other
 	uniqueID := uuid.New().String()
-	filename := generateFilename(uniqueID, s.cfg.Bucket.FilePrefix, s.cfg.Bucket.Partition.Prefix, s.partitionFormat, time.Now)
+	filename := generateFilename(
+		uniqueID,
+		s.cfg.Bucket.FilePrefix,
+		s.cfg.Bucket.Partition.Prefix,
+		s.partitionFormat,
+		time.Now().UTC(),
+	)
 
 	writer := s.bucketHandle.Object(filename).NewWriter(ctx)
 	defer func() {
