@@ -776,8 +776,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	defer mp.Close()
 
 	config := &Config{
-		PrometheusConfig:     cfg,
-		StartTimeMetricRegex: "",
+		PrometheusConfig: cfg,
 	}
 	if alterConfig != nil {
 		alterConfig(config)
