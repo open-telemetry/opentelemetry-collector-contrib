@@ -200,10 +200,7 @@ func newReceiver(
 		telBldr *metadata.TelemetryBuilder,
 	) (consumeMessageFunc, error),
 ) (component.Component, error) {
-	if franzGoConsumerFeatureGate.IsEnabled() {
-		return newFranzKafkaConsumer(config, set, topics, excludeTopics, consumeFn)
-	}
-	return newSaramaConsumer(config, set, topics, excludeTopics, consumeFn)
+	return newFranzKafkaConsumer(config, set, topics, excludeTopics, consumeFn)
 }
 
 type logsHandler struct {
