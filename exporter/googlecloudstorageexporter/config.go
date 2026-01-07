@@ -89,7 +89,7 @@ func (c *bucketConfig) Validate() error {
 
 func (c *partitionConfig) Validate() error {
 	if _, err := strftime.New(c.Format); err != nil {
-		return fmt.Errorf("%w: %s", errFormatInvalid, err)
+		return fmt.Errorf("%w: %w", errFormatInvalid, err)
 	}
 	return nil
 }
