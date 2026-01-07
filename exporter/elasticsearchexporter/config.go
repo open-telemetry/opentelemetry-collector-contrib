@@ -499,7 +499,7 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
 	}
 	if canonicalMappingModeName(cfg.Mapping.Mode) != MappingOTel.String() {
-		logger.Warn("mapping::mode config option is now deprecated and will soon beignored. Use the `elastic.mapping.mode` scope attribute instead. See the README for migration instructions.")
+		logger.Warn("mapping::mode config option is now deprecated and will soon be ignored. Use the `elastic.mapping.mode` scope attribute instead. See the README for migration instructions.")
 	}
 	if cfg.LogsDynamicIndex.Enabled {
 		logger.Warn("logs_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
