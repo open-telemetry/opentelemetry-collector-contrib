@@ -14,7 +14,7 @@ import (
 
 // aggregationGroup represents a group of spans to be aggregated
 type aggregationGroup struct {
-	spans         []spanInfo
+	nodes         []*spanNode    // nodes to aggregate (replaces []spanInfo for efficiency)
 	level         int            // tree level (0 = leaf, 1 = parent of leaf, etc.)
 	summarySpanID pcommon.SpanID // SpanID of the summary span (assigned before creation)
 }
@@ -56,18 +56,19 @@ func (p *leafSpanPruningProcessor) buildAggregationPlan(groups map[string]aggreg
 // Optimized to batch span removals instead of calling RemoveIf repeatedly
 func (p *leafSpanPruningProcessor) executeAggregations(plan aggregationPlan) {
 	// Track which parent SpanID should map to which summary SpanID
-	parentReplacements := make(map[pcommon.SpanID]pcommon.SpanID)
+	// Pre-size based on expected number of nodes being aggregated
+	parentReplacements := make(map[pcommon.SpanID]pcommon.SpanID, len(plan.groups)*4)
 
 	// Track spans to remove per ScopeSpans for batch removal
 	spansToRemove := make(map[ptrace.ScopeSpans]map[pcommon.SpanID]struct{})
 
 	for _, group := range plan.groups {
 		// Calculate statistics and time range in single pass
-		data := p.calculateAggregationData(group.spans)
+		data := p.calculateAggregationData(group.nodes)
 
 		// Determine the parent SpanID for the summary span
-		// Use the first span's parent as template
-		originalParentID := group.spans[0].span.ParentSpanID()
+		// Use the first node's parent as template
+		originalParentID := group.nodes[0].span.ParentSpanID()
 
 		// Check if the parent is being replaced by a summary span
 		summaryParentID := originalParentID
@@ -79,17 +80,17 @@ func (p *leafSpanPruningProcessor) executeAggregations(plan aggregationPlan) {
 		p.createSummarySpanWithParent(group, data, summaryParentID)
 
 		// Record that these original span IDs should be replaced by the summary span ID
-		for _, info := range group.spans {
-			parentReplacements[info.span.SpanID()] = group.summarySpanID
+		for _, node := range group.nodes {
+			parentReplacements[node.span.SpanID()] = group.summarySpanID
 		}
 
 		// Mark original spans for removal (batch per ScopeSpans)
-		for _, info := range group.spans {
-			scopeSpans := info.scopeSpans
+		for _, node := range group.nodes {
+			scopeSpans := node.scopeSpans
 			if spansToRemove[scopeSpans] == nil {
 				spansToRemove[scopeSpans] = make(map[pcommon.SpanID]struct{})
 			}
-			spansToRemove[scopeSpans][info.span.SpanID()] = struct{}{}
+			spansToRemove[scopeSpans][node.span.SpanID()] = struct{}{}
 		}
 	}
 
@@ -104,9 +105,10 @@ func (p *leafSpanPruningProcessor) executeAggregations(plan aggregationPlan) {
 
 // createSummarySpanWithParent creates a summary span with a specific parent SpanID
 func (p *leafSpanPruningProcessor) createSummarySpanWithParent(group aggregationGroup, data aggregationData, parentSpanID pcommon.SpanID) ptrace.Span {
-	// Use the first span as a template
-	templateSpan := group.spans[0].span
-	scopeSpans := group.spans[0].scopeSpans
+	// Use the first node as a template
+	templateNode := group.nodes[0]
+	templateSpan := templateNode.span
+	scopeSpans := templateNode.scopeSpans
 
 	// Create new span in the same ScopeSpans as the first span
 	newSpan := scopeSpans.Spans().AppendEmpty()

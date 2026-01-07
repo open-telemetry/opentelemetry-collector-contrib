@@ -5,26 +5,32 @@ package leafspanpruningprocessor // import "github.com/open-telemetry/openteleme
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
 // spanNode represents a span in the trace tree with parent/child relationships
 // groupKey is computed once during tree construction to avoid repeated string allocations
 type spanNode struct {
-	info     spanInfo
-	parent   *spanNode
-	children []*spanNode
-	groupKey string // cached group key for leaf spans
+	span             ptrace.Span
+	scopeSpans       ptrace.ScopeSpans
+	parent           *spanNode
+	children         []*spanNode
+	groupKey         string // cached group key for leaf spans
+	isLeaf           bool   // true if node has no children (updated during tree build)
+	markedForRemoval bool   // true if node will be aggregated (avoids map lookups)
 }
 
 // traceTree represents a complete trace as a tree structure
 type traceTree struct {
 	nodeByID map[pcommon.SpanID]*spanNode
+	leaves   []*spanNode // nodes with no children, populated during build
 	orphans  []*spanNode // spans whose parent is not in the trace
 }
 
 // buildTraceTree constructs a tree structure from a list of spans
 // Handles incomplete traces: orphans (missing parents), multiple roots, no root
+// Also identifies leaf nodes during construction to avoid a separate pass
 func (p *leafSpanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	tree := &traceTree{
 		nodeByID: make(map[pcommon.SpanID]*spanNode, len(spans)),
@@ -34,32 +40,45 @@ func (p *leafSpanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 		return tree
 	}
 
-	// First pass: create nodes for all spans
+	// First pass: create nodes for all spans, initially mark all as leaves
 	for _, info := range spans {
-		node := &spanNode{info: info}
+		node := &spanNode{
+			span:       info.span,
+			scopeSpans: info.scopeSpans,
+			isLeaf:     true, // assume leaf until a child links to it
+		}
 		tree.nodeByID[info.span.SpanID()] = node
 	}
 
-	// Second pass: identify root(s) and link parent-child relationships
-	// Pre-allocate orphans slice with reasonable capacity
+	// Second pass: link parent-child relationships and update leaf status
+	// Pre-allocate slices with reasonable capacity
 	tree.orphans = make([]*spanNode, 0, len(spans)/10)
+	tree.leaves = make([]*spanNode, 0, len(spans)/4)
 	var rootCount int
 
 	for _, node := range tree.nodeByID {
-		parentID := node.info.span.ParentSpanID()
+		parentID := node.span.ParentSpanID()
 		if parentID.IsEmpty() {
 			// This is a root span (no parent)
 			rootCount++
 		} else if parent, exists := tree.nodeByID[parentID]; exists {
-			// Link to parent
+			// Link to parent and mark parent as non-leaf
 			node.parent = parent
+			parent.isLeaf = false
 			if parent.children == nil {
-				parent.children = make([]*spanNode, 0, 4) // pre-allocate with reasonable capacity
+				parent.children = make([]*spanNode, 0, 4)
 			}
 			parent.children = append(parent.children, node)
 		} else {
 			// Parent not in trace - this is an orphan
 			tree.orphans = append(tree.orphans, node)
+		}
+	}
+
+	// Third pass: collect leaves (nodes still marked as leaf)
+	for _, node := range tree.nodeByID {
+		if node.isLeaf {
+			tree.leaves = append(tree.leaves, node)
 		}
 	}
 
@@ -79,50 +98,49 @@ func (p *leafSpanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	return tree
 }
 
-// findLeafNodes returns all nodes with no children (leaf spans)
-func (t *traceTree) findLeafNodes() []*spanNode {
-	leaves := make([]*spanNode, 0, len(t.nodeByID)/4) // pre-allocate assuming ~25% are leaves
-	for _, node := range t.nodeByID {
-		if len(node.children) == 0 {
-			leaves = append(leaves, node)
-		}
-	}
-	return leaves
+// getLeaves returns the pre-computed list of leaf nodes
+func (t *traceTree) getLeaves() []*spanNode {
+	return t.leaves
 }
 
 // findEligibleParentNodes finds parent nodes whose ALL children are marked for removal
-func (p *leafSpanPruningProcessor) findEligibleParentNodes(tree *traceTree, nodesToRemove map[pcommon.SpanID]struct{}) []*spanNode {
+// Uses the markedForRemoval field on nodes instead of map lookups for better performance
+func (p *leafSpanPruningProcessor) findEligibleParentNodes(tree *traceTree) []*spanNode {
 	eligibleParents := make([]*spanNode, 0, len(tree.nodeByID)/10)
 
 	for _, node := range tree.nodeByID {
-		// Skip if node has no children (it's a leaf)
-		if len(node.children) == 0 {
+		if !p.isEligibleForParentAggregation(node) {
 			continue
 		}
-
-		// Skip if node is root (no parent)
-		if node.parent == nil {
-			continue
-		}
-
-		// Skip if already marked for removal
-		if _, alreadyMarked := nodesToRemove[node.info.span.SpanID()]; alreadyMarked {
-			continue
-		}
-
-		// Check if ALL children are marked for removal
-		allChildrenRemoved := true
-		for _, child := range node.children {
-			if _, willRemove := nodesToRemove[child.info.span.SpanID()]; !willRemove {
-				allChildrenRemoved = false
-				break
-			}
-		}
-
-		if allChildrenRemoved {
-			eligibleParents = append(eligibleParents, node)
-		}
+		eligibleParents = append(eligibleParents, node)
 	}
 
 	return eligibleParents
+}
+
+// isEligibleForParentAggregation checks if a node can be aggregated as a parent
+func (p *leafSpanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool {
+	// Must have children (not a leaf)
+	if node.isLeaf {
+		return false
+	}
+
+	// Must have a parent (not root)
+	if node.parent == nil {
+		return false
+	}
+
+	// Must not already be marked for removal
+	if node.markedForRemoval {
+		return false
+	}
+
+	// All children must be marked for removal
+	for _, child := range node.children {
+		if !child.markedForRemoval {
+			return false
+		}
+	}
+
+	return true
 }

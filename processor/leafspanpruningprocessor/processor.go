@@ -117,9 +117,10 @@ func (p *leafSpanPruningProcessor) processTrace(ctx context.Context, spans []spa
 }
 
 // analyzeAggregationsWithTree performs Phase 1 using tree structure
+// Uses markedForRemoval field on nodes instead of separate map for better performance
 func (p *leafSpanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[string]aggregationGroup {
-	// Step 1: Find leaf nodes (nodes with no children)
-	leafNodes := tree.findLeafNodes()
+	// Step 1: Get pre-computed leaf nodes
+	leafNodes := tree.getLeaves()
 	if len(leafNodes) == 0 {
 		return nil
 	}
@@ -127,25 +128,19 @@ func (p *leafSpanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) 
 	// Step 2: Group similar leaf nodes
 	leafGroups := p.groupLeafNodesByKey(leafNodes)
 
-	// Step 3: Filter groups meeting minimum threshold
-	aggregationGroups := make(map[string]aggregationGroup)
-	nodesToRemove := make(map[pcommon.SpanID]struct{}) // spanID -> marker
+	// Step 3: Filter groups meeting minimum threshold and mark nodes
+	// Pre-size based on expected number of groups
+	aggregationGroups := make(map[string]aggregationGroup, len(leafGroups)/2)
 
 	for groupKey, nodes := range leafGroups {
 		if len(nodes) >= p.config.MinSpansToAggregate {
-			// Convert nodes to spanInfo slice
-			spans := make([]spanInfo, len(nodes))
-			for i, node := range nodes {
-				spans[i] = node.info
-			}
-
 			aggregationGroups[groupKey] = aggregationGroup{
-				spans: spans,
+				nodes: nodes,
 				level: 0,
 			}
-			// Mark these spans for removal
+			// Mark nodes for removal using field instead of map
 			for _, node := range nodes {
-				nodesToRemove[node.info.span.SpanID()] = struct{}{}
+				node.markedForRemoval = true
 			}
 		}
 	}
@@ -157,7 +152,7 @@ func (p *leafSpanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) 
 	// Step 4: Walk up the tree to find eligible parent spans recursively
 	level := 1
 	for {
-		parentCandidates := p.findEligibleParentNodes(tree, nodesToRemove)
+		parentCandidates := p.findEligibleParentNodes(tree)
 		if len(parentCandidates) == 0 {
 			break
 		}
@@ -165,7 +160,7 @@ func (p *leafSpanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) 
 		// Group parent candidates by name + status
 		parentGroups := make(map[string][]*spanNode)
 		for _, node := range parentCandidates {
-			parentKey := p.buildParentGroupKey(node.info.span)
+			parentKey := p.buildParentGroupKey(node.span)
 			parentGroups[parentKey] = append(parentGroups[parentKey], node)
 		}
 
@@ -173,19 +168,13 @@ func (p *leafSpanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) 
 		foundNewParents := false
 		for parentKey, nodes := range parentGroups {
 			if len(nodes) >= 2 {
-				// Convert nodes to spanInfo slice
-				spans := make([]spanInfo, len(nodes))
-				for i, node := range nodes {
-					spans[i] = node.info
-				}
-
 				aggregationGroups[parentKey] = aggregationGroup{
-					spans: spans,
+					nodes: nodes,
 					level: level,
 				}
-				// Mark these parent spans for removal
+				// Mark parent nodes for removal
 				for _, node := range nodes {
-					nodesToRemove[node.info.span.SpanID()] = struct{}{}
+					node.markedForRemoval = true
 				}
 				foundNewParents = true
 			}

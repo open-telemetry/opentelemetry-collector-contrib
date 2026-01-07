@@ -78,8 +78,9 @@ func (p *leafSpanPruningProcessor) buildParentGroupKey(span ptrace.Span) string 
 	return builder.String()
 }
 
-// buildLeafGroupKeyFromNode creates a grouping key for leaf spans using tree node parent pointer
-func (p *leafSpanPruningProcessor) buildLeafGroupKeyFromNode(node *spanNode) string {
+// buildLeafGroupKey creates a grouping key for leaf spans using tree node parent pointer
+// Renamed from buildLeafGroupKeyFromNode for clarity
+func (p *leafSpanPruningProcessor) buildLeafGroupKey(node *spanNode) string {
 	// Use cached group key if available
 	if node.groupKey != "" {
 		return node.groupKey
@@ -92,12 +93,12 @@ func (p *leafSpanPruningProcessor) buildLeafGroupKeyFromNode(node *spanNode) str
 	// Include parent span name to separate groups by parent
 	if node.parent != nil {
 		builder.WriteString("parent=")
-		builder.WriteString(node.parent.info.span.Name())
+		builder.WriteString(node.parent.span.Name())
 		builder.WriteString("|")
 	}
 
 	// Include regular group key (name + status + attributes)
-	builder.WriteString(p.buildGroupKey(node.info.span))
+	builder.WriteString(p.buildGroupKey(node.span))
 
 	// Cache the key for future use
 	node.groupKey = builder.String()
@@ -106,9 +107,10 @@ func (p *leafSpanPruningProcessor) buildLeafGroupKeyFromNode(node *spanNode) str
 
 // groupLeafNodesByKey groups leaf nodes by their grouping key
 func (p *leafSpanPruningProcessor) groupLeafNodesByKey(leafNodes []*spanNode) map[string][]*spanNode {
-	groups := make(map[string][]*spanNode)
+	// Pre-size map based on expected number of groups (assume ~1/4 unique groups)
+	groups := make(map[string][]*spanNode, len(leafNodes)/4+1)
 	for _, node := range leafNodes {
-		key := p.buildLeafGroupKeyFromNode(node)
+		key := p.buildLeafGroupKey(node)
 		groups[key] = append(groups[key], node)
 	}
 	return groups
