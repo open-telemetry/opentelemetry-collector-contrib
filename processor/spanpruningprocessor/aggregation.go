@@ -4,7 +4,8 @@
 package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 
 import (
-	"crypto/rand"
+	"encoding/binary"
+	"math/rand/v2"
 	"sort"
 	"time"
 
@@ -24,10 +25,11 @@ type aggregationPlan struct {
 	groups []aggregationGroup
 }
 
-// generateSpanID creates a new random span ID
+// generateSpanID creates a new random span ID using math/rand for performance.
+// Span IDs don't require cryptographic randomness, just uniqueness.
 func generateSpanID() pcommon.SpanID {
 	var id [8]byte
-	_, _ = rand.Read(id[:])
+	binary.BigEndian.PutUint64(id[:], rand.Uint64())
 	return pcommon.SpanID(id)
 }
 
