@@ -26,18 +26,21 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           TARGET_CONCURRENCY: 10
           FORCE_ALL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+          # We use '^' to ensure we only match files at the root, preventing false
+          # positives in subdirectories. For example, changing a Makefile of a receiver
+          # component shouldn't cause the full suite of tests to run.
           CRITICAL_FILES: '[
-            "Makefile",
-            "Makefile.Common", 
-            "Makefile.Weaver",
-            ".golangci.yml",
-            ".github/workflows/",
-            "internal/tools/",
-            "internal/buildscripts/",
-            "versions.yaml",
-            "distributions.yaml",
-            "renovate.json",
-            ".codecov.yml"
+            "^Makefile",
+            "^Makefile.Common", 
+            "^Makefile.Weaver",
+            "^.golangci.yml",
+            "^.github/workflows/",
+            "^internal/tools/",
+            "^internal/buildscripts/",
+            "^versions.yaml",
+            "^distributions.yaml",
+            "^renovate.json",
+            "^.codecov.yml"
           ]'
           ALL_TEST_GROUPS: '[
             "receiver-0",
