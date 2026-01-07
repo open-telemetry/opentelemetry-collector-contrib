@@ -3292,8 +3292,6 @@ func TestStatusVerboseIncludesAttributes(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, expectedAttrs, exporterStatus.Attributes)
 }
-<<<<<<< HEAD
-=======
 
 func TestStatusNonVerboseExcludesAttributes(t *testing.T) {
 	// These goroutines are part of the http.Client's connection pool management.
@@ -3440,4 +3438,3 @@ func TestStatusExcludesAttributesWhenConfigDisabled(t *testing.T) {
 	// Attributes should be empty map when include_attributes is false
 	assert.Empty(t, st.Attributes)
 }
->>>>>>> 7d8855abce4fbde6f9029beb662dcccd35d5e33d
