@@ -28,8 +28,22 @@ Event Hub, transforms them, and pushes them through the collector pipeline.
 
 ## Configuration
 
-### connection (Required)
-A string describing the connection to an Azure event hub.
+### connection (Required if auth is not used)
+A string describing the connection to an Azure event hub. Ignored if `auth` is specified.
+
+### event_hub
+This section is required when using `auth`. Only applicable when feature gate `receiver.azureeventhubreceiver.UseAzeventhubs` is enabled.
+
+#### name (Required when using auth)
+The name of the Event Hub.
+
+#### namespace (Required when using auth)
+The fully qualified namespace (e.g., `namespace.servicebus.windows.net`).
+
+### auth (Optional)
+The ID of an authentication extension to use. This can be used to authenticate using Azure Active Directory (AAD) pod identity,
+managed identity, or service principal. Only supported when feature gate `receiver.azureeventhubreceiver.UseAzeventhubs` is enabled.
+When this field is set, `connection` is ignored and `event_hub` section is required.
 
 ### group (Optional)
 The Consumer Group to read from. If empty will default to the default Consumer Group $Default
@@ -111,6 +125,15 @@ receivers:
       # All supported time format. Default is empty string array, which means using the current iso8601 parser. The format is based on https://pkg.go.dev/time#Layout. If no time-zone info, will use UTC time.
       logs: ["01/02/2006 15:04:05","2006-01-02 15:04:05","2006-01-02T15:04:05Z07:00"]
       metrics: ["01/02/2006 15:04:05"]
+
+  # Example with Auth
+  azureeventhub/auth:
+    event_hub:
+      name: hubName
+      namespace: namespace.servicebus.windows.net
+    auth: azureauth
+    partition: foo
+    group: bar
 ```
 
 This component can persist its state using the [storage extension].
