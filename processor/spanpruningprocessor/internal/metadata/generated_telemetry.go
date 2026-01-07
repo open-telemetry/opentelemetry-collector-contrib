@@ -78,7 +78,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorSpanpruningProcessingDuration, err = builder.meter.Float64Histogram(
 		"otelcol_processor_spanpruning_processing_duration",
 		metric.WithDescription("Time to process each batch of traces [development]"),
-		metric.WithUnit("ms"),
+		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningSpansPruned, err = builder.meter.Int64Counter(

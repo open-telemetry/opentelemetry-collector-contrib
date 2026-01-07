@@ -91,7 +91,7 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 	if tracesProcessed > 0 {
 		p.telemetryBuilder.ProcessorSpanpruningTracesProcessed.Add(ctx, tracesProcessed)
 		p.telemetryBuilder.ProcessorSpanpruningProcessingDuration.Record(ctx,
-			float64(time.Since(start).Milliseconds()))
+			time.Since(start).Seconds())
 	}
 
 	return td, nil

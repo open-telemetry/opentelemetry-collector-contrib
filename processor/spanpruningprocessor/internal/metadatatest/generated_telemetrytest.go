@@ -56,7 +56,7 @@ func AssertEqualProcessorSpanpruningProcessingDuration(t *testing.T, tt *compone
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_spanpruning_processing_duration",
 		Description: "Time to process each batch of traces [development]",
-		Unit:        "ms",
+		Unit:        "s",
 		Data: metricdata.Histogram[float64]{
 			Temporality: metricdata.CumulativeTemporality,
 			DataPoints:  dps,

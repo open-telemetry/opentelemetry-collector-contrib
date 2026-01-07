@@ -50,7 +50,7 @@ telemetry:
     processor_spanpruning_processing_duration:
       enabled: true
       description: Time to process each batch of traces
-      unit: ms
+      unit: s
       stability: { level: development }
       histogram: { value_type: double }
 
