@@ -21,9 +21,6 @@ subtext: |
     on Linux systems due to platform-specific data availability.
     This corresponds to the `Shmem` field in `/proc/meminfo`.
     
-    Support for other platforms may be added in the future when the underlying
-    gopsutil library provides the necessary data.
-
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.
