@@ -5,11 +5,15 @@ package googlecloudstorageexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+)
+
+var (
+	errNameRequired  = errors.New("name is required")
+	errFormatInvalid = errors.New("invalid format")
 )
 
 type Config struct {
@@ -77,14 +81,14 @@ func createDefaultConfig() component.Config {
 
 func (c *bucketConfig) Validate() error {
 	if c.Name == "" {
-		return errors.New("name is required")
+		return errNameRequired
 	}
 	return nil
 }
 
 func (c *partitionConfig) Validate() error {
 	if _, err := strftime.New(c.Format); err != nil {
-		return fmt.Errorf("invalid format: %w", err)
+		return errFormatInvalid
 	}
 	return nil
 }

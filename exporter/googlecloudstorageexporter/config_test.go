@@ -23,7 +23,7 @@ func TestValidate(t *testing.T) {
 	tests := []struct {
 		id          component.ID
 		expected    component.Config
-		expectedErr string
+		expectedErr error
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
@@ -61,11 +61,11 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "empty_bucket_name"),
-			expectedErr: "bucket: name is required",
+			expectedErr: errNameRequired,
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_partition_format"),
-			expectedErr: "bucket::partition: invalid format:",
+			expectedErr: errFormatInvalid,
 		},
 	}
 
@@ -82,8 +82,8 @@ func TestValidate(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			err = xconfmap.Validate(cfg)
-			if tt.expectedErr != "" {
-				require.ErrorContains(t, err, tt.expectedErr)
+			if tt.expectedErr != nil {
+				require.ErrorIs(t, err, tt.expectedErr)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.expected, cfg)
