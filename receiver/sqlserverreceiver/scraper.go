@@ -686,8 +686,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	timestamp := pcommon.NewTimestampFromTime(now)
 	s.lastExecutionTimestamp = now
 	for i, row := range rows {
-		totalElapsedTimeValDiff := float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000
-
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
@@ -706,27 +704,27 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		var cached bool
 
 		executionCountVal := s.retrieveValue(row, executionCount, &errs, retrieveInt)
-		cached, executionCountValDiff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, executionCount, executionCountVal.(int64))
+		cached, executionCountVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, executionCount, executionCountVal.(int64))
 		if !cached {
-			executionCountValDiff = int64(0)
+			executionCountVal = int64(0)
 		}
 
 		logicalReadsVal := s.retrieveValue(row, logicalReads, &errs, retrieveInt)
-		cached, logicalReadsValDiff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalReads, logicalReadsVal.(int64))
+		cached, logicalReadsVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalReads, logicalReadsVal.(int64))
 		if !cached {
-			logicalReadsValDiff = int64(0)
+			logicalReadsVal = int64(0)
 		}
 
 		logicalWritesVal := s.retrieveValue(row, logicalWrites, &errs, retrieveInt)
-		cached, logicalWritesValDiff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalWrites, logicalWritesVal.(int64))
+		cached, logicalWritesVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalWrites, logicalWritesVal.(int64))
 		if !cached {
-			logicalWritesValDiff = int64(0)
+			logicalWritesVal = int64(0)
 		}
 
 		physicalReadsVal := s.retrieveValue(row, physicalReads, &errs, retrieveInt)
-		cached, physicalReadsValDiff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, physicalReads, physicalReadsVal.(int64))
+		cached, physicalReadsVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, physicalReads, physicalReadsVal.(int64))
 		if !cached {
-			physicalReadsValDiff = int64(0)
+			physicalReadsVal = int64(0)
 		}
 
 		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
@@ -734,42 +732,26 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		})
 
 		rowsReturnedVal := s.retrieveValue(row, rowsReturned, &errs, retrieveInt)
-		cached, rowsReturnedValDiff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, rowsReturned, rowsReturnedVal.(int64))
+		cached, rowsReturnedVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, rowsReturned, rowsReturnedVal.(int64))
 		if !cached {
-			rowsReturnedValDiff = int64(0)
+			rowsReturnedVal = int64(0)
 		}
 
 		totalGrantVal := s.retrieveValue(row, totalGrant, &errs, retrieveInt)
-		cached, totalGrantValDiff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalGrant, totalGrantVal.(int64))
+		cached, totalGrantVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalGrant, totalGrantVal.(int64))
 		if !cached {
-			totalGrantValDiff = int64(0)
+			totalGrantVal = int64(0)
 		}
 
-		totalWorkerTimeVal := float64(s.retrieveValue(row, totalWorkerTime, &errs, retrieveInt).(int64))
-		cached, totalWorkerTimeValCached := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, int64(totalWorkerTimeVal))
-		totalWorkerTimeValDiff := float64(0)
+		totalWorkerTimeVal := s.retrieveValue(row, totalWorkerTime, &errs, retrieveInt)
+		cached, totalWorkerTimeVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, totalWorkerTimeVal.(int64))
+		totalWorkerTimeInSecVal := float64(0)
 		if cached {
-			totalWorkerTimeValDiff = float64(totalWorkerTimeValCached) / 1_000_000
+			totalWorkerTimeInSecVal = float64(totalWorkerTimeVal.(int64)) / 1_000_000
 		}
 
-		totalElapsedTimeVal := s.retrieveValue(row, totalElapsedTime, &errs, retrieveFloat).(float64) / 1_000_000
-
-		// If execution count in the DB is 1 that would mean there is no past records to compare with to find a delta.
-		// We just send down the metrics corresponding to that single execution as it is.
-		// If execution count in DB is not 1 then we send down the delta values.
-		execCountInDB := executionCountVal.(int64)
-		if execCountInDB != 1 {
-			executionCountVal = executionCountValDiff
-			logicalReadsVal = logicalReadsValDiff
-			logicalWritesVal = logicalWritesValDiff
-			physicalReadsVal = physicalReadsValDiff
-			rowsReturnedVal = rowsReturnedValDiff
-			totalGrantVal = totalGrantValDiff
-			totalWorkerTimeVal = totalWorkerTimeValDiff
-			totalElapsedTimeVal = totalElapsedTimeValDiff
-		}
-
-		if totalElapsedTimeVal == 0 {
+		totalElapsedTimeVal := float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000
+		if totalElapsedTimeVal == 0 || executionCountVal == 0 {
 			continue
 		}
 
@@ -787,7 +769,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		s.lb.RecordDbServerTopQueryEvent(
 			context.Background(),
 			timestamp,
-			totalWorkerTimeVal,
+			totalWorkerTimeInSecVal,
 			queryTextVal.(string),
 			executionCountVal.(int64),
 			logicalReadsVal.(int64),
