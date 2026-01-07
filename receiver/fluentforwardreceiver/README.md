@@ -45,6 +45,7 @@ The FluentD `tag` is stored as an attribute with key `fluentd.tag`.
 The FluentD event timestamp is used as the log record timestamp.
 The record `message` or `log` field is stored as the body of the log record. If both are present,
 it just takes the field that comes last in the message stream.
+
 Any other fields in the event are stored as attributes on the log record following these rules:
 
  - `bool` values are stored as boolean attributes
@@ -55,7 +56,7 @@ Any other fields in the event are stored as attributes on the log record followi
  - `map[string]any` values are stored as nested map attributes
  - `[]any` values are stored as array attributes
  - `float32` and `float64` values are stored as double attributes
- - `nil` values are uninitialized attributes
+ - `nil` values are left as empty attributes using `plog.LogRecord.Attributes().PutEmpty(key)`
  - All other types are converted to string representation using `fmt.Sprintf("%v", val)` which includes complex types
 
 ## Development
