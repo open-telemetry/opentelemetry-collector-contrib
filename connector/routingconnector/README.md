@@ -291,11 +291,11 @@ service:
 
 ### Example with `default_pipelines`
 
-The following example demonstrates strategies for migrating to `match_once: true` while using `default_pipelines`.
+The following example demonstrates strategies for migrating from `match_once: true` while using `default_pipelines`.
 
 ```yaml
 routing:
-  match_once: false
+  match_once: true
   default_pipelines: [ logs/default ]
   table:
     - condition: attributes["env"] == "prod"

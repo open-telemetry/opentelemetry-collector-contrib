@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions134 "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventionsv134 "go.opentelemetry.io/otel/semconv/v1.34.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
@@ -61,7 +61,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	d.rb.SetCloudProvider(conventions.CloudProviderAzure.Value.AsString())
-	d.rb.SetCloudPlatform(conventions134.CloudPlatformAzureVM.Value.AsString())
+	d.rb.SetCloudPlatform(conventionsv134.CloudPlatformAzureVM.Value.AsString())
 	d.rb.SetHostName(compute.OSProfile.ComputerName)
 	d.rb.SetCloudRegion(compute.Location)
 	d.rb.SetHostID(compute.VMID)
