@@ -120,7 +120,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   to check ExcludeTopic fields instead of Topic fields.
   
 - `receiver/sqlserver`: Collect query metrics for long running queries (#44984)
-- `receiver/tcpcheck`: Fix the unit of the `tcpcheck.error` metric from `error` to `errors` (#129694)
+- `receiver/tcpcheck`: Fix the unit of the `tcpcheck.error` metric from `error` to `errors` (#45092)
 
 <!-- previous-version -->
 
