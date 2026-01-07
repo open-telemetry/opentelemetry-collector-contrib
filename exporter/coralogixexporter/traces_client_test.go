@@ -231,6 +231,8 @@ func (m *mockTracesServer) Export(ctx context.Context, req ptraceotlp.ExportRequ
 		return ptraceotlp.NewExportResponse(), errors.New("invalid authorization header")
 	}
 
+	assertAcceptEncodingGzip(m.t, md)
+
 	m.recvCount += req.Traces().SpanCount()
 	resp := ptraceotlp.NewExportResponse()
 	if m.partialSuccess != nil {
