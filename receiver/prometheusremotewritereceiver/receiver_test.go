@@ -61,15 +61,15 @@ var writeV2RequestFixture = &writev2.Request{
 	},
 }
 
-func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
-	t.Helper()
+func setupMetricsReceiver(tb testing.TB) *prometheusRemoteWriteReceiver {
+	tb.Helper()
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	prwReceiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
-	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
+	prwReceiver, err := factory.CreateMetrics(tb.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	assert.NoError(tb, err)
+	assert.NotNil(tb, prwReceiver, "metrics receiver creation failed")
 
 	receiverID := component.MustNewID("test")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -77,13 +77,13 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 		Transport:              "http",
 		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
 	})
-	assert.NoError(t, err)
+	assert.NoError(tb, err)
 
 	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
 	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
 
 	// Add cleanup to ensure LRU cache is properly purged
-	t.Cleanup(func() {
+	tb.Cleanup(func() {
 		writeReceiver.rmCache.Purge()
 	})
 
