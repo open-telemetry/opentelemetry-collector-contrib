@@ -473,7 +473,7 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.count = v
 			mg.hasCount = true
 		case metricName == mf.metadata.MetricFamily+metricSuffixCreated:
-			mg.createdSeconds = v
+			mg.createdSeconds = v / 1000.0
 		default:
 			boundary, err := getBoundary(mf.mtype, ls)
 			if err != nil {
@@ -483,11 +483,11 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		if metricName == mf.metadata.MetricFamily+metricSuffixCreated {
-			mg.createdSeconds = v
+			mg.createdSeconds = v / 1000.0
 		}
 	case pmetric.MetricTypeSum:
 		if metricName == mf.metadata.MetricFamily+metricSuffixCreated {
-			mg.createdSeconds = v
+			mg.createdSeconds = v / 1000.0
 		} else {
 			mg.value = v
 			mg.hasValue = true

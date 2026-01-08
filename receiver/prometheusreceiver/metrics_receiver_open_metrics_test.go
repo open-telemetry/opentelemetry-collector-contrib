@@ -339,7 +339,7 @@ test_counter_created 1.55555e+09
 // shuffle the order of _created and _total lines
 // with an orphaned _created line {foo=bar3} that should not produce a Sum datapoint
 var counterMultiPayload = `# TYPE test_counter counter
-test_counter_created{foo="bar2"} 1
+test_counter_created{foo="bar2"} 1000
 test_counter_total{foo="bar1"} 12
 test_counter_created{foo="bar1"} 1.55555e+09
 test_counter_created{foo="bar3"} 100
@@ -445,11 +445,13 @@ func TestCreatedMetric(t *testing.T) {
 			validateFunc: verifyCreatedTimeMetric(verifyOpts{true, true, true, nil}),
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			testComponent(t, []*testData{test}, nil)
-		})
+	for useOMExposition := range []bool{false, true} {
+		for _, test := range tests {
+			t.Run(fmt.Sprintf("%s: useOpenMetricsFormat: %b", test.name, useOMExposition),func(t *testing.T) {
+				t.Parallel()
+				testComponent(t, []*testData{test}, nil)
+			})
+		}
 	}
 }
 
@@ -460,7 +462,7 @@ type verifyOpts struct {
 	checkOverride func(t *testing.T, metrics []pmetric.Metric)
 }
 
-const ctMetricValueAsSecFloat = 1.55555e+09
+const ctMetricValueAsSecFloat = 1.55555e+06
 
 var (
 	expectedSTSecsPart  = int64(ctMetricValueAsSecFloat)
