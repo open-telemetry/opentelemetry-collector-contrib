@@ -108,11 +108,6 @@ func TestComponentParser(t *testing.T) {
 				Mode:     Component,
 				FilePath: tc.inputFile,
 				DirPath:  dir,
-				Refs: map[string]Ref{
-					"external": {
-						ID: "https://example.com/schema/external/config.schema.yaml",
-					},
-				},
 				Mappings: testMappings(),
 			}
 			if tc.rootType != "" {

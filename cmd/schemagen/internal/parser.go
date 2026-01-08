@@ -15,9 +15,10 @@ import (
 )
 
 type Parser struct {
-	config *Config
-	schema *Schema
-	types  map[string]TypeInfo
+	config  *Config
+	schema  *Schema
+	types   map[string]TypeInfo
+	imports map[string]string
 }
 
 type TypeInfo struct {
@@ -28,8 +29,9 @@ type TypeInfo struct {
 
 func NewParser(cfg *Config) *Parser {
 	return &Parser{
-		config: cfg,
-		types:  make(map[string]TypeInfo),
+		config:  cfg,
+		types:   make(map[string]TypeInfo),
+		imports: make(map[string]string),
 	}
 }
 
@@ -70,7 +72,7 @@ func (p *Parser) processPackages(set *token.FileSet, pkgs []*packages.Package) *
 			}
 		}
 		for _, file := range pkg.Syntax {
-			p.collectTypeSpecs(file, ast.NewCommentMap(set, file, file.Comments), isMainPkg)
+			p.collectTypeSpecs(file, pkg.PkgPath, ast.NewCommentMap(set, file, file.Comments), isMainPkg)
 		}
 	}
 	if _, ok := p.types[p.config.RootTypeName]; !ok && p.config.Mode == Component {
@@ -83,7 +85,7 @@ func (p *Parser) initializeSchema(id, title string) {
 	p.schema = CreateSchema(id, title)
 }
 
-func (p *Parser) collectTypeSpecs(file *ast.File, cmap ast.CommentMap, isMain bool) {
+func (p *Parser) collectTypeSpecs(file *ast.File, pkgPath string, cmap ast.CommentMap, isMain bool) {
 	target := p.types
 	for _, decl := range file.Decls {
 		genDecl, ok := decl.(*ast.GenDecl)
@@ -105,6 +107,18 @@ func (p *Parser) collectTypeSpecs(file *ast.File, cmap ast.CommentMap, isMain bo
 				target[name] = TypeInfo{typeSpec, comms, pgkName}
 			}
 		}
+	}
+	for _, imp := range file.Imports {
+		path, name := ParseImport(imp)
+		// omit internal package paths
+		if strings.HasPrefix(path, pkgPath) {
+			continue
+		}
+		// if mapping defined for package, skip adding import
+		if p.config.Mappings[name] != nil {
+			continue
+		}
+		p.imports[name] = path
 	}
 }
 
@@ -322,8 +336,8 @@ func (p *Parser) parseSelector(selector *ast.SelectorExpr) (SchemaElement, error
 		return nil, errors.New("unrecognized SelectorExpr structure")
 	}
 
-	if ref, ok := p.config.Refs[pkgIdent.Name]; ok {
-		fullID := fmt.Sprintf("%s#/$defs/%s", ref.ID, selector.Sel.Name)
+	if path, ok := p.imports[pkgIdent.Name]; ok {
+		fullID := fmt.Sprintf("%s#/$defs/%s", path, selector.Sel.Name)
 		element := CreateRefField(fullID, "")
 		return element, nil
 	}

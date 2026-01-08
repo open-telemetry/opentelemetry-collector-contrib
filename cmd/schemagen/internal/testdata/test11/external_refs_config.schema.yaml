@@ -3,8 +3,8 @@ $id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/int
 title: test11 component
 type: object
 allOf:
-  - $ref: https://example.com/schema/external/config.schema.yaml#/$defs/TestConfig
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/external#/$defs/TestConfig
 properties:
   test_nested:
-    $ref: https://example.com/schema/external/config.schema.yaml#/$defs/TestConfig
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/external#/$defs/TestConfig
 

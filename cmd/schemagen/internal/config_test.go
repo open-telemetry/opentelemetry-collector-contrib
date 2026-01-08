@@ -28,7 +28,6 @@ func TestReadConfig_FileInput(t *testing.T) {
 	require.Equal(t, dir, cfg.OutputFolder)
 	require.Equal(t, "Service", cfg.RootTypeName)
 	require.Equal(t, "yaml", cfg.FileType)
-	require.Nil(t, cfg.Refs)
 	require.Nil(t, cfg.Mappings)
 }
 
@@ -96,9 +95,6 @@ func TestReadConfig_ReadsSettingsFile(t *testing.T) {
 	projectDir := t.TempDir()
 	settings := Settings{
 		OutputFolder: "./generated",
-		Refs: map[string]Ref{
-			"sample": {ID: "custom/ref"},
-		},
 		Mappings: Mappings{
 			"pkg": PackagesMapping{
 				"Thing": {
@@ -123,9 +119,6 @@ func TestReadConfig_ReadsSettingsFile(t *testing.T) {
 
 	expectedOutput := filepath.Join(projectDir, "generated")
 	require.Equal(t, evalPath(t, expectedOutput), evalPath(t, cfg.OutputFolder))
-	require.Equal(t, map[string]Ref{
-		"sample": {ID: "custom/ref"},
-	}, cfg.Refs)
 	require.Equal(t, Mappings{
 		"pkg": PackagesMapping{
 			"Thing": {SchemaType: SchemaTypeString, Format: "uuid"},

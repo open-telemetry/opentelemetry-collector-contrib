@@ -94,9 +94,6 @@ A practical example:
 
 ```yaml
 outputFolder: ./schemas
-refs:
-  confighttp:
-    id: go.opentelemetry.io/collector/config/confighttp
 mappings:
   time:
     Duration:
@@ -106,9 +103,6 @@ mappings:
 
 - `outputFolder` becomes the default `-o` value. Relative folders are resolved
   against the directory that contains `.schemagen.yaml`.
-- `refs` map Go import identifiers (`confighttp` in the example) to schema IDs.
-  Any field whose type comes from that package (e.g. `confighttp.HTTPClientSettings`)
-  is emitted as a `$ref` pointing to the matching schema.
 - `mappings` tell schemagen how to treat specific selector expressions as
   primitive schema fields. Each mapping converts the Go type into a scalar
   `schemaType` and can also set the JSON Schema `format`. The original
@@ -126,8 +120,7 @@ mappings:
 - Anonymous embedded structs are added via `allOf` with the referenced `$defs`.
 - Struct fields must expose a `mapstructure` tag; the tag value becomes the
   property name so only documented configuration knobs make it into the schema.
-- Selectors that match entries in your `.schemagen.yaml` `refs` map become
-  `$ref`s to the referenced schema, while entries under `mappings` produce
+- Selectors that match entries under `mappings` produce
   primitive properties that retain the original Go type under `x-customType`.
 - Optional wrapper types (e.g. `Optional[FooConfig]`) set the `x-optional`
   marker so downstream tooling can highlight nullable fields.

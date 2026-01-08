@@ -6,6 +6,7 @@ package internal
 import (
 	"go/ast"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -88,4 +89,24 @@ func goPrimitiveToSchemaType(typeName string) (SchemaType, bool) {
 	default:
 		return SchemaTypeUnknown, false
 	}
+}
+
+var importRegExp = regexp.MustCompile(`^(.+?)(?:/([^/"]+))?$`)
+
+func ParseImport(imp *ast.ImportSpec) (string, string) {
+	importStr := imp.Path.Value
+	if unquoted, err := strconv.Unquote(imp.Path.Value); err == nil {
+		importStr = unquoted
+	}
+
+	matches := importRegExp.FindStringSubmatch(importStr)
+	full := matches[0]
+	name := matches[2]
+	if name == "" {
+		name = full
+	}
+	if imp.Name != nil {
+		name = imp.Name.Name
+	}
+	return full, name
 }

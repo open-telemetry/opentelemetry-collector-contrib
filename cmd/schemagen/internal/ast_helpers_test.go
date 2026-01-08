@@ -153,6 +153,62 @@ func TestGoPrimitiveToSchemaType(t *testing.T) {
 	}
 }
 
+func TestParseImport(t *testing.T) {
+	testCases := []struct {
+		name     string
+		literal  string
+		alias    string
+		expected string
+		nameWant string
+	}{
+		{
+			name:     "uses trailing path segment as name",
+			literal:  fmt.Sprintf("%q", "go.opentelemetry.io/collector/confmap/converter"),
+			expected: "go.opentelemetry.io/collector/confmap/converter",
+			nameWant: "converter",
+		},
+		{
+			name:     "stdlib package retains full name",
+			literal:  fmt.Sprintf("%q", "context"),
+			expected: "context",
+			nameWant: "context",
+		},
+		{
+			name:     "alias overrides parsed name",
+			literal:  fmt.Sprintf("%q", "example.com/project/component"),
+			alias:    "componentAlias",
+			expected: "example.com/project/component",
+			nameWant: "componentAlias",
+		},
+		{
+			name:     "alias blank identifier preserved",
+			literal:  fmt.Sprintf("%q", "example.com/project/component"),
+			alias:    "_",
+			expected: "example.com/project/component",
+			nameWant: "_",
+		},
+		{
+			name:     "handles literal value without quotes",
+			literal:  "example.com/org/pkg/v2",
+			expected: "example.com/org/pkg/v2",
+			nameWant: "v2",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			spec := buildImportSpec(tc.literal, tc.alias)
+			full, gotName := ParseImport(spec)
+			if full != tc.expected {
+				t.Fatalf("expected full path %q got %q", tc.expected, full)
+			}
+			if gotName != tc.nameWant {
+				t.Fatalf("expected name %q got %q", tc.nameWant, gotName)
+			}
+		})
+	}
+}
+
 func parseFieldWithTag(t *testing.T, tagContent string) *ast.Field {
 	t.Helper()
 
@@ -194,4 +250,17 @@ func parseFieldWithTag(t *testing.T, tagContent string) *ast.Field {
 	}
 
 	return structType.Fields.List[0]
+}
+
+func buildImportSpec(literal, alias string) *ast.ImportSpec {
+	spec := &ast.ImportSpec{
+		Path: &ast.BasicLit{
+			Kind:  token.STRING,
+			Value: literal,
+		},
+	}
+	if alias != "" {
+		spec.Name = ast.NewIdent(alias)
+	}
+	return spec
 }

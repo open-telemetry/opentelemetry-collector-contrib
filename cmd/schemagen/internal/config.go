@@ -26,7 +26,6 @@ type Config = struct {
 	OutputFolder string
 	RootTypeName string
 	FileType     string
-	Refs         map[string]Ref
 	Mappings     Mappings
 }
 
@@ -72,7 +71,6 @@ func ReadConfig() (*Config, error) {
 		filePath string
 		dirPath  string
 		output   = *outputFolder
-		refs     map[string]Ref
 		mode     RunMode
 		mappings Mappings
 	)
@@ -100,7 +98,6 @@ func ReadConfig() (*Config, error) {
 
 	s, ok := ReadSettingsFile()
 	if ok {
-		refs = s.Refs
 		mappings = s.Mappings
 		if output == "" && s.OutputFolder != "" {
 			output = s.OutputFolder
@@ -117,7 +114,6 @@ func ReadConfig() (*Config, error) {
 		OutputFolder: output,
 		RootTypeName: *rootType,
 		FileType:     *fileType,
-		Refs:         refs,
 		Mode:         mode,
 		Mappings:     mappings,
 	}, nil
