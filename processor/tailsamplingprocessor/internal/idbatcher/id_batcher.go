@@ -87,6 +87,7 @@ func New(numBatches, newBatchesInitialCapacity uint64) (Batcher, error) {
 func (b *batcher) AddToCurrentBatch(id pcommon.TraceID) uint64 {
 	b.cbMutex.Lock()
 	defer b.cbMutex.Unlock()
+
 	b.currentBatch[id] = struct{}{}
 	return b.takeID + uint64(len(b.batches))
 }
@@ -111,21 +112,25 @@ func (b *batcher) MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFr
 }
 
 func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
+	b.stopLock.RLock()
+	defer b.stopLock.RUnlock()
+
 	if b.takeID < b.lastBatchID {
 		takeIdx := b.takeID % uint64(len(b.batches))
 		readBatch := b.batches[takeIdx]
 
-		b.stopLock.RLock()
 		if !b.stopped {
 			nextBatch := make(Batch, max(b.newBatchesInitialCapacity, uint64(len(readBatch))))
 
 			b.cbMutex.Lock()
 			b.batches[takeIdx] = b.currentBatch
 			b.currentBatch = nextBatch
+			b.takeID++
 			b.cbMutex.Unlock()
+		} else {
+			// If stopped we do not need to acquire the lock to increment the takeID.
+			b.takeID++
 		}
-		b.takeID++
-		b.stopLock.RUnlock()
 		return readBatch, true
 	}
 
