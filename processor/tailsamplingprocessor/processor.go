@@ -289,11 +289,13 @@ var (
 	attrDecisionNotSampled = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("decision", "not_sampled"))
 	attrDecisionDropped    = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("decision", "dropped"))
 	decisionToAttributes   = map[samplingpolicy.Decision]metric.MeasurementOption{
-		samplingpolicy.Sampled:          attrDecisionSampled,
-		samplingpolicy.NotSampled:       attrDecisionNotSampled,
+		samplingpolicy.Sampled:    attrDecisionSampled,
+		samplingpolicy.NotSampled: attrDecisionNotSampled,
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 		samplingpolicy.InvertNotSampled: attrDecisionNotSampled,
-		samplingpolicy.InvertSampled:    attrDecisionSampled,
-		samplingpolicy.Dropped:          attrDecisionDropped,
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+		samplingpolicy.InvertSampled: attrDecisionSampled,
+		samplingpolicy.Dropped:       attrDecisionDropped,
 	}
 
 	attrSampledTrue  = metric.WithAttributes(attribute.String("sampled", "true"))
@@ -656,10 +658,12 @@ func (tsp *tailSamplingSpanProcessor) inCache(id pcommon.TraceID) bool {
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyTickMetrics) (samplingpolicy.Decision, string) {
 	finalDecision := samplingpolicy.NotSampled
 	samplingDecisions := map[samplingpolicy.Decision]*policy{
-		samplingpolicy.Error:            nil,
-		samplingpolicy.Sampled:          nil,
-		samplingpolicy.NotSampled:       nil,
-		samplingpolicy.InvertSampled:    nil,
+		samplingpolicy.Error:      nil,
+		samplingpolicy.Sampled:    nil,
+		samplingpolicy.NotSampled: nil,
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+		samplingpolicy.InvertSampled: nil,
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 		samplingpolicy.InvertNotSampled: nil,
 		samplingpolicy.Dropped:          nil,
 	}
@@ -704,13 +708,16 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	case samplingDecisions[samplingpolicy.Dropped] != nil: // Dropped takes precedence
 		finalDecision = samplingpolicy.Dropped
 		sampledPolicy = samplingDecisions[samplingpolicy.Dropped]
+	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 	case samplingDecisions[samplingpolicy.InvertNotSampled] != nil: // Then InvertNotSampled
 		finalDecision = samplingpolicy.NotSampled
 	case samplingDecisions[samplingpolicy.Sampled] != nil:
 		finalDecision = samplingpolicy.Sampled
 		sampledPolicy = samplingDecisions[samplingpolicy.Sampled]
+	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 	case samplingDecisions[samplingpolicy.InvertSampled] != nil && samplingDecisions[samplingpolicy.NotSampled] == nil:
 		finalDecision = samplingpolicy.Sampled
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 		sampledPolicy = samplingDecisions[samplingpolicy.InvertSampled]
 	}
 
