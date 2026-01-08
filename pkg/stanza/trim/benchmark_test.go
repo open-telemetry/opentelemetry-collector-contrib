@@ -7,8 +7,6 @@ import (
 	"bufio"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 // BenchmarkTrimFuncs tests the core trimming logic (Leading, Trailing, Whitespace, Nop)
@@ -96,8 +94,7 @@ func BenchmarkWithFunc(b *testing.B) {
 			split := tc.fn
 
 			for b.Loop() {
-				_, _, err := split(data, false)
-				require.NoError(b, err)
+				_, _, _ = split(data, false)
 			}
 		})
 	}
@@ -131,8 +128,7 @@ func BenchmarkToLength(b *testing.B) {
 			data := tc.data
 
 			for b.Loop() {
-				_, _, err := split(data, false)
-				require.NoError(b, err)
+				_, _, _ = split(data, false)
 			}
 		})
 	}
