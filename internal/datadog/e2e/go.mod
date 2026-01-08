@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/e2e
 
-go 1.24.9
+go 1.24.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.143.0
