@@ -17,10 +17,10 @@ import (
 
 const (
 	// Number of log attributes to add to the plog.LogRecordSlice.
-	totalLogAttributes = 7
+	totalLogAttributes = 9
 
 	// Number of resource attributes to add to the plog.ResourceLogs.
-	totalResourceAttributes = 6
+	totalResourceAttributes = 7
 )
 
 // By default k8s event has only two types of events (Normal, Warning), here are we allowing other types as well.
@@ -78,6 +78,8 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plo
 	attrs.PutStr("k8s.event.name", ev.Name)
 	attrs.PutStr("k8s.event.uid", string(ev.UID))
 	attrs.PutStr(string(conventions.K8SNamespaceNameKey), ev.InvolvedObject.Namespace)
+	attrs.PutStr("k8s.event.reporting_controller", ev.ReportingController)
+	attrs.PutStr("k8s.event.reporting_instance", ev.ReportingInstance)
 
 	// "Count" field of k8s event will be '0' in case it is
 	// not present in the collected event from k8s.
