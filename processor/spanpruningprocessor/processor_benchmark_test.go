@@ -45,7 +45,7 @@ func BenchmarkDeepTrace_Depth5(b *testing.B) {
 
 // BenchmarkDeepTrace_Depth10 benchmarks deep trace with max_parent_depth=10.
 func BenchmarkDeepTrace_Depth10(b *testing.B) {
-	benchmarkDeepTrace(b, 20, 3, 5, 1000, MaxParentDepthLimit)
+	benchmarkDeepTrace(b, 20, 3, 5, 1000, 10)
 }
 
 // BenchmarkBuildTraceTree benchmarks tree construction.
