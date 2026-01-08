@@ -361,13 +361,13 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	return 1, nil
 }
 
-func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
+func (t *transaction) AppendSTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, stMs int64) (storage.SeriesRef, error) {
 	t.addingNativeHistogram = false
 	t.addingNHCB = false
-	return t.setCreationTimestamp(ls, atMs, ctMs)
+	return t.setStartTimestamp(ls, atMs, stMs)
 }
 
-func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
+func (t *transaction) AppendHistogramSTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, stMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
 	var schema int32
 	if h != nil {
 		schema = h.Schema
@@ -376,10 +376,10 @@ func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, ls labels
 	}
 	t.addingNativeHistogram = true
 	t.addingNHCB = schema == -53
-	return t.setCreationTimestamp(ls, atMs, ctMs)
+	return t.setStartTimestamp(ls, atMs, stMs)
 }
 
-func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
+func (t *transaction) setStartTimestamp(ls labels.Labels, atMs, stMs int64) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -415,7 +415,7 @@ func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64) (
 	curMF := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
 
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
-	curMF.addCreationTimestamp(seriesRef, ls, atMs, ctMs)
+	curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
 
 	return storage.SeriesRef(seriesRef), nil
 }
