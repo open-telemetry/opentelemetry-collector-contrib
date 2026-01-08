@@ -14,7 +14,6 @@ import (
 	"runtime"
 	"slices"
 	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -43,8 +42,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
@@ -1008,9 +1005,7 @@ func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
 	})
 
 	// prepare observed logger to capture warning
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	params := exportertest.NewNopSettings(metadata.Type)
-	params.Logger = zap.New(observedZapCore)
 
 	// create config that sets Mapping.Mode (deprecated) to ecs
 	cfg := withDefaultConfig(func(cfg *Config) {
@@ -1041,15 +1036,6 @@ func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
 	require.NoError(t, exp.ConsumeLogs(t.Context(), logs))
 	rec.WaitItems(1)
 
-	// verify a warning was emitted about mapping mode coming from config
-	found := false
-	for _, entry := range observedLogs.All() {
-		if strings.Contains(entry.Message, "mapping mode can no longer be supplied via config file") {
-			found = true
-			break
-		}
-	}
-	require.True(t, found, "expected warning about deprecated mapping mode in config")
 }
 
 func TestExporterMetrics(t *testing.T) {

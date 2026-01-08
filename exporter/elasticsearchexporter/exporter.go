@@ -629,7 +629,7 @@ func (e *elasticsearchExporter) getRequestMappingMode(ctx context.Context) (Mapp
 	values := client.FromContext(ctx).Metadata.Get(metadataKey)
 	switch n := len(values); n {
 	case 0:
-		return e.defaultMappingMode, nil
+		return MappingOTel, nil
 	case 1:
 		mode, err := e.parseMappingMode(values[0])
 		if err != nil {
