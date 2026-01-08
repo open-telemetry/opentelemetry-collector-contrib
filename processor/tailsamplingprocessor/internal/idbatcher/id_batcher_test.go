@@ -85,6 +85,7 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity uint64)
 
 	ticker := time.NewTicker(time.Millisecond)
 	got := Batch{}
+	duplicateIDs := 0
 	asyncDequesComplete := make(chan bool)
 	go func() {
 		defer func() {
@@ -100,8 +101,9 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity uint64)
 				return
 			}
 			for id := range g {
-				_, ok := got[id]
-				require.False(t, ok, "Found duplicate id in batcher")
+				if _, ok := got[id]; ok {
+					duplicateIDs++
+				}
 				got[id] = struct{}{}
 			}
 			if !more {
@@ -132,6 +134,7 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity uint64)
 	<-asyncDequesComplete
 	ticker.Stop()
 
+	require.Zero(t, duplicateIDs, "Found duplicate ids in batcher")
 	require.Len(t, got, len(ids), "Batcher got incorrect count of traces from batches")
 
 	for _, id := range ids {

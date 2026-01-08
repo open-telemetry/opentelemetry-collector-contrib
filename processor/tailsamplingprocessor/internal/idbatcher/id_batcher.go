@@ -13,10 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var (
-	// ErrInvalidNumBatches occurs when an invalid number of batches is specified.
-	ErrInvalidNumBatches = errors.New("invalid number of batches, it must be greater than zero")
-)
+// ErrInvalidNumBatches occurs when an invalid number of batches is specified.
+var ErrInvalidNumBatches = errors.New("invalid number of batches, it must be greater than zero")
 
 // Batch is the type of batches held by the Batcher. It uses a set in order to merge batches efficiently.
 type Batch map[pcommon.TraceID]struct{}

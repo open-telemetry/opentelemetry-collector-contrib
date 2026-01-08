@@ -966,7 +966,7 @@ func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) uint64 {
 }
 
 // MoveToEarlierBatch is a noop for a sync batcher as there is only one pending batch.
-func (s *syncIDBatcher) MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFromNow uint64) uint64 {
+func (*syncIDBatcher) MoveToEarlierBatch(_ pcommon.TraceID, currentBatch, _ uint64) uint64 {
 	return currentBatch
 }
 
