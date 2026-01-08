@@ -386,7 +386,7 @@ func TestCreatedMetric(t *testing.T) {
 		{
 			name: "counter",
 			pages: []mockPrometheusResponse{
-				{code: 200, data: formPage(counterPayload), useOpenMetrics: true},
+				{code: 200, data: formPage(counterPayload)},
 			},
 			validateFunc: verifyCreatedTimeMetric(verifyOpts{true, false, false, nil}),
 		},
@@ -394,14 +394,14 @@ func TestCreatedMetric(t *testing.T) {
 		{
 			name: "counter reversed",
 			pages: []mockPrometheusResponse{
-				{code: 200, data: formPage(counterReversePayload), useOpenMetrics: true},
+				{code: 200, data: formPage(counterReversePayload)},
 			},
 			validateFunc: verifyCreatedTimeMetric(verifyOpts{true, false, false, nil}),
 		},
 		{
 			name: "counter multiple series",
 			pages: []mockPrometheusResponse{
-				{code: 200, data: formPage(counterMultiPayload), useOpenMetrics: true},
+				{code: 200, data: formPage(counterMultiPayload)},
 			},
 			validateFunc: verifyCreatedTimeMetric(verifyOpts{true, false, false, func(t *testing.T, metrics []pmetric.Metric) {
 				for _, metric := range metrics {
@@ -433,25 +433,37 @@ func TestCreatedMetric(t *testing.T) {
 		{
 			name: "counter no value",
 			pages: []mockPrometheusResponse{
-				{code: 200, data: formPage(counterNoValue), useOpenMetrics: true},
+				{code: 200, data: formPage(counterNoValue)},
 			},
 			validateFunc: verifyCreatedTimeMetric(verifyOpts{false, false, false, nil}),
 		},
 		{
 			name: "all",
 			pages: []mockPrometheusResponse{
-				{code: 200, data: formPage(counterPayload, summaryPayload, histogramPayload), useOpenMetrics: true},
+				{code: 200, data: formPage(counterPayload, summaryPayload, histogramPayload)},
 			},
 			validateFunc: verifyCreatedTimeMetric(verifyOpts{true, true, true, nil}),
 		},
 	}
-	for useOMExposition := range []bool{false, true} {
-		for _, test := range tests {
-			t.Run(fmt.Sprintf("%s: useOpenMetricsFormat: %b", test.name, useOMExposition),func(t *testing.T) {
-				t.Parallel()
-				testComponent(t, []*testData{test}, nil)
-			})
-		}
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%s with useOpenMetrics=true", test.name), func(t *testing.T) {
+			t.Parallel()
+			for i := range test.pages {
+				test.pages[i].useOpenMetrics = true
+			}
+			testComponent(t, []*testData{test}, nil)
+		})
+	}
+	// re-run test suite with useOpenMetrics=false in testData as _created MF association logic is not *technically* dependent on the text parser but rather
+	// that counter metric lines follow the _total and _created suffices
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%s with useOpenMetrics=false", test.name), func(t *testing.T) {
+			t.Parallel()
+			for i := range test.pages {
+				test.pages[i].useOpenMetrics = false
+			}
+			testComponent(t, []*testData{test}, nil)
+		})
 	}
 }
 
@@ -462,6 +474,7 @@ type verifyOpts struct {
 	checkOverride func(t *testing.T, metrics []pmetric.Metric)
 }
 
+// reminder: the float value for _created is milliseconds
 const ctMetricValueAsSecFloat = 1.55555e+06
 
 var (

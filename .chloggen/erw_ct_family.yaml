@@ -7,11 +7,10 @@ change_type: enhancement
 component: receiver/prometheus
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Change how scrape counter metric's metricFamily and metricGroup are cached within a transaction. 
-  This enables _created line of counter in openmetrics-text format to be attributed to the same metricGroup as the counter itself.
+note: receiver/prometheus now associates scraped _created text lines as the created timestamp of its metric family rather than its own metric series, as defined by the OpenMetricsText spec
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [43888]
+issues: [45291]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
