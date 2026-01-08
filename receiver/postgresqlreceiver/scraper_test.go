@@ -690,7 +690,7 @@ func TestExplainQuery(t *testing.T) {
 
 			plan, err := client.explainQuery(tc.query, tc.queryID, logger)
 			require.NoError(t, err)
-			require.NotEmpty(t, plan)
+			assert.Equal(t, tc.mockPlanResult, plan)
 		})
 	}
 }
