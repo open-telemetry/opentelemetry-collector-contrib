@@ -54,14 +54,13 @@ func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsear
 	}
 
 	allowedMappingModes := cfg.allowedMappingModes()
-	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
 	exporter := &elasticsearchExporter{
 		set:                 set,
 		config:              cfg,
 		index:               index,
 		logstashFormat:      cfg.LogstashFormat,
 		allowedMappingModes: allowedMappingModes,
-		defaultMappingMode:  defaultMappingMode,
+		defaultMappingMode:  MappingOTel,
 		bufferPool:          pool.NewBufferPool(),
 		bulkIndexers:        bulkIndexers{telemetryBuilder: telemetryBuilder},
 		telemetryBuilder:    telemetryBuilder,
@@ -629,7 +628,7 @@ func (e *elasticsearchExporter) getRequestMappingMode(ctx context.Context) (Mapp
 	values := client.FromContext(ctx).Metadata.Get(metadataKey)
 	switch n := len(values); n {
 	case 0:
-		return MappingOTel, nil
+		return e.defaultMappingMode, nil
 	case 1:
 		mode, err := e.parseMappingMode(values[0])
 		if err != nil {

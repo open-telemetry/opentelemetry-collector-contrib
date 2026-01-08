@@ -35,9 +35,7 @@ func TestConfig(t *testing.T) {
 	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
 	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
 
-	defaultRawCfg := createDefaultConfig()
-	defaultRawCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
-	defaultRawCfg.(*Config).Mapping.Mode = "raw"
+	// Removed Mapping.Mode support; raw mapping config test case deleted.
 
 	defaultMaxIdleConns := 100
 	defaultIdleConnTimeout := 90 * time.Second
@@ -119,7 +117,6 @@ func TestConfig(t *testing.T) {
 					},
 				},
 				Mapping: MappingsSettings{
-					Mode: "otel",
 					AllowedModes: []string{
 						"bodymap",
 						"ecs",
@@ -198,7 +195,6 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:         "otel",
 					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
@@ -271,7 +267,6 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:         "otel",
 					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
@@ -289,11 +284,7 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected:   defaultLogstashFormatCfg,
 		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "raw"),
-			configFile: "config.yaml",
-			expected:   defaultRawCfg,
-		},
+		// Removed: raw mapping mode config case (Mapping.Mode deprecated/removed).
 		{
 			id:         component.NewIDWithName(metadata.Type, "cloudid"),
 			configFile: "config.yaml",
@@ -479,27 +470,12 @@ func TestConfig_Validate(t *testing.T) {
 			}),
 			err: "exactly one of [endpoint, endpoints, cloudid] must be specified",
 		},
-		"invalid mapping mode": {
-			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"http://test:9200"}
-				cfg.Mapping.Mode = "invalid"
-			}),
-			err: `invalid or disallowed default mapping mode "invalid"`,
-		},
 		"invalid allowed mapping modes": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoints = []string{"http://test:9200"}
 				cfg.Mapping.AllowedModes = []string{"foo"}
 			}),
 			err: `unknown allowed mapping mode name "foo"`,
-		},
-		"disallowed mapping mode": {
-			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"http://test:9200"}
-				cfg.Mapping.Mode = "otel"
-				cfg.Mapping.AllowedModes = []string{"raw"}
-			}),
-			err: `invalid or disallowed default mapping mode "otel"`,
 		},
 		"invalid scheme": {
 			config: withDefaultConfig(func(cfg *Config) {
