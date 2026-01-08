@@ -5,19 +5,19 @@ go 1.24.0
 require (
 	github.com/IBM/sarama v1.46.3
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.142.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.143.0
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/stretchr/testify v1.11.1
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20251021233722-4ca18825d8c0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/xdg-go/scram v1.2.0
-	go.opentelemetry.io/collector/config/configcompression v1.48.1-0.20251218222727-bf28fa76882d
-	go.opentelemetry.io/collector/config/configopaque v1.48.1-0.20251218222727-bf28fa76882d
-	go.opentelemetry.io/collector/config/configtls v1.48.1-0.20251218222727-bf28fa76882d
+	go.opentelemetry.io/collector/config/configcompression v1.49.0
+	go.opentelemetry.io/collector/config/configopaque v1.49.0
+	go.opentelemetry.io/collector/config/configtls v1.49.0
 	go.uber.org/goleak v1.3.0
 )
 
-require go.opentelemetry.io/collector/confmap/xconfmap v0.142.1-0.20251218222727-bf28fa76882d // indirect
+require go.opentelemetry.io/collector/confmap/xconfmap v0.143.0 // indirect
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.4 // indirect
@@ -42,7 +42,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-tpm v0.9.7 // indirect
+	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
@@ -65,8 +65,8 @@ require (
 	github.com/twmb/franz-go/plugin/kzap v1.1.2
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector/confmap v1.48.1-0.20251218222727-bf28fa76882d // indirect
-	go.opentelemetry.io/collector/featuregate v1.48.1-0.20251218222727-bf28fa76882d // indirect
+	go.opentelemetry.io/collector/confmap v1.49.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.49.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1
 	go.yaml.in/yaml/v3 v3.0.4 // indirect

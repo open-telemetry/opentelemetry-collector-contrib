@@ -81,7 +81,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 	// handle deprecated topic and exclude_topic for metric signal
 	if zeroConfig.Metrics.Topic != "" {
-		if len(zeroConfig.Logs.Topics) == 0 {
+		if len(zeroConfig.Metrics.Topics) == 0 {
 			c.Metrics.Topics = []string{zeroConfig.Metrics.Topic}
 			c.Metrics.topicAlias = c.Metrics.Topic
 			c.Metrics.Topic = ""
@@ -89,7 +89,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if zeroConfig.Metrics.ExcludeTopic != "" {
-		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
+		if len(zeroConfig.Metrics.ExcludeTopics) == 0 {
 			c.Metrics.ExcludeTopics = []string{zeroConfig.Metrics.ExcludeTopic}
 			c.Metrics.excludeTopicAlias = c.Metrics.ExcludeTopic
 			c.Metrics.ExcludeTopic = ""
@@ -98,7 +98,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 	// handle deprecated topic and exclude_topic for trace signal
 	if zeroConfig.Traces.Topic != "" {
-		if len(zeroConfig.Logs.Topics) == 0 {
+		if len(zeroConfig.Traces.Topics) == 0 {
 			c.Traces.Topics = []string{zeroConfig.Traces.Topic}
 			c.Traces.topicAlias = c.Traces.Topic
 			c.Traces.Topic = ""
@@ -106,7 +106,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	if zeroConfig.Traces.ExcludeTopic != "" {
-		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
+		if len(zeroConfig.Traces.ExcludeTopics) == 0 {
 			c.Traces.ExcludeTopics = []string{zeroConfig.Traces.ExcludeTopic}
 			c.Traces.excludeTopicAlias = c.Traces.ExcludeTopic
 			c.Traces.ExcludeTopic = ""
@@ -115,14 +115,14 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 	// handle deprecated topic and exclude_topic for profile signal
 	if zeroConfig.Profiles.Topic != "" {
-		if len(zeroConfig.Logs.Topics) == 0 {
+		if len(zeroConfig.Profiles.Topics) == 0 {
 			c.Profiles.Topics = []string{zeroConfig.Profiles.Topic}
 			c.Profiles.topicAlias = c.Profiles.Topic
 			c.Profiles.Topic = ""
 		}
 	}
 	if zeroConfig.Profiles.ExcludeTopic != "" {
-		if len(zeroConfig.Logs.ExcludeTopics) == 0 {
+		if len(zeroConfig.Profiles.ExcludeTopics) == 0 {
 			c.Profiles.ExcludeTopics = []string{zeroConfig.Profiles.ExcludeTopic}
 			c.Profiles.excludeTopicAlias = c.Profiles.ExcludeTopic
 			c.Profiles.ExcludeTopic = ""
@@ -168,9 +168,9 @@ func (c *Config) Validate() error {
 		return errors.New("both metrics.exclude_topic and metrics.exclude_topics cannot be set")
 	}
 	if c.Traces.ExcludeTopic != "" && len(c.Traces.ExcludeTopics) != 0 {
-		return errors.New("both traces.exclude_topic and traces.exclude_topic cannot be set")
+		return errors.New("both traces.exclude_topic and traces.exclude_topics cannot be set")
 	}
-	if c.Profiles.Topic != "" && len(c.Profiles.Topics) != 0 {
+	if c.Profiles.ExcludeTopic != "" && len(c.Profiles.ExcludeTopics) != 0 {
 		return errors.New("both profiles.exclude_topic and profiles.exclude_topics cannot be set")
 	}
 

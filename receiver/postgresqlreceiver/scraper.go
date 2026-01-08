@@ -8,6 +8,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -52,6 +55,7 @@ type postgreSQLScraper struct {
 	separateSchemaAttr   bool
 	queryPlanCache       *expirable.LRU[string, string]
 	newestQueryTimestamp float64
+	serviceInstanceID    string
 }
 
 type errsMux struct {
@@ -106,6 +110,7 @@ func newPostgreSQLScraper(
 		cache:              cache,
 		queryPlanCache:     queryPlanCache,
 		separateSchemaAttr: separateSchemaAttr,
+		serviceInstanceID:  getInstanceID(config.Endpoint, settings.Logger),
 	}
 }
 
@@ -174,7 +179,8 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
 	p.collectDatabaseLocks(ctx, now, listClient, &errs)
 
-	return p.mb.Emit(), errs.combine()
+	rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), "", "", "", "")
+	return p.mb.Emit(metadata.WithResource(rb.Emit())), errs.combine()
 }
 
 func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQuery int64) (plog.Logs, error) {
@@ -190,7 +196,8 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 
 	defer dbClient.Close()
 
-	return p.lb.Emit(), nil
+	rb := p.setupResourceBuilder(p.lb.NewResourceBuilder(), "", "", "", "")
+	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
 }
 
 func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery, topNQuery, maxExplainEachInterval int64) (plog.Logs, error) {
@@ -198,7 +205,8 @@ func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery,
 
 	p.collectTopQuery(ctx, p.clientFactory, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger)
 
-	return p.lb.Emit(), nil
+	rb := p.setupResourceBuilder(p.lb.NewResourceBuilder(), "", "", "", "")
+	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
 }
 
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
@@ -424,8 +432,7 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlBlksHitDataPoint(now, stats.blksHit)
 		p.mb.RecordPostgresqlBlksReadDataPoint(now, stats.blksRead)
 	}
-	rb := p.mb.NewResourceBuilder()
-	rb.SetPostgresqlDatabaseName(db)
+	rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), db, "", "", "")
 	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -462,14 +469,17 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, metadata.AttributeSourceTidxRead)
 			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, metadata.AttributeSourceTidxHit)
 		}
-		rb := p.mb.NewResourceBuilder()
-		rb.SetPostgresqlDatabaseName(db)
+
+		var schemaName string
+		var tableName string
 		if p.separateSchemaAttr {
-			rb.SetPostgresqlSchemaName(tm.schema)
-			rb.SetPostgresqlTableName(tm.table)
+			schemaName = tm.schema
+			tableName = tm.table
 		} else {
-			rb.SetPostgresqlTableName(fmt.Sprintf("%s.%s", tm.schema, tm.table))
+			tableName = fmt.Sprintf("%s.%s", tm.schema, tm.table)
 		}
+
+		rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), db, schemaName, tableName, "")
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return int64(len(tableMetrics))
@@ -491,15 +501,13 @@ func (p *postgreSQLScraper) collectIndexes(
 	for _, stat := range idxStats {
 		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans)
 		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size)
-		rb := p.mb.NewResourceBuilder()
-		rb.SetPostgresqlDatabaseName(database)
+
+		var schemaName string
 		if p.separateSchemaAttr {
-			rb.SetPostgresqlSchemaName(stat.schema)
-			rb.SetPostgresqlTableName(stat.table)
-		} else {
-			rb.SetPostgresqlTableName(stat.table)
+			schemaName = stat.schema
 		}
-		rb.SetPostgresqlIndexName(stat.index)
+
+		rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), database, schemaName, stat.table, stat.index)
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
@@ -519,11 +527,13 @@ func (p *postgreSQLScraper) collectFunctions(
 
 	for _, stat := range funcStats {
 		p.mb.RecordPostgresqlFunctionCallsDataPoint(now, stat.calls, stat.function)
-		rb := p.mb.NewResourceBuilder()
-		rb.SetPostgresqlDatabaseName(database)
+
+		var schemaName string
 		if p.separateSchemaAttr {
-			rb.SetPostgresqlSchemaName(stat.schema)
+			schemaName = stat.schema
 		}
+		rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), database, schemaName, "", "")
+
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
@@ -705,4 +715,40 @@ func (*postgreSQLScraper) retrieveBackends(
 	r.Lock()
 	r.activityMap = activityByDB
 	r.Unlock()
+}
+
+func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder, database, schema, table, index string) *metadata.ResourceBuilder {
+	rb.SetServiceInstanceID(p.serviceInstanceID)
+	if database != "" {
+		rb.SetPostgresqlDatabaseName(database)
+	}
+	if schema != "" {
+		rb.SetPostgresqlSchemaName(schema)
+	}
+	if table != "" {
+		rb.SetPostgresqlTableName(table)
+	}
+	if index != "" {
+		rb.SetPostgresqlIndexName(index)
+	}
+	return rb
+}
+
+func getInstanceID(instanceString string, logger *zap.Logger) string {
+	const fallback = "unknown:5432"
+	host, port, err := net.SplitHostPort(instanceString)
+	if err != nil {
+		logger.Warn("Unable to determine actual instance ID for constructing service.instance.id", zap.Error(err))
+		return fallback
+	}
+
+	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
+		localhost, hostNameErr := os.Hostname()
+		if hostNameErr != nil {
+			logger.Warn("Failed getting localhost machine name to construct service.instance.id.")
+		} else {
+			host = localhost
+		}
+	}
+	return host + ":" + port
 }
