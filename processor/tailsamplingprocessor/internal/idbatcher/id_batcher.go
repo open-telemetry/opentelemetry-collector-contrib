@@ -32,13 +32,21 @@ type Batcher interface {
 	// of limiting the growth of the current batch if appropriate for its scenario. It can
 	// either call CloseCurrentAndTakeFirstBatch earlier or stop adding new items depending on what is
 	// required by the scenario.
-	AddToCurrentBatch(id pcommon.TraceID)
+	AddToCurrentBatch(id pcommon.TraceID) uint64
+
+	// MoveToEarlierBatch tries to move the trace from the current batch to a
+	// batch that is only a few batches from now. If the current batch will be
+	// processed before the proposed batch it will do nothing. Returns the
+	// batch that the trace will now be a part of (which may stay the same).
+	MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFromNow uint64) uint64
+
 	// CloseCurrentAndTakeFirstBatch takes the batch at the front of the pipe, and moves the current
 	// batch to the end of the pipe, creating a new batch to receive new items. This operation should
 	// be atomic.
 	// It returns the batch that was in front of the pipe and a boolean that if true indicates that
 	// there are more batches to be retrieved.
 	CloseCurrentAndTakeFirstBatch() (Batch, bool)
+
 	// Stop informs that no more items are going to be batched and the pipeline can be read until it
 	// is empty. After this method is called attempts to enqueue new items will panic.
 	Stop()
@@ -78,10 +86,30 @@ func New(numBatches, newBatchesInitialCapacity uint64) (Batcher, error) {
 	return batcher, nil
 }
 
-func (b *batcher) AddToCurrentBatch(id pcommon.TraceID) {
+func (b *batcher) AddToCurrentBatch(id pcommon.TraceID) uint64 {
 	b.cbMutex.Lock()
+	defer b.cbMutex.Unlock()
 	b.currentBatch[id] = struct{}{}
-	b.cbMutex.Unlock()
+	return b.takeID + uint64(len(b.batches))
+}
+
+func (b *batcher) MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFromNow uint64) uint64 {
+	b.cbMutex.Lock()
+	defer b.cbMutex.Unlock()
+
+	proposedBatch := b.takeID + batchesFromNow
+	// Only move the batch if it is earlier.
+	if proposedBatch < currentBatch {
+		currentIdx := currentBatch % uint64(len(b.batches))
+		delete(b.batches[currentIdx], id)
+		proposedIdx := proposedBatch % uint64(len(b.batches))
+		if b.batches[proposedIdx] == nil {
+			b.batches[proposedIdx] = make(Batch, max(b.newBatchesInitialCapacity, 10))
+		}
+		b.batches[proposedIdx][id] = struct{}{}
+		return proposedBatch
+	}
+	return currentBatch
 }
 
 func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {

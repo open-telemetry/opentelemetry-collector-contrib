@@ -941,6 +941,7 @@ type syncIDBatcher struct {
 	openBatch idbatcher.Batch
 	batchPipe chan idbatcher.Batch
 	stopped   bool
+	currentID uint64
 }
 
 var _ idbatcher.Batcher = (*syncIDBatcher)(nil)
@@ -954,13 +955,19 @@ func newSyncIDBatcher() idbatcher.Batcher {
 	}
 }
 
-func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) {
+func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) uint64 {
 	s.Lock()
+	defer s.Unlock()
 	if s.stopped {
 		panic("cannot add to stopped batcher!")
 	}
 	s.openBatch[id] = struct{}{}
-	s.Unlock()
+	return s.currentID
+}
+
+// MoveToEarlierBatch is a noop for a sync batcher as there is only one pending batch.
+func (s *syncIDBatcher) MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFromNow uint64) uint64 {
+	return currentBatch
 }
 
 func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) {
@@ -977,6 +984,7 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 	if !s.stopped {
 		s.batchPipe <- s.openBatch
 		s.openBatch = idbatcher.Batch{}
+		s.currentID++
 	}
 	return firstBatch, true
 }
