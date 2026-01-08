@@ -130,9 +130,6 @@ func parseToAttributeValue(val any, dest pcommon.Value) {
 func timeFromTimestamp(ts any) (time.Time, error) {
 	switch v := ts.(type) {
 	case uint64:
-		if v > math.MaxInt64 {
-			return time.Time{}, fmt.Errorf("timestamp value overflow: %v", v)
-		}
 		return time.Unix(int64(v), 0), nil
 	case int64:
 		return time.Unix(v, 0), nil
