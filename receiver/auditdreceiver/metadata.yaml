@@ -1,0 +1,6 @@
+type: auditd
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
