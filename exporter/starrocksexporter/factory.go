@@ -33,8 +33,41 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
-	exp := newLogsExporter(set.Logger, c)
 
+	if c.IsDebugProtocol() {
+		// Debug mode - logs data instead of sending
+		exp := newDebugLogsExporter(set.Logger, c)
+		return exporterhelper.NewLogs(
+			ctx,
+			set,
+			cfg,
+			exp.pushLogsData,
+			exporterhelper.WithStart(exp.start),
+			exporterhelper.WithShutdown(exp.shutdown),
+			exporterhelper.WithTimeout(c.TimeoutSettings),
+			exporterhelper.WithQueue(c.QueueSettings),
+			exporterhelper.WithRetry(c.BackOffConfig),
+		)
+	}
+
+	if c.IsHTTPProtocol() {
+		// HTTP-based exporter using Stream Load API
+		exp := newHTTPLogsExporter(set.Logger, set.TelemetrySettings, c)
+		return exporterhelper.NewLogs(
+			ctx,
+			set,
+			cfg,
+			exp.pushLogsData,
+			exporterhelper.WithStart(exp.start),
+			exporterhelper.WithShutdown(exp.shutdown),
+			exporterhelper.WithTimeout(c.TimeoutSettings),
+			exporterhelper.WithQueue(c.QueueSettings),
+			exporterhelper.WithRetry(c.BackOffConfig),
+		)
+	}
+
+	// Default MySQL protocol exporter
+	exp := newLogsExporter(set.Logger, c)
 	return exporterhelper.NewLogs(
 		ctx,
 		set,
@@ -55,8 +88,41 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
-	exp := newTracesExporter(set.Logger, c)
 
+	if c.IsDebugProtocol() {
+		// Debug mode - logs data instead of sending
+		exp := newDebugTracesExporter(set.Logger, c)
+		return exporterhelper.NewTraces(
+			ctx,
+			set,
+			cfg,
+			exp.pushTraceData,
+			exporterhelper.WithStart(exp.start),
+			exporterhelper.WithShutdown(exp.shutdown),
+			exporterhelper.WithTimeout(c.TimeoutSettings),
+			exporterhelper.WithQueue(c.QueueSettings),
+			exporterhelper.WithRetry(c.BackOffConfig),
+		)
+	}
+
+	if c.IsHTTPProtocol() {
+		// HTTP-based exporter using Stream Load API
+		exp := newHTTPTracesExporter(set.Logger, set.TelemetrySettings, c)
+		return exporterhelper.NewTraces(
+			ctx,
+			set,
+			cfg,
+			exp.pushTraceData,
+			exporterhelper.WithStart(exp.start),
+			exporterhelper.WithShutdown(exp.shutdown),
+			exporterhelper.WithTimeout(c.TimeoutSettings),
+			exporterhelper.WithQueue(c.QueueSettings),
+			exporterhelper.WithRetry(c.BackOffConfig),
+		)
+	}
+
+	// Default MySQL protocol exporter
+	exp := newTracesExporter(set.Logger, c)
 	return exporterhelper.NewTraces(
 		ctx,
 		set,
@@ -77,8 +143,41 @@ func createMetricExporter(
 ) (exporter.Metrics, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
-	exp := newMetricsExporter(set.Logger, c)
 
+	if c.IsDebugProtocol() {
+		// Debug mode - logs data instead of sending
+		exp := newDebugMetricsExporter(set.Logger, c)
+		return exporterhelper.NewMetrics(
+			ctx,
+			set,
+			cfg,
+			exp.pushMetricsData,
+			exporterhelper.WithStart(exp.start),
+			exporterhelper.WithShutdown(exp.shutdown),
+			exporterhelper.WithTimeout(c.TimeoutSettings),
+			exporterhelper.WithQueue(c.QueueSettings),
+			exporterhelper.WithRetry(c.BackOffConfig),
+		)
+	}
+
+	if c.IsHTTPProtocol() {
+		// HTTP-based exporter using Stream Load API
+		exp := newHTTPMetricsExporter(set.Logger, set.TelemetrySettings, c)
+		return exporterhelper.NewMetrics(
+			ctx,
+			set,
+			cfg,
+			exp.pushMetricsData,
+			exporterhelper.WithStart(exp.start),
+			exporterhelper.WithShutdown(exp.shutdown),
+			exporterhelper.WithTimeout(c.TimeoutSettings),
+			exporterhelper.WithQueue(c.QueueSettings),
+			exporterhelper.WithRetry(c.BackOffConfig),
+		)
+	}
+
+	// Default MySQL protocol exporter
+	exp := newMetricsExporter(set.Logger, c)
 	return exporterhelper.NewMetrics(
 		ctx,
 		set,
