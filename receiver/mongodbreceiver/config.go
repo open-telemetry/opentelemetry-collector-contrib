@@ -30,6 +30,8 @@ type Config struct {
 	Hosts            []confignet.TCPAddrConfig `mapstructure:"hosts"`
 	Username         string                    `mapstructure:"username"`
 	Password         configopaque.String       `mapstructure:"password"`
+	AuthMechanism    string                    `mapstructure:"auth_mechanism,omitempty"`
+	AuthSource       string                    `mapstructure:"auth_source,omitempty"`
 	ReplicaSet       string                    `mapstructure:"replica_set,omitempty"`
 	Timeout          time.Duration             `mapstructure:"timeout"`
 	DirectConnection bool                      `mapstructure:"direct_connection"`
@@ -73,10 +75,17 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		}
 
 		if c.Username != "" && c.Password != "" {
-			clientOptions.SetAuth(options.Credential{
+			credential := options.Credential{
 				Username: c.Username,
 				Password: string(c.Password),
-			})
+			}
+			if c.AuthMechanism != "" {
+				credential.AuthMechanism = c.AuthMechanism
+			}
+			if c.AuthSource != "" {
+				credential.AuthSource = c.AuthSource
+			}
+			clientOptions.SetAuth(credential)
 		}
 
 		return clientOptions
@@ -103,10 +112,17 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 	}
 
 	if c.Username != "" && c.Password != "" {
-		clientOptions.SetAuth(options.Credential{
+		credential := options.Credential{
 			Username: c.Username,
 			Password: string(c.Password),
-		})
+		}
+		if c.AuthMechanism != "" {
+			credential.AuthMechanism = c.AuthMechanism
+		}
+		if c.AuthSource != "" {
+			credential.AuthSource = c.AuthSource
+		}
+		clientOptions.SetAuth(credential)
 	}
 
 	return clientOptions

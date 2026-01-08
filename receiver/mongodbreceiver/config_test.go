@@ -175,6 +175,39 @@ func TestOptions(t *testing.T) {
 	require.Equal(t, "rs-1", *clientOptions.ReplicaSet)
 }
 
+func TestOptionsWithAuthMechanismAndSource(t *testing.T) {
+	cfg := &Config{
+		Hosts: []confignet.TCPAddrConfig{
+			{
+				Endpoint: defaultEndpoint,
+			},
+		},
+		Username:      "uname",
+		Password:      "password",
+		AuthMechanism: "SCRAM-SHA-256",
+		AuthSource:    "admin",
+		Timeout:       2 * time.Minute,
+		ReplicaSet:    "rs-1",
+	}
+
+	// Test primary connection options
+	clientOptions := cfg.ClientOptions(false)
+	require.Equal(t, clientOptions.Auth.Username, cfg.Username)
+	require.Equal(t, clientOptions.Auth.AuthMechanism, cfg.AuthMechanism)
+	require.Equal(t, clientOptions.Auth.AuthSource, cfg.AuthSource)
+	require.Equal(t,
+		clientOptions.ConnectTimeout.Milliseconds(),
+		(2 * time.Minute).Milliseconds(),
+	)
+	require.Equal(t, "rs-1", *clientOptions.ReplicaSet)
+
+	// Test secondary connection options
+	secondaryOptions := cfg.ClientOptions(true)
+	require.Equal(t, secondaryOptions.Auth.Username, cfg.Username)
+	require.Equal(t, secondaryOptions.Auth.AuthMechanism, cfg.AuthMechanism)
+	require.Equal(t, secondaryOptions.Auth.AuthSource, cfg.AuthSource)
+}
+
 func TestOptionsTLS(t *testing.T) {
 	// loading valid ca file
 	caFile := filepath.Join("testdata", "certs", "ca.crt")
@@ -216,6 +249,8 @@ func TestLoadConfig(t *testing.T) {
 	expected.Username = "otel"
 	expected.Password = "${env:MONGO_PASSWORD}"
 	expected.CollectionInterval = time.Minute
+	expected.AuthMechanism = "SCRAM-SHA-256"
+	expected.AuthSource = "admin"
 
 	require.Equal(t, expected, cfg)
 }
