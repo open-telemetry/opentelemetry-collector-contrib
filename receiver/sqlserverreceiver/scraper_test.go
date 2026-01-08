@@ -421,27 +421,27 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	assert.Equal(t, 3846, int(tetValue))
 
 	rtValue, ok := scraper.cache.Get(keyPrefix + "-" + rowsReturned)
-	assert.True(t, ok, "Expected to find rowsReturned time in cache right after the first collection")
+	assert.True(t, ok, "Expected to find rowsReturned in cache right after the first collection")
 	assert.Equal(t, 2, int(rtValue))
 
 	twtValue, ok := scraper.cache.Get(keyPrefix + "-" + totalWorkerTime)
-	assert.True(t, ok, "Expected to find totalWorkerTime time in cache right after the first collection")
+	assert.True(t, ok, "Expected to find totalWorkerTime in cache right after the first collection")
 	assert.Equal(t, 3845, int(twtValue))
 
 	lrValue, ok := scraper.cache.Get(keyPrefix + "-" + logicalReads)
-	assert.True(t, ok, "Expected to find logicalReads time in cache right after the first collection")
+	assert.True(t, ok, "Expected to find logicalReads in cache right after the first collection")
 	assert.Equal(t, 3, int(lrValue))
 
 	prValue, ok := scraper.cache.Get(keyPrefix + "-" + physicalReads)
-	assert.True(t, ok, "Expected to find physicalReads time in cache right after the first collection")
+	assert.True(t, ok, "Expected to find physicalReads in cache right after the first collection")
 	assert.Equal(t, 5, int(prValue))
 
 	ecValue, ok := scraper.cache.Get(keyPrefix + "-" + executionCount)
-	assert.True(t, ok, "Expected to find executionCount time in cache right after the first collection")
+	assert.True(t, ok, "Expected to find executionCount in cache right after the first collection")
 	assert.Equal(t, 6, int(ecValue))
 
 	tgValue, ok := scraper.cache.Get(keyPrefix + "-" + totalGrant)
-	assert.True(t, ok, "Expected to find totalGrant time in cache right after the first collection")
+	assert.True(t, ok, "Expected to find totalGrant in cache right after the first collection")
 	assert.Equal(t, 3096, int(tgValue))
 }
 
