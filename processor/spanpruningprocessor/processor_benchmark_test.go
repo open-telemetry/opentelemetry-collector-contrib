@@ -31,6 +31,129 @@ func BenchmarkProcessTrace_LargeTrace(b *testing.B) {
 	benchmarkProcessTrace(b, 1000, 50)
 }
 
+// BenchmarkProcessTrace_SparseAggregation benchmarks when only ~10% of spans aggregate
+// This is where the walk-up-from-marked optimization should shine (M << N)
+func BenchmarkProcessTrace_SparseAggregation(b *testing.B) {
+	benchmarkProcessTraceSparse(b, 1000, 5)
+}
+
+// benchmarkProcessTraceSparse tests sparse aggregation where most spans don't aggregate
+func benchmarkProcessTraceSparse(b *testing.B, numSpans, minSpans int) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = minSpans
+	cfg.GroupByAttributes = []string{"db.*"}
+	cfg.MaxParentDepth = 3
+
+	set := processortest.NewNopSettings(metadata.Type)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	proc, err := newSpanPruningProcessor(set, cfg, telemetryBuilder)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	// Generate sparse trace where only ~10% of spans will aggregate
+	td := generateSparseTrace(numSpans, minSpans)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cloned := ptrace.NewTraces()
+		td.CopyTo(cloned)
+		_, err := proc.processTraces(context.Background(), cloned)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// generateSparseTrace creates a trace where only a small fraction of spans aggregate
+// Structure: root -> many unique handlers -> mix of unique and repeated leaf operations
+func generateSparseTrace(numSpans, minSpans int) ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+
+	// Create root span
+	rootSpan := ss.Spans().AppendEmpty()
+	rootSpan.SetTraceID(traceID)
+	rootSpan.SetSpanID(pcommon.SpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	rootSpan.SetName("root")
+	rootSpan.SetKind(ptrace.SpanKindServer)
+	rootSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	rootSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Second)))
+	rootSpan.Status().SetCode(ptrace.StatusCodeOk)
+
+	spanID := uint64(2)
+
+	// Create many handler spans (each unique, won't aggregate)
+	numHandlers := numSpans / 10 // 10% of spans are handlers
+	handlerIDs := make([]pcommon.SpanID, numHandlers)
+	for i := 0; i < numHandlers; i++ {
+		handler := ss.Spans().AppendEmpty()
+		handler.SetTraceID(traceID)
+		id := pcommon.SpanID([8]byte{0, 0, 0, 0, 0, 0, byte(spanID >> 8), byte(spanID)})
+		handler.SetSpanID(id)
+		handler.SetParentSpanID(rootSpan.SpanID())
+		handler.SetName(fmt.Sprintf("handler-%d", i)) // unique names, won't aggregate
+		handler.SetKind(ptrace.SpanKindInternal)
+		handler.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		handler.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(100 * time.Millisecond)))
+		handler.Status().SetCode(ptrace.StatusCodeOk)
+		handlerIDs[i] = id
+		spanID++
+	}
+
+	// Create leaf spans - 90% unique (won't aggregate), 10% repeated (will aggregate)
+	repeatedGroupSize := minSpans * 2 // ensure we meet threshold
+	numRepeated := repeatedGroupSize
+	numUnique := numSpans - numHandlers - 1 - numRepeated
+
+	// First, create unique leaf spans (won't aggregate - different names)
+	for i := 0; i < numUnique && spanID < uint64(numSpans+1); i++ {
+		parentIdx := i % len(handlerIDs)
+		leaf := ss.Spans().AppendEmpty()
+		leaf.SetTraceID(traceID)
+		id := pcommon.SpanID([8]byte{0, 0, 0, 0, 0, 0, byte(spanID >> 8), byte(spanID)})
+		leaf.SetSpanID(id)
+		leaf.SetParentSpanID(handlerIDs[parentIdx])
+		leaf.SetName(fmt.Sprintf("unique-op-%d", i)) // unique name, won't aggregate
+		leaf.SetKind(ptrace.SpanKindClient)
+		leaf.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		leaf.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(10 * time.Millisecond)))
+		leaf.Status().SetCode(ptrace.StatusCodeOk)
+		leaf.Attributes().PutStr("db.system", "postgresql")
+		leaf.Attributes().PutStr("unique.id", fmt.Sprintf("%d", i))
+		spanID++
+	}
+
+	// Then, create repeated leaf spans under ONE handler (will aggregate)
+	if len(handlerIDs) > 0 {
+		targetHandler := handlerIDs[0]
+		for i := 0; i < numRepeated && spanID < uint64(numSpans+1); i++ {
+			leaf := ss.Spans().AppendEmpty()
+			leaf.SetTraceID(traceID)
+			id := pcommon.SpanID([8]byte{0, 0, 0, 0, 0, 0, byte(spanID >> 8), byte(spanID)})
+			leaf.SetSpanID(id)
+			leaf.SetParentSpanID(targetHandler)
+			leaf.SetName("SELECT") // same name
+			leaf.SetKind(ptrace.SpanKindClient)
+			leaf.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			leaf.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(10 * time.Millisecond)))
+			leaf.Status().SetCode(ptrace.StatusCodeOk)
+			leaf.Attributes().PutStr("db.system", "postgresql")
+			leaf.Attributes().PutStr("db.operation", "select") // same attributes
+			spanID++
+		}
+	}
+
+	return td
+}
+
 // benchmarkProcessTrace is a helper for benchmarking trace processing with different sizes
 func benchmarkProcessTrace(b *testing.B, numSpans, minSpans int) {
 	cfg := createDefaultConfig().(*Config)
