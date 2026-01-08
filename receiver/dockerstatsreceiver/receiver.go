@@ -166,6 +166,7 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	}
 
 	r.mb.EmitForResource(metadata.WithResource(resource))
+	r.mb.RecordContainerStatusDataPoint(now, int64(metadata.MapAttributeStatus[container.State.Status]), metadata.MapAttributeStatus[container.State.Status])
 	return errs
 }
 

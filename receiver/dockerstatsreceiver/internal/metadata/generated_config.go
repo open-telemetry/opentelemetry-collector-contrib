@@ -98,6 +98,7 @@ type MetricsConfig struct {
 	ContainerPidsCount                         MetricConfig `mapstructure:"container.pids.count"`
 	ContainerPidsLimit                         MetricConfig `mapstructure:"container.pids.limit"`
 	ContainerRestarts                          MetricConfig `mapstructure:"container.restarts"`
+	ContainerStatus                            MetricConfig `mapstructure:"container.status"`
 	ContainerUptime                            MetricConfig `mapstructure:"container.uptime"`
 }
 
@@ -311,6 +312,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerRestarts: MetricConfig{
+			Enabled: false,
+		},
+		ContainerStatus: MetricConfig{
 			Enabled: false,
 		},
 		ContainerUptime: MetricConfig{

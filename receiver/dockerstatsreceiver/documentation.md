@@ -740,6 +740,20 @@ Number of restarts for the container.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {restarts} | Sum | Int | Cumulative | true | Development |
 
+### container.status
+
+Status of the container. One of - created, running, paused, restarting, removing, exited and dead
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {status} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| status | Container Status | Str: ``created``, ``running``, ``paused``, ``restarting``, ``removing``, ``exited``, ``dead`` | Recommended |
+
 ### container.uptime
 
 Time elapsed since container start time.

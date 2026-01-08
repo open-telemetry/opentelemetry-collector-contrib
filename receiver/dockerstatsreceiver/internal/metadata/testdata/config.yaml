@@ -141,6 +141,8 @@ all_set:
       enabled: true
     container.restarts:
       enabled: true
+    container.status:
+      enabled: true
     container.uptime:
       enabled: true
   resource_attributes:
@@ -299,6 +301,8 @@ none_set:
     container.pids.limit:
       enabled: false
     container.restarts:
+      enabled: false
+    container.status:
       enabled: false
     container.uptime:
       enabled: false

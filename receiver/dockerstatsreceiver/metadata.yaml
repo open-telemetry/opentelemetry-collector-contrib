@@ -67,6 +67,10 @@ attributes:
   operation:
     description: "Type of BlockIO operation."
     type: string
+  status:
+    description: "Container Status"
+    type: string
+    enum: ["created", "running", "paused", "restarting", "removing", "exited", "dead"]
 
 metrics:
   # CPU
@@ -846,6 +850,17 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+
+  # Container status
+  container.status:
+    enabled: false
+    stability:
+      level: development
+    description: "Status of the container. One of - created, running, paused, restarting, removing, exited and dead"
+    unit: "{status}"
+    gauge:
+      value_type: int
+    attributes: [status]
 
   # Base
   container.uptime:
