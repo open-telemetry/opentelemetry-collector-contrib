@@ -103,9 +103,7 @@ func parseXSentryRateLimitReset(reset string) time.Duration {
 	if resetTime, err := strconv.ParseInt(reset, 10, 64); err == nil {
 		resetAt := time.Unix(resetTime, 0)
 		retryAfter = time.Until(resetAt)
-		if retryAfter < 0 {
-			retryAfter = 0
-		}
+		retryAfter = max(retryAfter, 0)
 	}
 	return retryAfter
 }

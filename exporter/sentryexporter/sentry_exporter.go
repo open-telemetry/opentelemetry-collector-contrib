@@ -245,7 +245,6 @@ func (s *endpointState) projectCreationWorker() {
 					zap.String("project", req.projectSlug),
 					zap.String("team", s.defaultTeamSlug))
 			} else {
-
 				s.projectMapMu.RLock()
 				_, exists := s.projectToEndpoint[req.projectSlug]
 				s.projectMapMu.RUnlock()
@@ -253,7 +252,6 @@ func (s *endpointState) projectCreationWorker() {
 					s.telemetrySettings.Logger.Debug("Project already exists, skipping creation",
 						zap.String("project", req.projectSlug))
 				} else {
-
 					createCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 					_, err := s.sentryClient.CreateProject(createCtx, s.config.OrgSlug, s.defaultTeamSlug, req.projectSlug, req.projectSlug, req.platform)
 					cancel()
@@ -287,7 +285,6 @@ func (s *endpointState) projectCreationWorker() {
 								zap.Error(err))
 						}
 					} else {
-
 						endpointCtx, endpointCancel := context.WithTimeout(context.Background(), 30*time.Second)
 						endpoint, err := s.sentryClient.GetOTLPEndpoints(endpointCtx, s.config.OrgSlug, req.projectSlug)
 						endpointCancel()
@@ -321,7 +318,6 @@ func (s *endpointState) projectCreationWorker() {
 									zap.Error(err))
 							}
 						} else {
-
 							s.projectMapMu.Lock()
 							s.projectToEndpoint[req.projectSlug] = endpoint
 							s.projectMapMu.Unlock()
@@ -338,7 +334,6 @@ func (s *endpointState) projectCreationWorker() {
 			if !keepPending {
 				s.pendingCreations.Delete(req.projectSlug)
 			}
-
 		}
 	}
 }

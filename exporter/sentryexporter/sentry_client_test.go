@@ -4,7 +4,6 @@
 package sentryexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -15,7 +14,7 @@ import (
 func TestGetAllProjectsPagination(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	var callCount int32
 
 	var server *httptest.Server
@@ -74,7 +73,7 @@ func TestGetAllProjectsPagination(t *testing.T) {
 func TestGetProjectKeysPagination(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	var callCount int32
 
 	var server *httptest.Server
