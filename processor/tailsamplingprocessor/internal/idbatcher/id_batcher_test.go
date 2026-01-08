@@ -51,7 +51,7 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 	batcher, err := New(10, 100, uint64(4*runtime.NumCPU()))
 	require.NoError(b, err, "Failed to create Batcher")
 
-	ticker := time.NewTicker(100 * time.Millisecond)
+	ticker := time.NewTicker(time.Millisecond)
 	var wg sync.WaitGroup
 	defer func() {
 		batcher.Stop()
@@ -86,26 +86,29 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 	batcher, err := New(numBatches, newBatchesInitialCapacity, batchChannelSize)
 	require.NoError(t, err, "Failed to create Batcher: %v", err)
 
-	ticker := time.NewTicker(100 * time.Millisecond)
-	stopTicker := make(chan bool)
+	ticker := time.NewTicker(time.Millisecond)
 	got := Batch{}
+	asyncDequesComplete := make(chan bool)
 	go func() {
+		defer func() {
+			asyncDequesComplete <- true
+		}()
+
 		var completedDequeues uint64
-	outer:
-		for {
-			select {
-			case <-ticker.C:
-				g, _ := batcher.CloseCurrentAndTakeFirstBatch()
-				completedDequeues++
-				if completedDequeues <= numBatches && len(g) != 0 {
-					t.Error("Some of the first batches were not empty")
-					return
-				}
-				for id := range g {
-					got[id] = struct{}{}
-				}
-			case <-stopTicker:
-				break outer
+		for range ticker.C {
+			g, more := batcher.CloseCurrentAndTakeFirstBatch()
+			completedDequeues++
+			if completedDequeues <= numBatches && len(g) != 0 {
+				t.Error("Some of the first batches were not empty")
+				return
+			}
+			for id := range g {
+				_, ok := got[id]
+				require.False(t, ok, "Found duplicate id in batcher")
+				got[id] = struct{}{}
+			}
+			if !more {
+				return
 			}
 		}
 	}()
@@ -127,20 +130,10 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 	}
 
 	wg.Wait()
-	stopTicker <- true
-	ticker.Stop()
 	batcher.Stop()
-
-	// Get all ids added to the batcher
-	for {
-		batch, ok := batcher.CloseCurrentAndTakeFirstBatch()
-		for id := range batch {
-			got[id] = struct{}{}
-		}
-		if !ok {
-			break
-		}
-	}
+	// Wait for async process to be complete which will process all traces.
+	<-asyncDequesComplete
+	ticker.Stop()
 
 	require.Len(t, got, len(ids), "Batcher got incorrect count of traces from batches")
 
