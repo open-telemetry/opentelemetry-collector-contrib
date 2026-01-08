@@ -96,8 +96,9 @@ func ReleaseDBClient(cfg *Config) error {
 	// Close immediately if no more references
 	if client.refCount == 0 && !client.cleanedUp {
 		if err := client.db.Close(); err != nil {
-			// Log error but continue with cleanup
-			fmt.Printf("warning: failed to close connection pool for %s: %v\n", endpoint, err)
+			// Return error but continue with cleanup
+			// The error is wrapped to provide context
+			return fmt.Errorf("failed to close connection pool for %s: %w", endpoint, err)
 		}
 		client.cleanedUp = true
 		delete(clientMap, endpoint)

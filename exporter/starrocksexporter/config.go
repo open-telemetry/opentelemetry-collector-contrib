@@ -13,6 +13,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql" // MySQL driver for StarRocks
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -67,6 +68,22 @@ type Config struct {
 	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"`
 	// ConnMaxIdleTime is the maximum amount of time a connection may be idle before being closed.
 	ConnMaxIdleTime time.Duration `mapstructure:"conn_max_idle_time"`
+
+	// Protocol is the protocol to use for exporting data. Valid values: "mysql" (default) or "http".
+	// "mysql" uses the MySQL protocol with direct SQL INSERT statements.
+	// "http" uses the StarRocks Stream Load API over HTTP.
+	// "debug" outputs data to logs for debugging purposes.
+	Protocol string `mapstructure:"protocol"`
+	// HTTP is the HTTP client configuration for Stream Load API. Used when Protocol is "http".
+	HTTP confighttp.ClientConfig `mapstructure:"http"`
+	// StreamLoadTimeout is the timeout for Stream Load requests. Used when Protocol is "http".
+	// Default is 600 seconds (10 minutes).
+	StreamLoadTimeout time.Duration `mapstructure:"stream_load_timeout"`
+	// StreamLoadFormat is the data format for Stream Load. Valid values: "json" (default) or "csv".
+	StreamLoadFormat string `mapstructure:"stream_load_format"`
+	// MaxFilterRatio is the maximum error tolerance ratio for Stream Load (0 to 1).
+	// Default is 0, meaning any unqualified data causes the load to fail.
+	MaxFilterRatio float64 `mapstructure:"max_filter_ratio"`
 }
 
 type MetricTablesConfig struct {
@@ -94,30 +111,42 @@ const (
 	defaultMaxIdleConns       = 1
 	defaultConnMaxLifetime    = 5 * time.Minute
 	defaultConnMaxIdleTime    = 30 * time.Second
+	defaultProtocol           = "mysql"
+	defaultStreamLoadTimeout  = 600 * time.Second
+	defaultStreamLoadFormat   = "json"
+	defaultMaxFilterRatio     = 0.0
 )
 
 var (
-	errConfigNoEndpoint      = errors.New("endpoint must be specified")
-	errConfigInvalidEndpoint = errors.New("endpoint must be in format host:port")
+	errConfigNoEndpoint          = errors.New("endpoint must be specified")
+	errConfigInvalidEndpoint     = errors.New("endpoint must be in format host:port")
+	errConfigInvalidProtocol     = errors.New("protocol must be one of: 'mysql' (default), 'http', or 'debug'")
+	errConfigHTTPEndpoint        = errors.New("http endpoint must be specified when protocol is 'http'")
+	errConfigInvalidStreamFormat = errors.New("stream_load_format must be either 'json' or 'csv'")
 )
 
 func createDefaultConfig() component.Config {
 	return &Config{
 		collectorVersion: "unknown",
 
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
-		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
-		ConnectionParams: map[string]string{},
-		Database:         defaultDatabase,
-		LogsTableName:    "otel_logs",
-		TracesTableName:  "otel_traces",
-		TTL:              0,
-		CreateSchema:     true,
-		MaxOpenConns:     defaultMaxOpenConns,
-		MaxIdleConns:     defaultMaxIdleConns,
-		ConnMaxLifetime:  defaultConnMaxLifetime,
-		ConnMaxIdleTime:  defaultConnMaxIdleTime,
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
+		QueueSettings:     configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		BackOffConfig:     configretry.NewDefaultBackOffConfig(),
+		ConnectionParams:  map[string]string{},
+		Database:          defaultDatabase,
+		LogsTableName:     "otel_logs",
+		TracesTableName:   "otel_traces",
+		TTL:               0,
+		CreateSchema:      true,
+		MaxOpenConns:      defaultMaxOpenConns,
+		MaxIdleConns:      defaultMaxIdleConns,
+		ConnMaxLifetime:   defaultConnMaxLifetime,
+		ConnMaxIdleTime:   defaultConnMaxIdleTime,
+		Protocol:          defaultProtocol,
+		HTTP:              confighttp.NewDefaultClientConfig(),
+		StreamLoadTimeout: defaultStreamLoadTimeout,
+		StreamLoadFormat:  defaultStreamLoadFormat,
+		MaxFilterRatio:    defaultMaxFilterRatio,
 		MetricsTables: MetricTablesConfig{
 			Gauge:                metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultGaugeSuffix},
 			Sum:                  metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultSumSuffix},
@@ -130,24 +159,52 @@ func createDefaultConfig() component.Config {
 
 // Validate the StarRocks server configuration.
 func (cfg *Config) Validate() (err error) {
-	if cfg.Endpoint == "" {
-		err = errors.Join(err, errConfigNoEndpoint)
+	// Validate protocol (empty defaults to "mysql")
+	validProtocols := map[string]bool{
+		"":      true, // default is mysql
+		"mysql": true,
+		"http":  true,
+		"debug": true,
+	}
+	if !validProtocols[cfg.Protocol] {
+		err = errors.Join(err, errConfigInvalidProtocol)
 	}
 
-	dsn, e := cfg.buildDSN()
-	if e != nil {
-		err = errors.Join(err, e)
+	// For HTTP protocol, validate HTTP endpoint and format
+	if cfg.Protocol == "http" {
+		if cfg.HTTP.Endpoint == "" {
+			err = errors.Join(err, errConfigHTTPEndpoint)
+		}
+		if cfg.StreamLoadFormat != "json" && cfg.StreamLoadFormat != "csv" {
+			err = errors.Join(err, errConfigInvalidStreamFormat)
+		}
+	}
+
+	// For MySQL protocol (default), validate MySQL endpoint
+	// Debug and http protocols don't require MySQL endpoint
+	if cfg.Protocol != "http" && cfg.Protocol != "debug" {
+		if cfg.Endpoint == "" {
+			err = errors.Join(err, errConfigNoEndpoint)
+		}
+
+		dsn, e := cfg.buildDSN()
+		if e != nil {
+			err = errors.Join(err, e)
+		}
+
+		// Validate DSN by attempting to parse it
+		if dsn != "" {
+			db, e := sql.Open("mysql", dsn)
+			if e != nil {
+				err = errors.Join(err, fmt.Errorf("invalid DSN: %w", e))
+			} else {
+				// Close the test connection to avoid leak
+				_ = db.Close()
+			}
+		}
 	}
 
 	cfg.buildMetricTableNames()
-
-	// Validate DSN by attempting to parse it
-	if dsn != "" {
-		_, e := sql.Open("mysql", dsn)
-		if e != nil {
-			err = errors.Join(err, fmt.Errorf("invalid DSN: %w", e))
-		}
-	}
 
 	return err
 }
@@ -248,4 +305,20 @@ func (cfg *Config) database() string {
 		return cfg.Database
 	}
 	return defaultDatabase
+}
+
+// IsHTTPProtocol returns true if the protocol is set to "http".
+func (cfg *Config) IsHTTPProtocol() bool {
+	return cfg.Protocol == "http"
+}
+
+// IsMySQLProtocol returns true if the protocol is set to "mysql" or empty (default).
+func (cfg *Config) IsMySQLProtocol() bool {
+	return cfg.Protocol == "" || cfg.Protocol == "mysql"
+}
+
+// IsDebugProtocol returns true if the protocol is set to "debug".
+// Debug mode logs data instead of sending it to a destination.
+func (cfg *Config) IsDebugProtocol() bool {
+	return cfg.Protocol == "debug"
 }
