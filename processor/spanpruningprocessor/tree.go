@@ -9,28 +9,26 @@ import (
 	"go.uber.org/zap"
 )
 
-// spanNode represents a span in the trace tree with parent/child relationships
-// groupKey is computed once during tree construction to avoid repeated string allocations
+// spanNode represents a span in the trace tree with parent/child relationships.
 type spanNode struct {
 	span             ptrace.Span
 	scopeSpans       ptrace.ScopeSpans
 	parent           *spanNode
 	children         []*spanNode
 	groupKey         string // cached group key for leaf spans
-	isLeaf           bool   // true if node has no children (updated during tree build)
-	markedForRemoval bool   // true if node will be aggregated (avoids map lookups)
+	isLeaf           bool   // true if node has no children
+	markedForRemoval bool   // true if node will be aggregated
 }
 
-// traceTree represents a complete trace as a tree structure
+// traceTree represents a complete trace as a tree structure.
 type traceTree struct {
 	nodeByID map[pcommon.SpanID]*spanNode
 	leaves   []*spanNode // nodes with no children, populated during build
 	orphans  []*spanNode // spans whose parent is not in the trace
 }
 
-// buildTraceTree constructs a tree structure from a list of spans
-// Handles incomplete traces: orphans (missing parents), multiple roots, no root
-// Also identifies leaf nodes during construction to avoid a separate pass
+// buildTraceTree constructs a tree structure from a list of spans.
+// Handles incomplete traces: orphans (missing parents), multiple roots, no root.
 func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	tree := &traceTree{
 		nodeByID: make(map[pcommon.SpanID]*spanNode, len(spans)),
@@ -53,7 +51,6 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	// Second pass: link parent-child relationships and update leaf status
 	// Pre-allocate slices with reasonable capacity
 	tree.orphans = make([]*spanNode, 0, len(spans)/10)
-	tree.leaves = make([]*spanNode, 0, len(spans)/4)
 	var rootCount int
 
 	for _, node := range tree.nodeByID {
@@ -76,6 +73,7 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	}
 
 	// Third pass: collect leaves (nodes still marked as leaf)
+	tree.leaves = make([]*spanNode, 0, len(spans)/4)
 	for _, node := range tree.nodeByID {
 		if node.isLeaf {
 			tree.leaves = append(tree.leaves, node)
@@ -98,27 +96,49 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	return tree
 }
 
-// getLeaves returns the pre-computed list of leaf nodes
+// getLeaves returns the pre-computed list of leaf nodes.
 func (t *traceTree) getLeaves() []*spanNode {
 	return t.leaves
 }
 
-// findEligibleParentNodes finds parent nodes whose ALL children are marked for removal
-// Uses the markedForRemoval field on nodes instead of map lookups for better performance
-func (p *spanPruningProcessor) findEligibleParentNodes(tree *traceTree) []*spanNode {
-	eligibleParents := make([]*spanNode, 0, len(tree.nodeByID)/10)
-
-	for _, node := range tree.nodeByID {
-		if !p.isEligibleForParentAggregation(node) {
-			continue
-		}
-		eligibleParents = append(eligibleParents, node)
+// findEligibleParentNodesFromCandidates finds eligible parents from a set of candidates.
+// More efficient than scanning all nodes when walking up from marked nodes.
+func (p *spanPruningProcessor) findEligibleParentNodesFromCandidates(candidates []*spanNode) []*spanNode {
+	if len(candidates) == 0 {
+		return nil
 	}
 
+	eligibleParents := make([]*spanNode, 0, len(candidates)/4)
+	for _, node := range candidates {
+		if p.isEligibleForParentAggregation(node) {
+			eligibleParents = append(eligibleParents, node)
+		}
+	}
 	return eligibleParents
 }
 
-// isEligibleForParentAggregation checks if a node can be aggregated as a parent
+// collectParentCandidates returns unique parents of marked nodes for the next iteration.
+func collectParentCandidates(markedNodes []*spanNode) []*spanNode {
+	if len(markedNodes) == 0 {
+		return nil
+	}
+
+	seen := make(map[*spanNode]struct{}, len(markedNodes)/2)
+	candidates := make([]*spanNode, 0, len(markedNodes)/2)
+
+	for _, node := range markedNodes {
+		if node.parent != nil {
+			if _, exists := seen[node.parent]; !exists {
+				seen[node.parent] = struct{}{}
+				candidates = append(candidates, node.parent)
+			}
+		}
+	}
+
+	return candidates
+}
+
+// isEligibleForParentAggregation checks if a node can be aggregated as a parent.
 func (p *spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool {
 	// Must have children (not a leaf)
 	if node.isLeaf {

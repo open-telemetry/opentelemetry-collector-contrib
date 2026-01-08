@@ -189,6 +189,36 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expectError: true,
 		},
+		{
+			name: "max_parent_depth exceeds limit",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationSpanNameSuffix:  "_aggregated",
+				AggregationAttributePrefix: "aggregation.",
+				MaxParentDepth:             MaxParentDepthLimit + 1,
+			},
+			expectError: true,
+		},
+		{
+			name: "max_parent_depth at limit",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationSpanNameSuffix:  "_aggregated",
+				AggregationAttributePrefix: "aggregation.",
+				MaxParentDepth:             MaxParentDepthLimit,
+			},
+			expectError: false,
+		},
+		{
+			name: "max_parent_depth unlimited",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationSpanNameSuffix:  "_aggregated",
+				AggregationAttributePrefix: "aggregation.",
+				MaxParentDepth:             -1,
+			},
+			expectError: false,
+		},
 	}
 
 	for _, tt := range tests {

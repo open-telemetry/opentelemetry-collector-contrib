@@ -13,6 +13,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+// MaxParentDepthLimit is the maximum allowed value for MaxParentDepth configuration.
+// This limit ensures bounded iteration during parent aggregation.
+const MaxParentDepthLimit = 10
+
 // Config defines the configuration for the span pruning processor.
 type Config struct {
 	// GroupByAttributes specifies which span attributes to use for grouping
@@ -63,6 +67,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.MaxParentDepth < -1 {
 		return errors.New("max_parent_depth must be -1 (unlimited) or >= 0")
+	}
+
+	if cfg.MaxParentDepth > MaxParentDepthLimit {
+		return fmt.Errorf("max_parent_depth cannot exceed %d", MaxParentDepthLimit)
 	}
 
 	// Validate AggregationSpanNameSuffix

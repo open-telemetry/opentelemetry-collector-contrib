@@ -156,6 +156,7 @@ func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInf
 
 // analyzeAggregationsWithTree performs Phase 1 using tree structure
 // Uses markedForRemoval field on nodes instead of separate map for better performance
+// Optimized to walk up from marked nodes instead of scanning all nodes
 func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[string]aggregationGroup {
 	// Step 1: Get pre-computed leaf nodes
 	leafNodes := tree.getLeaves()
@@ -170,6 +171,9 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 	// Pre-size based on expected number of groups
 	aggregationGroups := make(map[string]aggregationGroup, len(leafGroups)/2)
 
+	// Track nodes marked in this round for candidate collection
+	var markedNodes []*spanNode
+
 	for groupKey, nodes := range leafGroups {
 		if len(nodes) >= p.config.MinSpansToAggregate {
 			aggregationGroups[groupKey] = aggregationGroup{
@@ -180,6 +184,7 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 			for _, node := range nodes {
 				node.markedForRemoval = true
 			}
+			markedNodes = append(markedNodes, nodes...)
 		}
 	}
 
@@ -193,27 +198,31 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 		return aggregationGroups
 	}
 
+	// Collect initial parent candidates from marked leaf nodes
+	candidates := collectParentCandidates(markedNodes)
+
 	depth := 1
-	for {
+	for len(candidates) > 0 {
 		// Check if we've reached the maximum parent depth limit
 		if p.config.MaxParentDepth > 0 && depth > p.config.MaxParentDepth {
 			break
 		}
 
-		parentCandidates := p.findEligibleParentNodes(tree)
-		if len(parentCandidates) == 0 {
+		// Find eligible parents from candidates (walks up from marked nodes)
+		eligibleParents := p.findEligibleParentNodesFromCandidates(candidates)
+		if len(eligibleParents) == 0 {
 			break
 		}
 
 		// Group parent candidates by name + status
 		parentGroups := make(map[string][]*spanNode)
-		for _, node := range parentCandidates {
+		for _, node := range eligibleParents {
 			parentKey := p.buildParentGroupKey(node.span)
 			parentGroups[parentKey] = append(parentGroups[parentKey], node)
 		}
 
 		// Add parent groups (at least 2 parents to aggregate)
-		foundNewParents := false
+		markedNodes = markedNodes[:0] // reset for this round
 		for parentKey, nodes := range parentGroups {
 			if len(nodes) >= 2 {
 				aggregationGroups[parentKey] = aggregationGroup{
@@ -224,13 +233,16 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 				for _, node := range nodes {
 					node.markedForRemoval = true
 				}
-				foundNewParents = true
+				markedNodes = append(markedNodes, nodes...)
 			}
 		}
 
-		if !foundNewParents {
+		if len(markedNodes) == 0 {
 			break
 		}
+
+		// Collect next round of candidates from newly marked nodes
+		candidates = collectParentCandidates(markedNodes)
 		depth++
 	}
 
