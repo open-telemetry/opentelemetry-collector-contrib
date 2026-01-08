@@ -56,6 +56,10 @@ func FindFiles(includes, excludes []string) ([]string, error) {
 				continue
 			}
 
+			// Fix UNC path corruption on Windows: if the include pattern starts with \\
+			// but the match only has \, restore the UNC prefix
+			match = fixUNCPath(include, match)
+
 			allSet[match] = struct{}{}
 		}
 	}
