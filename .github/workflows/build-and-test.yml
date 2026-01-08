@@ -27,18 +27,9 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - run: ./.github/workflows/scripts/check-disk-space.sh
   check-collector-module-version:
     runs-on: ubuntu-24.04
@@ -76,18 +67,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Lint
         run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
@@ -133,18 +115,9 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Run `govulncheck`
         run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
@@ -153,18 +126,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - run: make genotelcontribcol
       - name: CheckDoc
         run: make checkdoc
@@ -246,18 +210,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Cache Test Build
         uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5
         with:
@@ -358,15 +313,10 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+          install-tools: "false"
       - name: Cache Docker images.
         uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
         with:
@@ -388,15 +338,10 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+          install-tools: "false"
       - name: Cache Docker images.
         uses: AndreKurait/docker-cache@0fe76702a40db986d9663c24954fc14c6a6031b7 # 0.6.0
         with:
@@ -428,18 +373,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
       - run: ./.github/workflows/scripts/check-disk-space.sh
@@ -448,18 +384,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Correctness
         run: make -C testbed run-correctness-metrics-tests
       - run: ./.github/workflows/scripts/check-disk-space.sh
@@ -469,7 +396,11 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+          gomoddownload: "false"
+          install-tools: "false"
       - run: make genotelcontribcol
       - name: Build Examples
         run: make build-examples
@@ -518,18 +449,9 @@ jobs:
             arch: s390x
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Generate collector files
         run: make genotelcontribcol
       - name: Build Collector ${{ matrix.os }} ${{ matrix.arch }} ${{ matrix.arm }}
@@ -564,21 +486,14 @@ jobs:
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+          gomoddownload: "false"
+          install-tools: "false"
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
-        with:
-          go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - name: Build Docker Image
         run: |
           make genotelcontribcol
@@ -694,18 +609,9 @@ jobs:
       issues: write
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           merge-multiple: true
