@@ -35,17 +35,19 @@ func (l profileStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Prof
 		for _, sprofiles := range rprofiles.ScopeProfiles().All() {
 			for _, profile := range sprofiles.Profiles().All() {
 				tCtx := ottlprofile.NewTransformContextPtr(rprofiles, sprofiles, profile, dic)
-				defer tCtx.Close()
 				condition, err := l.Eval(ctx, tCtx)
 				if err != nil {
+					tCtx.Close()
 					return err
 				}
 				if condition {
 					err := l.Execute(ctx, tCtx)
 					if err != nil {
+						tCtx.Close()
 						return err
 					}
 				}
+				tCtx.Close()
 			}
 		}
 	}

@@ -90,13 +90,13 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 
 			profileSample, profile := createProfileSampleTelemetry()
 
-			tCtx := NewTransformContextPtr(pprofile.NewResourceProfiles(), pprofile.NewScopeProfiles(), profileSample, profile, pprofile.NewProfilesDictionary())
+			tCtx := NewTransformContextPtr(pprofile.NewResourceProfiles(), pprofile.NewScopeProfiles(), profile, profileSample, pprofile.NewProfilesDictionary())
 			got, err := accessor.Get(t.Context(), tCtx)
 			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 			tCtx.Close()
 
-			tCtx = NewTransformContextPtr(pprofile.NewResourceProfiles(), pprofile.NewScopeProfiles(), profileSample, profile, pprofile.NewProfilesDictionary())
+			tCtx = NewTransformContextPtr(pprofile.NewResourceProfiles(), pprofile.NewScopeProfiles(), profile, profileSample, pprofile.NewProfilesDictionary())
 			err = accessor.Set(t.Context(), tCtx, tt.newVal)
 			require.NoError(t, err)
 			tCtx.Close()
@@ -122,7 +122,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	scopeProfile := pprofile.NewScopeProfiles()
 	scopeProfile.Scope().SetName("instrumentation_scope")
 
-	ctx := NewTransformContextPtr(resourceProfile, scopeProfile, pprofile.NewSample(), profile, pprofile.NewProfilesDictionary())
+	ctx := NewTransformContextPtr(resourceProfile, scopeProfile, profile, pprofile.NewSample(), pprofile.NewProfilesDictionary())
 	defer ctx.Close()
 
 	tests := []struct {

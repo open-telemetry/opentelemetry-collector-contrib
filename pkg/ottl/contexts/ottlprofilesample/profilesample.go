@@ -68,7 +68,7 @@ type TransformContextOption func(*TransformContext)
 
 // NewTransformContext creates a new TransformContext with the provided parameters.
 //
-// Deprecated: [v0.143.0] Use NewTransformContextPtr.
+// Deprecated: [v0.144.0] Use NewTransformContextPtr.
 func NewTransformContext(sample pprofile.Sample, profile pprofile.Profile, dictionary pprofile.ProfilesDictionary, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeProfiles pprofile.ScopeProfiles, resourceProfiles pprofile.ResourceProfiles, options ...TransformContextOption) TransformContext {
 	tc := TransformContext{
 		sample:               sample,
@@ -88,7 +88,7 @@ func NewTransformContext(sample pprofile.Sample, profile pprofile.Profile, dicti
 
 // NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
-func NewTransformContextPtr(resourceProfiles pprofile.ResourceProfiles, scopeProfiles pprofile.ScopeProfiles, sample pprofile.Sample, profile pprofile.Profile, dictionary pprofile.ProfilesDictionary, options ...TransformContextOption) *TransformContext {
+func NewTransformContextPtr(resourceProfiles pprofile.ResourceProfiles, scopeProfiles pprofile.ScopeProfiles, profile pprofile.Profile, sample pprofile.Sample, dictionary pprofile.ProfilesDictionary, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
 	tCtx.sample = sample
 	tCtx.profile = profile
