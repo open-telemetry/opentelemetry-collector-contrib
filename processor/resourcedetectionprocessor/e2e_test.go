@@ -174,7 +174,21 @@ func TestE2EConsulDetector(t *testing.T) {
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
-		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+		metrics := metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1]
+
+		// Verify that consul detector populated the dynamic attributes (not empty)
+		require.Greater(tt, metrics.ResourceMetrics().Len(), 0, "expected at least one resource metric")
+		resourceAttrs := metrics.ResourceMetrics().At(0).Resource().Attributes()
+
+		hostName, found := resourceAttrs.Get("host.name")
+		require.True(tt, found, "host.name attribute should be present")
+		require.NotEmpty(tt, hostName.Str(), "host.name should not be empty")
+
+		hostID, found := resourceAttrs.Get("host.id")
+		require.True(tt, found, "host.id attribute should be present")
+		require.NotEmpty(tt, hostID.Str(), "host.id should not be empty")
+
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metrics,
 			pmetrictest.IgnoreTimestamp(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreScopeVersion(),

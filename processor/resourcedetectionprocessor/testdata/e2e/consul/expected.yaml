@@ -12,7 +12,7 @@ resourceMetrics:
             stringValue: "*"
         - key: instance_type
           value:
-            stringValue: t3.medium
+            stringValue: t3.micro
         - key: region
           value:
             stringValue: us-west-1
