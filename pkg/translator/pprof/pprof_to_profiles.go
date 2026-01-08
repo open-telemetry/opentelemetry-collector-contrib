@@ -18,10 +18,10 @@ import (
 )
 
 var (
-	// errInvalPprof is returned for invalid pprof data.
-	errInvalPprof = errors.New("invalid pprof data")
-	// errInalIdxFomrat is returned on invalid string formats for indices.
-	errInalIdxFomrat = errors.New("invalid format of attribute indices")
+	// errPprofInvalid is returned for invalid pprof data.
+	errPprofInvalid = errors.New("invalid pprof data")
+	// errIdxFormatInvalid is returned on invalid string formats for indices.
+	errIdxFormatInvalid = errors.New("invalid format of attribute indices")
 )
 
 const (
@@ -97,7 +97,7 @@ type lookupTables struct {
 
 func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 	if err := src.CheckValid(); err != nil {
-		return nil, fmt.Errorf("%w: %w", err, errInvalPprof)
+		return nil, fmt.Errorf("%w: %w", err, errPprofInvalid)
 	}
 	dst := pprofile.NewProfiles()
 
@@ -146,7 +146,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 			for lk, lv := range sample.Label {
 				if len(lv) != 1 {
 					return nil, fmt.Errorf("labels with multiple values (%d) are not supported: %w",
-						len(lv), errInvalPprof)
+						len(lv), errPprofInvalid)
 				}
 				var idx int32
 				lu, exist := sample.NumUnit[lk]
@@ -161,7 +161,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 			for lk, lv := range sample.NumLabel {
 				if len(lv) != 1 {
 					return nil, fmt.Errorf("invalid length of numeric label value %d: %w",
-						len(lv), errInvalPprof)
+						len(lv), errPprofInvalid)
 				}
 				var idx int32
 				lu, exist := sample.NumUnit[lk]
@@ -568,7 +568,7 @@ func stringToAttrIdx(indices string) ([]int32, error) {
 		result = append(result, int32(n))
 	}
 	if !slices.IsSorted(result) {
-		return nil, fmt.Errorf("invalid order of indices '%s': %w", indices, errInalIdxFomrat)
+		return nil, fmt.Errorf("invalid order of indices '%s': %w", indices, errIdxFormatInvalid)
 	}
 
 	return result, nil
@@ -641,7 +641,7 @@ func stringToLine(lines string) ([]pprofile.Line, error) {
 	for _, part := range parts {
 		components := strings.Split(part, ":")
 		if len(components) != 3 {
-			return nil, fmt.Errorf("invalid line format '%s': %w", part, errInalIdxFomrat)
+			return nil, fmt.Errorf("invalid line format '%s': %w", part, errIdxFormatInvalid)
 		}
 
 		funcID, err := strconv.ParseInt(components[0], 10, 32)

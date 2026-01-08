@@ -79,7 +79,7 @@ func TestStringToAttrIdx(t *testing.T) {
 		{input: "", output: []int32{}},
 		{input: "73", output: []int32{73}},
 		{input: "3;5;7", output: []int32{3, 5, 7}},
-		{input: "7;5;3", expectedError: errInalIdxFomrat},
+		{input: "7;5;3", expectedError: errIdxFormatInvalid},
 		{input: "invalid", expectedError: strconv.ErrSyntax},
 	} {
 		t.Run(tc.input, func(t *testing.T) {
@@ -132,13 +132,13 @@ func TestStringToLine(t *testing.T) {
 			name:          "invalid format",
 			input:         "invalid",
 			expected:      nil,
-			expectedError: errInalIdxFomrat,
+			expectedError: errIdxFormatInvalid,
 		},
 		{
 			name:          "incomplete format",
 			input:         "1:10:5;2:20",
 			expected:      nil,
-			expectedError: errInalIdxFomrat,
+			expectedError: errIdxFormatInvalid,
 		},
 		{
 			name:          "invalid function ID",
