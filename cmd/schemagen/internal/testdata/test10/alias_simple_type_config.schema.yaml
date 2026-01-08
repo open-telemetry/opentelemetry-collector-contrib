@@ -1,0 +1,18 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/test10
+title: test10 component
+$defs:
+  Double:
+    type: number
+    x-customType: float64
+  StringsArray:
+    items:
+      type: string
+    type: array
+type: object
+properties:
+  list_of_strings:
+    $ref: '#/$defs/StringsArray'
+  num:
+    $ref: '#/$defs/Double'
+

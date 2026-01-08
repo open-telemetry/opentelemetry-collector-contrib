@@ -1,0 +1,10 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/test01
+title: test01 component
+type: object
+properties:
+  tags:
+    items:
+      type: string
+    type: array
+
