@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: exporter/prometheusremotewrite
+note: Prevent duplicate samples by allowing the WAL to be empty
+issues: [41785]
+subtext: |
+  Since the WAL is being truncated after every send it's likely the reader and writer are in sync. Since WAL was not
+  allowed to be empty, the reader would always re-read previously delivered samples causing duplicate data to be sent
+  continuously.
+change_logs: [user]
