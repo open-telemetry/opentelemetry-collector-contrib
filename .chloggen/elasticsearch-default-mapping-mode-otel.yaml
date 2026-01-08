@@ -7,7 +7,7 @@ change_type: breaking
 component: exporter/elasticsearch
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Deprecate and ignore `mapping::mode` config option"
+note: "Ignore `mapping::mode` config option"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [45246]
@@ -16,7 +16,7 @@ issues: [45246]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The `mapping::mode` config option is now deprecated and will be ignored. Instead, use
+  The `mapping::mode` config option has already been deprecated and is now ignored. Instead, use
   the `X-Elastic-Mapping-Mode` client metadata key (via headers_setter extension) or the
   `elastic.mapping.mode` scope attribute to control the mapping mode per-request.
   See the README for migration instructions.
