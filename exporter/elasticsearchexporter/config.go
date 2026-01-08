@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"slices"
 	"strings"
 	"time"
 
@@ -349,9 +348,6 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("unknown allowed mapping mode name %q", name)
 		}
 		canonicalAllowedModes[i] = canonicalName
-	}
-	if !slices.Contains(canonicalAllowedModes, canonicalMappingModeName(cfg.Mapping.Mode)) {
-		return fmt.Errorf("invalid or disallowed default mapping mode %q", cfg.Mapping.Mode)
 	}
 
 	if cfg.Compression != "none" && cfg.Compression != configcompression.TypeGzip {
