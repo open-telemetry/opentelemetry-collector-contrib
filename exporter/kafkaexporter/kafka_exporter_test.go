@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -31,6 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 func TestTracesPusher_attr_Kgo(t *testing.T) {
@@ -50,7 +52,7 @@ func TestTracesPusher_attr_Kgo(t *testing.T) {
 	require.NoError(t, err)
 
 	records := fetchKgoRecords(t,
-		fakeCluster.ListenAddrs(), expectedTopicFromAttribute,
+		fakeCluster.ListenAddrs(), expectedTopicFromAttribute, 1,
 	)
 	fakeCluster.Close()
 
@@ -78,7 +80,7 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 		require.NoError(t, err)
 
 		records := fetchKgoRecords(t,
-			fakeCluster.ListenAddrs(), expectedTopicFromCtx,
+			fakeCluster.ListenAddrs(), expectedTopicFromCtx, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -107,7 +109,7 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 		require.NoError(t, err)
 
 		records := fetchKgoRecords(t,
-			fakeCluster.ListenAddrs(), defaultTopic,
+			fakeCluster.ListenAddrs(), defaultTopic, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -137,6 +139,112 @@ func TestTracesPusher_conf_err(t *testing.T) {
 		err := exp.exportData(t.Context(), testdata.GenerateTraces(2))
 
 		assert.True(t, consumererror.IsPermanent(err))
+	})
+}
+
+func TestTracesPusher_partitioning(t *testing.T) {
+	input := ptrace.NewTraces()
+	resourceSpans := input.ResourceSpans().AppendEmpty()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	traceID1 := pcommon.TraceID{1}
+	traceID2 := pcommon.TraceID{2}
+	span1 := scopeSpans.Spans().AppendEmpty()
+	span1.SetTraceID(traceID1)
+	span2 := scopeSpans.Spans().AppendEmpty()
+	span2.SetTraceID(traceID1)
+	span3 := scopeSpans.Spans().AppendEmpty()
+	span3.SetTraceID(traceID2)
+	span4 := scopeSpans.Spans().AppendEmpty()
+	span4.SetTraceID(traceID2)
+
+	t.Run("default_partitioning", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		exp, fakeCluster := newKgoMockTracesExporter(t, *config, componenttest.NewNopHost(), config.Traces.Topic)
+		defer fakeCluster.Close()
+
+		err := exp.exportData(t.Context(), input)
+		require.NoError(t, err)
+
+		records := fetchKgoRecords(t, fakeCluster.ListenAddrs(), config.Traces.Topic, 1)
+		require.Len(t, records, 1, "expected one message to be produced")
+		record := records[0]
+		assert.Nil(t, record.Key, "message key should be nil for default partitioning")
+	})
+	t.Run("jaeger_partitioning", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.Traces.Encoding = "jaeger_json"
+		exp, fakeCluster := newKgoMockTracesExporter(t, *config, componenttest.NewNopHost(), config.Traces.Topic)
+		defer fakeCluster.Close()
+
+		err := exp.exportData(t.Context(), input)
+		require.NoError(t, err)
+
+		// Jaeger encodings produce one message per span,
+		// and each one will have the trace ID as the key.
+		records := fetchKgoRecords(t, fakeCluster.ListenAddrs(), config.Traces.Topic, 4)
+		require.Len(t, records, 4, "expected 4 messages (one per span) for Jaeger encoding")
+
+		var keys [][]byte
+		for _, record := range records {
+			keys = append(keys, record.Key)
+		}
+		require.ElementsMatch(t, [][]byte{
+			[]byte(traceID1.String()),
+			[]byte(traceID1.String()),
+			[]byte(traceID2.String()),
+			[]byte(traceID2.String()),
+		}, keys)
+	})
+	t.Run("trace_partitioning", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.PartitionTracesByID = true
+		exp, fakeCluster := newKgoMockTracesExporter(t, *config, componenttest.NewNopHost(), config.Traces.Topic)
+		defer fakeCluster.Close()
+
+		err := exp.exportData(t.Context(), input)
+		require.NoError(t, err)
+
+		// We should get one message per trace ID (2 messages total)
+		records := fetchKgoRecords(t, fakeCluster.ListenAddrs(), config.Traces.Topic, 2)
+		require.Len(t, records, 2, "expected 2 messages (one per trace ID)")
+
+		// Collect keys and traces
+		var keys [][]byte
+		var traces []ptrace.Traces
+		for _, record := range records {
+			keys = append(keys, record.Key)
+
+			output, err := (&ptrace.ProtoUnmarshaler{}).UnmarshalTraces(record.Value)
+			require.NoError(t, err)
+			traces = append(traces, output)
+		}
+
+		expected := ptrace.NewTraces()
+		scopeSpans1 := expected.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+		span1.CopyTo(scopeSpans1.Spans().AppendEmpty())
+		span2.CopyTo(scopeSpans1.Spans().AppendEmpty())
+		scopeSpans2 := expected.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+		span3.CopyTo(scopeSpans2.Spans().AppendEmpty())
+		span4.CopyTo(scopeSpans2.Spans().AppendEmpty())
+
+		// Combine trace spans so we can compare ignoring order.
+		require.Len(t, traces, 2)
+		combined := traces[0]
+		for _, rs := range traces[1].ResourceSpans().All() {
+			rs.CopyTo(combined.ResourceSpans().AppendEmpty())
+		}
+		assert.NoError(t, ptracetest.CompareTraces(
+			expected, combined,
+			ptracetest.IgnoreResourceSpansOrder(),
+			ptracetest.IgnoreScopeSpansOrder(),
+			ptracetest.IgnoreSpansOrder(),
+		))
+
+		require.Len(t, keys, 2)
+		require.ElementsMatch(t, [][]byte{
+			[]byte(traceID1.String()),
+			[]byte(traceID2.String()),
+		}, keys)
 	})
 }
 
@@ -202,7 +310,7 @@ func TestMetricsDataPusher_Kgo(t *testing.T) {
 	expectedTopic := config.Metrics.Topic
 
 	records := fetchKgoRecords(t,
-		fakeCluster.ListenAddrs(), expectedTopic,
+		fakeCluster.ListenAddrs(), expectedTopic, 1,
 	)
 	fakeCluster.Close()
 
@@ -237,7 +345,7 @@ func TestMetricsDataPusher_attr_Kgo(t *testing.T) {
 
 	consumerSeedBrokers := fakeCluster.ListenAddrs()
 	records := fetchKgoRecords(t,
-		consumerSeedBrokers, expectedTopicFromAttribute,
+		consumerSeedBrokers, expectedTopicFromAttribute, 1,
 	)
 
 	require.Len(t, records, 1, "expected one message to be produced")
@@ -265,7 +373,7 @@ func TestMetricsDataPusher_ctx_Kgo(t *testing.T) {
 
 		consumerSeedBrokers := fakeCluster.ListenAddrs()
 		records := fetchKgoRecords(t,
-			consumerSeedBrokers, expectedTopicFromCtx,
+			consumerSeedBrokers, expectedTopicFromCtx, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -294,7 +402,7 @@ func TestMetricsDataPusher_ctx_Kgo(t *testing.T) {
 
 		consumerSeedBrokers := fakeCluster.ListenAddrs()
 		records := fetchKgoRecords(t,
-			consumerSeedBrokers, config.Metrics.Topic,
+			consumerSeedBrokers, config.Metrics.Topic, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -327,7 +435,7 @@ func TestLogsDataPusher_attr_Kgo(t *testing.T) {
 	require.NoError(t, err)
 
 	records := fetchKgoRecords(t,
-		fakeCluster.ListenAddrs(), expectedTopicFromAttribute,
+		fakeCluster.ListenAddrs(), expectedTopicFromAttribute, 1,
 	)
 	fakeCluster.Close()
 
@@ -355,7 +463,7 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 		require.NoError(t, err)
 
 		records := fetchKgoRecords(t,
-			fakeCluster.ListenAddrs(), expectedTopicFromCtx,
+			fakeCluster.ListenAddrs(), expectedTopicFromCtx, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -384,7 +492,7 @@ func TestLogsDataPusher_ctx_Kgo(t *testing.T) {
 		require.NoError(t, err)
 
 		records := fetchKgoRecords(t,
-			fakeCluster.ListenAddrs(), defaultTopic,
+			fakeCluster.ListenAddrs(), defaultTopic, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -481,7 +589,7 @@ func TestProfilesPusher_attr_Kgo(t *testing.T) {
 	require.NoError(t, err)
 
 	records := fetchKgoRecords(t,
-		fakeCluster.ListenAddrs(), expectedTopicFromAttribute,
+		fakeCluster.ListenAddrs(), expectedTopicFromAttribute, 1,
 	)
 	fakeCluster.Close()
 
@@ -509,7 +617,7 @@ func TestProfilesPusher_ctx_Kgo(t *testing.T) {
 		require.NoError(t, err)
 
 		records := fetchKgoRecords(t,
-			fakeCluster.ListenAddrs(), expectedTopicFromCtx,
+			fakeCluster.ListenAddrs(), expectedTopicFromCtx, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -538,7 +646,7 @@ func TestProfilesPusher_ctx_Kgo(t *testing.T) {
 		require.NoError(t, err)
 
 		records := fetchKgoRecords(t,
-			fakeCluster.ListenAddrs(), defaultTopic,
+			fakeCluster.ListenAddrs(), defaultTopic, 1,
 		)
 		require.Len(t, records, 1, "expected one message to be produced")
 		record := records[0]
@@ -855,10 +963,9 @@ func configureExporter[T any](tb testing.TB,
 	return cluster
 }
 
-// fetchKgoRecords polls a franz-go topic and returns at most one record produced to that topic.
-//
-// TODO rename the function to fetchKgoRecord, and have it return exactly one record.
-func fetchKgoRecords(tb testing.TB, brokers []string, topic string) []*kgo.Record {
+// fetchKgoRecords polls a franz-go topic and returns records produced to that topic.
+// maxRecords specifies the maximum number of records to fetch.
+func fetchKgoRecords(tb testing.TB, brokers []string, topic string, maxRecords int) []*kgo.Record {
 	clientOpts := []kgo.Opt{
 		kgo.SeedBrokers(brokers...),
 		kgo.ConsumeTopics(topic),
@@ -869,7 +976,7 @@ func fetchKgoRecords(tb testing.TB, brokers []string, topic string) []*kgo.Recor
 	defer consumerClient.Close()
 
 	var records []*kgo.Record
-	fetches := consumerClient.PollRecords(tb.Context(), 1)
+	fetches := consumerClient.PollRecords(tb.Context(), maxRecords)
 	require.NoError(tb, fetches.Err(), "error polling records")
 	fetches.EachRecord(func(r *kgo.Record) {
 		records = append(records, r)
