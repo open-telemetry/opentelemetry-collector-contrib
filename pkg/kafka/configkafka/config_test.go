@@ -151,10 +151,11 @@ func TestConsumerConfig(t *testing.T) {
 		},
 		"full": {
 			expected: ConsumerConfig{
-				SessionTimeout:    5 * time.Second,
-				HeartbeatInterval: 2 * time.Second,
-				GroupID:           "throng",
-				InitialOffset:     "earliest",
+				SessionTimeout:         5 * time.Second,
+				HeartbeatInterval:      2 * time.Second,
+				GroupID:                "throng",
+				GroupRebalanceStrategy: "cooperative-sticky",
+				InitialOffset:          "earliest",
 				AutoCommit: AutoCommitConfig{
 					Enable:   false,
 					Interval: 10 * time.Minute,
