@@ -4,6 +4,7 @@ cmd/golden cmd/golden
 cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
+cmd/schemagen cmd/schemagen
 cmd/telemetrygen cmd/telemetrygen
 confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
@@ -164,12 +165,12 @@ pkg/translator/azurelogs pkg/translator/azurelogs
 pkg/translator/faro pkg/translator/faro
 pkg/translator/jaeger pkg/translator/jaeger
 pkg/translator/loki pkg/translator/loki
-pkg/translator/opencensus pkg/translator/opencensus
 pkg/translator/pprof pkg/translator/pprof
 pkg/translator/prometheus pkg/translator/prometheus
 pkg/translator/prometheusremotewrite pkg/translator/prometheusremotewrite
 pkg/translator/signalfx pkg/translator/signalfx
 pkg/translator/skywalking pkg/translator/skywalking
+pkg/translator/splunk pkg/translator/splunk
 pkg/translator/zipkin pkg/translator/zipkin
 pkg/winperfcounters pkg/winperfcounters
 pkg/xk8stest pkg/xk8stest

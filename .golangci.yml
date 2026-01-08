@@ -36,6 +36,7 @@ linters:
     - gosec
     - govet
     - misspell
+    - modernize
     - nolintlint
     - predeclared
     - reassign
@@ -77,6 +78,72 @@ linters:
         path: receiver/macosunifiedloggingreceiver/config_common.go
         text: resolvedArchivePaths
 
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45002
+      - linters:
+          - revive
+        path: processor/transformprocessor/internal/common/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45003
+      - linters:
+          - revive
+        path: internal/healthcheck/internal/common/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45004
+      - linters:
+          - revive
+        path: cmd/telemetrygen/pkg/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45005
+      - linters:
+          - revive
+        path: extension/encoding/googlecloudlogentryencodingextension/internal/shared/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45006
+      - linters:
+          - revive
+        path: pkg/stanza/errors/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45006
+      - linters:
+          - revive
+        path: pkg/stanza/internal/time/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45006
+      - linters:
+          - revive
+        path: pkg/stanza/operator/parser/json/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45006
+      - linters:
+          - revive
+        path: pkg/stanza/operator/parser/time/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45008
+      - linters:
+          - revive
+        path: extension/jaegerremotesampling/internal/server/http/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45008
+      - linters:
+          - revive
+        path: extension/sumologicextension/internal/api/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45003
+      - linters:
+          - revive
+        path: internal/healthcheck/internal/http/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
     # Log a warning if an exclusion rule is unused.
     warn-unused: true
 
@@ -88,7 +155,7 @@ linters:
           deny:
             - pkg: github.com/azure/go-autorest
               desc: "This package is deprecated (EOL). Please use an alternative Azure SDK."
-              
+
             - pkg: go.uber.org/atomic
               desc: Use 'sync/atomic' instead of go.uber.org/atomic
 
@@ -103,7 +170,7 @@ linters:
 
             - pkg: sigs.k8s.io/yaml
               desc: "Use 'go.yaml.in/yaml' instead of sigs.k8s.io/yaml"
-        
+
         semconv:
           list-mode: lax
           deny:
@@ -113,16 +180,36 @@ linters:
             # TODO: Remove older semconv versions after v1.38.0 migration is complete.
             # If for any reason an individual package needs to use an older semconv version,
             # add a nolint directive on the import line.
-            - go.opentelemetry.io/otel/semconv/v1.6.1
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35325
             - go.opentelemetry.io/otel/semconv/v1.9.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45041
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076
             - go.opentelemetry.io/otel/semconv/v1.12.0
-            - go.opentelemetry.io/otel/semconv/v1.15.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45077
             - go.opentelemetry.io/otel/semconv/v1.16.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45080
             - go.opentelemetry.io/otel/semconv/v1.18.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085
+            - go.opentelemetry.io/otel/semconv/v1.20.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45079
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45087
             - go.opentelemetry.io/otel/semconv/v1.21.0
-            - go.opentelemetry.io/otel/semconv/v1.22.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45036
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45084
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44801
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45089
             - go.opentelemetry.io/otel/semconv/v1.25.0
-            - go.opentelemetry.io/otel/semconv/v1.27.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43806
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45074
+            - go.opentelemetry.io/otel/semconv/v1.26.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45086
+            - go.opentelemetry.io/otel/semconv/v1.28.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44994
+            - go.opentelemetry.io/otel/semconv/v1.31.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45030
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45034
+            - go.opentelemetry.io/otel/semconv/v1.34.0
             - go.opentelemetry.io/otel/semconv/v1.38.0
         
         semconv-in-test:
@@ -296,6 +383,9 @@ linters:
 
       test:
         begin: false
+
+    usetesting:
+      context-background: true
 
 output:
   # The formats used to render issues.

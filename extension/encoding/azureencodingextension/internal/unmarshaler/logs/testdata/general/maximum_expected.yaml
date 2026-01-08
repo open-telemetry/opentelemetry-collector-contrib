@@ -43,7 +43,7 @@ resourceLogs:
               - key: azure.correlation_id
                 value:
                   stringValue: 607964b6-41a5-4e24-a5db-db7aab3b9b34
-              - key: azure.duration
+              - key: azure.operation.duration
                 value:
                   intValue: "1234"
               - key: azure.identity
@@ -120,7 +120,7 @@ resourceLogs:
               - key: azure.correlation_id
                 value:
                   stringValue: 96317703-2132-4a8d-a5d7-e18d2f486783
-              - key: azure.duration
+              - key: azure.operation.duration
                 value:
                   intValue: "4321"
               - key: azure.identity
@@ -175,7 +175,7 @@ resourceLogs:
               - key: azure.correlation_id
                 value:
                   stringValue: 4ae807da-39d9-4327-b5b4-0ab685a57f9a
-              - key: azure.duration
+              - key: azure.operation.duration
                 value:
                   intValue: "321"
               - key: azure.identity
