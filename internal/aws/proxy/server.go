@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"time"
 
 	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
@@ -71,6 +72,9 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		Credentials: sess.Config.Credentials,
 	}
 
+	// Build routing maps for additional services
+	apiRouteMap, signerMap := buildRoutingMaps(cfg.AdditionalRoutingRules, cfg.RoleARN, signer, cfg.AWSEndpoint, *awsCfg.Region, cfg.toSessionConfig(), logger)
+
 	transport, err := proxyServerTransport(cfg)
 	if err != nil {
 		return nil, err
@@ -91,10 +95,47 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 			// resulting in a signed header being missing from the request.
 			req.Header.Del(connHeader)
 
-			// Set req url to xray endpoint
-			req.URL.Scheme = awsURL.Scheme
-			req.URL.Host = awsURL.Host
-			req.Host = awsURL.Host
+			apiName := strings.TrimPrefix(req.URL.Path, "/")
+
+			// Skip signing for invalid routing rules
+			if serviceConfig, exists := apiRouteMap[apiName]; exists && serviceConfig == nil {
+				logger.Warn("Skipping signing for path with invalid routing rule", zap.String("path", apiName))
+				return
+			}
+
+			serviceName := cfg.ServiceName
+			region := *awsCfg.Region
+			endpoint := awsEndPoint
+			requestSigner := signer
+
+			// Check for custom routing rules
+			if serviceConfig := apiRouteMap[apiName]; serviceConfig != nil {
+				if serviceConfig.ServiceName != "" {
+					serviceName = serviceConfig.ServiceName
+				}
+				if serviceConfig.Region != "" {
+					region = serviceConfig.Region
+				}
+				if serviceConfig.RoleARN != "" {
+					if roleSigner, ok := signerMap[serviceConfig.RoleARN]; ok {
+						requestSigner = roleSigner
+					}
+				}
+				if serviceConfig.AWSEndpoint != "" {
+					endpoint = serviceConfig.AWSEndpoint
+				}
+			}
+
+			targetURL, err := url.Parse(endpoint)
+			if err != nil {
+				logger.Error("Unable to parse endpoint", zap.Error(err))
+				targetURL = awsURL
+			}
+
+			// Set req url to target endpoint
+			req.URL.Scheme = targetURL.Scheme
+			req.URL.Host = targetURL.Host
+			req.Host = targetURL.Host
 
 			// Consume body and convert to io.ReadSeeker for signer to consume
 			body, err := consume(req.Body)
@@ -106,7 +147,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 			}
 
 			// Sign request. signer.Sign() also repopulates the request body.
-			_, err = signer.Sign(req, body, cfg.ServiceName, *awsCfg.Region, time.Now())
+			_, err = requestSigner.Sign(req, body, serviceName, region, time.Now())
 			if err != nil {
 				logger.Error("Unable to sign request", zap.Error(err))
 			}
@@ -161,4 +202,90 @@ func setResolverConfig() func(*endpoints.Options) {
 	return func(p *endpoints.Options) {
 		p.ResolveUnknownService = true
 	}
+}
+
+// buildRoutingMaps creates maps for routing API requests to their service configurations and signers.
+// Invalid rules are mapped to nil, indicating an issue resolving components needed for signing.
+func buildRoutingMaps(routes []RoutingRule, defaultRoleARN string, defaultSigner *v4.Signer, defaultAWSEndpoint, defaultRegion string, sessionCfg *sessionConfig, logger *zap.Logger) (map[string]*RoutingRule, map[string]*v4.Signer) {
+	apiMap := make(map[string]*RoutingRule)
+	signerMap := make(map[string]*v4.Signer)
+	if defaultRoleARN != "" {
+		signerMap[defaultRoleARN] = defaultSigner
+	}
+
+	for i := range routes {
+		route := &routes[i]
+		isValidRoute := true
+
+		if route.ServiceName == "" {
+			logger.Warn("Skipping routing rule: service_name is required",
+				zap.Int("route_index", i),
+				zap.Strings("paths", route.Paths))
+			isValidRoute = false
+		}
+
+		// Fall back to top-level region if not specified in rule
+		if isValidRoute && route.Region == "" {
+			if defaultRegion != "" {
+				route.Region = defaultRegion
+			} else {
+				logger.Warn("Skipping routing rule: region could not be resolved",
+					zap.Int("route_index", i),
+					zap.Strings("paths", route.Paths))
+				isValidRoute = false
+			}
+		}
+
+		if isValidRoute && route.AWSEndpoint == "" {
+			if defaultAWSEndpoint != "" {
+				route.AWSEndpoint = defaultAWSEndpoint
+			} else {
+				resolved, err := getServiceEndpoint(&aws.Config{Region: &route.Region}, route.ServiceName)
+				if err != nil {
+					logger.Warn("Skipping routing rule: failed to auto resolve endpoint",
+						zap.Int("route_index", i),
+						zap.String("service_name", route.ServiceName),
+						zap.String("region", route.Region),
+						zap.Error(err))
+					isValidRoute = false
+				} else {
+					route.AWSEndpoint = resolved
+				}
+			}
+		}
+
+		if isValidRoute && route.RoleARN != "" {
+			if _, exists := signerMap[route.RoleARN]; !exists {
+				roleSessionCfg := &sessionConfig{
+					Region:   sessionCfg.Region,
+					RoleARN:  route.RoleARN,
+					Endpoint: sessionCfg.Endpoint,
+				}
+				_, roleSess, err := getAWSConfigSessionWithConfig(roleSessionCfg, logger)
+				if err != nil {
+					logger.Warn("Skipping routing rule: failed to create AWS session for role",
+						zap.Int("route_index", i),
+						zap.String("role_arn", route.RoleARN),
+						zap.Error(err))
+					isValidRoute = false
+				} else {
+					signerMap[route.RoleARN] = &v4.Signer{
+						Credentials: roleSess.Config.Credentials,
+					}
+				}
+			}
+		}
+
+		// Map paths: valid routes get the config, invalid routes get nil
+		for _, path := range route.Paths {
+			if _, exists := apiMap[path]; !exists {
+				if isValidRoute {
+					apiMap[path] = route
+				} else {
+					apiMap[path] = nil
+				}
+			}
+		}
+	}
+	return apiMap, signerMap
 }

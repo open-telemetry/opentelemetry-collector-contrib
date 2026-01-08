@@ -37,6 +37,11 @@ receivers:
       role_arn: ""
       aws_endpoint: ""
       local_mode: false
+      additional_routing_rules:
+        - paths: ["slos"]
+          service_name: "application-signals"
+          region: "us-east-1"
+          aws_endpoint: "https://application-signals.us-east-1.api.aws"
 ```
 
 The default configurations below are based on the [default configurations](https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99) of the existing X-Ray Daemon.
@@ -87,3 +92,13 @@ The X-Ray service endpoint which the local TCP server forwards requests to.
 Determines whether the ECS/EC2 instance metadata endpoint will be called to fetch the AWS region to send requests to. Set to `true` to skip metadata check.
 
 Default: `false`
+
+### additional_routing_rules (Optional)
+A list of routing rules to forward requests to different AWS services based on the request path. Each rule can specify its own service name, region, role ARN, and endpoint. If not specified, certain values fall back to the top-level configuration.
+
+Each routing rule supports:
+- `paths`: List of URL paths to match (e.g., `["slos"]` for CloudWatch Application Signals, `["GetSamplingRules"]` for X-Ray)
+- `service_name`: (Required) AWS service name for these APIs (e.g., `"application-signals"`, `"logs"`)
+- `region`: AWS region for these APIs (optional, falls back to top-level `region`)
+- `role_arn`: IAM role ARN for these APIs (optional)
+- `aws_endpoint`: Custom endpoint URL for these APIs (optional, auto-resolved from service name and region if not provided)
