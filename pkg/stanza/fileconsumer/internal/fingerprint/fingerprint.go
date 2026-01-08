@@ -87,7 +87,6 @@ func (f *Fingerprint) Len() int {
 // because the primary purpose of a fingerprint is to convey a unique
 // identity, and only the FirstBytes field contributes to this goal.
 func (f Fingerprint) Equal(other *Fingerprint) bool {
-	// Use bytes.Equal for optimized comparison
 	return bytes.Equal(f.firstBytes, other.firstBytes)
 }
 
