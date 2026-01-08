@@ -59,17 +59,17 @@ var MapAttributeState = map[string]AttributeState{
 }
 
 var MetricsInfo = metricsInfo{
-	SystemDarwinMemoryCompressorPages: metricInfo{
-		Name: "system.darwin.memory.compressor.pages",
-	},
-	SystemDarwinMemoryPressure: metricInfo{
-		Name: "system.darwin.memory.pressure",
-	},
 	SystemLinuxMemoryAvailable: metricInfo{
 		Name: "system.linux.memory.available",
 	},
 	SystemLinuxMemoryDirty: metricInfo{
 		Name: "system.linux.memory.dirty",
+	},
+	SystemMemoryDarwinCompressorPages: metricInfo{
+		Name: "system.memory.darwin.compressor.pages",
+	},
+	SystemMemoryDarwinPressureStatus: metricInfo{
+		Name: "system.memory.darwin.pressure.status",
 	},
 	SystemMemoryLimit: metricInfo{
 		Name: "system.memory.limit",
@@ -86,10 +86,10 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	SystemDarwinMemoryCompressorPages metricInfo
-	SystemDarwinMemoryPressure        metricInfo
 	SystemLinuxMemoryAvailable        metricInfo
 	SystemLinuxMemoryDirty            metricInfo
+	SystemMemoryDarwinCompressorPages metricInfo
+	SystemMemoryDarwinPressureStatus  metricInfo
 	SystemMemoryLimit                 metricInfo
 	SystemMemoryPageSize              metricInfo
 	SystemMemoryUsage                 metricInfo
@@ -98,104 +98,6 @@ type metricsInfo struct {
 
 type metricInfo struct {
 	Name string
-}
-
-type metricSystemDarwinMemoryCompressorPages struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills system.darwin.memory.compressor.pages metric with initial data.
-func (m *metricSystemDarwinMemoryCompressorPages) init() {
-	m.data.SetName("system.darwin.memory.compressor.pages")
-	m.data.SetDescription("Number of memory pages currently occupied by the macOS compressor (Pages occupied by compressor from vm_stat).")
-	m.data.SetUnit("1")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricSystemDarwinMemoryCompressorPages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSystemDarwinMemoryCompressorPages) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSystemDarwinMemoryCompressorPages) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSystemDarwinMemoryCompressorPages(cfg MetricConfig) metricSystemDarwinMemoryCompressorPages {
-	m := metricSystemDarwinMemoryCompressorPages{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSystemDarwinMemoryPressure struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills system.darwin.memory.pressure metric with initial data.
-func (m *metricSystemDarwinMemoryPressure) init() {
-	m.data.SetName("system.darwin.memory.pressure")
-	m.data.SetDescription("macOS memory pressure level reported by sysctl kern.memorystatus_vm_pressure_level.")
-	m.data.SetUnit("1")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricSystemDarwinMemoryPressure) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSystemDarwinMemoryPressure) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSystemDarwinMemoryPressure) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSystemDarwinMemoryPressure(cfg MetricConfig) metricSystemDarwinMemoryPressure {
-	m := metricSystemDarwinMemoryPressure{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
 }
 
 type metricSystemLinuxMemoryAvailable struct {
@@ -293,6 +195,104 @@ func (m *metricSystemLinuxMemoryDirty) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemLinuxMemoryDirty(cfg MetricConfig) metricSystemLinuxMemoryDirty {
 	m := metricSystemLinuxMemoryDirty{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemMemoryDarwinCompressorPages struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.darwin.compressor.pages metric with initial data.
+func (m *metricSystemMemoryDarwinCompressorPages) init() {
+	m.data.SetName("system.memory.darwin.compressor.pages")
+	m.data.SetDescription("Number of memory pages currently occupied by the macOS compressor (Pages occupied by compressor from vm_stat).")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSystemMemoryDarwinCompressorPages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryDarwinCompressorPages) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryDarwinCompressorPages) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryDarwinCompressorPages(cfg MetricConfig) metricSystemMemoryDarwinCompressorPages {
+	m := metricSystemMemoryDarwinCompressorPages{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemMemoryDarwinPressureStatus struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.darwin.pressure.status metric with initial data.
+func (m *metricSystemMemoryDarwinPressureStatus) init() {
+	m.data.SetName("system.memory.darwin.pressure.status")
+	m.data.SetDescription("macOS memory pressure level reported by sysctl kern.memorystatus_vm_system.memory.darwin.pressure.status_level.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSystemMemoryDarwinPressureStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryDarwinPressureStatus) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryDarwinPressureStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryDarwinPressureStatus(cfg MetricConfig) metricSystemMemoryDarwinPressureStatus {
+	m := metricSystemMemoryDarwinPressureStatus{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -512,10 +512,10 @@ type MetricsBuilder struct {
 	metricsCapacity                         int                  // maximum observed number of metrics per resource.
 	metricsBuffer                           pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                               component.BuildInfo  // contains version information.
-	metricSystemDarwinMemoryCompressorPages metricSystemDarwinMemoryCompressorPages
-	metricSystemDarwinMemoryPressure        metricSystemDarwinMemoryPressure
 	metricSystemLinuxMemoryAvailable        metricSystemLinuxMemoryAvailable
 	metricSystemLinuxMemoryDirty            metricSystemLinuxMemoryDirty
+	metricSystemMemoryDarwinCompressorPages metricSystemMemoryDarwinCompressorPages
+	metricSystemMemoryDarwinPressureStatus  metricSystemMemoryDarwinPressureStatus
 	metricSystemMemoryLimit                 metricSystemMemoryLimit
 	metricSystemMemoryPageSize              metricSystemMemoryPageSize
 	metricSystemMemoryUsage                 metricSystemMemoryUsage
@@ -545,10 +545,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                           pmetric.NewMetrics(),
 		buildInfo:                               settings.BuildInfo,
-		metricSystemDarwinMemoryCompressorPages: newMetricSystemDarwinMemoryCompressorPages(mbc.Metrics.SystemDarwinMemoryCompressorPages),
-		metricSystemDarwinMemoryPressure:        newMetricSystemDarwinMemoryPressure(mbc.Metrics.SystemDarwinMemoryPressure),
 		metricSystemLinuxMemoryAvailable:        newMetricSystemLinuxMemoryAvailable(mbc.Metrics.SystemLinuxMemoryAvailable),
 		metricSystemLinuxMemoryDirty:            newMetricSystemLinuxMemoryDirty(mbc.Metrics.SystemLinuxMemoryDirty),
+		metricSystemMemoryDarwinCompressorPages: newMetricSystemMemoryDarwinCompressorPages(mbc.Metrics.SystemMemoryDarwinCompressorPages),
+		metricSystemMemoryDarwinPressureStatus:  newMetricSystemMemoryDarwinPressureStatus(mbc.Metrics.SystemMemoryDarwinPressureStatus),
 		metricSystemMemoryLimit:                 newMetricSystemMemoryLimit(mbc.Metrics.SystemMemoryLimit),
 		metricSystemMemoryPageSize:              newMetricSystemMemoryPageSize(mbc.Metrics.SystemMemoryPageSize),
 		metricSystemMemoryUsage:                 newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
@@ -619,10 +619,10 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricSystemDarwinMemoryCompressorPages.emit(ils.Metrics())
-	mb.metricSystemDarwinMemoryPressure.emit(ils.Metrics())
 	mb.metricSystemLinuxMemoryAvailable.emit(ils.Metrics())
 	mb.metricSystemLinuxMemoryDirty.emit(ils.Metrics())
+	mb.metricSystemMemoryDarwinCompressorPages.emit(ils.Metrics())
+	mb.metricSystemMemoryDarwinPressureStatus.emit(ils.Metrics())
 	mb.metricSystemMemoryLimit.emit(ils.Metrics())
 	mb.metricSystemMemoryPageSize.emit(ils.Metrics())
 	mb.metricSystemMemoryUsage.emit(ils.Metrics())
@@ -648,16 +648,6 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	return metrics
 }
 
-// RecordSystemDarwinMemoryCompressorPagesDataPoint adds a data point to system.darwin.memory.compressor.pages metric.
-func (mb *MetricsBuilder) RecordSystemDarwinMemoryCompressorPagesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSystemDarwinMemoryCompressorPages.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordSystemDarwinMemoryPressureDataPoint adds a data point to system.darwin.memory.pressure metric.
-func (mb *MetricsBuilder) RecordSystemDarwinMemoryPressureDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSystemDarwinMemoryPressure.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordSystemLinuxMemoryAvailableDataPoint adds a data point to system.linux.memory.available metric.
 func (mb *MetricsBuilder) RecordSystemLinuxMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSystemLinuxMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
@@ -666,6 +656,16 @@ func (mb *MetricsBuilder) RecordSystemLinuxMemoryAvailableDataPoint(ts pcommon.T
 // RecordSystemLinuxMemoryDirtyDataPoint adds a data point to system.linux.memory.dirty metric.
 func (mb *MetricsBuilder) RecordSystemLinuxMemoryDirtyDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSystemLinuxMemoryDirty.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemMemoryDarwinCompressorPagesDataPoint adds a data point to system.memory.darwin.compressor.pages metric.
+func (mb *MetricsBuilder) RecordSystemMemoryDarwinCompressorPagesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemMemoryDarwinCompressorPages.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemMemoryDarwinPressureStatusDataPoint adds a data point to system.memory.darwin.pressure.status metric.
+func (mb *MetricsBuilder) RecordSystemMemoryDarwinPressureStatusDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemMemoryDarwinPressureStatus.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemMemoryLimitDataPoint adds a data point to system.memory.limit metric.

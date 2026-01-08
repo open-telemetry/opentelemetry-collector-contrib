@@ -27,10 +27,10 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for memory metrics.
 type MetricsConfig struct {
-	SystemDarwinMemoryCompressorPages MetricConfig `mapstructure:"system.darwin.memory.compressor.pages"`
-	SystemDarwinMemoryPressure        MetricConfig `mapstructure:"system.darwin.memory.pressure"`
 	SystemLinuxMemoryAvailable        MetricConfig `mapstructure:"system.linux.memory.available"`
 	SystemLinuxMemoryDirty            MetricConfig `mapstructure:"system.linux.memory.dirty"`
+	SystemMemoryDarwinCompressorPages MetricConfig `mapstructure:"system.memory.darwin.compressor.pages"`
+	SystemMemoryDarwinPressureStatus  MetricConfig `mapstructure:"system.memory.darwin.pressure.status"`
 	SystemMemoryLimit                 MetricConfig `mapstructure:"system.memory.limit"`
 	SystemMemoryPageSize              MetricConfig `mapstructure:"system.memory.page_size"`
 	SystemMemoryUsage                 MetricConfig `mapstructure:"system.memory.usage"`
@@ -39,16 +39,16 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemDarwinMemoryCompressorPages: MetricConfig{
-			Enabled: false,
-		},
-		SystemDarwinMemoryPressure: MetricConfig{
-			Enabled: false,
-		},
 		SystemLinuxMemoryAvailable: MetricConfig{
 			Enabled: false,
 		},
 		SystemLinuxMemoryDirty: MetricConfig{
+			Enabled: false,
+		},
+		SystemMemoryDarwinCompressorPages: MetricConfig{
+			Enabled: false,
+		},
+		SystemMemoryDarwinPressureStatus: MetricConfig{
 			Enabled: false,
 		},
 		SystemMemoryLimit: MetricConfig{

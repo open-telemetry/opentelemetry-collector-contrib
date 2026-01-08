@@ -1,13 +1,13 @@
 default:
 all_set:
   metrics:
-    system.darwin.memory.compressor.pages:
-      enabled: true
-    system.darwin.memory.pressure:
-      enabled: true
     system.linux.memory.available:
       enabled: true
     system.linux.memory.dirty:
+      enabled: true
+    system.memory.darwin.compressor.pages:
+      enabled: true
+    system.memory.darwin.pressure.status:
       enabled: true
     system.memory.limit:
       enabled: true
@@ -19,13 +19,13 @@ all_set:
       enabled: true
 none_set:
   metrics:
-    system.darwin.memory.compressor.pages:
-      enabled: false
-    system.darwin.memory.pressure:
-      enabled: false
     system.linux.memory.available:
       enabled: false
     system.linux.memory.dirty:
+      enabled: false
+    system.memory.darwin.compressor.pages:
+      enabled: false
+    system.memory.darwin.pressure.status:
       enabled: false
     system.memory.limit:
       enabled: false

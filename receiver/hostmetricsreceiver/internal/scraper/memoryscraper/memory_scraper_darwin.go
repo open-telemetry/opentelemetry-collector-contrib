@@ -23,11 +23,11 @@ import (
 func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, _ *mem.VirtualMemoryStat) {
 	pressure, err := readMemorystatusVMPressureLevel(context.Background())
 	if err != nil {
-		s.settings.Logger.Debug("failed to read macOS memory pressure level",
+		s.settings.Logger.Debug("failed to read macOS memory pressue level",
 			zap.Error(err),
 		)
 	} else {
-		s.mb.RecordSystemDarwinMemoryPressureDataPoint(now, pressure)
+		s.mb.RecordSystemMemoryDarwinPressureStatusDataPoint(now, pressure)
 	}
 	pages, err := readVMStatCompressorPages(context.Background())
 	if err != nil {
@@ -35,7 +35,7 @@ func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, _ *me
 			zap.Error(err),
 		)
 	} else {
-		s.mb.RecordSystemDarwinMemoryCompressorPagesDataPoint(now, pages)
+		s.mb.RecordSystemMemoryDarwinCompressorPagesDataPoint(now, pages)
 	}
 }
 

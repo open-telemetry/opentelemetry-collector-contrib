@@ -17,24 +17,6 @@ attributes:
     enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
 
 metrics:
-
-  system.darwin.memory.compressor.pages:
-    enabled: false
-    description: Number of memory pages currently occupied by the macOS compressor (Pages occupied by compressor from vm_stat).
-    unit: "1"
-    stability:
-      level: development
-    gauge:
-      value_type: int
-
-  system.darwin.memory.pressure:
-    enabled: false
-    description: macOS memory pressure level reported by sysctl kern.memorystatus_vm_pressure_level.
-    unit: "1"
-    stability:
-      level: development
-    gauge:
-      value_type: int
       
   system.linux.memory.available:
     enabled: false
@@ -57,6 +39,25 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+
+  system.memory.darwin.compressor.pages:
+    enabled: false
+    description: Number of memory pages currently occupied by the macOS compressor (Pages occupied by compressor from vm_stat).
+    unit: "1"
+    stability:
+      level: development
+    gauge:
+      value_type: int
+  
+  system.memory.darwin.pressure.status:
+    enabled: false
+    description: macOS memory pressure level reported by sysctl kern.memorystatus_vm_system.memory.darwin.pressure.status_level.
+    unit: "1"
+    stability:
+      level: development
+    gauge:
+      value_type: int
+
   system.memory.limit:
     enabled: false
     description: Total bytes of memory available.

@@ -36,22 +36,6 @@ metrics:
     enabled: true
 ```
 
-### system.darwin.memory.compressor.pages
-
-Number of memory pages currently occupied by the macOS compressor (Pages occupied by compressor from vm_stat).
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
-
-### system.darwin.memory.pressure
-
-macOS memory pressure level reported by sysctl kern.memorystatus_vm_pressure_level.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
-
 ### system.linux.memory.available
 
 An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)
@@ -67,6 +51,22 @@ The amount of dirty memory according to `/proc/meminfo`.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
+
+### system.memory.darwin.compressor.pages
+
+Number of memory pages currently occupied by the macOS compressor (Pages occupied by compressor from vm_stat).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+### system.memory.darwin.pressure.status
+
+macOS memory pressure level reported by sysctl kern.memorystatus_vm_system.memory.darwin.pressure.status_level.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
 
 ### system.memory.limit
 
