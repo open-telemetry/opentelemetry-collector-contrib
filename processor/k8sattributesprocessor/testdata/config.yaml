@@ -162,3 +162,114 @@ k8sattributes/bad_filter_field_op:
       - key: field
         value: v1
         op: "exists"
+
+k8sattributes/otel_annotations:
+  extract:
+    otel_annotations: true
+
+k8sattributes/wait_for_metadata:
+  wait_for_metadata: true
+  wait_for_metadata_timeout: 30s
+
+k8sattributes/passthrough_mode:
+  passthrough: true
+
+k8sattributes/filter_label_exists:
+  filter:
+    labels:
+      - key: app
+        op: exists
+
+k8sattributes/filter_label_does_not_exist:
+  filter:
+    labels:
+      - key: deprecated-label
+        op: does-not-exist
+
+k8sattributes/extract_from_namespace:
+  extract:
+    labels:
+      - tag_name: ns_label
+        key: team
+        from: namespace
+    annotations:
+      - tag_name: ns_annotation
+        key: owner
+        from: namespace
+
+k8sattributes/extract_from_node:
+  extract:
+    labels:
+      - tag_name: node_label
+        key: node-role
+        from: node
+    metadata:
+      - k8s.node.name
+      - k8s.node.uid
+
+k8sattributes/extract_from_deployment:
+  extract:
+    labels:
+      - tag_name: deployment_label
+        key: app
+        from: deployment
+
+k8sattributes/extract_from_statefulset:
+  extract:
+    labels:
+      - tag_name: statefulset_label
+        key: app
+        from: statefulset
+
+k8sattributes/extract_from_daemonset:
+  extract:
+    labels:
+      - tag_name: daemonset_label
+        key: app
+        from: daemonset
+
+k8sattributes/extract_from_job:
+  extract:
+    labels:
+      - tag_name: job_label
+        key: app
+        from: job
+
+k8sattributes/all_metadata_fields:
+  extract:
+    metadata:
+      - k8s.namespace.name
+      - k8s.pod.name
+      - k8s.pod.uid
+      - k8s.pod.hostname
+      - k8s.pod.start_time
+      - k8s.pod.ip
+      - k8s.deployment.name
+      - k8s.deployment.uid
+      - k8s.replicaset.name
+      - k8s.replicaset.uid
+      - k8s.daemonset.name
+      - k8s.daemonset.uid
+      - k8s.statefulset.name
+      - k8s.statefulset.uid
+      - k8s.job.name
+      - k8s.job.uid
+      - k8s.cronjob.name
+      - k8s.cronjob.uid
+      - k8s.node.name
+      - k8s.node.uid
+      - k8s.container.name
+      - container.id
+      - container.image.name
+      - container.image.tag
+      - container.image.repo_digests
+      - service.namespace
+      - service.name
+      - service.version
+      - service.instance.id
+      - k8s.cluster.uid
+
+k8sattributes/bad_metadata_field:
+  extract:
+    metadata:
+      - invalid.metadata.field
