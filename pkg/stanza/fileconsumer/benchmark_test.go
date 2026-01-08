@@ -467,7 +467,7 @@ func BenchmarkRealisticPolling(b *testing.B) {
 			op.poll(b.Context())
 
 			// Now simulate ongoing polling where files are being re-checked
-			// This is the hot path that causes linear CPU scalingf
+			// This is the hot path that causes linear CPU scaling
 			for b.Loop() {
 				// Simulate a poll cycle - this is what happens repeatedly in production
 				// The manager will:
