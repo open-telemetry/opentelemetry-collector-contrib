@@ -76,11 +76,19 @@ func BenchmarkAttrProc_HashRegex(b *testing.B) {
 
 	for _, tc := range cases {
 		b.Run(tc.name, func(b *testing.B) {
-			attrs := newMap(b, tc.totalAttrs, tc.secretRatio)
-
 			b.ReportAllocs()
+
+			template := newMap(b, tc.totalAttrs, tc.secretRatio)
+			loopAttrs := pcommon.NewMap()
+			loopAttrs.EnsureCapacity(tc.totalAttrs)
+
 			for b.Loop() {
-				ap.Process(b.Context(), nil, attrs)
+				b.StopTimer()
+				loopAttrs.Clear()
+				template.CopyTo(loopAttrs)
+				b.StartTimer()
+
+				ap.Process(b.Context(), nil, loopAttrs)
 			}
 		})
 	}
