@@ -1003,8 +1003,6 @@ func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
 		assert.Contains(t, string(docs[0].Action), ".otel-")
 		return itemsAllOK(docs)
 	})
-
-	// prepare observed logger to capture warning
 	params := exportertest.NewNopSettings(metadata.Type)
 
 	// create config that sets Mapping.Mode (deprecated) to ecs
