@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkar
 go 1.24.0
 
 require (
-	github.com/IBM/sarama v1.46.3
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/goccy/go-json v0.10.5
 	github.com/gogo/protobuf v1.3.2
@@ -15,7 +14,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.143.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.143.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.143.0
-	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/stretchr/testify v1.11.1
 	github.com/twmb/franz-go v1.20.6
 	github.com/twmb/franz-go/pkg/kadm v1.17.1
@@ -33,7 +31,6 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.143.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.143.0
 	go.opentelemetry.io/collector/exporter/exporterhelper v0.143.0
-	go.opentelemetry.io/collector/featuregate v1.49.0
 	go.opentelemetry.io/collector/pdata v1.49.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.143.0
 	go.opentelemetry.io/collector/pdata/testdata v0.143.0
@@ -51,6 +48,7 @@ require (
 )
 
 require (
+	github.com/IBM/sarama v1.46.3 // indirect
 	github.com/apache/thrift v0.22.0 // indirect
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.4 // indirect
@@ -102,6 +100,7 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
 	github.com/relvacode/iso8601 v1.7.0 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.12.0 // indirect
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0 // indirect
@@ -116,6 +115,7 @@ require (
 	go.opentelemetry.io/collector/exporter v1.49.0 // indirect
 	go.opentelemetry.io/collector/extension v1.49.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.143.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.49.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.143.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
