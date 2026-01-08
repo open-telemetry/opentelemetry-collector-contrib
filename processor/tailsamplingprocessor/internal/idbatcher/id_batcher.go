@@ -7,6 +7,7 @@ package idbatcher // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"errors"
+	"math"
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -15,8 +16,6 @@ import (
 var (
 	// ErrInvalidNumBatches occurs when an invalid number of batches is specified.
 	ErrInvalidNumBatches = errors.New("invalid number of batches, it must be greater than zero")
-	// ErrInvalidBatchChannelSize occurs when an invalid batch channel size is specified.
-	ErrInvalidBatchChannelSize = errors.New("invalid batch channel size, it must be greater than zero")
 )
 
 // Batch is the type of batches held by the Batcher. It uses a set in order to merge batches efficiently.
@@ -48,15 +47,15 @@ type Batcher interface {
 var _ Batcher = (*batcher)(nil)
 
 type batcher struct {
-	pendingIDs chan pcommon.TraceID // Channel for the ids to be added to the next batch.
-	batches    chan Batch           // Channel with already captured batches.
+	takeID  uint64
+	batches []Batch
 
 	// cbMutex protects the currentBatch storing ids.
 	cbMutex      sync.Mutex
 	currentBatch Batch
 
 	newBatchesInitialCapacity uint64
-	stopchan                  chan bool
+	lastBatchID               uint64
 	stopped                   bool
 	stopLock                  sync.RWMutex
 }
@@ -64,59 +63,42 @@ type batcher struct {
 // New creates a Batcher that will hold numBatches in its pipeline, having a channel with
 // batchChannelSize to receive new items. New batches will be created with capacity set to
 // newBatchesInitialCapacity.
-func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batcher, error) {
+func New(numBatches, newBatchesInitialCapacity uint64) (Batcher, error) {
 	if numBatches < 1 {
 		return nil, ErrInvalidNumBatches
 	}
-	if batchChannelSize < 1 {
-		return nil, ErrInvalidBatchChannelSize
-	}
-
-	batches := make(chan Batch, numBatches)
-	// First numBatches batches will be empty in order to simplify clients that are running
-	// CloseCurrentAndTakeFirstBatch on a timer and want to delay the processing of the first
-	// batch with actual data. This way there is no need for accounting on the client side and
-	// a single timer can be started immediately.
-	for range numBatches {
-		batches <- nil
-	}
 
 	batcher := &batcher{
-		pendingIDs:                make(chan pcommon.TraceID, batchChannelSize),
-		batches:                   batches,
+		batches:                   make([]Batch, numBatches),
 		currentBatch:              make(Batch, newBatchesInitialCapacity),
 		newBatchesInitialCapacity: newBatchesInitialCapacity,
-		stopchan:                  make(chan bool),
+		lastBatchID:               math.MaxUint64,
 	}
-
-	// Single goroutine that keeps filling the current batch, contention is expected only
-	// when the current batch is being switched.
-	go func() {
-		for id := range batcher.pendingIDs {
-			batcher.cbMutex.Lock()
-			batcher.currentBatch[id] = struct{}{}
-			batcher.cbMutex.Unlock()
-		}
-		batcher.stopchan <- true
-	}()
 
 	return batcher, nil
 }
 
 func (b *batcher) AddToCurrentBatch(id pcommon.TraceID) {
-	b.pendingIDs <- id
+	b.cbMutex.Lock()
+	b.currentBatch[id] = struct{}{}
+	b.cbMutex.Unlock()
 }
 
 func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
-	if readBatch, ok := <-b.batches; ok {
+	if b.takeID < b.lastBatchID {
+		takeIdx := b.takeID % uint64(len(b.batches))
+		readBatch := b.batches[takeIdx]
+
 		b.stopLock.RLock()
 		if !b.stopped {
 			nextBatch := make(Batch, max(b.newBatchesInitialCapacity, uint64(len(readBatch))))
+
 			b.cbMutex.Lock()
-			b.batches <- b.currentBatch
+			b.batches[takeIdx] = b.currentBatch
 			b.currentBatch = nextBatch
 			b.cbMutex.Unlock()
 		}
+		b.takeID++
 		b.stopLock.RUnlock()
 		return readBatch, true
 	}
@@ -127,9 +109,8 @@ func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 }
 
 func (b *batcher) Stop() {
-	close(b.pendingIDs)
 	b.stopLock.Lock()
-	b.stopped = <-b.stopchan
+	b.stopped = true
+	b.lastBatchID = b.takeID + uint64(len(b.batches))
 	b.stopLock.Unlock()
-	close(b.batches)
 }

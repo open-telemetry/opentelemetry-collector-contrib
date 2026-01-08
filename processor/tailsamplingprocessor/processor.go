@@ -167,7 +167,7 @@ func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Ho
 		// this will start a goroutine in the background, so we run it only if everything went
 		// well in creating the policies, and only when the processor starts.
 		numDecisionBatches := math.Max(1, tsp.cfg.DecisionWait.Seconds())
-		idBatcher, err := idbatcher.New(uint64(numDecisionBatches), tsp.cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
+		idBatcher, err := idbatcher.New(uint64(numDecisionBatches), tsp.cfg.ExpectedNewTracesPerSec)
 		if err != nil {
 			return err
 		}
@@ -176,7 +176,7 @@ func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Ho
 
 	if tsp.rootReceivedBatcher == nil && tsp.cfg.DecisionWaitAfterRootReceived > 0 {
 		numDecisionBatches := math.Max(1, tsp.cfg.DecisionWaitAfterRootReceived.Seconds())
-		idBatcher, err := idbatcher.New(uint64(numDecisionBatches), tsp.cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
+		idBatcher, err := idbatcher.New(uint64(numDecisionBatches), tsp.cfg.ExpectedNewTracesPerSec)
 		if err != nil {
 			return err
 		}

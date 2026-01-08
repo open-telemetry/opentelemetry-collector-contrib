@@ -5,7 +5,6 @@ package idbatcher
 
 import (
 	"encoding/binary"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -20,16 +19,14 @@ func TestBatcherNew(t *testing.T) {
 		name                      string
 		numBatches                uint64
 		newBatchesInitialCapacity uint64
-		batchChannelSize          uint64
 		wantErr                   error
 	}{
-		{"invalid numBatches", 0, 0, 1, ErrInvalidNumBatches},
-		{"invalid batchChannelSize", 1, 0, 0, ErrInvalidBatchChannelSize},
-		{"valid", 1, 0, 1, nil},
+		{"invalid numBatches", 0, 0, ErrInvalidNumBatches},
+		{"valid", 1, 0, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.numBatches, tt.newBatchesInitialCapacity, tt.batchChannelSize)
+			got, err := New(tt.numBatches, tt.newBatchesInitialCapacity)
 			require.ErrorIs(t, err, tt.wantErr)
 			if got != nil {
 				got.Stop()
@@ -39,16 +36,16 @@ func TestBatcherNew(t *testing.T) {
 }
 
 func TestTypicalConfig(t *testing.T) {
-	concurrencyTest(t, 10, 100, uint64(4*runtime.NumCPU()))
+	concurrencyTest(t, 10, 100)
 }
 
 func TestMinBufferedChannels(t *testing.T) {
-	concurrencyTest(t, 1, 0, 1)
+	concurrencyTest(t, 1, 0)
 }
 
 func BenchmarkConcurrentEnqueue(b *testing.B) {
 	ids := generateSequentialIDs(1)
-	batcher, err := New(10, 100, uint64(4*runtime.NumCPU()))
+	batcher, err := New(10, 100)
 	require.NoError(b, err, "Failed to create Batcher")
 
 	ticker := time.NewTicker(time.Millisecond)
@@ -82,8 +79,8 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 	})
 }
 
-func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchChannelSize uint64) {
-	batcher, err := New(numBatches, newBatchesInitialCapacity, batchChannelSize)
+func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity uint64) {
+	batcher, err := New(numBatches, newBatchesInitialCapacity)
 	require.NoError(t, err, "Failed to create Batcher: %v", err)
 
 	ticker := time.NewTicker(time.Millisecond)
