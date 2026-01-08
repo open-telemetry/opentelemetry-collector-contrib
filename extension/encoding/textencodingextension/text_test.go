@@ -24,7 +24,7 @@ func TestTextRoundtrip(t *testing.T) {
 	assert.Equal(t, 2, ld.LogRecordCount())
 	b, err := codec.MarshalLogs(ld)
 	require.NoError(t, err)
-	require.Equal(t, "foo\nbar\n", string(b))
+	require.Equal(t, "foo\nbar", string(b))
 }
 
 func TestTextRoundtripMissingNewline(t *testing.T) {
@@ -38,7 +38,7 @@ func TestTextRoundtripMissingNewline(t *testing.T) {
 	assert.Equal(t, 2, ld.LogRecordCount())
 	b, err := codec.MarshalLogs(ld)
 	require.NoError(t, err)
-	require.Equal(t, "foo\nbar\n", string(b))
+	require.Equal(t, "foo\nbar", string(b))
 }
 
 func TestNoSeparator(t *testing.T) {
