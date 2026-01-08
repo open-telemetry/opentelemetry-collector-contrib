@@ -394,7 +394,6 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	const rowsReturned = "total_rows"
 	const totalWorkerTime = "total_worker_time"
 	const logicalReads = "total_logical_reads"
-	const logicalWrites = "total_logical_writes"
 	const physicalReads = "total_physical_reads"
 	const executionCount = "execution_count"
 	const totalGrant = "total_grant_kb"
@@ -407,7 +406,8 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 		topQueryCount:       200,
 	}
 
-	scraper.ScrapeLogs(t.Context())
+	_, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "expectedQueryTextAndPlanQuery.yaml")
 	expectedLogs, _ := golden.ReadLogs(expectedFile)
