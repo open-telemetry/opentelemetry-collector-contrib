@@ -108,6 +108,32 @@ func TestValidateRejectsInvalidProjectSlug(t *testing.T) {
 	assert.Contains(t, err.Error(), "project slug")
 }
 
+func TestValidateRejectsUpperCaseProjectSlug(t *testing.T) {
+	t.Parallel()
+
+	cfg := minimalValidConfig()
+	cfg.Routing.AttributeToProjectMapping = map[string]string{
+		"api-service": "BackendAPI",
+	}
+
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "project slug")
+}
+
+func TestValidateRejectsNumericOnlyProjectSlug(t *testing.T) {
+	t.Parallel()
+
+	cfg := minimalValidConfig()
+	cfg.Routing.AttributeToProjectMapping = map[string]string{
+		"api-service": "12345",
+	}
+
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "project slug")
+}
+
 func TestValidateRejectsEmptyAttributeValue(t *testing.T) {
 	t.Parallel()
 
