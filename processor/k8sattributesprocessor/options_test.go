@@ -735,11 +735,15 @@ func Test_extractFieldRules_FeatureGate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set feature gate state
-			require.NoError(t, featuregate.GlobalRegistry().Set(kube.AllowLabelsAnnotationsSingular.ID(), tt.featureGateValue))
+			// Set feature gate state for stable and legacy attributes
+			if tt.featureGateValue {
+				require.NoError(t, featuregate.GlobalRegistry().Set(kube.EnableStableAttributes.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(kube.DisableLegacyAttributes.ID(), true))
+			}
 			defer func() {
 				// Reset to default
-				require.NoError(t, featuregate.GlobalRegistry().Set(kube.AllowLabelsAnnotationsSingular.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(kube.EnableStableAttributes.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(kube.DisableLegacyAttributes.ID(), false))
 			}()
 
 			got, err := extractFieldRules(tt.fieldType, tt.fields...)

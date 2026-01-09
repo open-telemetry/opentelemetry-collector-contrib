@@ -1066,9 +1066,11 @@ func TestExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(EnableStableAttributes.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(DisableLegacyAttributes.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(EnableStableAttributes.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(DisableLegacyAttributes.ID(), false))
 				}()
 			}
 
@@ -1365,9 +1367,11 @@ func TestNamespaceExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(EnableStableAttributes.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(DisableLegacyAttributes.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(EnableStableAttributes.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(DisableLegacyAttributes.ID(), false))
 				}()
 			}
 
@@ -1623,9 +1627,11 @@ func TestNodeExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(EnableStableAttributes.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(DisableLegacyAttributes.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(EnableStableAttributes.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(DisableLegacyAttributes.ID(), false))
 				}()
 			}
 

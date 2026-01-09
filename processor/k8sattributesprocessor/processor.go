@@ -58,6 +58,12 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
+	if kube.DisableLegacyAttributes.IsEnabled() && !kube.EnableStableAttributes.IsEnabled() {
+		err := fmt.Errorf("cannot disable legacy attributes without enabling stable attributes")
+		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+		return err
+	}
+
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
 
 	for _, opt := range allOptions {
