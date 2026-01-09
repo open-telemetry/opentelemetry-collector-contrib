@@ -394,7 +394,6 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	const rowsReturned = "total_rows"
 	const totalWorkerTime = "total_worker_time"
 	const logicalReads = "total_logical_reads"
-	const logicalWrites = "total_logical_writes"
 	const physicalReads = "total_physical_reads"
 	const executionCount = "execution_count"
 	const totalGrant = "total_grant_kb"
@@ -407,7 +406,8 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 		topQueryCount:       200,
 	}
 
-	scraper.ScrapeLogs(t.Context())
+	_, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "expectedQueryTextAndPlanQuery.yaml")
 	expectedLogs, _ := golden.ReadLogs(expectedFile)
@@ -421,27 +421,27 @@ func TestQueryTextAndPlanQueryMetricsShouldBeCachedSinceFirstCollection(t *testi
 	assert.Equal(t, 3846, int(tetValue))
 
 	rtValue, ok := scraper.cache.Get(keyPrefix + "-" + rowsReturned)
-	assert.True(t, ok, "Expected to find rowsReturned time in cache right after the first collection")
+	assert.True(t, ok, "Expected to find rowsReturned in cache right after the first collection")
 	assert.Equal(t, 2, int(rtValue))
 
 	twtValue, ok := scraper.cache.Get(keyPrefix + "-" + totalWorkerTime)
-	assert.True(t, ok, "Expected to find totalWorkerTime time in cache right after the first collection")
+	assert.True(t, ok, "Expected to find totalWorkerTime in cache right after the first collection")
 	assert.Equal(t, 3845, int(twtValue))
 
 	lrValue, ok := scraper.cache.Get(keyPrefix + "-" + logicalReads)
-	assert.True(t, ok, "Expected to find logicalReads time in cache right after the first collection")
+	assert.True(t, ok, "Expected to find logicalReads in cache right after the first collection")
 	assert.Equal(t, 3, int(lrValue))
 
 	prValue, ok := scraper.cache.Get(keyPrefix + "-" + physicalReads)
-	assert.True(t, ok, "Expected to find physicalReads time in cache right after the first collection")
+	assert.True(t, ok, "Expected to find physicalReads in cache right after the first collection")
 	assert.Equal(t, 5, int(prValue))
 
 	ecValue, ok := scraper.cache.Get(keyPrefix + "-" + executionCount)
-	assert.True(t, ok, "Expected to find executionCount time in cache right after the first collection")
+	assert.True(t, ok, "Expected to find executionCount in cache right after the first collection")
 	assert.Equal(t, 6, int(ecValue))
 
 	tgValue, ok := scraper.cache.Get(keyPrefix + "-" + totalGrant)
-	assert.True(t, ok, "Expected to find totalGrant time in cache right after the first collection")
+	assert.True(t, ok, "Expected to find totalGrant in cache right after the first collection")
 	assert.Equal(t, 3096, int(tgValue))
 }
 
@@ -558,17 +558,7 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 	actualLogs, err := scraper.ScrapeLogs(t.Context())
 	assert.Error(t, err)
 
-	expectedFile := "expectedQueryTextAndPlanQueryWithInvalidData.yaml"
-
-	// Uncomment line below to re-generate expected logs.
-	// golden.WriteLogs(t, filepath.Join("testdata", expectedFile), actualLogs)
-
-	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", expectedFile))
-	assert.NoError(t, err)
-
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
-	assert.Equal(t, "db.server.top_query", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
-	assert.NoError(t, errs)
+	assert.Zero(t, actualLogs.LogRecordCount(), "If the metrics does not hold meaningful values then those records need not be exported by the receiver")
 }
 
 func TestRecordDatabaseSampleQuery(t *testing.T) {

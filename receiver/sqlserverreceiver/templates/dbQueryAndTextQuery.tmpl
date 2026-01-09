@@ -19,20 +19,15 @@ with qstats as (
 	GROUP BY
 		qs.query_hash,
 		qs.query_plan_hash
+	HAVING MAX(DATEADD(ms, qs.last_elapsed_time / 1000, qs.last_execution_time)) > DATEADD(SECOND, @lookbackTime, GETDATE())
 )
 SELECT qs.*,
 	SUBSTRING(st.text, (stats.statement_start_offset / 2) + 1,
 			 ((CASE statement_end_offset
 				   WHEN -1 THEN DATALENGTH(st.text)
 				   ELSE stats.statement_end_offset END - stats.statement_start_offset) / 2) + 1) AS query_text,
-	ISNULL(qp.query_plan, '') AS query_plan,
-    ISNULL(CASE WHEN qs.object_id > 0 THEN qs.object_id END, '') AS procedure_id,
-    ISNULL(CASE WHEN qs.object_id > 0
-        THEN QUOTENAME(OBJECT_SCHEMA_NAME(qs.object_id, st.dbid))
-            + N'.' + QUOTENAME(OBJECT_NAME(qs.object_id, st.dbid))
-            END, '') AS procedure_name
+	ISNULL(qp.query_plan, '') AS query_plan
 FROM qstats AS qs
 		INNER JOIN sys.dm_exec_query_stats AS stats on qs.query_plan_handle = stats.plan_handle
 		CROSS APPLY sys.dm_exec_query_plan(qs.query_plan_handle) AS qp
-		CROSS APPLY sys.dm_exec_sql_text(qs.query_plan_handle) AS st
-WHERE DATEADD(ms, qs.last_elapsed_time / 1000, qs.last_execution_time) > DATEADD(SECOND, @lookbackTime, GETDATE());
+		CROSS APPLY sys.dm_exec_sql_text(qs.query_plan_handle) AS st;
