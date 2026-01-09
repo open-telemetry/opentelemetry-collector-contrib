@@ -34,7 +34,7 @@ The following settings can be optionally configured:
 - `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup.
 - `client_id` (default = "otel-collector"): The client ID to configure the Kafka client with. The client ID will be used for all produce requests.
-- `connection_idle_timeout` (default = `4m`): The time after which idle connections to Kafka brokers are closed. Note: It may take up to 2x the configured time before a connection is actually closed. This setting is applicable for franz-go, while ignored in sarama because it does not close idle connections.
+- `connection_idle_timeout` (default = `4m`): The time after which idle connections to Kafka brokers are closed. Note: It may take up to 2x the configured time before a connection is actually closed due to franz-go implementation.
 - `logs`
   - `topic` (default = otlp\_logs): The name of the Kafka topic to which logs will be exported.
   - `encoding` (default = otlp\_proto): The encoding for logs. See [Supported encodings](#supported-encodings).
