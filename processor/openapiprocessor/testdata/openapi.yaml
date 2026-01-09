@@ -1,0 +1,120 @@
+openapi: "3.0.3"
+info:
+  title: Pet Store API
+  description: A sample API for testing the OpenAPI processor
+  version: "1.0.0"
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: https://staging.example.com/v1
+    description: Staging server
+  - url: https://api.example.com/{version}
+    description: Versioned server
+    variables:
+      version:
+        default: v1
+        enum:
+          - v1
+          - v2
+          - v3
+paths:
+  /users:
+    get:
+      operationId: getUsers
+      summary: Get all users
+      tags:
+        - users
+      responses:
+        '200':
+          description: Successful response
+    post:
+      operationId: createUser
+      summary: Create a new user
+      tags:
+        - users
+      responses:
+        '201':
+          description: User created
+  /users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getUserById
+      summary: Get a user by ID
+      tags:
+        - users
+      responses:
+        '200':
+          description: Successful response
+    put:
+      operationId: updateUser
+      summary: Update a user
+      tags:
+        - users
+      responses:
+        '200':
+          description: User updated
+    delete:
+      operationId: deleteUser
+      summary: Delete a user
+      tags:
+        - users
+      responses:
+        '204':
+          description: User deleted
+  /users/{userId}/orders:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getUserOrders
+      summary: Get orders for a user
+      tags:
+        - orders
+      responses:
+        '200':
+          description: Successful response
+  /users/{userId}/orders/{orderId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getUserOrderById
+      summary: Get a specific order for a user
+      tags:
+        - orders
+      responses:
+        '200':
+          description: Successful response
+    put:
+      operationId: updateUserOrder
+      summary: Update an order
+      tags:
+        - orders
+      responses:
+        '200':
+          description: Order updated
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check endpoint
+      tags:
+        - system
+      responses:
+        '200':
+          description: Service is healthy

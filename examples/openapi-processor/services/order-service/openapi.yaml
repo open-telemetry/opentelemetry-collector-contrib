@@ -1,0 +1,60 @@
+openapi: "3.0.3"
+info:
+  title: Order Service API
+  version: "1.0.0"
+  description: API for managing customer orders
+servers:
+  - url: http://order-service:8080
+    description: Order service
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service is healthy
+  /orders:
+    post:
+      summary: Create a new order
+      operationId: createOrder
+      description: Creates a new order and validates the user via user-service
+      responses:
+        "201":
+          description: Order created
+        "400":
+          description: Invalid user
+  /orders/{orderId}/items:
+    parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Add item to order
+      operationId: addOrderItem
+      description: Adds an item to the order and fetches product details from product-service
+      responses:
+        "201":
+          description: Item added
+        "404":
+          description: Order not found
+  /orders/{orderId}/checkout:
+    parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Checkout order
+      operationId: checkoutOrder
+      description: Completes the order and processes payment via payment-service
+      responses:
+        "200":
+          description: Order completed
+        "402":
+          description: Payment failed
+        "404":
+          description: Order not found

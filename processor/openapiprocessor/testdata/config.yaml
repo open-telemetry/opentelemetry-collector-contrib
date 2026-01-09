@@ -1,0 +1,32 @@
+# Basic configuration with defaults
+openapi/basic:
+  openapi_file: testdata/openapi.yaml
+  url_attribute: http.url
+  url_template_attribute: url.template
+  peer_service_attribute: peer.service
+
+# Custom configuration with all options
+openapi/custom:
+  openapi_file: testdata/openapi.json
+  url_attribute: url.path
+  url_template_attribute: http.route
+  peer_service_attribute: service.name
+  peer_service: my-api-service
+  overwrite_existing: true
+  include_query_params: true
+
+# Using template for peer service
+openapi/template_peer_service:
+  openapi_file: testdata/openapi.yaml
+  url_attribute: http.url
+  url_template_attribute: url.template
+  peer_service_attribute: peer.service
+  peer_service: "${info.title}-backend"
+
+# Server URL matching configuration
+openapi/server_matching:
+  openapi_file: testdata/openapi.yaml
+  url_attribute: http.url
+  url_template_attribute: url.template
+  peer_service_attribute: peer.service
+  use_server_url_matching: true

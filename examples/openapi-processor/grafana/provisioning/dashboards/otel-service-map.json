@@ -1,0 +1,518 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": ["otel", "spanmetrics"],
+      "targetBlank": false,
+      "title": "OTEL Dashboards",
+      "type": "dashboards"
+    }
+  ],
+  "liveNow": false,
+  "panels": [
+    {
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "code": { "language": "plaintext", "showLineNumbers": false },
+        "content": "# Service Dependency Map\n\nVisualize service-to-service calls and their relationships. Requires `peer.service` or `server.address` attributes in your spans.",
+        "mode": "markdown"
+      },
+      "type": "text"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "description": "Service dependency graph. Nodes = services, Edges = calls between services.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "nodeGraph": {}
+          }
+        }
+      },
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 2 },
+      "id": 2,
+      "options": {
+        "nodes": {
+          "mainStatUnit": "reqps"
+        },
+        "edges": {
+          "mainStatUnit": "reqps"
+        }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "label_replace(label_replace(label_replace(sum by (service_name) (rate(${namespace}http_server_request_count_total[$__rate_interval])), \"id\", \"$1\", \"service_name\", \"(.*)\"), \"title\", \"$1\", \"service_name\", \"(.*)\"), \"mainstat\", \"\", \"\", \"\")",
+          "format": "table",
+          "instant": true,
+          "refId": "nodes"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "label_replace(label_replace(label_replace(sum by (service_name, peer_service) (rate(${namespace}http_client_request_count_total{peer_service!=\"\"}[$__rate_interval])), \"source\", \"$1\", \"service_name\", \"(.*)\"), \"target\", \"$1\", \"peer_service\", \"(.*)\"), \"mainstat\", \"\", \"\", \"\")",
+          "format": "table",
+          "instant": true,
+          "refId": "edges"
+        }
+      ],
+      "title": "Service Dependency Graph",
+      "transformations": [
+        {
+          "filter": {
+            "id": "byRefId",
+            "options": "/^(?:nodes)$/"
+          },
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "Value": "mainstat"
+            }
+          }
+        },
+        {
+          "filter": {
+            "id": "byRefId",
+            "options": "/^(?:edges)$/"
+          },
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "Value": "mainstat"
+            }
+          }
+        },
+        {
+          "filter": {
+            "id": "byRefId",
+            "options": "/^(?:edges)$/"
+          },
+          "id": "calculateField",
+          "options": {
+            "alias": "id",
+            "mode": "reduceRow",
+            "reduce": {
+              "include": [
+                "source",
+                "target"
+              ],
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "filter": {
+            "id": "byRefId",
+            "options": "/^(?:nodes)$/"
+          },
+          "id": "calculateField",
+          "options": {
+            "alias": "mainstat",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #nodes"
+                }
+              },
+              "right": {
+                "fixed": "0"
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "filter": {
+            "id": "byRefId",
+            "options": "/^(?:edges)$/"
+          },
+          "id": "calculateField",
+          "options": {
+            "alias": "mainstat",
+            "binary": {
+              "left": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #edges"
+                }
+              },
+              "right": {
+                "fixed": "0"
+              }
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        }
+      ],
+      "type": "nodeGraph"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 80 }
+            ]
+          }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Calls/sec" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "decimals", "value": 2 }] },
+          { "matcher": { "id": "byName", "options": "P95 Latency" }, "properties": [{ "id": "unit", "value": "ms" }, { "id": "decimals", "value": 1 }] },
+          { "matcher": { "id": "byName", "options": "Error Rate" }, "properties": [{ "id": "unit", "value": "percentunit" }, { "id": "decimals", "value": 2 }] }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 18 },
+      "id": 3,
+      "options": {
+        "footer": { "enablePagination": true, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Calls/sec" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sum by (service_name, peer_service) (rate(${namespace}http_server_request_count_total{peer_service!=\"\"}[$__rate_interval]))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "calls"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "histogram_quantile(0.95, sum by (le, service_name, peer_service) (rate(${namespace}http_server_request_duration_seconds_bucket{peer_service!=\"\"}[$__rate_interval]))) * 1000",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "latency"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "(sum by (service_name, peer_service) (rate(${namespace}http_server_request_count_total{peer_service!=\"\", http_response_status_code=~\"5..\"}[$__rate_interval])) or sum by (service_name, peer_service) (rate(${namespace}http_server_request_count_total{peer_service!=\"\"}[$__rate_interval])) * 0) / sum by (service_name, peer_service) (rate(${namespace}http_server_request_count_total{peer_service!=\"\"}[$__rate_interval]))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "errors"
+        }
+      ],
+      "title": "Service-to-Service Calls",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": {
+              "service_name": "Source Service",
+              "peer_service": "Target Service",
+              "Value #calls": "Calls/sec",
+              "Value #latency": "P95 Latency",
+              "Value #errors": "Error Rate"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "id": 4,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sum by (service_name, peer_service) (rate(${namespace}http_server_request_count_total{peer_service!=\"\"}[$__rate_interval]))",
+          "legendFormat": "{{service_name}} → {{peer_service}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Inter-Service Call Rate Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "ms"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "id": 5,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "histogram_quantile(0.95, sum by (le, service_name, peer_service) (rate(${namespace}http_server_request_duration_seconds_bucket{peer_service!=\"\"}[$__rate_interval]))) * 1000",
+          "legendFormat": "{{service_name}} → {{peer_service}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Inter-Service P95 Latency Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 80 }
+            ]
+          }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Calls/sec" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "decimals", "value": 2 }] },
+          { "matcher": { "id": "byName", "options": "P95 Latency" }, "properties": [{ "id": "unit", "value": "ms" }, { "id": "decimals", "value": 1 }] }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 36 },
+      "id": 6,
+      "options": {
+        "footer": { "enablePagination": true, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Calls/sec" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sum by (service_name, server_address) (rate(${namespace}http_server_request_count_total{server_address!=\"\"}[$__rate_interval]))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "calls"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "histogram_quantile(0.95, sum by (le, service_name, server_address) (rate(${namespace}http_server_request_duration_seconds_bucket{server_address!=\"\"}[$__rate_interval]))) * 1000",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "latency"
+        }
+      ],
+      "title": "Outbound Calls by Server Address",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": {
+              "service_name": "Source Service",
+              "server_address": "Target Address",
+              "Value #calls": "Calls/sec",
+              "Value #latency": "P95 Latency"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 80 }
+            ]
+          }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Calls/sec" }, "properties": [{ "id": "unit", "value": "reqps" }, { "id": "decimals", "value": 2 }] },
+          { "matcher": { "id": "byName", "options": "P95 Latency" }, "properties": [{ "id": "unit", "value": "ms" }, { "id": "decimals", "value": 1 }] }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 46 },
+      "id": 7,
+      "options": {
+        "footer": { "enablePagination": true, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Calls/sec" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "sum by (service_name, db_system) (rate(${namespace}http_server_request_count_total{db_system!=\"\"}[$__rate_interval]))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "calls"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "expr": "histogram_quantile(0.95, sum by (le, service_name, db_system) (rate(${namespace}http_server_request_duration_seconds_bucket{db_system!=\"\"}[$__rate_interval]))) * 1000",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "latency"
+        }
+      ],
+      "title": "Database Calls by Service",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": {
+              "service_name": "Service",
+              "db_system": "Database",
+              "Value #calls": "Calls/sec",
+              "Value #latency": "P95 Latency"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["otel", "spanmetrics", "dependencies"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "VictoriaMetrics", "value": "VictoriaMetrics" },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "current": { "selected": true, "text": "default", "value": "" },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Metrics Namespace",
+        "multi": false,
+        "name": "namespace",
+        "options": [
+        ],
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "OpenTelemetry - Service Map",
+  "uid": "otel-service-map",
+  "version": 1,
+  "weekStart": ""
+}

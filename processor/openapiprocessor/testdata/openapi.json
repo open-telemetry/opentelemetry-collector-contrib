@@ -1,0 +1,40 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Pet Store API",
+    "description": "A sample API for testing the OpenAPI processor",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {"url": "https://api.example.com/v1", "description": "Production server"},
+    {"url": "https://staging.example.com/v1", "description": "Staging server"},
+    {"url": "https://api.example.com/{version}", "description": "Versioned server", "variables": {"version": {"default": "v1", "enum": ["v1", "v2", "v3"]}}}
+  ],
+  "paths": {
+    "/users": {
+      "get": {"operationId": "getUsers", "summary": "Get all users", "responses": {"200": {"description": "OK"}}},
+      "post": {"operationId": "createUser", "summary": "Create user", "responses": {"201": {"description": "Created"}}}
+    },
+    "/users/{userId}": {
+      "parameters": [{"name": "userId", "in": "path", "required": true, "schema": {"type": "string"}}],
+      "get": {"operationId": "getUserById", "summary": "Get user", "responses": {"200": {"description": "OK"}}},
+      "put": {"operationId": "updateUser", "summary": "Update user", "responses": {"200": {"description": "OK"}}},
+      "delete": {"operationId": "deleteUser", "summary": "Delete user", "responses": {"204": {"description": "Deleted"}}}
+    },
+    "/users/{userId}/orders": {
+      "parameters": [{"name": "userId", "in": "path", "required": true, "schema": {"type": "string"}}],
+      "get": {"operationId": "getUserOrders", "summary": "Get orders", "responses": {"200": {"description": "OK"}}}
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "parameters": [
+        {"name": "userId", "in": "path", "required": true, "schema": {"type": "string"}},
+        {"name": "orderId", "in": "path", "required": true, "schema": {"type": "string"}}
+      ],
+      "get": {"operationId": "getUserOrderById", "summary": "Get order", "responses": {"200": {"description": "OK"}}},
+      "put": {"operationId": "updateUserOrder", "summary": "Update order", "responses": {"200": {"description": "OK"}}}
+    },
+    "/health": {
+      "get": {"operationId": "healthCheck", "summary": "Health check", "responses": {"200": {"description": "OK"}}}
+    }
+  }
+}

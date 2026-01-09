@@ -143,6 +143,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/unrollprocessor v0.143.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.143.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor v0.143.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/openapiprocessor v0.143.0
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.143.0

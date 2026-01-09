@@ -1,0 +1,32 @@
+openapi: "3.0.3"
+info:
+  title: Product Service API
+  version: "1.0.0"
+  description: API for managing products
+servers:
+  - url: http://product-service:8080
+    description: Product service
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service is healthy
+  /products/{productId}:
+    parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get product by ID
+      operationId: getProduct
+      description: Returns product details by ID
+      responses:
+        "200":
+          description: Successful response
+        "404":
+          description: Product not found

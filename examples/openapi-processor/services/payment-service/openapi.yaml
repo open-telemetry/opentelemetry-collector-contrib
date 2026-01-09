@@ -1,0 +1,26 @@
+openapi: "3.0.3"
+info:
+  title: Payment Service API
+  version: "1.0.0"
+  description: API for processing payments
+servers:
+  - url: http://payment-service:8080
+    description: Payment service
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service is healthy
+  /payments:
+    post:
+      summary: Create a new payment
+      operationId: createPayment
+      description: Processes a payment for an order
+      responses:
+        "201":
+          description: Payment created successfully
+        "402":
+          description: Payment failed

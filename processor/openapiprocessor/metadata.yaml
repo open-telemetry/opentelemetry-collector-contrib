@@ -1,0 +1,13 @@
+type: openapi
+
+status:
+  class: processor
+  stability:
+    alpha: [traces]
+  distributions: [contrib]
+  codeowners:
+    active: []
+
+tests:
+  config:
+    openapi_file: testdata/openapi.yaml

@@ -1,0 +1,139 @@
+# OpenAPI Processor Example
+# This example demonstrates the OpenAPI processor enriching traces with
+# url.template and peer.service attributes based on OpenAPI specifications.
+#
+# Services:
+# - order-service: Manages orders, calls user, product, and payment services
+# - user-service: Manages users and profiles
+# - product-service: Manages products and categories
+# - payment-service: Processes payments and refunds
+# - otel-collector: Processes traces with OpenAPI processor
+# - tempo: Stores traces
+# - grafana: Visualizes traces
+
+services:
+  # ===================
+  # OpenTelemetry Collector with OpenAPI Processor (custom build)
+  # ===================
+  otel-collector:
+    image: openapi-processor-otel-collector:latest
+    command: ["--config=/etc/otel/config.yaml", "--feature-gates=connector.spanmetrics.useSecondAsDefaultMetricsUnit"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel/config.yaml
+      - ./services/order-service/openapi.yaml:/etc/otel/openapi/order-service.yaml
+      - ./services/user-service/openapi.yaml:/etc/otel/openapi/user-service.yaml
+      - ./services/product-service/openapi.yaml:/etc/otel/openapi/product-service.yaml
+      - ./services/payment-service/openapi.yaml:/etc/otel/openapi/payment-service.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8888:8888"   # Prometheus metrics
+
+  lgtm:
+    image: grafana/otel-lgtm
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      - ENABLE_LOGS_ALL=true
+    volumes:
+      - ./grafana/provisioning:/otel-lgtm/grafana/conf/provisioning:ro
+
+  # ===================
+  # Order Service
+  # ===================
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    environment:
+      - APP_NAME=order-service
+      - PORT=8080
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_SERVICE_NAME=Order Service API
+      - USER_SERVICE=http://user-service:8080
+      - PRODUCT_SERVICE=http://product-service:8080
+      - PAYMENT_SERVICE=http://payment-service:8080
+    ports:
+      - "8081:8080"
+    depends_on:
+      - otel-collector
+      - user-service
+      - product-service
+      - payment-service
+
+  # ===================
+  # User Service
+  # ===================
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    environment:
+      - APP_NAME=user-service
+      - PORT=8080
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_SERVICE_NAME=User Service API
+    ports:
+      - "8082:8080"
+    depends_on:
+      - otel-collector
+
+  # ===================
+  # Product Service
+  # ===================
+  product-service:
+    build:
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    environment:
+      - APP_NAME=product-service
+      - PORT=8080
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_SERVICE_NAME=Product Service API
+    ports:
+      - "8083:8080"
+    depends_on:
+      - otel-collector
+
+  # ===================
+  # Payment Service
+  # ===================
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    environment:
+      - APP_NAME=payment-service
+      - PORT=8080
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_SERVICE_NAME=Payment Service API
+    ports:
+      - "8084:8080"
+    depends_on:
+      - otel-collector
+
+  # ===================
+  # Load Generator (k6)
+  # ===================
+  k6:
+    image: grafana/k6:latest
+    volumes:
+      - ./k6:/scripts
+    environment:
+      - ORDER_SERVICE_URL=http://order-service:8080
+      - USER_SERVICE_URL=http://user-service:8080
+      - PRODUCT_SERVICE_URL=http://product-service:8080
+      - PAYMENT_SERVICE_URL=http://payment-service:8080
+    command: ["run", "--quiet", "/scripts/load-test.js"]
+    depends_on:
+      - order-service
+      - user-service
+      - product-service
+      - payment-service
+
+volumes:
+  tempo-data:
