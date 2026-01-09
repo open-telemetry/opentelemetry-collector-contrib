@@ -232,33 +232,33 @@ The current phase of namespaces (1 for active and 0 for terminating)
 
 Amount of cpu allocatable on the node
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {cpu} | Sum | Double | Unspecified | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {cpu} | Sum | Double | Unspecified | false | Development |
 
 ### k8s.node.ephemeral_storage.allocatable
 
 Amount of ephemeral-storage allocatable on the node
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Unspecified | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Unspecified | false | Development |
 
 ### k8s.node.memory.allocatable
 
 Amount of memory allocatable on the node
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Unspecified | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Unspecified | false | Development |
 
-### k8s.node.pods.allocatable
+### k8s.node.pod.allocatable
 
 Amount of pods allocatable on the node
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {pod} | Sum | Int | Unspecified | false |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {pod} | Sum | Int | Unspecified | false | Development |
 
 ### k8s.pod.phase
 

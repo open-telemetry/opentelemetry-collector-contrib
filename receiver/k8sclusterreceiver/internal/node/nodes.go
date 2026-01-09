@@ -29,17 +29,17 @@ const (
 )
 
 var EnableStableMetrics = featuregate.GlobalRegistry().MustRegister(
-	"semconv.k8s.enableStable",
+	"semconv.k8s.receiver.k8scluster.enableStable",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, semconv stable metrics are enabled."),
-	featuregate.WithRegisterFromVersion("v0.139.0"),
+	featuregate.WithRegisterFromVersion("v0.144.0"),
 )
 
 var DisableLegacyMetrics = featuregate.GlobalRegistry().MustRegister(
-	"semconv.k8s.disableLegacy",
+	"semconv.k8s.receiver.k8scluster.disableLegacy",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, semconv legacy metrics are disabled."),
-	featuregate.WithRegisterFromVersion("v0.139.0"),
+	featuregate.WithRegisterFromVersion("v0.144.0"),
 )
 
 // Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
@@ -89,7 +89,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Ti
 		}
 
 		if podVal, ok := node.Status.Allocatable[corev1.ResourcePods]; ok {
-			mb.RecordK8sNodePodsAllocatableDataPoint(ts, podVal.Value())
+			mb.RecordK8sNodePodAllocatableDataPoint(ts, podVal.Value())
 		}
 	}
 

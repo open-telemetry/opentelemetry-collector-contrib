@@ -32,7 +32,7 @@ resourceMetrics:
             sum:
               dataPoints:
                 - asInt: "12"
-            name: k8s.node.pods.allocatable
+            name: k8s.node.pod.allocatable
             unit: "{pod}"
 
         scope:

@@ -198,7 +198,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordK8sNodePodsAllocatableDataPoint(ts, 1)
+			mb.RecordK8sNodePodAllocatableDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -741,9 +741,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.pods.allocatable":
-					assert.False(t, validatedMetrics["k8s.node.pods.allocatable"], "Found a duplicate in the metrics slice: k8s.node.pods.allocatable")
-					validatedMetrics["k8s.node.pods.allocatable"] = true
+				case "k8s.node.pod.allocatable":
+					assert.False(t, validatedMetrics["k8s.node.pod.allocatable"], "Found a duplicate in the metrics slice: k8s.node.pod.allocatable")
+					validatedMetrics["k8s.node.pod.allocatable"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Amount of pods allocatable on the node", ms.At(i).Description())

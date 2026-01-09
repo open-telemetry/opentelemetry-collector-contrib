@@ -197,8 +197,8 @@ var MetricsInfo = metricsInfo{
 	K8sNodeMemoryAllocatable: metricInfo{
 		Name: "k8s.node.memory.allocatable",
 	},
-	K8sNodePodsAllocatable: metricInfo{
-		Name: "k8s.node.pods.allocatable",
+	K8sNodePodAllocatable: metricInfo{
+		Name: "k8s.node.pod.allocatable",
 	},
 	K8sPodPhase: metricInfo{
 		Name: "k8s.pod.phase",
@@ -284,7 +284,7 @@ type metricsInfo struct {
 	K8sNodeCPUAllocatable               metricInfo
 	K8sNodeEphemeralStorageAllocatable  metricInfo
 	K8sNodeMemoryAllocatable            metricInfo
-	K8sNodePodsAllocatable              metricInfo
+	K8sNodePodAllocatable               metricInfo
 	K8sPodPhase                         metricInfo
 	K8sPodStatusReason                  metricInfo
 	K8sReplicasetAvailable              metricInfo
@@ -1970,15 +1970,15 @@ func newMetricK8sNodeMemoryAllocatable(cfg MetricConfig) metricK8sNodeMemoryAllo
 	return m
 }
 
-type metricK8sNodePodsAllocatable struct {
+type metricK8sNodePodAllocatable struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills k8s.node.pods.allocatable metric with initial data.
-func (m *metricK8sNodePodsAllocatable) init() {
-	m.data.SetName("k8s.node.pods.allocatable")
+// init fills k8s.node.pod.allocatable metric with initial data.
+func (m *metricK8sNodePodAllocatable) init() {
+	m.data.SetName("k8s.node.pod.allocatable")
 	m.data.SetDescription("Amount of pods allocatable on the node")
 	m.data.SetUnit("{pod}")
 	m.data.SetEmptySum()
@@ -1986,7 +1986,7 @@ func (m *metricK8sNodePodsAllocatable) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityUnspecified)
 }
 
-func (m *metricK8sNodePodsAllocatable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricK8sNodePodAllocatable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1997,14 +1997,14 @@ func (m *metricK8sNodePodsAllocatable) recordDataPoint(start pcommon.Timestamp, 
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricK8sNodePodsAllocatable) updateCapacity() {
+func (m *metricK8sNodePodAllocatable) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricK8sNodePodsAllocatable) emit(metrics pmetric.MetricSlice) {
+func (m *metricK8sNodePodAllocatable) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -2012,8 +2012,8 @@ func (m *metricK8sNodePodsAllocatable) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sNodePodsAllocatable(cfg MetricConfig) metricK8sNodePodsAllocatable {
-	m := metricK8sNodePodsAllocatable{config: cfg}
+func newMetricK8sNodePodAllocatable(cfg MetricConfig) metricK8sNodePodAllocatable {
+	m := metricK8sNodePodAllocatable{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2878,7 +2878,7 @@ type MetricsBuilder struct {
 	metricK8sNodeCPUAllocatable               metricK8sNodeCPUAllocatable
 	metricK8sNodeEphemeralStorageAllocatable  metricK8sNodeEphemeralStorageAllocatable
 	metricK8sNodeMemoryAllocatable            metricK8sNodeMemoryAllocatable
-	metricK8sNodePodsAllocatable              metricK8sNodePodsAllocatable
+	metricK8sNodePodAllocatable               metricK8sNodePodAllocatable
 	metricK8sPodPhase                         metricK8sPodPhase
 	metricK8sPodStatusReason                  metricK8sPodStatusReason
 	metricK8sReplicasetAvailable              metricK8sReplicasetAvailable
@@ -2953,7 +2953,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sNodeCPUAllocatable:               newMetricK8sNodeCPUAllocatable(mbc.Metrics.K8sNodeCPUAllocatable),
 		metricK8sNodeEphemeralStorageAllocatable:  newMetricK8sNodeEphemeralStorageAllocatable(mbc.Metrics.K8sNodeEphemeralStorageAllocatable),
 		metricK8sNodeMemoryAllocatable:            newMetricK8sNodeMemoryAllocatable(mbc.Metrics.K8sNodeMemoryAllocatable),
-		metricK8sNodePodsAllocatable:              newMetricK8sNodePodsAllocatable(mbc.Metrics.K8sNodePodsAllocatable),
+		metricK8sNodePodAllocatable:               newMetricK8sNodePodAllocatable(mbc.Metrics.K8sNodePodAllocatable),
 		metricK8sPodPhase:                         newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
 		metricK8sPodStatusReason:                  newMetricK8sPodStatusReason(mbc.Metrics.K8sPodStatusReason),
 		metricK8sReplicasetAvailable:              newMetricK8sReplicasetAvailable(mbc.Metrics.K8sReplicasetAvailable),
@@ -3316,7 +3316,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sNodeCPUAllocatable.emit(ils.Metrics())
 	mb.metricK8sNodeEphemeralStorageAllocatable.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryAllocatable.emit(ils.Metrics())
-	mb.metricK8sNodePodsAllocatable.emit(ils.Metrics())
+	mb.metricK8sNodePodAllocatable.emit(ils.Metrics())
 	mb.metricK8sPodPhase.emit(ils.Metrics())
 	mb.metricK8sPodStatusReason.emit(ils.Metrics())
 	mb.metricK8sReplicasetAvailable.emit(ils.Metrics())
@@ -3529,9 +3529,9 @@ func (mb *MetricsBuilder) RecordK8sNodeMemoryAllocatableDataPoint(ts pcommon.Tim
 	mb.metricK8sNodeMemoryAllocatable.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordK8sNodePodsAllocatableDataPoint adds a data point to k8s.node.pods.allocatable metric.
-func (mb *MetricsBuilder) RecordK8sNodePodsAllocatableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodePodsAllocatable.recordDataPoint(mb.startTime, ts, val)
+// RecordK8sNodePodAllocatableDataPoint adds a data point to k8s.node.pod.allocatable metric.
+func (mb *MetricsBuilder) RecordK8sNodePodAllocatableDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sNodePodAllocatable.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sPodPhaseDataPoint adds a data point to k8s.pod.phase metric.
