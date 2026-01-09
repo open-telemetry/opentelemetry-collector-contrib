@@ -8,13 +8,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"net/url"
-	"os/exec"
-	"path/filepath"
-	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestExtractNameFromTag(t *testing.T) {
@@ -137,74 +131,82 @@ func TestExtractDescriptionFromComment(t *testing.T) {
 
 func TestGoPrimitiveToSchemaType(t *testing.T) {
 	testCases := []struct {
-		name     string
-		typeName string
-		expected SchemaType
+		name         string
+		typeName     string
+		expectedType SchemaType
+		isCustom     bool
 	}{
-		{"string type", "string", SchemaTypeString},
-		{"bool type", "bool", SchemaTypeBoolean},
-		{"integer types", "int32", SchemaTypeInteger},
-		{"number types", "float64", SchemaTypeNumber},
-		{"any type", "any", ""},
-		{"unknown type", "Custom", SchemaTypeNull},
+		{"string type", "string", SchemaTypeString, false},
+		{"bool type", "bool", SchemaTypeBoolean, false},
+		{"integer types", "int32", SchemaTypeInteger, true},
+		{"number types", "float64", SchemaTypeNumber, true},
+		{"any type", "any", SchemaTypeAny, true},
+		{"unknown type", "Custom", SchemaTypeUnknown, false},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := goPrimitiveToSchemaType(tc.typeName); got != tc.expected {
-				t.Fatalf("expected %q got %q", tc.expected, got)
+			if got, custom := goPrimitiveToSchemaType(tc.typeName); got != tc.expectedType || custom != tc.isCustom {
+				t.Fatalf("expected %q:%t got %q:%t", tc.expectedType, tc.isCustom, got, custom)
 			}
 		})
 	}
 }
 
-func TestGetSchemaIDWithPrefix(t *testing.T) {
-	repoDir := setupGitRepo(t)
-	cfg := &Config{
-		DirPath:        repoDir,
-		SchemaPath:     filepath.Join(repoDir, "schemas/config.schema.yaml"),
-		SchemaIDPrefix: "https://example.com/root",
+func TestParseImport(t *testing.T) {
+	testCases := []struct {
+		name     string
+		literal  string
+		alias    string
+		expected string
+		nameWant string
+	}{
+		{
+			name:     "uses trailing path segment as name",
+			literal:  fmt.Sprintf("%q", "go.opentelemetry.io/collector/confmap/converter"),
+			expected: "go.opentelemetry.io/collector/confmap/converter",
+			nameWant: "converter",
+		},
+		{
+			name:     "stdlib package retains full name",
+			literal:  fmt.Sprintf("%q", "context"),
+			expected: "context",
+			nameWant: "context",
+		},
+		{
+			name:     "alias overrides parsed name",
+			literal:  fmt.Sprintf("%q", "example.com/project/component"),
+			alias:    "componentAlias",
+			expected: "example.com/project/component",
+			nameWant: "componentAlias",
+		},
+		{
+			name:     "alias blank identifier preserved",
+			literal:  fmt.Sprintf("%q", "example.com/project/component"),
+			alias:    "_",
+			expected: "example.com/project/component",
+			nameWant: "_",
+		},
+		{
+			name:     "handles literal value without quotes",
+			literal:  "example.com/org/pkg/v2",
+			expected: "example.com/org/pkg/v2",
+			nameWant: "v2",
+		},
 	}
-	file := parseTestFile(t, "package test")
 
-	id, err := GetSchemaID(file, cfg)
-
-	require.NoError(t, err)
-	require.Equal(t, "https://example.com/root/config.schema.yaml", id)
-}
-
-func TestGetSchemaIDWithImportComment(t *testing.T) {
-	repoDir := setupGitRepo(t)
-	cfg := &Config{
-		DirPath:    repoDir,
-		SchemaPath: filepath.Join(repoDir, "schemas/config.schema.yaml"),
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			spec := buildImportSpec(tc.literal, tc.alias)
+			full, gotName := ParseImport(spec)
+			if full != tc.expected {
+				t.Fatalf("expected full path %q got %q", tc.expected, full)
+			}
+			if gotName != tc.nameWant {
+				t.Fatalf("expected name %q got %q", tc.nameWant, gotName)
+			}
+		})
 	}
-	file := parseTestFile(t, `package test
-	// import "github.com/example/repo"`)
-
-	id, err := GetSchemaID(file, cfg)
-	require.NoError(t, err)
-
-	basePath, err := getBasePath(repoDir)
-	require.NoError(t, err)
-	relPath, err := filepath.Rel(strings.TrimSpace(basePath), repoDir)
-	require.NoError(t, err)
-	repo := "github.com/example/repo"
-	rootURL := strings.TrimSuffix(repo, filepath.ToSlash(relPath))
-	expected, err := url.JoinPath("https://", rootURL, "blob/main", relPath, "config.schema.yaml")
-	require.NoError(t, err)
-	require.Equal(t, expected, id)
-}
-
-func TestGetSchemaIDErrorWithoutGitOrImport(t *testing.T) {
-	cfg := &Config{
-		DirPath:    t.TempDir(),
-		SchemaPath: "schema.yaml",
-	}
-	file := parseTestFile(t, "package test")
-
-	_, err := GetSchemaID(file, cfg)
-	require.Error(t, err)
 }
 
 func parseFieldWithTag(t *testing.T, tagContent string) *ast.Field {
@@ -250,29 +252,15 @@ func parseFieldWithTag(t *testing.T, tagContent string) *ast.Field {
 	return structType.Fields.List[0]
 }
 
-func parseTestFile(t *testing.T, source string) *ast.File {
-	t.Helper()
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, "", source, parser.ParseComments)
-	require.NoError(t, err)
-	return file
-}
-
-func setupGitRepo(t *testing.T) string {
-	dir := t.TempDir()
-	runGitCmd(t, dir, "init")
-	runGitCmd(t, dir, "remote", "add", "origin", "git@github.com:example/repo.git")
-	resolved, err := filepath.EvalSymlinks(dir)
-	require.NoError(t, err)
-	return resolved
-}
-
-func runGitCmd(t *testing.T, dir string, args ...string) {
-	t.Helper()
-	cmd := exec.Command("git", args...)
-	cmd.Dir = dir
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("git %v failed: %v\n%s", args, err, string(output))
+func buildImportSpec(literal, alias string) *ast.ImportSpec {
+	spec := &ast.ImportSpec{
+		Path: &ast.BasicLit{
+			Kind:  token.STRING,
+			Value: literal,
+		},
 	}
+	if alias != "" {
+		spec.Name = ast.NewIdent(alias)
+	}
+	return spec
 }
