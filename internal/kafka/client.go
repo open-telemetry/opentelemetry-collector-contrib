@@ -6,29 +6,11 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"context"
 	"crypto/tls"
-	"time"
 
 	"github.com/IBM/sarama"
-	"go.opentelemetry.io/collector/config/configcompression"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
-
-var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
-	"none":   sarama.CompressionNone,
-	"gzip":   sarama.CompressionGZIP,
-	"snappy": sarama.CompressionSnappy,
-	"lz4":    sarama.CompressionLZ4,
-	"zstd":   sarama.CompressionZSTD,
-}
-
-func convertToSaramaCompressionLevel(level configcompression.Level) int {
-	switch level {
-	case 0, configcompression.DefaultCompressionLevel:
-		return sarama.CompressionLevelDefault
-	}
-	return int(level)
-}
 
 // NewSaramaClient returns a new Kafka client with the given configuration.
 func NewSaramaClient(ctx context.Context, config configkafka.ClientConfig) (sarama.Client, error) {
@@ -46,41 +28,6 @@ func NewSaramaClusterAdminClient(ctx context.Context, config configkafka.ClientC
 		return nil, err
 	}
 	return sarama.NewClusterAdmin(config.Brokers, saramaConfig)
-}
-
-// NewSaramaSyncProducer returns a new synchronous Kafka producer with the given configuration.
-//
-// NewSaramaSyncProducer takes a timeout for produce operations, which is the maximum time to
-// wait for required_acks. This is required since SyncProducer methods cannot be cancelled with
-// a context.Context.
-func NewSaramaSyncProducer(
-	ctx context.Context,
-	clientConfig configkafka.ClientConfig,
-	producerConfig configkafka.ProducerConfig,
-	producerTimeout time.Duration,
-) (sarama.SyncProducer, error) {
-	saramaConfig, err := newSaramaClientConfig(ctx, clientConfig)
-	if err != nil {
-		return nil, err
-	}
-	setSaramaProducerConfig(saramaConfig, producerConfig, producerTimeout)
-	return sarama.NewSyncProducer(clientConfig.Brokers, saramaConfig)
-}
-
-func setSaramaProducerConfig(
-	out *sarama.Config,
-	producerConfig configkafka.ProducerConfig,
-	producerTimeout time.Duration,
-) {
-	out.Producer.Return.Successes = true // required for SyncProducer
-	out.Producer.Return.Errors = true    // required for SyncProducer
-	out.Producer.MaxMessageBytes = producerConfig.MaxMessageBytes
-	out.Producer.Flush.MaxMessages = producerConfig.FlushMaxMessages
-	out.Producer.RequiredAcks = sarama.RequiredAcks(producerConfig.RequiredAcks)
-	out.Producer.Timeout = producerTimeout
-	out.Producer.Compression = saramaCompressionCodecs[producerConfig.Compression]
-	out.Producer.CompressionLevel = convertToSaramaCompressionLevel(producerConfig.CompressionParams.Level)
-	out.Metadata.AllowAutoTopicCreation = producerConfig.AllowAutoTopicCreation
 }
 
 // newSaramaClientConfig returns a Sarama client config, based on the given config.
