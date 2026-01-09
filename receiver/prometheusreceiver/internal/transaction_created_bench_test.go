@@ -88,7 +88,7 @@ func newBenchmarkTransactionForOMCounterBenchmarking(b *testing.B) *transaction 
 	return tx
 }
 
-// mockOMCounterMDStore replicates metadata behavior for counters that follow OpenMetric's _total and_created suffices
+// mockOMCounterMDStore replicates metadata behavior for counters that follow OpenMetric's _total and_created suffixes
 // in which series metadata will be keyed by the normalized metricFamily name (i.e foo_bar_counter_total -> foo_bar_counter)
 type mockOMCounterMDStore struct {
 	mockMetadataStore

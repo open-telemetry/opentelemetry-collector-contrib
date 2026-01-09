@@ -455,7 +455,7 @@ func TestCreatedMetric(t *testing.T) {
 		})
 	}
 	// re-run test suite with useOpenMetrics=false in testData as _created MF association logic is not *technically* dependent on the text parser but rather
-	// that counter metric lines follow the _total and _created suffices
+	// that counter metric lines follow the _total and _created suffixes
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s with useOpenMetrics=false", test.name), func(t *testing.T) {
 			t.Parallel()
