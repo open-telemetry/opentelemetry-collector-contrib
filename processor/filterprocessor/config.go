@@ -37,24 +37,21 @@ type Config struct {
 	// `ignore` means the processor ignores errors returned by conditions and continues on to the next condition. This is the recommended mode.
 	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
 	// The default value is `propagate`.
-	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
+	ErrorMode ottl.ErrorMode           `mapstructure:"error_mode"`
+	Spans     filterconfig.MatchConfig `mapstructure:"spans"`
 
+	// Deprecated: use MetricConditions instead.
 	Metrics MetricFilters `mapstructure:"metrics"`
-
+	// Deprecated: use LogConditions instead.
 	Logs LogFilters `mapstructure:"logs"`
-
-	Spans filterconfig.MatchConfig `mapstructure:"spans"`
-
+	// Deprecated: use TraceConditions instead.
 	Traces TraceFilters `mapstructure:"traces"`
-
+	// Deprecated: use ProfileConditions instead.
 	Profiles ProfileFilters `mapstructure:"profiles"`
 
-	MetricConditions []common.ContextConditions `mapstructure:"metric_conditions"`
-
-	LogConditions []common.ContextConditions `mapstructure:"log_conditions"`
-
-	TraceConditions []common.ContextConditions `mapstructure:"trace_conditions"`
-
+	MetricConditions  []common.ContextConditions `mapstructure:"metric_conditions"`
+	LogConditions     []common.ContextConditions `mapstructure:"log_conditions"`
+	TraceConditions   []common.ContextConditions `mapstructure:"trace_conditions"`
 	ProfileConditions []common.ContextConditions `mapstructure:"profile_conditions"`
 
 	resourceFunctions  map[string]ottl.Factory[*ottlresource.TransformContext]
