@@ -79,8 +79,8 @@ type ClientConfig struct {
 
 	// ConnectionIdleTimeout specifies the time after which idle connections are closed.
 	//
-	// Note: It may take up to 2x the configured time before a connection is actually closed.
-	// This setting is applicable for franz-go, while ignored in sarama because it does not close idle connections.
+	// Note: It may take up to 2x the configured time before a connection is actually closed
+	// due to franz-go implementation.
 	ConnectionIdleTimeout time.Duration `mapstructure:"connection_idle_timeout"`
 }
 

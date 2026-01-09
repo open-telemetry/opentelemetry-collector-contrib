@@ -17,7 +17,6 @@ issues: [45321]
 # Use pipe (|) for multiline entries.
 subtext: |
   Defaults to 4 minutes. It may take up to 2x the configured time before a connection is actually closed.
-  This setting is applicable for franz-go, while ignored in sarama because it does not close idle connections.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
