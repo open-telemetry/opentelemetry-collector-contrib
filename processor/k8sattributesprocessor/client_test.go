@@ -4,6 +4,7 @@
 package k8sattributesprocessor
 
 import (
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -34,6 +35,8 @@ type fakeClient struct {
 	ReplicaSets        map[string]*kube.ReplicaSet
 	Jobs               map[string]*kube.Job
 	StopCh             chan struct{}
+	stopOnce           sync.Once
+	stopWg             sync.WaitGroup
 }
 
 func selectors() (labels.Selector, fields.Selector) {
@@ -103,13 +106,30 @@ func (f *fakeClient) GetJob(jobUID string) (*kube.Job, bool) {
 
 // Start is a noop for FakeClient.
 func (f *fakeClient) Start() error {
-	if f.Informer != nil {
-		go f.Informer.Run(f.StopCh)
+	startInformer := func(informer cache.SharedInformer) {
+		if informer != nil {
+			f.stopWg.Add(1)
+			go func() {
+				defer f.stopWg.Done()
+				informer.Run(f.StopCh)
+			}()
+		}
 	}
+
+	startInformer(f.Informer)
+	startInformer(f.NamespaceInformer)
+	startInformer(f.NodeInformer)
+	startInformer(f.ReplicaSetInformer)
+
 	return nil
 }
 
 // Stop is a noop for FakeClient.
 func (f *fakeClient) Stop() {
-	close(f.StopCh)
+	f.stopOnce.Do(func() {
+		if f.StopCh != nil {
+			close(f.StopCh)
+			f.stopWg.Wait()
+		}
+	})
 }

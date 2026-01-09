@@ -24,8 +24,7 @@ processors for higher throughput and resiliency. Message payload encoding is con
 
 > [!NOTE]
 > The Kafka exporter uses the [`franz-go`](https://github.com/twmb/franz-go) client library, which provides
-> better performance and support for modern Kafka features. The `exporter.kafkaexporter.UseFranzGo` feature
-> gate is now stable and always enabled (as of v0.141.0). The legacy Sarama client will be removed after v0.143.0.
+> better performance and support for modern Kafka features.
 
 There are no required settings.
 

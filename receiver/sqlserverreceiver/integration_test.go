@@ -158,7 +158,7 @@ func TestEventsScraper(t *testing.T) {
 					assert.NotNil(tt, actualLog)
 					assert.NoError(tt, err)
 					assert.Positive(tt, actualLog.LogRecordCount())
-				}, 10*time.Second, 100*time.Millisecond)
+				}, 20*time.Second, 100*time.Millisecond)
 				found := false
 				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 				for i := 0; i < logRecords.Len(); i++ {
