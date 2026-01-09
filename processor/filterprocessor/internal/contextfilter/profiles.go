@@ -72,7 +72,7 @@ func WithProfileErrorMode(errorMode ottl.ErrorMode) ProfileParserCollectionOptio
 	return ProfileParserCollectionOption(ottl.WithParserCollectionErrorMode[ProfilesConsumer](errorMode))
 }
 
-func WithProfileCommonParsers(functions map[string]ottl.Factory[ottlresource.TransformContext]) ProfileParserCollectionOption {
+func WithProfileCommonParsers(functions map[string]ottl.Factory[*ottlresource.TransformContext]) ProfileParserCollectionOption {
 	return ProfileParserCollectionOption(withCommonParsers[ProfilesConsumer](functions))
 }
 

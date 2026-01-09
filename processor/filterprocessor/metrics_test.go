@@ -821,7 +821,7 @@ func Test_ProcessMetrics_DefinedContext(t *testing.T) {
 			contextConditions: []common.ContextConditions{
 				{Conditions: []string{`attributes["lib"] == "awesomelib"`}, Context: "scope"},
 			},
-			want: func(md pmetric.Metrics) {},
+			want: func(_ pmetric.Metrics) {},
 		},
 		{
 			name: "scope: drop by name",
@@ -977,7 +977,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 			contextConditions: []common.ContextConditions{
 				{Conditions: []string{`scope.attributes["lib"] == "awesomelib"`}},
 			},
-			want: func(md pmetric.Metrics) {},
+			want: func(_ pmetric.Metrics) {},
 		},
 		{
 			name: "scope: drop by name",
@@ -1300,8 +1300,8 @@ func Test_Metrics_NonDefaultFunctions(t *testing.T) {
 		name               string
 		conditions         []common.ContextConditions
 		wantErrorWith      string
-		metricFunctions    map[string]ottl.Factory[ottlmetric.TransformContext]
-		dataPointFunctions map[string]ottl.Factory[ottldatapoint.TransformContext]
+		metricFunctions    map[string]ottl.Factory[*ottlmetric.TransformContext]
+		dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
 	}
 
 	tests := []testCase{
@@ -1313,9 +1313,9 @@ func Test_Metrics_NonDefaultFunctions(t *testing.T) {
 					Conditions: []string{`IsMatch(name, TestMetricFunc())`},
 				},
 			},
-			metricFunctions: map[string]ottl.Factory[ottlmetric.TransformContext]{
+			metricFunctions: map[string]ottl.Factory[*ottlmetric.TransformContext]{
 				"IsMatch":        defaultMetricFunctionsMap()["IsMatch"],
-				"TestMetricFunc": NewMetricFuncFactory[ottlmetric.TransformContext](),
+				"TestMetricFunc": NewMetricFuncFactory[*ottlmetric.TransformContext](),
 			},
 			dataPointFunctions: defaultDataPointFunctionsMap(),
 		},
@@ -1340,9 +1340,9 @@ func Test_Metrics_NonDefaultFunctions(t *testing.T) {
 				},
 			},
 			metricFunctions: defaultMetricFunctionsMap(),
-			dataPointFunctions: map[string]ottl.Factory[ottldatapoint.TransformContext]{
+			dataPointFunctions: map[string]ottl.Factory[*ottldatapoint.TransformContext]{
 				"IsMatch":           defaultDataPointFunctionsMap()["IsMatch"],
-				"TestDataPointFunc": NewDataPointFuncFactory[ottldatapoint.TransformContext](),
+				"TestDataPointFunc": NewDataPointFuncFactory[*ottldatapoint.TransformContext](),
 			},
 		},
 		{

@@ -23,7 +23,7 @@ type LogsConsumer interface {
 }
 
 type logConditions struct {
-	expr.BoolExpr[ottllog.TransformContext]
+	expr.BoolExpr[*ottllog.TransformContext]
 }
 
 func (logConditions) Context() ContextID {
@@ -34,9 +34,10 @@ func (l logConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	var condErr error
 	ld.ResourceLogs().RemoveIf(func(rlogs plog.ResourceLogs) bool {
 		rlogs.ScopeLogs().RemoveIf(func(slogs plog.ScopeLogs) bool {
-			slogs.LogRecords().RemoveIf(func(logs plog.LogRecord) bool {
-				tCtx := ottllog.NewTransformContext(logs, slogs.Scope(), rlogs.Resource(), slogs, rlogs)
+			slogs.LogRecords().RemoveIf(func(log plog.LogRecord) bool {
+				tCtx := ottllog.NewTransformContextPtr(rlogs, slogs, log)
 				cond, err := l.Eval(ctx, tCtx)
+				tCtx.Close()
 				if err != nil {
 					condErr = multierr.Append(condErr, err)
 					return false
@@ -58,7 +59,7 @@ type LogParserCollection ottl.ParserCollection[LogsConsumer]
 
 type LogParserCollectionOption ottl.ParserCollectionOption[LogsConsumer]
 
-func WithLogParser(functions map[string]ottl.Factory[ottllog.TransformContext]) LogParserCollectionOption {
+func WithLogParser(functions map[string]ottl.Factory[*ottllog.TransformContext]) LogParserCollectionOption {
 	return func(pc *ottl.ParserCollection[LogsConsumer]) error {
 		logParser, err := ottllog.NewParser(functions, pc.Settings, ottllog.EnablePathContextNames())
 		if err != nil {
@@ -72,7 +73,7 @@ func WithLogErrorMode(errorMode ottl.ErrorMode) LogParserCollectionOption {
 	return LogParserCollectionOption(ottl.WithParserCollectionErrorMode[LogsConsumer](errorMode))
 }
 
-func WithLogCommonParsers(functions map[string]ottl.Factory[ottlresource.TransformContext]) LogParserCollectionOption {
+func WithLogCommonParsers(functions map[string]ottl.Factory[*ottlresource.TransformContext]) LogParserCollectionOption {
 	return LogParserCollectionOption(withCommonParsers[LogsConsumer](functions))
 }
 
@@ -94,7 +95,7 @@ func NewLogParserCollection(settings component.TelemetrySettings, options ...Log
 	return &lpc, nil
 }
 
-func convertLogConditions(pc *ottl.ParserCollection[LogsConsumer], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[ottllog.TransformContext]) (LogsConsumer, error) {
+func convertLogConditions(pc *ottl.ParserCollection[LogsConsumer], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottllog.TransformContext]) (LogsConsumer, error) {
 	contextConditions, err := toContextConditions(conditions)
 	if err != nil {
 		return nil, err

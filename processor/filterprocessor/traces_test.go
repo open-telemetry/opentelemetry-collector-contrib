@@ -811,8 +811,8 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		name               string
 		conditions         []common.ContextConditions
 		wantErrorWith      string
-		spanFunctions      map[string]ottl.Factory[ottlspan.TransformContext]
-		spanEventFunctions map[string]ottl.Factory[ottlspanevent.TransformContext]
+		spanFunctions      map[string]ottl.Factory[*ottlspan.TransformContext]
+		spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]
 	}
 
 	tests := []testCase{
@@ -824,9 +824,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 					Conditions: []string{`IsMatch(name, TestSpanFunc())`},
 				},
 			},
-			spanFunctions: map[string]ottl.Factory[ottlspan.TransformContext]{
+			spanFunctions: map[string]ottl.Factory[*ottlspan.TransformContext]{
 				"IsMatch":      defaultSpanFunctionsMap()["IsMatch"],
-				"TestSpanFunc": NewSpanFuncFactory[ottlspan.TransformContext](),
+				"TestSpanFunc": NewSpanFuncFactory[*ottlspan.TransformContext](),
 			},
 			spanEventFunctions: defaultSpanEventFunctionsMap(),
 		},
@@ -851,9 +851,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 				},
 			},
 			spanFunctions: defaultSpanFunctionsMap(),
-			spanEventFunctions: map[string]ottl.Factory[ottlspanevent.TransformContext]{
+			spanEventFunctions: map[string]ottl.Factory[*ottlspanevent.TransformContext]{
 				"IsMatch":      defaultSpanEventFunctionsMap()["IsMatch"],
-				"TestSpanFunc": NewSpanEventFuncFactory[ottlspanevent.TransformContext](),
+				"TestSpanFunc": NewSpanEventFuncFactory[*ottlspanevent.TransformContext](),
 			},
 		},
 		{

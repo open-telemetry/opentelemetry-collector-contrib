@@ -24,7 +24,7 @@ type TracesConsumer interface {
 }
 
 type traceConditions struct {
-	expr.BoolExpr[ottlspan.TransformContext]
+	expr.BoolExpr[*ottlspan.TransformContext]
 }
 
 func (traceConditions) Context() ContextID {
@@ -34,12 +34,12 @@ func (traceConditions) Context() ContextID {
 func (t traceConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	var condErr error
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
-		resource := rs.Resource()
 		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
-			scope := ss.Scope()
 			ss.Spans().RemoveIf(func(span ptrace.Span) bool {
-				tCtx := ottlspan.NewTransformContext(span, scope, resource, ss, rs)
+				tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
 				cond, err := t.Eval(ctx, tCtx)
+				tCtx.Close()
+
 				if err != nil {
 					condErr = multierr.Append(condErr, err)
 					return false
@@ -57,7 +57,7 @@ func (t traceConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 }
 
 type spanEventConditions struct {
-	expr.BoolExpr[ottlspanevent.TransformContext]
+	expr.BoolExpr[*ottlspanevent.TransformContext]
 }
 
 func (spanEventConditions) Context() ContextID {
@@ -67,13 +67,13 @@ func (spanEventConditions) Context() ContextID {
 func (s spanEventConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	var condErr error
 	td.ResourceSpans().RemoveIf(func(rspans ptrace.ResourceSpans) bool {
-		resource := rspans.Resource()
 		rspans.ScopeSpans().RemoveIf(func(sspans ptrace.ScopeSpans) bool {
-			scope := sspans.Scope()
 			sspans.Spans().RemoveIf(func(span ptrace.Span) bool {
 				span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
-					tCtx := ottlspanevent.NewTransformContext(spanEvent, span, scope, resource, sspans, rspans)
+					tCtx := ottlspanevent.NewTransformContextPtr(rspans, sspans, span, spanEvent)
 					cond, err := s.Eval(ctx, tCtx)
+					tCtx.Close()
+
 					if err != nil {
 						condErr = multierr.Append(condErr, err)
 						return false
@@ -96,17 +96,17 @@ type TraceParserCollection ottl.ParserCollection[TracesConsumer]
 
 type TraceParserCollectionOption ottl.ParserCollectionOption[TracesConsumer]
 
-func WithSpanParser(functions map[string]ottl.Factory[ottlspan.TransformContext]) TraceParserCollectionOption {
+func WithSpanParser(functions map[string]ottl.Factory[*ottlspan.TransformContext]) TraceParserCollectionOption {
 	return func(pc *ottl.ParserCollection[TracesConsumer]) error {
 		parser, err := ottlspan.NewParser(functions, pc.Settings, ottlspan.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
-		return ottl.WithParserCollectionContext(ottlspan.ContextName, &parser, ottl.WithConditionConverter[ottlspan.TransformContext, TracesConsumer](convertSpanConditions))(pc)
+		return ottl.WithParserCollectionContext(ottlspan.ContextName, &parser, ottl.WithConditionConverter(convertSpanConditions))(pc)
 	}
 }
 
-func WithSpanEventParser(functions map[string]ottl.Factory[ottlspanevent.TransformContext]) TraceParserCollectionOption {
+func WithSpanEventParser(functions map[string]ottl.Factory[*ottlspanevent.TransformContext]) TraceParserCollectionOption {
 	return func(pc *ottl.ParserCollection[TracesConsumer]) error {
 		parser, err := ottlspanevent.NewParser(functions, pc.Settings, ottlspanevent.EnablePathContextNames())
 		if err != nil {
@@ -120,7 +120,7 @@ func WithTraceErrorMode(errorMode ottl.ErrorMode) TraceParserCollectionOption {
 	return TraceParserCollectionOption(ottl.WithParserCollectionErrorMode[TracesConsumer](errorMode))
 }
 
-func WithTraceCommonParsers(functions map[string]ottl.Factory[ottlresource.TransformContext]) TraceParserCollectionOption {
+func WithTraceCommonParsers(functions map[string]ottl.Factory[*ottlresource.TransformContext]) TraceParserCollectionOption {
 	return TraceParserCollectionOption(withCommonParsers[TracesConsumer](functions))
 }
 
@@ -142,7 +142,7 @@ func NewTraceParserCollection(settings component.TelemetrySettings, options ...T
 	return &tpc, nil
 }
 
-func convertSpanConditions(pc *ottl.ParserCollection[TracesConsumer], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[ottlspan.TransformContext]) (TracesConsumer, error) {
+func convertSpanConditions(pc *ottl.ParserCollection[TracesConsumer], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottlspan.TransformContext]) (TracesConsumer, error) {
 	contextConditions, err := toContextConditions(conditions)
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func convertSpanConditions(pc *ottl.ParserCollection[TracesConsumer], conditions
 	return traceConditions{&sConditions}, nil
 }
 
-func convertSpanEventConditions(pc *ottl.ParserCollection[TracesConsumer], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[ottlspanevent.TransformContext]) (TracesConsumer, error) {
+func convertSpanEventConditions(pc *ottl.ParserCollection[TracesConsumer], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottlspanevent.TransformContext]) (TracesConsumer, error) {
 	contextConditions, err := toContextConditions(conditions)
 	if err != nil {
 		return nil, err

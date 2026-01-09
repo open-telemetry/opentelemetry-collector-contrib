@@ -107,7 +107,6 @@ func (fpp *filterProfileProcessor) processProfiles(ctx context.Context, pd pprof
 func (fpp *filterProfileProcessor) processSkipExpression(ctx context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) {
 	dic := pd.Dictionary()
 	var errs error
-	var errs error
 	pd.ResourceProfiles().RemoveIf(func(rp pprofile.ResourceProfiles) bool {
 		resource := rp.Resource()
 		if fpp.skipResourceExpr != nil {

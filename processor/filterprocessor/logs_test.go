@@ -1090,7 +1090,6 @@ func Test_ProcessLogs_ErrorMode(t *testing.T) {
 			})
 		}
 	}
-
 }
 
 func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
@@ -1201,7 +1200,7 @@ func Test_Logs_NonDefaultFunctions(t *testing.T) {
 		name          string
 		conditions    []common.ContextConditions
 		wantErrorWith string
-		logFunctions  map[string]ottl.Factory[ottllog.TransformContext]
+		logFunctions  map[string]ottl.Factory[*ottllog.TransformContext]
 	}
 
 	tests := []testCase{
@@ -1213,9 +1212,9 @@ func Test_Logs_NonDefaultFunctions(t *testing.T) {
 					Conditions: []string{`IsMatch(body, TestLogFunc())`},
 				},
 			},
-			logFunctions: map[string]ottl.Factory[ottllog.TransformContext]{
+			logFunctions: map[string]ottl.Factory[*ottllog.TransformContext]{
 				"IsMatch":     defaultLogFunctionsMap()["IsMatch"],
-				"TestLogFunc": NewLogFuncFactory[ottllog.TransformContext](),
+				"TestLogFunc": NewLogFuncFactory[*ottllog.TransformContext](),
 			},
 		},
 		{

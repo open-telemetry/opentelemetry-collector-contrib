@@ -23,7 +23,7 @@ import (
 var _ baseContext = &resourceConditions{}
 
 type resourceConditions struct {
-	expr.BoolExpr[ottlresource.TransformContext]
+	expr.BoolExpr[*ottlresource.TransformContext]
 }
 
 func (resourceConditions) Context() ContextID {
@@ -33,8 +33,9 @@ func (resourceConditions) Context() ContextID {
 func (r resourceConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	var condErr error
 	td.ResourceSpans().RemoveIf(func(rspans ptrace.ResourceSpans) bool {
-		tCtx := ottlresource.NewTransformContext(rspans.Resource(), rspans)
+		tCtx := ottlresource.NewTransformContextPtr(rspans.Resource(), rspans)
 		condition, err := r.Eval(ctx, tCtx)
+		tCtx.Close()
 		if err != nil {
 			condErr = multierr.Append(condErr, err)
 			return false
@@ -50,8 +51,9 @@ func (r resourceConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 func (r resourceConditions) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	var condErr error
 	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
-		tCtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics)
+		tCtx := ottlresource.NewTransformContextPtr(rmetrics.Resource(), rmetrics)
 		condition, err := r.Eval(ctx, tCtx)
+		tCtx.Close()
 		if err != nil {
 			condErr = multierr.Append(condErr, err)
 			return false
@@ -67,8 +69,9 @@ func (r resourceConditions) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 func (r resourceConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	var condErr error
 	ld.ResourceLogs().RemoveIf(func(rlogs plog.ResourceLogs) bool {
-		tCtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
+		tCtx := ottlresource.NewTransformContextPtr(rlogs.Resource(), rlogs)
 		condition, err := r.Eval(ctx, tCtx)
+		tCtx.Close()
 		if err != nil {
 			condErr = multierr.Append(condErr, err)
 			return false
@@ -84,8 +87,9 @@ func (r resourceConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 func (r resourceConditions) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
 	var condErr error
 	pd.ResourceProfiles().RemoveIf(func(rprofiles pprofile.ResourceProfiles) bool {
-		tCtx := ottlresource.NewTransformContext(rprofiles.Resource(), rprofiles)
+		tCtx := ottlresource.NewTransformContextPtr(rprofiles.Resource(), rprofiles)
 		condition, err := r.Eval(ctx, tCtx)
+		tCtx.Close()
 		if err != nil {
 			condErr = multierr.Append(condErr, err)
 			return false
@@ -101,7 +105,7 @@ func (r resourceConditions) ConsumeProfiles(ctx context.Context, pd pprofile.Pro
 var _ baseContext = &scopeConditions{}
 
 type scopeConditions struct {
-	expr.BoolExpr[ottlscope.TransformContext]
+	expr.BoolExpr[*ottlscope.TransformContext]
 }
 
 func (scopeConditions) Context() ContextID {
@@ -112,8 +116,9 @@ func (s scopeConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 	var condErr error
 	td.ResourceSpans().RemoveIf(func(rspans ptrace.ResourceSpans) bool {
 		rspans.ScopeSpans().RemoveIf(func(sspans ptrace.ScopeSpans) bool {
-			tCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource(), sspans)
+			tCtx := ottlscope.NewTransformContextPtr(sspans.Scope(), rspans.Resource(), sspans)
 			condition, err := s.Eval(ctx, tCtx)
+			tCtx.Close()
 			if err != nil {
 				condErr = multierr.Append(condErr, err)
 				return false
@@ -132,8 +137,9 @@ func (s scopeConditions) ConsumeMetrics(ctx context.Context, md pmetric.Metrics)
 	var condErr error
 	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
 		rmetrics.ScopeMetrics().RemoveIf(func(smetrics pmetric.ScopeMetrics) bool {
-			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource(), smetrics)
+			tCtx := ottlscope.NewTransformContextPtr(smetrics.Scope(), rmetrics.Resource(), smetrics)
 			condition, err := s.Eval(ctx, tCtx)
+			tCtx.Close()
 			if err != nil {
 				condErr = multierr.Append(condErr, err)
 				return false
@@ -152,8 +158,9 @@ func (s scopeConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	var condErr error
 	ld.ResourceLogs().RemoveIf(func(rlogs plog.ResourceLogs) bool {
 		rlogs.ScopeLogs().RemoveIf(func(slogs plog.ScopeLogs) bool {
-			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource(), slogs)
+			tCtx := ottlscope.NewTransformContextPtr(slogs.Scope(), rlogs.Resource(), slogs)
 			condition, err := s.Eval(ctx, tCtx)
+			tCtx.Close()
 			if err != nil {
 				condErr = multierr.Append(condErr, err)
 				return false
@@ -172,8 +179,9 @@ func (s scopeConditions) ConsumeProfiles(ctx context.Context, pd pprofile.Profil
 	var condErr error
 	pd.ResourceProfiles().RemoveIf(func(rprofiles pprofile.ResourceProfiles) bool {
 		rprofiles.ScopeProfiles().RemoveIf(func(sprofiles pprofile.ScopeProfiles) bool {
-			tCtx := ottlscope.NewTransformContext(sprofiles.Scope(), rprofiles.Resource(), sprofiles)
+			tCtx := ottlscope.NewTransformContextPtr(sprofiles.Scope(), rprofiles.Resource(), sprofiles)
 			condition, err := s.Eval(ctx, tCtx)
+			tCtx.Close()
 			if err != nil {
 				condErr = multierr.Append(condErr, err)
 				return false
@@ -195,7 +203,7 @@ type baseContext interface {
 	ProfilesConsumer
 }
 
-func withCommonParsers[R any](resourceFunctions map[string]ottl.Factory[ottlresource.TransformContext]) ottl.ParserCollectionOption[R] {
+func withCommonParsers[R any](resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext]) ottl.ParserCollectionOption[R] {
 	return func(pc *ottl.ParserCollection[R]) error {
 		rp, err := ottlresource.NewParser(resourceFunctions, pc.Settings, ottlresource.EnablePathContextNames())
 		if err != nil {
@@ -206,12 +214,12 @@ func withCommonParsers[R any](resourceFunctions map[string]ottl.Factory[ottlreso
 			return err
 		}
 
-		err = ottl.WithParserCollectionContext(ottlresource.ContextName, &rp, ottl.WithConditionConverter[ottlresource.TransformContext, R](convertResourceConditions))(pc)
+		err = ottl.WithParserCollectionContext(ottlresource.ContextName, &rp, ottl.WithConditionConverter[*ottlresource.TransformContext, R](convertResourceConditions))(pc)
 		if err != nil {
 			return err
 		}
 
-		err = ottl.WithParserCollectionContext(ottlscope.ContextName, &sp, ottl.WithConditionConverter[ottlscope.TransformContext, R](convertScopeConditions))(pc)
+		err = ottl.WithParserCollectionContext(ottlscope.ContextName, &sp, ottl.WithConditionConverter[*ottlscope.TransformContext, R](convertScopeConditions))(pc)
 		if err != nil {
 			return err
 		}
@@ -223,7 +231,7 @@ func withCommonParsers[R any](resourceFunctions map[string]ottl.Factory[ottlreso
 func convertResourceConditions[R any](
 	pc *ottl.ParserCollection[R],
 	conditions ottl.ConditionsGetter,
-	parsedConditions []*ottl.Condition[ottlresource.TransformContext],
+	parsedConditions []*ottl.Condition[*ottlresource.TransformContext],
 ) (R, error) {
 	contextConditions, err := toContextConditions(conditions)
 	if err != nil {
@@ -238,7 +246,7 @@ func convertResourceConditions[R any](
 func convertScopeConditions[R any](
 	pc *ottl.ParserCollection[R],
 	conditions ottl.ConditionsGetter,
-	parsedConditions []*ottl.Condition[ottlscope.TransformContext],
+	parsedConditions []*ottl.Condition[*ottlscope.TransformContext],
 ) (R, error) {
 	contextConditions, err := toContextConditions(conditions)
 	if err != nil {

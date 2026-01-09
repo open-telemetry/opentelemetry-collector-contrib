@@ -145,7 +145,6 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 
 	metricDataPointCountBeforeFilters := md.DataPointCount()
 
-
 	var errs error
 	var processedMetrics pmetric.Metrics
 	if len(fmp.consumers) > 0 {
@@ -182,10 +181,9 @@ func (fmp *filterMetricProcessor) processConditions(ctx context.Context, md pmet
 func (fmp *filterMetricProcessor) processSkipExpression(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	var errs error
 	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
-		resource := rm.Resource()
 		if fmp.skipResourceExpr != nil {
 			tCtx := ottlresource.NewTransformContextPtr(rm.Resource(), rm)
-			skip, err := fmp.skipResourceExpr.Eval(ctx, ottlresource.NewTransformContext(resource, rm))
+			skip, err := fmp.skipResourceExpr.Eval(ctx, tCtx)
 			tCtx.Close()
 			if err != nil {
 				errs = multierr.Append(errs, err)
