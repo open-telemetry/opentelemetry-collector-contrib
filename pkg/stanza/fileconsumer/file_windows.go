@@ -13,6 +13,10 @@ import (
 	"syscall"
 )
 
+// Noop on windows because we close files immediately after reading.
+func (*Manager) readLostFiles(context.Context) {
+}
+
 // normalizePath ensures Windows UNC paths are properly formatted for os.Open().
 // It converts UNC paths to extended-length format (\\?\UNC\server\share\path)
 // for reliable file access on Windows. Extended-length paths bypass path parsing
@@ -39,10 +43,6 @@ func normalizePath(path string) (string, bool) {
 	// For non-UNC paths (including paths starting with single backslash which are
 	// valid local paths on the current drive), just clean normally
 	return filepath.Clean(path), false
-}
-
-// Noop on windows because we close files immediately after reading.
-func (*Manager) readLostFiles(context.Context) {
 }
 
 // openFile opens a file on Windows with FILE_SHARE_DELETE flag to allow
