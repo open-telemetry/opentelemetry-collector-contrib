@@ -72,7 +72,7 @@ Manages product catalog:
 ### Payment Service (port 8084)
 Processes payments:
 - `GET /health` - Health check
-- `POST /payments` - Create a new payment
+- `POST /payments` - Create a new payment (This endpoint is setup to fail 10% of the time)
 
 ## Running the Example
 

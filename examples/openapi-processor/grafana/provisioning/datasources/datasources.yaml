@@ -7,7 +7,7 @@ datasources:
     url: http://127.0.0.1:9090
     editable: true
     jsonData:
-      timeInterval: 60s
+      timeInterval: 10s
       exemplarTraceIdDestinations:
         - name: trace_id
           datasourceUid: tempo

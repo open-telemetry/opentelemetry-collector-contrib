@@ -27,7 +27,7 @@ connectors:
       enabled: true
     dimensions_cache_size: 1000
     aggregation_temporality: AGGREGATION_TEMPORALITY_CUMULATIVE
-    metrics_flush_interval: 100ms
+    metrics_flush_interval: 1s
 processors:
   batch:
     timeout: 100ms
