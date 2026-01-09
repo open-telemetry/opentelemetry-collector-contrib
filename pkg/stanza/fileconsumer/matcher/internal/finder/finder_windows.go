@@ -46,3 +46,18 @@ func pathExcluded(excludes []string, path string) bool {
 	}
 	return false
 }
+
+// fixUNCPath corrects UNC path corruption that occurs when doublestar's path.Join
+// collapses // to /. If the pattern starts with \\ (UNC) but the match only has \,
+// we restore the UNC prefix.
+func fixUNCPath(pattern, match string) string {
+	// Check if pattern is a UNC path (starts with \\)
+	if len(pattern) >= 2 && pattern[0] == '\\' && pattern[1] == '\\' {
+		// Check if match is corrupted (starts with single \ instead of \\)
+		if len(match) >= 1 && match[0] == '\\' && (len(match) == 1 || match[1] != '\\') {
+			// Restore the missing backslash
+			return `\` + match
+		}
+	}
+	return match
+}
