@@ -8,9 +8,9 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"os"
-	"syscall"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 // normalizePath ensures Windows UNC paths are properly formatted for os.Open().
