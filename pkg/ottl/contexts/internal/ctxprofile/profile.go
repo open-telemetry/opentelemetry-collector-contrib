@@ -17,9 +17,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofilecommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
-func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func PathGetSetter[K Context](path ottlpath.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
 		return nil, ctxerror.New("nil", "nil", Name, DocRef)
 	}
@@ -146,7 +147,7 @@ func accessDuration[K Context]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessPeriodType[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func accessPeriodType[K Context](path ottlpath.Path[K]) (ottl.GetSetter[K], error) {
 	periodTypeTarget := func(tCtx K) pprofile.ValueType {
 		return tCtx.GetProfile().PeriodType()
 	}
@@ -167,7 +168,7 @@ func accessPeriod[K Context]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessSampleType[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func accessSampleType[K Context](path ottlpath.Path[K]) (ottl.GetSetter[K], error) {
 	sampleTypeTarget := func(tCtx K) pprofile.ValueType {
 		return tCtx.GetProfile().SampleType()
 	}

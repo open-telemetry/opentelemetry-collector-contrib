@@ -11,12 +11,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
 type valueTypeSource[K Context] = func(ctx K) pprofile.ValueType
 
 func valueTypeGetterSetter[K Context](
-	path ottl.Path[K],
+	path ottlpath.Path[K],
 	source valueTypeSource[K],
 ) (ottl.GetSetter[K], error) {
 	if path == nil || path.Next() == nil {
@@ -34,7 +35,7 @@ func valueTypeGetterSetter[K Context](
 	}
 }
 
-func accessValueType[K Context](path ottl.Path[K], getValueType valueTypeSource[K]) ottl.GetSetter[K] {
+func accessValueType[K Context](path ottlpath.Path[K], getValueType valueTypeSource[K]) ottl.GetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return getValueType(tCtx), nil
@@ -50,7 +51,7 @@ func accessValueType[K Context](path ottl.Path[K], getValueType valueTypeSource[
 	}
 }
 
-func accessValueTypeType[K Context](path ottl.Path[K], getValueType valueTypeSource[K]) ottl.GetSetter[K] {
+func accessValueTypeType[K Context](path ottlpath.Path[K], getValueType valueTypeSource[K]) ottl.GetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			valueType := getValueType(tCtx)
@@ -68,7 +69,7 @@ func accessValueTypeType[K Context](path ottl.Path[K], getValueType valueTypeSou
 	}
 }
 
-func accessValueTypeUnit[K Context](path ottl.Path[K], getValueType valueTypeSource[K]) ottl.GetSetter[K] {
+func accessValueTypeUnit[K Context](path ottlpath.Path[K], getValueType valueTypeSource[K]) ottl.GetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			valueType := getValueType(tCtx)
@@ -87,7 +88,7 @@ func accessValueTypeUnit[K Context](path ottl.Path[K], getValueType valueTypeSou
 }
 
 func getValueTypeString[K Context](
-	path ottl.Path[K],
+	path ottlpath.Path[K],
 	dict pprofile.ProfilesDictionary,
 	currIndex int32,
 ) (string, error) {
@@ -98,7 +99,7 @@ func getValueTypeString[K Context](
 }
 
 func setValueTypeString[K Context](
-	path ottl.Path[K],
+	path ottlpath.Path[K],
 	dict pprofile.ProfilesDictionary,
 	currIndex int32,
 	val any,

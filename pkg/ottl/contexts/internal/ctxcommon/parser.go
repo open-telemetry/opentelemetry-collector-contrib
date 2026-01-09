@@ -9,6 +9,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
 func NewParser[K any](
@@ -39,7 +40,7 @@ func PathExpressionParser[K any](
 	cacheGetter ctxcache.Getter[K],
 	contextParsers map[string]ottl.PathExpressionParser[K],
 ) ottl.PathExpressionParser[K] {
-	return func(path ottl.Path[K]) (ottl.GetSetter[K], error) {
+	return func(path ottlpath.Path[K]) (ottl.GetSetter[K], error) {
 		if path == nil {
 			return nil, ctxerror.New("nil", "nil", contextName, contextDocRef)
 		}

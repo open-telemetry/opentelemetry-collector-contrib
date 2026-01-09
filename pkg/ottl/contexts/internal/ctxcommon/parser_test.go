@@ -14,11 +14,12 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
 func TestNewParser(t *testing.T) {
 	functions := map[string]ottl.Factory[testContext]{}
-	pathExpressionParser := func(_ ottl.Path[testContext]) (ottl.GetSetter[testContext], error) {
+	pathExpressionParser := func(_ ottlpath.Path[testContext]) (ottl.GetSetter[testContext], error) {
 		return &testGetSetter{value: "test"}, nil
 	}
 	enumParser := func(*ottl.EnumSymbol) (*ottl.Enum, error) {
@@ -38,7 +39,7 @@ func TestNewParser(t *testing.T) {
 
 func TestNewParserWithOptions(t *testing.T) {
 	functions := map[string]ottl.Factory[testContext]{}
-	pathExpressionParser := func(_ ottl.Path[testContext]) (ottl.GetSetter[testContext], error) {
+	pathExpressionParser := func(ottlpath.Path[testContext]) (ottl.GetSetter[testContext], error) {
 		return &testGetSetter{value: "test"}, nil
 	}
 	enumParser := func(*ottl.EnumSymbol) (*ottl.Enum, error) {
@@ -74,10 +75,10 @@ func TestPathExpressionParser(t *testing.T) {
 	}
 
 	contextParsers := map[string]ottl.PathExpressionParser[testContext]{
-		contextName: func(_ ottl.Path[testContext]) (ottl.GetSetter[testContext], error) {
+		contextName: func(ottlpath.Path[testContext]) (ottl.GetSetter[testContext], error) {
 			return &testGetSetter{value: "test-context-value"}, nil
 		},
-		otherContextName: func(_ ottl.Path[testContext]) (ottl.GetSetter[testContext], error) {
+		otherContextName: func(ottlpath.Path[testContext]) (ottl.GetSetter[testContext], error) {
 			return &testGetSetter{value: "other-context-value"}, nil
 		},
 	}
@@ -91,7 +92,7 @@ func TestPathExpressionParser(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		path           ottl.Path[testContext]
+		path           ottlpath.Path[testContext]
 		skipValueCheck bool
 		expectedType   string
 		expectedValue  any
@@ -224,7 +225,7 @@ type testContext struct{}
 type testPath struct {
 	ctx      string
 	pathName string
-	nextPath ottl.Path[testContext]
+	nextPath ottlpath.Path[testContext]
 	pathStr  string
 }
 
@@ -236,11 +237,11 @@ func (p testPath) Name() string {
 	return p.pathName
 }
 
-func (p testPath) Next() ottl.Path[testContext] {
+func (p testPath) Next() ottlpath.Path[testContext] {
 	return p.nextPath
 }
 
-func (testPath) Keys() []ottl.Key[testContext] {
+func (testPath) Keys() []ottlpath.Key[testContext] {
 	return nil
 }
 

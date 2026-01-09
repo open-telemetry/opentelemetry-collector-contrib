@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -211,7 +211,7 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 
 	t.Run("non-existing-key", func(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
-			KeySlice: []ottl.Key[*mockAttributeContext]{
+			KeySlice: []ottlpath.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
 					S: ottltest.Strp("key1"),
 				},
@@ -225,7 +225,7 @@ func TestAccessAttributesKey_Getter(t *testing.T) {
 
 	t.Run("existing-key", func(t *testing.T) {
 		path := pathtest.Path[*mockAttributeContext]{
-			KeySlice: []ottl.Key[*mockAttributeContext]{
+			KeySlice: []ottlpath.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
 					S: ottltest.Strp("foo"),
 				},
@@ -283,7 +283,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		originalExisting2Value := existingAttr2.Value().Int()
 
 		path := pathtest.Path[*mockAttributeContext]{
-			KeySlice: []ottl.Key[*mockAttributeContext]{
+			KeySlice: []ottlpath.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
 					S: ottltest.Strp("key1"),
 				},
@@ -328,7 +328,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		originalFooValue := attr.Value().Str()
 
 		path := pathtest.Path[*mockAttributeContext]{
-			KeySlice: []ottl.Key[*mockAttributeContext]{
+			KeySlice: []ottlpath.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
 					S: ottltest.Strp("foo"),
 				},
@@ -402,7 +402,7 @@ func TestAccessAttributesKey_Setter(t *testing.T) {
 		}
 
 		path := pathtest.Path[*mockAttributeContext]{
-			KeySlice: []ottl.Key[*mockAttributeContext]{
+			KeySlice: []ottlpath.Key[*mockAttributeContext]{
 				&pathtest.Key[*mockAttributeContext]{
 					S: ottltest.Strp("bazinga"),
 				},

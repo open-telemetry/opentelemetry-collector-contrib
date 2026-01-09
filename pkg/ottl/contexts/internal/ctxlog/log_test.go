@@ -13,9 +13,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -57,7 +57,7 @@ func TestPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     ottl.Path[*testContext]
+		path     ottlpath.Path[*testContext]
 		orig     any
 		newVal   any
 		modified func(log plog.LogRecord)
@@ -202,7 +202,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "body slice index",
 			path: &pathtest.Path[*testContext]{
 				N: "body",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						I: ottltest.Intp(0),
 					},
@@ -219,7 +219,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "body.map[key]",
 			path: &pathtest.Path[*testContext]{
 				N: "body",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("key"),
 					},
@@ -258,7 +258,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes.key",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("str"),
 					},

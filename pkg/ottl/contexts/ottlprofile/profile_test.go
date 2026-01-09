@@ -13,9 +13,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -43,7 +43,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     ottl.Path[TransformContext]
+		path     ottlpath.Path[TransformContext]
 		orig     any
 		newVal   any
 		modified func(profile pprofile.Profile, cache pcommon.Map)
@@ -85,7 +85,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "cache access",
 			path: &pathtest.Path[TransformContext]{
 				N: "cache",
-				KeySlice: []ottl.Key[TransformContext]{
+				KeySlice: []ottlpath.Key[TransformContext]{
 					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("temp"),
 					},
@@ -150,14 +150,14 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     ottl.Path[TransformContext]
+		path     ottlpath.Path[TransformContext]
 		expected any
 	}{
 		{
 			name: "resource",
 			path: &pathtest.Path[TransformContext]{N: "resource", NextPath: &pathtest.Path[TransformContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[TransformContext]{
+				KeySlice: []ottlpath.Key[TransformContext]{
 					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("foo"),
 					},
@@ -167,7 +167,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 		{
 			name: "resource with context",
-			path: &pathtest.Path[TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[TransformContext]{
+			path: &pathtest.Path[TransformContext]{C: "resource", N: "attributes", KeySlice: []ottlpath.Key[TransformContext]{
 				&pathtest.Key[TransformContext]{
 					S: ottltest.Strp("foo"),
 				},

@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
 func TestPathGetSetter(t *testing.T) {
@@ -22,7 +22,7 @@ func TestPathGetSetter(t *testing.T) {
 	tests := []struct {
 		path string
 		val  any
-		keys []ottl.Key[*profileSampleContext]
+		keys []ottlpath.Key[*profileSampleContext]
 	}{
 		{
 			path: "values",

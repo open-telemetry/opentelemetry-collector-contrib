@@ -13,9 +13,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -36,7 +36,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		path      ottl.Path[*testContext]
+		path      ottlpath.Path[*testContext]
 		orig      any
 		newVal    any
 		modified  func(pmetric.NumberDataPoint)
@@ -157,7 +157,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("str"),
 					},
@@ -173,7 +173,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes bool",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("bool"),
 					},
@@ -189,7 +189,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes int",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("int"),
 					},
@@ -205,7 +205,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes float",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("double"),
 					},
@@ -221,7 +221,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes bytes",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("bytes"),
 					},
@@ -237,7 +237,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes array string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_str"),
 					},
@@ -256,7 +256,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes array bool",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_bool"),
 					},
@@ -275,7 +275,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes array int",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_int"),
 					},
@@ -294,7 +294,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes array float",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_float"),
 					},
@@ -313,7 +313,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes array bytes",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_bytes"),
 					},
@@ -332,7 +332,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes pcommon.Map",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("pMap"),
 					},
@@ -353,7 +353,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes map[string]any",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("map"),
 					},
@@ -374,7 +374,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes nested",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("slice"),
 					},
@@ -400,7 +400,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes nested new values",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("new"),
 					},
@@ -431,7 +431,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[*testContext])
 		pathWithContext.C = ctxdatapoint.Name
-		testWithContext.path = ottl.Path[*testContext](&pathWithContext)
+		testWithContext.path = ottlpath.Path[*testContext](&pathWithContext)
 		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
@@ -493,7 +493,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     ottl.Path[*testContext]
+		path     ottlpath.Path[*testContext]
 		orig     any
 		newVal   any
 		modified func(pmetric.HistogramDataPoint)
@@ -634,7 +634,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("str"),
 					},
@@ -650,7 +650,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes bool",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("bool"),
 					},
@@ -666,7 +666,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes int",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("int"),
 					},
@@ -682,7 +682,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes float",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("double"),
 					},
@@ -698,7 +698,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes bytes",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("bytes"),
 					},
@@ -714,7 +714,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes array string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_str"),
 					},
@@ -733,7 +733,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes array bool",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_bool"),
 					},
@@ -752,7 +752,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes array int",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_int"),
 					},
@@ -771,7 +771,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes array float",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_float"),
 					},
@@ -790,7 +790,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes array bytes",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_bytes"),
 					},
@@ -809,7 +809,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes pcommon.Map",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("pMap"),
 					},
@@ -830,7 +830,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes map[string]any",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("map"),
 					},
@@ -851,7 +851,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes nested",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("slice"),
 					},
@@ -877,7 +877,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes nested new values",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("new"),
 					},
@@ -908,7 +908,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[*testContext])
 		pathWithContext.C = ctxdatapoint.Name
-		testWithContext.path = ottl.Path[*testContext](&pathWithContext)
+		testWithContext.path = ottlpath.Path[*testContext](&pathWithContext)
 		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
@@ -976,7 +976,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     ottl.Path[*testContext]
+		path     ottlpath.Path[*testContext]
 		orig     any
 		newVal   any
 		modified func(pmetric.ExponentialHistogramDataPoint)
@@ -1195,7 +1195,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("str"),
 					},
@@ -1211,7 +1211,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes bool",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("bool"),
 					},
@@ -1227,7 +1227,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes int",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("int"),
 					},
@@ -1243,7 +1243,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes float",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("double"),
 					},
@@ -1259,7 +1259,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes bytes",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("bytes"),
 					},
@@ -1275,7 +1275,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes array string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_str"),
 					},
@@ -1294,7 +1294,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes array bool",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_bool"),
 					},
@@ -1313,7 +1313,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes array int",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_int"),
 					},
@@ -1332,7 +1332,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes array float",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_float"),
 					},
@@ -1351,7 +1351,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes array bytes",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_bytes"),
 					},
@@ -1370,7 +1370,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes pcommon.Map",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("pMap"),
 					},
@@ -1391,7 +1391,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes map[string]any",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("map"),
 					},
@@ -1412,7 +1412,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes nested",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("slice"),
 					},
@@ -1438,7 +1438,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes nested new values",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("new"),
 					},
@@ -1469,7 +1469,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[*testContext])
 		pathWithContext.C = ctxdatapoint.Name
-		testWithContext.path = ottl.Path[*testContext](&pathWithContext)
+		testWithContext.path = ottlpath.Path[*testContext](&pathWithContext)
 		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
@@ -1537,7 +1537,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     ottl.Path[*testContext]
+		path     ottlpath.Path[*testContext]
 		orig     any
 		newVal   any
 		modified func(pmetric.SummaryDataPoint)
@@ -1656,7 +1656,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("str"),
 					},
@@ -1672,7 +1672,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes bool",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("bool"),
 					},
@@ -1688,7 +1688,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes int",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("int"),
 					},
@@ -1704,7 +1704,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes float",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("double"),
 					},
@@ -1720,7 +1720,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes bytes",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("bytes"),
 					},
@@ -1736,7 +1736,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes array string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_str"),
 					},
@@ -1755,7 +1755,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes array bool",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_bool"),
 					},
@@ -1774,7 +1774,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes array int",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_int"),
 					},
@@ -1793,7 +1793,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes array float",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_float"),
 					},
@@ -1812,7 +1812,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes array bytes",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_bytes"),
 					},
@@ -1831,7 +1831,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes pcommon.Map",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("pMap"),
 					},
@@ -1852,7 +1852,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes map[string]any",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("map"),
 					},
@@ -1873,7 +1873,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes nested",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("slice"),
 					},
@@ -1899,7 +1899,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes nested new values",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("new"),
 					},
@@ -1930,7 +1930,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[*testContext])
 		pathWithContext.C = ctxdatapoint.Name
-		testWithContext.path = ottl.Path[*testContext](&pathWithContext)
+		testWithContext.path = ottlpath.Path[*testContext](&pathWithContext)
 		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {

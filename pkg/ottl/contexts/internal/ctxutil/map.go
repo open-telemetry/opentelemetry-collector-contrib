@@ -10,10 +10,10 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
-func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.Key[K]) (any, error) {
+func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottlpath.Key[K]) (any, error) {
 	if len(keys) == 0 {
 		return nil, errors.New("cannot get map value without keys")
 	}
@@ -31,7 +31,7 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 	return getIndexableValue[K](ctx, tCtx, val, keys[1:])
 }
 
-func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.Key[K], val any) error {
+func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottlpath.Key[K], val any) error {
 	if len(keys) == 0 {
 		return errors.New("cannot set map value without keys")
 	}
@@ -48,7 +48,7 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 	return SetIndexableValue[K](ctx, tCtx, currentValue, val, keys[1:])
 }
 
-func GetMapKeyName[K any](ctx context.Context, tCtx K, key ottl.Key[K]) (*string, error) {
+func GetMapKeyName[K any](ctx context.Context, tCtx K, key ottlpath.Key[K]) (*string, error) {
 	resolvedKey, err := key.String(ctx, tCtx)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func GetMapKeyName[K any](ctx context.Context, tCtx K, key ottl.Key[K]) (*string
 	return resolvedKey, nil
 }
 
-func FetchValueFromExpression[K any, T int64 | string](ctx context.Context, tCtx K, key ottl.Key[K]) (*T, error) {
+func FetchValueFromExpression[K any, T int64 | string](ctx context.Context, tCtx K, key ottlpath.Key[K]) (*T, error) {
 	p, err := key.ExpressionGetter(ctx, tCtx)
 	if err != nil {
 		return nil, err

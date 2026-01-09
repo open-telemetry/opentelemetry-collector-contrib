@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -26,7 +26,7 @@ func TestPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     ottl.Path[*testContext]
+		path     ottlpath.Path[*testContext]
 		orig     any
 		newVal   any
 		modified func(resource pcommon.Resource)
@@ -68,7 +68,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("str"),
 					},
@@ -84,7 +84,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes bool",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("bool"),
 					},
@@ -100,7 +100,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes int",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("int"),
 					},
@@ -116,7 +116,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes float",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("double"),
 					},
@@ -132,7 +132,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes bytes",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("bytes"),
 					},
@@ -148,7 +148,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes array empty",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_empty"),
 					},
@@ -167,7 +167,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes array string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_str"),
 					},
@@ -186,7 +186,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes array bool",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_bool"),
 					},
@@ -205,7 +205,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes array int",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_int"),
 					},
@@ -224,7 +224,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes array float",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_float"),
 					},
@@ -243,7 +243,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes array bytes",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_bytes"),
 					},
@@ -262,7 +262,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes nested",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("slice"),
 					},
@@ -288,7 +288,7 @@ func TestPathGetSetter(t *testing.T) {
 			name: "attributes nested new values",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*testContext]{
+				KeySlice: []ottlpath.Key[*testContext]{
 					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("new"),
 					},

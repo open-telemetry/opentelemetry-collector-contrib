@@ -13,12 +13,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
 func TestValueTypeGetterSetter(t *testing.T) {
 	tests := []struct {
 		name      string
-		path      ottl.Path[*mockValueTypeContext]
+		path      ottlpath.Path[*mockValueTypeContext]
 		wantErr   bool
 		checkFunc func(t *testing.T, getSetter any, err error)
 	}{
