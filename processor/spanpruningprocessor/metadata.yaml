@@ -54,6 +54,42 @@ telemetry:
       stability: { level: development }
       histogram: { value_type: double }
 
+    processor_spanpruning_leaf_attribute_diversity_loss:
+      enabled: true
+      description: Attribute values lost due to diversity per leaf aggregation
+      unit: "{values}"
+      stability: { level: development }
+      histogram:
+        value_type: int
+        bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
+
+    processor_spanpruning_leaf_attribute_loss:
+      enabled: true
+      description: Attribute keys lost due to absence per leaf aggregation
+      unit: "{keys}"
+      stability: { level: development }
+      histogram:
+        value_type: int
+        bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
+
+    processor_spanpruning_parent_attribute_diversity_loss:
+      enabled: true
+      description: Attribute values lost due to diversity per parent aggregation
+      unit: "{values}"
+      stability: { level: development }
+      histogram:
+        value_type: int
+        bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
+
+    processor_spanpruning_parent_attribute_loss:
+      enabled: true
+      description: Attribute keys lost due to absence per parent aggregation
+      unit: "{keys}"
+      stability: { level: development }
+      histogram:
+        value_type: int
+        bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
+
 tests:
   config:
     group_by_attributes:

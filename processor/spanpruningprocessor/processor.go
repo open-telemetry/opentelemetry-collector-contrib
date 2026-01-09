@@ -133,7 +133,7 @@ func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInf
 	}
 
 	// Phase 1: Analyze aggregations (bottom-up)
-	aggregationGroups := p.analyzeAggregationsWithTree(tree)
+	aggregationGroups := p.analyzeAggregationsWithTree(ctx, tree)
 	if len(aggregationGroups) == 0 {
 		return nil
 	}
@@ -157,7 +157,7 @@ func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInf
 // analyzeAggregationsWithTree performs Phase 1 using tree structure
 // Uses markedForRemoval field on nodes instead of separate map for better performance
 // Optimized to walk up from marked nodes instead of scanning all nodes
-func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[string]aggregationGroup {
+func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, tree *traceTree) map[string]aggregationGroup {
 	// Step 1: Get pre-computed leaf nodes
 	leafNodes := tree.getLeaves()
 	if len(leafNodes) == 0 {
@@ -176,9 +176,23 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 
 	for groupKey, nodes := range leafGroups {
 		if len(nodes) >= p.config.MinSpansToAggregate {
+			// Analyze attribute loss for leaf aggregation
+			lossInfo := analyzeAttributeLoss(nodes)
+
+			// Record telemetry for leaf attribute loss (always record to track 0 values)
+			p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(
+				ctx,
+				int64(len(lossInfo.diverse)),
+			)
+			p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(
+				ctx,
+				int64(len(lossInfo.missing)),
+			)
+
 			aggregationGroups[groupKey] = aggregationGroup{
-				nodes: nodes,
-				depth: 0,
+				nodes:    nodes,
+				depth:    0,
+				lossInfo: lossInfo,
 			}
 			// Mark nodes for removal using field instead of map
 			for _, node := range nodes {
@@ -225,9 +239,23 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 		markedNodes = markedNodes[:0] // reset for this round
 		for parentKey, nodes := range parentGroups {
 			if len(nodes) >= 2 {
+				// Analyze attribute loss for parent aggregation
+				lossInfo := analyzeAttributeLoss(nodes)
+
+				// Record telemetry for parent attribute loss (always record to track 0 values)
+				p.telemetryBuilder.ProcessorSpanpruningParentAttributeDiversityLoss.Record(
+					ctx,
+					int64(len(lossInfo.diverse)),
+				)
+				p.telemetryBuilder.ProcessorSpanpruningParentAttributeLoss.Record(
+					ctx,
+					int64(len(lossInfo.missing)),
+				)
+
 				aggregationGroups[parentKey] = aggregationGroup{
-					nodes: nodes,
-					depth: depth,
+					nodes:    nodes,
+					depth:    depth,
+					lossInfo: lossInfo,
 				}
 				// Mark parent nodes for removal
 				for _, node := range nodes {
