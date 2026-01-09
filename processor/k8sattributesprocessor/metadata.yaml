@@ -28,6 +28,10 @@ resource_attributes:
     description: Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name.
     type: string
     enabled: true
+  container.image.tags:
+    description: Container image tags.
+    type: slice
+    enabled: true
   k8s.cluster.uid:
     description: Gives cluster uid identified with kube-system namespace
     type: string
