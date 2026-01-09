@@ -253,7 +253,7 @@ type RetrySettings struct {
 }
 
 type MappingsSettings struct {
-	// Mode configures the default document mapping mode.
+	// Mode is now deprecated and ignored. The default mapping mode is "otel".
 	//
 	// The mode may be overridden in two ways:
 	//  - by the client metadata key X-Elastic-Mapping-Mode, if specified
