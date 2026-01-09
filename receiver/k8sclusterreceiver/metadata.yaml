@@ -512,6 +512,8 @@ metrics:
     enabled: true
     description: Amount of cpu allocatable on the node
     unit: "{cpu}"
+    stability:
+      level: development
     sum:
       monotonic: false
       value_type: double
@@ -519,6 +521,8 @@ metrics:
     enabled: true
     description: Amount of ephemeral-storage allocatable on the node
     unit: "By"
+    stability:
+      level: development
     sum:
       monotonic: false
       value_type: int
@@ -526,13 +530,17 @@ metrics:
     enabled: true
     description: Amount of memory allocatable on the node
     unit: "By"
+    stability:
+      level: development
     sum:
       monotonic: false
       value_type: int
-  k8s.node.pods.allocatable:
+  k8s.node.pod.allocatable:
     enabled: true
     description: Amount of pods allocatable on the node
     unit: "{pod}"
+    stability:
+      level: development
     sum:
       monotonic: false
       value_type: int

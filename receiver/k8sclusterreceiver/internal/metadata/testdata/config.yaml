@@ -67,7 +67,7 @@ all_set:
       enabled: true
     k8s.node.memory.allocatable:
       enabled: true
-    k8s.node.pods.allocatable:
+    k8s.node.pod.allocatable:
       enabled: true
     k8s.pod.phase:
       enabled: true
@@ -250,7 +250,7 @@ none_set:
       enabled: false
     k8s.node.memory.allocatable:
       enabled: false
-    k8s.node.pods.allocatable:
+    k8s.node.pod.allocatable:
       enabled: false
     k8s.pod.phase:
       enabled: false

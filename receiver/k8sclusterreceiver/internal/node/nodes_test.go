@@ -76,7 +76,7 @@ func TestNodeAllocatableNamespaceMetrics(t *testing.T) {
 	mbc.Metrics.K8sNodeCPUAllocatable.Enabled = true
 	mbc.Metrics.K8sNodeMemoryAllocatable.Enabled = true
 	mbc.Metrics.K8sNodeEphemeralStorageAllocatable.Enabled = true
-	mbc.Metrics.K8sNodePodsAllocatable.Enabled = true
+	mbc.Metrics.K8sNodePodAllocatable.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, n, ts)
 	m := mb.Emit()

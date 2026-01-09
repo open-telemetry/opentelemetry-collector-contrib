@@ -62,7 +62,7 @@ type MetricsConfig struct {
 	K8sNodeCPUAllocatable               MetricConfig `mapstructure:"k8s.node.cpu.allocatable"`
 	K8sNodeEphemeralStorageAllocatable  MetricConfig `mapstructure:"k8s.node.ephemeral_storage.allocatable"`
 	K8sNodeMemoryAllocatable            MetricConfig `mapstructure:"k8s.node.memory.allocatable"`
-	K8sNodePodsAllocatable              MetricConfig `mapstructure:"k8s.node.pods.allocatable"`
+	K8sNodePodAllocatable               MetricConfig `mapstructure:"k8s.node.pod.allocatable"`
 	K8sPodPhase                         MetricConfig `mapstructure:"k8s.pod.phase"`
 	K8sPodStatusReason                  MetricConfig `mapstructure:"k8s.pod.status_reason"`
 	K8sReplicasetAvailable              MetricConfig `mapstructure:"k8s.replicaset.available"`
@@ -182,7 +182,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sNodeMemoryAllocatable: MetricConfig{
 			Enabled: true,
 		},
-		K8sNodePodsAllocatable: MetricConfig{
+		K8sNodePodAllocatable: MetricConfig{
 			Enabled: true,
 		},
 		K8sPodPhase: MetricConfig{

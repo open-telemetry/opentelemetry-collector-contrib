@@ -86,10 +86,10 @@ Example:
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
-**Note** that with the introduction of the [semconv.k8s.enableStable](#semconvk8senablestable) feature gate, the metrics for the allocatable resource types
-(`k8s.node.cpu.allocatable`, `k8s.node.ephemeral_storage.allocatable`, `k8s.node.memory.allocatable`, `k8s.node.pods.allocatable`) are enabled/disabled via the metrics section, and are represented by up/down counters, rather than gauges.
-To activate the feature flag, start the collector with `--feature-gates=+semconv.k8s.enableStable`.
-To disable the old representation of the allocatable metrics (`k8s.node.allocatable_cpu`, `k8s.node.allocatable_ephemeral_storage`, `k8s.node.allocatable_memory`, `k8s.node.allocatable_pods`) disable the [semconv.k8s.disableLegacy](#semconvk8sdisablelegacy) feature flag with `--feature-gates=-semconv.k8s.disableLegacy`
+**Note** that with the introduction of the [semconv.k8s.receiver.k8scluster.enableStable](#semconvk8sreceiverk8sclusterenablestable) feature gate, the metrics for the allocatable resource types
+(`k8s.node.cpu.allocatable`, `k8s.node.ephemeral_storage.allocatable`, `k8s.node.memory.allocatable`, `k8s.node.pod.allocatable`) are enabled/disabled via the metrics section, and are represented by up/down counters, rather than gauges.
+To activate the feature flag, start the collector with `--feature-gates=+semconv.k8s.receiver.k8scluster.enableStable`.
+To disable the old representation of the allocatable metrics (`k8s.node.allocatable_cpu`, `k8s.node.allocatable_ephemeral_storage`, `k8s.node.allocatable_memory`, `k8s.node.allocatable_pods`) disable the [semconv.k8s.receiver.k8scluster.disableLegacy](#semconvk8sreceiverk8sclusterdisablelegacy) feature flag with `--feature-gates=-semconv.k8s.receiver.k8scluster.disableLegacy`
 
 ### k8s_leader_elector
 Provide name of the k8s leader elector extension defined in config. This allows multiple instances of k8s cluster
@@ -453,9 +453,9 @@ Add the following rules to your ClusterRole:
 
 ## Feature Gates
 
-### `semconv.k8s.enableStable`
+### `semconv.k8s.receiver.k8scluster.enableStable`
 
-The `semconv.k8s.enableStable` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the SemConv valid format of the node allocatable metrics reported by the receiver.
+The `semconv.k8s.receiver.k8scluster.enableStable` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the SemConv valid format of the node allocatable metrics reported by the receiver.
 The feature gate is in `alpha` stage, which means it is disabled by default.
 
 If enabled, the SemConv valid format of the node allocatable metrics are reported (if enabled via the metrics section):
@@ -463,11 +463,11 @@ If enabled, the SemConv valid format of the node allocatable metrics are reporte
 - `k8s.node.cpu.allocatable`
 - `k8s.node.ephemeral_storage.allocatable`
 - `k8s.node.memory.allocatable`
-- `k8s.node.pods.allocatable`
+- `k8s.node.pod.allocatable`
 
-### `semconv.k8s.disableLegacy`
+### `semconv.k8s.receiver.k8scluster.disableLegacy`
 
-The `semconv.k8s.disableLegacy` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) disables the old, non-SemConv valid format of the node allocatable metrics reported by the receiver.
+The `semconv.k8s.receiver.k8scluster.disableLegacy` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) disables the old, non-SemConv valid format of the node allocatable metrics reported by the receiver.
 The feature gate is in `alpha` stage, which means it is disabled by default.
 
 If disabled, the old format of the node allocatable metrics are reported:
