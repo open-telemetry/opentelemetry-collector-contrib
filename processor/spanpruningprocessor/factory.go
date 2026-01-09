@@ -29,7 +29,6 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		MinSpansToAggregate:        5,
 		MaxParentDepth:             1,
-		AggregationSpanNameSuffix:  "_aggregated",
 		AggregationAttributePrefix: "aggregation.",
 		AggregationHistogramBuckets: []time.Duration{
 			5 * time.Millisecond,

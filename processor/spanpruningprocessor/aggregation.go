@@ -121,7 +121,7 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 	newSpan := scopeSpans.Spans().AppendEmpty()
 
 	// Copy basic properties from template
-	newSpan.SetName(templateSpan.Name() + p.config.AggregationSpanNameSuffix)
+	newSpan.SetName(templateSpan.Name())
 	newSpan.SetTraceID(templateSpan.TraceID())
 	newSpan.SetSpanID(group.summarySpanID)
 	newSpan.SetParentSpanID(parentSpanID)
@@ -139,6 +139,7 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 
 	// Add aggregation statistics as attributes
 	prefix := p.config.AggregationAttributePrefix
+	newSpan.Attributes().PutBool(prefix+"is_summary", true)
 	newSpan.Attributes().PutInt(prefix+"span_count", data.count)
 	newSpan.Attributes().PutInt(prefix+"duration_min_ns", int64(data.minDuration))
 	newSpan.Attributes().PutInt(prefix+"duration_max_ns", int64(data.maxDuration))
