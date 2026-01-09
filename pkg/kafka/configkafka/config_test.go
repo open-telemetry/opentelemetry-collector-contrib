@@ -118,6 +118,13 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"conn_idle_timeout": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.ConnIdleTimeout = 5 * time.Minute
+				return cfg
+			}(),
+		},
 
 		// Invalid configurations
 		"brokers_required": {

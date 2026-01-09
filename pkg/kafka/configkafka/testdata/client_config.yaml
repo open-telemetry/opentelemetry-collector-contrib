@@ -98,3 +98,6 @@ kafka/foo:
 
 kafka/not_use_leader_epoch:
   use_leader_epoch: false
+
+kafka/connection_idle_timeout:
+  connection_idle_timeout: 5m

@@ -76,14 +76,21 @@ type ClientConfig struct {
 	//
 	// NOTE: this is experimental and may be removed in a future release.
 	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
+
+	// ConnectionIdleTimeout specifies the time after which idle connections are closed.
+	//
+	// Note: It may take up to 2x the configured time before a connection is actually closed.
+	// This setting is applicable for franz-go, while ignored in sarama because it does not close idle connections.
+	ConnectionIdleTimeout time.Duration `mapstructure:"connection_idle_timeout"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		Brokers:        []string{"localhost:9092"},
-		ClientID:       "otel-collector",
-		Metadata:       NewDefaultMetadataConfig(),
-		UseLeaderEpoch: true,
+		Brokers:               []string{"localhost:9092"},
+		ClientID:              "otel-collector",
+		Metadata:              NewDefaultMetadataConfig(),
+		UseLeaderEpoch:        true,
+		ConnectionIdleTimeout: 4 * time.Minute,
 	}
 }
 
@@ -95,6 +102,9 @@ func (c ClientConfig) Validate() error {
 		if _, err := sarama.ParseKafkaVersion(c.ProtocolVersion); err != nil {
 			return fmt.Errorf("invalid protocol version: %w", err)
 		}
+	}
+	if c.ConnectionIdleTimeout <= 0 {
+		return fmt.Errorf("connection_idle_timeout (%s) must be positive", c.ConnectionIdleTimeout)
 	}
 	return nil
 }
