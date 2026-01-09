@@ -190,7 +190,7 @@ func Test_lexer(t *testing.T) {
 			{"Punct", "["},
 			{"String", `"foo"`},
 			{"Punct", "]"},
-		}},		
+		}},
 		{"Float variations with trailing dot", "1. 2. 3.", false, []result{
 			{"Float", "1."},
 			{"Float", "2."},
