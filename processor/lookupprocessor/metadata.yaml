@@ -4,6 +4,6 @@ status:
   class: processor
   stability:
     development: [logs]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [jsvd, dehaansa, VihasMakwana]
