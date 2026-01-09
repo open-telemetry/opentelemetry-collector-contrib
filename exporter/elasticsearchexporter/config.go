@@ -253,6 +253,16 @@ type RetrySettings struct {
 }
 
 type MappingsSettings struct {
+	// Mode configures the default document mapping mode.
+	//
+	// The mode may be overridden in two ways:
+	//  - by the client metadata key X-Elastic-Mapping-Mode, if specified
+	//  - by the scope attribute elastic.mapping.mode, if specified
+	//
+	// The order of precedence is:
+	//   scope attribute > client metadata > default mode.
+	Mode string `mapstructure:"mode"`
+
 	// AllowedModes controls the allowed document mapping modes
 	// specified through X-Elastic-Mapping-Mode client metadata.
 	//
@@ -483,6 +493,9 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
 		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior
 		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
+	}
+	if canonicalMappingModeName(cfg.Mapping.Mode) != MappingOTel.String() {
+		logger.Warn("mapping::mode config option is deprecated and ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. See the README for migration instructions.")
 	}
 	if cfg.LogsDynamicIndex.Enabled {
 		logger.Warn("logs_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
