@@ -8,11 +8,20 @@ kafka/full:
     enable: false
     interval: 10m
   min_fetch_size: 10
-  default_fetch_size: 1024
   max_fetch_size: 4096
   max_fetch_wait: 1s
   max_partition_fetch_size: 4096
+  group_rebalance_strategy: cooperative-sticky
+kafka/zero_min_fetch_size:
+  min_fetch_size: 0
+  max_fetch_size: 1048576
 
 # Invalid configurations
 kafka/invalid_initial_offset:
   initial_offset: middle
+kafka/invalid_fetch_size:
+  min_fetch_size: 1000
+  max_fetch_size: 100
+kafka/negative_min_fetch_size:
+  min_fetch_size: -100
+  max_fetch_size: 1048576

@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	vultrmeta "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/vultr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -77,14 +76,14 @@ func TestVultrDetector_Detect_OK(t *testing.T) {
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, conventions.SchemaURL, schemaURL)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	got := res.Attributes().AsRaw()
 	want := map[string]any{
-		string(conventions.CloudProviderKey): TypeStr,
-		string(conventions.CloudRegionKey):   strings.ToLower(region),
-		string(conventions.HostIDKey):        v2ID,
-		string(conventions.HostNameKey):      hostName,
+		"cloud.provider": TypeStr,
+		"cloud.region":   strings.ToLower(region),
+		"host.id":        v2ID,
+		"host.name":      hostName,
 	}
 	assert.Equal(t, want, got)
 }

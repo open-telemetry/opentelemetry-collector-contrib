@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-github/v79/github"
+	"github.com/google/go-github/v81/github"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -99,7 +99,7 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 	router.HandleFunc(gtr.cfg.WebHook.Path, gtr.handleReq)
 
 	// webhook server standup and configuration
-	gtr.server, err = gtr.cfg.WebHook.ToServer(ctx, host, gtr.settings.TelemetrySettings, router)
+	gtr.server, err = gtr.cfg.WebHook.ToServer(ctx, host.GetExtensions(), gtr.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}

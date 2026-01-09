@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kfake"
@@ -287,63 +286,6 @@ func acksToString(tb testing.TB, acks configkafka.RequiredAcks) string {
 	}
 }
 
-// TODO(marclop): Remove this test once we completely remove Sarama so
-// we can get rid of the sarama dependency.
-func Test_saramaCompatHasher(t *testing.T) {
-	cases := []struct {
-		name       string
-		key        []byte
-		topic      string
-		partitions int32
-	}{
-		{"empty topic", []byte("key1"), "", 3},
-		{"single partition", []byte("key2"), "topic2", 1},
-		{"large partitions", []byte("key3"), "topic3", 100},
-		{"unicode key", []byte("ключ"), "topic4", 5},
-		{"unicode topic", []byte("key5"), "тема", 4},
-		{"zero partitions", []byte("key6"), "topic6", 1},
-		{"long key", []byte("thisisaverylongkeythatexceedstypicallengths"), "topic7", 8},
-		{"long topic", []byte("key8"), "averylongtopicnamethatexceedstypicallengths", 10},
-		{"special chars key", []byte("!@#$%^&*()_+"), "topic9", 7},
-		{"case sensitivity", []byte("Key11"), "Topic11", 11},
-		{"case sensitivity 2", []byte("key11"), "topic11", 11},
-		{"max int32 partitions", []byte("key12"), "topic12", 2147483647},
-		// Original cases for coverage
-		{"orig case 1", []byte("key1"), "topic1", 3},
-		{"orig case 2", []byte("key2"), "topic2", 5},
-		{"orig case 3", []byte("key3"), "topic3", 7},
-		{"orig case 4", []byte("key4"), "topic4", 2},
-		{"orig case 5", []byte("key5"), "topic5", 4},
-		{"orig case 6", []byte("key6"), "topic6", 6},
-		{"orig case 7", []byte("key7"), "topic7", 8},
-		{"orig case 8", []byte("key8"), "topic8", 10},
-		{"orig case 9", []byte("key9"), "topic9", 1},
-		{"orig case 10", []byte("key10"), "topic10", 9},
-		{"orig case 11", []byte("key11"), "topic11", 11},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			message := "test message"
-			// Sarama result
-			r, err := sarama.NewHashPartitioner(tc.topic).Partition(&sarama.ProducerMessage{
-				Topic: tc.topic,
-				Key:   sarama.ByteEncoder(tc.key),
-				Value: sarama.ByteEncoder(message),
-			}, tc.partitions)
-			require.NoError(t, err, "failed to hash partition")
-			saramaResult := int(r)
-
-			// Franz-go result
-			franzResult := newSaramaCompatPartitioner().ForTopic(tc.topic).Partition(&kgo.Record{
-				Topic: tc.topic,
-				Key:   tc.key,
-				Value: []byte(message),
-			}, int(tc.partitions))
-			assert.Equal(t, saramaResult, franzResult, "partitioning results do not match")
-		})
-	}
-}
-
 func TestNewFranzKafkaConsumerRegex(t *testing.T) {
 	topicCount := 10
 	topics := make([]string, topicCount)
@@ -484,7 +426,7 @@ func mustNewFranzConsumerGroup(t *testing.T,
 	minAge := 10 * time.Millisecond
 	opts = append(opts, kgo.MetadataMinAge(minAge), kgo.MetadataMaxAge(minAge*2))
 	client, err := NewFranzConsumerGroup(t.Context(), clientConfig, consumerConfig,
-		topics, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
+		topics, nil, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
 	)
 	require.NoError(t, err)
 	t.Cleanup(client.Close)

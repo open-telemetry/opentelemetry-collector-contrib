@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -74,8 +75,8 @@ func (*jaegerGRPCDataSender) ProtocolName() string {
 
 // Config defines configuration for Jaeger gRPC exporter.
 type jaegerConfig struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -176,7 +177,7 @@ func (s *protoGRPCSender) start(ctx context.Context, host component.Host) error 
 	if s.clientSettings == nil {
 		return errors.New("client settings not found")
 	}
-	conn, err := s.clientSettings.ToClientConn(ctx, host, s.settings)
+	conn, err := s.clientSettings.ToClientConn(ctx, host.GetExtensions(), s.settings)
 	if err != nil {
 		return err
 	}

@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
@@ -42,6 +42,8 @@ type Input struct {
 	cancel                   context.CancelFunc
 	wg                       sync.WaitGroup
 	subscription             Subscription
+	maxEventsPerPollCycle    int
+	eventsReadInPollCycle    int
 	remote                   RemoteConfig
 	remoteSessionHandle      windows.Handle
 	startRemoteSession       func() error
@@ -166,7 +168,7 @@ func (i *Input) Start(persister operator.Persister) error {
 	if !subscriptionError {
 		i.subscription = subscription
 		i.wg.Add(1)
-		go i.readOnInterval(ctx)
+		go i.pollAndRead(ctx)
 	}
 
 	return nil
@@ -198,29 +200,45 @@ func (i *Input) Stop() error {
 	return multierr.Append(errs, i.stopRemoteSession())
 }
 
-// readOnInterval will read events with respect to the polling interval until it reaches the end of the channel.
-func (i *Input) readOnInterval(ctx context.Context) {
+func (i *Input) pollAndRead(ctx context.Context) {
 	defer i.wg.Done()
 
-	ticker := time.NewTicker(i.pollInterval)
-	defer ticker.Stop()
-
 	for {
+		i.eventsReadInPollCycle = 0
+
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
+		case <-time.After(i.pollInterval):
 			i.read(ctx)
 		}
 	}
 }
 
-// read will read events from the subscription.
 func (i *Input) read(ctx context.Context) {
-	events, actualMaxReads, err := i.subscription.Read(i.currentMaxReads)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if !i.readBatch(ctx) {
+				return
+			}
+		}
+	}
+}
+
+// readBatch will read events from the subscription
+func (i *Input) readBatch(ctx context.Context) bool {
+	maxBatchSize := i.getCurrentBatchSize()
+	if maxBatchSize <= 0 {
+		return false
+	}
+
+	events, actualMaxReads, err := i.subscription.Read(maxBatchSize)
 
 	// Update the current max reads if it changed
-	if err == nil && actualMaxReads < i.currentMaxReads {
+	if err == nil && actualMaxReads < maxBatchSize {
 		i.currentMaxReads = actualMaxReads
 		i.Logger().Debug("Encountered RPC_S_INVALID_BOUND, reduced batch size", zap.Int("current_batch_size", i.currentMaxReads), zap.Int("original_batch_size", i.maxReads))
 	}
@@ -232,7 +250,7 @@ func (i *Input) read(ctx context.Context) {
 			closeErr := i.subscription.Close()
 			if closeErr != nil {
 				i.Logger().Error("Failed to close remote subscription", zap.Error(closeErr))
-				return
+				return false
 			}
 			if err := i.stopRemoteSession(); err != nil {
 				i.Logger().Error("Failed to close remote session", zap.Error(err))
@@ -241,14 +259,14 @@ func (i *Input) read(ctx context.Context) {
 			i.subscription = NewRemoteSubscription(i.remote.Server)
 			if err := i.startRemoteSession(); err != nil {
 				i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
-				return
+				return false
 			}
 			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
 				i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
-				return
+				return false
 			}
 		}
-		return
+		return false
 	}
 
 	for n, event := range events {
@@ -263,6 +281,9 @@ func (i *Input) read(ctx context.Context) {
 		}
 		event.Close()
 	}
+
+	i.eventsReadInPollCycle += len(events)
+	return len(events) != 0
 }
 
 func (i *Input) getPublisherName(event Event) (name string, excluded bool) {
@@ -348,7 +369,7 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 	}
 
 	if i.includeLogRecordOriginal {
-		e.AddAttribute(string(semconv.LogRecordOriginalKey), eventXML.Original)
+		e.AddAttribute(string(conventions.LogRecordOriginalKey), eventXML.Original)
 	}
 
 	return i.Write(ctx, e)
@@ -385,4 +406,12 @@ func (i *Input) getPersistKey() string {
 	}
 
 	return i.channel
+}
+
+func (i *Input) getCurrentBatchSize() int {
+	if i.maxEventsPerPollCycle == 0 {
+		return i.currentMaxReads
+	}
+
+	return min(i.currentMaxReads, i.maxEventsPerPollCycle-i.eventsReadInPollCycle)
 }

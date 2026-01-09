@@ -13,6 +13,7 @@ components:
     - cmd/opampsupervisor
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
+    - cmd/schemagen
     - cmd/telemetrygen
     - connector/count
     - connector/datadog
@@ -39,7 +40,6 @@ components:
     - exporter/azuredataexplorer
     - exporter/azuremonitor
     - exporter/bmchelix
-    - exporter/carbon
     - exporter/cassandra
     - exporter/clickhouse
     - exporter/coralogix
@@ -83,6 +83,7 @@ components:
     - extension/awscloudwatchmetricstreams_encoding
     - extension/awslogs_encoding
     - extension/awsproxy
+    - extension/azure_encoding
     - extension/azureauth
     - extension/basicauth
     - extension/bearertokenauth
@@ -135,6 +136,8 @@ components:
     - internal/grpcutil
     - internal/healthcheck
     - internal/k8sconfig
+    - internal/k8sinventory
+    - internal/k8sleaderelectortest
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders
@@ -167,12 +170,12 @@ components:
     - pkg/translator/azurelogs
     - pkg/translator/jaeger
     - pkg/translator/loki
-    - pkg/translator/opencensus
     - pkg/translator/pprof
     - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
     - pkg/translator/skywalking
+    - pkg/translator/splunk
     - pkg/translator/zipkin
     - pkg/winperfcounters
     - pkg/xk8stest

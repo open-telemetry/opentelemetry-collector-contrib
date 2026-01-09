@@ -147,6 +147,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			SendDelay:           se.config.DimensionClient.SendDelay,
 			MaxBuffered:         se.config.DimensionClient.MaxBuffered,
 			MetricsConverter:    *se.converter,
+			DefaultProperties:   se.config.DefaultProperties,
 			ExcludeProperties:   se.config.ExcludeProperties,
 			MaxConnsPerHost:     se.config.DimensionClient.MaxConnsPerHost,
 			MaxIdleConns:        se.config.DimensionClient.MaxIdleConns,
@@ -217,7 +218,7 @@ func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) 
 func (se *signalfxExporter) createClient(ctx context.Context, host component.Host) (*http.Client, error) {
 	se.config.TLS = se.config.IngestTLSs
 
-	return se.config.ToClient(ctx, host, se.telemetrySettings)
+	return se.config.ToClient(ctx, host.GetExtensions(), se.telemetrySettings)
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {

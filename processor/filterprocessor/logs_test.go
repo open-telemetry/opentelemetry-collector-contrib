@@ -599,7 +599,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			caps := flp.Capabilities()
 			assert.True(t, caps.MutatesData)
 			ctx := t.Context()
-			assert.NoError(t, flp.Start(ctx, nil))
+			assert.NoError(t, flp.Start(ctx, componenttest.NewNopHost()))
 
 			cErr := flp.ConsumeLogs(t.Context(), test.inLogs)
 			assert.NoError(t, cErr)

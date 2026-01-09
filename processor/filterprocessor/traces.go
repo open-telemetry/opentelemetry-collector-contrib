@@ -26,9 +26,9 @@ import (
 
 type filterSpanProcessor struct {
 	consumers         []common.TracesConsumer
-	skipResourceExpr  expr.BoolExpr[ottlresource.TransformContext]
-	skipSpanExpr      expr.BoolExpr[ottlspan.TransformContext]
-	skipSpanEventExpr expr.BoolExpr[ottlspanevent.TransformContext]
+	skipResourceExpr  expr.BoolExpr[*ottlresource.TransformContext]
+	skipSpanExpr      expr.BoolExpr[*ottlspan.TransformContext]
+	skipSpanEventExpr expr.BoolExpr[*ottlspanevent.TransformContext]
 	telemetry         *filterTelemetry
 	logger            *zap.Logger
 }
@@ -143,7 +143,9 @@ func (fsp *filterSpanProcessor) processSkipExpression(ctx context.Context, td pt
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		resource := rs.Resource()
 		if fsp.skipResourceExpr != nil {
-			skip, err := fsp.skipResourceExpr.Eval(ctx, ottlresource.NewTransformContext(resource, rs))
+			tCtx := ottlresource.NewTransformContextPtr(resource, rs)
+			skip, err := fsp.skipResourceExpr.Eval(ctx, tCtx)
+			tCtx.Close()
 			if err != nil {
 				errs = multierr.Append(errs, err)
 				return false
@@ -156,10 +158,11 @@ func (fsp *filterSpanProcessor) processSkipExpression(ctx context.Context, td pt
 			return rs.ScopeSpans().Len() == 0
 		}
 		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
-			scope := ss.Scope()
 			ss.Spans().RemoveIf(func(span ptrace.Span) bool {
 				if fsp.skipSpanExpr != nil {
-					skip, err := fsp.skipSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ss, rs))
+					tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
+					skip, err := fsp.skipSpanExpr.Eval(ctx, tCtx)
+					tCtx.Close()
 					if err != nil {
 						errs = multierr.Append(errs, err)
 						return false
@@ -170,7 +173,9 @@ func (fsp *filterSpanProcessor) processSkipExpression(ctx context.Context, td pt
 				}
 				if fsp.skipSpanEventExpr != nil {
 					span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
-						skip, err := fsp.skipSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvent, span, scope, resource, ss, rs))
+						tCtx := ottlspanevent.NewTransformContextPtr(rs, ss, span, spanEvent)
+						skip, err := fsp.skipSpanEventExpr.Eval(ctx, tCtx)
+						tCtx.Close()
 						if err != nil {
 							errs = multierr.Append(errs, err)
 							return false

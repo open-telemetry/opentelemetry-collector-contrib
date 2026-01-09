@@ -8,9 +8,6 @@ pkg/ottl
 connector/routingconnector
 internal/pdatautil
 connector/spanmetricsconnector
-internal/common
-pkg/resourcetotelemetry
-exporter/carbonexporter
 internal/grpcutil
 internal/sharedcomponent
 receiver/otelarrowreceiver
@@ -20,6 +17,8 @@ receiver/otelarrowreceiver
 internal/otelarrow
 exporter/otelarrowexporter
 receiver/otelarrowreceiver
+internal/common
+pkg/resourcetotelemetry
 pkg/translator/prometheus
 pkg/translator/prometheusremotewrite
 exporter/prometheusremotewriteexporter
@@ -51,6 +50,7 @@ pkg/datadog
 receiver/datadogreceiver
 receiver/jaegerreceiver
 receiver/signalfxreceiver
+pkg/translator/splunk
 exporter/splunkhecexporter
 extension/ackextension
 receiver/splunkhecreceiver
@@ -59,6 +59,7 @@ receiver/syslogreceiver
 testbed/mockdatasenders/mockdatadogagentexporter
 testbed
 cmd/opampsupervisor
+cmd/schemagen
 cmd/telemetrygen
 cmd/telemetrygen/internal/e2etest
 confmap/provider/aesprovider
@@ -149,6 +150,7 @@ extension/datadogextension
 extension/encoding/avrologencodingextension
 extension/encoding/awscloudwatchmetricstreamsencodingextension
 extension/encoding/awslogsencodingextension
+extension/encoding/azureencodingextension
 extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
@@ -158,9 +160,9 @@ extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
 extension/googleclientauthextension
 extension/headerssetterextension
-extension/healthcheckextension
 pkg/status
 internal/healthcheck
+extension/healthcheckextension
 extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling
@@ -197,13 +199,14 @@ processor/transformprocessor
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
 internal/datadog/e2e
+internal/k8sinventory
+internal/k8sleaderelectortest
 internal/kubelet
 internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
-pkg/translator/opencensus
 pkg/translator/pprof
 processor/attributesprocessor
 processor/coralogixprocessor
