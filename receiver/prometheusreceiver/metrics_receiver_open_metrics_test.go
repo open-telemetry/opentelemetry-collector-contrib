@@ -423,7 +423,7 @@ func TestCreatedMetric(t *testing.T) {
 					require.Equal(t, 12.0, first.DoubleValue())
 					fooValue, _ = second.Attributes().Get("foo")
 					require.Equal(t, "bar2", fooValue.AsString())
-					require.Equal(t, pcommon.Timestamp(time.Unix(1, 0).UnixNano()), second.StartTimestamp())
+					require.Equal(t, pcommon.Timestamp(time.Unix(1000, 0).UnixNano()), second.StartTimestamp())
 					require.Equal(t, 100.0, second.DoubleValue())
 					return
 				}
@@ -474,8 +474,7 @@ type verifyOpts struct {
 	checkOverride func(t *testing.T, metrics []pmetric.Metric)
 }
 
-// reminder: the float value for _created is milliseconds
-const ctMetricValueAsSecFloat = 1.55555e+06
+const ctMetricValueAsSecFloat = 1.55555e+09
 
 var (
 	expectedSTSecsPart  = int64(ctMetricValueAsSecFloat)
