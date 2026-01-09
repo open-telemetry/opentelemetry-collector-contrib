@@ -44,7 +44,6 @@ func TestLoadConfig(t *testing.T) {
 				GroupByAttributes:           []string{"db.operation"},
 				MinSpansToAggregate:         5,
 				MaxParentDepth:              1,
-				AggregationSpanNameSuffix:   "_aggregated",
 				AggregationAttributePrefix:  "aggregation.",
 				AggregationHistogramBuckets: defaultHistogramBuckets,
 			},
@@ -55,7 +54,6 @@ func TestLoadConfig(t *testing.T) {
 				GroupByAttributes:           []string{"db.operation", "db.name"},
 				MinSpansToAggregate:         3,
 				MaxParentDepth:              1,
-				AggregationSpanNameSuffix:   "_batch",
 				AggregationAttributePrefix:  "batch.",
 				AggregationHistogramBuckets: defaultHistogramBuckets,
 			},
@@ -96,7 +94,6 @@ func TestConfig_Validate(t *testing.T) {
 			name: "valid config",
 			config: &Config{
 				MinSpansToAggregate:        2,
-				AggregationSpanNameSuffix:  "_aggregated",
 				AggregationAttributePrefix: "aggregation.",
 				GroupByAttributes:          []string{"db.operation"},
 			},
@@ -124,28 +121,9 @@ func TestConfig_Validate(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name: "empty aggregation_span_name_suffix",
-			config: &Config{
-				MinSpansToAggregate:        2,
-				AggregationSpanNameSuffix:  "",
-				AggregationAttributePrefix: "aggregation.",
-			},
-			expectError: true,
-		},
-		{
-			name: "whitespace-only aggregation_span_name_suffix",
-			config: &Config{
-				MinSpansToAggregate:        2,
-				AggregationSpanNameSuffix:  "   ",
-				AggregationAttributePrefix: "aggregation.",
-			},
-			expectError: true,
-		},
-		{
 			name: "empty aggregation_attribute_prefix",
 			config: &Config{
 				MinSpansToAggregate:        2,
-				AggregationSpanNameSuffix:  "_aggregated",
 				AggregationAttributePrefix: "",
 			},
 			expectError: true,
@@ -154,7 +132,6 @@ func TestConfig_Validate(t *testing.T) {
 			name: "whitespace-only aggregation_attribute_prefix",
 			config: &Config{
 				MinSpansToAggregate:        2,
-				AggregationSpanNameSuffix:  "_aggregated",
 				AggregationAttributePrefix: "   ",
 			},
 			expectError: true,
@@ -163,7 +140,6 @@ func TestConfig_Validate(t *testing.T) {
 			name: "empty group_by_attributes pattern",
 			config: &Config{
 				MinSpansToAggregate:        2,
-				AggregationSpanNameSuffix:  "_aggregated",
 				AggregationAttributePrefix: "aggregation.",
 				GroupByAttributes:          []string{"db.operation", ""},
 			},
@@ -173,7 +149,6 @@ func TestConfig_Validate(t *testing.T) {
 			name: "whitespace-only group_by_attributes pattern",
 			config: &Config{
 				MinSpansToAggregate:        2,
-				AggregationSpanNameSuffix:  "_aggregated",
 				AggregationAttributePrefix: "aggregation.",
 				GroupByAttributes:          []string{"db.operation", "   "},
 			},
@@ -183,7 +158,6 @@ func TestConfig_Validate(t *testing.T) {
 			name: "invalid glob pattern in group_by_attributes",
 			config: &Config{
 				MinSpansToAggregate:        2,
-				AggregationSpanNameSuffix:  "_aggregated",
 				AggregationAttributePrefix: "aggregation.",
 				GroupByAttributes:          []string{"db.operation", "[invalid*"},
 			},
@@ -194,7 +168,6 @@ func TestConfig_Validate(t *testing.T) {
 			name: "max_parent_depth unlimited",
 			config: &Config{
 				MinSpansToAggregate:        2,
-				AggregationSpanNameSuffix:  "_aggregated",
 				AggregationAttributePrefix: "aggregation.",
 				MaxParentDepth:             -1,
 			},

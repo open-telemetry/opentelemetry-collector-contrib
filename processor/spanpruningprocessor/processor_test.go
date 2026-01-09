@@ -49,7 +49,7 @@ func TestLeafSpanPruning_BasicAggregation(t *testing.T) {
 	assert.Equal(t, 2, finalSpanCount)
 
 	// Verify summary span exists with aggregation attributes
-	summarySpan := findSpanByNameSuffix(td, "_aggregated")
+	summarySpan := findSummarySpan(td)
 	require.NotNil(t, summarySpan, "summary span should exist")
 
 	// Check aggregation attributes
@@ -183,12 +183,12 @@ func TestLeafSpanPruning_StatusAggregation(t *testing.T) {
 	assert.Equal(t, 3, finalSpanCount)
 
 	// Verify we have both an OK summary and an Error summary
-	okSummary := findSpanByNameAndStatus(td, "_aggregated", ptrace.StatusCodeOk)
+	okSummary := findSpanByNameAndStatus(td, "SELECT", ptrace.StatusCodeOk)
 	require.NotNil(t, okSummary)
 	okCount, _ := okSummary.Attributes().Get("aggregation.span_count")
 	assert.Equal(t, int64(4), okCount.Int())
 
-	errorSummary := findSpanByNameAndStatus(td, "_aggregated", ptrace.StatusCodeError)
+	errorSummary := findSpanByNameAndStatus(td, "SELECT", ptrace.StatusCodeError)
 	require.NotNil(t, errorSummary)
 	errorCount, _ := errorSummary.Attributes().Get("aggregation.span_count")
 	assert.Equal(t, int64(2), errorCount.Int())
@@ -230,7 +230,7 @@ func TestLeafSpanPruning_DurationStats(t *testing.T) {
 	err = tp.ConsumeTraces(t.Context(), td)
 	require.NoError(t, err)
 
-	summarySpan := findSpanByNameSuffix(td, "_aggregated")
+	summarySpan := findSummarySpan(td)
 	require.NotNil(t, summarySpan)
 
 	attrs := summarySpan.Attributes()
@@ -456,7 +456,8 @@ func countSpans(td ptrace.Traces) int {
 	return count
 }
 
-func findSpanByNameSuffix(td ptrace.Traces, suffix string) ptrace.Span {
+// findSummarySpan finds the first summary span (with is_summary attribute set to true)
+func findSummarySpan(td ptrace.Traces) ptrace.Span {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		ilss := rss.At(i).ScopeSpans()
@@ -464,7 +465,8 @@ func findSpanByNameSuffix(td ptrace.Traces, suffix string) ptrace.Span {
 			spans := ilss.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if len(span.Name()) >= len(suffix) && span.Name()[len(span.Name())-len(suffix):] == suffix {
+				isSummary, exists := span.Attributes().Get("aggregation.is_summary")
+				if exists && isSummary.Bool() {
 					return span
 				}
 			}
@@ -473,7 +475,8 @@ func findSpanByNameSuffix(td ptrace.Traces, suffix string) ptrace.Span {
 	return ptrace.Span{}
 }
 
-func findSpanByNameAndStatus(td ptrace.Traces, nameSuffix string, statusCode ptrace.StatusCode) ptrace.Span {
+func findSpanByNameAndStatus(td ptrace.Traces, spanName string, statusCode ptrace.StatusCode) ptrace.Span {
+	// findSpanByNameAndStatus finds a summary span by exact name and status code
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		ilss := rss.At(i).ScopeSpans()
@@ -481,7 +484,8 @@ func findSpanByNameAndStatus(td ptrace.Traces, nameSuffix string, statusCode ptr
 			spans := ilss.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if strings.HasSuffix(span.Name(), nameSuffix) && span.Status().Code() == statusCode {
+				isSummary, exists := span.Attributes().Get("aggregation.is_summary")
+				if exists && isSummary.Bool() && span.Name() == spanName && span.Status().Code() == statusCode {
 					return span
 				}
 			}
@@ -557,7 +561,7 @@ func TestLeafSpanPruning_GlobPatternWildcard(t *testing.T) {
 	finalSpanCount := countSpans(td)
 	assert.Equal(t, 2, finalSpanCount) // 1 parent + 1 summary
 
-	summarySpan := findSpanByNameSuffix(td, "_aggregated")
+	summarySpan := findSummarySpan(td)
 	require.NotNil(t, summarySpan)
 
 	attrs := summarySpan.Attributes()
@@ -829,7 +833,6 @@ func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
 			cfg := &Config{
 				GroupByAttributes:           []string{"db.operation"},
 				MinSpansToAggregate:         tt.minSpansToAggregate,
-				AggregationSpanNameSuffix:   "_aggregated",
 				AggregationAttributePrefix:  "aggregation.",
 				AggregationHistogramBuckets: tt.buckets,
 			}
@@ -874,7 +877,8 @@ func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
 					spans := ils.Spans()
 					for k := 0; k < spans.Len(); k++ {
 						span := spans.At(k)
-						if strings.Contains(span.Name(), "_aggregated") {
+						isSummary, exists := span.Attributes().Get("aggregation.is_summary")
+						if exists && isSummary.Bool() {
 							summarySpan = span
 							foundSummary = true
 							break
@@ -924,17 +928,17 @@ func TestLeafSpanPruning_RecursiveParentAggregation(t *testing.T) {
 	assert.Equal(t, 9, finalSpanCount)
 
 	// Verify aggregated spans exist
-	handlerOKAgg, found := findSpanByName(td, "handler_aggregated", "Ok")
-	require.True(t, found, "OK handler_aggregated should exist")
+	handlerOKAgg, found := findSpanByName(td, "handler", "Ok")
+	require.True(t, found, "OK handler summary should exist")
 
-	handlerErrorAgg, found := findSpanByName(td, "handler_aggregated", "Error")
-	require.True(t, found, "Error handler_aggregated should exist")
+	handlerErrorAgg, found := findSpanByName(td, "handler", "Error")
+	require.True(t, found, "Error handler summary should exist")
 
-	selectOKAgg, found := findSpanByName(td, "SELECT_aggregated", "Ok")
-	require.True(t, found, "OK SELECT_aggregated should exist")
+	selectOKAgg, found := findSpanByName(td, "SELECT", "Ok")
+	require.True(t, found, "OK SELECT summary should exist")
 
-	selectErrorAgg, found := findSpanByName(td, "SELECT_aggregated", "Error")
-	require.True(t, found, "Error SELECT_aggregated should exist")
+	selectErrorAgg, found := findSpanByName(td, "SELECT", "Error")
+	require.True(t, found, "Error SELECT summary should exist")
 
 	// Verify span counts
 	handlerOKCount, _ := handlerOKAgg.Attributes().Get("aggregation.span_count")
@@ -989,12 +993,12 @@ func TestLeafSpanPruning_ParentNotAggregatedIfChildrenMixed(t *testing.T) {
 	assert.Equal(t, 5, finalSpanCount)
 
 	// Verify handler_aggregated does NOT exist
-	_, found := findSpanByExactName(td, "handler_aggregated")
-	assert.False(t, found, "handler_aggregated should NOT exist")
+	_, found := findSummarySpanByName(td, "handler")
+	assert.False(t, found, "handler summary should NOT exist")
 
 	// Verify SELECT_aggregated exists
-	selectAgg, found := findSpanByExactName(td, "SELECT_aggregated")
-	require.True(t, found, "SELECT_aggregated should exist")
+	selectAgg, found := findSummarySpanByName(td, "SELECT")
+	require.True(t, found, "SELECT summary should exist")
 
 	selectCount, _ := selectAgg.Attributes().Get("aggregation.span_count")
 	assert.Equal(t, int64(3), selectCount.Int())
@@ -1033,8 +1037,8 @@ func TestLeafSpanPruning_RootSpansNotAggregated(t *testing.T) {
 	assert.Equal(t, 3, len(roots), "all root spans should still exist")
 
 	// Verify SELECT_aggregated exists
-	selectAgg, found := findSpanByExactName(td, "SELECT_aggregated")
-	require.True(t, found, "SELECT_aggregated should exist")
+	selectAgg, found := findSummarySpanByName(td, "SELECT")
+	require.True(t, found, "SELECT summary should exist")
 
 	selectCount, _ := selectAgg.Attributes().Get("aggregation.span_count")
 	assert.Equal(t, int64(6), selectCount.Int())
@@ -1064,20 +1068,20 @@ func TestLeafSpanPruning_ThreeLevelAggregation(t *testing.T) {
 	assert.Equal(t, 4, finalSpanCount)
 
 	// Verify all aggregated spans exist
-	middlewareAgg, found := findSpanByExactName(td, "middleware_aggregated")
-	require.True(t, found, "middleware_aggregated should exist")
+	middlewareAgg, found := findSummarySpanByName(td, "middleware")
+	require.True(t, found, "middleware summary should exist")
 
-	handlerAgg, found := findSpanByExactName(td, "handler_aggregated")
-	require.True(t, found, "handler_aggregated should exist")
+	handlerAgg, found := findSummarySpanByName(td, "handler")
+	require.True(t, found, "handler summary should exist")
 
-	selectAgg, found := findSpanByExactName(td, "SELECT_aggregated")
-	require.True(t, found, "SELECT_aggregated should exist")
+	selectAgg, found := findSummarySpanByName(td, "SELECT")
+	require.True(t, found, "SELECT summary should exist")
 
 	// Verify parent-child relationships
-	// handler_aggregated should be child of middleware_aggregated
+	// handler summary should be child of middleware summary
 	assert.Equal(t, middlewareAgg.SpanID(), handlerAgg.ParentSpanID())
 
-	// SELECT_aggregated should be child of handler_aggregated
+	// SELECT summary should be child of handler summary
 	assert.Equal(t, handlerAgg.SpanID(), selectAgg.ParentSpanID())
 
 	// Verify span counts
@@ -1340,6 +1344,7 @@ func createTestTraceWithThreeLevels(t *testing.T) ptrace.Traces {
 }
 
 func findSpanByName(td ptrace.Traces, nameSubstring string, statusCode string) (ptrace.Span, bool) {
+	// findSpanByName finds a summary span by name substring and status code string
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -1349,7 +1354,8 @@ func findSpanByName(td ptrace.Traces, nameSubstring string, statusCode string) (
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if strings.Contains(span.Name(), nameSubstring) && span.Status().Code().String() == statusCode {
+				isSummary, exists := span.Attributes().Get("aggregation.is_summary")
+				if strings.Contains(span.Name(), nameSubstring) && span.Status().Code().String() == statusCode && exists && isSummary.Bool() {
 					return span, true
 				}
 			}
@@ -1369,6 +1375,27 @@ func findSpanByExactName(td ptrace.Traces, name string) (ptrace.Span, bool) {
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if span.Name() == name {
+					return span, true
+				}
+			}
+		}
+	}
+	return ptrace.Span{}, false
+}
+
+// findSummarySpanByName finds a summary span (with is_summary attribute) by exact name
+func findSummarySpanByName(td ptrace.Traces, name string) (ptrace.Span, bool) {
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		ilss := rs.ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			ils := ilss.At(j)
+			spans := ils.Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				isSummary, exists := span.Attributes().Get("aggregation.is_summary")
+				if span.Name() == name && exists && isSummary.Bool() {
 					return span, true
 				}
 			}
@@ -1420,7 +1447,7 @@ func TestLeafSpanPruning_OrphanSpans(t *testing.T) {
 	finalSpanCount := countSpans(td)
 	assert.Equal(t, 2, finalSpanCount)
 
-	summarySpan := findSpanByNameSuffix(td, "_aggregated")
+	summarySpan := findSummarySpan(td)
 	require.NotNil(t, summarySpan)
 
 	attrs := summarySpan.Attributes()
@@ -1449,7 +1476,7 @@ func TestLeafSpanPruning_MultipleRootSpans(t *testing.T) {
 	finalSpanCount := countSpans(td)
 	assert.Equal(t, 3, finalSpanCount)
 
-	summarySpan := findSpanByNameSuffix(td, "_aggregated")
+	summarySpan := findSummarySpan(td)
 	require.NotNil(t, summarySpan)
 
 	attrs := summarySpan.Attributes()
@@ -1477,7 +1504,7 @@ func TestLeafSpanPruning_NoRootSpan(t *testing.T) {
 	finalSpanCount := countSpans(td)
 	assert.Equal(t, 1, finalSpanCount) // 1 summary
 
-	summarySpan := findSpanByNameSuffix(td, "_aggregated")
+	summarySpan := findSummarySpan(td)
 	require.NotNil(t, summarySpan)
 
 	attrs := summarySpan.Attributes()

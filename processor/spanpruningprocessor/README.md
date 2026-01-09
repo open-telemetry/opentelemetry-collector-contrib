@@ -60,10 +60,6 @@ processors:
     # Default: 1
     max_parent_depth: 1
 
-    # Suffix appended to create aggregation span name
-    # Default: "_aggregated"
-    aggregation_span_name_suffix: "_batch"
-
     # Prefix for aggregation statistics attributes
     # Default: "aggregation."
     aggregation_attribute_prefix: "batch."
@@ -86,7 +82,6 @@ processors:
 | `group_by_attributes` | []string | [] | Attribute patterns for grouping (supports glob patterns like `db.*`) |
 | `min_spans_to_aggregate` | int | 5 | Minimum group size before aggregation occurs |
 | `max_parent_depth` | int | 1 | Max depth of parent aggregation (0=none, -1=unlimited) |
-| `aggregation_span_name_suffix` | string | "_aggregated" | Suffix appended to aggregation span names |
 | `aggregation_attribute_prefix` | string | "aggregation." | Prefix for aggregation statistics attributes |
 | `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for histogram buckets |
 | `enable_attribute_loss_analysis` | bool | false | Enable attribute loss analysis (adds metrics and span attributes showing attribute differences) |
@@ -109,7 +104,7 @@ When multiple attributes match a pattern, they are all included in the grouping 
 When spans are aggregated, the summary span includes:
 
 ### Properties
-- **Name**: Original span name + configured suffix (e.g., `SELECT_aggregated`)
+- **Name**: Original span name (e.g., `SELECT`)
 - **TraceID**: Same as original spans
 - **SpanID**: Newly generated unique ID
 - **ParentSpanID**: Same as original spans (common parent)
@@ -122,6 +117,7 @@ The following attributes are added to the summary span (shown with default `aggr
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
+| `<prefix>is_summary` | bool | Always `true` to identify summary spans |
 | `<prefix>span_count` | int64 | Number of spans that were aggregated |
 | `<prefix>duration_min_ns` | int64 | Minimum duration in nanoseconds |
 | `<prefix>duration_max_ns` | int64 | Maximum duration in nanoseconds |
@@ -186,12 +182,14 @@ root-span (parent)
 **After Processing (with `min_spans_to_aggregate: 2`):**
 ```
 root-span (parent)
-├── SELECT_aggregated (summary, status: OK)
+├── SELECT (summary, status: OK)
+│   - aggregation.is_summary: true
 │   - aggregation.span_count: 3
 │   - aggregation.duration_min_ns: 10000000
 │   - aggregation.duration_max_ns: 15000000
 │   - aggregation.duration_avg_ns: 12333333
-├── SELECT_aggregated (summary, status: Error)
+├── SELECT (summary, status: Error)
+│   - aggregation.is_summary: true
 │   - aggregation.span_count: 2
 │   - aggregation.duration_min_ns: 45000000
 │   - aggregation.duration_max_ns: 50000000
@@ -231,10 +229,10 @@ root
 **After Processing:**
 ```
 root
-├── handler_aggregated (status: OK, span_count: 3)
-│   └── SELECT_aggregated (status: OK, span_count: 3)
-├── handler_aggregated (status: Error, span_count: 2)
-│   └── SELECT_aggregated (status: Error, span_count: 2)
+├── handler (summary, status: OK, span_count: 3)
+│   └── SELECT (summary, status: OK, span_count: 3)
+├── handler (summary, status: Error, span_count: 2)
+│   └── SELECT (summary, status: Error, span_count: 2)
 ├── handler (status: OK)
 │   └── INSERT (status: OK) ─────────────────────────── unchanged
 └── worker (status: OK)

@@ -36,11 +36,6 @@ type Config struct {
 	// Default: 1
 	MaxParentDepth int `mapstructure:"max_parent_depth"`
 
-	// AggregationSpanNameSuffix is appended to the original span name to create
-	// the aggregation span name.
-	// Default: "_aggregated"
-	AggregationSpanNameSuffix string `mapstructure:"aggregation_span_name_suffix"`
-
 	// AggregationAttributePrefix is the prefix for aggregation attributes
 	// added to the summary span.
 	// Default: "aggregation."
@@ -69,11 +64,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.MaxParentDepth < -1 {
 		return errors.New("max_parent_depth must be -1 (unlimited) or >= 0")
-	}
-
-	// Validate AggregationSpanNameSuffix
-	if strings.TrimSpace(cfg.AggregationSpanNameSuffix) == "" {
-		return errors.New("aggregation_span_name_suffix cannot be empty")
 	}
 
 	// Validate AggregationAttributePrefix
