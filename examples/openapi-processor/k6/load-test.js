@@ -7,8 +7,8 @@ const ORDER_SERVICE = __ENV.ORDER_SERVICE_URL || 'http://order-service:8080';
 
 export const options = {
   stages: [
-    { duration: '1s', target: 1 },   // Ramp up
-    { duration: '10m', target: 1 },    // Steady load
+    { duration: '1s', target: 100 },   // Ramp up
+    { duration: '10m', target: 500 },    // Steady load
   ],
   thresholds: {
     http_req_duration: ['p(95)<2000'],

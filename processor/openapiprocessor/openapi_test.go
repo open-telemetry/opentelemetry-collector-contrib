@@ -174,6 +174,42 @@ func TestMatchesPathTemplate(t *testing.T) {
 			template: "/users/{userId}",
 			expected: false,
 		},
+		{
+			name:     "alphanumeric id",
+			urlPath:  "/users/abc123",
+			template: "/users/{userId}",
+			expected: true,
+		},
+		{
+			name:     "uuid id",
+			urlPath:  "/users/550e8400-e29b-41d4-a716-446655440000",
+			template: "/users/{userId}",
+			expected: true,
+		},
+		{
+			name:     "slug id",
+			urlPath:  "/users/john-doe-123",
+			template: "/users/{userId}",
+			expected: true,
+		},
+		{
+			name:     "multiple alphanumeric parameters",
+			urlPath:  "/users/user-abc-123/orders/order-xyz-789",
+			template: "/users/{userId}/orders/{orderId}",
+			expected: true,
+		},
+		{
+			name:     "mixed numeric and alphanumeric ids",
+			urlPath:  "/users/12345/orders/order-abc",
+			template: "/users/{userId}/orders/{orderId}",
+			expected: true,
+		},
+		{
+			name:     "underscore in id",
+			urlPath:  "/users/user_123_abc",
+			template: "/users/{userId}",
+			expected: true,
+		},
 	}
 
 	for _, tt := range tests {
