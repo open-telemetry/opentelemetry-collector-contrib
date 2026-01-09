@@ -41,7 +41,7 @@ type ClientConfig struct {
 	// a DNS lookup on each of the provided brokers, and then perform a reverse
 	// lookup on the resulting IPs to obtain the canonical hostnames to use as the
 	// bootstrap servers. This can be required in SASL environments.
-	// Ignored for franz-go.
+	// ignored by franz-go.
 	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
 
 	// ProtocolVersion defines the Kafka protocol version that the client will

@@ -39,7 +39,7 @@ The following settings can be optionally configured:
 
 - `brokers` (default = localhost:9092): The list of kafka brokers.
 - `protocol_version` (default = 2.1.0): Kafka protocol version.
-- `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup. Ignored for franz-go.
+- `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup. ignored by franz-go.
 - `logs`
   - `topic` (Deprecated [v0.142.0]: use `topics`) 
      (default = otlp\logs): If this is set, it will take precedence over default value of `topics`
