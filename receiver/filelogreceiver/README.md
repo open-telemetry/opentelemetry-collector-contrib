@@ -245,6 +245,21 @@ are provided.
 
 ## Feature Gates
 
+### `filelog.protobufCheckpointEncoding`
+
+When this feature gate is enabled, the receiver uses protobuf encoding for checkpoint storage instead of JSON. This provides improved performance (~7x faster decoding) and reduced storage usage (~31% smaller).
+
+The feature includes full backward compatibility:
+- The receiver can always read both protobuf and JSON checkpoints regardless of the feature gate setting
+- When the feature gate is enabled, new checkpoints are written in protobuf format
+- When the feature gate is disabled, new checkpoints are written in JSON format
+
+To enable this feature gate, use the flag: `--feature-gates=filelog.protobufCheckpointEncoding`
+
+Schedule for this feature gate is:
+
+- Introduce as `Alpha` (disabled by default) in `v0.144.0`
+
 ### `filelog.decompressFingerprint`
 
 When this feature gate is enabled, the fingerprint of compressed file is computed by first decompressing its data. Note, it is important to set `compression` to a non-empty value for it to work.
@@ -255,4 +270,4 @@ Schedule for this feature gate is:
 
 - Introduce as `Alpha` (disabled by default) in `v0.128.0`
 - Move to `Beta` (enabled by default) in `v0.133.0`
-- Move to `Stable` (cannot be disabled) in `v0.142.0` 
+- Move to `Stable` (cannot be disabled) in `v0.142.0`
