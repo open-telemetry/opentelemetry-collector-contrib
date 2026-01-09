@@ -556,17 +556,7 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 	actualLogs, err := scraper.ScrapeLogs(t.Context())
 	assert.Error(t, err)
 
-	expectedFile := "expectedQueryTextAndPlanQueryWithInvalidData.yaml"
-
-	// Uncomment line below to re-generate expected logs.
-	// golden.WriteLogs(t, filepath.Join("testdata", expectedFile), actualLogs)
-
-	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", expectedFile))
-	assert.NoError(t, err)
-
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
-	assert.Equal(t, "db.server.top_query", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
-	assert.NoError(t, errs)
+	assert.Zero(t, actualLogs.LogRecordCount(), "If the metrics does not hold meaningful values then those records need not be exported by the receiver")
 }
 
 func TestRecordDatabaseSampleQuery(t *testing.T) {
