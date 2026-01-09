@@ -162,7 +162,7 @@ type listGetter[K any] struct {
 func newListGetter[K any](slice []Getter[K]) (Getter[K], error) {
 	g := listGetter[K]{slice}
 	for _, v := range slice {
-		if !isLiteralGetter(v) {
+		if _, isLiteral := GetLiteralValue(v); !isLiteral {
 			return &g, nil
 		}
 	}
@@ -195,7 +195,7 @@ type mapGetter[K any] struct {
 func newMapGetter[K any](mapValues map[string]Getter[K]) (Getter[K], error) {
 	g := mapGetter[K]{mapValues: mapValues}
 	for _, v := range mapValues {
-		if !isLiteralGetter(v) {
+		if _, isLiteral := GetLiteralValue(v); !isLiteral {
 			return &g, nil
 		}
 	}
@@ -285,7 +285,7 @@ func newStandardPSliceGetter[K any](getter Getter[K]) (PSliceGetter[K], error) {
 	g := StandardPSliceGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
@@ -391,7 +391,7 @@ func newStandardStringGetter[K any](getter Getter[K]) (StringGetter[K], error) {
 	g := StandardStringGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
@@ -442,7 +442,7 @@ func newStandardIntGetter[K any](getter Getter[K]) (IntGetter[K], error) {
 	g := StandardIntGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
@@ -491,7 +491,7 @@ func newStandardFloatGetter[K any](getter Getter[K]) (FloatGetter[K], error) {
 	g := StandardFloatGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
@@ -540,7 +540,7 @@ func newStandardBoolGetter[K any](getter Getter[K]) (BoolGetter[K], error) {
 	g := StandardBoolGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
@@ -654,7 +654,7 @@ func newStandardPMapGetter[K any](getter Getter[K]) (PMapGetter[K], error) {
 	g := StandardPMapGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
@@ -715,7 +715,7 @@ func newStandardStringLikeGetter[K any](getter Getter[K]) (StringLikeGetter[K], 
 	g := StandardStringLikeGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
@@ -781,7 +781,7 @@ func newStandardFloatLikeGetter[K any](getter Getter[K]) (FloatLikeGetter[K], er
 	g := StandardFloatLikeGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
@@ -860,7 +860,7 @@ func newStandardIntLikeGetter[K any](getter Getter[K]) (IntLikeGetter[K], error)
 	g := StandardIntLikeGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
@@ -939,7 +939,7 @@ func newStandardByteSliceLikeGetter[K any](getter Getter[K]) (ByteSliceLikeGette
 	g := StandardByteSliceLikeGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
@@ -1029,7 +1029,7 @@ func newStandardBoolLikeGetter[K any](getter Getter[K]) (BoolLikeGetter[K], erro
 	g := StandardBoolLikeGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
@@ -1183,7 +1183,7 @@ func newStandardTimeGetter[K any](getter Getter[K]) (TimeGetter[K], error) {
 	g := StandardTimeGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
@@ -1227,7 +1227,7 @@ func newStandardDurationGetter[K any](getter Getter[K]) (DurationGetter[K], erro
 	g := StandardDurationGetter[K]{
 		Getter: getter.Get,
 	}
-	if isLiteralGetter(getter) {
+	if _, isLiteral := GetLiteralValue(getter); !isLiteral {
 		val, err := g.Get(context.Background(), *new(K))
 		if err != nil {
 			return nil, err
