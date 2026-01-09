@@ -27,14 +27,15 @@ type Config struct {
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Deprecated - Transport option will be removed in v0.102.0
-	Hosts            []confignet.TCPAddrConfig `mapstructure:"hosts"`
-	Username         string                    `mapstructure:"username"`
-	Password         configopaque.String       `mapstructure:"password"`
-	AuthMechanism    string                    `mapstructure:"auth_mechanism,omitempty"`
-	AuthSource       string                    `mapstructure:"auth_source,omitempty"`
-	ReplicaSet       string                    `mapstructure:"replica_set,omitempty"`
-	Timeout          time.Duration             `mapstructure:"timeout"`
-	DirectConnection bool                      `mapstructure:"direct_connection"`
+	Hosts                   []confignet.TCPAddrConfig `mapstructure:"hosts"`
+	Username                string                    `mapstructure:"username"`
+	Password                configopaque.String       `mapstructure:"password"`
+	AuthMechanism           string                    `mapstructure:"auth_mechanism,omitempty"`
+	AuthSource              string                    `mapstructure:"auth_source,omitempty"`
+	AuthMechanismProperties map[string]string         `mapstructure:"auth_mechanism_properties,omitempty"`
+	ReplicaSet              string                    `mapstructure:"replica_set,omitempty"`
+	Timeout                 time.Duration             `mapstructure:"timeout"`
+	DirectConnection        bool                      `mapstructure:"direct_connection"`
 }
 
 func (c *Config) Validate() error {
@@ -85,6 +86,9 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 			if c.AuthSource != "" {
 				credential.AuthSource = c.AuthSource
 			}
+			if len(c.AuthMechanismProperties) > 0 {
+				credential.AuthMechanismProperties = c.AuthMechanismProperties
+			}
 			clientOptions.SetAuth(credential)
 		}
 
@@ -121,6 +125,9 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		}
 		if c.AuthSource != "" {
 			credential.AuthSource = c.AuthSource
+		}
+		if len(c.AuthMechanismProperties) > 0 {
+			credential.AuthMechanismProperties = c.AuthMechanismProperties
 		}
 		clientOptions.SetAuth(credential)
 	}
