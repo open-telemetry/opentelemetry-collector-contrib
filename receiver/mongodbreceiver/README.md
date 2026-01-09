@@ -42,8 +42,9 @@ The following settings are optional:
   - For a sharded MongoDB deployment, please specify a list of the `mongos` hosts.
 - `username`: If authentication is required, the user can with `clusterMonitor` permissions can be provided here.
 - `password`: If authentication is required, the password can be provided here.
-- `auth_mechanism`: (optional) The authentication mechanism to use. Common values include `SCRAM-SHA-1`, `SCRAM-SHA-256`, `MONGODB-X509`, etc. If not specified, MongoDB will use the default mechanism.
+- `auth_mechanism`: (optional) The authentication mechanism to use. Common values include `SCRAM-SHA-1`, `SCRAM-SHA-256`, `MONGODB-X509`, `GSSAPI`, `MONGODB-AWS`, etc. If not specified, MongoDB will use the default mechanism.
 - `auth_source`: (optional) The database name to use for authentication. If not specified, MongoDB will use the default authentication database (usually `admin`).
+- `auth_mechanism_properties`: (optional) A map of key-value pairs specifying additional properties for the authentication mechanism. For example, when using `GSSAPI` (Kerberos), you may need to set `SERVICE_NAME`. For `MONGODB-AWS`, you may need to set `AWS_SESSION_TOKEN` when using temporary AWS credentials.
 - `collection_interval`: (default = `1m`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `replica_set`: If the deployment of MongoDB is a replica set then this allows users to specify the replica set name which allows for autodiscovery of other nodes in the replica set.

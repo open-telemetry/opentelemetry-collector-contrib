@@ -186,8 +186,11 @@ func TestOptionsWithAuthMechanismAndSource(t *testing.T) {
 		Password:      "password",
 		AuthMechanism: "SCRAM-SHA-256",
 		AuthSource:    "admin",
-		Timeout:       2 * time.Minute,
-		ReplicaSet:    "rs-1",
+		AuthMechanismProperties: map[string]string{
+			"SERVICE_NAME": "mongodb",
+		},
+		Timeout:    2 * time.Minute,
+		ReplicaSet: "rs-1",
 	}
 
 	// Test primary connection options
@@ -195,6 +198,7 @@ func TestOptionsWithAuthMechanismAndSource(t *testing.T) {
 	require.Equal(t, clientOptions.Auth.Username, cfg.Username)
 	require.Equal(t, clientOptions.Auth.AuthMechanism, cfg.AuthMechanism)
 	require.Equal(t, clientOptions.Auth.AuthSource, cfg.AuthSource)
+	require.Equal(t, clientOptions.Auth.AuthMechanismProperties, cfg.AuthMechanismProperties)
 	require.Equal(t,
 		clientOptions.ConnectTimeout.Milliseconds(),
 		(2 * time.Minute).Milliseconds(),
@@ -206,6 +210,7 @@ func TestOptionsWithAuthMechanismAndSource(t *testing.T) {
 	require.Equal(t, secondaryOptions.Auth.Username, cfg.Username)
 	require.Equal(t, secondaryOptions.Auth.AuthMechanism, cfg.AuthMechanism)
 	require.Equal(t, secondaryOptions.Auth.AuthSource, cfg.AuthSource)
+	require.Equal(t, secondaryOptions.Auth.AuthMechanismProperties, cfg.AuthMechanismProperties)
 }
 
 func TestOptionsTLS(t *testing.T) {
@@ -251,6 +256,9 @@ func TestLoadConfig(t *testing.T) {
 	expected.CollectionInterval = time.Minute
 	expected.AuthMechanism = "SCRAM-SHA-256"
 	expected.AuthSource = "admin"
+	expected.AuthMechanismProperties = map[string]string{
+		"SERVICE_NAME": "mongodb",
+	}
 
 	require.Equal(t, expected, cfg)
 }
