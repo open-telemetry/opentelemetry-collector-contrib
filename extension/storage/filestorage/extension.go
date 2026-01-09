@@ -81,10 +81,10 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 
 	// If the error is due to filename being too long, truncate and try again
 	if errors.Is(err, syscall.ENAMETOOLONG) {
+		hashedName := filepath.Join(lfs.cfg.Directory, hash(rawName))
 		lfs.logger.Warn("filename too long, using hashed filename instead",
-			zap.String("originalFile", absoluteName), zap.String("component", rawName))
-		absoluteName := filepath.Join(lfs.cfg.Directory, hash(rawName))
-		client, err = lfs.createClientWithPanicRecovery(absoluteName)
+			zap.String("originalFile", absoluteName), zap.String("component", rawName), zap.String("hashedFileName", hashedName))
+		client, err = lfs.createClientWithPanicRecovery(hashedName)
 	}
 
 	// return error if still not successful
