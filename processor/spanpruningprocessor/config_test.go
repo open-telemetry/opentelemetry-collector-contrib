@@ -190,7 +190,6 @@ func TestConfig_Validate(t *testing.T) {
 			expectError: true,
 		},
 
-
 		{
 			name: "max_parent_depth unlimited",
 			config: &Config{
@@ -213,4 +212,33 @@ func TestConfig_Validate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEnableAttributeLossAnalysis(t *testing.T) {
+	factory := NewFactory()
+
+	t.Run("disabled by default", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		assert.False(t, cfg.EnableAttributeLossAnalysis)
+	})
+
+	t.Run("can be enabled", func(t *testing.T) {
+		c := &Config{
+			MinSpansToAggregate:         2,
+			AggregationSpanNameSuffix:   "_aggregated",
+			AggregationAttributePrefix:  "aggregation.",
+			EnableAttributeLossAnalysis: true,
+		}
+		assert.True(t, c.EnableAttributeLossAnalysis)
+	})
+
+	t.Run("can be disabled explicitly", func(t *testing.T) {
+		c := &Config{
+			MinSpansToAggregate:         2,
+			AggregationSpanNameSuffix:   "_aggregated",
+			AggregationAttributePrefix:  "aggregation.",
+			EnableAttributeLossAnalysis: false,
+		}
+		assert.False(t, c.EnableAttributeLossAnalysis)
+	})
 }

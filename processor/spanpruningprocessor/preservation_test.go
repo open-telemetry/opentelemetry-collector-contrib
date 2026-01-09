@@ -306,6 +306,7 @@ func TestLeafSpanPruning_DiverseAttributesOnParentSummary(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.MinSpansToAggregate = 2
 	cfg.MaxParentDepth = -1 // Enable parent aggregation
+	cfg.EnableAttributeLossAnalysis = true
 
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
@@ -334,6 +335,7 @@ func TestLeafSpanPruning_NoAttributeLossOnIdenticalLeafSpans(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.MinSpansToAggregate = 2
+	cfg.EnableAttributeLossAnalysis = true
 	cfg.MaxParentDepth = 0 // Disable parent aggregation
 
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
@@ -361,6 +363,7 @@ func TestLeafSpanPruning_DiverseAttributesOnLeafSummary(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.MinSpansToAggregate = 2
+	cfg.EnableAttributeLossAnalysis = true
 	cfg.MaxParentDepth = 0                           // Disable parent aggregation
 	cfg.GroupByAttributes = []string{"db.operation"} // Only group by db.operation
 
@@ -392,6 +395,7 @@ func TestLeafSpanPruning_MissingAttributesOnLeafSummary(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.MinSpansToAggregate = 2
+	cfg.EnableAttributeLossAnalysis = true
 	cfg.MaxParentDepth = 0
 	cfg.GroupByAttributes = []string{"db.operation"}
 
@@ -413,7 +417,7 @@ func TestLeafSpanPruning_MissingAttributesOnLeafSummary(t *testing.T) {
 	require.True(t, exists, "missing_attributes should exist")
 
 	missingAttrsStr := missingAttrs.Str()
-	assert.Contains(t, missingAttrsStr, "debug.info", "should contain debug.info (missing from some spans)")
+	assert.Contains(t, missingAttrsStr, "extra.attr", "should contain extra attributes (missing from some spans)")
 }
 
 // Helper function to create test span nodes
@@ -550,8 +554,8 @@ func createTestTraceWithMissingLeafAttributes(t *testing.T) ptrace.Traces {
 	parent.SetName("parent")
 	parent.Status().SetCode(ptrace.StatusCodeOk)
 
-	// 3 leaf spans - only LAST one has debug.info attribute (not template)
-	// This ensures the template lacks it, so the value is lost
+	// 3 leaf spans with varying attribute presence
+	// Regardless of which span becomes template, some attributes will be missing
 	for i := 0; i < 3; i++ {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
@@ -563,10 +567,50 @@ func createTestTraceWithMissingLeafAttributes(t *testing.T) ptrace.Traces {
 		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
 		span.Attributes().PutStr("db.operation", "select") // Same for all
 
-		if i == 2 {
-			span.Attributes().PutStr("debug.info", "extra-data") // Only on last span (not template)
+		// Each span has a different extra attribute
+		// This ensures missing_attributes is always set regardless of template selection
+		switch i {
+		case 0:
+			span.Attributes().PutStr("extra.attr0", "value0")
+		case 1:
+			span.Attributes().PutStr("extra.attr1", "value1")
+		case 2:
+			span.Attributes().PutStr("extra.attr2", "value2")
 		}
 	}
 
 	return td
+}
+
+// Test that attribute loss analysis is skipped when EnableAttributeLossAnalysis is false
+func TestLeafSpanPruning_AttributeLossAnalysisDisabled(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.EnableAttributeLossAnalysis = false // Explicitly disabled
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// Create trace with spans that WOULD have diverse attributes if analysis was enabled
+	td := createTestTraceWithDiverseLeafAttributes(t)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// Find the summary span
+	summarySpan := findSpanByNameSuffix(td, "_aggregated")
+	require.NotNil(t, summarySpan)
+
+	// Verify NO attribute loss attributes are added when analysis is disabled
+	_, diverseExists := summarySpan.Attributes().Get("aggregation.diverse_attributes")
+	_, missingExists := summarySpan.Attributes().Get("aggregation.missing_attributes")
+
+	assert.False(t, diverseExists, "diverse_attributes should NOT exist when EnableAttributeLossAnalysis is false")
+	assert.False(t, missingExists, "missing_attributes should NOT exist when EnableAttributeLossAnalysis is false")
+
+	// Verify aggregation still works (span_count should exist)
+	spanCount, exists := summarySpan.Attributes().Get("aggregation.span_count")
+	assert.True(t, exists, "span_count should exist")
+	assert.Equal(t, int64(3), spanCount.Int())
 }

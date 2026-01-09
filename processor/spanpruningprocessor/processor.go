@@ -30,10 +30,11 @@ type attributePattern struct {
 
 // spanPruningProcessor is the leaf span pruning processor implementation
 type spanPruningProcessor struct {
-	config            *Config
-	logger            *zap.Logger
-	attributePatterns []attributePattern
-	telemetryBuilder  *metadata.TelemetryBuilder
+	config                      *Config
+	logger                      *zap.Logger
+	attributePatterns           []attributePattern
+	telemetryBuilder            *metadata.TelemetryBuilder
+	enableAttributeLossAnalysis bool
 }
 
 func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuilder *metadata.TelemetryBuilder) (*spanPruningProcessor, error) {
@@ -50,10 +51,11 @@ func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuild
 	}
 
 	return &spanPruningProcessor{
-		config:            cfg,
-		logger:            set.Logger,
-		attributePatterns: patterns,
-		telemetryBuilder:  telemetryBuilder,
+		config:                      cfg,
+		logger:                      set.Logger,
+		attributePatterns:           patterns,
+		telemetryBuilder:            telemetryBuilder,
+		enableAttributeLossAnalysis: cfg.EnableAttributeLossAnalysis,
 	}, nil
 }
 
@@ -176,18 +178,19 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 
 	for groupKey, nodes := range leafGroups {
 		if len(nodes) >= p.config.MinSpansToAggregate {
-			// Analyze attribute loss for leaf aggregation
-			lossInfo := analyzeAttributeLoss(nodes)
-
-			// Record telemetry for leaf attribute loss (always record to track 0 values)
-			p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(
-				ctx,
-				int64(len(lossInfo.diverse)),
-			)
-			p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(
-				ctx,
-				int64(len(lossInfo.missing)),
-			)
+			// Analyze attribute loss for leaf aggregation (only when enabled)
+			var lossInfo attributeLossSummary
+			if p.enableAttributeLossAnalysis {
+				lossInfo = analyzeAttributeLoss(nodes)
+				p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(
+					ctx,
+					int64(len(lossInfo.diverse)),
+				)
+				p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(
+					ctx,
+					int64(len(lossInfo.missing)),
+				)
+			}
 
 			aggregationGroups[groupKey] = aggregationGroup{
 				nodes:    nodes,
@@ -239,18 +242,19 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 		markedNodes = markedNodes[:0] // reset for this round
 		for parentKey, nodes := range parentGroups {
 			if len(nodes) >= 2 {
-				// Analyze attribute loss for parent aggregation
-				lossInfo := analyzeAttributeLoss(nodes)
-
-				// Record telemetry for parent attribute loss (always record to track 0 values)
-				p.telemetryBuilder.ProcessorSpanpruningParentAttributeDiversityLoss.Record(
-					ctx,
-					int64(len(lossInfo.diverse)),
-				)
-				p.telemetryBuilder.ProcessorSpanpruningParentAttributeLoss.Record(
-					ctx,
-					int64(len(lossInfo.missing)),
-				)
+				// Analyze attribute loss for parent aggregation (only when enabled)
+				var lossInfo attributeLossSummary
+				if p.enableAttributeLossAnalysis {
+					lossInfo = analyzeAttributeLoss(nodes)
+					p.telemetryBuilder.ProcessorSpanpruningParentAttributeDiversityLoss.Record(
+						ctx,
+						int64(len(lossInfo.diverse)),
+					)
+					p.telemetryBuilder.ProcessorSpanpruningParentAttributeLoss.Record(
+						ctx,
+						int64(len(lossInfo.missing)),
+					)
+				}
 
 				aggregationGroups[parentKey] = aggregationGroup{
 					nodes:    nodes,

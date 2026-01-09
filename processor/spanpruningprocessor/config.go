@@ -51,6 +51,12 @@ type Config struct {
 	// Example: [5*time.Millisecond, 10*time.Millisecond, 100*time.Millisecond]
 	// Default: [5*time.Millisecond, 10*time.Millisecond, 25*time.Millisecond, 50*time.Millisecond, 100*time.Millisecond, 250*time.Millisecond, 500*time.Millisecond, time.Second, 2500*time.Millisecond, 5*time.Second, 10*time.Second]
 	AggregationHistogramBuckets []time.Duration `mapstructure:"aggregation_histogram_buckets"`
+
+	// EnableAttributeLossAnalysis controls whether to analyze and report attribute loss
+	// during aggregation. When enabled, the processor analyzes attribute differences across spans being
+	// aggregated, records histogram metrics, and adds summary attributes to aggregated spans.
+	// Default: false (to reduce telemetry overhead)
+	EnableAttributeLossAnalysis bool `mapstructure:"enable_attribute_loss_analysis"`
 }
 
 var _ component.Config = (*Config)(nil)

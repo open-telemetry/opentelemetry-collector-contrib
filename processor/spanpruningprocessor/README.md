@@ -72,6 +72,11 @@ processors:
     # Default: [5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
     # Set to empty list to disable histogram
     aggregation_histogram_buckets: [10ms, 50ms, 100ms, 500ms, 1s]
+
+    # Enable attribute loss analysis during aggregation
+    # Default: false (reduces telemetry overhead)
+    # When enabled, analyzes attribute differences, records metrics, and adds summary attributes
+    enable_attribute_loss_analysis: false
 ```
 
 ## Configuration Options
@@ -84,6 +89,7 @@ processors:
 | `aggregation_span_name_suffix` | string | "_aggregated" | Suffix appended to aggregation span names |
 | `aggregation_attribute_prefix` | string | "aggregation." | Prefix for aggregation statistics attributes |
 | `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for histogram buckets |
+| `enable_attribute_loss_analysis` | bool | false | Enable attribute loss analysis (adds metrics and span attributes showing attribute differences) |
 
 ### Glob Pattern Support
 
@@ -273,6 +279,24 @@ The processor emits the following metrics to help monitor its operation:
 |--------|-------------|
 | `otelcol_processor_spanpruning_aggregation_group_size` | Distribution of the number of spans per aggregation group |
 | `otelcol_processor_spanpruning_processing_duration` | Time taken to process each batch of traces (in milliseconds) |
+
+### Optional Attribute Loss Metrics
+
+When `enable_attribute_loss_analysis: true`, the processor also emits metrics about attribute loss during aggregation. These metrics help you understand how much information is being lost when spans are grouped together.
+
+#### Histograms (Optional)
+
+| Metric | Description |
+|--------|-------------|
+| `otelcol_processor_spanpruning_leaf_attribute_diversity_loss` | Attribute values lost due to diversity per leaf aggregation (when leaf spans have different attribute values) |
+| `otelcol_processor_spanpruning_leaf_attribute_loss` | Attribute keys lost due to absence per leaf aggregation (when some spans don't have an attribute that others do) |
+| `otelcol_processor_spanpruning_parent_attribute_diversity_loss` | Attribute values lost due to diversity per parent aggregation |
+| `otelcol_processor_spanpruning_parent_attribute_loss` | Attribute keys lost due to absence per parent aggregation |
+
+Attribute loss analysis is **disabled by default** (`enable_attribute_loss_analysis: false`) to reduce overhead. When enabled, the processor:
+- Analyzes attribute differences across spans being aggregated
+- Records histogram metrics for loss tracking
+- Adds `<prefix>diverse_attributes` and `<prefix>missing_attributes` summary attributes to aggregated spans
 
 These metrics can be used to:
 - Monitor the effectiveness of span pruning (compare `spans_received` vs `spans_pruned`)
