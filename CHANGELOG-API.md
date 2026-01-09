@@ -7,6 +7,39 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.143.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Delete the package pkg/translator/opencensus (#45083)
+  The opencensus translator is no longer used by the project.
+  It was previously deprecated, and is now deleted.
+  
+- `exporter/sapm`: Deprecate the SAPM exporter code ahead of its removal. (#45062)
+  This exporter has been deprecated since 2024-12-19.
+  Please use the OTLP exporter instead.
+  With this change, the Go module is declared deprecated.
+  
+- `pkg/ottl`: Make BoolExpr to be private to allow extending and implementing literals support. (#44954, #45096)
+  Improve BoolExpr evaluation by evaluating literals at compile time.
+- `pkg/ottl`: Remove deprecated NewTransformContext funcs (#45043)
+- `processor/tail_sampling`: Add support for caching the policy name involved in a sampling decision. (#45040)
+  This change allows the `tailsampling.policy` attribute to be set on the spans in a trace when a sampling decision is cached.
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate stanza/errors Wrap function in favor of standard fmt.Errorf (#44949)
+
+### 🚀 New components 🚀
+
+- `pkg/translator/splunk`: Introduce package for translating OTel to HEC format (#45011)
+
+### 💡 Enhancements 💡
+
+- `receiver/awscloudwatch`: Add support for filtering log groups by account ID. (#38391)
+
+<!-- previous-version -->
+
 ## v0.142.0
 
 ### 🛑 Breaking changes 🛑
