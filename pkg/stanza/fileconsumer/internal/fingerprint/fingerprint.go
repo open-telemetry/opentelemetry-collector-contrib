@@ -87,17 +87,7 @@ func (f *Fingerprint) Len() int {
 // because the primary purpose of a fingerprint is to convey a unique
 // identity, and only the FirstBytes field contributes to this goal.
 func (f Fingerprint) Equal(other *Fingerprint) bool {
-	l0 := len(other.firstBytes)
-	l1 := len(f.firstBytes)
-	if l0 != l1 {
-		return false
-	}
-	for i := range l0 {
-		if other.firstBytes[i] != f.firstBytes[i] {
-			return false
-		}
-	}
-	return true
+	return bytes.Equal(f.firstBytes, other.firstBytes)
 }
 
 // StartsWith returns true if the fingerprints are the same
