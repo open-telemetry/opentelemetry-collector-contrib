@@ -13,50 +13,50 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
-// AttributeStatus specifies the value status attribute.
-type AttributeStatus int
+// AttributeContainerState specifies the value container.state attribute.
+type AttributeContainerState int
 
 const (
-	_ AttributeStatus = iota
-	AttributeStatusCreated
-	AttributeStatusRunning
-	AttributeStatusPaused
-	AttributeStatusRestarting
-	AttributeStatusRemoving
-	AttributeStatusExited
-	AttributeStatusDead
+	_ AttributeContainerState = iota
+	AttributeContainerStateCreated
+	AttributeContainerStateRunning
+	AttributeContainerStatePaused
+	AttributeContainerStateRestarting
+	AttributeContainerStateRemoving
+	AttributeContainerStateExited
+	AttributeContainerStateDead
 )
 
-// String returns the string representation of the AttributeStatus.
-func (av AttributeStatus) String() string {
+// String returns the string representation of the AttributeContainerState.
+func (av AttributeContainerState) String() string {
 	switch av {
-	case AttributeStatusCreated:
+	case AttributeContainerStateCreated:
 		return "created"
-	case AttributeStatusRunning:
+	case AttributeContainerStateRunning:
 		return "running"
-	case AttributeStatusPaused:
+	case AttributeContainerStatePaused:
 		return "paused"
-	case AttributeStatusRestarting:
+	case AttributeContainerStateRestarting:
 		return "restarting"
-	case AttributeStatusRemoving:
+	case AttributeContainerStateRemoving:
 		return "removing"
-	case AttributeStatusExited:
+	case AttributeContainerStateExited:
 		return "exited"
-	case AttributeStatusDead:
+	case AttributeContainerStateDead:
 		return "dead"
 	}
 	return ""
 }
 
-// MapAttributeStatus is a helper map of string to AttributeStatus attribute value.
-var MapAttributeStatus = map[string]AttributeStatus{
-	"created":    AttributeStatusCreated,
-	"running":    AttributeStatusRunning,
-	"paused":     AttributeStatusPaused,
-	"restarting": AttributeStatusRestarting,
-	"removing":   AttributeStatusRemoving,
-	"exited":     AttributeStatusExited,
-	"dead":       AttributeStatusDead,
+// MapAttributeContainerState is a helper map of string to AttributeContainerState attribute value.
+var MapAttributeContainerState = map[string]AttributeContainerState{
+	"created":    AttributeContainerStateCreated,
+	"running":    AttributeContainerStateRunning,
+	"paused":     AttributeContainerStatePaused,
+	"restarting": AttributeContainerStateRestarting,
+	"removing":   AttributeContainerStateRemoving,
+	"exited":     AttributeContainerStateExited,
+	"dead":       AttributeContainerStateDead,
 }
 
 var MetricsInfo = metricsInfo{
@@ -3978,31 +3978,33 @@ func (m *metricContainerStatus) init() {
 	m.data.SetName("container.status")
 	m.data.SetDescription("Status of the container. One of - created, running, paused, restarting, removing, exited and dead")
 	m.data.SetUnit("{status}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricContainerStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusAttributeValue string) {
+func (m *metricContainerStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, containerStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("status", statusAttributeValue)
+	dp.Attributes().PutStr("container.state", containerStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricContainerStatus) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricContainerStatus) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -4815,8 +4817,8 @@ func (mb *MetricsBuilder) RecordContainerRestartsDataPoint(ts pcommon.Timestamp,
 }
 
 // RecordContainerStatusDataPoint adds a data point to container.status metric.
-func (mb *MetricsBuilder) RecordContainerStatusDataPoint(ts pcommon.Timestamp, val int64, statusAttributeValue AttributeStatus) {
-	mb.metricContainerStatus.recordDataPoint(mb.startTime, ts, val, statusAttributeValue.String())
+func (mb *MetricsBuilder) RecordContainerStatusDataPoint(ts pcommon.Timestamp, val int64, containerStateAttributeValue AttributeContainerState) {
+	mb.metricContainerStatus.recordDataPoint(mb.startTime, ts, val, containerStateAttributeValue.String())
 }
 
 // RecordContainerUptimeDataPoint adds a data point to container.uptime metric.

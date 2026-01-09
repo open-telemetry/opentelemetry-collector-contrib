@@ -166,8 +166,21 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	}
 
 	r.mb.EmitForResource(metadata.WithResource(resource))
-	r.mb.RecordContainerStatusDataPoint(now, int64(metadata.MapAttributeStatus[container.State.Status]), metadata.MapAttributeStatus[container.State.Status])
+	r.recordContainerStatus(now, container)
 	return errs
+}
+
+func (r *metricsReceiver) recordContainerStatus(now pcommon.Timestamp, container *docker.Container) {
+	current := container.State.Status
+
+	for key, value := range metadata.MapAttributeContainerState {
+		if current == key {
+			continue
+		}
+		r.mb.RecordContainerStatusDataPoint(now, 0, value)
+	}
+
+	r.mb.RecordContainerStatusDataPoint(now, 1, metadata.MapAttributeContainerState[current])
 }
 
 func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *ctypes.MemoryStats) {
