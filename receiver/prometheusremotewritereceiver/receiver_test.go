@@ -6,6 +6,7 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -23,8 +24,10 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -58,15 +61,15 @@ var writeV2RequestFixture = &writev2.Request{
 	},
 }
 
-func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
-	t.Helper()
+func setupMetricsReceiver(tb testing.TB) *prometheusRemoteWriteReceiver {
+	tb.Helper()
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	prwReceiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
-	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
+	prwReceiver, err := factory.CreateMetrics(tb.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	assert.NoError(tb, err)
+	assert.NotNil(tb, prwReceiver, "metrics receiver creation failed")
 
 	receiverID := component.MustNewID("test")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -74,13 +77,13 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 		Transport:              "http",
 		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
 	})
-	assert.NoError(t, err)
+	assert.NoError(tb, err)
 
 	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
 	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
 
 	// Add cleanup to ensure LRU cache is properly purged
-	t.Cleanup(func() {
+	tb.Cleanup(func() {
 		writeReceiver.rmCache.Purge()
 	})
 
@@ -2029,4 +2032,101 @@ func TestConcurrentRequestsforSameResourceAttributes(t *testing.T) {
 			}
 		}
 	}
+}
+
+// setupMetricsReceiverWithConsumer creates a receiver with a custom consumer for testing.
+func setupMetricsReceiverWithConsumer(t *testing.T, nextConsumer consumer.Metrics) *prometheusRemoteWriteReceiver {
+	t.Helper()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	prwReceiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, nextConsumer)
+	require.NoError(t, err)
+	require.NotNil(t, prwReceiver, "metrics receiver creation failed")
+
+	receiverID := component.MustNewID("test")
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
+	})
+	require.NoError(t, err)
+
+	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	return writeReceiver
+}
+
+func TestHandlePRWConsumerResponse(t *testing.T) {
+	// Create a valid request with metrics.
+	request := &writev2.Request{
+		Symbols: []string{"", "__name__", "test_metric", "job", "test-job", "instance", "test-instance"},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			},
+		},
+	}
+
+	pBuf := proto.NewBuffer(nil)
+	err := pBuf.Marshal(request)
+	require.NoError(t, err)
+
+	// Send raw protobuf body - in production the confighttp middleware decompresses
+	// but in tests we call handlePRW directly without middleware.
+	rawBody := pBuf.Bytes()
+
+	t.Run("success returns 204", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(rawBody))
+		req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
+
+		w := httptest.NewRecorder()
+		prwReceiver.handlePRW(w, req)
+		resp := w.Result()
+
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		assert.Len(t, sink.AllMetrics(), 1)
+	})
+
+	t.Run("retryable error returns 500", func(t *testing.T) {
+		prwReceiver := setupMetricsReceiverWithConsumer(t, consumertest.NewErr(errors.New("temporary failure")))
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(rawBody))
+		req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
+
+		w := httptest.NewRecorder()
+		prwReceiver.handlePRW(w, req)
+		resp := w.Result()
+
+		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Contains(t, string(body), "temporary failure")
+	})
+
+	t.Run("permanent error returns 400", func(t *testing.T) {
+		prwReceiver := setupMetricsReceiverWithConsumer(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("permanent failure"))))
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(rawBody))
+		req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
+
+		w := httptest.NewRecorder()
+		prwReceiver.handlePRW(w, req)
+		resp := w.Result()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Contains(t, string(body), "permanent failure")
+	})
 }
