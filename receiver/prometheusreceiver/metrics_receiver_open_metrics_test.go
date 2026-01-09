@@ -447,7 +447,6 @@ func TestCreatedMetric(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s with useOpenMetrics=true", test.name), func(t *testing.T) {
-			t.Parallel()
 			for i := range test.pages {
 				test.pages[i].useOpenMetrics = true
 			}
@@ -458,7 +457,6 @@ func TestCreatedMetric(t *testing.T) {
 	// that counter metric lines follow the _total and _created suffixes
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s with useOpenMetrics=false", test.name), func(t *testing.T) {
-			t.Parallel()
 			for i := range test.pages {
 				test.pages[i].useOpenMetrics = false
 			}
