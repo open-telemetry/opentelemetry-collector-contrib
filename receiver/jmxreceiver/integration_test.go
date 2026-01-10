@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -156,10 +157,13 @@ func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	params := receivertest.NewNopSettings(metadata.Type)
 	cfg := &Config{
-		CollectionInterval: 100 * time.Millisecond,
-		Endpoint:           "service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi",
-		JARPath:            "/notavalidpath",
-		TargetSystem:       "jvm",
+		ControllerConfig: scraperhelper.ControllerConfig{
+			CollectionInterval: 100 * time.Millisecond,
+			InitialDelay:       1 * time.Second,
+		},
+		Endpoint:     "service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi",
+		JARPath:      "/notavalidpath",
+		TargetSystem: "jvm",
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: "<invalid>:123",
 			TimeoutSettings: exporterhelper.TimeoutConfig{

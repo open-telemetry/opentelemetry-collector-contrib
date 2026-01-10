@@ -82,3 +82,14 @@ func Test_MarshalUnmarshal(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, plogtest.CompareLogs(logs, result, plogtest.IgnoreTimestamp(), plogtest.IgnoreObservedTimestamp()))
 }
+
+func Test_StartSeparatorConfig(t *testing.T) {
+	factory := NewFactory()
+	ext, err := factory.Create(t.Context(), extensiontest.NewNopSettings(factory.Type()), factory.CreateDefaultConfig())
+	require.NoError(t, err)
+	err = ext.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	e := ext.(*textExtension)
+	require.Equal(t, e.config.MarshalingSeparator, e.textEncoder.marshalingSeparator)
+	require.Equal(t, e.config.UnmarshalingSeparator, e.textEncoder.unmarshalingSeparator.String())
+}

@@ -190,6 +190,7 @@ processor/isolationforestprocessor processor/isolationforest
 processor/k8sattributesprocessor processor/k8sattributes
 processor/logdedupprocessor processor/logdedup
 processor/logstransformprocessor processor/logstransform
+processor/lookupprocessor processor/lookup
 processor/metricsgenerationprocessor processor/metricsgeneration
 processor/metricstarttimeprocessor processor/metricstarttime
 processor/metricstransformprocessor processor/metricstransform
