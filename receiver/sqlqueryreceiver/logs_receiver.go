@@ -134,9 +134,22 @@ func (receiver *logsReceiver) createQueryReceivers() error {
 }
 
 func (receiver *logsReceiver) startCollecting() {
-	receiver.collectionIntervalTicker = time.NewTicker(receiver.config.CollectionInterval)
+	initialDelay := receiver.config.InitialDelay
 
 	go func() {
+		if initialDelay > 0 {
+			timer := time.NewTimer(initialDelay)
+			select {
+			case <-timer.C:
+				receiver.collect()
+			case <-receiver.shutdownRequested:
+				timer.Stop()
+				return
+			}
+		}
+
+		receiver.collectionIntervalTicker = time.NewTicker(receiver.config.CollectionInterval)
+
 		for {
 			select {
 			case <-receiver.collectionIntervalTicker.C:
