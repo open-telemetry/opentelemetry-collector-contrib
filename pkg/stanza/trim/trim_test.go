@@ -5,6 +5,7 @@ package trim
 
 import (
 	"bufio"
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -205,54 +206,194 @@ func TestToLengthWithTruncate(t *testing.T) {
 				splittest.ExpectAdvanceToken(len(" extra "), " extra "),
 			},
 		},
+	}
+
+	for _, tc := range testCases {
+		skipping := false
+		splitFunc := ToLengthWithTruncate(tc.baseFunc, tc.maxLength, &skipping)
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
+	}
+}
+
+// TestToLengthWithTruncate_Scanner tests the truncation behavior using a real bufio.Scanner
+// This is important because the stateful skip mode requires multiple calls to the split function
+func TestToLengthWithTruncate_Scanner(t *testing.T) {
+	testCases := []struct {
+		name           string
+		input          []byte
+		maxLength      int
+		expectedTokens []string
+	}{
 		{
-			name:      "OversizedLineWithNewline_Truncates",
-			input:     []byte("Very long line here.\nShort.\n"),
-			baseFunc:  bufio.ScanLines,
-			maxLength: 10,
-			steps: []splittest.Step{
-				// Should get truncated long line (advance past full line including newline) + short line
-				splittest.ExpectAdvanceToken(len("Very long line here.\n"), "Very long "),
-				splittest.ExpectAdvanceToken(len("Short.\n"), "Short."),
-			},
+			name:           "OversizedLineWithNewline_Truncates",
+			input:          []byte("Very long line here.\nShort.\n"),
+			maxLength:      10,
+			expectedTokens: []string{"Very long ", "Short."},
 		},
 		{
-			name:      "MultipleOversizedLines_Truncates",
-			input:     []byte("First very long line here.\nSecond also very long line.\n"),
-			baseFunc:  bufio.ScanLines,
-			maxLength: 10,
-			steps: []splittest.Step{
-				// Each oversized line produces only ONE truncated token
-				splittest.ExpectAdvanceToken(len("First very long line here.\n"), "First very"),
-				splittest.ExpectAdvanceToken(len("Second also very long line.\n"), "Second als"),
-			},
+			name:           "MultipleOversizedLines_Truncates",
+			input:          []byte("First very long line here.\nSecond also very long line.\n"),
+			maxLength:      10,
+			expectedTokens: []string{"First very", "Second als"},
 		},
 		{
-			name:      "OversizedLineAtEOF_Truncates",
-			input:     []byte("This is a very long line without newline"),
-			baseFunc:  bufio.ScanLines,
-			maxLength: 10,
-			steps: []splittest.Step{
-				// At EOF, should truncate and advance past entire content
-				splittest.ExpectAdvanceToken(len("This is a very long line without newline"), "This is a "),
-			},
+			name:           "OversizedLineAtEOF_Truncates",
+			input:          []byte("This is a very long line without newline"),
+			maxLength:      10,
+			expectedTokens: []string{"This is a "},
 		},
 		{
-			name:      "TokenLongerThanMax_Truncates",
-			input:     []byte("Short.\nVery long line here.\nAnother short.\n"),
-			baseFunc:  bufio.ScanLines,
-			maxLength: 10,
-			steps: []splittest.Step{
-				splittest.ExpectAdvanceToken(len("Short.\n"), "Short."),
-				// Token found by splitFunc is longer than max, should truncate but advance past full token
-				splittest.ExpectAdvanceToken(len("Very long line here.\n"), "Very long "),
-				splittest.ExpectAdvanceToken(len("Another short.\n"), "Another sh"),
-			},
+			name:           "MixedSizes",
+			input:          []byte("Short.\nVery long oversized line.\nTiny\n"),
+			maxLength:      10,
+			expectedTokens: []string{"Short.", "Very long ", "Tiny"},
+		},
+		{
+			name:           "EmptyLineAfterOversized",
+			input:          []byte("Very long line here.\n\nShort.\n"),
+			maxLength:      10,
+			expectedTokens: []string{"Very long ", "", "Short."},
 		},
 	}
 
 	for _, tc := range testCases {
-		splitFunc := ToLengthWithTruncate(tc.baseFunc, tc.maxLength)
-		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
+		t.Run(tc.name, func(t *testing.T) {
+			skipping := false
+			splitFunc := ToLengthWithTruncate(bufio.ScanLines, tc.maxLength, &skipping)
+			scanner := bufio.NewScanner(bytes.NewReader(tc.input))
+			scanner.Split(splitFunc)
+
+			var tokens []string
+			for scanner.Scan() {
+				tokens = append(tokens, scanner.Text())
+			}
+
+			assert.NoError(t, scanner.Err())
+			assert.Equal(t, tc.expectedTokens, tokens, "Expected tokens to match")
+		})
+	}
+}
+
+// TestToLengthWithTruncate_LimitedBuffer tests with a buffer size limited to maxLength,
+// simulating how the collector works where buffer size is capped at max_log_size
+func TestToLengthWithTruncate_LimitedBuffer(t *testing.T) {
+	testCases := []struct {
+		name           string
+		input          []byte
+		maxLength      int
+		expectedTokens []string
+	}{
+		{
+			name:           "OversizedLineWithNewline_LimitedBuffer",
+			input:          []byte("Very long line here.\nShort.\n"),
+			maxLength:      10,
+			expectedTokens: []string{"Very long ", "Short."},
+		},
+		{
+			name:           "MultipleOversizedLines_LimitedBuffer",
+			input:          []byte("First very long line here.\nSecond also very long line.\n"),
+			maxLength:      10,
+			expectedTokens: []string{"First very", "Second als"},
+		},
+		{
+			name:           "OversizedLineAtEOF_LimitedBuffer",
+			input:          []byte("This is a very long line without newline"),
+			maxLength:      10,
+			expectedTokens: []string{"This is a "},
+		},
+		{
+			name:           "MixedSizes_LimitedBuffer",
+			input:          []byte("Short.\nVery long oversized line.\nTiny\n"),
+			maxLength:      10,
+			expectedTokens: []string{"Short.", "Very long ", "Tiny"},
+		},
+		{
+			name:           "VeryLongLine_MuchLongerThanBuffer",
+			input:          append(bytes.Repeat([]byte("A"), 100), []byte("\nShort.\n")...),
+			maxLength:      10,
+			expectedTokens: []string{"AAAAAAAAAA", "Short."},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			skipping := false
+			splitFunc := ToLengthWithTruncate(bufio.ScanLines, tc.maxLength, &skipping)
+			scanner := bufio.NewScanner(bytes.NewReader(tc.input))
+			scanner.Split(splitFunc)
+			// Set buffer to exactly maxLength to simulate collector behavior
+			scanner.Buffer(make([]byte, tc.maxLength), tc.maxLength)
+
+			var tokens []string
+			for scanner.Scan() {
+				tokens = append(tokens, scanner.Text())
+			}
+
+			assert.NoError(t, scanner.Err())
+			assert.Equal(t, tc.expectedTokens, tokens, "Expected tokens to match")
+		})
+	}
+}
+
+// TestToLengthWithTruncate_PositionalScanner tests with a positional scanner wrapper like the collector uses
+func TestToLengthWithTruncate_PositionalScanner(t *testing.T) {
+	testCases := []struct {
+		name           string
+		input          []byte
+		maxLength      int
+		expectedTokens []string
+	}{
+		{
+			name:           "10xBufferLine",
+			input:          append(bytes.Repeat([]byte("A"), 100), []byte("\nShort.\n")...),
+			maxLength:      10,
+			expectedTokens: []string{"AAAAAAAAAA", "Short."},
+		},
+		{
+			name:           "ExactlyAtMaxLength",
+			input:          []byte("1234567890\nShort.\n"),
+			maxLength:      10,
+			expectedTokens: []string{"1234567890", "Short."},
+		},
+		{
+			name:           "OneByteOverMaxLength",
+			input:          []byte("12345678901\nShort.\n"),
+			maxLength:      10,
+			expectedTokens: []string{"1234567890", "Short."},
+		},
+		{
+			name:           "MultipleOversizedWithShort",
+			input:          append(append(bytes.Repeat([]byte("A"), 50), []byte("\nOK\n")...), append(bytes.Repeat([]byte("B"), 50), []byte("\nEnd\n")...)...),
+			maxLength:      10,
+			expectedTokens: []string{"AAAAAAAAAA", "OK", "BBBBBBBBBB", "End"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			skipping := false
+			splitFunc := ToLengthWithTruncate(bufio.ScanLines, tc.maxLength, &skipping)
+
+			// Create a positional scanner wrapper like the collector does
+			reader := bytes.NewReader(tc.input)
+			s := bufio.NewScanner(reader)
+			s.Buffer(make([]byte, tc.maxLength), tc.maxLength)
+
+			var pos int64
+			posTrackingFunc := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+				advance, token, err = splitFunc(data, atEOF)
+				pos += int64(advance)
+				return advance, token, err
+			}
+			s.Split(posTrackingFunc)
+
+			var tokens []string
+			for s.Scan() {
+				tokens = append(tokens, s.Text())
+			}
+
+			assert.NoError(t, s.Err())
+			assert.Equal(t, tc.expectedTokens, tokens, "Expected tokens to match")
+		})
 	}
 }

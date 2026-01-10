@@ -123,7 +123,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	flushFunc := m.FlushState.Func(tokenLenFunc, f.FlushTimeout)
 	var lengthLimitedFunc bufio.SplitFunc
 	if f.TruncateOnMaxLogSize {
-		lengthLimitedFunc = trim.ToLengthWithTruncate(flushFunc, f.MaxLogSize)
+		lengthLimitedFunc = trim.ToLengthWithTruncate(flushFunc, f.MaxLogSize, &m.TruncateSkipping)
 	} else {
 		lengthLimitedFunc = trim.ToLength(flushFunc, f.MaxLogSize)
 	}

@@ -28,14 +28,15 @@ import (
 const gzipExtension = ".gz"
 
 type Metadata struct {
-	Fingerprint     *fingerprint.Fingerprint
-	Offset          int64
-	RecordNum       int64
-	FileAttributes  map[string]any
-	HeaderFinalized bool
-	FlushState      flush.State
-	TokenLenState   tokenlen.State
-	FileType        string
+	Fingerprint       *fingerprint.Fingerprint
+	Offset            int64
+	RecordNum         int64
+	FileAttributes    map[string]any
+	HeaderFinalized   bool
+	FlushState        flush.State
+	TokenLenState     tokenlen.State
+	FileType          string
+	TruncateSkipping  bool
 }
 
 // Reader manages a single file
