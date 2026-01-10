@@ -80,3 +80,40 @@ func ToLength(splitFunc bufio.SplitFunc, maxLength int) bufio.SplitFunc {
 		return advance, token, err
 	}
 }
+
+// ToLengthWithTruncate wraps a bufio.SplitFunc to truncate tokens that exceed maxLength.
+// Unlike ToLength which splits oversized content into multiple tokens, this function
+// returns only the truncated portion (up to maxLength) and advances past the entire
+// original content, effectively dropping the remainder.
+func ToLengthWithTruncate(splitFunc bufio.SplitFunc, maxLength int) bufio.SplitFunc {
+	if maxLength <= 0 {
+		return splitFunc
+	}
+	return func(data []byte, atEOF bool) (int, []byte, error) {
+		advance, token, err := splitFunc(data, atEOF)
+		if (advance == 0 && token == nil && err == nil) && len(data) >= maxLength {
+			// No token was found, but we have enough data.
+			// Find the next delimiter (newline) after maxLength to advance past the entire oversized content.
+			// Look for newline in the remaining data after maxLength.
+			for i := maxLength; i < len(data); i++ {
+				if data[i] == '\n' {
+					// Found a newline, return truncated token and advance past the whole line including newline
+					return i + 1, data[:maxLength], nil
+				}
+			}
+			// No newline found yet, need more data (unless at EOF)
+			if atEOF {
+				// At EOF, return what we have truncated
+				return len(data), data[:maxLength], nil
+			}
+			// Request more data to find the end of this oversized line
+			return 0, nil, nil
+		}
+		if len(token) > maxLength {
+			// A token was found but it is longer than the max length.
+			// Return truncated token but advance past the entire original token.
+			return advance, token[:maxLength], nil
+		}
+		return advance, token, err
+	}
+}

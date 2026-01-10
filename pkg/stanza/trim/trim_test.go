@@ -174,3 +174,85 @@ func TestToLength(t *testing.T) {
 		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}
 }
+
+func TestToLengthWithTruncate(t *testing.T) {
+	testCases := []struct {
+		name      string
+		baseFunc  bufio.SplitFunc
+		maxLength int
+		input     []byte
+		steps     []splittest.Step
+	}{
+		{
+			name:      "IgnoreZeroLength",
+			input:     []byte(" hello \n world \n extra "),
+			baseFunc:  bufio.ScanLines,
+			maxLength: 0,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len(" hello \n"), " hello "),
+				splittest.ExpectAdvanceToken(len(" world \n"), " world "),
+				splittest.ExpectAdvanceToken(len(" extra "), " extra "),
+			},
+		},
+		{
+			name:      "NoLongTokens",
+			input:     []byte(" hello \n world \n extra "),
+			baseFunc:  bufio.ScanLines,
+			maxLength: 100,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len(" hello \n"), " hello "),
+				splittest.ExpectAdvanceToken(len(" world \n"), " world "),
+				splittest.ExpectAdvanceToken(len(" extra "), " extra "),
+			},
+		},
+		{
+			name:      "OversizedLineWithNewline_Truncates",
+			input:     []byte("Very long line here.\nShort.\n"),
+			baseFunc:  bufio.ScanLines,
+			maxLength: 10,
+			steps: []splittest.Step{
+				// Should get truncated long line (advance past full line including newline) + short line
+				splittest.ExpectAdvanceToken(len("Very long line here.\n"), "Very long "),
+				splittest.ExpectAdvanceToken(len("Short.\n"), "Short."),
+			},
+		},
+		{
+			name:      "MultipleOversizedLines_Truncates",
+			input:     []byte("First very long line here.\nSecond also very long line.\n"),
+			baseFunc:  bufio.ScanLines,
+			maxLength: 10,
+			steps: []splittest.Step{
+				// Each oversized line produces only ONE truncated token
+				splittest.ExpectAdvanceToken(len("First very long line here.\n"), "First very"),
+				splittest.ExpectAdvanceToken(len("Second also very long line.\n"), "Second als"),
+			},
+		},
+		{
+			name:      "OversizedLineAtEOF_Truncates",
+			input:     []byte("This is a very long line without newline"),
+			baseFunc:  bufio.ScanLines,
+			maxLength: 10,
+			steps: []splittest.Step{
+				// At EOF, should truncate and advance past entire content
+				splittest.ExpectAdvanceToken(len("This is a very long line without newline"), "This is a "),
+			},
+		},
+		{
+			name:      "TokenLongerThanMax_Truncates",
+			input:     []byte("Short.\nVery long line here.\nAnother short.\n"),
+			baseFunc:  bufio.ScanLines,
+			maxLength: 10,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("Short.\n"), "Short."),
+				// Token found by splitFunc is longer than max, should truncate but advance past full token
+				splittest.ExpectAdvanceToken(len("Very long line here.\n"), "Very long "),
+				splittest.ExpectAdvanceToken(len("Another short.\n"), "Another sh"),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		splitFunc := ToLengthWithTruncate(tc.baseFunc, tc.maxLength)
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
+	}
+}
