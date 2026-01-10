@@ -1,0 +1,10 @@
+change_type: new_component
+component: processor/lookup
+note: Add skeleton for external lookup enrichment processor
+issues: [41816]
+
+subtext: |
+  Adds the initial skeleton for a lookup processor that performs external lookups to enrich telemetry signals.
+  Also includes source abstraction with factory pattern, noop source for testing, and cache wrapper utility.
+
+change_logs: [user]

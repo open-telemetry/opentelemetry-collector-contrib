@@ -1,0 +1,9 @@
+type: lookup
+
+status:
+  class: processor
+  stability:
+    development: [logs]
+  distributions: []
+  codeowners:
+    active: [jsvd, dehaansa, VihasMakwana]
