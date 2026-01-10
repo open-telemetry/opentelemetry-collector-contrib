@@ -195,7 +195,7 @@ func TestLogsReceiver_InitialDelay(t *testing.T) {
 				}},
 			},
 		},
-		consumertest.NewNop(),
+		&consumertest.LogsSink{},
 	)
 	require.NoError(t, err)
 
@@ -205,13 +205,14 @@ func TestLogsReceiver_InitialDelay(t *testing.T) {
 	}()
 
 	time.Sleep(initialDelay / 2)
-	assert.Equal(t, 0, fakeClient.RequestCounter, "should not collect before initial delay")
+	sink := receiver.(*logsReceiver).nextConsumer.(*consumertest.LogsSink)
+	assert.Equal(t, 0, sink.LogRecordCount(), "should not collect before initial delay")
 
 	require.Eventually(t, func() bool {
-		return fakeClient.RequestCounter >= 1
+		return sink.LogRecordCount() >= 1
 	}, initialDelay+50*time.Millisecond, 5*time.Millisecond)
 
 	require.Eventually(t, func() bool {
-		return fakeClient.RequestCounter >= 2
+		return sink.LogRecordCount() >= 2
 	}, initialDelay+collectionInterval+50*time.Millisecond, 5*time.Millisecond)
 }
