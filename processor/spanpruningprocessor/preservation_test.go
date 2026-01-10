@@ -317,9 +317,9 @@ func TestLeafSpanPruning_DiverseAttributesOnParentSummary(t *testing.T) {
 	err = tp.ConsumeTraces(t.Context(), td)
 	require.NoError(t, err)
 
-	// Find the parent aggregated span (handler_aggregated)
-	handlerAgg, found := findSpanByExactName(td, "handler_aggregated")
-	require.True(t, found, "handler_aggregated should exist")
+	// Find the parent aggregated span
+	handlerAgg, found := findSummarySpanByName(td, "handler")
+	require.True(t, found, "handler summary should exist")
 
 	// Check for diverse_attributes attribute
 	diverseAttrs, exists := handlerAgg.Attributes().Get("aggregation.diverse_attributes")
@@ -348,8 +348,8 @@ func TestLeafSpanPruning_NoAttributeLossOnIdenticalLeafSpans(t *testing.T) {
 	require.NoError(t, err)
 
 	// Find the leaf summary span
-	summarySpan := findSpanByNameSuffix(td, "_aggregated")
-	require.NotNil(t, summarySpan)
+	summarySpan, found := findSummarySpanByName(td, "SELECT")
+	require.True(t, found, "SELECT summary should exist")
 
 	// Leaf spans are grouped by identical attributes, so no loss attributes
 	_, diverseExists := summarySpan.Attributes().Get("aggregation.diverse_attributes")
@@ -377,8 +377,8 @@ func TestLeafSpanPruning_DiverseAttributesOnLeafSummary(t *testing.T) {
 	require.NoError(t, err)
 
 	// Find the leaf summary span
-	summarySpan := findSpanByNameSuffix(td, "_aggregated")
-	require.NotNil(t, summarySpan)
+	summarySpan, found := findSummarySpanByName(td, "db_query")
+	require.True(t, found, "db_query summary should exist")
 
 	// Leaf spans have diverse db.statement values
 	diverseAttrs, exists := summarySpan.Attributes().Get("aggregation.diverse_attributes")
@@ -409,8 +409,8 @@ func TestLeafSpanPruning_MissingAttributesOnLeafSummary(t *testing.T) {
 	require.NoError(t, err)
 
 	// Find the leaf summary span
-	summarySpan := findSpanByNameSuffix(td, "_aggregated")
-	require.NotNil(t, summarySpan)
+	summarySpan, found := findSummarySpanByName(td, "db_query")
+	require.True(t, found, "db_query summary should exist")
 
 	// Check for missing_attributes
 	missingAttrs, exists := summarySpan.Attributes().Get("aggregation.missing_attributes")
@@ -599,8 +599,8 @@ func TestLeafSpanPruning_AttributeLossAnalysisDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	// Find the summary span
-	summarySpan := findSpanByNameSuffix(td, "_aggregated")
-	require.NotNil(t, summarySpan)
+	summarySpan, found := findSummarySpanByName(td, "db_query")
+	require.True(t, found, "db_query summary should exist")
 
 	// Verify NO attribute loss attributes are added when analysis is disabled
 	_, diverseExists := summarySpan.Attributes().Get("aggregation.diverse_attributes")

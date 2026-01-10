@@ -276,7 +276,7 @@ The processor emits the following metrics to help monitor its operation:
 | Metric | Description |
 |--------|-------------|
 | `otelcol_processor_spanpruning_aggregation_group_size` | Distribution of the number of spans per aggregation group |
-| `otelcol_processor_spanpruning_processing_duration` | Time taken to process each batch of traces (in milliseconds) |
+| `otelcol_processor_spanpruning_processing_duration` | Time taken to process each batch of traces (in seconds) |
 
 ### Optional Attribute Loss Metrics
 
