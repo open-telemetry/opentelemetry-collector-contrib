@@ -96,7 +96,7 @@ func ToLengthWithTruncate(splitFunc bufio.SplitFunc, maxLength int, skipping *bo
 	return func(data []byte, atEOF bool) (int, []byte, error) {
 		// If we're in skip mode, look for the next newline to resume normal processing
 		if *skipping {
-			for i := 0; i < len(data); i++ {
+			for i := range len(data) {
 				if data[i] == '\n' {
 					// Found the end of the oversized line, resume normal processing
 					*skipping = false
