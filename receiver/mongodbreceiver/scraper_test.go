@@ -6,6 +6,7 @@ package mongodbreceiver
 import (
 	"errors"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -451,4 +452,115 @@ func TestServerAddressAndPort(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReceiverMetricsDisabled(t *testing.T) {
+	scraperCfg := createDefaultConfig().(*Config)
+
+	// disable all metrics
+	v := reflect.ValueOf(&scraperCfg.Metrics).Elem()
+	for i := 0; i < v.NumField(); i++ {
+		v.Field(i).FieldByName("Enabled").SetBool(false)
+	}
+
+	fc := &fakeClient{}
+	adminStatus, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	ss, err := loadServerStatusAsMap()
+	require.NoError(t, err)
+	dbStats, err := loadDBStatsAsMap()
+	require.NoError(t, err)
+	topStats, err := loadTopAsMap()
+	require.NoError(t, err)
+	productsIndexStats, err := loadIndexStatsAsMap("products")
+	require.NoError(t, err)
+	ordersIndexStats, err := loadIndexStatsAsMap("orders")
+	require.NoError(t, err)
+	mongo40, err := version.NewVersion("4.0")
+	require.NoError(t, err)
+	fakeDatabaseName := "fakedatabase"
+	fc.On("GetVersion", mock.Anything).Return(mongo40, nil)
+	fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{fakeDatabaseName}, nil)
+	fc.On("ServerStatus", mock.Anything, fakeDatabaseName).Return(ss, nil)
+	fc.On("ServerStatus", mock.Anything, "admin").Return(adminStatus, nil)
+	fc.On("DBStats", mock.Anything, fakeDatabaseName).Return(dbStats, nil)
+	fc.On("TopStats", mock.Anything).Return(topStats, nil)
+	fc.On("ListCollectionNames", mock.Anything, fakeDatabaseName).Return([]string{"products", "orders"}, nil)
+	fc.On("IndexStats", mock.Anything, fakeDatabaseName, "products").Return(productsIndexStats, nil)
+	fc.On("IndexStats", mock.Anything, fakeDatabaseName, "orders").Return(ordersIndexStats, nil)
+
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
+	scraper.client = fc
+
+	scrapedMetrics, err := scraper.scrape(t.Context())
+	if err != nil {
+		require.Nil(t, err, "error scraping while no metrics are enabled")
+	}
+
+	require.Equal(t, 0, scrapedMetrics.MetricCount(), "no data should be scraped when all metrics are disabled")
+}
+
+func TestDependentMetricsWhenDisabled(t *testing.T) {
+	tests := []struct {
+		name      string
+		subject   func(*metadata.MetricsConfig)
+		dependent func(*metadata.MetricsConfig)
+	}{
+		{
+			name: "mongodb.commands.rate metric should work when mongodb.operation.count disabled",
+			subject: func(mc *metadata.MetricsConfig) {
+				mc.MongodbOperationCount.Enabled = false
+			},
+			dependent: func(mc *metadata.MetricsConfig) {
+				mc.MongodbCommandsRate.Enabled = true
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scraperCfg := createDefaultConfig().(*Config)
+			tt.subject(&scraperCfg.Metrics)
+			tt.dependent(&scraperCfg.Metrics)
+
+			// successful scrape config
+			fc := &fakeClient{}
+			adminStatus, err := loadAdminStatusAsMap()
+			require.NoError(t, err)
+			ss, err := loadServerStatusAsMap()
+			require.NoError(t, err)
+			dbStats, err := loadDBStatsAsMap()
+			require.NoError(t, err)
+			topStats, err := loadTopAsMap()
+			require.NoError(t, err)
+			productsIndexStats, err := loadIndexStatsAsMap("products")
+			require.NoError(t, err)
+			ordersIndexStats, err := loadIndexStatsAsMap("orders")
+			require.NoError(t, err)
+			mongo40, err := version.NewVersion("4.0")
+			require.NoError(t, err)
+			fakeDatabaseName := "fakedatabase"
+			fc.On("GetVersion", mock.Anything).Return(mongo40, nil)
+			fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{fakeDatabaseName}, nil)
+			fc.On("ServerStatus", mock.Anything, fakeDatabaseName).Return(ss, nil)
+			fc.On("ServerStatus", mock.Anything, "admin").Return(adminStatus, nil)
+			fc.On("DBStats", mock.Anything, fakeDatabaseName).Return(dbStats, nil)
+			fc.On("TopStats", mock.Anything).Return(topStats, nil)
+			fc.On("ListCollectionNames", mock.Anything, fakeDatabaseName).Return([]string{"products", "orders"}, nil)
+			fc.On("IndexStats", mock.Anything, fakeDatabaseName, "products").Return(productsIndexStats, nil)
+			fc.On("IndexStats", mock.Anything, fakeDatabaseName, "orders").Return(ordersIndexStats, nil)
+
+			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
+			scraper.client = fc
+
+			scrapedMetrics, err := scraper.scrape(t.Context())
+			if err != nil {
+				require.Nil(t, err, "error scraping metrics")
+			}
+
+			// FIXME: somehow check if disabled metric is not in scraped metrics
+			t.Log(scrapedMetrics)
+		})
+	}
+
 }
