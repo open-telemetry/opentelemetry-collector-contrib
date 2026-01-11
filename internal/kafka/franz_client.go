@@ -152,13 +152,12 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 
 	// Configure rebalance strategy
 	switch consumerCfg.GroupRebalanceStrategy {
-	case "range": // Sarama default.
+	case "range":
 		opts = append(opts, kgo.Balancers(kgo.RangeBalancer()))
 	case "roundrobin":
 		opts = append(opts, kgo.Balancers(kgo.RoundRobinBalancer()))
 	case "sticky":
 		opts = append(opts, kgo.Balancers(kgo.StickyBalancer()))
-	// NOTE(marclop): This is a new type of balancer, document accordingly.
 	case "cooperative-sticky":
 		opts = append(opts, kgo.Balancers(kgo.CooperativeStickyBalancer()))
 	}

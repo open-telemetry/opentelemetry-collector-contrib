@@ -171,7 +171,6 @@ components:
     - pkg/translator/azurelogs
     - pkg/translator/jaeger
     - pkg/translator/loki
-    - pkg/translator/opencensus
     - pkg/translator/pprof
     - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
@@ -202,6 +201,7 @@ components:
     - processor/k8sattributes
     - processor/logdedup
     - processor/logstransform
+    - processor/lookup
     - processor/metricsgeneration
     - processor/metricstarttime
     - processor/metricstransform
