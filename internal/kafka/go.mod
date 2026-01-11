@@ -17,7 +17,7 @@ require (
 	go.uber.org/goleak v1.3.0
 )
 
-require go.opentelemetry.io/collector/confmap/xconfmap v0.143.0 // indirect
+require go.opentelemetry.io/collector/confmap/xconfmap v0.143.1-0.20260109195331-fbd5d3f9faae // indirect
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.4 // indirect
