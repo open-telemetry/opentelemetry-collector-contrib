@@ -7,18 +7,18 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.143.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.143.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.49.0
+	go.opentelemetry.io/collector/component v1.49.1-0.20260109195331-fbd5d3f9faae
 	go.opentelemetry.io/collector/component/componenttest v0.143.0
-	go.opentelemetry.io/collector/confmap v1.49.0
+	go.opentelemetry.io/collector/confmap v1.49.1-0.20260109195331-fbd5d3f9faae
 	go.opentelemetry.io/collector/confmap/xconfmap v0.143.0
-	go.opentelemetry.io/collector/consumer v1.49.0
+	go.opentelemetry.io/collector/consumer v1.49.1-0.20260109195331-fbd5d3f9faae
 	go.opentelemetry.io/collector/consumer/consumertest v0.143.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.143.0
-	go.opentelemetry.io/collector/pdata v1.49.0
+	go.opentelemetry.io/collector/pdata v1.49.1-0.20260109195331-fbd5d3f9faae
 	go.opentelemetry.io/collector/pdata/pprofile v0.143.0
-	go.opentelemetry.io/collector/pipeline v1.49.0
+	go.opentelemetry.io/collector/pipeline v1.49.1-0.20260109195331-fbd5d3f9faae
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.143.0
-	go.opentelemetry.io/collector/processor v1.49.0
+	go.opentelemetry.io/collector/processor v1.49.1-0.20260109195331-fbd5d3f9faae
 	go.opentelemetry.io/collector/processor/processorhelper v0.143.0
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.143.0
 	go.opentelemetry.io/collector/processor/processortest v0.143.0
@@ -69,7 +69,7 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.143.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.49.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260109195331-fbd5d3f9faae // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.143.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
