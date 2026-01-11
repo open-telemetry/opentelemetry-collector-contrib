@@ -64,3 +64,6 @@ retract (
 
 // IMPORTANT NOTE: Do not add replace statements to this go.mod. This will break go install.
 // See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27855.
+
+// Can be removed after 0.144.0 release
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260109195331-fbd5d3f9faae
