@@ -41,6 +41,7 @@ type collector struct {
 
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
+	shutdownCh chan struct{}
 }
 
 type metricFamily struct {
@@ -51,7 +52,7 @@ type metricFamily struct {
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	labelNamer := configureLabelNamer(config)
 
-	return &collector{
+	c := &collector{
 		accumulator:      newAccumulator(logger, config.MetricExpiration),
 		logger:           logger,
 		namespace:        normalizeNamespace(config.Namespace, labelNamer, logger),
@@ -61,7 +62,28 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 		withoutScopeInfo: config.WithoutScopeInfo,
 		metricNamer:      configureMetricNamer(config),
 		labelNamer:       labelNamer,
+		shutdownCh:       make(chan struct{}), // <--- Added this
 	}
+
+	// <--- Added this background loop
+	go func() {
+		interval := config.MetricExpiration
+		if interval == 0 {
+			interval = 5 * time.Minute
+		}
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-c.shutdownCh:
+				return
+			case <-ticker.C:
+				c.cleanupMetricFamilies()
+			}
+		}
+	}()
+
+	return c
 }
 
 // normalizeNamespace builds and returns the namespace if specified in the config
@@ -673,4 +695,7 @@ func (c *collector) cleanupMetricFamilies() {
 		}
 		return true
 	})
+}
+func (c *collector) stop() {
+	close(c.shutdownCh)
 }
