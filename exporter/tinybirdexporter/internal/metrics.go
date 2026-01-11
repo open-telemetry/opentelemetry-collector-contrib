@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -27,6 +28,29 @@ type baseMetricSignal struct {
 	ScopeSchemaURL     string            `json:"scope_schema_url"`
 	ScopeAttributes    map[string]string `json:"scope_attributes"`
 	exemplars
+}
+
+type genericDataPoint interface {
+	Exemplars() pmetric.ExemplarSlice
+	Attributes() pcommon.Map
+	StartTimestamp() pcommon.Timestamp
+	Timestamp() pcommon.Timestamp
+	Flags() pmetric.DataPointFlags
+}
+
+/*
+Auxiliary method to populate data from a data point representation. This is needed
+to be able to lazy load all the dependant fields inside baseMetricSignal which depend
+on datapoint data.
+
+This method must be called after baseMetricSignal initialization for each data point.
+*/
+func loadDataPoint[T genericDataPoint](metric *baseMetricSignal, dp T) {
+	metric.exemplars = convertExemplars(dp.Exemplars())
+	metric.MetricAttributes = convertAttributes(dp.Attributes())
+	metric.StartTimestamp = dp.StartTimestamp().AsTime().Format(time.RFC3339Nano)
+	metric.Timestamp = dp.Timestamp().AsTime().Format(time.RFC3339Nano)
+	metric.Flags = uint32(dp.Flags())
 }
 
 type exemplars struct {
@@ -158,14 +182,7 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 					dps := sum.DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-
-						// populate datapoint dependant fields
-						baseMetricSignal.exemplars = convertExemplars(dp.Exemplars())
-						baseMetricSignal.MetricAttributes = convertAttributes(dp.Attributes())
-						baseMetricSignal.StartTimestamp = dp.StartTimestamp().AsTime().Format(time.RFC3339Nano)
-						baseMetricSignal.Timestamp = dp.Timestamp().AsTime().Format(time.RFC3339Nano)
-						baseMetricSignal.Flags = uint32(dp.Flags())
-
+						loadDataPoint(&baseMetricSignal, dp)
 						sumSignal := sumMetricSignal{
 							baseMetricSignal:       baseMetricSignal,
 							Value:                  covertValue(dp),
@@ -181,13 +198,7 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 					dps := metric.Gauge().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-
-						// populate datapoint dependant fields
-						baseMetricSignal.exemplars = convertExemplars(dp.Exemplars())
-						baseMetricSignal.MetricAttributes = convertAttributes(dp.Attributes())
-						baseMetricSignal.StartTimestamp = dp.StartTimestamp().AsTime().Format(time.RFC3339Nano)
-						baseMetricSignal.Timestamp = dp.Timestamp().AsTime().Format(time.RFC3339Nano)
-						baseMetricSignal.Flags = uint32(dp.Flags())
+						loadDataPoint(&baseMetricSignal, dp)
 
 						gaugeSignal := gaugeMetricSignal{
 							baseMetricSignal: baseMetricSignal,
@@ -203,6 +214,7 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 					dps := hist.DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
+						loadDataPoint(&baseMetricSignal, dp)
 
 						var minVal, maxVal *float64
 						if dp.HasMin() {
@@ -213,13 +225,6 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 							localMax := dp.Max()
 							maxVal = &localMax
 						}
-
-						// populate datapoint dependant fields
-						baseMetricSignal.exemplars = convertExemplars(dp.Exemplars())
-						baseMetricSignal.MetricAttributes = convertAttributes(dp.Attributes())
-						baseMetricSignal.StartTimestamp = dp.StartTimestamp().AsTime().Format(time.RFC3339Nano)
-						baseMetricSignal.Timestamp = dp.Timestamp().AsTime().Format(time.RFC3339Nano)
-						baseMetricSignal.Flags = uint32(dp.Flags())
 
 						histogramSignal := histogramMetricSignal{
 							baseMetricSignal:       baseMetricSignal,
@@ -240,6 +245,7 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 					dps := ehist.DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
+						loadDataPoint(&baseMetricSignal, dp)
 
 						var minVal, maxVal *float64
 						if dp.HasMin() {
@@ -250,13 +256,6 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 							localMax := dp.Max()
 							maxVal = &localMax
 						}
-
-						// populate datapoint dependant fields
-						baseMetricSignal.exemplars = convertExemplars(dp.Exemplars())
-						baseMetricSignal.MetricAttributes = convertAttributes(dp.Attributes())
-						baseMetricSignal.StartTimestamp = dp.StartTimestamp().AsTime().Format(time.RFC3339Nano)
-						baseMetricSignal.Timestamp = dp.Timestamp().AsTime().Format(time.RFC3339Nano)
-						baseMetricSignal.Flags = uint32(dp.Flags())
 
 						exponentialHistogramSignal := exponentialHistogramMetricSignal{
 							baseMetricSignal:       baseMetricSignal,
