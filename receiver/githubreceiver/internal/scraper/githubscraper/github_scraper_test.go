@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v79/github"
+	"github.com/google/go-github/v81/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -99,6 +99,18 @@ func TestScrape(t *testing.T) {
 								{
 									Merged: false,
 								},
+							},
+						},
+					},
+					responseCode: http.StatusOK,
+				},
+				mergedPRResponse: mergedPRResponse{
+					prs: []getMergedPullRequestDataRepositoryPullRequestsPullRequestConnection{
+						{
+							PageInfo: getMergedPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
+								HasPreviousPage: false,
+							},
+							Nodes: []MergedPullRequestNode{
 								{
 									Merged: true,
 								},

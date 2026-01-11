@@ -1111,6 +1111,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(span_id, SpanID("0102030405060708"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+			},
+		},
+		{
 			statement: `set(attributes["test"], "pass") where String(ProfileID(0x00000000000000000000000000000001)) == "[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]"`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
@@ -1165,6 +1171,12 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(trace_id, TraceID(0x00000000000000000000000000000000))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().SetTraceID(pcommon.NewTraceIDEmpty())
+			},
+		},
+		{
+			statement: `set(trace_id, TraceID("0102030405060708090a0b0c0d0e0f10"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 			},
 		},
 		{
@@ -1429,6 +1441,30 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], XXH128("hello world"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "df8d09e93f874900a99b8775cc15b6c7")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Bool(1))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", true)
+			},
+		},
+		{
+			statement: `set(attributes["test"], Bool("1"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", true)
+			},
+		},
+		{
+			statement: `set(attributes["test"], Bool(true))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", true)
+			},
+		},
+		{
+			statement: `set(attributes["test"], Bool("true"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", true)
 			},
 		},
 	}
@@ -2210,30 +2246,30 @@ func constructLogTransformContextValueExpressions() *ottllog.TransformContext {
 }
 
 func constructSpanTransformContext() *ottlspan.TransformContext {
-	resource := pcommon.NewResource()
+	rs := ptrace.NewResourceSpans()
 
-	scope := pcommon.NewInstrumentationScope()
-	scope.SetName("scope")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().SetName("scope")
 
-	td := ptrace.NewSpan()
-	fillSpanOne(td)
+	span := ss.Spans().AppendEmpty()
+	fillSpanOne(span)
 
-	return ottlspan.NewTransformContextPtr(td, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+	return ottlspan.NewTransformContextPtr(rs, ss, span)
 }
 
 func constructSpanEventTransformContext() *ottlspanevent.TransformContext {
-	resource := pcommon.NewResource()
+	rs := ptrace.NewResourceSpans()
 
-	scope := pcommon.NewInstrumentationScope()
-	scope.SetName("scope")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().SetName("scope")
 
-	span := ptrace.NewSpan()
+	span := ss.Spans().AppendEmpty()
 	fillSpanOne(span)
 
 	ev1 := span.Events().AppendEmpty()
 	ev1.SetName("event-1")
 
-	return ottlspanevent.NewTransformContextPtr(ev1, span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), ottlspanevent.WithEventIndex(0))
+	return ottlspanevent.NewTransformContextPtr(rs, ss, span, ev1, ottlspanevent.WithEventIndex(0))
 }
 
 func newResourceLogs(tCtx *ottllog.TransformContext) plog.ResourceLogs {

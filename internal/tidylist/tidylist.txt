@@ -50,6 +50,7 @@ pkg/datadog
 receiver/datadogreceiver
 receiver/jaegerreceiver
 receiver/signalfxreceiver
+pkg/translator/splunk
 exporter/splunkhecexporter
 extension/ackextension
 receiver/splunkhecreceiver
@@ -58,6 +59,7 @@ receiver/syslogreceiver
 testbed/mockdatasenders/mockdatadogagentexporter
 testbed
 cmd/opampsupervisor
+cmd/schemagen
 cmd/telemetrygen
 cmd/telemetrygen/internal/e2etest
 confmap/provider/aesprovider
@@ -198,13 +200,13 @@ receiver/dockerstatsreceiver
 receiver/filelogreceiver
 internal/datadog/e2e
 internal/k8sinventory
+internal/k8sleaderelectortest
 internal/kubelet
 internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
-pkg/translator/opencensus
 pkg/translator/pprof
 processor/attributesprocessor
 processor/coralogixprocessor
@@ -220,6 +222,7 @@ processor/intervalprocessor
 processor/isolationforestprocessor
 processor/logdedupprocessor
 processor/logstransformprocessor
+processor/lookupprocessor
 processor/metricsgenerationprocessor
 processor/metricstarttimeprocessor
 processor/metricstransformprocessor
