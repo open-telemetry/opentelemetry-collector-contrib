@@ -1,0 +1,5 @@
+change_type: "bug_fix"
+component: "receiver/libhoney"
+issues: [45273]
+note: "Improve msgpack decoding to handle ints or uints"
+change_logs: [user]
