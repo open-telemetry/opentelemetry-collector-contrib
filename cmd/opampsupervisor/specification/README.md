@@ -321,14 +321,27 @@ For enhanced resilience, the Supervisor supports a fallback configuration mechan
 When configured, the Supervisor can automatically switch to a fallback configuration
 if the OpAMP server becomes unreachable for a specified duration.
 
+To enable this feature, the user must set the `fallback_configs` setting in the `agent`
+section of the Supervisor configuration file. The Supervisor will validate the configurations
+using the binary indicated by the `agent::executable` via the `validate` subcommand
+to ensure that they are valid configurations.
+
+If more than one fallback configuration is specified, the Supervisor will merge them in order.
+
+There are two scenarios where the Supervisor will switch to the fallback configuration:
+
 **Startup Fallback**: If `fallback_startup_timeout` is set and the Supervisor cannot
 establish an initial connection to the OpAMP server within that duration, the Collector
-will be started with the fallback configuration specified in `fallback_config`.
+will be started with the fallback configuration specified in `fallback_config`. The
+default value for this timeout is 30 seconds. It'll only be used if `fallback_configs` is set.
 
 **Runtime Fallback**: If `fallback_runtime_timeout` is set and the connection to the
 OpAMP server is lost after being previously connected, the Supervisor will wait for
 the specified duration. If the connection is not restored, the Collector will be
-switched to the fallback configuration.
+switched to the fallback configuration. This can be useful to avoid a potentially
+problematic configuration drift if the agent cannot receive a remote configuration
+for a long time. The default value of this timeout is 0 (disabled). It must be set
+to a non-zero value to enable runtime fallback.
 
 **Recovery**: When the connection to the OpAMP server is restored after using the
 fallback configuration, the Supervisor automatically switches back to the remote
