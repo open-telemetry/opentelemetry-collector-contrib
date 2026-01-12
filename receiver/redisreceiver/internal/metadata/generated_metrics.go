@@ -452,6 +452,7 @@ func (m *metricRedisClientsBlocked) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClientsBlocked(cfg MetricConfig) metricRedisClientsBlocked {
 	m := metricRedisClientsBlocked{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -503,6 +504,7 @@ func (m *metricRedisClientsConnected) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClientsConnected(cfg MetricConfig) metricRedisClientsConnected {
 	m := metricRedisClientsConnected{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -552,6 +554,7 @@ func (m *metricRedisClientsMaxInputBuffer) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClientsMaxInputBuffer(cfg MetricConfig) metricRedisClientsMaxInputBuffer {
 	m := metricRedisClientsMaxInputBuffer{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -601,6 +604,7 @@ func (m *metricRedisClientsMaxOutputBuffer) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClientsMaxOutputBuffer(cfg MetricConfig) metricRedisClientsMaxOutputBuffer {
 	m := metricRedisClientsMaxOutputBuffer{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -650,6 +654,7 @@ func (m *metricRedisClusterClusterEnabled) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClusterClusterEnabled(cfg MetricConfig) metricRedisClusterClusterEnabled {
 	m := metricRedisClusterClusterEnabled{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -699,6 +704,7 @@ func (m *metricRedisClusterKnownNodes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClusterKnownNodes(cfg MetricConfig) metricRedisClusterKnownNodes {
 	m := metricRedisClusterKnownNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -750,6 +756,7 @@ func (m *metricRedisClusterLinksBufferLimitExceededCount) emit(metrics pmetric.M
 
 func newMetricRedisClusterLinksBufferLimitExceededCount(cfg MetricConfig) metricRedisClusterLinksBufferLimitExceededCount {
 	m := metricRedisClusterLinksBufferLimitExceededCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -799,6 +806,7 @@ func (m *metricRedisClusterNodeCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClusterNodeCount(cfg MetricConfig) metricRedisClusterNodeCount {
 	m := metricRedisClusterNodeCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -848,6 +856,7 @@ func (m *metricRedisClusterNodeUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClusterNodeUptime(cfg MetricConfig) metricRedisClusterNodeUptime {
 	m := metricRedisClusterNodeUptime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -897,6 +906,7 @@ func (m *metricRedisClusterSlotsAssigned) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClusterSlotsAssigned(cfg MetricConfig) metricRedisClusterSlotsAssigned {
 	m := metricRedisClusterSlotsAssigned{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -946,6 +956,7 @@ func (m *metricRedisClusterSlotsFail) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClusterSlotsFail(cfg MetricConfig) metricRedisClusterSlotsFail {
 	m := metricRedisClusterSlotsFail{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -995,6 +1006,7 @@ func (m *metricRedisClusterSlotsOk) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClusterSlotsOk(cfg MetricConfig) metricRedisClusterSlotsOk {
 	m := metricRedisClusterSlotsOk{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1044,6 +1056,7 @@ func (m *metricRedisClusterSlotsPfail) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClusterSlotsPfail(cfg MetricConfig) metricRedisClusterSlotsPfail {
 	m := metricRedisClusterSlotsPfail{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1095,6 +1108,7 @@ func (m *metricRedisClusterState) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClusterState(cfg MetricConfig) metricRedisClusterState {
 	m := metricRedisClusterState{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1146,6 +1160,7 @@ func (m *metricRedisClusterStatsMessagesReceived) emit(metrics pmetric.MetricSli
 
 func newMetricRedisClusterStatsMessagesReceived(cfg MetricConfig) metricRedisClusterStatsMessagesReceived {
 	m := metricRedisClusterStatsMessagesReceived{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1197,6 +1212,7 @@ func (m *metricRedisClusterStatsMessagesSent) emit(metrics pmetric.MetricSlice) 
 
 func newMetricRedisClusterStatsMessagesSent(cfg MetricConfig) metricRedisClusterStatsMessagesSent {
 	m := metricRedisClusterStatsMessagesSent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1246,6 +1262,7 @@ func (m *metricRedisClusterUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClusterUptime(cfg MetricConfig) metricRedisClusterUptime {
 	m := metricRedisClusterUptime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1299,6 +1316,7 @@ func (m *metricRedisCmdCalls) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisCmdCalls(cfg MetricConfig) metricRedisCmdCalls {
 	m := metricRedisCmdCalls{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1351,6 +1369,7 @@ func (m *metricRedisCmdLatency) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisCmdLatency(cfg MetricConfig) metricRedisCmdLatency {
 	m := metricRedisCmdLatency{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1404,6 +1423,7 @@ func (m *metricRedisCmdUsec) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisCmdUsec(cfg MetricConfig) metricRedisCmdUsec {
 	m := metricRedisCmdUsec{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1453,6 +1473,7 @@ func (m *metricRedisCommands) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisCommands(cfg MetricConfig) metricRedisCommands {
 	m := metricRedisCommands{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1504,6 +1525,7 @@ func (m *metricRedisCommandsProcessed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisCommandsProcessed(cfg MetricConfig) metricRedisCommandsProcessed {
 	m := metricRedisCommandsProcessed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1555,6 +1577,7 @@ func (m *metricRedisConnectionsReceived) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisConnectionsReceived(cfg MetricConfig) metricRedisConnectionsReceived {
 	m := metricRedisConnectionsReceived{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1606,6 +1629,7 @@ func (m *metricRedisConnectionsRejected) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisConnectionsRejected(cfg MetricConfig) metricRedisConnectionsRejected {
 	m := metricRedisConnectionsRejected{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1659,6 +1683,7 @@ func (m *metricRedisCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisCPUTime(cfg MetricConfig) metricRedisCPUTime {
 	m := metricRedisCPUTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1710,6 +1735,7 @@ func (m *metricRedisDbAvgTTL) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisDbAvgTTL(cfg MetricConfig) metricRedisDbAvgTTL {
 	m := metricRedisDbAvgTTL{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1761,6 +1787,7 @@ func (m *metricRedisDbExpires) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisDbExpires(cfg MetricConfig) metricRedisDbExpires {
 	m := metricRedisDbExpires{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1812,6 +1839,7 @@ func (m *metricRedisDbKeys) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisDbKeys(cfg MetricConfig) metricRedisDbKeys {
 	m := metricRedisDbKeys{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1863,6 +1891,7 @@ func (m *metricRedisKeysEvicted) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisKeysEvicted(cfg MetricConfig) metricRedisKeysEvicted {
 	m := metricRedisKeysEvicted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1914,6 +1943,7 @@ func (m *metricRedisKeysExpired) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisKeysExpired(cfg MetricConfig) metricRedisKeysExpired {
 	m := metricRedisKeysExpired{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1965,6 +1995,7 @@ func (m *metricRedisKeyspaceHits) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisKeyspaceHits(cfg MetricConfig) metricRedisKeyspaceHits {
 	m := metricRedisKeyspaceHits{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2016,6 +2047,7 @@ func (m *metricRedisKeyspaceMisses) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisKeyspaceMisses(cfg MetricConfig) metricRedisKeyspaceMisses {
 	m := metricRedisKeyspaceMisses{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2065,6 +2097,7 @@ func (m *metricRedisLatestFork) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisLatestFork(cfg MetricConfig) metricRedisLatestFork {
 	m := metricRedisLatestFork{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2114,6 +2147,7 @@ func (m *metricRedisMaxmemory) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisMaxmemory(cfg MetricConfig) metricRedisMaxmemory {
 	m := metricRedisMaxmemory{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2163,6 +2197,7 @@ func (m *metricRedisMemoryFragmentationRatio) emit(metrics pmetric.MetricSlice) 
 
 func newMetricRedisMemoryFragmentationRatio(cfg MetricConfig) metricRedisMemoryFragmentationRatio {
 	m := metricRedisMemoryFragmentationRatio{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2212,6 +2247,7 @@ func (m *metricRedisMemoryLua) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisMemoryLua(cfg MetricConfig) metricRedisMemoryLua {
 	m := metricRedisMemoryLua{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2261,6 +2297,7 @@ func (m *metricRedisMemoryPeak) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisMemoryPeak(cfg MetricConfig) metricRedisMemoryPeak {
 	m := metricRedisMemoryPeak{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2310,6 +2347,7 @@ func (m *metricRedisMemoryRss) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisMemoryRss(cfg MetricConfig) metricRedisMemoryRss {
 	m := metricRedisMemoryRss{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2359,6 +2397,7 @@ func (m *metricRedisMemoryUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisMemoryUsed(cfg MetricConfig) metricRedisMemoryUsed {
 	m := metricRedisMemoryUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2410,6 +2449,7 @@ func (m *metricRedisMemoryUsedMemoryOverhead) emit(metrics pmetric.MetricSlice) 
 
 func newMetricRedisMemoryUsedMemoryOverhead(cfg MetricConfig) metricRedisMemoryUsedMemoryOverhead {
 	m := metricRedisMemoryUsedMemoryOverhead{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2461,6 +2501,7 @@ func (m *metricRedisMemoryUsedMemoryStartup) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisMemoryUsedMemoryStartup(cfg MetricConfig) metricRedisMemoryUsedMemoryStartup {
 	m := metricRedisMemoryUsedMemoryStartup{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2512,6 +2553,7 @@ func (m *metricRedisMode) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisMode(cfg MetricConfig) metricRedisMode {
 	m := metricRedisMode{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2563,6 +2605,7 @@ func (m *metricRedisNetInput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisNetInput(cfg MetricConfig) metricRedisNetInput {
 	m := metricRedisNetInput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2614,6 +2657,7 @@ func (m *metricRedisNetOutput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisNetOutput(cfg MetricConfig) metricRedisNetOutput {
 	m := metricRedisNetOutput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2665,6 +2709,7 @@ func (m *metricRedisRdbChangesSinceLastSave) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisRdbChangesSinceLastSave(cfg MetricConfig) metricRedisRdbChangesSinceLastSave {
 	m := metricRedisRdbChangesSinceLastSave{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2714,6 +2759,7 @@ func (m *metricRedisReplicationBacklogFirstByteOffset) emit(metrics pmetric.Metr
 
 func newMetricRedisReplicationBacklogFirstByteOffset(cfg MetricConfig) metricRedisReplicationBacklogFirstByteOffset {
 	m := metricRedisReplicationBacklogFirstByteOffset{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2763,6 +2809,7 @@ func (m *metricRedisReplicationOffset) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisReplicationOffset(cfg MetricConfig) metricRedisReplicationOffset {
 	m := metricRedisReplicationOffset{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2812,6 +2859,7 @@ func (m *metricRedisReplicationReplicaOffset) emit(metrics pmetric.MetricSlice) 
 
 func newMetricRedisReplicationReplicaOffset(cfg MetricConfig) metricRedisReplicationReplicaOffset {
 	m := metricRedisReplicationReplicaOffset{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2865,6 +2913,7 @@ func (m *metricRedisRole) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisRole(cfg MetricConfig) metricRedisRole {
 	m := metricRedisRole{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2914,6 +2963,7 @@ func (m *metricRedisSentinelMasters) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisSentinelMasters(cfg MetricConfig) metricRedisSentinelMasters {
 	m := metricRedisSentinelMasters{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2963,6 +3013,7 @@ func (m *metricRedisSentinelRunningScripts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisSentinelRunningScripts(cfg MetricConfig) metricRedisSentinelRunningScripts {
 	m := metricRedisSentinelRunningScripts{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3012,6 +3063,7 @@ func (m *metricRedisSentinelScriptsQueueLength) emit(metrics pmetric.MetricSlice
 
 func newMetricRedisSentinelScriptsQueueLength(cfg MetricConfig) metricRedisSentinelScriptsQueueLength {
 	m := metricRedisSentinelScriptsQueueLength{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3061,6 +3113,7 @@ func (m *metricRedisSentinelSimulateFailureFlags) emit(metrics pmetric.MetricSli
 
 func newMetricRedisSentinelSimulateFailureFlags(cfg MetricConfig) metricRedisSentinelSimulateFailureFlags {
 	m := metricRedisSentinelSimulateFailureFlags{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3110,6 +3163,7 @@ func (m *metricRedisSentinelTiltSinceSeconds) emit(metrics pmetric.MetricSlice) 
 
 func newMetricRedisSentinelTiltSinceSeconds(cfg MetricConfig) metricRedisSentinelTiltSinceSeconds {
 	m := metricRedisSentinelTiltSinceSeconds{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3161,6 +3215,7 @@ func (m *metricRedisSentinelTotalTilt) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisSentinelTotalTilt(cfg MetricConfig) metricRedisSentinelTotalTilt {
 	m := metricRedisSentinelTotalTilt{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3212,6 +3267,7 @@ func (m *metricRedisSlavesConnected) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisSlavesConnected(cfg MetricConfig) metricRedisSlavesConnected {
 	m := metricRedisSlavesConnected{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3263,6 +3319,7 @@ func (m *metricRedisTrackingTotalKeys) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisTrackingTotalKeys(cfg MetricConfig) metricRedisTrackingTotalKeys {
 	m := metricRedisTrackingTotalKeys{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3314,6 +3371,7 @@ func (m *metricRedisUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisUptime(cfg MetricConfig) metricRedisUptime {
 	m := metricRedisUptime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

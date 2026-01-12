@@ -1296,6 +1296,7 @@ func (m *metricMysqlBufferPoolDataPages) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlBufferPoolDataPages(cfg MetricConfig) metricMysqlBufferPoolDataPages {
 	m := metricMysqlBufferPoolDataPages{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1347,6 +1348,7 @@ func (m *metricMysqlBufferPoolLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlBufferPoolLimit(cfg MetricConfig) metricMysqlBufferPoolLimit {
 	m := metricMysqlBufferPoolLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1400,6 +1402,7 @@ func (m *metricMysqlBufferPoolOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlBufferPoolOperations(cfg MetricConfig) metricMysqlBufferPoolOperations {
 	m := metricMysqlBufferPoolOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1451,6 +1454,7 @@ func (m *metricMysqlBufferPoolPageFlushes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlBufferPoolPageFlushes(cfg MetricConfig) metricMysqlBufferPoolPageFlushes {
 	m := metricMysqlBufferPoolPageFlushes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1504,6 +1508,7 @@ func (m *metricMysqlBufferPoolPages) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlBufferPoolPages(cfg MetricConfig) metricMysqlBufferPoolPages {
 	m := metricMysqlBufferPoolPages{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1557,6 +1562,7 @@ func (m *metricMysqlBufferPoolUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlBufferPoolUsage(cfg MetricConfig) metricMysqlBufferPoolUsage {
 	m := metricMysqlBufferPoolUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1610,6 +1616,7 @@ func (m *metricMysqlClientNetworkIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlClientNetworkIo(cfg MetricConfig) metricMysqlClientNetworkIo {
 	m := metricMysqlClientNetworkIo{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1663,6 +1670,7 @@ func (m *metricMysqlCommands) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlCommands(cfg MetricConfig) metricMysqlCommands {
 	m := metricMysqlCommands{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1714,6 +1722,7 @@ func (m *metricMysqlConnectionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlConnectionCount(cfg MetricConfig) metricMysqlConnectionCount {
 	m := metricMysqlConnectionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1767,6 +1776,7 @@ func (m *metricMysqlConnectionErrors) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlConnectionErrors(cfg MetricConfig) metricMysqlConnectionErrors {
 	m := metricMysqlConnectionErrors{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1820,6 +1830,7 @@ func (m *metricMysqlDoubleWrites) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlDoubleWrites(cfg MetricConfig) metricMysqlDoubleWrites {
 	m := metricMysqlDoubleWrites{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1873,6 +1884,7 @@ func (m *metricMysqlHandlers) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlHandlers(cfg MetricConfig) metricMysqlHandlers {
 	m := metricMysqlHandlers{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1929,6 +1941,7 @@ func (m *metricMysqlIndexIoWaitCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlIndexIoWaitCount(cfg MetricConfig) metricMysqlIndexIoWaitCount {
 	m := metricMysqlIndexIoWaitCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1985,6 +1998,7 @@ func (m *metricMysqlIndexIoWaitTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlIndexIoWaitTime(cfg MetricConfig) metricMysqlIndexIoWaitTime {
 	m := metricMysqlIndexIoWaitTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2038,6 +2052,7 @@ func (m *metricMysqlJoins) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlJoins(cfg MetricConfig) metricMysqlJoins {
 	m := metricMysqlJoins{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2091,6 +2106,7 @@ func (m *metricMysqlLocks) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlLocks(cfg MetricConfig) metricMysqlLocks {
 	m := metricMysqlLocks{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2144,6 +2160,7 @@ func (m *metricMysqlLogOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlLogOperations(cfg MetricConfig) metricMysqlLogOperations {
 	m := metricMysqlLogOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2195,6 +2212,7 @@ func (m *metricMysqlMaxUsedConnections) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlMaxUsedConnections(cfg MetricConfig) metricMysqlMaxUsedConnections {
 	m := metricMysqlMaxUsedConnections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2248,6 +2266,7 @@ func (m *metricMysqlMysqlxConnections) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlMysqlxConnections(cfg MetricConfig) metricMysqlMysqlxConnections {
 	m := metricMysqlMysqlxConnections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2301,6 +2320,7 @@ func (m *metricMysqlMysqlxWorkerThreads) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlMysqlxWorkerThreads(cfg MetricConfig) metricMysqlMysqlxWorkerThreads {
 	m := metricMysqlMysqlxWorkerThreads{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2354,6 +2374,7 @@ func (m *metricMysqlOpenedResources) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlOpenedResources(cfg MetricConfig) metricMysqlOpenedResources {
 	m := metricMysqlOpenedResources{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2407,6 +2428,7 @@ func (m *metricMysqlOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlOperations(cfg MetricConfig) metricMysqlOperations {
 	m := metricMysqlOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2460,6 +2482,7 @@ func (m *metricMysqlPageOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlPageOperations(cfg MetricConfig) metricMysqlPageOperations {
 	m := metricMysqlPageOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2511,6 +2534,7 @@ func (m *metricMysqlPageSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlPageSize(cfg MetricConfig) metricMysqlPageSize {
 	m := metricMysqlPageSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2564,6 +2588,7 @@ func (m *metricMysqlPreparedStatements) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlPreparedStatements(cfg MetricConfig) metricMysqlPreparedStatements {
 	m := metricMysqlPreparedStatements{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2615,6 +2640,7 @@ func (m *metricMysqlQueryClientCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlQueryClientCount(cfg MetricConfig) metricMysqlQueryClientCount {
 	m := metricMysqlQueryClientCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2666,6 +2692,7 @@ func (m *metricMysqlQueryCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlQueryCount(cfg MetricConfig) metricMysqlQueryCount {
 	m := metricMysqlQueryCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2717,6 +2744,7 @@ func (m *metricMysqlQuerySlowCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlQuerySlowCount(cfg MetricConfig) metricMysqlQuerySlowCount {
 	m := metricMysqlQuerySlowCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2768,6 +2796,7 @@ func (m *metricMysqlReplicaSQLDelay) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlReplicaSQLDelay(cfg MetricConfig) metricMysqlReplicaSQLDelay {
 	m := metricMysqlReplicaSQLDelay{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2819,6 +2848,7 @@ func (m *metricMysqlReplicaTimeBehindSource) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlReplicaTimeBehindSource(cfg MetricConfig) metricMysqlReplicaTimeBehindSource {
 	m := metricMysqlReplicaTimeBehindSource{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2872,6 +2902,7 @@ func (m *metricMysqlRowLocks) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlRowLocks(cfg MetricConfig) metricMysqlRowLocks {
 	m := metricMysqlRowLocks{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2925,6 +2956,7 @@ func (m *metricMysqlRowOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlRowOperations(cfg MetricConfig) metricMysqlRowOperations {
 	m := metricMysqlRowOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2978,6 +3010,7 @@ func (m *metricMysqlSorts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlSorts(cfg MetricConfig) metricMysqlSorts {
 	m := metricMysqlSorts{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3034,6 +3067,7 @@ func (m *metricMysqlStatementEventCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlStatementEventCount(cfg MetricConfig) metricMysqlStatementEventCount {
 	m := metricMysqlStatementEventCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3089,6 +3123,7 @@ func (m *metricMysqlStatementEventWaitTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlStatementEventWaitTime(cfg MetricConfig) metricMysqlStatementEventWaitTime {
 	m := metricMysqlStatementEventWaitTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3143,6 +3178,7 @@ func (m *metricMysqlTableAverageRowLength) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlTableAverageRowLength(cfg MetricConfig) metricMysqlTableAverageRowLength {
 	m := metricMysqlTableAverageRowLength{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3198,6 +3234,7 @@ func (m *metricMysqlTableIoWaitCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlTableIoWaitCount(cfg MetricConfig) metricMysqlTableIoWaitCount {
 	m := metricMysqlTableIoWaitCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3253,6 +3290,7 @@ func (m *metricMysqlTableIoWaitTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlTableIoWaitTime(cfg MetricConfig) metricMysqlTableIoWaitTime {
 	m := metricMysqlTableIoWaitTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3308,6 +3346,7 @@ func (m *metricMysqlTableLockWaitReadCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlTableLockWaitReadCount(cfg MetricConfig) metricMysqlTableLockWaitReadCount {
 	m := metricMysqlTableLockWaitReadCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3363,6 +3402,7 @@ func (m *metricMysqlTableLockWaitReadTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlTableLockWaitReadTime(cfg MetricConfig) metricMysqlTableLockWaitReadTime {
 	m := metricMysqlTableLockWaitReadTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3418,6 +3458,7 @@ func (m *metricMysqlTableLockWaitWriteCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlTableLockWaitWriteCount(cfg MetricConfig) metricMysqlTableLockWaitWriteCount {
 	m := metricMysqlTableLockWaitWriteCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3473,6 +3514,7 @@ func (m *metricMysqlTableLockWaitWriteTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlTableLockWaitWriteTime(cfg MetricConfig) metricMysqlTableLockWaitWriteTime {
 	m := metricMysqlTableLockWaitWriteTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3527,6 +3569,7 @@ func (m *metricMysqlTableRows) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlTableRows(cfg MetricConfig) metricMysqlTableRows {
 	m := metricMysqlTableRows{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3582,6 +3625,7 @@ func (m *metricMysqlTableSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlTableSize(cfg MetricConfig) metricMysqlTableSize {
 	m := metricMysqlTableSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3635,6 +3679,7 @@ func (m *metricMysqlTableOpenCache) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlTableOpenCache(cfg MetricConfig) metricMysqlTableOpenCache {
 	m := metricMysqlTableOpenCache{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3688,6 +3733,7 @@ func (m *metricMysqlThreads) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlThreads(cfg MetricConfig) metricMysqlThreads {
 	m := metricMysqlThreads{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3741,6 +3787,7 @@ func (m *metricMysqlTmpResources) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlTmpResources(cfg MetricConfig) metricMysqlTmpResources {
 	m := metricMysqlTmpResources{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3792,6 +3839,7 @@ func (m *metricMysqlUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlUptime(cfg MetricConfig) metricMysqlUptime {
 	m := metricMysqlUptime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

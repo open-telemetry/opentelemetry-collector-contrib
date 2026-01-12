@@ -115,6 +115,7 @@ func (m *metricTcpcheckDuration) emit(metrics pmetric.MetricSlice) {
 
 func newMetricTcpcheckDuration(cfg MetricConfig) metricTcpcheckDuration {
 	m := metricTcpcheckDuration{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -169,6 +170,7 @@ func (m *metricTcpcheckError) emit(metrics pmetric.MetricSlice) {
 
 func newMetricTcpcheckError(cfg MetricConfig) metricTcpcheckError {
 	m := metricTcpcheckError{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -220,6 +222,7 @@ func (m *metricTcpcheckStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricTcpcheckStatus(cfg MetricConfig) metricTcpcheckStatus {
 	m := metricTcpcheckStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

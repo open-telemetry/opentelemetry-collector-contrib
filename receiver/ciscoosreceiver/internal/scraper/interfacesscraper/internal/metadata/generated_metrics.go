@@ -144,6 +144,7 @@ func (m *metricSystemNetworkErrors) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemNetworkErrors(cfg MetricConfig) metricSystemNetworkErrors {
 	m := metricSystemNetworkErrors{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -198,6 +199,7 @@ func (m *metricSystemNetworkInterfaceStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemNetworkInterfaceStatus(cfg MetricConfig) metricSystemNetworkInterfaceStatus {
 	m := metricSystemNetworkInterfaceStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -255,6 +257,7 @@ func (m *metricSystemNetworkIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemNetworkIo(cfg MetricConfig) metricSystemNetworkIo {
 	m := metricSystemNetworkIo{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -312,6 +315,7 @@ func (m *metricSystemNetworkPacketCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemNetworkPacketCount(cfg MetricConfig) metricSystemNetworkPacketCount {
 	m := metricSystemNetworkPacketCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -369,6 +373,7 @@ func (m *metricSystemNetworkPacketDropped) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemNetworkPacketDropped(cfg MetricConfig) metricSystemNetworkPacketDropped {
 	m := metricSystemNetworkPacketDropped{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

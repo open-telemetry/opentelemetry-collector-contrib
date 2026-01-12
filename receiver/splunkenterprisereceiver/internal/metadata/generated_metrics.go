@@ -271,6 +271,7 @@ func (m *metricSplunkAggregationQueueRatio) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkAggregationQueueRatio(cfg MetricConfig) metricSplunkAggregationQueueRatio {
 	m := metricSplunkAggregationQueueRatio{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -325,6 +326,7 @@ func (m *metricSplunkBucketsSearchableStatus) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSplunkBucketsSearchableStatus(cfg MetricConfig) metricSplunkBucketsSearchableStatus {
 	m := metricSplunkBucketsSearchableStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -378,6 +380,7 @@ func (m *metricSplunkDataIndexesExtendedBucketCount) emit(metrics pmetric.Metric
 
 func newMetricSplunkDataIndexesExtendedBucketCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketCount {
 	m := metricSplunkDataIndexesExtendedBucketCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -432,6 +435,7 @@ func (m *metricSplunkDataIndexesExtendedBucketEventCount) emit(metrics pmetric.M
 
 func newMetricSplunkDataIndexesExtendedBucketEventCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketEventCount {
 	m := metricSplunkDataIndexesExtendedBucketEventCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -486,6 +490,7 @@ func (m *metricSplunkDataIndexesExtendedBucketHotCount) emit(metrics pmetric.Met
 
 func newMetricSplunkDataIndexesExtendedBucketHotCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketHotCount {
 	m := metricSplunkDataIndexesExtendedBucketHotCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -540,6 +545,7 @@ func (m *metricSplunkDataIndexesExtendedBucketWarmCount) emit(metrics pmetric.Me
 
 func newMetricSplunkDataIndexesExtendedBucketWarmCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketWarmCount {
 	m := metricSplunkDataIndexesExtendedBucketWarmCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -593,6 +599,7 @@ func (m *metricSplunkDataIndexesExtendedEventCount) emit(metrics pmetric.MetricS
 
 func newMetricSplunkDataIndexesExtendedEventCount(cfg MetricConfig) metricSplunkDataIndexesExtendedEventCount {
 	m := metricSplunkDataIndexesExtendedEventCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -646,6 +653,7 @@ func (m *metricSplunkDataIndexesExtendedRawSize) emit(metrics pmetric.MetricSlic
 
 func newMetricSplunkDataIndexesExtendedRawSize(cfg MetricConfig) metricSplunkDataIndexesExtendedRawSize {
 	m := metricSplunkDataIndexesExtendedRawSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -699,6 +707,7 @@ func (m *metricSplunkDataIndexesExtendedTotalSize) emit(metrics pmetric.MetricSl
 
 func newMetricSplunkDataIndexesExtendedTotalSize(cfg MetricConfig) metricSplunkDataIndexesExtendedTotalSize {
 	m := metricSplunkDataIndexesExtendedTotalSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -753,6 +762,7 @@ func (m *metricSplunkHealth) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkHealth(cfg MetricConfig) metricSplunkHealth {
 	m := metricSplunkHealth{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -806,6 +816,7 @@ func (m *metricSplunkIndexerAvgRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkIndexerAvgRate(cfg MetricConfig) metricSplunkIndexerAvgRate {
 	m := metricSplunkIndexerAvgRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -859,6 +870,7 @@ func (m *metricSplunkIndexerCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkIndexerCPUTime(cfg MetricConfig) metricSplunkIndexerCPUTime {
 	m := metricSplunkIndexerCPUTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -912,6 +924,7 @@ func (m *metricSplunkIndexerQueueRatio) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkIndexerQueueRatio(cfg MetricConfig) metricSplunkIndexerQueueRatio {
 	m := metricSplunkIndexerQueueRatio{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -965,6 +978,7 @@ func (m *metricSplunkIndexerRawWriteTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkIndexerRawWriteTime(cfg MetricConfig) metricSplunkIndexerRawWriteTime {
 	m := metricSplunkIndexerRawWriteTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1019,6 +1033,7 @@ func (m *metricSplunkIndexerRollingrestartStatus) emit(metrics pmetric.MetricSli
 
 func newMetricSplunkIndexerRollingrestartStatus(cfg MetricConfig) metricSplunkIndexerRollingrestartStatus {
 	m := metricSplunkIndexerRollingrestartStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1072,6 +1087,7 @@ func (m *metricSplunkIndexerThroughput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkIndexerThroughput(cfg MetricConfig) metricSplunkIndexerThroughput {
 	m := metricSplunkIndexerThroughput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1125,6 +1141,7 @@ func (m *metricSplunkIndexesAvgSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkIndexesAvgSize(cfg MetricConfig) metricSplunkIndexesAvgSize {
 	m := metricSplunkIndexesAvgSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1178,6 +1195,7 @@ func (m *metricSplunkIndexesAvgUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkIndexesAvgUsage(cfg MetricConfig) metricSplunkIndexesAvgUsage {
 	m := metricSplunkIndexesAvgUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1231,6 +1249,7 @@ func (m *metricSplunkIndexesBucketCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkIndexesBucketCount(cfg MetricConfig) metricSplunkIndexesBucketCount {
 	m := metricSplunkIndexesBucketCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1284,6 +1303,7 @@ func (m *metricSplunkIndexesMedianDataAge) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkIndexesMedianDataAge(cfg MetricConfig) metricSplunkIndexesMedianDataAge {
 	m := metricSplunkIndexesMedianDataAge{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1337,6 +1357,7 @@ func (m *metricSplunkIndexesSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkIndexesSize(cfg MetricConfig) metricSplunkIndexesSize {
 	m := metricSplunkIndexesSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1390,6 +1411,7 @@ func (m *metricSplunkIoAvgIops) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkIoAvgIops(cfg MetricConfig) metricSplunkIoAvgIops {
 	m := metricSplunkIoAvgIops{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1443,6 +1465,7 @@ func (m *metricSplunkKvstoreBackupStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkKvstoreBackupStatus(cfg MetricConfig) metricSplunkKvstoreBackupStatus {
 	m := metricSplunkKvstoreBackupStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1496,6 +1519,7 @@ func (m *metricSplunkKvstoreReplicationStatus) emit(metrics pmetric.MetricSlice)
 
 func newMetricSplunkKvstoreReplicationStatus(cfg MetricConfig) metricSplunkKvstoreReplicationStatus {
 	m := metricSplunkKvstoreReplicationStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1551,6 +1575,7 @@ func (m *metricSplunkKvstoreStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkKvstoreStatus(cfg MetricConfig) metricSplunkKvstoreStatus {
 	m := metricSplunkKvstoreStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1606,6 +1631,7 @@ func (m *metricSplunkLicenseExpirationSecondsRemaining) emit(metrics pmetric.Met
 
 func newMetricSplunkLicenseExpirationSecondsRemaining(cfg MetricConfig) metricSplunkLicenseExpirationSecondsRemaining {
 	m := metricSplunkLicenseExpirationSecondsRemaining{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1659,6 +1685,7 @@ func (m *metricSplunkLicenseIndexUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkLicenseIndexUsage(cfg MetricConfig) metricSplunkLicenseIndexUsage {
 	m := metricSplunkLicenseIndexUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1712,6 +1739,7 @@ func (m *metricSplunkParseQueueRatio) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkParseQueueRatio(cfg MetricConfig) metricSplunkParseQueueRatio {
 	m := metricSplunkParseQueueRatio{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1765,6 +1793,7 @@ func (m *metricSplunkPipelineSetCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkPipelineSetCount(cfg MetricConfig) metricSplunkPipelineSetCount {
 	m := metricSplunkPipelineSetCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1818,6 +1847,7 @@ func (m *metricSplunkSchedulerAvgExecutionLatency) emit(metrics pmetric.MetricSl
 
 func newMetricSplunkSchedulerAvgExecutionLatency(cfg MetricConfig) metricSplunkSchedulerAvgExecutionLatency {
 	m := metricSplunkSchedulerAvgExecutionLatency{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1871,6 +1901,7 @@ func (m *metricSplunkSchedulerAvgRunTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkSchedulerAvgRunTime(cfg MetricConfig) metricSplunkSchedulerAvgRunTime {
 	m := metricSplunkSchedulerAvgRunTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1924,6 +1955,7 @@ func (m *metricSplunkSchedulerCompletionRatio) emit(metrics pmetric.MetricSlice)
 
 func newMetricSplunkSchedulerCompletionRatio(cfg MetricConfig) metricSplunkSchedulerCompletionRatio {
 	m := metricSplunkSchedulerCompletionRatio{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1976,6 +2008,7 @@ func (m *metricSplunkSearchDuration) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkSearchDuration(cfg MetricConfig) metricSplunkSearchDuration {
 	m := metricSplunkSearchDuration{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2028,6 +2061,7 @@ func (m *metricSplunkSearchInitiation) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkSearchInitiation(cfg MetricConfig) metricSplunkSearchInitiation {
 	m := metricSplunkSearchInitiation{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2081,6 +2115,7 @@ func (m *metricSplunkSearchStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkSearchStatus(cfg MetricConfig) metricSplunkSearchStatus {
 	m := metricSplunkSearchStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2133,6 +2168,7 @@ func (m *metricSplunkSearchSuccess) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkSearchSuccess(cfg MetricConfig) metricSplunkSearchSuccess {
 	m := metricSplunkSearchSuccess{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2186,6 +2222,7 @@ func (m *metricSplunkServerIntrospectionQueuesCurrent) emit(metrics pmetric.Metr
 
 func newMetricSplunkServerIntrospectionQueuesCurrent(cfg MetricConfig) metricSplunkServerIntrospectionQueuesCurrent {
 	m := metricSplunkServerIntrospectionQueuesCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2239,6 +2276,7 @@ func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) emit(metrics pmetric
 
 func newMetricSplunkServerIntrospectionQueuesCurrentBytes(cfg MetricConfig) metricSplunkServerIntrospectionQueuesCurrentBytes {
 	m := metricSplunkServerIntrospectionQueuesCurrentBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2292,6 +2330,7 @@ func (m *metricSplunkServerSearchartifactsAdhoc) emit(metrics pmetric.MetricSlic
 
 func newMetricSplunkServerSearchartifactsAdhoc(cfg MetricConfig) metricSplunkServerSearchartifactsAdhoc {
 	m := metricSplunkServerSearchartifactsAdhoc{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2345,6 +2384,7 @@ func (m *metricSplunkServerSearchartifactsAdhocSize) emit(metrics pmetric.Metric
 
 func newMetricSplunkServerSearchartifactsAdhocSize(cfg MetricConfig) metricSplunkServerSearchartifactsAdhocSize {
 	m := metricSplunkServerSearchartifactsAdhocSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2398,6 +2438,7 @@ func (m *metricSplunkServerSearchartifactsCompleted) emit(metrics pmetric.Metric
 
 func newMetricSplunkServerSearchartifactsCompleted(cfg MetricConfig) metricSplunkServerSearchartifactsCompleted {
 	m := metricSplunkServerSearchartifactsCompleted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2451,6 +2492,7 @@ func (m *metricSplunkServerSearchartifactsCompletedSize) emit(metrics pmetric.Me
 
 func newMetricSplunkServerSearchartifactsCompletedSize(cfg MetricConfig) metricSplunkServerSearchartifactsCompletedSize {
 	m := metricSplunkServerSearchartifactsCompletedSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2504,6 +2546,7 @@ func (m *metricSplunkServerSearchartifactsIncomplete) emit(metrics pmetric.Metri
 
 func newMetricSplunkServerSearchartifactsIncomplete(cfg MetricConfig) metricSplunkServerSearchartifactsIncomplete {
 	m := metricSplunkServerSearchartifactsIncomplete{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2557,6 +2600,7 @@ func (m *metricSplunkServerSearchartifactsIncompleteSize) emit(metrics pmetric.M
 
 func newMetricSplunkServerSearchartifactsIncompleteSize(cfg MetricConfig) metricSplunkServerSearchartifactsIncompleteSize {
 	m := metricSplunkServerSearchartifactsIncompleteSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2610,6 +2654,7 @@ func (m *metricSplunkServerSearchartifactsInvalid) emit(metrics pmetric.MetricSl
 
 func newMetricSplunkServerSearchartifactsInvalid(cfg MetricConfig) metricSplunkServerSearchartifactsInvalid {
 	m := metricSplunkServerSearchartifactsInvalid{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2663,6 +2708,7 @@ func (m *metricSplunkServerSearchartifactsJobCacheCount) emit(metrics pmetric.Me
 
 func newMetricSplunkServerSearchartifactsJobCacheCount(cfg MetricConfig) metricSplunkServerSearchartifactsJobCacheCount {
 	m := metricSplunkServerSearchartifactsJobCacheCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2717,6 +2763,7 @@ func (m *metricSplunkServerSearchartifactsJobCacheSize) emit(metrics pmetric.Met
 
 func newMetricSplunkServerSearchartifactsJobCacheSize(cfg MetricConfig) metricSplunkServerSearchartifactsJobCacheSize {
 	m := metricSplunkServerSearchartifactsJobCacheSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2770,6 +2817,7 @@ func (m *metricSplunkServerSearchartifactsSavedsearches) emit(metrics pmetric.Me
 
 func newMetricSplunkServerSearchartifactsSavedsearches(cfg MetricConfig) metricSplunkServerSearchartifactsSavedsearches {
 	m := metricSplunkServerSearchartifactsSavedsearches{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2823,6 +2871,7 @@ func (m *metricSplunkServerSearchartifactsScheduled) emit(metrics pmetric.Metric
 
 func newMetricSplunkServerSearchartifactsScheduled(cfg MetricConfig) metricSplunkServerSearchartifactsScheduled {
 	m := metricSplunkServerSearchartifactsScheduled{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2876,6 +2925,7 @@ func (m *metricSplunkServerSearchartifactsScheduledSize) emit(metrics pmetric.Me
 
 func newMetricSplunkServerSearchartifactsScheduledSize(cfg MetricConfig) metricSplunkServerSearchartifactsScheduledSize {
 	m := metricSplunkServerSearchartifactsScheduledSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2929,6 +2979,7 @@ func (m *metricSplunkTypingQueueRatio) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkTypingQueueRatio(cfg MetricConfig) metricSplunkTypingQueueRatio {
 	m := metricSplunkTypingQueueRatio{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

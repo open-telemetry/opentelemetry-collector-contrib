@@ -454,6 +454,7 @@ func (m *metricAerospikeNamespaceDiskAvailable) emit(metrics pmetric.MetricSlice
 
 func newMetricAerospikeNamespaceDiskAvailable(cfg MetricConfig) metricAerospikeNamespaceDiskAvailable {
 	m := metricAerospikeNamespaceDiskAvailable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -505,6 +506,7 @@ func (m *metricAerospikeNamespaceGeojsonRegionQueryCells) emit(metrics pmetric.M
 
 func newMetricAerospikeNamespaceGeojsonRegionQueryCells(cfg MetricConfig) metricAerospikeNamespaceGeojsonRegionQueryCells {
 	m := metricAerospikeNamespaceGeojsonRegionQueryCells{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -556,6 +558,7 @@ func (m *metricAerospikeNamespaceGeojsonRegionQueryFalsePositive) emit(metrics p
 
 func newMetricAerospikeNamespaceGeojsonRegionQueryFalsePositive(cfg MetricConfig) metricAerospikeNamespaceGeojsonRegionQueryFalsePositive {
 	m := metricAerospikeNamespaceGeojsonRegionQueryFalsePositive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -607,6 +610,7 @@ func (m *metricAerospikeNamespaceGeojsonRegionQueryPoints) emit(metrics pmetric.
 
 func newMetricAerospikeNamespaceGeojsonRegionQueryPoints(cfg MetricConfig) metricAerospikeNamespaceGeojsonRegionQueryPoints {
 	m := metricAerospikeNamespaceGeojsonRegionQueryPoints{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -658,6 +662,7 @@ func (m *metricAerospikeNamespaceGeojsonRegionQueryRequests) emit(metrics pmetri
 
 func newMetricAerospikeNamespaceGeojsonRegionQueryRequests(cfg MetricConfig) metricAerospikeNamespaceGeojsonRegionQueryRequests {
 	m := metricAerospikeNamespaceGeojsonRegionQueryRequests{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -707,6 +712,7 @@ func (m *metricAerospikeNamespaceMemoryFree) emit(metrics pmetric.MetricSlice) {
 
 func newMetricAerospikeNamespaceMemoryFree(cfg MetricConfig) metricAerospikeNamespaceMemoryFree {
 	m := metricAerospikeNamespaceMemoryFree{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -760,6 +766,7 @@ func (m *metricAerospikeNamespaceMemoryUsage) emit(metrics pmetric.MetricSlice) 
 
 func newMetricAerospikeNamespaceMemoryUsage(cfg MetricConfig) metricAerospikeNamespaceMemoryUsage {
 	m := metricAerospikeNamespaceMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -815,6 +822,7 @@ func (m *metricAerospikeNamespaceQueryCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricAerospikeNamespaceQueryCount(cfg MetricConfig) metricAerospikeNamespaceQueryCount {
 	m := metricAerospikeNamespaceQueryCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -869,6 +877,7 @@ func (m *metricAerospikeNamespaceScanCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricAerospikeNamespaceScanCount(cfg MetricConfig) metricAerospikeNamespaceScanCount {
 	m := metricAerospikeNamespaceScanCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -923,6 +932,7 @@ func (m *metricAerospikeNamespaceTransactionCount) emit(metrics pmetric.MetricSl
 
 func newMetricAerospikeNamespaceTransactionCount(cfg MetricConfig) metricAerospikeNamespaceTransactionCount {
 	m := metricAerospikeNamespaceTransactionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -977,6 +987,7 @@ func (m *metricAerospikeNodeConnectionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricAerospikeNodeConnectionCount(cfg MetricConfig) metricAerospikeNodeConnectionCount {
 	m := metricAerospikeNodeConnectionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1030,6 +1041,7 @@ func (m *metricAerospikeNodeConnectionOpen) emit(metrics pmetric.MetricSlice) {
 
 func newMetricAerospikeNodeConnectionOpen(cfg MetricConfig) metricAerospikeNodeConnectionOpen {
 	m := metricAerospikeNodeConnectionOpen{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1079,6 +1091,7 @@ func (m *metricAerospikeNodeMemoryFree) emit(metrics pmetric.MetricSlice) {
 
 func newMetricAerospikeNodeMemoryFree(cfg MetricConfig) metricAerospikeNodeMemoryFree {
 	m := metricAerospikeNodeMemoryFree{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1130,6 +1143,7 @@ func (m *metricAerospikeNodeQueryTracked) emit(metrics pmetric.MetricSlice) {
 
 func newMetricAerospikeNodeQueryTracked(cfg MetricConfig) metricAerospikeNodeQueryTracked {
 	m := metricAerospikeNodeQueryTracked{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

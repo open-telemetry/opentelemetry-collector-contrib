@@ -750,6 +750,7 @@ func (m *metricVcenterClusterCPUEffective) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterClusterCPUEffective(cfg MetricConfig) metricVcenterClusterCPUEffective {
 	m := metricVcenterClusterCPUEffective{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -801,6 +802,7 @@ func (m *metricVcenterClusterCPULimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterClusterCPULimit(cfg MetricConfig) metricVcenterClusterCPULimit {
 	m := metricVcenterClusterCPULimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -854,6 +856,7 @@ func (m *metricVcenterClusterHostCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterClusterHostCount(cfg MetricConfig) metricVcenterClusterHostCount {
 	m := metricVcenterClusterHostCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -905,6 +908,7 @@ func (m *metricVcenterClusterMemoryEffective) emit(metrics pmetric.MetricSlice) 
 
 func newMetricVcenterClusterMemoryEffective(cfg MetricConfig) metricVcenterClusterMemoryEffective {
 	m := metricVcenterClusterMemoryEffective{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -956,6 +960,7 @@ func (m *metricVcenterClusterMemoryLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterClusterMemoryLimit(cfg MetricConfig) metricVcenterClusterMemoryLimit {
 	m := metricVcenterClusterMemoryLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1009,6 +1014,7 @@ func (m *metricVcenterClusterVMCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterClusterVMCount(cfg MetricConfig) metricVcenterClusterVMCount {
 	m := metricVcenterClusterVMCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1060,6 +1066,7 @@ func (m *metricVcenterClusterVMTemplateCount) emit(metrics pmetric.MetricSlice) 
 
 func newMetricVcenterClusterVMTemplateCount(cfg MetricConfig) metricVcenterClusterVMTemplateCount {
 	m := metricVcenterClusterVMTemplateCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1109,6 +1116,7 @@ func (m *metricVcenterClusterVsanCongestions) emit(metrics pmetric.MetricSlice) 
 
 func newMetricVcenterClusterVsanCongestions(cfg MetricConfig) metricVcenterClusterVsanCongestions {
 	m := metricVcenterClusterVsanCongestions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1160,6 +1168,7 @@ func (m *metricVcenterClusterVsanLatencyAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterClusterVsanLatencyAvg(cfg MetricConfig) metricVcenterClusterVsanLatencyAvg {
 	m := metricVcenterClusterVsanLatencyAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1211,6 +1220,7 @@ func (m *metricVcenterClusterVsanOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterClusterVsanOperations(cfg MetricConfig) metricVcenterClusterVsanOperations {
 	m := metricVcenterClusterVsanOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1262,6 +1272,7 @@ func (m *metricVcenterClusterVsanThroughput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterClusterVsanThroughput(cfg MetricConfig) metricVcenterClusterVsanThroughput {
 	m := metricVcenterClusterVsanThroughput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1315,6 +1326,7 @@ func (m *metricVcenterDatacenterClusterCount) emit(metrics pmetric.MetricSlice) 
 
 func newMetricVcenterDatacenterClusterCount(cfg MetricConfig) metricVcenterDatacenterClusterCount {
 	m := metricVcenterDatacenterClusterCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1366,6 +1378,7 @@ func (m *metricVcenterDatacenterCPULimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterDatacenterCPULimit(cfg MetricConfig) metricVcenterDatacenterCPULimit {
 	m := metricVcenterDatacenterCPULimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1417,6 +1430,7 @@ func (m *metricVcenterDatacenterDatastoreCount) emit(metrics pmetric.MetricSlice
 
 func newMetricVcenterDatacenterDatastoreCount(cfg MetricConfig) metricVcenterDatacenterDatastoreCount {
 	m := metricVcenterDatacenterDatastoreCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1470,6 +1484,7 @@ func (m *metricVcenterDatacenterDiskSpace) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterDatacenterDiskSpace(cfg MetricConfig) metricVcenterDatacenterDiskSpace {
 	m := metricVcenterDatacenterDiskSpace{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1524,6 +1539,7 @@ func (m *metricVcenterDatacenterHostCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterDatacenterHostCount(cfg MetricConfig) metricVcenterDatacenterHostCount {
 	m := metricVcenterDatacenterHostCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1575,6 +1591,7 @@ func (m *metricVcenterDatacenterMemoryLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterDatacenterMemoryLimit(cfg MetricConfig) metricVcenterDatacenterMemoryLimit {
 	m := metricVcenterDatacenterMemoryLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1629,6 +1646,7 @@ func (m *metricVcenterDatacenterVMCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterDatacenterVMCount(cfg MetricConfig) metricVcenterDatacenterVMCount {
 	m := metricVcenterDatacenterVMCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1682,6 +1700,7 @@ func (m *metricVcenterDatastoreDiskUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterDatastoreDiskUsage(cfg MetricConfig) metricVcenterDatastoreDiskUsage {
 	m := metricVcenterDatastoreDiskUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1731,6 +1750,7 @@ func (m *metricVcenterDatastoreDiskUtilization) emit(metrics pmetric.MetricSlice
 
 func newMetricVcenterDatastoreDiskUtilization(cfg MetricConfig) metricVcenterDatastoreDiskUtilization {
 	m := metricVcenterDatastoreDiskUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1782,6 +1802,7 @@ func (m *metricVcenterHostCPUCapacity) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostCPUCapacity(cfg MetricConfig) metricVcenterHostCPUCapacity {
 	m := metricVcenterHostCPUCapacity{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1835,6 +1856,7 @@ func (m *metricVcenterHostCPUReserved) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostCPUReserved(cfg MetricConfig) metricVcenterHostCPUReserved {
 	m := metricVcenterHostCPUReserved{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1886,6 +1908,7 @@ func (m *metricVcenterHostCPUUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostCPUUsage(cfg MetricConfig) metricVcenterHostCPUUsage {
 	m := metricVcenterHostCPUUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1935,6 +1958,7 @@ func (m *metricVcenterHostCPUUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostCPUUtilization(cfg MetricConfig) metricVcenterHostCPUUtilization {
 	m := metricVcenterHostCPUUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1987,6 +2011,7 @@ func (m *metricVcenterHostDiskLatencyAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostDiskLatencyAvg(cfg MetricConfig) metricVcenterHostDiskLatencyAvg {
 	m := metricVcenterHostDiskLatencyAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2038,6 +2063,7 @@ func (m *metricVcenterHostDiskLatencyMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostDiskLatencyMax(cfg MetricConfig) metricVcenterHostDiskLatencyMax {
 	m := metricVcenterHostDiskLatencyMax{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2092,6 +2118,7 @@ func (m *metricVcenterHostDiskThroughput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostDiskThroughput(cfg MetricConfig) metricVcenterHostDiskThroughput {
 	m := metricVcenterHostDiskThroughput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2143,6 +2170,7 @@ func (m *metricVcenterHostMemoryCapacity) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostMemoryCapacity(cfg MetricConfig) metricVcenterHostMemoryCapacity {
 	m := metricVcenterHostMemoryCapacity{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2194,6 +2222,7 @@ func (m *metricVcenterHostMemoryUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostMemoryUsage(cfg MetricConfig) metricVcenterHostMemoryUsage {
 	m := metricVcenterHostMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2243,6 +2272,7 @@ func (m *metricVcenterHostMemoryUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostMemoryUtilization(cfg MetricConfig) metricVcenterHostMemoryUtilization {
 	m := metricVcenterHostMemoryUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2295,6 +2325,7 @@ func (m *metricVcenterHostNetworkPacketDropRate) emit(metrics pmetric.MetricSlic
 
 func newMetricVcenterHostNetworkPacketDropRate(cfg MetricConfig) metricVcenterHostNetworkPacketDropRate {
 	m := metricVcenterHostNetworkPacketDropRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2347,6 +2378,7 @@ func (m *metricVcenterHostNetworkPacketErrorRate) emit(metrics pmetric.MetricSli
 
 func newMetricVcenterHostNetworkPacketErrorRate(cfg MetricConfig) metricVcenterHostNetworkPacketErrorRate {
 	m := metricVcenterHostNetworkPacketErrorRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2399,6 +2431,7 @@ func (m *metricVcenterHostNetworkPacketRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostNetworkPacketRate(cfg MetricConfig) metricVcenterHostNetworkPacketRate {
 	m := metricVcenterHostNetworkPacketRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2453,6 +2486,7 @@ func (m *metricVcenterHostNetworkThroughput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostNetworkThroughput(cfg MetricConfig) metricVcenterHostNetworkThroughput {
 	m := metricVcenterHostNetworkThroughput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2506,6 +2540,7 @@ func (m *metricVcenterHostNetworkUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostNetworkUsage(cfg MetricConfig) metricVcenterHostNetworkUsage {
 	m := metricVcenterHostNetworkUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2555,6 +2590,7 @@ func (m *metricVcenterHostVsanCacheHitRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostVsanCacheHitRate(cfg MetricConfig) metricVcenterHostVsanCacheHitRate {
 	m := metricVcenterHostVsanCacheHitRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2604,6 +2640,7 @@ func (m *metricVcenterHostVsanCongestions) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostVsanCongestions(cfg MetricConfig) metricVcenterHostVsanCongestions {
 	m := metricVcenterHostVsanCongestions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2655,6 +2692,7 @@ func (m *metricVcenterHostVsanLatencyAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostVsanLatencyAvg(cfg MetricConfig) metricVcenterHostVsanLatencyAvg {
 	m := metricVcenterHostVsanLatencyAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2706,6 +2744,7 @@ func (m *metricVcenterHostVsanOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostVsanOperations(cfg MetricConfig) metricVcenterHostVsanOperations {
 	m := metricVcenterHostVsanOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2757,6 +2796,7 @@ func (m *metricVcenterHostVsanThroughput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostVsanThroughput(cfg MetricConfig) metricVcenterHostVsanThroughput {
 	m := metricVcenterHostVsanThroughput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2808,6 +2848,7 @@ func (m *metricVcenterResourcePoolCPUShares) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterResourcePoolCPUShares(cfg MetricConfig) metricVcenterResourcePoolCPUShares {
 	m := metricVcenterResourcePoolCPUShares{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2859,6 +2900,7 @@ func (m *metricVcenterResourcePoolCPUUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterResourcePoolCPUUsage(cfg MetricConfig) metricVcenterResourcePoolCPUUsage {
 	m := metricVcenterResourcePoolCPUUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2910,6 +2952,7 @@ func (m *metricVcenterResourcePoolMemoryBallooned) emit(metrics pmetric.MetricSl
 
 func newMetricVcenterResourcePoolMemoryBallooned(cfg MetricConfig) metricVcenterResourcePoolMemoryBallooned {
 	m := metricVcenterResourcePoolMemoryBallooned{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2963,6 +3006,7 @@ func (m *metricVcenterResourcePoolMemoryGranted) emit(metrics pmetric.MetricSlic
 
 func newMetricVcenterResourcePoolMemoryGranted(cfg MetricConfig) metricVcenterResourcePoolMemoryGranted {
 	m := metricVcenterResourcePoolMemoryGranted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3014,6 +3058,7 @@ func (m *metricVcenterResourcePoolMemoryShares) emit(metrics pmetric.MetricSlice
 
 func newMetricVcenterResourcePoolMemoryShares(cfg MetricConfig) metricVcenterResourcePoolMemoryShares {
 	m := metricVcenterResourcePoolMemoryShares{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3065,6 +3110,7 @@ func (m *metricVcenterResourcePoolMemorySwapped) emit(metrics pmetric.MetricSlic
 
 func newMetricVcenterResourcePoolMemorySwapped(cfg MetricConfig) metricVcenterResourcePoolMemorySwapped {
 	m := metricVcenterResourcePoolMemorySwapped{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3118,6 +3164,7 @@ func (m *metricVcenterResourcePoolMemoryUsage) emit(metrics pmetric.MetricSlice)
 
 func newMetricVcenterResourcePoolMemoryUsage(cfg MetricConfig) metricVcenterResourcePoolMemoryUsage {
 	m := metricVcenterResourcePoolMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3167,6 +3214,7 @@ func (m *metricVcenterVMCPUReadiness) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMCPUReadiness(cfg MetricConfig) metricVcenterVMCPUReadiness {
 	m := metricVcenterVMCPUReadiness{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3219,6 +3267,7 @@ func (m *metricVcenterVMCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMCPUTime(cfg MetricConfig) metricVcenterVMCPUTime {
 	m := metricVcenterVMCPUTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3270,6 +3319,7 @@ func (m *metricVcenterVMCPUUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMCPUUsage(cfg MetricConfig) metricVcenterVMCPUUsage {
 	m := metricVcenterVMCPUUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3319,6 +3369,7 @@ func (m *metricVcenterVMCPUUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMCPUUtilization(cfg MetricConfig) metricVcenterVMCPUUtilization {
 	m := metricVcenterVMCPUUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3372,6 +3423,7 @@ func (m *metricVcenterVMDiskLatencyAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMDiskLatencyAvg(cfg MetricConfig) metricVcenterVMDiskLatencyAvg {
 	m := metricVcenterVMDiskLatencyAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3423,6 +3475,7 @@ func (m *metricVcenterVMDiskLatencyMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMDiskLatencyMax(cfg MetricConfig) metricVcenterVMDiskLatencyMax {
 	m := metricVcenterVMDiskLatencyMax{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3475,6 +3528,7 @@ func (m *metricVcenterVMDiskThroughput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMDiskThroughput(cfg MetricConfig) metricVcenterVMDiskThroughput {
 	m := metricVcenterVMDiskThroughput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3528,6 +3582,7 @@ func (m *metricVcenterVMDiskUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMDiskUsage(cfg MetricConfig) metricVcenterVMDiskUsage {
 	m := metricVcenterVMDiskUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3577,6 +3632,7 @@ func (m *metricVcenterVMDiskUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMDiskUtilization(cfg MetricConfig) metricVcenterVMDiskUtilization {
 	m := metricVcenterVMDiskUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3628,6 +3684,7 @@ func (m *metricVcenterVMMemoryBallooned) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMMemoryBallooned(cfg MetricConfig) metricVcenterVMMemoryBallooned {
 	m := metricVcenterVMMemoryBallooned{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3679,6 +3736,7 @@ func (m *metricVcenterVMMemoryGranted) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMMemoryGranted(cfg MetricConfig) metricVcenterVMMemoryGranted {
 	m := metricVcenterVMMemoryGranted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3730,6 +3788,7 @@ func (m *metricVcenterVMMemorySwapped) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMMemorySwapped(cfg MetricConfig) metricVcenterVMMemorySwapped {
 	m := metricVcenterVMMemorySwapped{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3781,6 +3840,7 @@ func (m *metricVcenterVMMemorySwappedSsd) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMMemorySwappedSsd(cfg MetricConfig) metricVcenterVMMemorySwappedSsd {
 	m := metricVcenterVMMemorySwappedSsd{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3832,6 +3892,7 @@ func (m *metricVcenterVMMemoryUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMMemoryUsage(cfg MetricConfig) metricVcenterVMMemoryUsage {
 	m := metricVcenterVMMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3881,6 +3942,7 @@ func (m *metricVcenterVMMemoryUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMMemoryUtilization(cfg MetricConfig) metricVcenterVMMemoryUtilization {
 	m := metricVcenterVMMemoryUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3933,6 +3995,7 @@ func (m *metricVcenterVMNetworkBroadcastPacketRate) emit(metrics pmetric.MetricS
 
 func newMetricVcenterVMNetworkBroadcastPacketRate(cfg MetricConfig) metricVcenterVMNetworkBroadcastPacketRate {
 	m := metricVcenterVMNetworkBroadcastPacketRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3985,6 +4048,7 @@ func (m *metricVcenterVMNetworkMulticastPacketRate) emit(metrics pmetric.MetricS
 
 func newMetricVcenterVMNetworkMulticastPacketRate(cfg MetricConfig) metricVcenterVMNetworkMulticastPacketRate {
 	m := metricVcenterVMNetworkMulticastPacketRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4037,6 +4101,7 @@ func (m *metricVcenterVMNetworkPacketDropRate) emit(metrics pmetric.MetricSlice)
 
 func newMetricVcenterVMNetworkPacketDropRate(cfg MetricConfig) metricVcenterVMNetworkPacketDropRate {
 	m := metricVcenterVMNetworkPacketDropRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4089,6 +4154,7 @@ func (m *metricVcenterVMNetworkPacketRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMNetworkPacketRate(cfg MetricConfig) metricVcenterVMNetworkPacketRate {
 	m := metricVcenterVMNetworkPacketRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4143,6 +4209,7 @@ func (m *metricVcenterVMNetworkThroughput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMNetworkThroughput(cfg MetricConfig) metricVcenterVMNetworkThroughput {
 	m := metricVcenterVMNetworkThroughput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4196,6 +4263,7 @@ func (m *metricVcenterVMNetworkUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMNetworkUsage(cfg MetricConfig) metricVcenterVMNetworkUsage {
 	m := metricVcenterVMNetworkUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4247,6 +4315,7 @@ func (m *metricVcenterVMVsanLatencyAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMVsanLatencyAvg(cfg MetricConfig) metricVcenterVMVsanLatencyAvg {
 	m := metricVcenterVMVsanLatencyAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4298,6 +4367,7 @@ func (m *metricVcenterVMVsanOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMVsanOperations(cfg MetricConfig) metricVcenterVMVsanOperations {
 	m := metricVcenterVMVsanOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4349,6 +4419,7 @@ func (m *metricVcenterVMVsanThroughput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterVMVsanThroughput(cfg MetricConfig) metricVcenterVMVsanThroughput {
 	m := metricVcenterVMVsanThroughput{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

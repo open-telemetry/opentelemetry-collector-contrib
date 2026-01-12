@@ -206,6 +206,7 @@ func (m *metricSnowflakeBillingCloudServiceTotal) emit(metrics pmetric.MetricSli
 
 func newMetricSnowflakeBillingCloudServiceTotal(cfg MetricConfig) metricSnowflakeBillingCloudServiceTotal {
 	m := metricSnowflakeBillingCloudServiceTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -257,6 +258,7 @@ func (m *metricSnowflakeBillingTotalCreditTotal) emit(metrics pmetric.MetricSlic
 
 func newMetricSnowflakeBillingTotalCreditTotal(cfg MetricConfig) metricSnowflakeBillingTotalCreditTotal {
 	m := metricSnowflakeBillingTotalCreditTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -308,6 +310,7 @@ func (m *metricSnowflakeBillingVirtualWarehouseTotal) emit(metrics pmetric.Metri
 
 func newMetricSnowflakeBillingVirtualWarehouseTotal(cfg MetricConfig) metricSnowflakeBillingVirtualWarehouseTotal {
 	m := metricSnowflakeBillingVirtualWarehouseTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -359,6 +362,7 @@ func (m *metricSnowflakeBillingWarehouseCloudServiceTotal) emit(metrics pmetric.
 
 func newMetricSnowflakeBillingWarehouseCloudServiceTotal(cfg MetricConfig) metricSnowflakeBillingWarehouseCloudServiceTotal {
 	m := metricSnowflakeBillingWarehouseCloudServiceTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -410,6 +414,7 @@ func (m *metricSnowflakeBillingWarehouseTotalCreditTotal) emit(metrics pmetric.M
 
 func newMetricSnowflakeBillingWarehouseTotalCreditTotal(cfg MetricConfig) metricSnowflakeBillingWarehouseTotalCreditTotal {
 	m := metricSnowflakeBillingWarehouseTotalCreditTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -461,6 +466,7 @@ func (m *metricSnowflakeBillingWarehouseVirtualWarehouseTotal) emit(metrics pmet
 
 func newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(cfg MetricConfig) metricSnowflakeBillingWarehouseVirtualWarehouseTotal {
 	m := metricSnowflakeBillingWarehouseVirtualWarehouseTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -518,6 +524,7 @@ func (m *metricSnowflakeDatabaseBytesScannedAvg) emit(metrics pmetric.MetricSlic
 
 func newMetricSnowflakeDatabaseBytesScannedAvg(cfg MetricConfig) metricSnowflakeDatabaseBytesScannedAvg {
 	m := metricSnowflakeDatabaseBytesScannedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -575,6 +582,7 @@ func (m *metricSnowflakeDatabaseQueryCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeDatabaseQueryCount(cfg MetricConfig) metricSnowflakeDatabaseQueryCount {
 	m := metricSnowflakeDatabaseQueryCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -628,6 +636,7 @@ func (m *metricSnowflakeLoginsTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeLoginsTotal(cfg MetricConfig) metricSnowflakeLoginsTotal {
 	m := metricSnowflakeLoginsTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -679,6 +688,7 @@ func (m *metricSnowflakePipeCreditsUsedTotal) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSnowflakePipeCreditsUsedTotal(cfg MetricConfig) metricSnowflakePipeCreditsUsedTotal {
 	m := metricSnowflakePipeCreditsUsedTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -730,6 +740,7 @@ func (m *metricSnowflakeQueryBlocked) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeQueryBlocked(cfg MetricConfig) metricSnowflakeQueryBlocked {
 	m := metricSnowflakeQueryBlocked{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -787,6 +798,7 @@ func (m *metricSnowflakeQueryBytesDeletedAvg) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSnowflakeQueryBytesDeletedAvg(cfg MetricConfig) metricSnowflakeQueryBytesDeletedAvg {
 	m := metricSnowflakeQueryBytesDeletedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -844,6 +856,7 @@ func (m *metricSnowflakeQueryBytesSpilledLocalAvg) emit(metrics pmetric.MetricSl
 
 func newMetricSnowflakeQueryBytesSpilledLocalAvg(cfg MetricConfig) metricSnowflakeQueryBytesSpilledLocalAvg {
 	m := metricSnowflakeQueryBytesSpilledLocalAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -901,6 +914,7 @@ func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) emit(metrics pmetric.MetricS
 
 func newMetricSnowflakeQueryBytesSpilledRemoteAvg(cfg MetricConfig) metricSnowflakeQueryBytesSpilledRemoteAvg {
 	m := metricSnowflakeQueryBytesSpilledRemoteAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -958,6 +972,7 @@ func (m *metricSnowflakeQueryBytesWrittenAvg) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSnowflakeQueryBytesWrittenAvg(cfg MetricConfig) metricSnowflakeQueryBytesWrittenAvg {
 	m := metricSnowflakeQueryBytesWrittenAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1015,6 +1030,7 @@ func (m *metricSnowflakeQueryCompilationTimeAvg) emit(metrics pmetric.MetricSlic
 
 func newMetricSnowflakeQueryCompilationTimeAvg(cfg MetricConfig) metricSnowflakeQueryCompilationTimeAvg {
 	m := metricSnowflakeQueryCompilationTimeAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1072,6 +1088,7 @@ func (m *metricSnowflakeQueryDataScannedCacheAvg) emit(metrics pmetric.MetricSli
 
 func newMetricSnowflakeQueryDataScannedCacheAvg(cfg MetricConfig) metricSnowflakeQueryDataScannedCacheAvg {
 	m := metricSnowflakeQueryDataScannedCacheAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1123,6 +1140,7 @@ func (m *metricSnowflakeQueryExecuted) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeQueryExecuted(cfg MetricConfig) metricSnowflakeQueryExecuted {
 	m := metricSnowflakeQueryExecuted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1180,6 +1198,7 @@ func (m *metricSnowflakeQueryExecutionTimeAvg) emit(metrics pmetric.MetricSlice)
 
 func newMetricSnowflakeQueryExecutionTimeAvg(cfg MetricConfig) metricSnowflakeQueryExecutionTimeAvg {
 	m := metricSnowflakeQueryExecutionTimeAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1237,6 +1256,7 @@ func (m *metricSnowflakeQueryPartitionsScannedAvg) emit(metrics pmetric.MetricSl
 
 func newMetricSnowflakeQueryPartitionsScannedAvg(cfg MetricConfig) metricSnowflakeQueryPartitionsScannedAvg {
 	m := metricSnowflakeQueryPartitionsScannedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1288,6 +1308,7 @@ func (m *metricSnowflakeQueryQueuedOverload) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeQueryQueuedOverload(cfg MetricConfig) metricSnowflakeQueryQueuedOverload {
 	m := metricSnowflakeQueryQueuedOverload{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1339,6 +1360,7 @@ func (m *metricSnowflakeQueryQueuedProvision) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSnowflakeQueryQueuedProvision(cfg MetricConfig) metricSnowflakeQueryQueuedProvision {
 	m := metricSnowflakeQueryQueuedProvision{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1396,6 +1418,7 @@ func (m *metricSnowflakeQueuedOverloadTimeAvg) emit(metrics pmetric.MetricSlice)
 
 func newMetricSnowflakeQueuedOverloadTimeAvg(cfg MetricConfig) metricSnowflakeQueuedOverloadTimeAvg {
 	m := metricSnowflakeQueuedOverloadTimeAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1453,6 +1476,7 @@ func (m *metricSnowflakeQueuedProvisioningTimeAvg) emit(metrics pmetric.MetricSl
 
 func newMetricSnowflakeQueuedProvisioningTimeAvg(cfg MetricConfig) metricSnowflakeQueuedProvisioningTimeAvg {
 	m := metricSnowflakeQueuedProvisioningTimeAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1510,6 +1534,7 @@ func (m *metricSnowflakeQueuedRepairTimeAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeQueuedRepairTimeAvg(cfg MetricConfig) metricSnowflakeQueuedRepairTimeAvg {
 	m := metricSnowflakeQueuedRepairTimeAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1567,6 +1592,7 @@ func (m *metricSnowflakeRowsDeletedAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeRowsDeletedAvg(cfg MetricConfig) metricSnowflakeRowsDeletedAvg {
 	m := metricSnowflakeRowsDeletedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1624,6 +1650,7 @@ func (m *metricSnowflakeRowsInsertedAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeRowsInsertedAvg(cfg MetricConfig) metricSnowflakeRowsInsertedAvg {
 	m := metricSnowflakeRowsInsertedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1681,6 +1708,7 @@ func (m *metricSnowflakeRowsProducedAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeRowsProducedAvg(cfg MetricConfig) metricSnowflakeRowsProducedAvg {
 	m := metricSnowflakeRowsProducedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1738,6 +1766,7 @@ func (m *metricSnowflakeRowsUnloadedAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeRowsUnloadedAvg(cfg MetricConfig) metricSnowflakeRowsUnloadedAvg {
 	m := metricSnowflakeRowsUnloadedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1795,6 +1824,7 @@ func (m *metricSnowflakeRowsUpdatedAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeRowsUpdatedAvg(cfg MetricConfig) metricSnowflakeRowsUpdatedAvg {
 	m := metricSnowflakeRowsUpdatedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1846,6 +1876,7 @@ func (m *metricSnowflakeSessionIDCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeSessionIDCount(cfg MetricConfig) metricSnowflakeSessionIDCount {
 	m := metricSnowflakeSessionIDCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1895,6 +1926,7 @@ func (m *metricSnowflakeStorageFailsafeBytesTotal) emit(metrics pmetric.MetricSl
 
 func newMetricSnowflakeStorageFailsafeBytesTotal(cfg MetricConfig) metricSnowflakeStorageFailsafeBytesTotal {
 	m := metricSnowflakeStorageFailsafeBytesTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1944,6 +1976,7 @@ func (m *metricSnowflakeStorageStageBytesTotal) emit(metrics pmetric.MetricSlice
 
 func newMetricSnowflakeStorageStageBytesTotal(cfg MetricConfig) metricSnowflakeStorageStageBytesTotal {
 	m := metricSnowflakeStorageStageBytesTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1993,6 +2026,7 @@ func (m *metricSnowflakeStorageStorageBytesTotal) emit(metrics pmetric.MetricSli
 
 func newMetricSnowflakeStorageStorageBytesTotal(cfg MetricConfig) metricSnowflakeStorageStorageBytesTotal {
 	m := metricSnowflakeStorageStorageBytesTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2050,6 +2084,7 @@ func (m *metricSnowflakeTotalElapsedTimeAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeTotalElapsedTimeAvg(cfg MetricConfig) metricSnowflakeTotalElapsedTimeAvg {
 	m := metricSnowflakeTotalElapsedTimeAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

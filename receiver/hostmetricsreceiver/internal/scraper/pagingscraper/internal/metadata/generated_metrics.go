@@ -166,6 +166,7 @@ func (m *metricSystemPagingFaults) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemPagingFaults(cfg MetricConfig) metricSystemPagingFaults {
 	m := metricSystemPagingFaults{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -220,6 +221,7 @@ func (m *metricSystemPagingOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemPagingOperations(cfg MetricConfig) metricSystemPagingOperations {
 	m := metricSystemPagingOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -274,6 +276,7 @@ func (m *metricSystemPagingUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemPagingUsage(cfg MetricConfig) metricSystemPagingUsage {
 	m := metricSystemPagingUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -326,6 +329,7 @@ func (m *metricSystemPagingUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemPagingUtilization(cfg MetricConfig) metricSystemPagingUtilization {
 	m := metricSystemPagingUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
