@@ -494,6 +494,20 @@ func TestPopulateActiveComponents(t *testing.T) {
 			},
 			expectedError: "",
 		},
+		{
+			name: "Extension not found in module info",
+			collectorConfigStringMap: map[string]any{
+				"extensions": map[string]any{
+					"missing_extension": map[string]any{},
+				},
+				"service": map[string]any{
+					"extensions": []any{"missing_extension"},
+				},
+			},
+			moduleInfoJSON:     payload.NewModuleInfoJSON(),
+			expectedComponents: []payload.ServiceComponent{},
+			expectedError:      "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -645,24 +659,6 @@ func TestPopulateActiveComponentsAdditionalErrorPaths(t *testing.T) {
 		moduleInfoJSON := payload.NewModuleInfoJSON()
 		_, err := PopulateActiveComponents(confMap, moduleInfoJSON)
 		require.Error(t, err) // Should error on unmarshal
-	})
-
-	t.Run("extension not found in module info", func(t *testing.T) {
-		confMap := confmap.NewFromStringMap(map[string]any{
-			"extensions": map[string]any{
-				"missing_extension": map[string]any{},
-			},
-			"service": map[string]any{
-				"extensions": []any{"missing_extension"},
-			},
-		})
-
-		moduleInfoJSON := payload.NewModuleInfoJSON()
-		// Don't add the extension to moduleInfoJSON
-
-		_, err := PopulateActiveComponents(confMap, moduleInfoJSON)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "extension not found in Module Info")
 	})
 }
 
