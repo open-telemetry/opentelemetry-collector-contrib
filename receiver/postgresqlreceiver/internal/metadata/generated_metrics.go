@@ -2432,11 +2432,29 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.PostgresqlTableName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["postgresql.table.name"] = filter.CreateFilter(mbc.ResourceAttributes.PostgresqlTableName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.ServerHost.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.host"] = filter.CreateFilter(mbc.ResourceAttributes.ServerHost.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerHost.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.host"] = filter.CreateFilter(mbc.ResourceAttributes.ServerHost.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ServiceInstanceID.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceInstanceID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServiceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["service.name"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServiceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["service.name"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceName.MetricsExclude)
 	}
 
 	for _, op := range options {
