@@ -24,11 +24,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 )
 
 type filterMetricProcessor struct {
-	consumers         []common.MetricsConsumer
+	consumers         []condition.MetricsConsumer
 	skipResourceExpr  expr.BoolExpr[*ottlresource.TransformContext]
 	skipMetricExpr    expr.BoolExpr[*ottlmetric.TransformContext]
 	skipDataPointExpr expr.BoolExpr[*ottldatapoint.TransformContext]

@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	fsregexp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
@@ -927,15 +927,15 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "spans_mix_config"),
-			errorMessage: "cannot use ottl conditions and include/exclude for spans at the same time",
+			errorMessage: "cannot use \"traces.resource\", \"traces.span\", \"traces.spanevent\" and the span settings \"spans.include\", \"spans.exclude\" at the same time",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "metrics_mix_config"),
-			errorMessage: "cannot use ottl conditions and include/exclude for metrics at the same time",
+			errorMessage: "cannot use \"metrics.resource\", \"metrics.metric\", \"metrics.datapoint\" and the settings \"metrics.include\", \"metrics.exclude\" at the same time",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "logs_mix_config"),
-			errorMessage: "cannot use ottl conditions and include/exclude for logs at the same time",
+			errorMessage: "cannot use \"logs.resource\", \"logs.log\" and the settings \"logs.include\", \"logs.exclude\" at the same time",
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_syntax_span"),
@@ -956,7 +956,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_inferred_trace"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
-				TraceConditions: []common.ContextConditions{
+				TraceConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`span.attributes["test"] == "pass"`},
 						ErrorMode:  "",
@@ -968,7 +968,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_inferred_metric"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
-				MetricConditions: []common.ContextConditions{
+				MetricConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`metric.name == "pass"`},
 						ErrorMode:  "",
@@ -980,7 +980,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_inferred_log"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
-				LogConditions: []common.ContextConditions{
+				LogConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`log.attributes["test"] == "pass"`},
 						ErrorMode:  "",
@@ -992,7 +992,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_inferred_profile"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
-				ProfileConditions: []common.ContextConditions{
+				ProfileConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`profile.attributes["test"] == "pass"`},
 						ErrorMode:  "",
@@ -1004,7 +1004,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_inferred_with_error_mode"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
-				TraceConditions: []common.ContextConditions{
+				TraceConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`span.attributes["test"] == "pass"`},
 						ErrorMode:  "",
@@ -1016,7 +1016,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_inferred_multiple_conditions"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
-				TraceConditions: []common.ContextConditions{
+				TraceConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{
 							`span.attributes["test"] == "pass"`,
@@ -1035,25 +1035,25 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_conditions_error_mode"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
-				TraceConditions: []common.ContextConditions{
+				TraceConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`span.attributes["test"] == "pass"`},
 						ErrorMode:  ottl.SilentError,
 					},
 				},
-				MetricConditions: []common.ContextConditions{
+				MetricConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`metric.name == "pass"`},
 						ErrorMode:  ottl.SilentError,
 					},
 				},
-				LogConditions: []common.ContextConditions{
+				LogConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`log.attributes["test"] == "pass"`},
 						ErrorMode:  ottl.PropagateError,
 					},
 				},
-				ProfileConditions: []common.ContextConditions{
+				ProfileConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`profile.attributes["test"] == "pass"`},
 						ErrorMode:  ottl.SilentError,
@@ -1075,13 +1075,13 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "advance_style"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
-				TraceConditions: []common.ContextConditions{
+				TraceConditions: []condition.ContextConditions{
 					getDefinedContextConditions("span"),
 					getDefinedContextConditions("spanevent"),
 					getDefinedContextConditions("scope"),
 					getDefinedContextConditions("resource"),
 				},
-				MetricConditions: []common.ContextConditions{
+				MetricConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`name == "pass"`},
 						Context:    "metric",
@@ -1090,12 +1090,12 @@ func TestLoadingConfigOTTL(t *testing.T) {
 					getDefinedContextConditions("scope"),
 					getDefinedContextConditions("resource"),
 				},
-				LogConditions: []common.ContextConditions{
+				LogConditions: []condition.ContextConditions{
 					getDefinedContextConditions("log"),
 					getDefinedContextConditions("scope"),
 					getDefinedContextConditions("resource"),
 				},
-				ProfileConditions: []common.ContextConditions{
+				ProfileConditions: []condition.ContextConditions{
 					getDefinedContextConditions("profile"),
 					getDefinedContextConditions("scope"),
 					getDefinedContextConditions("resource"),
@@ -1212,18 +1212,18 @@ func Test_MixedConfigurationStyles(t *testing.T) {
 	assert.ErrorContains(t, sub.Unmarshal(cfg), "configuring multiple configuration styles is not supported")
 }
 
-func getInferredContextConditions(prefix string) []common.ContextConditions {
-	return []common.ContextConditions{
+func getInferredContextConditions(prefix string) []condition.ContextConditions {
+	return []condition.ContextConditions{
 		{
 			Conditions: getConditionStrings(prefix),
 		},
 	}
 }
 
-func getDefinedContextConditions(prefix string) common.ContextConditions {
-	return common.ContextConditions{
+func getDefinedContextConditions(prefix string) condition.ContextConditions {
+	return condition.ContextConditions{
 		Conditions: getConditionStrings(""),
-		Context:    common.ContextID(prefix),
+		Context:    condition.ContextID(prefix),
 	}
 }
 

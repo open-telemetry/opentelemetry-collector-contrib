@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
@@ -79,7 +79,7 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 	tests := []struct {
 		name              string
 		conditions        ProfileFilters
-		contextConditions []common.ContextConditions
+		contextConditions []condition.ContextConditions
 		filterEverything  bool
 		want              func(pprofile.Profiles)
 		errorMode         ottl.ErrorMode
@@ -144,7 +144,7 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 		},
 		{
 			name: "with context conditions",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`IsMatch(profile.original_payload_format, ".*legacy")`}},
 			},
 			filterEverything: true,
@@ -193,27 +193,27 @@ func TestFilterProfileProcessorTelemetry(t *testing.T) {
 func Test_ProcessProfiles_DefinedContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextConditions []common.ContextConditions
+		contextConditions []condition.ContextConditions
 		filterEverything  bool
 		want              func(pd pprofile.Profiles)
 	}{
 		{
 			name: "resource: drop by schema_url",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`schema_url == "test_schema_url"`}, Context: "resource"},
 			},
 			want: func(_ pprofile.Profiles) {},
 		},
 		{
 			name: "resource: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`attributes["host.name"] == "localhost"`}, Context: "resource"},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "scope: drop by name",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`name == "scope1"`}, Context: "scope"},
 			},
 			want: func(pd pprofile.Profiles) {
@@ -227,14 +227,14 @@ func Test_ProcessProfiles_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "scope: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`attributes["lib"] == "awesomelib"`}, Context: "scope"},
 			},
 			want: func(_ pprofile.Profiles) {},
 		},
 		{
 			name: "profile: drop by attributes",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`IsMatch(attributes["total.string"], ".*")`}, Context: "profile"},
 			},
 			want: func(pd pprofile.Profiles) {
@@ -258,7 +258,7 @@ func Test_ProcessProfiles_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "profile: drop by payload format",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`original_payload_format == "legacy"`}, Context: "profile"},
 			},
 			want: func(pd pprofile.Profiles) {
@@ -275,14 +275,14 @@ func Test_ProcessProfiles_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "profile: drop by function",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`IsMatch(original_payload_format, ".*legacy")`}, Context: "profile"},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "inferring mixed condition",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`original_payload_format == "legacy"`}, Context: "profile"},
 				{Conditions: []string{`scope.name == "scope1"`}, Context: "scope"},
 			},
@@ -324,27 +324,27 @@ func Test_ProcessProfiles_DefinedContext(t *testing.T) {
 func Test_ProcessProfiles_InferredContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextConditions []common.ContextConditions
+		contextConditions []condition.ContextConditions
 		filterEverything  bool
 		want              func(pd pprofile.Profiles)
 	}{
 		{
 			name: "resource: drop by schema_url",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.schema_url == "test_schema_url"`}},
 			},
 			want: func(_ pprofile.Profiles) {},
 		},
 		{
 			name: "resource: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.attributes["host.name"] == "localhost"`}},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "scope: drop by name",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.name == "scope1"`}},
 			},
 			want: func(pd pprofile.Profiles) {
@@ -358,14 +358,14 @@ func Test_ProcessProfiles_InferredContext(t *testing.T) {
 		},
 		{
 			name: "scope: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["lib"] == "awesomelib"`}},
 			},
 			want: func(_ pprofile.Profiles) {},
 		},
 		{
 			name: "profile: drop by attributes",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`IsMatch(profile.attributes["total.string"], ".*")`}},
 			},
 			want: func(pd pprofile.Profiles) {
@@ -389,7 +389,7 @@ func Test_ProcessProfiles_InferredContext(t *testing.T) {
 		},
 		{
 			name: "profile: drop by payload format",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`profile.original_payload_format == "legacy"`}},
 			},
 			want: func(pd pprofile.Profiles) {
@@ -406,14 +406,14 @@ func Test_ProcessProfiles_InferredContext(t *testing.T) {
 		},
 		{
 			name: "profile: drop by function",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`IsMatch(profile.original_payload_format, ".*legacy")`}},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "inferring mixed contexts",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{
 					`profile.original_payload_format == "legacy"`,
 					`scope.name == "scope1"`,
@@ -473,8 +473,8 @@ func Test_ProcessProfiles_ErrorMode(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("%s:%s", tt.name, errMode), func(t *testing.T) {
 				cfg, _ := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.ProfileConditions = []common.ContextConditions{
-					{Conditions: []string{`ParseJSON("1")`}, Context: common.ContextID(tt.name)},
+				cfg.ProfileConditions = []condition.ContextConditions{
+					{Conditions: []string{`ParseJSON("1")`}, Context: condition.ContextID(tt.name)},
 				}
 				cfg.ErrorMode = errMode
 				processor, err := newFilterProfilesProcessor(processortest.NewNopSettings(metadata.Type), cfg)
@@ -497,14 +497,14 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 	tests := []struct {
 		name          string
 		errorMode     ottl.ErrorMode
-		conditions    []common.ContextConditions
+		conditions    []condition.ContextConditions
 		want          func(pd pprofile.Profiles)
 		wantErrorWith string
 	}{
 		{
 			name:      "resource: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}},
 			},
@@ -518,7 +518,7 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "resource: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}},
 			},
@@ -527,7 +527,7 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "scope: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`scope.name == "scope1"`}},
 			},
@@ -543,7 +543,7 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "scope: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`scope.name == ParseJSON("true")`}},
 			},
@@ -552,7 +552,7 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "profile: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`profile.original_payload_format == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`IsMatch(profile.original_payload_format, "non-legacy")`}},
 			},
@@ -571,7 +571,7 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "profile: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`profile.original_payload_format == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`profile.original_payload_format == ParseJSON("true")`}},
 			},
@@ -608,7 +608,7 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 func Test_Profiles_NonDefaultFunctions(t *testing.T) {
 	type testCase struct {
 		name             string
-		conditions       []common.ContextConditions
+		conditions       []condition.ContextConditions
 		wantErrorWith    string
 		profileFunctions map[string]ottl.Factory[ottlprofile.TransformContext]
 	}
@@ -616,9 +616,9 @@ func Test_Profiles_NonDefaultFunctions(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "profile funcs : statement with added profile func",
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{
-					Context:    common.ContextID("profile"),
+					Context:    condition.ContextID("profile"),
 					Conditions: []string{`IsMatch(original_payload_format, TestProfileFunc())`},
 				},
 			},
@@ -629,9 +629,9 @@ func Test_Profiles_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "profile funcs : statement with missing profile func",
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{
-					Context:    common.ContextID("profile"),
+					Context:    condition.ContextID("profile"),
 					Conditions: []string{`IsMatch(original_payload_format, TestProfileFunc())`},
 				},
 			},

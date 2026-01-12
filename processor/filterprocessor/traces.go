@@ -21,11 +21,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 )
 
 type filterSpanProcessor struct {
-	consumers         []common.TracesConsumer
+	consumers         []condition.TracesConsumer
 	skipResourceExpr  expr.BoolExpr[*ottlresource.TransformContext]
 	skipSpanExpr      expr.BoolExpr[*ottlspan.TransformContext]
 	skipSpanEventExpr expr.BoolExpr[*ottlspanevent.TransformContext]

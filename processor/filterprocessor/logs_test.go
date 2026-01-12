@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
@@ -788,42 +788,42 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 func Test_ProcessLogs_DefinedContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextConditions []common.ContextConditions
+		contextConditions []condition.ContextConditions
 		filterEverything  bool
 		want              func(ld plog.Logs)
 		errorMode         ottl.ErrorMode
 	}{
 		{
 			name: "resource: drop everything",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`schema_url == "test_schema_url"`}, Context: "resource"},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "resource: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`attributes["host.name"] == "localhost"`}, Context: "resource"},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "scope: drop everything",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`schema_url == "test_schema_url"`}, Context: "scope"},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "scope: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`attributes["lib"] == "awesomelib"`}, Context: "scope"},
 			},
 			want: func(_ plog.Logs) {},
 		},
 		{
 			name: "scope: drop by name",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`name == "scope0"`}, Context: "scope"},
 			},
 			want: func(ld plog.Logs) {
@@ -834,7 +834,7 @@ func Test_ProcessLogs_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "log: drop by attributes",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`attributes["total.string"] == "123456789"`}, Context: "log"},
 			},
 			want: func(ld plog.Logs) {
@@ -852,7 +852,7 @@ func Test_ProcessLogs_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "log: drop by function",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`IsMatch(body, "operationA")`}, Context: "log"},
 			},
 			want: func(ld plog.Logs) {
@@ -866,7 +866,7 @@ func Test_ProcessLogs_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "log: drop by enum",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`severity_number < SEVERITY_NUMBER_WARN`}, Context: "log"},
 			},
 			want: func(ld plog.Logs) {
@@ -880,7 +880,7 @@ func Test_ProcessLogs_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "mixed conditions",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`body == "operationA"`}, Context: "log"},
 				{Conditions: []string{`name == "scope1"`}, Context: "scope"},
 			},
@@ -921,42 +921,42 @@ func Test_ProcessLogs_DefinedContext(t *testing.T) {
 func Test_ProcessLogs_InferredContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextConditions []common.ContextConditions
+		contextConditions []condition.ContextConditions
 		filterEverything  bool
 		want              func(ld plog.Logs)
 		errorMode         ottl.ErrorMode
 	}{
 		{
 			name: "resource: drop everything",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.schema_url == "test_schema_url"`}},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "resource: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.attributes["host.name"] == "localhost"`}},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "scope: drop everything",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.schema_url == "test_schema_url"`}},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "scope: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["lib"] == "awesomelib"`}},
 			},
 			want: func(_ plog.Logs) {},
 		},
 		{
 			name: "scope: drop by name",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.name == "scope0"`}},
 			},
 			want: func(ld plog.Logs) {
@@ -967,7 +967,7 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 		},
 		{
 			name: "log: drop by attributes",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`log.attributes["total.string"] == "123456789"`}},
 			},
 			want: func(ld plog.Logs) {
@@ -985,7 +985,7 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 		},
 		{
 			name: "log: drop by function",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`IsMatch(log.body, "operationA")`}},
 			},
 			want: func(ld plog.Logs) {
@@ -999,7 +999,7 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 		},
 		{
 			name: "log: drop by enum",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`log.severity_number < SEVERITY_NUMBER_WARN`}},
 			},
 			want: func(ld plog.Logs) {
@@ -1013,7 +1013,7 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 		},
 		{
 			name: "inferring mixed contexts",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{
 					`log.body == "operationA"`,
 					`scope.name == "scope1"`,
@@ -1072,8 +1072,8 @@ func Test_ProcessLogs_ErrorMode(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("%s:%s", tt.name, errMode), func(t *testing.T) {
 				cfg, _ := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.LogConditions = []common.ContextConditions{
-					{Conditions: []string{`ParseJSON("1")`}, Context: common.ContextID(tt.name)},
+				cfg.LogConditions = []condition.ContextConditions{
+					{Conditions: []string{`ParseJSON("1")`}, Context: condition.ContextID(tt.name)},
 				}
 				cfg.ErrorMode = errMode
 				processor, err := newFilterLogsProcessor(processortest.NewNopSettings(metadata.Type), cfg)
@@ -1096,14 +1096,14 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 	tests := []struct {
 		name          string
 		errorMode     ottl.ErrorMode
-		conditions    []common.ContextConditions
+		conditions    []condition.ContextConditions
 		want          func(td plog.Logs)
 		wantErrorWith string
 	}{
 		{
 			name:      "resource: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}},
 			},
@@ -1117,7 +1117,7 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "resource: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}},
 			},
@@ -1126,7 +1126,7 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "scope: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`scope.schema_url != "test_schema_url"`}},
 			},
@@ -1139,7 +1139,7 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "scope: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("true")`}},
 			},
@@ -1148,7 +1148,7 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "log: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`log.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`not IsMatch(log.body, ".*")`}},
 			},
@@ -1161,7 +1161,7 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "log: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`log.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`log.attributes["pass"] == ParseJSON("true")`}},
 			},
@@ -1198,7 +1198,7 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 func Test_Logs_NonDefaultFunctions(t *testing.T) {
 	type testCase struct {
 		name          string
-		conditions    []common.ContextConditions
+		conditions    []condition.ContextConditions
 		wantErrorWith string
 		logFunctions  map[string]ottl.Factory[*ottllog.TransformContext]
 	}
@@ -1206,9 +1206,9 @@ func Test_Logs_NonDefaultFunctions(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "log funcs : statement with added log func",
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{
-					Context:    common.ContextID("log"),
+					Context:    condition.ContextID("log"),
 					Conditions: []string{`IsMatch(body, TestLogFunc())`},
 				},
 			},
@@ -1219,9 +1219,9 @@ func Test_Logs_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "log funcs : statement with missing log func",
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{
-					Context:    common.ContextID("log"),
+					Context:    condition.ContextID("log"),
 					Conditions: []string{`IsMatch(body, TestLogFunc())`},
 				},
 			},

@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
@@ -201,7 +201,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 	tests := []struct {
 		name              string
 		conditions        TraceFilters
-		contextConditions []common.ContextConditions
+		contextConditions []condition.ContextConditions
 		filterEverything  bool
 		want              func(td ptrace.Traces)
 		errorMode         ottl.ErrorMode
@@ -283,7 +283,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 		},
 		{
 			name: "with context conditions",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`not IsMatch(span.name, "operation.*")`}},
 			},
 			want:      func(_ ptrace.Traces) {},
@@ -335,35 +335,35 @@ func TestFilterTraceProcessorTelemetry(t *testing.T) {
 func Test_ProcessTraces_DefinedContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextConditions []common.ContextConditions
+		contextConditions []condition.ContextConditions
 		filterEverything  bool
 		want              func(td ptrace.Traces)
 		errorMode         ottl.ErrorMode
 	}{
 		{
 			name: "resource: drop by schema_url",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`schema_url == "test_schema_url"`}, Context: "resource"},
 			},
 			want: func(_ ptrace.Traces) {},
 		},
 		{
 			name: "resource: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`attributes["host.name"] == "localhost"`}, Context: "resource"},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "scope: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`attributes["lib"] == "awesomelib"`}, Context: "scope"},
 			},
 			want: func(_ ptrace.Traces) {},
 		},
 		{
 			name: "scope: drop by name",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`name == "scope1"`}, Context: "scope"},
 			},
 			want: func(td ptrace.Traces) {
@@ -374,7 +374,7 @@ func Test_ProcessTraces_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "span: drop by attributes",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`attributes["total.string"] == "123456789"`}, Context: "span"},
 			},
 			want: func(td ptrace.Traces) {
@@ -389,7 +389,7 @@ func Test_ProcessTraces_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "span: drop by function",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`IsMatch(name, "operationA")`}, Context: "span"},
 			},
 			want: func(td ptrace.Traces) {
@@ -403,7 +403,7 @@ func Test_ProcessTraces_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "span: drop by enum",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`status.code == STATUS_CODE_ERROR`}, Context: "span"},
 			},
 			want: func(td ptrace.Traces) {
@@ -417,7 +417,7 @@ func Test_ProcessTraces_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "spanevent: drop by name",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`name == "eventA"`}, Context: "spanevent"},
 			},
 			want: func(td ptrace.Traces) {
@@ -433,7 +433,7 @@ func Test_ProcessTraces_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "inferring mixed contexts",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`name == "operationA"`}, Context: "span"},
 				{Conditions: []string{`name == "scope1"`}, Context: "scope"},
 			},
@@ -477,35 +477,35 @@ func Test_ProcessTraces_DefinedContext(t *testing.T) {
 func Test_ProcessTraces_InferredContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextConditions []common.ContextConditions
+		contextConditions []condition.ContextConditions
 		filterEverything  bool
 		want              func(td ptrace.Traces)
 		errorMode         ottl.ErrorMode
 	}{
 		{
 			name: "resource: drop by schema_url",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.schema_url == "test_schema_url"`}},
 			},
 			want: func(_ ptrace.Traces) {},
 		},
 		{
 			name: "resource: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.attributes["host.name"] == "localhost"`}},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "scope: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["lib"] == "awesomelib"`}},
 			},
 			want: func(_ ptrace.Traces) {},
 		},
 		{
 			name: "scope: drop by name",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.name == "scope1"`}},
 			},
 			want: func(td ptrace.Traces) {
@@ -516,7 +516,7 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 		},
 		{
 			name: "span: drop by attributes",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`span.attributes["total.string"] == "123456789"`}},
 			},
 			want: func(td ptrace.Traces) {
@@ -531,7 +531,7 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 		},
 		{
 			name: "span: drop by function",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`IsMatch(span.name, "operationA")`}},
 			},
 			want: func(td ptrace.Traces) {
@@ -545,7 +545,7 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 		},
 		{
 			name: "span: drop by enum",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`span.status.code == STATUS_CODE_ERROR`}},
 			},
 			want: func(td ptrace.Traces) {
@@ -559,7 +559,7 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 		},
 		{
 			name: "spanevent: drop by name",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`spanevent.name == "eventA"`}},
 			},
 			want: func(td ptrace.Traces) {
@@ -575,7 +575,7 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 		},
 		{
 			name: "inferring mixed contexts",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{
 					`span.name == "operationA"`,
 					`scope.name == "scope1"`,
@@ -640,8 +640,8 @@ func Test_ProcessTraces_ErrorMode(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("%s:%s", tt.name, errMode), func(t *testing.T) {
 				cfg, _ := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.TraceConditions = []common.ContextConditions{
-					{Conditions: []string{`ParseJSON("1")`}, Context: common.ContextID(tt.name)},
+				cfg.TraceConditions = []condition.ContextConditions{
+					{Conditions: []string{`ParseJSON("1")`}, Context: condition.ContextID(tt.name)},
 				}
 				cfg.ErrorMode = errMode
 				processor, err := newFilterSpansProcessor(processortest.NewNopSettings(metadata.Type), cfg)
@@ -664,14 +664,14 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 	tests := []struct {
 		name          string
 		errorMode     ottl.ErrorMode
-		conditions    []common.ContextConditions
+		conditions    []condition.ContextConditions
 		want          func(td ptrace.Traces)
 		wantErrorWith string
 	}{
 		{
 			name:      "resource: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}},
 			},
@@ -685,7 +685,7 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "resource: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}},
 			},
@@ -694,7 +694,7 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "scope: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`scope.name == "scope1"`}},
 			},
@@ -707,7 +707,7 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "scope: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("true")`}},
 			},
@@ -716,7 +716,7 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "span: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`span.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`not IsMatch(span.name, ".*")`}},
 			},
@@ -729,7 +729,7 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "span: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`span.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`span.attributes["pass"] == ParseJSON("true")`}},
 			},
@@ -738,7 +738,7 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "spanevent: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`spanevent.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`spanevent.name == "eventA"`}},
 			},
@@ -756,7 +756,7 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "spanevent: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`spanevent.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`spanevent.attributes["pass"] == ParseJSON("true")`}},
 			},
@@ -809,7 +809,7 @@ func NewSpanEventFuncFactory[K any]() ottl.Factory[K] {
 func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 	type testCase struct {
 		name               string
-		conditions         []common.ContextConditions
+		conditions         []condition.ContextConditions
 		wantErrorWith      string
 		spanFunctions      map[string]ottl.Factory[*ottlspan.TransformContext]
 		spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]
@@ -818,9 +818,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "span functions : statement with added span func",
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{
-					Context:    common.ContextID("span"),
+					Context:    condition.ContextID("span"),
 					Conditions: []string{`IsMatch(name, TestSpanFunc())`},
 				},
 			},
@@ -832,9 +832,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "span functions : statement with missing span func",
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{
-					Context:    common.ContextID("span"),
+					Context:    condition.ContextID("span"),
 					Conditions: []string{`IsMatch(name, TestSpanFunc())`},
 				},
 			},
@@ -844,9 +844,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "span event functions : statement with added span event func",
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{
-					Context:    common.ContextID("spanevent"),
+					Context:    condition.ContextID("spanevent"),
 					Conditions: []string{`IsMatch(name, TestSpanFunc())`},
 				},
 			},
@@ -858,9 +858,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "span event functions : statement with missing span event func",
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{
-					Context:    common.ContextID("spanevent"),
+					Context:    condition.ContextID("spanevent"),
 					Conditions: []string{`IsMatch(name, TestSpanEventFunc())`},
 				},
 			},

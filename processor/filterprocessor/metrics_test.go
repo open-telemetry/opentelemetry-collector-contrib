@@ -29,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
@@ -798,48 +798,48 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 func Test_ProcessMetrics_DefinedContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextConditions []common.ContextConditions
+		contextConditions []condition.ContextConditions
 		filterEverything  bool
 		want              func(md pmetric.Metrics)
 	}{
 		{
 			name: "resource: drop everything",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`schema_url == "test_schema_url"`}, Context: "resource"},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "resource: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`attributes["host.name"] == "localhost"`}, Context: "resource"},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "scope: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`attributes["lib"] == "awesomelib"`}, Context: "scope"},
 			},
 			want: func(_ pmetric.Metrics) {},
 		},
 		{
 			name: "scope: drop by name",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`name == "scope"`}, Context: "scope"},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "metrics: drop everything",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`IsMatch(name, "operation.*")`}, Context: "metric"},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "metrics: drop by name",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`name == "operationA"`}, Context: "metric"},
 			},
 			want: func(md pmetric.Metrics) {
@@ -853,7 +853,7 @@ func Test_ProcessMetrics_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "metric: drop by enum",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`type == METRIC_DATA_TYPE_SUM`}, Context: "metric"},
 			},
 			want: func(md pmetric.Metrics) {
@@ -864,7 +864,7 @@ func Test_ProcessMetrics_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "datapoint: drop by sum",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_SUM and value_double == 1.0`}, Context: "datapoint"},
 			},
 			want: func(md pmetric.Metrics) {
@@ -875,7 +875,7 @@ func Test_ProcessMetrics_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "datapoint: drop by gauge",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_GAUGE and value_double == 1.0`}, Context: "datapoint"},
 			},
 			want: func(md pmetric.Metrics) {
@@ -886,7 +886,7 @@ func Test_ProcessMetrics_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "datapoint: drop by histogram",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_HISTOGRAM and count == 1`}, Context: "datapoint"},
 			},
 			want: func(md pmetric.Metrics) {
@@ -897,7 +897,7 @@ func Test_ProcessMetrics_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "datapoint: drop by exponential histogram",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM and count == 1`}, Context: "datapoint"},
 			},
 			want: func(md pmetric.Metrics) {
@@ -908,7 +908,7 @@ func Test_ProcessMetrics_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "datapoint: drop by summary",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_SUMMARY and sum == 43.21`}, Context: "datapoint"},
 			},
 			want: func(md pmetric.Metrics) {
@@ -919,7 +919,7 @@ func Test_ProcessMetrics_DefinedContext(t *testing.T) {
 		},
 		{
 			name: "mixed conditions",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`attributes["unknown"] == "unknown"`}, Context: "resource"},
 				{Conditions: []string{`type == METRIC_DATA_TYPE_SUMMARY`}, Context: "metric"},
 			},
@@ -954,48 +954,48 @@ func Test_ProcessMetrics_DefinedContext(t *testing.T) {
 func Test_ProcessMetrics_InferredContext(t *testing.T) {
 	tests := []struct {
 		name              string
-		contextConditions []common.ContextConditions
+		contextConditions []condition.ContextConditions
 		filterEverything  bool
 		want              func(md pmetric.Metrics)
 	}{
 		{
 			name: "resource: drop everything",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.schema_url == "test_schema_url"`}},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "resource: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.attributes["host.name"] == "localhost"`}},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "scope: drop by attribute",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["lib"] == "awesomelib"`}},
 			},
 			want: func(_ pmetric.Metrics) {},
 		},
 		{
 			name: "scope: drop by name",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.name == "scope"`}},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "metrics: drop by function",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`IsMatch(metric.name, "operation.*")`}},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "metrics: drop by name",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.name == "operationA"`}},
 			},
 			want: func(md pmetric.Metrics) {
@@ -1009,7 +1009,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 		},
 		{
 			name: "metric: drop by enum",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_SUM`}},
 			},
 			want: func(md pmetric.Metrics) {
@@ -1020,7 +1020,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 		},
 		{
 			name: "datapoint: drop by sum",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_SUM and datapoint.value_double == 1.0`}},
 			},
 			want: func(md pmetric.Metrics) {
@@ -1031,7 +1031,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 		},
 		{
 			name: "datapoint: drop by gauge",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_GAUGE and datapoint.value_double == 1.0`}},
 			},
 			want: func(md pmetric.Metrics) {
@@ -1042,7 +1042,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 		},
 		{
 			name: "datapoint: drop by histogram",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_HISTOGRAM and datapoint.count == 1`}},
 			},
 			want: func(md pmetric.Metrics) {
@@ -1053,7 +1053,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 		},
 		{
 			name: "datapoint: drop by exponential histogram",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM and datapoint.count == 1`}},
 			},
 			want: func(md pmetric.Metrics) {
@@ -1064,7 +1064,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 		},
 		{
 			name: "datapoint: drop by summary",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_SUMMARY and datapoint.sum == 43.21`}},
 			},
 			want: func(md pmetric.Metrics) {
@@ -1075,7 +1075,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 		},
 		{
 			name: "mixed contexts",
-			contextConditions: []common.ContextConditions{
+			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{
 					`resource.attributes["unknown"] == "unknown"`,
 					`metric.type == METRIC_DATA_TYPE_SUMMARY`,
@@ -1131,8 +1131,8 @@ func Test_ProcessMetrics_ErrorMode(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("%s:%s", tt.name, errMode), func(t *testing.T) {
 				cfg, _ := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MetricConditions = []common.ContextConditions{
-					{Conditions: []string{`ParseJSON("1")`}, Context: common.ContextID(tt.name)},
+				cfg.MetricConditions = []condition.ContextConditions{
+					{Conditions: []string{`ParseJSON("1")`}, Context: condition.ContextID(tt.name)},
 				}
 				cfg.ErrorMode = errMode
 				processor, err := newFilterMetricProcessor(processortest.NewNopSettings(metadata.Type), cfg)
@@ -1155,14 +1155,14 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 	tests := []struct {
 		name          string
 		errorMode     ottl.ErrorMode
-		conditions    []common.ContextConditions
+		conditions    []condition.ContextConditions
 		want          func(md pmetric.Metrics)
 		wantErrorWith string
 	}{
 		{
 			name:      "resource: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}},
 			},
@@ -1176,7 +1176,7 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "resource: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}},
 			},
@@ -1185,7 +1185,7 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "scope: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`scope.schema_url == "test_schema_url"`}},
 			},
@@ -1198,7 +1198,7 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "scope: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("true")`}},
 			},
@@ -1207,7 +1207,7 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "metric: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`not IsMatch(metric.name, ".*")`}},
 			},
@@ -1220,7 +1220,7 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "metric: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`metric.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`metric.name == ParseJSON("true")`}},
 			},
@@ -1229,7 +1229,7 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "datapoint: conditions group with error mode",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`datapoint.attributes["test"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`datapoint.count == 1`}},
 			},
@@ -1245,7 +1245,7 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 		{
 			name:      "datapoint: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{Conditions: []string{`datapoint.attributes["test"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
 				{Conditions: []string{`datapoint.attributes["test"] == ParseJSON("true")`}},
 			},
@@ -1298,7 +1298,7 @@ func NewDataPointFuncFactory[K any]() ottl.Factory[K] {
 func Test_Metrics_NonDefaultFunctions(t *testing.T) {
 	type testCase struct {
 		name               string
-		conditions         []common.ContextConditions
+		conditions         []condition.ContextConditions
 		wantErrorWith      string
 		metricFunctions    map[string]ottl.Factory[*ottlmetric.TransformContext]
 		dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
@@ -1307,9 +1307,9 @@ func Test_Metrics_NonDefaultFunctions(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "metric functions : condition with added metric func",
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{
-					Context:    common.ContextID("metric"),
+					Context:    condition.ContextID("metric"),
 					Conditions: []string{`IsMatch(name, TestMetricFunc())`},
 				},
 			},
@@ -1321,9 +1321,9 @@ func Test_Metrics_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "metric functions : condition with missing metric func",
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{
-					Context:    common.ContextID("metric"),
+					Context:    condition.ContextID("metric"),
 					Conditions: []string{`IsMatch(name, TestMetricFunc())`},
 				},
 			},
@@ -1333,9 +1333,9 @@ func Test_Metrics_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "datapoint functions : condition with added data point func",
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{
-					Context:    common.ContextID("datapoint"),
+					Context:    condition.ContextID("datapoint"),
 					Conditions: []string{`IsMatch(count, TestDataPointFunc())`},
 				},
 			},
@@ -1347,9 +1347,9 @@ func Test_Metrics_NonDefaultFunctions(t *testing.T) {
 		},
 		{
 			name: "datapoint functions : condition with missing data point func",
-			conditions: []common.ContextConditions{
+			conditions: []condition.ContextConditions{
 				{
-					Context:    common.ContextID("datapoint"),
+					Context:    condition.ContextID("datapoint"),
 					Conditions: []string{`IsMatch(count, TestDataPointFunc())`},
 				},
 			},

@@ -27,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 )
 
 // Config defines configuration for Resource processor.
@@ -49,10 +49,10 @@ type Config struct {
 	// Deprecated: use ProfileConditions instead.
 	Profiles ProfileFilters `mapstructure:"profiles"`
 
-	MetricConditions  []common.ContextConditions `mapstructure:"metric_conditions"`
-	LogConditions     []common.ContextConditions `mapstructure:"log_conditions"`
-	TraceConditions   []common.ContextConditions `mapstructure:"trace_conditions"`
-	ProfileConditions []common.ContextConditions `mapstructure:"profile_conditions"`
+	MetricConditions  []condition.ContextConditions `mapstructure:"metric_conditions"`
+	LogConditions     []condition.ContextConditions `mapstructure:"log_conditions"`
+	TraceConditions   []condition.ContextConditions `mapstructure:"trace_conditions"`
+	ProfileConditions []condition.ContextConditions `mapstructure:"profile_conditions"`
 
 	resourceFunctions  map[string]ottl.Factory[*ottlresource.TransformContext]
 	dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
@@ -341,7 +341,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		return nil
 	}
 
-	contextConditionsFields := map[string]*[]common.ContextConditions{
+	contextConditionsFields := map[string]*[]condition.ContextConditions{
 		"trace_conditions":   &cfg.TraceConditions,
 		"metric_conditions":  &cfg.MetricConditions,
 		"log_conditions":     &cfg.LogConditions,
@@ -562,36 +562,36 @@ func (cfg *Config) validateInferredContextConfig() error {
 	return errs
 }
 
-func (cfg *Config) newTraceParserCollection(telemetrySettings component.TelemetrySettings) (*common.TraceParserCollection, error) {
-	return common.NewTraceParserCollection(telemetrySettings,
-		common.WithSpanParser(cfg.spanFunctions),
-		common.WithSpanEventParser(cfg.spanEventFunctions),
-		common.WithTraceErrorMode(cfg.ErrorMode),
-		common.WithTraceCommonParsers(cfg.resourceFunctions),
+func (cfg *Config) newTraceParserCollection(telemetrySettings component.TelemetrySettings) (*condition.TraceParserCollection, error) {
+	return condition.NewTraceParserCollection(telemetrySettings,
+		condition.WithSpanParser(cfg.spanFunctions),
+		condition.WithSpanEventParser(cfg.spanEventFunctions),
+		condition.WithTraceErrorMode(cfg.ErrorMode),
+		condition.WithTraceCommonParsers(cfg.resourceFunctions),
 	)
 }
 
-func (cfg *Config) newMetricParserCollection(telemetrySettings component.TelemetrySettings) (*common.MetricParserCollection, error) {
-	return common.NewMetricParserCollection(telemetrySettings,
-		common.WithMetricParser(cfg.metricFunctions),
-		common.WithDataPointParser(cfg.dataPointFunctions),
-		common.WithMetricErrorMode(cfg.ErrorMode),
-		common.WithMetricCommonParsers(cfg.resourceFunctions),
+func (cfg *Config) newMetricParserCollection(telemetrySettings component.TelemetrySettings) (*condition.MetricParserCollection, error) {
+	return condition.NewMetricParserCollection(telemetrySettings,
+		condition.WithMetricParser(cfg.metricFunctions),
+		condition.WithDataPointParser(cfg.dataPointFunctions),
+		condition.WithMetricErrorMode(cfg.ErrorMode),
+		condition.WithMetricCommonParsers(cfg.resourceFunctions),
 	)
 }
 
-func (cfg *Config) newLogParserCollection(telemetrySettings component.TelemetrySettings) (*common.LogParserCollection, error) {
-	return common.NewLogParserCollection(telemetrySettings,
-		common.WithLogParser(cfg.logFunctions),
-		common.WithLogErrorMode(cfg.ErrorMode),
-		common.WithLogCommonParsers(cfg.resourceFunctions),
+func (cfg *Config) newLogParserCollection(telemetrySettings component.TelemetrySettings) (*condition.LogParserCollection, error) {
+	return condition.NewLogParserCollection(telemetrySettings,
+		condition.WithLogParser(cfg.logFunctions),
+		condition.WithLogErrorMode(cfg.ErrorMode),
+		condition.WithLogCommonParsers(cfg.resourceFunctions),
 	)
 }
 
-func (cfg *Config) newProfileParserCollection(telemetrySettings component.TelemetrySettings) (*common.ProfileParserCollection, error) {
-	return common.NewProfileParserCollection(telemetrySettings,
-		common.WithProfileParser(cfg.profileFunctions),
-		common.WithProfileErrorMode(cfg.ErrorMode),
-		common.WithProfileCommonParsers(cfg.resourceFunctions),
+func (cfg *Config) newProfileParserCollection(telemetrySettings component.TelemetrySettings) (*condition.ProfileParserCollection, error) {
+	return condition.NewProfileParserCollection(telemetrySettings,
+		condition.WithProfileParser(cfg.profileFunctions),
+		condition.WithProfileErrorMode(cfg.ErrorMode),
+		condition.WithProfileCommonParsers(cfg.resourceFunctions),
 	)
 }
