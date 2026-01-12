@@ -293,11 +293,10 @@ func (a Agent) validateFallbackConfig() error {
 		return fmt.Errorf("could not stat agent::fallback_config path: %w", err)
 	}
 
-	// Validate that at least one timeout is configured when fallback is enabled
 	if a.FallbackStartupTimeout < 0 {
 		return errors.New("agent::fallback_startup_timeout must be non-negative")
 	}
-	// Validate that the runtime timeout is non-negative or zero when fallback is enabled
+
 	if a.FallbackRuntimeTimeout < 0 {
 		return errors.New("agent::fallback_runtime_timeout must be non-negative")
 	}
