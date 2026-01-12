@@ -184,7 +184,6 @@ func TestEventsScraper(t *testing.T) {
 					assert.True(tt, found, "Expected query not found in logs")
 				}, 10*time.Second, 100*time.Millisecond)
 
-				assert.True(t, found, "Expected query not found in final validation")
 				finished.Store(true)
 			},
 		},
