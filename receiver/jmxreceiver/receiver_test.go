@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/metadata"
@@ -36,6 +37,9 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestBuildJMXConfig(t *testing.T) {
+	scs := scraperhelper.NewDefaultControllerConfig()
+	scs.CollectionInterval = 123 * time.Second
+
 	tests := []struct {
 		name                  string
 		mockedGathererJarHash string
@@ -49,10 +53,10 @@ func TestBuildJMXConfig(t *testing.T) {
 			"5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5",
 			"",
 			&Config{
-				JARPath:            "testdata/fake_jmx.jar",
-				Endpoint:           "myhost:12345",
-				TargetSystem:       "mytargetsystem",
-				CollectionInterval: 123 * time.Second,
+				JARPath:          "testdata/fake_jmx.jar",
+				Endpoint:         "myhost:12345",
+				TargetSystem:     "mytargetsystem",
+				ControllerConfig: scs,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "https://myotlpendpoint",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -106,10 +110,10 @@ otel.resource.attributes = abc=123,one=two`,
 			"",
 			"dce3d9a8457bb5097144e88e1c1246f428e047a677462cff1a638c172c7eeab1",
 			&Config{
-				JARPath:            "testdata/fake_jmx_scraper.jar",
-				Endpoint:           "myhost:12345",
-				TargetSystem:       "mytargetsystem",
-				CollectionInterval: 123 * time.Second,
+				JARPath:          "testdata/fake_jmx_scraper.jar",
+				Endpoint:         "myhost:12345",
+				TargetSystem:     "mytargetsystem",
+				ControllerConfig: scs,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "https://myotlpendpoint",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -164,9 +168,9 @@ otel.resource.attributes = abc=123,one=two`,
 			"",
 			"",
 			&Config{
-				Endpoint:           "myhostwithoutport",
-				TargetSystem:       "mytargetsystem",
-				CollectionInterval: 123 * time.Second,
+				Endpoint:         "myhostwithoutport",
+				TargetSystem:     "mytargetsystem",
+				ControllerConfig: scs,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -181,9 +185,9 @@ otel.resource.attributes = abc=123,one=two`,
 			"",
 			"",
 			&Config{
-				Endpoint:           "myhost:withoutvalidport",
-				TargetSystem:       "mytargetsystem",
-				CollectionInterval: 123 * time.Second,
+				Endpoint:         "myhost:withoutvalidport",
+				TargetSystem:     "mytargetsystem",
+				ControllerConfig: scs,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
 					TimeoutSettings: exporterhelper.TimeoutConfig{
@@ -198,9 +202,9 @@ otel.resource.attributes = abc=123,one=two`,
 			"",
 			"",
 			&Config{
-				Endpoint:           ":::",
-				TargetSystem:       "mytargetsystem",
-				CollectionInterval: 123 * time.Second,
+				Endpoint:         ":::",
+				TargetSystem:     "mytargetsystem",
+				ControllerConfig: scs,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",
 					TimeoutSettings: exporterhelper.TimeoutConfig{

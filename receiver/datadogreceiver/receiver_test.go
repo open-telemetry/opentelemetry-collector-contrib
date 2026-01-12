@@ -823,6 +823,69 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 	assert.Equal(t, "hosta", hostName.AsString())
 }
 
+func TestDatadogServices_SingleObject_EndToEnd(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	sink := new(consumertest.MetricsSink)
+
+	ctx := t.Context()
+
+	dd, err := newDataDogReceiver(
+		ctx,
+		cfg,
+		receivertest.NewNopSettings(metadata.Type),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+	dd.(*datadogReceiver).nextMetricsConsumer = sink
+
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, dd.Shutdown(t.Context()))
+	}()
+
+	// Test single object payload (not an array)
+	servicePayload := []byte(`{
+		"check": "app.health",
+		"host_name": "hostb",
+		"status": 0,
+		"tags": ["environment:prod"]
+	}`)
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("http://%s/api/v1/check_run", dd.(*datadogReceiver).address),
+		io.NopCloser(bytes.NewReader(servicePayload)),
+	)
+	require.NoError(t, err, "Must not error when creating request")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err, "Must not error performing request")
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
+	require.JSONEq(t, `{"status": "ok"}`, string(body), "Expected JSON response to be `{\"status\": \"ok\"}`, got %s", string(body))
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	got := mds[0]
+	require.Equal(t, 1, got.ResourceMetrics().Len())
+	metrics := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	assert.Equal(t, 1, metrics.Len())
+	metric := metrics.At(0)
+	assert.Equal(t, "app.health", metric.Name())
+	assert.Equal(t, pmetric.MetricTypeGauge, metric.Type())
+	dps := metric.Gauge().DataPoints()
+	assert.Equal(t, 1, dps.Len())
+	dp := dps.At(0)
+	assert.Equal(t, int64(0), dp.IntValue())
+	assert.Equal(t, 1, dp.Attributes().Len())
+	environment, _ := dp.Attributes().Get("environment")
+	assert.Equal(t, "prod", environment.AsString())
+	hostName, _ := got.ResourceMetrics().At(0).Resource().Attributes().Get("host.name")
+	assert.Equal(t, "hostb", hostName.AsString())
+}
+
 func TestDatadogLogsV2_SingleLog_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
