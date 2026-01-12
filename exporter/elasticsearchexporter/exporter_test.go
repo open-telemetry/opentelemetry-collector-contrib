@@ -1033,7 +1033,6 @@ func TestDeprecatedConfigMappingModeIgnored(t *testing.T) {
 
 	require.NoError(t, exp.ConsumeLogs(t.Context(), logs))
 	rec.WaitItems(1)
-
 }
 
 func TestExporterMetrics(t *testing.T) {
