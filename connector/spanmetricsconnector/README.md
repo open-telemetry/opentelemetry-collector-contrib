@@ -318,7 +318,7 @@ The ideal long-term solution is to modify the OpenTelemetry instrumentation code
 
 However, deploying updated instrumentation libraries can be time-consuming, often requiring an immediate interim solution to restore observability backend functionality.
 
-**Addressing high cardinality span names in the ingestion pipeline**
+#### Addressing high cardinality span names in the ingestion pipeline
 
 An effective short-term solution is to implement a span sanitization layer within the observability ingestion pipeline. This can be achieved by using the OpenTelemetry Collector Transform Processor's [`set_semconv_span_name()` function](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#set_semconv_span_name) immediately before the Span Metrics Connector to enforce semantic conventions on span names.
 
@@ -416,7 +416,7 @@ service:
     # ...
 ```
 
-**Addressing high cardinality span names in the instrumentation code**
+#### Addressing high cardinality span names in the instrumentation code
 
 The preferred long-term solution is to ensure span names and attributes comply with [OpenTelemetry Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/) directly in the instrumentation code.
 
