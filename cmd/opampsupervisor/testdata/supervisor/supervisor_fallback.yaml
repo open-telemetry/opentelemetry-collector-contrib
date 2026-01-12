@@ -20,7 +20,8 @@ agent:
   config_files:
     - '{{.local_config}}'
   {{- end }}
-  fallback_config: '{{.fallback_config}}'
+  fallback_configs:
+    - '{{.fallback_configs}}'
   {{- if .fallback_startup_timeout }}
   fallback_startup_timeout: {{ .fallback_startup_timeout }}
   {{- end }}

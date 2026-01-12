@@ -1499,21 +1499,27 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 	return configChanged, nil
 }
 
-// composeFallbackConfig composes the agent configuration using the fallback config file
-// instead of the remote config. This is used when the OpAMP server is unreachable.
+// composeFallbackConfig composes the agent configuration using the fallback config files
+// (merged in order) instead of the remote config. This is used when the OpAMP server is unreachable.
 func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
 	k := koanf.New("::")
 
 	s.addSpecialConfigFiles()
 
-	// Load the fallback config file
-	fallbackConfigBytes, err := os.ReadFile(s.config.Agent.FallbackConfig)
-	if err != nil {
-		return false, fmt.Errorf("could not read fallback config file: %w", err)
+	if len(s.config.Agent.FallbackConfigs) == 0 {
+		return false, errors.New("no fallback configs configured")
 	}
 
-	if err = k.Load(rawbytes.Provider(fallbackConfigBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
-		return false, fmt.Errorf("could not load fallback config: %w", err)
+	// Load and merge fallback config files, in order.
+	for _, fallbackPath := range s.config.Agent.FallbackConfigs {
+		fallbackConfigBytes, readErr := os.ReadFile(fallbackPath)
+		if readErr != nil {
+			return false, fmt.Errorf("could not read fallback config file: %w", readErr)
+		}
+
+		if err = k.Load(rawbytes.Provider(fallbackConfigBytes), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+			return false, fmt.Errorf("could not load fallback config: %w", err)
+		}
 	}
 
 	// Add the OpAMP extension config

@@ -224,9 +224,9 @@ type Agent struct {
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
-	// FallbackConfig is the path to a fallback configuration file to use when
-	// the OpAMP server is unreachable.
-	FallbackConfig string `mapstructure:"fallback_config"`
+	// FallbackConfigs is an ordered list of fallback configuration files to use
+	// when the OpAMP server is unreachable. Configs are merged in order.
+	FallbackConfigs []string `mapstructure:"fallback_configs"`
 	// FallbackStartupTimeout is how long to wait for initial connection to the
 	// OpAMP server before using the fallback configuration. If not set or zero,
 	// fallback on startup is disabled.
@@ -276,25 +276,30 @@ func (a Agent) Validate() error {
 		return errors.New("agent::use_hup_config_reload is not supported on Windows")
 	}
 
-	if err := a.validateFallbackConfig(); err != nil {
+	if err := a.validateFallbackConfigs(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (a Agent) validateFallbackConfig() error {
-	// If no fallback config is specified, no validation is needed
-	if a.FallbackConfig == "" {
+func (a Agent) validateFallbackConfigs() error {
+	// If no fallback configs are specified, no validation is needed.
+	if len(a.FallbackConfigs) == 0 {
 		return nil
 	}
 
-	// Validate that the fallback config file exists
-	if _, err := os.Stat(a.FallbackConfig); err != nil {
-		return fmt.Errorf("could not stat agent::fallback_config path: %w", err)
+	// Validate that the fallback config files exist.
+	for i, cfgPath := range a.FallbackConfigs {
+		if cfgPath == "" {
+			return fmt.Errorf("agent::fallback_configs[%d] cannot be empty", i)
+		}
+		if _, err := os.Stat(cfgPath); err != nil {
+			return fmt.Errorf("could not stat agent::fallback_configs[%d] path %q: %w", i, cfgPath, err)
+		}
 	}
-	if err := a.validateFallbackConfigWithColBin(); err != nil {
-		return fmt.Errorf("could not validate fallback config with agent::executable: %w", err)
+	if err := a.validateFallbackConfigsWithColBin(); err != nil {
+		return fmt.Errorf("could not validate fallback configs with agent::executable: %w", err)
 	}
 
 	if a.FallbackStartupTimeout < 0 {
@@ -308,9 +313,13 @@ func (a Agent) validateFallbackConfig() error {
 	return nil
 }
 
-func (a Agent) validateFallbackConfigWithColBin() error {
-	cfgValidateCommand := []string{a.Executable, "validate", "--config", a.FallbackConfig}
-	cmd := exec.Command(cfgValidateCommand[0], cfgValidateCommand[1:]...)
+func (a Agent) validateFallbackConfigsWithColBin() error {
+	cfgValidateCommand := []string{a.Executable, "validate"}
+	for _, cfgPath := range a.FallbackConfigs {
+		cfgValidateCommand = append(cfgValidateCommand, "--config", cfgPath)
+	}
+	cmd := exec.Command(cfgValidateCommand[0], cfgValidateCommand[1:]...) // #nosec G204
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
@@ -322,7 +331,7 @@ func (a Agent) validateFallbackConfigWithColBin() error {
 
 // FallbackEnabled returns true if fallback configuration is enabled.
 func (a Agent) FallbackEnabled() bool {
-	return a.FallbackConfig != ""
+	return len(a.FallbackConfigs) > 0
 }
 
 type SpecialConfigFile string
@@ -437,6 +446,7 @@ func DefaultSupervisor() Supervisor {
 			ConfigApplyTimeout:      5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
+			FallbackConfigs:         []string{},
 			FallbackStartupTimeout:  30 * time.Second,
 		},
 		Telemetry: Telemetry{

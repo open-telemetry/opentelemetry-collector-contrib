@@ -2294,6 +2294,25 @@ service:
       exporters: [nop]
 `
 
+	const fallbackBaseConfigInput = `receivers:
+  nop:
+exporters:
+  nop:
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+`
+
+	const fallbackOverrideConfigInput = `exporters:
+  logging:
+service:
+  pipelines:
+    logs:
+      exporters: [logging]
+`
+
 	const expectedMergedConfig = `exporters:
     nop: null
 extensions:
@@ -2421,7 +2440,7 @@ service:
 						Directory: t.TempDir(),
 					},
 					Agent: config.Agent{
-						FallbackConfig: fallbackConfigPath,
+						FallbackConfigs: []string{fallbackConfigPath},
 					},
 				},
 				hasNewConfig:                   make(chan struct{}, 1),
@@ -2480,7 +2499,7 @@ service:
 					Directory: t.TempDir(),
 				},
 				Agent: config.Agent{
-					FallbackConfig: "/nonexistent/path/fallback_config.yaml",
+					FallbackConfigs: []string{"/nonexistent/path/fallback_config.yaml"},
 				},
 			},
 			hasNewConfig:                   make(chan struct{}, 1),
@@ -2513,7 +2532,7 @@ service:
 					Directory: t.TempDir(),
 				},
 				Agent: config.Agent{
-					FallbackConfig: fallbackConfigPath,
+					FallbackConfigs: []string{fallbackConfigPath},
 				},
 			},
 			hasNewConfig:                   make(chan struct{}, 1),
@@ -2547,5 +2566,95 @@ service:
 		configChanged, err = s.composeFallbackConfig()
 		require.NoError(t, err)
 		require.False(t, configChanged)
+	})
+
+	t.Run("multiple fallback configs are merged in order", func(t *testing.T) {
+		// Base config defines exporters list as [nop], override changes it to [logging].
+		// Koanf overrides lists by default (except service.extensions via configMergeFunc),
+		// so this validates later fallback configs override earlier ones.
+		basePath := filepath.Join(t.TempDir(), "fallback_base.yaml")
+		overridePath := filepath.Join(t.TempDir(), "fallback_override.yaml")
+		require.NoError(t, os.WriteFile(basePath, []byte(fallbackBaseConfigInput), 0o600))
+		require.NoError(t, os.WriteFile(overridePath, []byte(fallbackOverrideConfigInput), 0o600))
+
+		const expectedMergedConfigMulti = `exporters:
+    logging: null
+    nop: null
+extensions:
+    opamp:
+        capabilities:
+            reports_available_components: false
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 1234
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receivers:
+    nop: null
+service:
+    extensions:
+        - opamp
+    pipelines:
+        logs:
+            exporters:
+                - logging
+            receivers:
+                - nop
+    telemetry:
+        logs:
+            encoding: json
+            error_output_paths:
+                - stderr
+            output_paths:
+                - stdout
+        resource:
+            service.name: otelcol
+`
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			persistentState:   &persistentState{InstanceID: testUUID},
+			pidProvider:       staticPIDProvider(1234),
+			config: config.Supervisor{
+				Storage: config.Storage{
+					Directory: t.TempDir(),
+				},
+				Agent: config.Agent{
+					FallbackConfigs: []string{basePath, overridePath},
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+		}
+
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{
+			IdentifyingAttributes: []*protobufs.KeyValue{
+				{
+					Key: "service.name",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: "otelcol",
+						},
+					},
+				},
+			},
+		})
+		s.agentDescription = agentDesc
+
+		require.NoError(t, s.createTemplates())
+
+		configChanged, err := s.composeFallbackConfig()
+		require.NoError(t, err)
+		require.True(t, configChanged)
+
+		cfgState := s.cfgState.Load().(*configState)
+		require.NotNil(t, cfgState)
+		gotConfig := strings.ReplaceAll(cfgState.mergedConfig, "\r\n", "\n")
+		require.Equal(t, expectedMergedConfigMulti, gotConfig)
 	})
 }
