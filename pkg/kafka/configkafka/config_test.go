@@ -118,10 +118,10 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
-		"conn_idle_timeout": {
+		"connection_idle_timeout": {
 			expected: func() ClientConfig {
 				cfg := NewDefaultClientConfig()
-				cfg.ConnIdleTimeout = 5 * time.Minute
+				cfg.ConnectionIdleTimeout = 5 * time.Minute
 				return cfg
 			}(),
 		},
