@@ -49,7 +49,7 @@ func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td ptrace.T
 				// and keep them in the grouping entry
 				groupedResourceSpans := tg.findOrCreateResourceSpans(rs.Resource(), requiredAttributes)
 				sp := matchingScopeSpans(groupedResourceSpans, ils.Scope()).Spans().AppendEmpty()
-				span.CopyTo(sp)
+				span.MoveTo(sp)
 			}
 		}
 	}
