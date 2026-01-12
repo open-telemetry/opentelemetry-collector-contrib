@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
 )
@@ -513,7 +514,7 @@ func TestPopulateActiveComponents(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			confMap := confmap.NewFromStringMap(tt.collectorConfigStringMap)
-			activeComponents, err := PopulateActiveComponents(confMap, tt.moduleInfoJSON)
+			activeComponents, err := PopulateActiveComponents(zap.NewNop(), confMap, tt.moduleInfoJSON)
 			if tt.expectedError != "" {
 				require.Error(t, err)
 				assert.ErrorContains(t, err, tt.expectedError)
@@ -646,7 +647,7 @@ func TestPopulateActiveComponentsAdditionalErrorPaths(t *testing.T) {
 
 		// This should panic when trying to call GetComponent on nil moduleInfoJSON
 		assert.Panics(t, func() {
-			_, err := PopulateActiveComponents(confMap, nil)
+			_, err := PopulateActiveComponents(zap.NewNop(), confMap, nil)
 			require.Error(t, err)
 		})
 	})
@@ -657,7 +658,7 @@ func TestPopulateActiveComponentsAdditionalErrorPaths(t *testing.T) {
 		})
 
 		moduleInfoJSON := payload.NewModuleInfoJSON()
-		_, err := PopulateActiveComponents(confMap, moduleInfoJSON)
+		_, err := PopulateActiveComponents(zap.NewNop(), confMap, moduleInfoJSON)
 		require.Error(t, err) // Should error on unmarshal
 	})
 }
