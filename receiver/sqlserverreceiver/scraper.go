@@ -824,13 +824,12 @@ func (s *sqlServerScraperHelper) cacheAndDiff(queryHash, queryPlanHash, procedur
 		key = procedureID + "-" + key
 	}
 	cached, ok := s.cache.Get(key)
+	s.cache.Add(key, val)
 	if !ok {
-		s.cache.Add(key, val)
 		return false, val
 	}
 
 	if val > cached {
-		s.cache.Add(key, val)
 		return true, val - cached
 	}
 	return true, 0
