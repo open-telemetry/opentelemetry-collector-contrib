@@ -265,6 +265,6 @@ func (t *ConnectionStateTracker) sendEvent(event ConnectionStateEvent) {
 	case t.eventCh <- event:
 		t.logger.Debug("Sent connection state event", zap.String("event", event.String()))
 	default:
-		t.logger.Warn("Event channel full, dropping event", zap.String("event", event.String()))
+		t.logger.Warn("Connection state event channel full, dropping event", zap.String("event", event.String()))
 	}
 }
