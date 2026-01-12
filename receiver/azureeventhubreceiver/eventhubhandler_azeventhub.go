@@ -5,17 +5,44 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
 
 type checkpointSeqNumber struct {
-	SeqNumber int64 `json:"seqNumber"`
+	// Offset only used for backwards compatibility
+	Offset         string `json:"offset"`
+	SequenceNumber int64  `json:"sequenceNumber"`
+}
+
+// UnmarshalJSON is a custom unmarshaller to allow for backward compatibility
+// with the sequence number field
+func (c *checkpointSeqNumber) UnmarshalJSON(data []byte) error {
+	// Primary struct shape
+	type Alias checkpointSeqNumber
+	var tmp struct {
+		Alias
+		SeqNumber *int64 `json:"seqNumber"` // fallback
+	}
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	*c = checkpointSeqNumber(tmp.Alias)
+	if tmp.SeqNumber != nil {
+		c.SequenceNumber = *tmp.SeqNumber
+	}
+	return nil
 }
 
 type azPartitionClient interface {
@@ -30,36 +57,70 @@ func getConsumerGroup(config *Config) string {
 	return config.ConsumerGroup
 }
 
-func newAzeventhubWrapper(h *eventhubHandler) (*hubWrapperAzeventhubImpl, error) {
-	consumerGroup := getConsumerGroup(h.config)
+// createConsumerClient creates a new Azure Event Hub consumer client.
+// If auth is configured, it uses the auth extension to create the client.
+// Otherwise, it uses the connection string.
+func createConsumerClient(
+	config *Config,
+	host component.Host,
+	consumerGroup string,
+	logger *zap.Logger,
+) (*azeventhubs.ConsumerClient, error) {
+	if config.Auth != nil {
+		if config.Connection != "" {
+			logger.Warn("both 'auth' and 'connection' are specified, 'connection' will be ignored.")
+		}
+		ext, ok := host.GetExtensions()[*config.Auth]
+		if !ok {
+			return nil, fmt.Errorf("failed to resolve auth extension %q", *config.Auth)
+		}
+		credential, ok := ext.(azcore.TokenCredential)
+		if !ok {
+			return nil, fmt.Errorf("extension %q does not implement azcore.TokenCredential", *config.Auth)
+		}
 
-	hub, newHubErr := azeventhubs.NewConsumerClientFromConnectionString(
-		h.config.Connection,
+		return azeventhubs.NewConsumerClient(
+			config.EventHub.Namespace,
+			config.EventHub.Name,
+			consumerGroup,
+			credential,
+			&azeventhubs.ConsumerClientOptions{},
+		)
+	}
+	return azeventhubs.NewConsumerClientFromConnectionString(
+		config.Connection,
 		"",
 		consumerGroup,
 		&azeventhubs.ConsumerClientOptions{},
 	)
+}
 
+func newAzeventhubWrapper(h *eventhubHandler, host component.Host) (*hubWrapperAzeventhubImpl, error) {
+	consumerGroup := getConsumerGroup(h.config)
+
+	hub, newHubErr := createConsumerClient(h.config, host, consumerGroup, h.settings.Logger)
 	if newHubErr != nil {
 		h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
 		return nil, newHubErr
 	}
 
-	var storage *storageCheckpointPersister[checkpointSeqNumber]
-	if h.storageClient != nil {
-		storage = &storageCheckpointPersister[checkpointSeqNumber]{
-			storageClient: h.storageClient,
-			defaultValue: checkpointSeqNumber{
-				SeqNumber: -1,
-			},
-		}
-	}
-
 	return &hubWrapperAzeventhubImpl{
 		hub:     azEventHubWrapper{hub},
 		config:  h.config,
-		storage: storage,
+		storage: getStorageCheckpointPersister(h.storageClient),
 	}, nil
+}
+
+func getStorageCheckpointPersister(storageClient storage.Client) *storageCheckpointPersister[checkpointSeqNumber] {
+	if storageClient == nil {
+		return nil
+	}
+	return &storageCheckpointPersister[checkpointSeqNumber]{
+		storageClient: storageClient,
+		defaultValue: checkpointSeqNumber{
+			SequenceNumber: -1,
+		},
+	}
 }
 
 type azEventHubWrapper struct {
@@ -121,18 +182,13 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 		if err != nil {
 			return nil, err
 		}
-		startPos := azeventhubs.StartPosition{Latest: to.Ptr(true)}
-		if applyOffset && h.config.Offset != "" {
-			startPos = azeventhubs.StartPosition{Offset: &h.config.Offset}
-		}
-		if h.storage != nil {
-			checkpoint, readErr := h.storage.Read(namespace, pProps.EventHubName, h.config.ConsumerGroup, partitionID)
-			if readErr == nil {
-				startPos = azeventhubs.StartPosition{
-					SequenceNumber: &checkpoint.SeqNumber,
-				}
-			}
-		}
+		startPos := h.getStartPos(
+			applyOffset,
+			namespace,
+			pProps.EventHubName,
+			getConsumerGroup(h.config),
+			partitionID,
+		)
 		pc, err := h.hub.NewPartitionClient(partitionID, &azeventhubs.PartitionClientOptions{
 			StartPosition: startPos,
 		})
@@ -185,8 +241,8 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 
 					if h.storage != nil {
 						err := h.storage.Write(
-							namespace, pProps.EventHubName, h.config.ConsumerGroup, partitionID, checkpointSeqNumber{
-								SeqNumber: lastEvent.SequenceNumber,
+							namespace, pProps.EventHubName, getConsumerGroup(h.config), partitionID, checkpointSeqNumber{
+								SequenceNumber: lastEvent.SequenceNumber,
 							},
 						)
 						if err != nil {
@@ -210,13 +266,51 @@ func (h *hubWrapperAzeventhubImpl) Close(ctx context.Context) error {
 	return errNoConfig
 }
 
+func (h *hubWrapperAzeventhubImpl) getStartPos(
+	applyOffset bool,
+	namespace string,
+	eventHubName string,
+	consumerGroup string,
+	partitionID string,
+) azeventhubs.StartPosition {
+	startPos := azeventhubs.StartPosition{Latest: to.Ptr(true)}
+	if applyOffset && h.config.Offset != "" {
+		startPos = azeventhubs.StartPosition{Offset: &h.config.Offset}
+	}
+	if h.storage != nil {
+		checkpoint, readErr := h.storage.Read(
+			namespace,
+			eventHubName,
+			consumerGroup,
+			partitionID,
+		)
+		// Only apply the checkpoint seq number offset if we have one saved
+		if readErr == nil && checkpoint.SequenceNumber != -1 && checkpoint.Offset != "@latest" {
+			startPos = azeventhubs.StartPosition{
+				SequenceNumber: &checkpoint.SequenceNumber,
+			}
+		}
+	}
+
+	return startPos
+}
+
 func (h *hubWrapperAzeventhubImpl) namespace() (string, error) {
+	if h.config.Auth != nil {
+		return h.config.EventHub.Namespace, nil
+	}
 	parsed, err := azeventhubs.ParseConnectionString(h.config.Connection)
 	if err != nil {
 		return "", err
 	}
 
-	return parsed.FullyQualifiedNamespace, nil
+	// Return the first part of the namespace
+	// Ex: example.servicebus.windows.net => example
+	n := parsed.FullyQualifiedNamespace
+	if s := strings.Split(n, "."); len(s) > 0 {
+		n = s[0]
+	}
+	return n, nil
 }
 
 type partitionListener struct {
