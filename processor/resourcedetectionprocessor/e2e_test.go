@@ -7,7 +7,14 @@ package resourcedetectionprocessor
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -56,6 +63,7 @@ func TestE2EEnvDetector(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
 	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "env", "collector"), map[string]string{}, "")
@@ -67,7 +75,7 @@ func TestE2EEnvDetector(t *testing.T) {
 	}()
 
 	wantEntries := 10
-	waitForData(t, wantEntries, metricsConsumer)
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
 
 	// Uncomment to regenerate golden file
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
@@ -102,6 +110,7 @@ func TestE2ESystemDetector(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
 	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "system", "collector"), map[string]string{}, "")
@@ -113,7 +122,7 @@ func TestE2ESystemDetector(t *testing.T) {
 	}()
 
 	wantEntries := 10 // Minimal number of metrics to wait for.
-	waitForData(t, wantEntries, metricsConsumer)
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
 
 	// Uncomment to regenerate golden file
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
@@ -140,6 +149,72 @@ func TestE2ESystemDetector(t *testing.T) {
 	}, 3*time.Minute, 1*time.Second)
 }
 
+// TestE2EDockerDetector validates docker metadata detection by running the Collector inside a
+// Docker container and verifying that docker-specific resource attributes are reported.
+func TestE2EDockerDetector(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("Docker detector e2e test is currently supported on linux runners only")
+	}
+	if _, err := exec.LookPath("docker"); err != nil {
+		t.Skipf("docker binary not available: %v", err)
+	}
+	if _, err := os.Stat("/var/run/docker.sock"); err != nil {
+		t.Skipf("docker socket unavailable: %v", err)
+	}
+
+	var expected pmetric.Metrics
+	expectedFile := filepath.Join("testdata", "e2e", "docker", "expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	shutdownSink := startUpSink(t, metricsConsumer)
+	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
+
+	containerName := fmt.Sprintf("otelcol-docker-%s", strings.ToLower(uuid.NewString()[:8]))
+	runCollectorInDocker(t, containerName)
+
+	wantEntries := 10
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
+
+	containerResourceName := "/" + containerName
+	setResourceAttributeValue(expected, "container.name", containerResourceName)
+
+	allMetrics := metricsConsumer.AllMetrics()
+	newMetrics := allMetrics[startEntries:]
+	var actual pmetric.Metrics
+	found := false
+	for _, m := range newMetrics {
+		var metricsWithContainer pmetric.Metrics
+		metricsWithContainer, err = filterMetricsByResourceAttribute(m, "container.name", containerResourceName)
+		if err == nil {
+			actual = metricsWithContainer
+			found = true
+			break
+		}
+	}
+	require.Truef(t, found, "resource with container.name=%s not found in new metric batches", containerName)
+
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, actual,
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreScopeVersion(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+
+			pmetrictest.ChangeResourceAttributeValue("host.name", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("container.image.name", replaceWithStar),
+		),
+		)
+	}, 3*time.Minute, 1*time.Second)
+}
+
 func replaceWithStar(_ string) string {
 	return "*"
 }
@@ -156,11 +231,93 @@ func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 	}
 }
 
-func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink) {
+func waitForData(t *testing.T, mc *consumertest.MetricsSink, startEntries, entriesNum int) {
 	timeoutMinutes := 3
 	require.Eventuallyf(t, func() bool {
-		return len(mc.AllMetrics()) > entriesNum
+		return len(mc.AllMetrics()) >= startEntries+entriesNum
 	}, time.Duration(timeoutMinutes)*time.Minute, 1*time.Second,
-		"failed to receive %d entries, received %d metrics in %d minutes", entriesNum,
-		len(mc.AllMetrics()), timeoutMinutes)
+		"failed to receive %d new entries, received %d metrics total (starting from %d) in %d minutes",
+		entriesNum, len(mc.AllMetrics()), startEntries, timeoutMinutes)
+}
+
+func runCollectorInDocker(t *testing.T, containerName string) {
+	t.Helper()
+
+	confDir := filepath.Join("testdata", "e2e", "docker")
+	absConfDir, err := filepath.Abs(confDir)
+	require.NoError(t, err)
+
+	groupArgs := dockerSocketGroupArgs(t)
+
+	args := []string{
+		"run",
+		"-d",
+		"--name", containerName,
+		"--add-host", "host.docker.internal:host-gateway",
+	}
+	args = append(args, groupArgs...)
+	args = append(args,
+		"-v", fmt.Sprintf("%s:/conf:ro", absConfDir),
+		"-v", "/var/run/docker.sock:/var/run/docker.sock",
+		"otelcontribcol:latest",
+		"--config=/conf/config.yaml",
+	)
+
+	cmd := exec.Command("docker", args...)
+	output, err := cmd.CombinedOutput()
+	require.NoErrorf(t, err, "failed to start docker collector: %s", output)
+
+	t.Cleanup(func() {
+		if t.Failed() {
+			if logs, logErr := exec.Command("docker", "logs", containerName).CombinedOutput(); logErr == nil {
+				t.Logf("docker logs for %s:\n%s", containerName, logs)
+			} else {
+				t.Logf("failed to fetch docker logs for %s: %v", containerName, logErr)
+			}
+		}
+		stopDockerContainer(t, containerName)
+	})
+}
+
+func stopDockerContainer(t *testing.T, containerName string) {
+	t.Helper()
+	cmd := exec.Command("docker", "rm", "-f", containerName)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Logf("failed to remove docker container %s: %v (%s)", containerName, err, output)
+	}
+}
+
+func setResourceAttributeValue(metrics pmetric.Metrics, key, value string) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		attrs := rms.At(i).Resource().Attributes()
+		if _, ok := attrs.Get(key); ok {
+			attrs.PutStr(key, value)
+		}
+	}
+}
+
+func filterMetricsByResourceAttribute(metrics pmetric.Metrics, key, value string) (pmetric.Metrics, error) {
+	filtered := pmetric.NewMetrics()
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		attrs := rms.At(i).Resource().Attributes()
+		if attr, ok := attrs.Get(key); ok && attr.AsString() == value {
+			rms.At(i).CopyTo(filtered.ResourceMetrics().AppendEmpty())
+		}
+	}
+	if filtered.ResourceMetrics().Len() == 0 {
+		return filtered, fmt.Errorf("resource with %s=%s not found", key, value)
+	}
+	return filtered, nil
+}
+
+func dockerSocketGroupArgs(t *testing.T) []string {
+	info, err := os.Stat("/var/run/docker.sock")
+	require.NoError(t, err)
+
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	require.True(t, ok, "unexpected stat type for docker socket")
+
+	return []string{"--group-add", strconv.FormatUint(uint64(stat.Gid), 10)}
 }
