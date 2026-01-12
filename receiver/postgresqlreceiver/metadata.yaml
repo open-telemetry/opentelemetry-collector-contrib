@@ -28,8 +28,20 @@ resource_attributes:
     description: The table name.
     enabled: true
     type: string
+  server.host:
+    description: The hostname of the PostgreSQL server.
+    enabled: true
+    type: string
+  server.port:
+    description: The port number of the PostgreSQL server.
+    enabled: true
+    type: int
   service.instance.id:
-    description: A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value).
+    description: A unique identifier of the PostgreSQL resource as a UUID v5, derived from host, port, database, schema, table, and index.
+    enabled: true
+    type: string
+  service.name:
+    description: The database management system name (postgresql).
     enabled: true
     type: string
 

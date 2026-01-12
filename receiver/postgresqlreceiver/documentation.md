@@ -456,4 +456,7 @@ top query
 | postgresql.index.name | The name of the index on a table. | Any Str | true |
 | postgresql.schema.name | The schema name. | Any Str | true |
 | postgresql.table.name | The table name. | Any Str | true |
-| service.instance.id | A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value). | Any Str | true |
+| server.host | The hostname of the PostgreSQL server. | Any Str | true |
+| server.port | The port number of the PostgreSQL server. | Any Int | true |
+| service.instance.id | A unique identifier of the PostgreSQL resource as a UUID v5, derived from host, port, database, schema, table, and index. | Any Str | true |
+| service.name | The database management system name (postgresql). | Any Str | true |

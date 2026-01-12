@@ -167,11 +167,29 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	if lbc.ResourceAttributes.PostgresqlTableName.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["postgresql.table.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlTableName.EventsExclude)
 	}
+	if lbc.ResourceAttributes.ServerHost.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["server.host"] = filter.CreateFilter(lbc.ResourceAttributes.ServerHost.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServerHost.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["server.host"] = filter.CreateFilter(lbc.ResourceAttributes.ServerHost.EventsExclude)
+	}
+	if lbc.ResourceAttributes.ServerPort.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServerPort.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsExclude)
+	}
 	if lbc.ResourceAttributes.ServiceInstanceID.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsInclude)
 	}
 	if lbc.ResourceAttributes.ServiceInstanceID.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsExclude)
+	}
+	if lbc.ResourceAttributes.ServiceName.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsInclude)
+	}
+	if lbc.ResourceAttributes.ServiceName.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsExclude)
 	}
 
 	return lb
