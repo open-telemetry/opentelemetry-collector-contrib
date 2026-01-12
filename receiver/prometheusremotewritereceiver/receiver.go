@@ -37,10 +37,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
+const defaultMaxRequestBodySize = 10 * 1024 * 1024 // 10MiB
+
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	cache, err := lru.New[uint64, pmetric.ResourceMetrics](1000)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
+	}
+	if cfg.MaxRequestBodySize <= 0 {
+		cfg.MaxRequestBodySize = defaultMaxRequestBodySize
 	}
 
 	return &prometheusRemoteWriteReceiver{
