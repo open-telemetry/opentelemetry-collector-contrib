@@ -106,7 +106,12 @@ func (t *TransformerOperator) ProcessBatchWithTransform(ctx context.Context, ent
 		}
 
 		if err = transform(ent); err != nil {
-			errs = append(errs, t.HandleEntryErrorWithWrite(ctx, ent, err, write))
+			if handleErr := t.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
+				// Only append error if not in quiet mode
+				if t.OnError != DropOnErrorQuiet && t.OnError != SendOnErrorQuiet {
+					errs = append(errs, handleErr)
+				}
+			}
 			continue
 		}
 
@@ -130,7 +135,14 @@ func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entr
 	}
 
 	if err := transform(entry); err != nil {
-		return t.HandleEntryError(ctx, entry, err)
+		if handleErr := t.HandleEntryError(ctx, entry, err); handleErr != nil {
+			// Return nil for quiet modes to prevent error from bubbling up
+			if t.OnError == DropOnErrorQuiet || t.OnError == SendOnErrorQuiet {
+				return nil
+			}
+			return handleErr
+		}
+		return nil
 	}
 	return t.Write(ctx, entry)
 }
