@@ -314,6 +314,8 @@ Beyond degrading APM interfaces with numerous non-meaningful operation names, th
 
 The span metrics connector provides an optional circuit breaker through the `aggregation_cardinality_limit` attribute (disabled by default) to mitigate cardinality explosion. While this feature addresses performance and cost concerns, it does not resolve the underlying issue of semantically meaningless operation names.
 
+### Fixing high cardinality span name issues
+
 The ideal long-term solution is to modify the OpenTelemetry instrumentation code to comply with semantic conventions, preventing the generation of non-compliant high cardinality span names.
 
 However, deploying updated instrumentation libraries can be time-consuming, often requiring an immediate interim solution to restore observability backend functionality.
