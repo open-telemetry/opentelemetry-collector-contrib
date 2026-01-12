@@ -5,6 +5,7 @@ package healthcheckextension
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,7 +44,11 @@ func TestLegacyReadyNotReadyBehavior(t *testing.T) {
 
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		require.NoError(t, ext.Shutdown(t.Context()))
+		// Use Background context for shutdown in cleanup to avoid cancellation issues.
+		//nolint:usetesting // cleanup may run after the test context is cancelled
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		require.NoError(t, ext.Shutdown(ctx))
 	})
 
 	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/", port))
@@ -116,7 +121,11 @@ func TestV2ExtensionEnabledByGate(t *testing.T) {
 
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		require.NoError(t, ext.Shutdown(t.Context()))
+		// Use Background context for shutdown in cleanup to avoid cancellation issues.
+		//nolint:usetesting // cleanup may run after the test context is cancelled
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		require.NoError(t, ext.Shutdown(ctx))
 	})
 
 	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/", port))
