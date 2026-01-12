@@ -55,6 +55,7 @@ jobs:
         with:
           repository: prometheus/compliance
           path: compliance
+          ref: adfa690dd4df11f9c1bc1b130db5843fdca219f1 # Pin to commit using Go 1.23.0
       - name: Copy binary to compliance directory
         # The required name of the downloaded artifact is `otelcol_0.42.0_linux_amd64`, so we place the collector contrib artifact under the same name in the bin folder to run.
         # Source: https://github.com/prometheus/compliance/blob/12cbdf92abf7737531871ab7620a2de965fc5382/remote_write_sender/targets/otel.go#L8
