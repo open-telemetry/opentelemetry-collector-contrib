@@ -41,21 +41,25 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				GroupByAttributes:           []string{"db.operation"},
-				MinSpansToAggregate:         5,
-				MaxParentDepth:              1,
-				AggregationAttributePrefix:  "aggregation.",
-				AggregationHistogramBuckets: defaultHistogramBuckets,
+				GroupByAttributes:               []string{"db.operation"},
+				MinSpansToAggregate:             5,
+				MaxParentDepth:                  1,
+				AggregationAttributePrefix:      "aggregation.",
+				AggregationHistogramBuckets:     defaultHistogramBuckets,
+				EnableAttributeLossAnalysis:     false,
+				AttributeLossExemplarSampleRate: 0.01,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "custom"),
 			expected: &Config{
-				GroupByAttributes:           []string{"db.operation", "db.name"},
-				MinSpansToAggregate:         3,
-				MaxParentDepth:              1,
-				AggregationAttributePrefix:  "batch.",
-				AggregationHistogramBuckets: defaultHistogramBuckets,
+				GroupByAttributes:               []string{"db.operation", "db.name"},
+				MinSpansToAggregate:             3,
+				MaxParentDepth:                  1,
+				AggregationAttributePrefix:      "batch.",
+				AggregationHistogramBuckets:     defaultHistogramBuckets,
+				EnableAttributeLossAnalysis:     false,
+				AttributeLossExemplarSampleRate: 0.01,
 			},
 		},
 	}
@@ -173,6 +177,24 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expectError: false,
 		},
+		{
+			name: "invalid attribute_loss_exemplar_sample_rate negative",
+			config: &Config{
+				MinSpansToAggregate:             2,
+				AggregationAttributePrefix:      "aggregation.",
+				AttributeLossExemplarSampleRate: -0.1,
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid attribute_loss_exemplar_sample_rate > 1",
+			config: &Config{
+				MinSpansToAggregate:             2,
+				AggregationAttributePrefix:      "aggregation.",
+				AttributeLossExemplarSampleRate: 1.5,
+			},
+			expectError: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -193,6 +215,11 @@ func TestEnableAttributeLossAnalysis(t *testing.T) {
 	t.Run("disabled by default", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig().(*Config)
 		assert.False(t, cfg.EnableAttributeLossAnalysis)
+	})
+
+	t.Run("has correct sample rate default", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		assert.Equal(t, 0.01, cfg.AttributeLossExemplarSampleRate)
 	})
 
 	t.Run("can be enabled", func(t *testing.T) {

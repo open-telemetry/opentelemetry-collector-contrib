@@ -23,19 +23,19 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                         metric.Meter
-	mu                                            sync.Mutex
-	registrations                                 []metric.Registration
-	ProcessorSpanpruningAggregationGroupSize      metric.Int64Histogram
-	ProcessorSpanpruningAggregationsCreated       metric.Int64Counter
-	ProcessorSpanpruningLeafAttributeDiversityLoss  metric.Int64Histogram
-	ProcessorSpanpruningLeafAttributeLoss           metric.Int64Histogram
+	meter                                            metric.Meter
+	mu                                               sync.Mutex
+	registrations                                    []metric.Registration
+	ProcessorSpanpruningAggregationGroupSize         metric.Int64Histogram
+	ProcessorSpanpruningAggregationsCreated          metric.Int64Counter
+	ProcessorSpanpruningLeafAttributeDiversityLoss   metric.Int64Histogram
+	ProcessorSpanpruningLeafAttributeLoss            metric.Int64Histogram
 	ProcessorSpanpruningParentAttributeDiversityLoss metric.Int64Histogram
 	ProcessorSpanpruningParentAttributeLoss          metric.Int64Histogram
-	ProcessorSpanpruningProcessingDuration        metric.Float64Histogram
-	ProcessorSpanpruningSpansPruned               metric.Int64Counter
-	ProcessorSpanpruningSpansReceived             metric.Int64Counter
-	ProcessorSpanpruningTracesProcessed           metric.Int64Counter
+	ProcessorSpanpruningProcessingDuration           metric.Float64Histogram
+	ProcessorSpanpruningSpansPruned                  metric.Int64Counter
+	ProcessorSpanpruningSpansReceived                metric.Int64Counter
+	ProcessorSpanpruningTracesProcessed              metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.

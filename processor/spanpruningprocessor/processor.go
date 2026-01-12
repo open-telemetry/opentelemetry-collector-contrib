@@ -6,12 +6,14 @@ package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"time"
 
 	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
@@ -63,6 +65,28 @@ func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuild
 func (p *spanPruningProcessor) shutdown(_ context.Context) error {
 	p.telemetryBuilder.Shutdown()
 	return nil
+}
+
+// shouldSampleAttributeLossExemplar returns true if this recording should include an exemplar
+func (p *spanPruningProcessor) shouldSampleAttributeLossExemplar() bool {
+	rate := p.config.AttributeLossExemplarSampleRate
+	if rate <= 0 {
+		return false
+	}
+	if rate >= 1 {
+		return true
+	}
+	return rand.Float64() < rate
+}
+
+// createExemplarContext creates a context with span context for exemplar attachment.
+// Uses direct type casting since pcommon and trace ID types are identical byte arrays.
+func createExemplarContext(ctx context.Context, traceID pcommon.TraceID, spanID pcommon.SpanID) context.Context {
+	return trace.ContextWithSpanContext(ctx, trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    trace.TraceID(traceID),
+		SpanID:     trace.SpanID(spanID),
+		TraceFlags: trace.FlagsSampled,
+	}))
 }
 
 func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
@@ -182,12 +206,20 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 			var lossInfo attributeLossSummary
 			if p.enableAttributeLossAnalysis {
 				lossInfo = analyzeAttributeLoss(nodes)
+
+				// Determine context for recording (with or without exemplar)
+				recordCtx := ctx
+				if p.shouldSampleAttributeLossExemplar() {
+					exemplarSpan := nodes[0].span
+					recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
+				}
+
 				p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(
-					ctx,
+					recordCtx,
 					int64(len(lossInfo.diverse)),
 				)
 				p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(
-					ctx,
+					recordCtx,
 					int64(len(lossInfo.missing)),
 				)
 			}
@@ -246,12 +278,20 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 				var lossInfo attributeLossSummary
 				if p.enableAttributeLossAnalysis {
 					lossInfo = analyzeAttributeLoss(nodes)
+
+					// Determine context for recording (with or without exemplar)
+					recordCtx := ctx
+					if p.shouldSampleAttributeLossExemplar() {
+						exemplarSpan := nodes[0].span
+						recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
+					}
+
 					p.telemetryBuilder.ProcessorSpanpruningParentAttributeDiversityLoss.Record(
-						ctx,
+						recordCtx,
 						int64(len(lossInfo.diverse)),
 					)
 					p.telemetryBuilder.ProcessorSpanpruningParentAttributeLoss.Record(
-						ctx,
+						recordCtx,
 						int64(len(lossInfo.missing)),
 					)
 				}
