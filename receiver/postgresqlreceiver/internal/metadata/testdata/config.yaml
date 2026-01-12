@@ -101,6 +101,10 @@ all_set:
       enabled: true
     postgresql.table.name:
       enabled: true
+    server.host:
+      enabled: true
+    server.port:
+      enabled: true
     service.instance.id:
       enabled: true
     service.name:
@@ -208,6 +212,10 @@ reaggregate_set:
     postgresql.schema.name:
       enabled: true
     postgresql.table.name:
+      enabled: true
+    server.host:
+      enabled: true
+    server.port:
       enabled: true
     service.instance.id:
       enabled: true
@@ -317,6 +325,10 @@ none_set:
       enabled: false
     postgresql.table.name:
       enabled: false
+    server.host:
+      enabled: false
+    server.port:
+      enabled: false
     service.instance.id:
       enabled: false
     service.name:
@@ -337,6 +349,12 @@ override_set:
     postgresql.table.name:
       enabled: true
       override_value: "override-postgresql.table.name"
+    server.host:
+      enabled: true
+      override_value: "override-server.host"
+    server.port:
+      enabled: true
+      override_value: 123
     service.instance.id:
       enabled: true
       override_value: "override-service.instance.id"
@@ -367,6 +385,18 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     postgresql.table.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    server.host:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    server.port:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -416,6 +446,18 @@ filter_set_exclude:
         - strict: "postgresql.table.name-val"
       events_exclude:
         - strict: "postgresql.table.name-val"
+    server.host:
+      enabled: true
+      metrics_exclude:
+        - strict: "server.host-val"
+      events_exclude:
+        - strict: "server.host-val"
+    server.port:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+      events_exclude:
+        - regexp: ".*"
     service.instance.id:
       enabled: true
       metrics_exclude:
