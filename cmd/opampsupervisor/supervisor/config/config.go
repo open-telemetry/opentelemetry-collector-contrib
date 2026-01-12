@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -292,6 +293,9 @@ func (a Agent) validateFallbackConfig() error {
 	if _, err := os.Stat(a.FallbackConfig); err != nil {
 		return fmt.Errorf("could not stat agent::fallback_config path: %w", err)
 	}
+	if err := a.validateFallbackConfigWithColBin(); err != nil {
+		return fmt.Errorf("could not validate fallback config with agent::executable: %w", err)
+	}
 
 	if a.FallbackStartupTimeout < 0 {
 		return errors.New("agent::fallback_startup_timeout must be non-negative")
@@ -301,6 +305,18 @@ func (a Agent) validateFallbackConfig() error {
 		return errors.New("agent::fallback_runtime_timeout must be non-negative")
 	}
 
+	return nil
+}
+
+func (a Agent) validateFallbackConfigWithColBin() error {
+	cfgValidateCommand := []string{a.Executable, "validate", "--config", a.FallbackConfig}
+	cmd := exec.Command(cfgValidateCommand[0], cfgValidateCommand[1:]...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

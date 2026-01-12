@@ -311,6 +311,49 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 	return cfgFile
 }
 
+// This test ensures the Supervisor config validation path can validate
+// agent::fallback_config by executing the real Collector binary with:
+//
+//	<collector> --config <fallback> --validate
+//
+// The e2e test Makefile target builds the binary at:
+//
+//	../../bin/otelcontribcol_<GOOS>_<GOARCH>[.exe]
+func TestValidateFallbackConfigWithColBin_E2E(t *testing.T) {
+	// Ensure the collector binary exists where the e2e tests expect it.
+	ext := ""
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
+	colBinName := fmt.Sprintf("otelcontribcol_%s_%s%s", runtime.GOOS, runtime.GOARCH, ext)
+	collectorPath := filepath.Clean(filepath.Join("..", "..", "bin", colBinName))
+	require.FileExists(t, collectorPath, "expected Collector binary at %q", collectorPath)
+
+	t.Run("Valid fallback config", func(t *testing.T) {
+		goodColConfigPath := filepath.Join("testdata", "collector", "healthcheck_config.yaml")
+		cfgFile := getSupervisorConfig(t, "fallback", map[string]string{
+			"url":             "localhost:12345",
+			"storage_dir":     t.TempDir(),
+			"fallback_config": goodColConfigPath,
+		})
+
+		_, err := config.Load(cfgFile.Name())
+		require.NoError(t, err)
+	})
+
+	t.Run("Invalid fallback config", func(t *testing.T) {
+		badColConfigPath := filepath.Join("testdata", "collector", "bad_config.yaml")
+		badCfgFile := getSupervisorConfig(t, "fallback", map[string]string{
+			"url":             "localhost:12345",
+			"storage_dir":     t.TempDir(),
+			"fallback_config": badColConfigPath,
+		})
+
+		_, err := config.Load(badCfgFile.Name())
+		require.ErrorContains(t, err, "could not validate fallback config with agent::executable")
+	})
+}
+
 func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 	modes := getTestModes()
 
