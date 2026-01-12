@@ -425,7 +425,7 @@ func (cfg *Config) validateExplicitContextConfig() error {
 	var errs error
 
 	if cfg.Traces.ResourceConditions != nil {
-		_, err := filterottl.NewBoolExprForResource(cfg.Metrics.ResourceConditions, cfg.resourceFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := filterottl.NewBoolExprForResource(cfg.Traces.ResourceConditions, cfg.resourceFunctions, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 		errs = multierr.Append(errs, err)
 	}
 
