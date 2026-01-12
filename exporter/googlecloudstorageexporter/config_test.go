@@ -28,7 +28,10 @@ func TestValidate(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				Encoding: func() *component.ID { id := component.MustNewID("test"); return &id }(),
+				Encoding: func() *component.ID {
+					id := component.MustNewID("test")
+					return &id
+				}(),
 				Bucket: bucketConfig{
 					Name:       "test-bucket",
 					Region:     "test-region",

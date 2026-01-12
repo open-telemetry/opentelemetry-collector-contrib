@@ -22,9 +22,9 @@ func NewFactory() exporter.Factory {
 }
 
 func createLogsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
-	return newGCSExporter(ctx, config.(*Config), set.Logger)
+	return newGCSExporter(ctx, config.(*Config), set.Logger, signalTypeLogs)
 }
 
 func createTracesExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
-	return newGCSExporter(ctx, config.(*Config), set.Logger)
+	return newGCSExporter(ctx, config.(*Config), set.Logger, signalTypeTraces)
 }

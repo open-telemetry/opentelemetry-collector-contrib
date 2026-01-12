@@ -28,6 +28,7 @@ func TestNewStorageExporter(t *testing.T) {
 		getZone      func(context.Context) (string, error)
 		getProjectID func(context.Context) (string, error)
 		cfg          *Config
+		signal       signalType
 		expectsErr   string
 	}{
 		"region and project set": {
@@ -37,6 +38,7 @@ func TestNewStorageExporter(t *testing.T) {
 					Region:    "test",
 				},
 			},
+			signal: signalTypeLogs,
 		},
 		"region missing and provider works": {
 			getZone: func(_ context.Context) (string, error) {
@@ -47,6 +49,7 @@ func TestNewStorageExporter(t *testing.T) {
 					ProjectID: "test",
 				},
 			},
+			signal: signalTypeLogs,
 		},
 		"region missing and provider fails": {
 			getZone: func(_ context.Context) (string, error) {
@@ -57,6 +60,7 @@ func TestNewStorageExporter(t *testing.T) {
 					ProjectID: "test",
 				},
 			},
+			signal:     signalTypeLogs,
 			expectsErr: "failed to determine region",
 		},
 		"project ID missing and provider works": {
@@ -68,6 +72,7 @@ func TestNewStorageExporter(t *testing.T) {
 					Region: "test",
 				},
 			},
+			signal: signalTypeLogs,
 		},
 		"project ID missing and provider fails": {
 			getProjectID: func(_ context.Context) (string, error) {
@@ -78,6 +83,7 @@ func TestNewStorageExporter(t *testing.T) {
 					Region: "test",
 				},
 			},
+			signal:     signalTypeLogs,
 			expectsErr: "failed to determine project ID",
 		},
 		"partition format valid and provider works": {
@@ -90,6 +96,7 @@ func TestNewStorageExporter(t *testing.T) {
 					},
 				},
 			},
+			signal: signalTypeLogs,
 		},
 		"partition format invalid and provider fails": {
 			cfg: &Config{
@@ -101,7 +108,18 @@ func TestNewStorageExporter(t *testing.T) {
 					},
 				},
 			},
+			signal:     signalTypeLogs,
 			expectsErr: "failed to parse partition format",
+		},
+		"invalid signal type": {
+			cfg: &Config{
+				Bucket: bucketConfig{
+					ProjectID: "test",
+					Region:    "test",
+				},
+			},
+			signal:     signalType("invalid"),
+			expectsErr: "signal type \"invalid\" not recognized",
 		},
 	}
 
@@ -109,7 +127,12 @@ func TestNewStorageExporter(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			gcsExporter, err := newStorageExporter(t.Context(), test.cfg, test.getZone, test.getProjectID, zap.NewNop(), signalTypeLogs)
+			signal := test.signal
+			if signal == "" {
+				signal = signalTypeLogs // default
+			}
+
+			gcsExporter, err := newStorageExporter(t.Context(), test.cfg, test.getZone, test.getProjectID, zap.NewNop(), signal)
 			if test.expectsErr != "" {
 				require.ErrorContains(t, err, test.expectsErr)
 				return
@@ -152,19 +175,17 @@ func TestStart(t *testing.T) {
 	})
 
 	gcsExporter.cfg.Encoding = &id
-	t.Run("encoding id not present - falls back to JSON", func(t *testing.T) {
+	t.Run("encoding id not present", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
-		require.NoError(t, err)
-		require.Equal(t, &plog.JSONMarshaler{}, gcsExporter.logsMarshaler)
+		require.ErrorContains(t, err, "unknown extension")
 	})
 
 	id = component.MustNewID(encodingFailsID)
 
 	gcsExporter.cfg.Encoding = &id
-	t.Run("encoding id not a logs marshaler - falls back to JSON", func(t *testing.T) {
+	t.Run("encoding id not a logs marshaler", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
-		require.NoError(t, err)
-		require.Equal(t, &plog.JSONMarshaler{}, gcsExporter.logsMarshaler)
+		require.ErrorContains(t, err, "is not a")
 	})
 
 	id = component.MustNewID(encodingLogsOnlyID)
@@ -173,7 +194,8 @@ func TestStart(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.NoError(t, err)
 		require.IsType(t, &mockLogMarshaler{}, gcsExporter.logsMarshaler)
-		require.IsType(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
+		// Traces marshaler remains default JSON since this is a logs exporter
+		require.Equal(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
 	})
 
 	id = component.MustNewID(encodingSucceedsID)
@@ -424,9 +446,9 @@ func TestConsumeTracesWithLogsOnlyEncoding(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	// Start should succeed but fall back to JSON marshaler for traces
 	errStart := exp.Start(t.Context(), mHost)
 	require.NoError(t, errStart)
-	// Should fall back to JSON marshaler for traces
 	require.IsType(t, &ptrace.JSONMarshaler{}, exp.tracesMarshaler)
 
 	err = exp.ConsumeTraces(t.Context(), ptrace.NewTraces())

@@ -24,6 +24,15 @@ import (
 	"google.golang.org/api/googleapi"
 )
 
+type signalType string
+
+const (
+	signalTypeLogs   signalType = "logs"
+	signalTypeTraces signalType = "traces"
+)
+
+var validSignals = []signalType{signalTypeLogs, signalTypeTraces}
+
 type storageExporter struct {
 	cfg             *Config
 	logsMarshaler   plog.Marshaler
@@ -32,6 +41,7 @@ type storageExporter struct {
 	bucketHandle    *storage.BucketHandle
 	logger          *zap.Logger
 	partitionFormat *strftime.Strftime
+	signal          signalType
 }
 
 var (
@@ -43,6 +53,7 @@ func newGCSExporter(
 	ctx context.Context,
 	cfg *Config,
 	logger *zap.Logger,
+	signal signalType,
 ) (*storageExporter, error) {
 	return newStorageExporter(
 		ctx,
@@ -50,6 +61,7 @@ func newGCSExporter(
 		metadata.ZoneWithContext,
 		metadata.ProjectIDWithContext,
 		logger,
+		signal,
 	)
 }
 
@@ -59,7 +71,15 @@ func newStorageExporter(
 	getZone func(context.Context) (string, error),
 	getProjectID func(context.Context) (string, error),
 	logger *zap.Logger,
+	signal signalType,
 ) (*storageExporter, error) {
+	// Validate signal type
+	switch signal {
+	case signalTypeLogs, signalTypeTraces: // valid
+	default:
+		return nil, fmt.Errorf("signal type %q not recognized, valid values are %v", signal, validSignals)
+	}
+
 	errMsg := "failed to determine %s: not set in exporter config '%s' and unable to retrieve from metadata: %w"
 
 	if cfg.Bucket.Region == "" {
@@ -90,6 +110,7 @@ func newStorageExporter(
 		cfg:             cfg,
 		logger:          logger,
 		partitionFormat: partitionFormat,
+		signal:          signal,
 	}, nil
 }
 
@@ -102,21 +123,30 @@ func isBucketConflictError(err error) bool {
 }
 
 func (s *storageExporter) Start(ctx context.Context, host component.Host) error {
+	// Initialize default marshalers
 	s.logsMarshaler = &plog.JSONMarshaler{}
 	s.tracesMarshaler = &ptrace.JSONMarshaler{}
 
+	// Load encoding extension if configured
 	if s.cfg.Encoding != nil {
-		logsEncoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
-		if err != nil {
-			return fmt.Errorf("failed to load logs extension: %w", err)
+		switch s.signal {
+		case signalTypeLogs:
+			logsEncoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
+			if err != nil {
+				return fmt.Errorf("failed to load logs extension: %w", err)
+			}
+			s.logsMarshaler = logsEncoding
+		case signalTypeTraces:
+			tracesEncoding, err := loadExtension[ptrace.Marshaler](host, *s.cfg.Encoding, "traces marshaler")
+			if err != nil {
+				// If the encoding doesn't support traces, log warning and fall back to JSON
+				s.logger.Warn("Encoding extension does not support traces marshaler, falling back to JSON",
+					zap.String("encoding", s.cfg.Encoding.String()),
+					zap.Error(err))
+			} else {
+				s.tracesMarshaler = tracesEncoding
+			}
 		}
-		s.logsMarshaler = logsEncoding
-
-		tracesEncoding, err := loadExtension[ptrace.Marshaler](host, *s.cfg.Encoding, "traces marshaler")
-		if err != nil {
-			return fmt.Errorf("failed to load traces extension: %w", err)
-		}
-		s.tracesMarshaler = tracesEncoding
 	}
 
 	// TODO Add option for authenticator
