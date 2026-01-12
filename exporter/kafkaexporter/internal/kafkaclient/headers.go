@@ -10,7 +10,6 @@ import (
 )
 
 // metadataToHeaders converts metadata from the context into a slice of headers using the provided header constructor.
-// This function is generic and can be used for both Sarama and Franz-go header types.
 func metadataToHeaders[H any](ctx context.Context, keys []string,
 	makeHeader func(key string, value []byte) H,
 ) []H {
@@ -32,10 +31,10 @@ func metadataToHeaders[H any](ctx context.Context, keys []string,
 // - messages: the messages to set headers on
 // - ctx: context for extracting metadata
 // - metadataKeys: which metadata keys to extract
-// - makeHeader: constructs the header type for the target client (Sarama/Franz-go)
+// - makeHeader: constructs the header type for the target client
 // - getHeaders: gets the headers from a message
 // - setHeaders: sets the headers on a message
-// Usage example (Sarama):
+// Usage example:
 //
 //	setMessageHeaders(ctx, allMessages, keys, makeHeader, getHeaders, setHeaders)
 func setMessageHeaders[M, H any](ctx context.Context,
