@@ -47,7 +47,7 @@ The following settings are optional for both transports:
   - `reports_effective_config`: Whether to enable the OpAMP ReportsEffectiveConfig capability. Default is `true`.
   - `reports_health`: Whether to enable the OpAMP ReportsHealth capability. Default is `true`.
   - `reports_available_components`: Whether to enable the OpAMP ReportsAvailableComponents capability. Default is `true`.
-  - `accepts_restart_command`: Whether to enable the OpAMP AcceptsRestartCommand capability. Default is `false`. The extension sends a `SIGHUP` signal to the collector to initiate a restart. This functionality is also behind a feature gate (alpha) called `extension.opampextension.RemoteRestarts`
+  - `accepts_restart_command`: Whether to enable the OpAMP AcceptsRestartCommand capability. Default is `false`. The extension sends a `SIGHUP` signal to the collector to initiate a restart (however, SIGHUP isn't supported on windows systems, so it will be ignored). This functionality is also behind a feature gate (alpha) called `extension.opampextension.RemoteRestarts`
 - `agent_description`: Setting that modifies the agent description reported to the OpAMP server.
   - `include_resource_attributes`: Copy the Collector's resource attributes into the set of non-identifying attributes in the agent description.
   - `non_identifying_attributes`: A map of key value pairs that will be added to the [non-identifying attributes](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#agentdescriptionnon_identifying_attributes) reported to the OpAMP server. If an attribute collides with the default non-identifying attributes that are automatically added, the ones specified here take precedence.

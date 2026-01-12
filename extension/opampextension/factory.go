@@ -22,7 +22,7 @@ var (
 		remoteRestartsFeatureGateName,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, opampextension supports the remote restarts opamp command."),
-		featuregate.WithRegisterFromVersion("v0.142.0"),
+		featuregate.WithRegisterFromVersion("v0.143.0"),
 	)
 )
 

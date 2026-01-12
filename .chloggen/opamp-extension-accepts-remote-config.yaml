@@ -7,7 +7,7 @@ change_type: enhancement
 component: extension/opamp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: This change adds support for the OpAMP AcceptsRemoteConfig capability. This capability has been implemented in the OpAMP supervisor, but this adds functionality to the extension which sends the SIGHUP signal to restart the collector which will reload the config on startup.
+note: This change adds support for the OpAMP AcceptsRemoteConfig capability. The implementation for this capability sends a SIGHUP signal to restart the collector which will reload the config on startup.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [45056]
@@ -15,7 +15,7 @@ issues: [45056]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: This functionality is behind a feature gate (extension.opampextension.RemoteRestarts) that defaults disabled. The SIGHUP signal does not work on windows systems, but might later be updated to use the SIGUSR2 signal.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

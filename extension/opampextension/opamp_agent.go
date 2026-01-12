@@ -475,16 +475,22 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 
 func (o *opampAgent) onCommand(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 	cmdType := command.GetType()
-	if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
-		// the SIGHUP signal doesn't exist in windows, so we'll just short circuit if this is running on a windows system.
-		if o.remoteRestartsEnabled && o.capabilities.AcceptsRestartCommand && runtime.GOOS != "windows" {
-			o.logger.Info("received remote config — sending SIGHUP to reload")
-			collectorProcess, err := os.FindProcess(os.Getpid())
-			if err != nil {
-				return fmt.Errorf("finding current process from pid: %w", err)
-			}
-			return collectorProcess.Signal(syscall.SIGHUP)
+	if *cmdType.Enum() != protobufs.CommandType_CommandType_Restart {
+		o.logger.Debug("ignoring non-restart command")
+		return nil
+	}
+	// the SIGHUP signal doesn't exist in windows, so we'll just short circuit if this is running on a windows system.
+	if o.remoteRestartsEnabled && o.capabilities.AcceptsRestartCommand {
+		if runtime.GOOS == "windows" {
+			o.logger.Warn("received restart command, but SIGHUP signal unsupported on windows systems")
+			return nil
 		}
+		o.logger.Info("received remote config — sending SIGHUP to reload")
+		collectorProcess, err := os.FindProcess(os.Getpid())
+		if err != nil {
+			return fmt.Errorf("finding current process from pid: %w", err)
+		}
+		return collectorProcess.Signal(syscall.SIGHUP)
 	}
 	return nil
 }
