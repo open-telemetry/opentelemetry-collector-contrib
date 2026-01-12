@@ -196,6 +196,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	// Create franz-go consumer client
 	client, err := kafka.NewFranzConsumerGroup(
 		ctx,
+		host,
 		c.config.ClientConfig,
 		c.config.ConsumerConfig,
 		c.topics,
