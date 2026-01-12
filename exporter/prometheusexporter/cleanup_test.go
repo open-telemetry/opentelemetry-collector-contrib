@@ -17,6 +17,9 @@ func TestBackgroundCleanup(t *testing.T) {
 	cfg := &Config{MetricExpiration: expiration}
 
 	c := newCollector(cfg, zap.NewNop())
+
+	// FIX: Start the background loop manually!
+	c.Start()
 	defer c.stop()
 
 	// 2. Inject a STALE metric (1 hour old) -> Should be removed
@@ -31,7 +34,7 @@ func TestBackgroundCleanup(t *testing.T) {
 		lastSeen: time.Now().Add(1 * time.Hour),
 	})
 
-	// 4. Wait for the loop to run
+	// 4. Wait for the loop to run (Wait longer to be safe)
 	time.Sleep(100 * time.Millisecond)
 
 	// 5. Assertions

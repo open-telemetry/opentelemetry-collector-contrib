@@ -181,18 +181,13 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 
 	nodeName := getNodeName(pod, resource.Attributes())
 	if nodeName != "" {
-		if kp.rules.Node {
-			attrsToAdd := kp.getAttributesForPodsNode(nodeName)
-			for key, val := range attrsToAdd {
-				setResourceAttribute(resource.Attributes(), key, val)
-			}
+		attrsToAdd := kp.getAttributesForPodsNode(nodeName)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
 		}
-
-		if kp.rules.NodeUID {
-			nodeUID := kp.getUIDForPodsNode(nodeName)
-			if nodeUID != "" {
-				setResourceAttribute(resource.Attributes(), string(conventions.K8SNodeUIDKey), nodeUID)
-			}
+		nodeUID := kp.getUIDForPodsNode(nodeName)
+		if nodeUID != "" {
+			setResourceAttribute(resource.Attributes(), string(conventions.K8SNodeUIDKey), nodeUID)
 		}
 	}
 

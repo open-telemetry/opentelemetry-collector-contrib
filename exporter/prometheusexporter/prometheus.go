@@ -35,8 +35,6 @@ func newPrometheusExporter(config *Config, set exporter.Settings) (*prometheusEx
 		return nil, errBlankPrometheusAddress
 	}
 
-	// Return error early because newCollector
-	// will call logger.Error if it fails to build the namespace.
 	if set.Logger == nil {
 		return nil, errors.New("nil logger")
 	}
@@ -64,6 +62,8 @@ func newPrometheusExporter(config *Config, set exporter.Settings) (*prometheusEx
 }
 
 func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) error {
+	pe.collector.Start()
+
 	ln, err := pe.config.ToListener(ctx)
 	if err != nil {
 		return err
@@ -97,5 +97,6 @@ func (pe *prometheusExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 }
 
 func (pe *prometheusExporter) Shutdown(ctx context.Context) error {
+	pe.collector.stop()
 	return pe.shutdownFunc(ctx)
 }
