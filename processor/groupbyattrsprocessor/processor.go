@@ -87,7 +87,7 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld plog.Logs)
 				// and keep them in the grouping entry
 				groupedResourceLogs := lg.findOrCreateResourceLogs(ls.Resource(), requiredAttributes)
 				lr := matchingScopeLogs(groupedResourceLogs, sl.Scope()).LogRecords().AppendEmpty()
-				log.CopyTo(lr)
+				log.MoveTo(lr)
 			}
 		}
 	}
@@ -117,35 +117,35 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 					for pointIndex := 0; pointIndex < metric.Gauge().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Gauge().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
-						dataPoint.CopyTo(groupedMetric.Gauge().DataPoints().AppendEmpty())
+						dataPoint.MoveTo(groupedMetric.Gauge().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeSum:
 					for pointIndex := 0; pointIndex < metric.Sum().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Sum().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
-						dataPoint.CopyTo(groupedMetric.Sum().DataPoints().AppendEmpty())
+						dataPoint.MoveTo(groupedMetric.Sum().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeSummary:
 					for pointIndex := 0; pointIndex < metric.Summary().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Summary().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
-						dataPoint.CopyTo(groupedMetric.Summary().DataPoints().AppendEmpty())
+						dataPoint.MoveTo(groupedMetric.Summary().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeHistogram:
 					for pointIndex := 0; pointIndex < metric.Histogram().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Histogram().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
-						dataPoint.CopyTo(groupedMetric.Histogram().DataPoints().AppendEmpty())
+						dataPoint.MoveTo(groupedMetric.Histogram().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeExponentialHistogram:
 					for pointIndex := 0; pointIndex < metric.ExponentialHistogram().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.ExponentialHistogram().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
-						dataPoint.CopyTo(groupedMetric.ExponentialHistogram().DataPoints().AppendEmpty())
+						dataPoint.MoveTo(groupedMetric.ExponentialHistogram().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeEmpty:
