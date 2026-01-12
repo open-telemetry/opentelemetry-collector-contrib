@@ -8,13 +8,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 var metricSet = `# HELP http_connected connected clients
@@ -51,25 +47,10 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetrics bool) {
 	defer testutil.SetFeatureGateForTest(t, enableReportExtraScrapeMetricsGate, reportExtraScrapeMetrics)()
 
-	ctx := t.Context()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
-
-	cms := new(consumertest.MetricsSink)
-	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
-		PrometheusConfig: cfg,
-	}, cms)
-	require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
-
-	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
-	// verify state after shutdown is called
-	t.Cleanup(func() {
-		// verify state after shutdown is called
-		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-		require.NoError(t, receiver.Shutdown(t.Context()))
-		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()), "expected scrape manager to have no targets")
-	})
+	_, cms := newTestReceiver(t, &Config{PrometheusConfig: cfg})
 
 	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
 	mp.wg.Wait()

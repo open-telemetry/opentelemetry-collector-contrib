@@ -24,6 +24,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	commonconfig "github.com/prometheus/common/config"
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/common/promslog"
 	"github.com/prometheus/common/route"
 	"github.com/prometheus/common/version"
@@ -73,7 +74,6 @@ type pReceiver struct {
 	registry               *prometheus.Registry
 	registerer             prometheus.Registerer
 	unregisterMetrics      func()
-	skipOffsetting         bool // for testing only
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -105,12 +105,16 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 // Start is the method that starts Prometheus scraping. It
 // is controlled by having previously defined a Configuration using perhaps New.
 func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
+	return r.start(ctx, host, prometheusComponentOptions{})
+}
+
+func (r *pReceiver) start(ctx context.Context, host component.Host, opts prometheusComponentOptions) error {
 	discoveryCtx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
 
 	logger := slog.New(zapslog.NewHandler(r.settings.Logger.Core()))
 
-	err := r.initPrometheusComponents(discoveryCtx, logger, host)
+	err := r.initPrometheusComponents(discoveryCtx, logger, host, opts)
 	if err != nil {
 		r.settings.Logger.Error("Failed to initPrometheusComponents Prometheus components", zap.Error(err))
 		return err
@@ -135,7 +139,10 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.Logger, host component.Host) error {
+func (r *pReceiver) initPrometheusComponents(
+	ctx context.Context, logger *slog.Logger, host component.Host,
+	opts prometheusComponentOptions,
+) error {
 	// Some SD mechanisms use the "refresh" package, which has its own metrics.
 	refreshSdMetrics := discovery.NewRefreshMetrics(r.registerer)
 
@@ -144,7 +151,12 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 	if err != nil {
 		return fmt.Errorf("failed to register service discovery metrics: %w", err)
 	}
-	r.discoveryManager = discovery.NewManager(ctx, logger, r.registerer, sdMetrics)
+
+	var discoveryManagerOptions []func(*discovery.Manager)
+	if opts.discovery.updatert > 0 {
+		discoveryManagerOptions = append(discoveryManagerOptions, discovery.Updatert(opts.discovery.updatert))
+	}
+	r.discoveryManager = discovery.NewManager(ctx, logger, r.registerer, sdMetrics, discoveryManagerOptions...)
 	if r.discoveryManager == nil {
 		// NewManager can sometimes return nil if it encountered an error, but
 		// the error message is logged separately.
@@ -170,18 +182,18 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		return err
 	}
 
-	opts := r.initScrapeOptions()
+	scrapeOpts := r.initScrapeOptions(opts.scrape)
 
 	// for testing only
-	if r.skipOffsetting {
-		optsValue := reflect.ValueOf(opts).Elem()
+	if r.cfg.skipOffsetting {
+		optsValue := reflect.ValueOf(scrapeOpts).Elem()
 		field := optsValue.FieldByName("skipOffsetting")
 		reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).
 			Elem().
 			Set(reflect.ValueOf(true))
 	}
 
-	scrapeManager, err := scrape.NewManager(opts, logger, nil, store, r.registerer)
+	scrapeManager, err := scrape.NewManager(scrapeOpts, logger, nil, store, r.registerer)
 	if err != nil {
 		return err
 	}
@@ -209,9 +221,10 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 	return nil
 }
 
-func (r *pReceiver) initScrapeOptions() *scrape.Options {
+func (r *pReceiver) initScrapeOptions(o prometheusScrapeOptions) *scrape.Options {
 	opts := &scrape.Options{
-		PassMetadataInContext: true,
+		DiscoveryReloadInterval: model.Duration(o.discoveryReloadInterval),
+		PassMetadataInContext:   true,
 		// We're slowly switching to the feature gate, so we need to check both the feature gate and the config option for a few releases.
 		ExtraMetrics: enableReportExtraScrapeMetricsGate.IsEnabled() || (r.cfg.ReportExtraScrapeMetrics && !removeReportExtraScrapeMetricsConfigGate.IsEnabled()),
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
@@ -427,4 +440,26 @@ func (r *pReceiver) Shutdown(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+type prometheusComponentOptions struct {
+	discovery prometheusDiscoveryOptions
+	scrape    prometheusScrapeOptions
+}
+
+type prometheusDiscoveryOptions struct {
+	// updatert is the interval for updating targets.
+	//
+	// If zero, the default (5s) from Prometheus is used.
+	// This option is primarily for testing.
+	updatert time.Duration
+}
+
+type prometheusScrapeOptions struct {
+	// discoveryReloadInterval is the interval for reloading
+	// scrape configurations.
+	//
+	// If zero, the default (5s) from Prometheus is used.
+	// This option is primarily for testing.
+	discoveryReloadInterval time.Duration
 }
