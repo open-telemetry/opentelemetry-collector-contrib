@@ -161,12 +161,7 @@ func (t *ConnectionStateTracker) OnConnect() {
 		return
 	}
 
-	prevState := t.state
 	t.state = ConnectionStateConnected
-
-	t.logger.Info("OpAMP connection established",
-		zap.String("previous_state", prevState.String()),
-		zap.Bool("was_using_fallback", t.usingFallback))
 
 	// Stop any pending fallback timer
 	t.stopFallbackTimer()
@@ -187,18 +182,11 @@ func (t *ConnectionStateTracker) OnConnectFailed() {
 		return
 	}
 
-	prevState := t.state
-
 	// Only transition to disconnected if we were previously connected.
 	// Otherwise, we stay in waiting state.
 	switch t.state {
 	case ConnectionStateConnected:
 		t.state = ConnectionStateDisconnected
-		t.logger.Warn(
-			"OpAMP connection lost",
-			zap.String("previous_state", prevState.String()),
-			zap.Bool("using_fallback", t.usingFallback),
-		)
 
 		// Start runtime fallback timer if configured and not already using fallback
 		if t.config.RuntimeTimeout > 0 && !t.usingFallback {
