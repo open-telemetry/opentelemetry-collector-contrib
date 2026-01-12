@@ -363,24 +363,24 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		}
 
 		conditionsConfigs := make([]any, 0, len(values))
-		var basicStatements []any
+		var basicConditions []any
 		for _, value := range values {
 			// Array of strings means it's a basic configuration style
 			if reflect.TypeOf(value).Kind() == reflect.String {
 				if len(conditionsConfigs) > 0 {
 					return errors.New("configuring multiple configuration styles is not supported, please use only Basic configuration or only Advanced configuration")
 				}
-				basicStatements = append(basicStatements, value)
+				basicConditions = append(basicConditions, value)
 			} else {
-				if len(basicStatements) > 0 {
+				if len(basicConditions) > 0 {
 					return errors.New("configuring multiple configuration styles is not supported, please use only Basic configuration or only Advanced configuration")
 				}
 				conditionsConfigs = append(conditionsConfigs, value)
 			}
 		}
 
-		if len(basicStatements) > 0 {
-			conditionsConfigs = append(conditionsConfigs, map[string]any{"conditions": basicStatements})
+		if len(basicConditions) > 0 {
+			conditionsConfigs = append(conditionsConfigs, map[string]any{"conditions": basicConditions})
 		}
 
 		contextConditionsPatch[fieldName] = conditionsConfigs
@@ -413,13 +413,13 @@ func (cfg *Config) Validate() error {
 
 func (cfg *Config) validateExplicitContextConfig() error {
 	if (cfg.Traces.ResourceConditions != nil || cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil) && (cfg.Spans.Include != nil || cfg.Spans.Exclude != nil) {
-		return errors.New("cannot use ottl conditions and include/exclude for spans at the same time")
+		return errors.New(`cannot use "traces.resource", "traces.span", "traces.spanevent" and the span settings "spans.include", "spans.exclude" at the same time`)
 	}
 	if (cfg.Metrics.ResourceConditions != nil || cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil) && (cfg.Metrics.Include != nil || cfg.Metrics.Exclude != nil) {
-		return errors.New("cannot use ottl conditions and include/exclude for metrics at the same time")
+		return errors.New(`cannot use "metrics.resource", "metrics.metric", "metrics.datapoint" and the settings "metrics.include", "metrics.exclude" at the same time`)
 	}
 	if (cfg.Logs.ResourceConditions != nil || cfg.Logs.LogConditions != nil) && (cfg.Logs.Include != nil || cfg.Logs.Exclude != nil) {
-		return errors.New("cannot use ottl conditions and include/exclude for logs at the same time")
+		return errors.New(`cannot use "logs.resource", "logs.log" and the settings "logs.include", "logs.exclude" at the same time`)
 	}
 
 	var errs error
