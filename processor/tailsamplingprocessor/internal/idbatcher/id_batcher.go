@@ -56,14 +56,13 @@ type batcher struct {
 	takeID  uint64
 	batches []Batch
 
-	// cbMutex protects the currentBatch storing ids.
-	cbMutex      sync.Mutex
+	// mux protects any batch storing/moving ids.
+	mux          sync.Mutex
 	currentBatch Batch
 
 	newBatchesInitialCapacity uint64
 	lastBatchID               uint64
 	stopped                   bool
-	stopLock                  sync.RWMutex
 }
 
 // New creates a Batcher that will hold numBatches in its pipeline, having a channel with
@@ -85,16 +84,16 @@ func New(numBatches, newBatchesInitialCapacity uint64) (Batcher, error) {
 }
 
 func (b *batcher) AddToCurrentBatch(id pcommon.TraceID) uint64 {
-	b.cbMutex.Lock()
-	defer b.cbMutex.Unlock()
+	b.mux.Lock()
+	defer b.mux.Unlock()
 
 	b.currentBatch[id] = struct{}{}
 	return b.takeID + uint64(len(b.batches))
 }
 
 func (b *batcher) MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFromNow uint64) uint64 {
-	b.cbMutex.Lock()
-	defer b.cbMutex.Unlock()
+	b.mux.Lock()
+	defer b.mux.Unlock()
 
 	proposedBatch := b.takeID + batchesFromNow
 	// Only move the batch if it is earlier.
@@ -112,8 +111,8 @@ func (b *batcher) MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFr
 }
 
 func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
-	b.stopLock.RLock()
-	defer b.stopLock.RUnlock()
+	b.mux.Lock()
+	defer b.mux.Unlock()
 
 	if b.takeID < b.lastBatchID {
 		takeIdx := b.takeID % uint64(len(b.batches))
@@ -121,16 +120,10 @@ func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 
 		if !b.stopped {
 			nextBatch := make(Batch, max(b.newBatchesInitialCapacity, uint64(len(readBatch))))
-
-			b.cbMutex.Lock()
 			b.batches[takeIdx] = b.currentBatch
 			b.currentBatch = nextBatch
-			b.takeID++
-			b.cbMutex.Unlock()
-		} else {
-			// If stopped we do not need to acquire the lock to increment the takeID.
-			b.takeID++
 		}
+		b.takeID++
 		return readBatch, true
 	}
 
@@ -140,8 +133,9 @@ func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 }
 
 func (b *batcher) Stop() {
-	b.stopLock.Lock()
+	b.mux.Lock()
+	defer b.mux.Unlock()
+
 	b.stopped = true
 	b.lastBatchID = b.takeID + uint64(len(b.batches))
-	b.stopLock.Unlock()
 }
