@@ -11,9 +11,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 
 	"go.opentelemetry.io/collector/featuregate"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/compression"
 )
 
 const DefaultSize = 1000 // bytes
@@ -41,11 +43,11 @@ func New(first []byte) *Fingerprint {
 
 // NewFromFile computes fingerprint of the given file using first 'N' bytes
 // Set decompressData to true to compute fingerprint of compressed files by decompressing its data first
-func NewFromFile(file *os.File, size int, decompressData bool) (*Fingerprint, error) {
+func NewFromFile(file *os.File, size int, decompressData bool, logger *zap.Logger) (*Fingerprint, error) {
 	buf := make([]byte, size)
 	if DecompressedFingerprintFeatureGate.IsEnabled() {
 		if decompressData {
-			if hasGzipExtension(file.Name()) {
+			if compression.IsGzipFile(file, logger) {
 				// If the file is of compressed type, uncompress the data before creating its fingerprint
 				uncompressedData, err := gzip.NewReader(file)
 				if err != nil {
@@ -69,10 +71,6 @@ func NewFromFile(file *os.File, size int, decompressData bool) (*Fingerprint, er
 	return New(buf[:n]), nil
 }
 
-func hasGzipExtension(filename string) bool {
-	return filepath.Ext(filename) == ".gz"
-}
-
 // Copy creates a new copy of the fingerprint
 func (f Fingerprint) Copy() *Fingerprint {
 	buf := make([]byte, len(f.firstBytes), cap(f.firstBytes))
@@ -89,17 +87,7 @@ func (f *Fingerprint) Len() int {
 // because the primary purpose of a fingerprint is to convey a unique
 // identity, and only the FirstBytes field contributes to this goal.
 func (f Fingerprint) Equal(other *Fingerprint) bool {
-	l0 := len(other.firstBytes)
-	l1 := len(f.firstBytes)
-	if l0 != l1 {
-		return false
-	}
-	for i := range l0 {
-		if other.firstBytes[i] != f.firstBytes[i] {
-			return false
-		}
-	}
-	return true
+	return bytes.Equal(f.firstBytes, other.firstBytes)
 }
 
 // StartsWith returns true if the fingerprints are the same

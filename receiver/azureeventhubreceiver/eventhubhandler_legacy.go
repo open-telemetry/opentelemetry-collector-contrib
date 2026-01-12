@@ -24,7 +24,7 @@ func newLegacyHubWrapper(h *eventhubHandler) (*hubWrapperLegacyImpl, error) {
 			eventhub.HubWithOffsetPersistence(
 				&storageCheckpointPersister[persist.Checkpoint]{
 					storageClient: h.storageClient,
-					defaultValue:  persist.NewCheckpointFromStartOfStream(),
+					defaultValue:  persist.NewCheckpointFromEndOfStream(),
 				},
 			),
 		)
