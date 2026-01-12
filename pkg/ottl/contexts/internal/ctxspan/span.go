@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -565,6 +566,11 @@ func accessFlags[K Context]() ottl.StandardGetSetter[K] {
 			if err != nil {
 				return err
 			}
+
+			if value < 0 || value > math.MaxUint32 {
+				return fmt.Errorf("value %d is out of range for uint32", value)
+			}
+
 			tCtx.GetSpan().SetFlags(uint32(value))
 			return nil
 		},
