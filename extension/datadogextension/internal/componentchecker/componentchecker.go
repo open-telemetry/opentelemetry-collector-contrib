@@ -6,7 +6,6 @@ package componentchecker // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -112,7 +111,8 @@ func PopulateActiveComponents(c *confmap.Conf, moduleInfoJSON *payload.ModuleInf
 			extension.Gomod = module.Gomod
 			extension.Version = module.Version
 		} else {
-			return nil, fmt.Errorf("extension not found in Module Info, something has gone wrong with status parsing for extension ID: %s", extensionID.String())
+			// This extension may be a custom component from the datadog-agent repository (i.e. ddflareextension)
+			continue
 		}
 		// TODO: Add component status parsing, potentially via pkg/status
 		serviceComponents = append(serviceComponents, extension)
