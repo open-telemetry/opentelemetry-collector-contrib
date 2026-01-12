@@ -11,10 +11,12 @@ import (
 	"math"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -34,6 +36,10 @@ const (
 	defaultPostgreSQLDatabase = "postgres"
 )
 
+// otelNamespaceUUID is the official OTel namespace UUID for deterministic UUID v5 generation,
+// as recommended by the semantic conventions for service.instance.id.
+// See: https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/
+var otelNamespaceUUID = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
 type postgreSQLScraper struct {
 	logger        *zap.Logger
 	config        *Config
@@ -732,7 +738,23 @@ func (*postgreSQLScraper) retrieveBackends(
 }
 
 func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder, database, schema, table, index string) *metadata.ResourceBuilder {
-	rb.SetServiceInstanceID(p.serviceInstanceID)
+	// Set constant service.name
+	rb.SetServiceName("postgresql")
+
+	// Set server.host and server.port by extracting from serviceInstanceID (format: host:port)
+	if idx := strings.LastIndex(p.serviceInstanceID, ":"); idx != -1 {
+		rb.SetServerHost(p.serviceInstanceID[:idx])
+		if port, err := strconv.Atoi(p.serviceInstanceID[idx+1:]); err == nil {
+			rb.SetServerPort(int64(port))
+		}
+	}
+
+	// Generate deterministic UUID v5 for service.instance.id based on resource identifiers.
+	// This ensures the triplet (service.namespace, service.name, service.instance.id) is unique per resource.
+	instanceID := p.generateInstanceID(database, schema, table, index)
+	rb.SetServiceInstanceID(instanceID)
+
+	// Set other resource attributes
 	if database != "" {
 		rb.SetPostgresqlDatabaseName(database)
 	}
@@ -745,7 +767,30 @@ func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder, d
 	if index != "" {
 		rb.SetPostgresqlIndexName(index)
 	}
+
 	return rb
+}
+
+// generateInstanceID creates a deterministic UUID v5 from the resource identifiers.
+// The UUID is stable across restarts - same inputs always produce the same UUID.
+func (p *postgreSQLScraper) generateInstanceID(database, schema, table, index string) string {
+	// Build the name from non-empty components
+	var parts []string
+	parts = append(parts, p.serviceInstanceID) // Always include host:port
+	if database != "" {
+		parts = append(parts, database)
+	}
+	if schema != "" {
+		parts = append(parts, schema)
+	}
+	if table != "" {
+		parts = append(parts, table)
+	}
+	if index != "" {
+		parts = append(parts, index)
+	}
+	name := strings.Join(parts, ":")
+	return uuid.NewSHA1(otelNamespaceUUID, []byte(name)).String()
 }
 
 func getInstanceID(instanceString string, logger *zap.Logger) string {
