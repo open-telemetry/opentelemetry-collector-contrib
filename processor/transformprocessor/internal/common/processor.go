@@ -45,6 +45,7 @@ func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 				return err
 			}
 		}
+		tCtx.Close()
 	}
 	return nil
 }
