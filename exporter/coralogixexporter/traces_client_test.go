@@ -200,7 +200,7 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 			if tt.configEnabled {
 				assert.Contains(t, err.Error(), "rate limit exceeded")
 			} else {
-				assert.Contains(t, err.Error(), "no such host")
+				assert.Contains(t, err.Error(), "produced zero addresses")
 			}
 		})
 	}

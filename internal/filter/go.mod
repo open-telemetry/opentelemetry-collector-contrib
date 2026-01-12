@@ -9,11 +9,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.143.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.143.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.49.0
-	go.opentelemetry.io/collector/component/componenttest v0.143.0
-	go.opentelemetry.io/collector/confmap v1.49.0
-	go.opentelemetry.io/collector/featuregate v1.49.0
-	go.opentelemetry.io/collector/pdata v1.49.0
+	go.opentelemetry.io/collector/component v1.49.1-0.20260109195331-fbd5d3f9faae
+	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260109195331-fbd5d3f9faae
+	go.opentelemetry.io/collector/confmap v1.49.1-0.20260109195331-fbd5d3f9faae
+	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260109195331-fbd5d3f9faae
+	go.opentelemetry.io/collector/pdata v1.49.1-0.20260109195331-fbd5d3f9faae
 	go.opentelemetry.io/otel v1.39.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
@@ -52,7 +52,7 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.143.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.143.1-0.20260109195331-fbd5d3f9faae // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
@@ -82,3 +82,6 @@ retract (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+// Can be removed after 0.144.0 release
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260109195331-fbd5d3f9faae

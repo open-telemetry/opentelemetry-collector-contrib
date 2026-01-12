@@ -122,6 +122,7 @@ func (m *metricChassisPowerstate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricChassisPowerstate(cfg MetricConfig) metricChassisPowerstate {
 	m := metricChassisPowerstate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -182,6 +183,7 @@ func (m *metricChassisStatusHealth) emit(metrics pmetric.MetricSlice) {
 
 func newMetricChassisStatusHealth(cfg MetricConfig) metricChassisStatusHealth {
 	m := metricChassisStatusHealth{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -242,6 +244,7 @@ func (m *metricChassisStatusState) emit(metrics pmetric.MetricSlice) {
 
 func newMetricChassisStatusState(cfg MetricConfig) metricChassisStatusState {
 	m := metricChassisStatusState{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -297,6 +300,7 @@ func (m *metricFanReading) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFanReading(cfg MetricConfig) metricFanReading {
 	m := metricFanReading{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -351,6 +355,7 @@ func (m *metricFanStatusHealth) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFanStatusHealth(cfg MetricConfig) metricFanStatusHealth {
 	m := metricFanStatusHealth{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -405,6 +410,7 @@ func (m *metricFanStatusState) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFanStatusState(cfg MetricConfig) metricFanStatusState {
 	m := metricFanStatusState{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -466,6 +472,7 @@ func (m *metricSystemPowerstate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemPowerstate(cfg MetricConfig) metricSystemPowerstate {
 	m := metricSystemPowerstate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -527,6 +534,7 @@ func (m *metricSystemStatusHealth) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemStatusHealth(cfg MetricConfig) metricSystemStatusHealth {
 	m := metricSystemStatusHealth{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -588,6 +596,7 @@ func (m *metricSystemStatusState) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemStatusState(cfg MetricConfig) metricSystemStatusState {
 	m := metricSystemStatusState{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -642,6 +651,7 @@ func (m *metricTemperatureReading) emit(metrics pmetric.MetricSlice) {
 
 func newMetricTemperatureReading(cfg MetricConfig) metricTemperatureReading {
 	m := metricTemperatureReading{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -696,6 +706,7 @@ func (m *metricTemperatureStatusHealth) emit(metrics pmetric.MetricSlice) {
 
 func newMetricTemperatureStatusHealth(cfg MetricConfig) metricTemperatureStatusHealth {
 	m := metricTemperatureStatusHealth{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -750,6 +761,7 @@ func (m *metricTemperatureStatusState) emit(metrics pmetric.MetricSlice) {
 
 func newMetricTemperatureStatusState(cfg MetricConfig) metricTemperatureStatusState {
 	m := metricTemperatureStatusState{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

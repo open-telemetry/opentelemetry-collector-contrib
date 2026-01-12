@@ -333,6 +333,7 @@ func (m *metricK8sContainerCPULimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerCPULimit(cfg MetricConfig) metricK8sContainerCPULimit {
 	m := metricK8sContainerCPULimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -382,6 +383,7 @@ func (m *metricK8sContainerCPURequest) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerCPURequest(cfg MetricConfig) metricK8sContainerCPURequest {
 	m := metricK8sContainerCPURequest{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -431,6 +433,7 @@ func (m *metricK8sContainerEphemeralstorageLimit) emit(metrics pmetric.MetricSli
 
 func newMetricK8sContainerEphemeralstorageLimit(cfg MetricConfig) metricK8sContainerEphemeralstorageLimit {
 	m := metricK8sContainerEphemeralstorageLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -480,6 +483,7 @@ func (m *metricK8sContainerEphemeralstorageRequest) emit(metrics pmetric.MetricS
 
 func newMetricK8sContainerEphemeralstorageRequest(cfg MetricConfig) metricK8sContainerEphemeralstorageRequest {
 	m := metricK8sContainerEphemeralstorageRequest{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -529,6 +533,7 @@ func (m *metricK8sContainerMemoryLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerMemoryLimit(cfg MetricConfig) metricK8sContainerMemoryLimit {
 	m := metricK8sContainerMemoryLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -578,6 +583,7 @@ func (m *metricK8sContainerMemoryRequest) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerMemoryRequest(cfg MetricConfig) metricK8sContainerMemoryRequest {
 	m := metricK8sContainerMemoryRequest{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -627,6 +633,7 @@ func (m *metricK8sContainerReady) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerReady(cfg MetricConfig) metricK8sContainerReady {
 	m := metricK8sContainerReady{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -676,6 +683,7 @@ func (m *metricK8sContainerRestarts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerRestarts(cfg MetricConfig) metricK8sContainerRestarts {
 	m := metricK8sContainerRestarts{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -729,6 +737,7 @@ func (m *metricK8sContainerStatusReason) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerStatusReason(cfg MetricConfig) metricK8sContainerStatusReason {
 	m := metricK8sContainerStatusReason{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -782,6 +791,7 @@ func (m *metricK8sContainerStatusState) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerStatusState(cfg MetricConfig) metricK8sContainerStatusState {
 	m := metricK8sContainerStatusState{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -831,6 +841,7 @@ func (m *metricK8sContainerStorageLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerStorageLimit(cfg MetricConfig) metricK8sContainerStorageLimit {
 	m := metricK8sContainerStorageLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -880,6 +891,7 @@ func (m *metricK8sContainerStorageRequest) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerStorageRequest(cfg MetricConfig) metricK8sContainerStorageRequest {
 	m := metricK8sContainerStorageRequest{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -929,6 +941,7 @@ func (m *metricK8sCronjobActiveJobs) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sCronjobActiveJobs(cfg MetricConfig) metricK8sCronjobActiveJobs {
 	m := metricK8sCronjobActiveJobs{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -978,6 +991,7 @@ func (m *metricK8sDaemonsetCurrentScheduledNodes) emit(metrics pmetric.MetricSli
 
 func newMetricK8sDaemonsetCurrentScheduledNodes(cfg MetricConfig) metricK8sDaemonsetCurrentScheduledNodes {
 	m := metricK8sDaemonsetCurrentScheduledNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1027,6 +1041,7 @@ func (m *metricK8sDaemonsetDesiredScheduledNodes) emit(metrics pmetric.MetricSli
 
 func newMetricK8sDaemonsetDesiredScheduledNodes(cfg MetricConfig) metricK8sDaemonsetDesiredScheduledNodes {
 	m := metricK8sDaemonsetDesiredScheduledNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1076,6 +1091,7 @@ func (m *metricK8sDaemonsetMisscheduledNodes) emit(metrics pmetric.MetricSlice) 
 
 func newMetricK8sDaemonsetMisscheduledNodes(cfg MetricConfig) metricK8sDaemonsetMisscheduledNodes {
 	m := metricK8sDaemonsetMisscheduledNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1125,6 +1141,7 @@ func (m *metricK8sDaemonsetReadyNodes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sDaemonsetReadyNodes(cfg MetricConfig) metricK8sDaemonsetReadyNodes {
 	m := metricK8sDaemonsetReadyNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1174,6 +1191,7 @@ func (m *metricK8sDeploymentAvailable) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sDeploymentAvailable(cfg MetricConfig) metricK8sDeploymentAvailable {
 	m := metricK8sDeploymentAvailable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1223,6 +1241,7 @@ func (m *metricK8sDeploymentDesired) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sDeploymentDesired(cfg MetricConfig) metricK8sDeploymentDesired {
 	m := metricK8sDeploymentDesired{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1272,6 +1291,7 @@ func (m *metricK8sHpaCurrentReplicas) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sHpaCurrentReplicas(cfg MetricConfig) metricK8sHpaCurrentReplicas {
 	m := metricK8sHpaCurrentReplicas{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1321,6 +1341,7 @@ func (m *metricK8sHpaDesiredReplicas) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sHpaDesiredReplicas(cfg MetricConfig) metricK8sHpaDesiredReplicas {
 	m := metricK8sHpaDesiredReplicas{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1370,6 +1391,7 @@ func (m *metricK8sHpaMaxReplicas) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sHpaMaxReplicas(cfg MetricConfig) metricK8sHpaMaxReplicas {
 	m := metricK8sHpaMaxReplicas{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1419,6 +1441,7 @@ func (m *metricK8sHpaMinReplicas) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sHpaMinReplicas(cfg MetricConfig) metricK8sHpaMinReplicas {
 	m := metricK8sHpaMinReplicas{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1468,6 +1491,7 @@ func (m *metricK8sJobActivePods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sJobActivePods(cfg MetricConfig) metricK8sJobActivePods {
 	m := metricK8sJobActivePods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1517,6 +1541,7 @@ func (m *metricK8sJobDesiredSuccessfulPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sJobDesiredSuccessfulPods(cfg MetricConfig) metricK8sJobDesiredSuccessfulPods {
 	m := metricK8sJobDesiredSuccessfulPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1566,6 +1591,7 @@ func (m *metricK8sJobFailedPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sJobFailedPods(cfg MetricConfig) metricK8sJobFailedPods {
 	m := metricK8sJobFailedPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1615,6 +1641,7 @@ func (m *metricK8sJobMaxParallelPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sJobMaxParallelPods(cfg MetricConfig) metricK8sJobMaxParallelPods {
 	m := metricK8sJobMaxParallelPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1664,6 +1691,7 @@ func (m *metricK8sJobSuccessfulPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sJobSuccessfulPods(cfg MetricConfig) metricK8sJobSuccessfulPods {
 	m := metricK8sJobSuccessfulPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1713,6 +1741,7 @@ func (m *metricK8sNamespacePhase) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNamespacePhase(cfg MetricConfig) metricK8sNamespacePhase {
 	m := metricK8sNamespacePhase{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1764,6 +1793,7 @@ func (m *metricK8sNodeCondition) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeCondition(cfg MetricConfig) metricK8sNodeCondition {
 	m := metricK8sNodeCondition{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1813,6 +1843,7 @@ func (m *metricK8sPodPhase) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sPodPhase(cfg MetricConfig) metricK8sPodPhase {
 	m := metricK8sPodPhase{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1862,6 +1893,7 @@ func (m *metricK8sPodStatusReason) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sPodStatusReason(cfg MetricConfig) metricK8sPodStatusReason {
 	m := metricK8sPodStatusReason{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1911,6 +1943,7 @@ func (m *metricK8sReplicasetAvailable) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sReplicasetAvailable(cfg MetricConfig) metricK8sReplicasetAvailable {
 	m := metricK8sReplicasetAvailable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1960,6 +1993,7 @@ func (m *metricK8sReplicasetDesired) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sReplicasetDesired(cfg MetricConfig) metricK8sReplicasetDesired {
 	m := metricK8sReplicasetDesired{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2009,6 +2043,7 @@ func (m *metricK8sReplicationControllerAvailable) emit(metrics pmetric.MetricSli
 
 func newMetricK8sReplicationControllerAvailable(cfg MetricConfig) metricK8sReplicationControllerAvailable {
 	m := metricK8sReplicationControllerAvailable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2058,6 +2093,7 @@ func (m *metricK8sReplicationControllerDesired) emit(metrics pmetric.MetricSlice
 
 func newMetricK8sReplicationControllerDesired(cfg MetricConfig) metricK8sReplicationControllerDesired {
 	m := metricK8sReplicationControllerDesired{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2109,6 +2145,7 @@ func (m *metricK8sResourceQuotaHardLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sResourceQuotaHardLimit(cfg MetricConfig) metricK8sResourceQuotaHardLimit {
 	m := metricK8sResourceQuotaHardLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2160,6 +2197,7 @@ func (m *metricK8sResourceQuotaUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sResourceQuotaUsed(cfg MetricConfig) metricK8sResourceQuotaUsed {
 	m := metricK8sResourceQuotaUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2209,6 +2247,7 @@ func (m *metricK8sStatefulsetCurrentPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sStatefulsetCurrentPods(cfg MetricConfig) metricK8sStatefulsetCurrentPods {
 	m := metricK8sStatefulsetCurrentPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2258,6 +2297,7 @@ func (m *metricK8sStatefulsetDesiredPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sStatefulsetDesiredPods(cfg MetricConfig) metricK8sStatefulsetDesiredPods {
 	m := metricK8sStatefulsetDesiredPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2307,6 +2347,7 @@ func (m *metricK8sStatefulsetReadyPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sStatefulsetReadyPods(cfg MetricConfig) metricK8sStatefulsetReadyPods {
 	m := metricK8sStatefulsetReadyPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2356,6 +2397,7 @@ func (m *metricK8sStatefulsetUpdatedPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sStatefulsetUpdatedPods(cfg MetricConfig) metricK8sStatefulsetUpdatedPods {
 	m := metricK8sStatefulsetUpdatedPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2408,6 +2450,7 @@ func (m *metricOpenshiftAppliedclusterquotaLimit) emit(metrics pmetric.MetricSli
 
 func newMetricOpenshiftAppliedclusterquotaLimit(cfg MetricConfig) metricOpenshiftAppliedclusterquotaLimit {
 	m := metricOpenshiftAppliedclusterquotaLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2460,6 +2503,7 @@ func (m *metricOpenshiftAppliedclusterquotaUsed) emit(metrics pmetric.MetricSlic
 
 func newMetricOpenshiftAppliedclusterquotaUsed(cfg MetricConfig) metricOpenshiftAppliedclusterquotaUsed {
 	m := metricOpenshiftAppliedclusterquotaUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2511,6 +2555,7 @@ func (m *metricOpenshiftClusterquotaLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOpenshiftClusterquotaLimit(cfg MetricConfig) metricOpenshiftClusterquotaLimit {
 	m := metricOpenshiftClusterquotaLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2562,6 +2607,7 @@ func (m *metricOpenshiftClusterquotaUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOpenshiftClusterquotaUsed(cfg MetricConfig) metricOpenshiftClusterquotaUsed {
 	m := metricOpenshiftClusterquotaUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

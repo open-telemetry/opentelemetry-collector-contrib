@@ -196,7 +196,7 @@ func TestProfilesExporter_PushProfiles_WhenCannotSend(t *testing.T) {
 			if tt.enabled {
 				assert.Contains(t, err.Error(), "rate limit exceeded")
 			} else {
-				assert.Contains(t, err.Error(), "no such host")
+				assert.Contains(t, err.Error(), "produced zero addresses")
 			}
 		})
 	}

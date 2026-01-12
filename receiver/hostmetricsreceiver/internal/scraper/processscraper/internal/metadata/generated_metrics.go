@@ -233,6 +233,7 @@ func (m *metricProcessContextSwitches) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessContextSwitches(cfg MetricConfig) metricProcessContextSwitches {
 	m := metricProcessContextSwitches{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -286,6 +287,7 @@ func (m *metricProcessCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessCPUTime(cfg MetricConfig) metricProcessCPUTime {
 	m := metricProcessCPUTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -337,6 +339,7 @@ func (m *metricProcessCPUUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessCPUUtilization(cfg MetricConfig) metricProcessCPUUtilization {
 	m := metricProcessCPUUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -390,6 +393,7 @@ func (m *metricProcessDiskIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessDiskIo(cfg MetricConfig) metricProcessDiskIo {
 	m := metricProcessDiskIo{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -443,6 +447,7 @@ func (m *metricProcessDiskOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessDiskOperations(cfg MetricConfig) metricProcessDiskOperations {
 	m := metricProcessDiskOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -494,6 +499,7 @@ func (m *metricProcessHandles) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessHandles(cfg MetricConfig) metricProcessHandles {
 	m := metricProcessHandles{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -545,6 +551,7 @@ func (m *metricProcessMemoryUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessMemoryUsage(cfg MetricConfig) metricProcessMemoryUsage {
 	m := metricProcessMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -594,6 +601,7 @@ func (m *metricProcessMemoryUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessMemoryUtilization(cfg MetricConfig) metricProcessMemoryUtilization {
 	m := metricProcessMemoryUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -645,6 +653,7 @@ func (m *metricProcessMemoryVirtual) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessMemoryVirtual(cfg MetricConfig) metricProcessMemoryVirtual {
 	m := metricProcessMemoryVirtual{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -696,6 +705,7 @@ func (m *metricProcessOpenFileDescriptors) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessOpenFileDescriptors(cfg MetricConfig) metricProcessOpenFileDescriptors {
 	m := metricProcessOpenFileDescriptors{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -749,6 +759,7 @@ func (m *metricProcessPagingFaults) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessPagingFaults(cfg MetricConfig) metricProcessPagingFaults {
 	m := metricProcessPagingFaults{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -800,6 +811,7 @@ func (m *metricProcessSignalsPending) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessSignalsPending(cfg MetricConfig) metricProcessSignalsPending {
 	m := metricProcessSignalsPending{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -851,6 +863,7 @@ func (m *metricProcessThreads) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessThreads(cfg MetricConfig) metricProcessThreads {
 	m := metricProcessThreads{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -900,6 +913,7 @@ func (m *metricProcessUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricProcessUptime(cfg MetricConfig) metricProcessUptime {
 	m := metricProcessUptime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

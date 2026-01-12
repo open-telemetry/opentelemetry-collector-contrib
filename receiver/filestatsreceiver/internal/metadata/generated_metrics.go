@@ -86,6 +86,7 @@ func (m *metricFileAtime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFileAtime(cfg MetricConfig) metricFileAtime {
 	m := metricFileAtime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -135,6 +136,7 @@ func (m *metricFileCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFileCount(cfg MetricConfig) metricFileCount {
 	m := metricFileCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -188,6 +190,7 @@ func (m *metricFileCtime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFileCtime(cfg MetricConfig) metricFileCtime {
 	m := metricFileCtime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -239,6 +242,7 @@ func (m *metricFileMtime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFileMtime(cfg MetricConfig) metricFileMtime {
 	m := metricFileMtime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -288,6 +292,7 @@ func (m *metricFileSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricFileSize(cfg MetricConfig) metricFileSize {
 	m := metricFileSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

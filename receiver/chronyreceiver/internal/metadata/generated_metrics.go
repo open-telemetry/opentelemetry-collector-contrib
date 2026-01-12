@@ -127,6 +127,7 @@ func (m *metricNtpFrequencyOffset) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNtpFrequencyOffset(cfg MetricConfig) metricNtpFrequencyOffset {
 	m := metricNtpFrequencyOffset{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -176,6 +177,7 @@ func (m *metricNtpSkew) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNtpSkew(cfg MetricConfig) metricNtpSkew {
 	m := metricNtpSkew{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -225,6 +227,7 @@ func (m *metricNtpStratum) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNtpStratum(cfg MetricConfig) metricNtpStratum {
 	m := metricNtpStratum{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -276,6 +279,7 @@ func (m *metricNtpTimeCorrection) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNtpTimeCorrection(cfg MetricConfig) metricNtpTimeCorrection {
 	m := metricNtpTimeCorrection{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -327,6 +331,7 @@ func (m *metricNtpTimeLastOffset) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNtpTimeLastOffset(cfg MetricConfig) metricNtpTimeLastOffset {
 	m := metricNtpTimeLastOffset{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -378,6 +383,7 @@ func (m *metricNtpTimeRmsOffset) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNtpTimeRmsOffset(cfg MetricConfig) metricNtpTimeRmsOffset {
 	m := metricNtpTimeRmsOffset{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -429,6 +435,7 @@ func (m *metricNtpTimeRootDelay) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNtpTimeRootDelay(cfg MetricConfig) metricNtpTimeRootDelay {
 	m := metricNtpTimeRootDelay{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

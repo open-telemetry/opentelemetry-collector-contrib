@@ -84,6 +84,7 @@ func (m *metricPingLossRatio) emit(metrics pmetric.MetricSlice) {
 
 func newMetricPingLossRatio(cfg MetricConfig) metricPingLossRatio {
 	m := metricPingLossRatio{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -133,6 +134,7 @@ func (m *metricPingRttAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricPingRttAvg(cfg MetricConfig) metricPingRttAvg {
 	m := metricPingRttAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -182,6 +184,7 @@ func (m *metricPingRttMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricPingRttMax(cfg MetricConfig) metricPingRttMax {
 	m := metricPingRttMax{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -231,6 +234,7 @@ func (m *metricPingRttMin) emit(metrics pmetric.MetricSlice) {
 
 func newMetricPingRttMin(cfg MetricConfig) metricPingRttMin {
 	m := metricPingRttMin{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -280,6 +284,7 @@ func (m *metricPingRttStddev) emit(metrics pmetric.MetricSlice) {
 
 func newMetricPingRttStddev(cfg MetricConfig) metricPingRttStddev {
 	m := metricPingRttStddev{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
