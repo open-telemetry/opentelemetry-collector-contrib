@@ -16,7 +16,7 @@ issues: [45321]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Defaults to 4 minutes. It may take up to 2x the configured time before a connection is actually closed.
+  Defaults to 9 minutes. The connection may be closed between 0.5x-1x of the configured value.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

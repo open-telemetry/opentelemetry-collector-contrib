@@ -259,7 +259,9 @@ func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
 	}
 	// Configure connection idle timeout
 	if clientCfg.ConnectionIdleTimeout > 0 {
-		opts = append(opts, kgo.ConnIdleTimeout(clientCfg.ConnectionIdleTimeout))
+		// Divide by 2 because franz-go may take up to 2x the configured time to close connections.
+		// This ensures connections are closed between 0.5x-1x of the user-configured value.
+		opts = append(opts, kgo.ConnIdleTimeout(clientCfg.ConnectionIdleTimeout/2))
 	}
 	// Configure the min/max protocol version if provided
 	if clientCfg.ProtocolVersion != "" {

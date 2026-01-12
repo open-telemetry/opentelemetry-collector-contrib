@@ -79,8 +79,7 @@ type ClientConfig struct {
 
 	// ConnectionIdleTimeout specifies the time after which idle connections are closed.
 	//
-	// Note: It may take up to 2x the configured time before a connection is actually closed
-	// due to franz-go implementation.
+	// Note: The connection may be closed between 0.5x-1x of the configured value.
 	ConnectionIdleTimeout time.Duration `mapstructure:"connection_idle_timeout"`
 }
 
@@ -90,7 +89,7 @@ func NewDefaultClientConfig() ClientConfig {
 		ClientID:              "otel-collector",
 		Metadata:              NewDefaultMetadataConfig(),
 		UseLeaderEpoch:        true,
-		ConnectionIdleTimeout: 4 * time.Minute,
+		ConnectionIdleTimeout: 9 * time.Minute,
 	}
 }
 
