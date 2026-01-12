@@ -86,8 +86,6 @@ type opampAgent struct {
 	startTimeUnixNano    uint64
 	componentStatusCh    chan *eventSourcePair
 	readyCh              chan struct{}
-
-	remoteRestartsEnabled bool
 }
 
 var (
@@ -110,9 +108,6 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	o.reportFunc = func(event *componentstatus.Event) {
 		componentstatus.ReportStatus(host, event)
 	}
-
-	// querying on startup so the value is cached
-	o.remoteRestartsEnabled = RemoteRestartsFeatureGate.IsEnabled()
 
 	header := http.Header{}
 	for k, v := range o.cfg.Server.GetHeaders() {
@@ -480,7 +475,7 @@ func (o *opampAgent) onCommand(_ context.Context, command *protobufs.ServerToAge
 		return nil
 	}
 	// the SIGHUP signal doesn't exist in windows, so we'll just short circuit if this is running on a windows system.
-	if o.remoteRestartsEnabled && o.capabilities.AcceptsRestartCommand {
+	if o.capabilities.AcceptsRestartCommand {
 		if runtime.GOOS == "windows" {
 			o.logger.Warn("received restart command, but SIGHUP signal unsupported on windows systems")
 			return nil

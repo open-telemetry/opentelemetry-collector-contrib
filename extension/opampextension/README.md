@@ -70,6 +70,16 @@ Other components may use a configured OpAMP extension to send and receive custom
 
 See the [opampcustommessages](../opampcustommessages/README.md) module for more information on the custom message API.
 
+## Using the AcceptsRestartCommand capability to orchestrate collector config updates
+If the `accepts_restart_command` capability is enabled (along with the `extension.opampextension.RemoteRestarts` feature gate), upon receiving a restart `ServerToAgentCommand`, the extension will send a `SIGHUP` signal to the collector process. 
+
+The `SIGHUP` signal is already trapped in the collector and initiates a graceful restart of all the components. This functionality might be desired if the collectors config was updated and the restart would fetch the latest config values.
+
+**NOTE** on the `SIGHUP` signal for restarts:
+SIGHUP is not supported in the `windows` operating system, and the current implementation will short circuit evaluation on windows systems (until the collector can also handle a cross-platform signal like SIGUSR2).
+
+**<ins>Please note that an invalid config (capability enabled without feature gate)</ins>** will cause the collector to error out and stay down until it is manually restarted using some other mechanism (since the opamp extension won't be active). Regular healthchecks and using the `validate` subcommand on the collector are **highly recommended** when using this functionality to prevent data loss due to config issues.
+
 ## Status
 
 This OpenTelemetry OpAMP agent extension is intended to support the [OpAMP

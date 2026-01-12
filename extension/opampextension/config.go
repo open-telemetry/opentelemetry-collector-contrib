@@ -207,6 +207,8 @@ func (s OpAMPServer) GetPollingInterval() time.Duration {
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
 	switch {
+	case cfg.Capabilities.AcceptsRestartCommand && !RemoteRestartsFeatureGate.IsEnabled():
+		return errors.New("extension.opampextension.RemoteRestarts feature gate must be enabled to use the accepts_restart_command capability")
 	case cfg.Server.WS == nil && cfg.Server.HTTP == nil:
 		return errors.New("opamp server must have at least ws or http set")
 	case cfg.Server.WS != nil && cfg.Server.HTTP != nil:

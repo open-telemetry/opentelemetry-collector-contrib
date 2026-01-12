@@ -783,38 +783,9 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 		t.Skip("skipping test on windows since SIGHUP isn't a recognized signal")
 	}
 
-	t.Run("remote restarts not enabled by feature gate", func(t *testing.T) {
-		agent := opampAgent{
-			logger:                zaptest.NewLogger(t),
-			remoteRestartsEnabled: false,
-			capabilities: Capabilities{
-				AcceptsRestartCommand: true,
-			},
-		}
-
-		ctx, cancel := context.WithCancel(t.Context())
-		t.Cleanup(cancel)
-
-		sighupReceived := make(chan bool, 1)
-		setupSignalHandler(ctx, t, func() {
-			sighupReceived <- true
-		})
-
-		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
-			Type: protobufs.CommandType_CommandType_Restart,
-		}))
-
-		select {
-		case <-sighupReceived:
-			t.Error("shouldn't have received SIGHUP")
-		case <-time.After(250 * time.Millisecond):
-			// success
-		}
-	})
 	t.Run("restart capability not enabled", func(t *testing.T) {
 		agent := opampAgent{
-			logger:                zaptest.NewLogger(t),
-			remoteRestartsEnabled: true,
+			logger: zaptest.NewLogger(t),
 			capabilities: Capabilities{
 				AcceptsRestartCommand: false,
 			},
@@ -865,8 +836,7 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 	})
 	t.Run("happy path", func(t *testing.T) {
 		agent := opampAgent{
-			logger:                zaptest.NewLogger(t),
-			remoteRestartsEnabled: true,
+			logger: zaptest.NewLogger(t),
 			capabilities: Capabilities{
 				AcceptsRestartCommand: true,
 			},

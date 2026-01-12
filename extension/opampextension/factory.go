@@ -21,8 +21,8 @@ var (
 	RemoteRestartsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 		remoteRestartsFeatureGateName,
 		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, opampextension supports the remote restarts opamp command."),
-		featuregate.WithRegisterFromVersion("v0.143.0"),
+		featuregate.WithRegisterDescription("When enabled, the OpAMP extension supports restart commands from the OpAMP server through the `CommandType_Restart` command."),
+		featuregate.WithRegisterFromVersion("v0.144.0"),
 	)
 )
 
