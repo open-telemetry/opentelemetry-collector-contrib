@@ -446,13 +446,8 @@ func TestConsumeTracesWithLogsOnlyEncoding(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// Start should succeed but fall back to JSON marshaler for traces
 	errStart := exp.Start(t.Context(), mHost)
-	require.NoError(t, errStart)
-	require.IsType(t, &ptrace.JSONMarshaler{}, exp.tracesMarshaler)
-
-	err = exp.ConsumeTraces(t.Context(), ptrace.NewTraces())
-	require.NoError(t, err)
+	require.ErrorContains(t, errStart, "is not a traces marshaler")
 }
 
 func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {

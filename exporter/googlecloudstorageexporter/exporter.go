@@ -139,13 +139,9 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 		case signalTypeTraces:
 			tracesEncoding, err := loadExtension[ptrace.Marshaler](host, *s.cfg.Encoding, "traces marshaler")
 			if err != nil {
-				// If the encoding doesn't support traces, log warning and fall back to JSON
-				s.logger.Warn("Encoding extension does not support traces marshaler, falling back to JSON",
-					zap.String("encoding", s.cfg.Encoding.String()),
-					zap.Error(err))
-			} else {
-				s.tracesMarshaler = tracesEncoding
+				return fmt.Errorf("failed to load traces extension: %w", err)
 			}
+			s.tracesMarshaler = tracesEncoding
 		}
 	}
 
