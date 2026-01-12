@@ -382,7 +382,7 @@ func formPage(payloads ...string) string {
 }
 
 func TestCreatedMetric(t *testing.T) {
-	tests := []*testData{
+	tests := []testData{
 		{
 			name: "counter",
 			pages: []mockPrometheusResponse{
@@ -445,23 +445,19 @@ func TestCreatedMetric(t *testing.T) {
 			validateFunc: verifyCreatedTimeMetric(verifyOpts{true, true, true, nil}),
 		},
 	}
-	for _, test := range tests {
-		t.Run(fmt.Sprintf("%s with useOpenMetrics=true", test.name), func(t *testing.T) {
-			for i := range test.pages {
-				test.pages[i].useOpenMetrics = true
-			}
-			testComponent(t, []*testData{test}, nil)
-		})
-	}
-	// re-run test suite with useOpenMetrics=false in testData as _created MF association logic is not *technically* dependent on the text parser but rather
-	// that counter metric lines follow the _total and _created suffixes
-	for _, test := range tests {
-		t.Run(fmt.Sprintf("%s with useOpenMetrics=false", test.name), func(t *testing.T) {
-			for i := range test.pages {
-				test.pages[i].useOpenMetrics = false
-			}
-			testComponent(t, []*testData{test}, nil)
-		})
+	for _, useOM := range []bool{false, true} {
+		for i := range tests {
+			testCopy := tests[i]
+			testCopy.pages = make([]mockPrometheusResponse, len(tests[i].pages))
+			copy(testCopy.pages, tests[i].pages)
+			t.Run(fmt.Sprintf("%s with useOpenMetrics=%v", testCopy.name, useOM), func(t *testing.T) {
+				t.Parallel()
+				for i := range testCopy.pages {
+					testCopy.pages[i].useOpenMetrics = useOM
+				}
+				testComponent(t, []*testData{&testCopy}, nil)
+			})
+		}
 	}
 }
 
