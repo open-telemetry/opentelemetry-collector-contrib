@@ -189,13 +189,24 @@ func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace st
 
 func newReplicaSetMetaInformer(apiCfg k8sconfig.APIConfig) func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
 	return func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
-		restCfg, _ := k8sconfig.CreateRestConfig(apiCfg)
-		mc, _ := metadata.NewForConfig(restCfg)
+		// Create the REST config
+		restCfg, err := k8sconfig.CreateRestConfig(apiCfg)
+		if err != nil {
+			return nil
+		}
+
+		// Create the metadata client
+		mc, err := metadata.NewForConfig(restCfg)
+		if err != nil {
+			return nil
+		}
+
+		// Define the GroupVersionResource for ReplicaSets
 		gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
 
+		// Define the ListWatch
 		lw := &cache.ListWatch{
 			ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
-				// Populate selectors here if you mirror your existing helpers
 				if namespace == "" {
 					return mc.Resource(gvr).List(ctx, opts)
 				}

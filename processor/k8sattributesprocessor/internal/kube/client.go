@@ -207,11 +207,15 @@ func New(
 	}
 
 	c.namespaceInformer = informersFactory.newNamespaceInformer(c.kc)
+
 	if rules.DeploymentName || rules.DeploymentUID {
 		if informersFactory.newReplicaSetInformer == nil {
 			informersFactory.newReplicaSetInformer = newReplicaSetMetaInformer(apiCfg)
 		}
 		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.kc, c.Filters.Namespace)
+		if c.replicasetInformer == nil {
+			return nil, fmt.Errorf("failed to create ReplicaSet informer")
+		}
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
