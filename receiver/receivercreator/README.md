@@ -167,6 +167,20 @@ None
 
 See `redis/2` in [examples](#examples).
 
+## Endpoint Change Handling
+
+When an observer reports changes to an endpoint's metadata, the receiver_creator
+intelligently handles the update:
+
+- If the resolved receiver configuration would be the same, the existing receiver
+  continues running without interruption
+- If the resolved configuration would change (e.g., a template variable like
+  `` `endpoint` `` resolves to a different value), the receiver is restarted with
+  the new configuration
+
+This optimization prevents unnecessary receiver restarts and is particularly
+beneficial for log collection, where restarting a filelog receiver could cause
+duplicate log ingestion if not using persistent storage for file offsets.
 
 **receivers.&lt;receiver_type/id&gt;.resource_attributes**
 
