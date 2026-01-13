@@ -3,207 +3,464 @@ all_set:
   metrics:
     splunk.aggregation.queue.ratio:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.buckets.searchable.status:
       enabled: true
+      attributes: ["splunk.host","splunk.indexer.searchable","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.bucket.count:
       enabled: true
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.bucket.event.count:
       enabled: true
+      attributes: ["splunk.index.name","splunk.bucket.dir","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.bucket.hot.count:
       enabled: true
+      attributes: ["splunk.index.name","splunk.bucket.dir","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.bucket.warm.count:
       enabled: true
+      attributes: ["splunk.index.name","splunk.bucket.dir","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.event.count:
       enabled: true
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.raw.size:
       enabled: true
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.total.size:
       enabled: true
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.health:
       enabled: true
+      attributes: ["splunk.feature","splunk.feature.health","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexer.avg.rate:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexer.cpu.time:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexer.queue.ratio:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexer.raw.write.time:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexer.rollingrestart.status:
       enabled: true
+      attributes: ["splunk.searchable.restart","splunk.rollingorrestart","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexer.throughput:
       enabled: true
+      attributes: ["splunk.indexer.status","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexes.avg.size:
       enabled: true
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexes.avg.usage:
       enabled: true
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexes.bucket.count:
       enabled: true
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexes.median.data.age:
       enabled: true
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexes.size:
       enabled: true
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.io.avg.iops:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.kvstore.backup.status:
       enabled: true
+      attributes: ["splunk.kvstore.status.value","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.kvstore.replication.status:
       enabled: true
+      attributes: ["splunk.kvstore.status.value","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.kvstore.status:
       enabled: true
+      attributes: ["splunk.kvstore.storage.engine","splunk.kvstore.external","splunk.kvstore.status.value","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.license.expiration.seconds_remaining:
       enabled: true
+      attributes: ["splunk.license.status","splunk.license.label","splunk.license.type","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.license.index.usage:
       enabled: true
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.parse.queue.ratio:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.pipeline.set.count:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.scheduler.avg.execution.latency:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.scheduler.avg.run.time:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.scheduler.completion.ratio:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.search.duration:
       enabled: true
+      attributes: ["splunk.splunkd.build","splunk.splunkd.version"]
     splunk.search.initiation:
       enabled: true
+      attributes: ["splunk.splunkd.build","splunk.splunkd.version"]
     splunk.search.status:
       enabled: true
+      attributes: ["splunk.search.state","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.search.success:
       enabled: true
+      attributes: ["splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.introspection.queues.current:
       enabled: true
+      attributes: ["splunk.queue.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.introspection.queues.current.bytes:
       enabled: true
+      attributes: ["splunk.queue.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.adhoc:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.adhoc.size:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.completed:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.completed.size:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.incomplete:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.incomplete.size:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.invalid:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.job.cache.count:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.job.cache.size:
       enabled: true
+      attributes: ["splunk.host","splunk.searchartifacts.cache.type","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.savedsearches:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.scheduled:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.scheduled.size:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.typing.queue.ratio:
       enabled: true
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
+reaggregate_set:
+  metrics:
+    splunk.aggregation.queue.ratio:
+      enabled: true
+      attributes: []
+    splunk.buckets.searchable.status:
+      enabled: true
+      attributes: []
+    splunk.data.indexes.extended.bucket.count:
+      enabled: true
+      attributes: []
+    splunk.data.indexes.extended.bucket.event.count:
+      enabled: true
+      attributes: []
+    splunk.data.indexes.extended.bucket.hot.count:
+      enabled: true
+      attributes: []
+    splunk.data.indexes.extended.bucket.warm.count:
+      enabled: true
+      attributes: []
+    splunk.data.indexes.extended.event.count:
+      enabled: true
+      attributes: []
+    splunk.data.indexes.extended.raw.size:
+      enabled: true
+      attributes: []
+    splunk.data.indexes.extended.total.size:
+      enabled: true
+      attributes: []
+    splunk.health:
+      enabled: true
+      attributes: []
+    splunk.indexer.avg.rate:
+      enabled: true
+      attributes: []
+    splunk.indexer.cpu.time:
+      enabled: true
+      attributes: []
+    splunk.indexer.queue.ratio:
+      enabled: true
+      attributes: []
+    splunk.indexer.raw.write.time:
+      enabled: true
+      attributes: []
+    splunk.indexer.rollingrestart.status:
+      enabled: true
+      attributes: []
+    splunk.indexer.throughput:
+      enabled: true
+      attributes: []
+    splunk.indexes.avg.size:
+      enabled: true
+      attributes: []
+    splunk.indexes.avg.usage:
+      enabled: true
+      attributes: []
+    splunk.indexes.bucket.count:
+      enabled: true
+      attributes: []
+    splunk.indexes.median.data.age:
+      enabled: true
+      attributes: []
+    splunk.indexes.size:
+      enabled: true
+      attributes: []
+    splunk.io.avg.iops:
+      enabled: true
+      attributes: []
+    splunk.kvstore.backup.status:
+      enabled: true
+      attributes: []
+    splunk.kvstore.replication.status:
+      enabled: true
+      attributes: []
+    splunk.kvstore.status:
+      enabled: true
+      attributes: []
+    splunk.license.expiration.seconds_remaining:
+      enabled: true
+      attributes: []
+    splunk.license.index.usage:
+      enabled: true
+      attributes: []
+    splunk.parse.queue.ratio:
+      enabled: true
+      attributes: []
+    splunk.pipeline.set.count:
+      enabled: true
+      attributes: []
+    splunk.scheduler.avg.execution.latency:
+      enabled: true
+      attributes: []
+    splunk.scheduler.avg.run.time:
+      enabled: true
+      attributes: []
+    splunk.scheduler.completion.ratio:
+      enabled: true
+      attributes: []
+    splunk.search.duration:
+      enabled: true
+      attributes: []
+    splunk.search.initiation:
+      enabled: true
+      attributes: []
+    splunk.search.status:
+      enabled: true
+      attributes: []
+    splunk.search.success:
+      enabled: true
+      attributes: []
+    splunk.server.introspection.queues.current:
+      enabled: true
+      attributes: []
+    splunk.server.introspection.queues.current.bytes:
+      enabled: true
+      attributes: []
+    splunk.server.searchartifacts.adhoc:
+      enabled: true
+      attributes: []
+    splunk.server.searchartifacts.adhoc.size:
+      enabled: true
+      attributes: []
+    splunk.server.searchartifacts.completed:
+      enabled: true
+      attributes: []
+    splunk.server.searchartifacts.completed.size:
+      enabled: true
+      attributes: []
+    splunk.server.searchartifacts.incomplete:
+      enabled: true
+      attributes: []
+    splunk.server.searchartifacts.incomplete.size:
+      enabled: true
+      attributes: []
+    splunk.server.searchartifacts.invalid:
+      enabled: true
+      attributes: []
+    splunk.server.searchartifacts.job.cache.count:
+      enabled: true
+      attributes: []
+    splunk.server.searchartifacts.job.cache.size:
+      enabled: true
+      attributes: []
+    splunk.server.searchartifacts.savedsearches:
+      enabled: true
+      attributes: []
+    splunk.server.searchartifacts.scheduled:
+      enabled: true
+      attributes: []
+    splunk.server.searchartifacts.scheduled.size:
+      enabled: true
+      attributes: []
+    splunk.typing.queue.ratio:
+      enabled: true
+      attributes: []
 none_set:
   metrics:
     splunk.aggregation.queue.ratio:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.buckets.searchable.status:
       enabled: false
+      attributes: ["splunk.host","splunk.indexer.searchable","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.bucket.count:
       enabled: false
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.bucket.event.count:
       enabled: false
+      attributes: ["splunk.index.name","splunk.bucket.dir","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.bucket.hot.count:
       enabled: false
+      attributes: ["splunk.index.name","splunk.bucket.dir","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.bucket.warm.count:
       enabled: false
+      attributes: ["splunk.index.name","splunk.bucket.dir","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.event.count:
       enabled: false
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.raw.size:
       enabled: false
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.data.indexes.extended.total.size:
       enabled: false
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.health:
       enabled: false
+      attributes: ["splunk.feature","splunk.feature.health","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexer.avg.rate:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexer.cpu.time:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexer.queue.ratio:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexer.raw.write.time:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexer.rollingrestart.status:
       enabled: false
+      attributes: ["splunk.searchable.restart","splunk.rollingorrestart","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexer.throughput:
       enabled: false
+      attributes: ["splunk.indexer.status","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexes.avg.size:
       enabled: false
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexes.avg.usage:
       enabled: false
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexes.bucket.count:
       enabled: false
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexes.median.data.age:
       enabled: false
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.indexes.size:
       enabled: false
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.io.avg.iops:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.kvstore.backup.status:
       enabled: false
+      attributes: ["splunk.kvstore.status.value","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.kvstore.replication.status:
       enabled: false
+      attributes: ["splunk.kvstore.status.value","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.kvstore.status:
       enabled: false
+      attributes: ["splunk.kvstore.storage.engine","splunk.kvstore.external","splunk.kvstore.status.value","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.license.expiration.seconds_remaining:
       enabled: false
+      attributes: ["splunk.license.status","splunk.license.label","splunk.license.type","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.license.index.usage:
       enabled: false
+      attributes: ["splunk.index.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.parse.queue.ratio:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.pipeline.set.count:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.scheduler.avg.execution.latency:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.scheduler.avg.run.time:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.scheduler.completion.ratio:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.search.duration:
       enabled: false
+      attributes: ["splunk.splunkd.build","splunk.splunkd.version"]
     splunk.search.initiation:
       enabled: false
+      attributes: ["splunk.splunkd.build","splunk.splunkd.version"]
     splunk.search.status:
       enabled: false
+      attributes: ["splunk.search.state","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.search.success:
       enabled: false
+      attributes: ["splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.introspection.queues.current:
       enabled: false
+      attributes: ["splunk.queue.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.introspection.queues.current.bytes:
       enabled: false
+      attributes: ["splunk.queue.name","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.adhoc:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.adhoc.size:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.completed:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.completed.size:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.incomplete:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.incomplete.size:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.invalid:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.job.cache.count:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.job.cache.size:
       enabled: false
+      attributes: ["splunk.host","splunk.searchartifacts.cache.type","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.savedsearches:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.scheduled:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.server.searchartifacts.scheduled.size:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
     splunk.typing.queue.ratio:
       enabled: false
+      attributes: ["splunk.host","splunk.splunkd.build","splunk.splunkd.version"]
