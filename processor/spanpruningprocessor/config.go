@@ -13,50 +13,50 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// Config defines the configuration for the span pruning processor.
+// Config defines the configuration options for the span pruning processor
+// and the rules used to identify and aggregate similar spans.
 type Config struct {
-	// GroupByAttributes specifies which span attributes to use for grouping
-	// similar leaf spans. Spans with the same name AND same values for these
-	// attributes will be grouped together.
-	// Supports glob patterns for matching attribute keys:
+	// GroupByAttributes lists attribute patterns used to decide which leaf spans
+	// belong in the same aggregation group. Spans must share the span name and
+	// have identical values for every matched attribute to be grouped. Patterns
+	// accept glob syntax, for example:
 	//   - "db.*" matches db.operation, db.name, db.statement, etc.
 	//   - "http.request.*" matches http.request.method, http.request.header, etc.
 	//   - "service" matches only the exact key "service"
-	// Example: ["db.*", "http.method"] or ["rpc.*"]
+	// Examples: ["db.*", "http.method"], ["rpc.*"].
 	GroupByAttributes []string `mapstructure:"group_by_attributes"`
 
-	// MinSpansToAggregate is the minimum number of similar leaf spans required
-	// before aggregation occurs. If a group has fewer spans, they are left unchanged.
+	// MinSpansToAggregate is the minimum number of similar spans required before
+	// aggregation occurs. Groups smaller than this threshold are preserved.
 	// Default: 5
 	MinSpansToAggregate int `mapstructure:"min_spans_to_aggregate"`
 
-	// MaxParentDepth limits how deep parent span aggregation can go above the leaf spans.
-	// Set to 0 to only aggregate leaf spans (no parent aggregation).
-	// Set to -1 for unlimited depth.
+	// MaxParentDepth bounds how many ancestor levels above the aggregated leaves
+	// can also be aggregated. Use 0 to aggregate only leaves, -1 for unlimited
+	// depth, or a positive integer to cap traversal.
 	// Default: 1
 	MaxParentDepth int `mapstructure:"max_parent_depth"`
 
-	// AggregationAttributePrefix is the prefix for aggregation attributes
-	// added to the summary span.
+	// AggregationAttributePrefix prefixes all aggregation-related attributes that
+	// are added to summary spans.
 	// Default: "aggregation."
 	AggregationAttributePrefix string `mapstructure:"aggregation_attribute_prefix"`
 
-	// AggregationHistogramBuckets defines the upper bounds for histogram buckets
-	// used to track latency distributions of aggregated spans.
+	// AggregationHistogramBuckets lists cumulative histogram bucket upper bounds
+	// for latency tracking on aggregated spans. Empty slice disables histograms.
 	// Example: [5*time.Millisecond, 10*time.Millisecond, 100*time.Millisecond]
 	// Default: [5*time.Millisecond, 10*time.Millisecond, 25*time.Millisecond, 50*time.Millisecond, 100*time.Millisecond, 250*time.Millisecond, 500*time.Millisecond, time.Second, 2500*time.Millisecond, 5*time.Second, 10*time.Second]
 	AggregationHistogramBuckets []time.Duration `mapstructure:"aggregation_histogram_buckets"`
 
-	// EnableAttributeLossAnalysis controls whether to analyze and report attribute loss
-	// during aggregation. When enabled, the processor analyzes attribute differences across spans being
-	// aggregated, records histogram metrics, and adds summary attributes to aggregated spans.
+	// EnableAttributeLossAnalysis toggles analysis of attribute loss during
+	// aggregation. When enabled, the processor compares attribute sets across
+	// aggregated spans, records loss metrics, and annotates summary spans.
 	// Default: false (to reduce telemetry overhead)
 	EnableAttributeLossAnalysis bool `mapstructure:"enable_attribute_loss_analysis"`
 
-	// AttributeLossExemplarSampleRate controls what fraction of attribute loss
-	// metric recordings include trace exemplars. Range: 0.0 (disabled) to 1.0 (always).
-	// Only applies when EnableAttributeLossAnalysis is true.
-	// Default: 0.01 (1%)
+	// AttributeLossExemplarSampleRate controls the fraction of attribute-loss
+	// metric recordings that include exemplars when loss analysis is enabled.
+	// Range: 0.0 (disabled) to 1.0 (always). Default: 0.01 (1%).
 	AttributeLossExemplarSampleRate float64 `mapstructure:"attribute_loss_exemplar_sample_rate"`
 }
 

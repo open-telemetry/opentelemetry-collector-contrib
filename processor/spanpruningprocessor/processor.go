@@ -19,18 +19,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 )
 
-// spanInfo holds a span and its location within the trace data structure
+// spanInfo pairs a span with its ScopeSpans container for in-place edits.
 type spanInfo struct {
 	span       ptrace.Span
 	scopeSpans ptrace.ScopeSpans
 }
 
-// attributePattern holds a compiled glob pattern for matching attribute keys
+// attributePattern caches a compiled glob used for attribute key matching.
 type attributePattern struct {
 	glob glob.Glob
 }
 
-// spanPruningProcessor is the leaf span pruning processor implementation
+// spanPruningProcessor aggregates similar leaf spans (and eligible parents)
+// according to configuration while emitting telemetry about pruning actions.
 type spanPruningProcessor struct {
 	config                      *Config
 	logger                      *zap.Logger
@@ -61,13 +62,14 @@ func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuild
 	}, nil
 }
 
-// shutdown is called when the processor is being stopped
+// shutdown releases processor resources, including telemetry providers.
 func (p *spanPruningProcessor) shutdown(_ context.Context) error {
 	p.telemetryBuilder.Shutdown()
 	return nil
 }
 
-// shouldSampleAttributeLossExemplar returns true if this recording should include an exemplar
+// shouldSampleAttributeLossExemplar decides whether to attach exemplars to
+// attribute-loss metrics based on the configured sampling rate.
 func (p *spanPruningProcessor) shouldSampleAttributeLossExemplar() bool {
 	rate := p.config.AttributeLossExemplarSampleRate
 	if rate <= 0 {
@@ -89,6 +91,8 @@ func createExemplarContext(ctx context.Context, traceID pcommon.TraceID, spanID 
 	}))
 }
 
+// processTraces runs aggregation for each trace batch and records processor
+// telemetry about received, pruned, and aggregated spans.
 func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	start := time.Now()
 
@@ -123,7 +127,8 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 	return td, nil
 }
 
-// groupSpansByTraceID collects all spans organized by trace ID
+// groupSpansByTraceID flattens incoming data into a TraceID-indexed map so
+// each trace can be analyzed independently.
 func (p *spanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon.TraceID][]spanInfo {
 	traceSpans := make(map[pcommon.TraceID][]spanInfo)
 
@@ -148,9 +153,9 @@ func (p *spanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon
 	return traceSpans
 }
 
-// processTrace processes a single trace using two-phase approach:
-// Phase 1: Analyze aggregations bottom-up (identify leaf groups, then eligible parents)
-// Phase 2: Execute aggregations top-down (create parent summaries first, then children)
+// processTrace applies the pruning algorithm to a single trace:
+// 1) analyze aggregation candidates bottom-up, 2) build a top-down execution
+// plan, and 3) create summary spans while removing originals.
 func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInfo) error {
 	// Build trace tree
 	tree := p.buildTraceTree(spans)

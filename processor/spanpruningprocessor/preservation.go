@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// attributeCardinality tracks the number of unique values for an attribute key
+// attributeCardinality records how many distinct values an attribute key has
 // across spans being aggregated.
 type attributeCardinality struct {
 	key          string
@@ -26,17 +26,16 @@ type attributeLossSummary struct {
 	missing []attributeCardinality // absent from some spans
 }
 
-// isEmpty returns true if no attribute loss was detected
+// isEmpty reports whether any attribute loss was detected.
 func (s attributeLossSummary) isEmpty() bool {
 	return len(s.diverse) == 0 && len(s.missing) == 0
 }
 
-// analyzeAttributeLoss examines spans being aggregated and identifies which
-// attribute keys will lose information when combined into a single summary span.
-// The first node is the template whose attributes are preserved on the summary.
-// Returns an attributeLossSummary with:
-// - diverse: attributes present in ALL spans but with multiple unique values (loss = unique - 1)
-// - missing: attributes absent from SOME spans (loss depends on template)
+// analyzeAttributeLoss examines spans being aggregated to determine which
+// attributes will lose information in the summary span. The first node is the
+// template whose attributes are preserved on the summary. Results include:
+// - diverse: present in all spans but with multiple unique values (loss = unique - 1)
+// - missing: absent from some spans (loss depends on template presence)
 // Both slices are sorted by uniqueValues descending.
 func analyzeAttributeLoss(nodes []*spanNode) attributeLossSummary {
 	if len(nodes) < 2 {
@@ -112,14 +111,12 @@ func analyzeAttributeLoss(nodes []*spanNode) attributeLossSummary {
 	return result
 }
 
-// maxLostAttributesEntries is the maximum number of attribute keys to include
-// in each attribute string to prevent excessively long values.
+// maxLostAttributesEntries bounds how many attribute keys are serialized into
+// the loss strings to prevent excessively long attribute values.
 const maxLostAttributesEntries = 10
 
-// formatAttributeCardinality formats attribute cardinality for storage as a span attribute.
-// Format: "key1(count1),key2(count2),..."
-// Example: "db.statement(12),db.system(3),http.route(2)"
-// Truncates to maxLostAttributesEntries with "..." suffix if exceeded.
+// formatAttributeCardinality formats attribute cardinality as "key(count),..."
+// truncated to maxLostAttributesEntries with an ellipsis when needed.
 func formatAttributeCardinality(attrs []attributeCardinality) string {
 	if len(attrs) == 0 {
 		return ""

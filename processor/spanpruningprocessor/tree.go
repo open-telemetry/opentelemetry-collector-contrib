@@ -9,7 +9,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// spanNode represents a span in the trace tree with parent/child relationships.
+// spanNode models a span in the trace tree with cached relationships and
+// aggregation bookkeeping.
 type spanNode struct {
 	span             ptrace.Span
 	scopeSpans       ptrace.ScopeSpans
@@ -20,15 +21,17 @@ type spanNode struct {
 	markedForRemoval bool   // true if node will be aggregated
 }
 
-// traceTree represents a complete trace as a tree structure.
+// traceTree holds span nodes indexed by ID plus quick leaf/orphan lists for
+// efficient aggregation analysis.
 type traceTree struct {
 	nodeByID map[pcommon.SpanID]*spanNode
 	leaves   []*spanNode // nodes with no children, populated during build
 	orphans  []*spanNode // spans whose parent is not in the trace
 }
 
-// buildTraceTree constructs a tree structure from a list of spans.
-// Handles incomplete traces: orphans (missing parents), multiple roots, no root.
+// buildTraceTree constructs parent/child links for a trace and records
+// leaves, roots, and orphans so aggregation decisions can account for
+// incomplete traces.
 func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	tree := &traceTree{
 		nodeByID: make(map[pcommon.SpanID]*spanNode, len(spans)),
@@ -96,13 +99,14 @@ func (p *spanPruningProcessor) buildTraceTree(spans []spanInfo) *traceTree {
 	return tree
 }
 
-// getLeaves returns the pre-computed list of leaf nodes.
+// getLeaves returns the pre-computed leaf nodes (spans with no children).
 func (t *traceTree) getLeaves() []*spanNode {
 	return t.leaves
 }
 
-// findEligibleParentNodesFromCandidates finds eligible parents from a set of candidates.
-// More efficient than scanning all nodes when walking up from marked nodes.
+// findEligibleParentNodesFromCandidates filters candidate parents to those
+// whose children are all marked for aggregation and that are themselves
+// aggregate-able.
 func (p *spanPruningProcessor) findEligibleParentNodesFromCandidates(candidates []*spanNode) []*spanNode {
 	if len(candidates) == 0 {
 		return nil
@@ -117,7 +121,8 @@ func (p *spanPruningProcessor) findEligibleParentNodesFromCandidates(candidates 
 	return eligibleParents
 }
 
-// collectParentCandidates returns unique parents of marked nodes for the next iteration.
+// collectParentCandidates returns unique parents of marked nodes for the
+// next aggregation depth iteration.
 func collectParentCandidates(markedNodes []*spanNode) []*spanNode {
 	if len(markedNodes) == 0 {
 		return nil
@@ -138,7 +143,8 @@ func collectParentCandidates(markedNodes []*spanNode) []*spanNode {
 	return candidates
 }
 
-// isEligibleForParentAggregation checks if a node can be aggregated as a parent.
+// isEligibleForParentAggregation verifies that a node meets the criteria for
+// parent aggregation (not root, all children marked, not already marked).
 func (p *spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool {
 	// Must have children (not a leaf)
 	if node.isLeaf {
