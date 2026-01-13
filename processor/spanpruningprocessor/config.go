@@ -73,8 +73,12 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Validate AggregationAttributePrefix
-	if strings.TrimSpace(cfg.AggregationAttributePrefix) == "" {
+	prefix := strings.TrimSpace(cfg.AggregationAttributePrefix)
+	if prefix == "" {
 		return errors.New("aggregation_attribute_prefix cannot be empty")
+	}
+	if strings.ContainsAny(prefix, " \t\n\r") {
+		return errors.New("aggregation_attribute_prefix cannot contain whitespace")
 	}
 
 	// Validate GroupByAttributes glob patterns

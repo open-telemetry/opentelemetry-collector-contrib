@@ -60,11 +60,10 @@ func (p *spanPruningProcessor) buildAggregationPlan(groups map[string]aggregatio
 // Returns the count of spans that were pruned (aggregated)
 func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 	// Track which parent SpanID should map to which summary SpanID
-	// Pre-size based on expected number of nodes being aggregated
 	parentReplacements := make(map[pcommon.SpanID]pcommon.SpanID, len(plan.groups)*4)
 
 	// Track spans to remove per ScopeSpans for batch removal
-	spansToRemove := make(map[ptrace.ScopeSpans]map[pcommon.SpanID]struct{})
+	spansToRemove := make(map[ptrace.ScopeSpans]map[pcommon.SpanID]struct{}, len(plan.groups))
 	prunedCount := 0
 
 	for _, group := range plan.groups {
@@ -86,16 +85,13 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 
 		// Record that these original span IDs should be replaced by the summary span ID
 		for _, node := range group.nodes {
-			parentReplacements[node.span.SpanID()] = group.summarySpanID
-		}
-
-		// Mark original spans for removal (batch per ScopeSpans)
-		for _, node := range group.nodes {
+			spanID := node.span.SpanID()
+			parentReplacements[spanID] = group.summarySpanID
 			scopeSpans := node.scopeSpans
 			if spansToRemove[scopeSpans] == nil {
-				spansToRemove[scopeSpans] = make(map[pcommon.SpanID]struct{})
+				spansToRemove[scopeSpans] = make(map[pcommon.SpanID]struct{}, len(group.nodes))
 			}
-			spansToRemove[scopeSpans][node.span.SpanID()] = struct{}{}
+			spansToRemove[scopeSpans][spanID] = struct{}{}
 		}
 		prunedCount += len(group.nodes)
 	}

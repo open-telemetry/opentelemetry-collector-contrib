@@ -96,6 +96,47 @@ func BenchmarkFindEligibleParents(b *testing.B) {
 	}
 }
 
+// BenchmarkBuildGroupKey benchmarks group key construction.
+func BenchmarkBuildGroupKey(b *testing.B) {
+	proc := newBenchmarkProcessor(b, 1)
+	td := generateTestTrace(200, 5)
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(2)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = proc.buildGroupKey(span)
+	}
+}
+
+// BenchmarkExecuteAggregations benchmarks the aggregation execution phase.
+func BenchmarkExecuteAggregations(b *testing.B) {
+	proc := newBenchmarkProcessor(b, 1)
+	base := generateTestTrace(500, 5)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		td := ptrace.NewTraces()
+		base.CopyTo(td)
+
+		spans := spanInfosFromTraces(td)
+		tree := proc.buildTraceTree(spans)
+		leafGroups := proc.groupLeafNodesByKey(tree.getLeaves())
+
+		groups := make(map[string]aggregationGroup, len(leafGroups))
+		for key, nodes := range leafGroups {
+			if len(nodes) >= proc.config.MinSpansToAggregate {
+				groups[key] = aggregationGroup{nodes: nodes, depth: 0}
+			}
+		}
+
+		plan := proc.buildAggregationPlan(groups)
+
+		b.StartTimer()
+		proc.executeAggregations(plan)
+		b.StopTimer()
+	}
+}
+
 // newBenchmarkProcessor creates a processor configured for benchmarking.
 func newBenchmarkProcessor(b *testing.B, maxParentDepth int) *spanPruningProcessor {
 	b.Helper()
@@ -116,6 +157,27 @@ func newBenchmarkProcessor(b *testing.B, maxParentDepth int) *spanPruningProcess
 		b.Fatal(err)
 	}
 	return proc
+}
+
+func spanInfosFromTraces(td ptrace.Traces) []spanInfo {
+	var spans []spanInfo
+
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		ilss := rss.At(i).ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			ss := ilss.At(j)
+			ssSpans := ss.Spans()
+			for k := 0; k < ssSpans.Len(); k++ {
+				spans = append(spans, spanInfo{
+					span:       ssSpans.At(k),
+					scopeSpans: ss,
+				})
+			}
+		}
+	}
+
+	return spans
 }
 
 func benchmarkProcessTrace(b *testing.B, numSpans, minSpans int) {

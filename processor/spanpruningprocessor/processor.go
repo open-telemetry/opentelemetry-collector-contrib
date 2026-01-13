@@ -214,14 +214,16 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 					recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
 				}
 
-				p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(
-					recordCtx,
-					int64(len(lossInfo.diverse)),
-				)
-				p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(
-					recordCtx,
-					int64(len(lossInfo.missing)),
-				)
+				if !lossInfo.isEmpty() {
+					p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(
+						recordCtx,
+						int64(len(lossInfo.diverse)),
+					)
+					p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(
+						recordCtx,
+						int64(len(lossInfo.missing)),
+					)
+				}
 			}
 
 			aggregationGroups[groupKey] = aggregationGroup{
@@ -286,14 +288,16 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 						recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
 					}
 
-					p.telemetryBuilder.ProcessorSpanpruningParentAttributeDiversityLoss.Record(
-						recordCtx,
-						int64(len(lossInfo.diverse)),
-					)
-					p.telemetryBuilder.ProcessorSpanpruningParentAttributeLoss.Record(
-						recordCtx,
-						int64(len(lossInfo.missing)),
-					)
+					if !lossInfo.isEmpty() {
+						p.telemetryBuilder.ProcessorSpanpruningParentAttributeDiversityLoss.Record(
+							recordCtx,
+							int64(len(lossInfo.diverse)),
+						)
+						p.telemetryBuilder.ProcessorSpanpruningParentAttributeLoss.Record(
+							recordCtx,
+							int64(len(lossInfo.missing)),
+						)
+					}
 				}
 
 				aggregationGroups[parentKey] = aggregationGroup{
