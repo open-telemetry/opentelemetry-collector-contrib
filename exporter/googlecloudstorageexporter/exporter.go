@@ -29,6 +29,12 @@ import (
 	"google.golang.org/api/googleapi"
 )
 
+type zstdWriter interface {
+	Write(p []byte) (int, error)
+	Close() error
+	Reset(w io.Writer)
+}
+
 type storageExporter struct {
 	cfg             *Config
 	logsMarshaler   plog.Marshaler
@@ -105,7 +111,10 @@ func newStorageExporter(
 			New: func() any {
 				// Create a new zstd writer that writes to a dummy buffer initially
 				// It will be reset to the actual destination when used
-				writer, _ := zstd.NewWriter(io.Discard)
+				writer, err := zstd.NewWriter(io.Discard)
+				if err != nil {
+					panic(fmt.Sprintf("failed to create zstd writer for pool: %v", err))
+				}
 				return writer
 			},
 		},
@@ -333,17 +342,9 @@ func (s *storageExporter) compressZstd(raw []byte) ([]byte, error) {
 	content := bytes.NewBuffer(nil)
 
 	// Try to get a zstd writer from the pool
-	var zipper interface {
-		Write(p []byte) (int, error)
-		Close() error
-		Reset(w io.Writer)
-	}
+	var zipper zstdWriter
 	if pooled := s.zstdWriterPool.Get(); pooled != nil {
-		if w, ok := pooled.(interface {
-			Write(p []byte) (int, error)
-			Close() error
-			Reset(w io.Writer)
-		}); ok {
+		if w, ok := pooled.(zstdWriter); ok {
 			zipper = w
 			zipper.Reset(content)
 		}
