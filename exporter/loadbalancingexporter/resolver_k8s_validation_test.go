@@ -35,7 +35,7 @@ func TestConfigValidationWithK8sResolverOutsideCluster(t *testing.T) {
 
 	// This should NOT fail even when running outside a Kubernetes cluster
 	// because the k8s client is not created until Start() is called
-	exp, err := factory.CreateTraces(context.Background(), settings, cfg)
+	exp, err := factory.CreateTraces(t.Context(), settings, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
