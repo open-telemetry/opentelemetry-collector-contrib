@@ -1150,7 +1150,10 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `mysqlreceiver`: Fix for the conversion error on mysql.event_id. Setting an int (0) as default value in SQL. (#42040)
 - `windowseventlogreceiver`: Fixes issue for remote log collection where domain was not properly passed into EvtOpenSession syscall (#41950)
 
+- `processor/redaction`: Clarify precedence between `allowed_values` and `blocked_values` in configuration (#45390)
 <!-- previous-version -->
+
+
 
 ## v0.132.0
 
