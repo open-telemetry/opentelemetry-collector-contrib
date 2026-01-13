@@ -118,6 +118,9 @@ When spans are aggregated, the summary span includes:
 - **StartTimestamp**: Earliest start time of all spans in the group
 - **EndTimestamp**: Latest end time of all spans in the group
 - **Status**: Same as original spans (spans are grouped by status code)
+- **Attributes**: Inherited from the slowest span in the group
+
+> **Note**: The summary span's duration (`EndTimestamp - StartTimestamp`) represents the total time window covered by all aggregated spans, which may exceed `duration_max_ns`. For example, if spans overlap or are staggered, the time range can be larger than any individual span's duration. Use `duration_max_ns` to find the slowest individual operation.
 
 ### Aggregation Attributes
 The following attributes are added to the summary span (shown with default `aggregation_attribute_prefix: "aggregation."`):
@@ -262,7 +265,7 @@ root
 ## Limitations
 
 - Requires complete traces for accurate leaf detection
-- Summary span inherits attributes from the first span in the group
+- Summary span inherits attributes from the slowest span in the group
 - Parent spans are only aggregated when ALL their children are aggregated
 
 ## Telemetry
@@ -289,7 +292,7 @@ The processor emits the following metrics to help monitor its operation:
 
 When `enable_attribute_loss_analysis: true`, the processor also emits metrics about attribute loss during aggregation. These metrics help you understand how much information is being lost when spans are grouped together.
 
-To correlate these metrics back to traces, a configurable fraction of these metric recordings can include trace exemplars via `attribute_loss_exemplar_sample_rate`. Sampling is applied per aggregation group, and the exemplar context is taken from the first span in the group.
+To correlate these metrics back to traces, a configurable fraction of these metric recordings can include trace exemplars via `attribute_loss_exemplar_sample_rate`. Sampling is applied per aggregation group, and the exemplar context is taken from the slowest span in the group.
 
 #### Histograms (Optional)
 

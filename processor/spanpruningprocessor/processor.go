@@ -207,15 +207,18 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 
 	for groupKey, nodes := range leafGroups {
 		if len(nodes) >= p.config.MinSpansToAggregate {
+			// Find the template node (longest duration) for this group
+			templateNode := findLongestDurationNode(nodes)
+
 			// Analyze attribute loss for leaf aggregation (only when enabled)
 			var lossInfo attributeLossSummary
 			if p.enableAttributeLossAnalysis {
-				lossInfo = analyzeAttributeLoss(nodes)
+				lossInfo = analyzeAttributeLoss(nodes, templateNode)
 
 				// Determine context for recording (with or without exemplar)
 				recordCtx := ctx
 				if p.shouldSampleAttributeLossExemplar() {
-					exemplarSpan := nodes[0].span
+					exemplarSpan := templateNode.span
 					recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
 				}
 
@@ -232,9 +235,10 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 			}
 
 			aggregationGroups[groupKey] = aggregationGroup{
-				nodes:    nodes,
-				depth:    0,
-				lossInfo: lossInfo,
+				nodes:        nodes,
+				depth:        0,
+				lossInfo:     lossInfo,
+				templateNode: templateNode,
 			}
 			// Mark nodes for removal using field instead of map
 			for _, node := range nodes {
@@ -281,15 +285,18 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 		markedNodes = markedNodes[:0] // reset for this round
 		for parentKey, nodes := range parentGroups {
 			if len(nodes) >= 2 {
+				// Find the template node (longest duration) for this group
+				templateNode := findLongestDurationNode(nodes)
+
 				// Analyze attribute loss for parent aggregation (only when enabled)
 				var lossInfo attributeLossSummary
 				if p.enableAttributeLossAnalysis {
-					lossInfo = analyzeAttributeLoss(nodes)
+					lossInfo = analyzeAttributeLoss(nodes, templateNode)
 
 					// Determine context for recording (with or without exemplar)
 					recordCtx := ctx
 					if p.shouldSampleAttributeLossExemplar() {
-						exemplarSpan := nodes[0].span
+						exemplarSpan := templateNode.span
 						recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
 					}
 
@@ -306,9 +313,10 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 				}
 
 				aggregationGroups[parentKey] = aggregationGroup{
-					nodes:    nodes,
-					depth:    depth,
-					lossInfo: lossInfo,
+					nodes:        nodes,
+					depth:        depth,
+					lossInfo:     lossInfo,
+					templateNode: templateNode,
 				}
 				// Mark parent nodes for removal
 				for _, node := range nodes {

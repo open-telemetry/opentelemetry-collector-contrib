@@ -26,7 +26,7 @@ func TestAnalyzeAttributeLoss_NoDiversity(t *testing.T) {
 		{"db.operation": "select", "db.name": "users"},
 	})
 
-	result := analyzeAttributeLoss(nodes)
+	result := analyzeAttributeLoss(nodes, nodes[0])
 	assert.True(t, result.isEmpty(), "no loss when all values are identical")
 }
 
@@ -38,7 +38,7 @@ func TestAnalyzeAttributeLoss_WithDiversity(t *testing.T) {
 		{"db.operation": "select", "db.name": "products", "db.statement": "SELECT * FROM products"},
 	})
 
-	result := analyzeAttributeLoss(nodes)
+	result := analyzeAttributeLoss(nodes, nodes[0])
 
 	// Should have 2 attributes with diversity: db.name (3 values, 2 lost) and db.statement (3 values, 2 lost)
 	assert.Len(t, result.diverse, 2, "should have 2 diverse attributes")
@@ -62,7 +62,7 @@ func TestAnalyzeAttributeLoss_MixedDiversity(t *testing.T) {
 		{"db.operation": "select", "http.method": "PUT", "http.route": "/api/users"},
 	})
 
-	result := analyzeAttributeLoss(nodes)
+	result := analyzeAttributeLoss(nodes, nodes[0])
 
 	// Only http.method has diversity (3 values, 2 lost)
 	// db.operation and http.route have identical values
@@ -81,7 +81,7 @@ func TestAnalyzeAttributeLoss_SortOrder(t *testing.T) {
 		{"a": "4", "b": "2", "c": "1"},
 	})
 
-	result := analyzeAttributeLoss(nodes)
+	result := analyzeAttributeLoss(nodes, nodes[0])
 
 	// a has 4 unique values (3 lost), b has 2 unique values (1 lost), c has 1 (no diversity)
 	assert.Len(t, result.diverse, 2)
@@ -97,15 +97,15 @@ func TestAnalyzeAttributeLoss_SingleNode(t *testing.T) {
 		{"db.operation": "select"},
 	})
 
-	result := analyzeAttributeLoss(nodes)
+	result := analyzeAttributeLoss(nodes, nodes[0])
 	assert.True(t, result.isEmpty(), "single node should return empty")
 }
 
 func TestAnalyzeAttributeLoss_EmptyNodes(t *testing.T) {
-	result := analyzeAttributeLoss(nil)
+	result := analyzeAttributeLoss(nil, nil)
 	assert.True(t, result.isEmpty())
 
-	result = analyzeAttributeLoss([]*spanNode{})
+	result = analyzeAttributeLoss([]*spanNode{}, nil)
 	assert.True(t, result.isEmpty())
 }
 
@@ -121,7 +121,7 @@ func TestAnalyzeAttributeLoss_MissingAttributes(t *testing.T) {
 		{"a": "3", "b": "2"},
 	})
 
-	result := analyzeAttributeLoss(nodes)
+	result := analyzeAttributeLoss(nodes, nodes[0])
 
 	// 'a' has 3 unique values, present in all -> diverse (2 lost)
 	assert.Len(t, result.diverse, 1)
@@ -151,7 +151,7 @@ func TestAnalyzeAttributeLoss_AllMissingFromSome(t *testing.T) {
 		{"c": "1"},
 	})
 
-	result := analyzeAttributeLoss(nodes)
+	result := analyzeAttributeLoss(nodes, nodes[0])
 
 	// No attribute is present in all spans, so diverse should be empty
 	assert.Empty(t, result.diverse)
@@ -177,7 +177,7 @@ func TestAnalyzeAttributeLoss_BothDiverseAndMissing(t *testing.T) {
 		{"a": "3", "b": "1", "c": "2"},
 	})
 
-	result := analyzeAttributeLoss(nodes)
+	result := analyzeAttributeLoss(nodes, nodes[0])
 
 	// 'a' has 3 unique values, present in all -> diverse (2 lost)
 	assert.Len(t, result.diverse, 1)
@@ -205,7 +205,7 @@ func TestAnalyzeAttributeLoss_MissingWithTemplateHavingIt(t *testing.T) {
 		{"a": "3"},
 	})
 
-	result := analyzeAttributeLoss(nodes)
+	result := analyzeAttributeLoss(nodes, nodes[0])
 
 	// 'a' has 3 unique values -> 2 lost
 	assert.Len(t, result.diverse, 1)
@@ -224,7 +224,7 @@ func TestAnalyzeAttributeLoss_EmptyStringValues(t *testing.T) {
 		{"a": "", "b": "value"},
 	})
 
-	result := analyzeAttributeLoss(nodes)
+	result := analyzeAttributeLoss(nodes, nodes[0])
 
 	// 'a' has 2 unique values: "" and "non-empty" -> 1 lost
 	// 'b' has 2 unique values: "value" and "" -> 1 lost

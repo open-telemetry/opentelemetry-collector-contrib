@@ -20,12 +20,32 @@ type aggregationGroup struct {
 	depth         int                  // tree depth (0 = leaf, 1 = parent of leaf, etc.)
 	summarySpanID pcommon.SpanID       // SpanID of the summary span (assigned before creation)
 	lossInfo      attributeLossSummary // attribute loss info (diverse + missing)
+	templateNode  *spanNode            // node to use as summary template (longest duration)
 }
 
 // aggregationPlan orders aggregation groups for top-down execution and
 // carries precomputed summary span IDs.
 type aggregationPlan struct {
 	groups []aggregationGroup
+}
+
+// findLongestDurationNode returns the node with the longest duration.
+func findLongestDurationNode(nodes []*spanNode) *spanNode {
+	if len(nodes) == 0 {
+		return nil
+	}
+	longest := nodes[0]
+	// pcommon.Timestamp is uint64 nanoseconds; direct subtraction avoids
+	// creating intermediate time.Time objects (2 per span otherwise).
+	longestDuration := int64(longest.span.EndTimestamp()) - int64(longest.span.StartTimestamp())
+	for _, node := range nodes[1:] {
+		duration := int64(node.span.EndTimestamp()) - int64(node.span.StartTimestamp())
+		if duration > longestDuration {
+			longest = node
+			longestDuration = duration
+		}
+	}
+	return longest
 }
 
 // generateSpanID produces a non-cryptographic span ID suitable for summary
@@ -113,8 +133,8 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 // group, wiring it under the provided parent SpanID and attaching stats
 // and attribute-loss annotations.
 func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGroup, data aggregationData, parentSpanID pcommon.SpanID) ptrace.Span {
-	// Use the first node as a template
-	templateNode := group.nodes[0]
+	// Use the template node (longest duration span) as a template
+	templateNode := group.templateNode
 	templateSpan := templateNode.span
 	scopeSpans := templateNode.scopeSpans
 
