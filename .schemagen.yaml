@@ -1,0 +1,14 @@
+mappings:
+  time:
+    Time:
+      schemaType: string
+      format: date-time
+    Duration:
+      schemaType: string
+      format: duration
+  component:
+    ID:
+      schemaType: string
+  configopaque:
+    String:
+      schemaType: string
