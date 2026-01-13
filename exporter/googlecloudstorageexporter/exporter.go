@@ -300,41 +300,42 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 func (s *storageExporter) compressContent(raw []byte) ([]byte, error) {
 	switch s.cfg.Bucket.Compression {
 	case configcompression.TypeGzip:
-		return compress[*gzip.Writer](s.gzipWriterPool, raw, func(w io.Writer) *gzip.Writer {
-			return gzip.NewWriter(w)
+		return compress[*gzip.Writer](s.gzipWriterPool, raw, func(w io.Writer) (*gzip.Writer, error) {
+			return gzip.NewWriter(w), nil
 		})
 	case configcompression.TypeZstd:
-		return compress[zstdWriter](s.zstdWriterPool, raw, func(w io.Writer) zstdWriter {
-			writer, err := zstd.NewWriter(w)
-			if err != nil {
-				panic(fmt.Sprintf("failed to create zstd writer: %v", err))
-			}
-			return writer
+		return compress[zstdWriter](s.zstdWriterPool, raw, func(w io.Writer) (zstdWriter, error) {
+			return zstd.NewWriter(w)
 		})
 	default:
 		return raw, nil
 	}
 }
 
-func compress[T poolItem](pool *sync.Pool, raw []byte, newItem func(io.Writer) T) ([]byte, error) {
+func compress[T poolItem](pool *sync.Pool, raw []byte, newItem func(io.Writer) (T, error)) ([]byte, error) {
 	if pool == nil {
 		return nil, errors.New("unexpected: compress pool is nil")
 	}
 
 	content := bytes.NewBuffer(nil)
 
-	// Try to get a writer from the pool
+	// Get writer from pool or create new one
+	pooled := pool.Get()
 	var zipper T
-	if pooled := pool.Get(); pooled != nil {
+	var fromPool bool
+	if pooled != nil {
 		if w, ok := pooled.(T); ok {
 			zipper = w
 			zipper.Reset(content)
+			fromPool = true
 		}
 	}
-
-	// If we didn't get a valid writer from pool, create a new one
-	if any(zipper) == nil {
-		zipper = newItem(content)
+	if !fromPool {
+		var err error
+		zipper, err = newItem(content)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Always return the writer to the pool (even on error).
