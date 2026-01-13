@@ -3,7 +3,9 @@
 
 //go:generate mdatagen metadata.yaml
 
-// Package spanpruningprocessor identifies duplicate/similar leaf spans
-// within a trace and replaces each group with an aggregated summary span.
-// Leaf spans are spans that are not referenced as a parent by any other span.
+// Package spanpruningprocessor detects duplicate or similar leaf spans within a
+// single trace and replaces each set with a single aggregated summary span.
+// Leaf spans are spans that are never referenced as a parent by another span.
+// When all children of a parent are aggregated, the parent can also be
+// aggregated, preserving the trace structure while reducing volume.
 package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"

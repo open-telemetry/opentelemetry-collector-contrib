@@ -28,7 +28,7 @@ Time to process each batch of traces [development]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Histogram | Double | development |
+| s | Histogram | Double | development |
 
 ### otelcol_processor_spanpruning_spans_pruned
 

@@ -6,34 +6,38 @@ package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"time"
 
 	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 )
 
-// spanInfo holds a span and its location within the trace data structure
+// spanInfo pairs a span with its ScopeSpans container for in-place edits.
 type spanInfo struct {
 	span       ptrace.Span
 	scopeSpans ptrace.ScopeSpans
 }
 
-// attributePattern holds a compiled glob pattern for matching attribute keys
+// attributePattern caches a compiled glob used for attribute key matching.
 type attributePattern struct {
 	glob glob.Glob
 }
 
-// spanPruningProcessor is the leaf span pruning processor implementation
+// spanPruningProcessor aggregates similar leaf spans (and eligible parents)
+// according to configuration while emitting telemetry about pruning actions.
 type spanPruningProcessor struct {
-	config            *Config
-	logger            *zap.Logger
-	attributePatterns []attributePattern
-	telemetryBuilder  *metadata.TelemetryBuilder
+	config                      *Config
+	logger                      *zap.Logger
+	attributePatterns           []attributePattern
+	telemetryBuilder            *metadata.TelemetryBuilder
+	enableAttributeLossAnalysis bool
 }
 
 func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuilder *metadata.TelemetryBuilder) (*spanPruningProcessor, error) {
@@ -50,19 +54,45 @@ func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuild
 	}
 
 	return &spanPruningProcessor{
-		config:            cfg,
-		logger:            set.Logger,
-		attributePatterns: patterns,
-		telemetryBuilder:  telemetryBuilder,
+		config:                      cfg,
+		logger:                      set.Logger,
+		attributePatterns:           patterns,
+		telemetryBuilder:            telemetryBuilder,
+		enableAttributeLossAnalysis: cfg.EnableAttributeLossAnalysis,
 	}, nil
 }
 
-// shutdown is called when the processor is being stopped
+// shutdown releases processor resources, including telemetry providers.
 func (p *spanPruningProcessor) shutdown(_ context.Context) error {
 	p.telemetryBuilder.Shutdown()
 	return nil
 }
 
+// shouldSampleAttributeLossExemplar decides whether to attach exemplars to
+// attribute-loss metrics based on the configured sampling rate.
+func (p *spanPruningProcessor) shouldSampleAttributeLossExemplar() bool {
+	rate := p.config.AttributeLossExemplarSampleRate
+	if rate <= 0 {
+		return false
+	}
+	if rate >= 1 {
+		return true
+	}
+	return rand.Float64() < rate
+}
+
+// createExemplarContext creates a context with span context for exemplar attachment.
+// Uses direct type casting since pcommon and trace ID types are identical byte arrays.
+func createExemplarContext(ctx context.Context, traceID pcommon.TraceID, spanID pcommon.SpanID) context.Context {
+	return trace.ContextWithSpanContext(ctx, trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    trace.TraceID(traceID),
+		SpanID:     trace.SpanID(spanID),
+		TraceFlags: trace.FlagsSampled,
+	}))
+}
+
+// processTraces runs aggregation for each trace batch and records processor
+// telemetry about received, pruned, and aggregated spans.
 func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	start := time.Now()
 
@@ -97,7 +127,8 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 	return td, nil
 }
 
-// groupSpansByTraceID collects all spans organized by trace ID
+// groupSpansByTraceID flattens incoming data into a TraceID-indexed map so
+// each trace can be analyzed independently.
 func (p *spanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon.TraceID][]spanInfo {
 	traceSpans := make(map[pcommon.TraceID][]spanInfo)
 
@@ -122,9 +153,9 @@ func (p *spanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon
 	return traceSpans
 }
 
-// processTrace processes a single trace using two-phase approach:
-// Phase 1: Analyze aggregations bottom-up (identify leaf groups, then eligible parents)
-// Phase 2: Execute aggregations top-down (create parent summaries first, then children)
+// processTrace applies the pruning algorithm to a single trace:
+// 1) analyze aggregation candidates bottom-up, 2) build a top-down execution
+// plan, and 3) create summary spans while removing originals.
 func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInfo) error {
 	// Build trace tree
 	tree := p.buildTraceTree(spans)
@@ -133,7 +164,7 @@ func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInf
 	}
 
 	// Phase 1: Analyze aggregations (bottom-up)
-	aggregationGroups := p.analyzeAggregationsWithTree(tree)
+	aggregationGroups := p.analyzeAggregationsWithTree(ctx, tree)
 	if len(aggregationGroups) == 0 {
 		return nil
 	}
@@ -157,7 +188,7 @@ func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInf
 // analyzeAggregationsWithTree performs Phase 1 using tree structure
 // Uses markedForRemoval field on nodes instead of separate map for better performance
 // Optimized to walk up from marked nodes instead of scanning all nodes
-func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[string]aggregationGroup {
+func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, tree *traceTree) map[string]aggregationGroup {
 	// Step 1: Get pre-computed leaf nodes
 	leafNodes := tree.getLeaves()
 	if len(leafNodes) == 0 {
@@ -176,9 +207,34 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 
 	for groupKey, nodes := range leafGroups {
 		if len(nodes) >= p.config.MinSpansToAggregate {
+			// Analyze attribute loss for leaf aggregation (only when enabled)
+			var lossInfo attributeLossSummary
+			if p.enableAttributeLossAnalysis {
+				lossInfo = analyzeAttributeLoss(nodes)
+
+				// Determine context for recording (with or without exemplar)
+				recordCtx := ctx
+				if p.shouldSampleAttributeLossExemplar() {
+					exemplarSpan := nodes[0].span
+					recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
+				}
+
+				if !lossInfo.isEmpty() {
+					p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(
+						recordCtx,
+						int64(len(lossInfo.diverse)),
+					)
+					p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(
+						recordCtx,
+						int64(len(lossInfo.missing)),
+					)
+				}
+			}
+
 			aggregationGroups[groupKey] = aggregationGroup{
-				nodes: nodes,
-				depth: 0,
+				nodes:    nodes,
+				depth:    0,
+				lossInfo: lossInfo,
 			}
 			// Mark nodes for removal using field instead of map
 			for _, node := range nodes {
@@ -225,9 +281,34 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 		markedNodes = markedNodes[:0] // reset for this round
 		for parentKey, nodes := range parentGroups {
 			if len(nodes) >= 2 {
+				// Analyze attribute loss for parent aggregation (only when enabled)
+				var lossInfo attributeLossSummary
+				if p.enableAttributeLossAnalysis {
+					lossInfo = analyzeAttributeLoss(nodes)
+
+					// Determine context for recording (with or without exemplar)
+					recordCtx := ctx
+					if p.shouldSampleAttributeLossExemplar() {
+						exemplarSpan := nodes[0].span
+						recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
+					}
+
+					if !lossInfo.isEmpty() {
+						p.telemetryBuilder.ProcessorSpanpruningParentAttributeDiversityLoss.Record(
+							recordCtx,
+							int64(len(lossInfo.diverse)),
+						)
+						p.telemetryBuilder.ProcessorSpanpruningParentAttributeLoss.Record(
+							recordCtx,
+							int64(len(lossInfo.missing)),
+						)
+					}
+				}
+
 				aggregationGroups[parentKey] = aggregationGroup{
-					nodes: nodes,
-					depth: depth,
+					nodes:    nodes,
+					depth:    depth,
+					lossInfo: lossInfo,
 				}
 				// Mark parent nodes for removal
 				for _, node := range nodes {

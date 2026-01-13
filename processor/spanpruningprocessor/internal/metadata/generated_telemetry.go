@@ -23,15 +23,19 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                    metric.Meter
-	mu                                       sync.Mutex
-	registrations                            []metric.Registration
-	ProcessorSpanpruningAggregationGroupSize metric.Int64Histogram
-	ProcessorSpanpruningAggregationsCreated  metric.Int64Counter
-	ProcessorSpanpruningProcessingDuration   metric.Float64Histogram
-	ProcessorSpanpruningSpansPruned          metric.Int64Counter
-	ProcessorSpanpruningSpansReceived        metric.Int64Counter
-	ProcessorSpanpruningTracesProcessed      metric.Int64Counter
+	meter                                            metric.Meter
+	mu                                               sync.Mutex
+	registrations                                    []metric.Registration
+	ProcessorSpanpruningAggregationGroupSize         metric.Int64Histogram
+	ProcessorSpanpruningAggregationsCreated          metric.Int64Counter
+	ProcessorSpanpruningLeafAttributeDiversityLoss   metric.Int64Histogram
+	ProcessorSpanpruningLeafAttributeLoss            metric.Int64Histogram
+	ProcessorSpanpruningParentAttributeDiversityLoss metric.Int64Histogram
+	ProcessorSpanpruningParentAttributeLoss          metric.Int64Histogram
+	ProcessorSpanpruningProcessingDuration           metric.Float64Histogram
+	ProcessorSpanpruningSpansPruned                  metric.Int64Counter
+	ProcessorSpanpruningSpansReceived                metric.Int64Counter
+	ProcessorSpanpruningTracesProcessed              metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -73,6 +77,34 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_processor_spanpruning_aggregations_created",
 		metric.WithDescription("Total aggregation summary spans created [development]"),
 		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningLeafAttributeDiversityLoss, err = builder.meter.Int64Histogram(
+		"otelcol_processor_spanpruning_leaf_attribute_diversity_loss",
+		metric.WithDescription("Attribute values lost due to diversity per leaf aggregation [development]"),
+		metric.WithUnit("{values}"),
+		metric.WithExplicitBucketBoundaries(0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningLeafAttributeLoss, err = builder.meter.Int64Histogram(
+		"otelcol_processor_spanpruning_leaf_attribute_loss",
+		metric.WithDescription("Attribute keys lost due to absence per leaf aggregation [development]"),
+		metric.WithUnit("{keys}"),
+		metric.WithExplicitBucketBoundaries(0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningParentAttributeDiversityLoss, err = builder.meter.Int64Histogram(
+		"otelcol_processor_spanpruning_parent_attribute_diversity_loss",
+		metric.WithDescription("Attribute values lost due to diversity per parent aggregation [development]"),
+		metric.WithUnit("{values}"),
+		metric.WithExplicitBucketBoundaries(0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningParentAttributeLoss, err = builder.meter.Int64Histogram(
+		"otelcol_processor_spanpruning_parent_attribute_loss",
+		metric.WithDescription("Attribute keys lost due to absence per parent aggregation [development]"),
+		metric.WithUnit("{keys}"),
+		metric.WithExplicitBucketBoundaries(0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningProcessingDuration, err = builder.meter.Float64Histogram(

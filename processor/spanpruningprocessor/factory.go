@@ -43,6 +43,8 @@ func createDefaultConfig() component.Config {
 			5 * time.Second,
 			10 * time.Second,
 		},
+		EnableAttributeLossAnalysis:     false,
+		AttributeLossExemplarSampleRate: 0.01, // 1% default
 	}
 }
 

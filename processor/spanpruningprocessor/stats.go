@@ -10,8 +10,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// aggregationData holds both statistics and time range for a group of spans
-// Combines what was previously calculateStats and findTimeRange to save an iteration
+// aggregationData tracks statistics and time ranges for a group of spans in
+// a single pass, replacing separate calculations for efficiency.
 type aggregationData struct {
 	count         int64
 	minDuration   time.Duration
@@ -22,8 +22,8 @@ type aggregationData struct {
 	latestEnd     pcommon.Timestamp
 }
 
-// calculateAggregationData computes statistics and time range in a single pass
-// Takes []*spanNode instead of []spanInfo to avoid intermediate conversions
+// calculateAggregationData derives span counts, duration stats, and histogram
+// bucket counts for the provided nodes in one traversal.
 func (p *spanPruningProcessor) calculateAggregationData(nodes []*spanNode) aggregationData {
 	data := aggregationData{
 		count: int64(len(nodes)),
@@ -42,7 +42,8 @@ func (p *spanPruningProcessor) calculateAggregationData(nodes []*spanNode) aggre
 	return data
 }
 
-// updateWithSpan updates aggregation data with a single span
+// updateWithSpan incorporates a single span into the aggregation statistics
+// and histogram buckets, tracking min/max times and cumulative counts.
 func (data *aggregationData) updateWithSpan(span ptrace.Span, isFirst bool, histogramBuckets []time.Duration) {
 	startTime := span.StartTimestamp().AsTime()
 	endTime := span.EndTimestamp().AsTime()

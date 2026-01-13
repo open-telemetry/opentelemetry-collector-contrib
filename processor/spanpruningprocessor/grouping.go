@@ -12,16 +12,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// builderPool reduces allocations in hot path by reusing string builders
+// builderPool reduces allocations in the hot path by reusing string builders.
 var builderPool = sync.Pool{
 	New: func() interface{} {
 		return &strings.Builder{}
 	},
 }
 
-// buildGroupKey creates a grouping key from span name, status, and matching attributes
-// Attributes are matched using glob patterns from the configuration
-// Uses a pooled string builder to reduce allocations in hot path
+// buildGroupKey assembles the grouping key for a span using its name,
+// status, and configured attribute matches. A pooled builder minimizes
+// allocations in this frequently executed path.
 func (p *spanPruningProcessor) buildGroupKey(span ptrace.Span) string {
 	builder := builderPool.Get().(*strings.Builder)
 	builder.Reset()
@@ -65,8 +65,8 @@ func (p *spanPruningProcessor) buildGroupKey(span ptrace.Span) string {
 	return builder.String()
 }
 
-// buildParentGroupKey creates a grouping key for parent spans using only name and status
-// (attributes are not considered for parent aggregation)
+// buildParentGroupKey constructs a parent grouping key from name and status
+// only; attributes are intentionally excluded for parent aggregation.
 func (p *spanPruningProcessor) buildParentGroupKey(span ptrace.Span) string {
 	builder := builderPool.Get().(*strings.Builder)
 	builder.Reset()
@@ -78,8 +78,9 @@ func (p *spanPruningProcessor) buildParentGroupKey(span ptrace.Span) string {
 	return builder.String()
 }
 
-// buildLeafGroupKey creates a grouping key for leaf spans using tree node parent pointer
-// Renamed from buildLeafGroupKeyFromNode for clarity
+// buildLeafGroupKey derives a leaf grouping key that includes the parent's
+// span name (if present) plus the standard grouping key, caching results per
+// node to avoid recomputation.
 func (p *spanPruningProcessor) buildLeafGroupKey(node *spanNode) string {
 	// Use cached group key if available
 	if node.groupKey != "" {
@@ -105,7 +106,8 @@ func (p *spanPruningProcessor) buildLeafGroupKey(node *spanNode) string {
 	return node.groupKey
 }
 
-// groupLeafNodesByKey groups leaf nodes by their grouping key
+// groupLeafNodesByKey groups leaf nodes by their derived key so that spans
+// with identical grouping characteristics can be aggregated together.
 func (p *spanPruningProcessor) groupLeafNodesByKey(leafNodes []*spanNode) map[string][]*spanNode {
 	// Pre-size map based on expected number of groups (assume ~1/4 unique groups)
 	groups := make(map[string][]*spanNode, len(leafNodes)/4+1)

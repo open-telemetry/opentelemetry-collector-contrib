@@ -13,27 +13,31 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// aggregationGroup represents a group of spans to be aggregated
+// aggregationGroup captures the spans to aggregate along with execution
+// metadata (tree depth, preassigned summary ID, and attribute loss info).
 type aggregationGroup struct {
-	nodes         []*spanNode    // nodes to aggregate (replaces []spanInfo for efficiency)
-	depth         int            // tree depth (0 = leaf, 1 = parent of leaf, etc.)
-	summarySpanID pcommon.SpanID // SpanID of the summary span (assigned before creation)
+	nodes         []*spanNode          // nodes to aggregate (replaces []spanInfo for efficiency)
+	depth         int                  // tree depth (0 = leaf, 1 = parent of leaf, etc.)
+	summarySpanID pcommon.SpanID       // SpanID of the summary span (assigned before creation)
+	lossInfo      attributeLossSummary // attribute loss info (diverse + missing)
 }
 
-// aggregationPlan holds all aggregations ordered for top-down execution
+// aggregationPlan orders aggregation groups for top-down execution and
+// carries precomputed summary span IDs.
 type aggregationPlan struct {
 	groups []aggregationGroup
 }
 
-// generateSpanID creates a new random span ID using math/rand for performance.
-// Span IDs don't require cryptographic randomness, just uniqueness.
+// generateSpanID produces a non-cryptographic span ID suitable for summary
+// spans; uniqueness is sufficient, not randomness strength.
 func generateSpanID() pcommon.SpanID {
 	var id [8]byte
 	binary.BigEndian.PutUint64(id[:], rand.Uint64())
 	return pcommon.SpanID(id)
 }
 
-// buildAggregationPlan orders aggregation groups for top-down execution
+// buildAggregationPlan sorts aggregation groups by depth (parents before
+// children) and preassigns summary SpanIDs to avoid conflicts during writes.
 func (p *spanPruningProcessor) buildAggregationPlan(groups map[string]aggregationGroup) aggregationPlan {
 	// Convert map to slice with pre-allocation
 	groupSlice := make([]aggregationGroup, 0, len(groups))
@@ -54,16 +58,14 @@ func (p *spanPruningProcessor) buildAggregationPlan(groups map[string]aggregatio
 	return aggregationPlan{groups: groupSlice}
 }
 
-// executeAggregations performs Phase 2: top-down creation of summary spans
-// Optimized to batch span removals instead of calling RemoveIf repeatedly
-// Returns the count of spans that were pruned (aggregated)
+// executeAggregations performs the top-down creation of summary spans, batch
+// removes originals, and returns the number of pruned spans.
 func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 	// Track which parent SpanID should map to which summary SpanID
-	// Pre-size based on expected number of nodes being aggregated
 	parentReplacements := make(map[pcommon.SpanID]pcommon.SpanID, len(plan.groups)*4)
 
 	// Track spans to remove per ScopeSpans for batch removal
-	spansToRemove := make(map[ptrace.ScopeSpans]map[pcommon.SpanID]struct{})
+	spansToRemove := make(map[ptrace.ScopeSpans]map[pcommon.SpanID]struct{}, len(plan.groups))
 	prunedCount := 0
 
 	for _, group := range plan.groups {
@@ -85,16 +87,13 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 
 		// Record that these original span IDs should be replaced by the summary span ID
 		for _, node := range group.nodes {
-			parentReplacements[node.span.SpanID()] = group.summarySpanID
-		}
-
-		// Mark original spans for removal (batch per ScopeSpans)
-		for _, node := range group.nodes {
+			spanID := node.span.SpanID()
+			parentReplacements[spanID] = group.summarySpanID
 			scopeSpans := node.scopeSpans
 			if spansToRemove[scopeSpans] == nil {
-				spansToRemove[scopeSpans] = make(map[pcommon.SpanID]struct{})
+				spansToRemove[scopeSpans] = make(map[pcommon.SpanID]struct{}, len(group.nodes))
 			}
-			spansToRemove[scopeSpans][node.span.SpanID()] = struct{}{}
+			spansToRemove[scopeSpans][spanID] = struct{}{}
 		}
 		prunedCount += len(group.nodes)
 	}
@@ -110,7 +109,9 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 	return prunedCount
 }
 
-// createSummarySpanWithParent creates a summary span with a specific parent SpanID
+// createSummarySpanWithParent builds the summary span for an aggregation
+// group, wiring it under the provided parent SpanID and attaching stats
+// and attribute-loss annotations.
 func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGroup, data aggregationData, parentSpanID pcommon.SpanID) ptrace.Span {
 	// Use the first node as a template
 	templateNode := group.nodes[0]
@@ -161,6 +162,14 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 		for _, count := range data.bucketCounts {
 			bucketCountsSlice.AppendEmpty().SetInt(count)
 		}
+	}
+
+	// Add attribute loss info when detected
+	if len(group.lossInfo.diverse) > 0 {
+		newSpan.Attributes().PutStr(prefix+"diverse_attributes", formatAttributeCardinality(group.lossInfo.diverse))
+	}
+	if len(group.lossInfo.missing) > 0 {
+		newSpan.Attributes().PutStr(prefix+"missing_attributes", formatAttributeCardinality(group.lossInfo.missing))
 	}
 
 	return newSpan
