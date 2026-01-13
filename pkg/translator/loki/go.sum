@@ -121,8 +121,8 @@ github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRI
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_golang v1.23.2 h1:Je96obch5RDVy3FDMndoUsjAhG5Edi49h0RJWRi/o0o=
 github.com/prometheus/client_golang v1.23.2/go.mod h1:Tb1a6LWHB3/SPIzCoaDXI4I8UHKeFTEQ1YCr+0Gyqmg=
-github.com/prometheus/client_golang/exp v0.0.0-20251212205219-7ba246a648ca h1:BOxmsLoL2ymn8lXJtorca7N/m+2vDQUDoEtPjf0iAxA=
-github.com/prometheus/client_golang/exp v0.0.0-20251212205219-7ba246a648ca/go.mod h1:gndBHh3ZdjBozGcGrjUYjN3UJLRS3l2drALtu4lUt+k=
+github.com/prometheus/client_golang/exp v0.0.0-20260101091701-2cd067eb23c9 h1:al1B/YzHmaXhacIFkrZSDSUpnPHV4ZPMfENQpvk3PZQ=
+github.com/prometheus/client_golang/exp v0.0.0-20260101091701-2cd067eb23c9/go.mod h1:PmAYDB13uBFBG9qE1qxZZgZWhg7Rg6SfKM5DMK7hjyI=
 github.com/prometheus/client_model v0.6.2 h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNwqPLxwZyk=
 github.com/prometheus/client_model v0.6.2/go.mod h1:y3m2F6Gdpfy6Ut/GBsUqTWZqCUvMVzSfMLjcu6wAwpE=
 github.com/prometheus/common v0.67.5 h1:pIgK94WWlQt1WLwAC5j2ynLaBRDiinoAb86HZHTUGI4=
@@ -131,8 +131,8 @@ github.com/prometheus/otlptranslator v1.0.0 h1:s0LJW/iN9dkIH+EnhiD3BlkkP5QVIUVEo
 github.com/prometheus/otlptranslator v1.0.0/go.mod h1:vRYWnXvI6aWGpsdY/mOT/cbeVRBlPWtBNDb7kGR3uKM=
 github.com/prometheus/procfs v0.16.1 h1:hZ15bTNuirocR6u0JZ6BAHHmwS1p8B4P6MRqxtzMyRg=
 github.com/prometheus/procfs v0.16.1/go.mod h1:teAbpZRB1iIAJYREa1LsoWUXykVXA1KlTmWl8x/U+Is=
-github.com/prometheus/prometheus v0.309.1 h1:jutK6eCYDpWdPTUbVbkcQsNCMO9CCkSwjQRMLds4jSo=
-github.com/prometheus/prometheus v0.309.1/go.mod h1:d+dOGiVhuNDa4MaFXHVdnUBy/CzqlcNTooR8oM1wdTU=
+github.com/prometheus/prometheus v0.309.2-0.20260113063212-c980c74f51e9 h1:BgaVZibWS31jw2IkRcbyqhxwnMTMFyCILHCHI0JUrB8=
+github.com/prometheus/prometheus v0.309.2-0.20260113063212-c980c74f51e9/go.mod h1:wSFyaZQ1ioryO2X47s2wvQEWypS+Mwf9IQ1ABDEo2Sk=
 github.com/prometheus/sigv4 v0.3.0 h1:QIG7nTbu0JTnNidGI1Uwl5AGVIChWUACxn2B/BQ1kms=
 github.com/prometheus/sigv4 v0.3.0/go.mod h1:fKtFYDus2M43CWKMNtGvFNHGXnAJJEGZbiYCmVp/F8I=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
@@ -222,8 +222,8 @@ golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8T
 golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 gonum.org/v1/gonum v0.16.0 h1:5+ul4Swaf3ESvrOnidPp4GZbzf0mxVQpDCYUQE7OJfk=
 gonum.org/v1/gonum v0.16.0/go.mod h1:fef3am4MQ93R2HHpKnLk4/Tbh/s0+wqD5nfa6Pnwy4E=
-google.golang.org/api v0.257.0 h1:8Y0lzvHlZps53PEaw+G29SsQIkuKrumGWs9puiexNAA=
-google.golang.org/api v0.257.0/go.mod h1:4eJrr+vbVaZSqs7vovFd1Jb/A6ml6iw2e6FBYf3GAO4=
+google.golang.org/api v0.258.0 h1:IKo1j5FBlN74fe5isA2PVozN3Y5pwNKriEgAXPOkDAc=
+google.golang.org/api v0.258.0/go.mod h1:qhOMTQEZ6lUps63ZNq9jhODswwjkjYYguA7fA3TBFww=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b h1:Mv8VFug0MP9e5vUxfBcE3vUkV6CImK3cMNMIDFjmzxU=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b/go.mod h1:j9x/tPzZkyxcgEFkiKEEGxfvyumM01BEtsW8xzOahRQ=
 google.golang.org/grpc v1.78.0 h1:K1XZG/yGDJnzMdd/uZHAkVqJE+xIDOcmdSFZkBUicNc=

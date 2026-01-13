@@ -71,7 +71,7 @@ require (
 	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
-	github.com/prometheus/prometheus v0.309.1 // indirect
+	github.com/prometheus/prometheus v0.309.2-0.20260113063212-c980c74f51e9 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.49.1-0.20260115162016-5e41fb551263 // indirect

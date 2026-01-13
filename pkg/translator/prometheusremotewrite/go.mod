@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.143.0
 	github.com/prometheus/common v0.67.5
 	github.com/prometheus/otlptranslator v1.0.0
-	github.com/prometheus/prometheus v0.309.1
+	github.com/prometheus/prometheus v0.309.2-0.20260113063212-c980c74f51e9
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.49.1-0.20260115162016-5e41fb551263
 	go.opentelemetry.io/otel v1.39.0
@@ -65,7 +65,7 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
-	github.com/prometheus/client_golang/exp v0.0.0-20251212205219-7ba246a648ca // indirect
+	github.com/prometheus/client_golang/exp v0.0.0-20260101091701-2cd067eb23c9 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/prometheus/sigv4 v0.3.0 // indirect
@@ -84,7 +84,7 @@ require (
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	google.golang.org/api v0.257.0 // indirect
+	google.golang.org/api v0.258.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
 	google.golang.org/grpc v1.78.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect

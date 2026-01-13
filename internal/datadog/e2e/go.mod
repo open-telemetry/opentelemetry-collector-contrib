@@ -161,7 +161,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.17 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.279.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ecs v1.69.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ecs v1.70.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.17 // indirect
 	github.com/aws/aws-sdk-go-v2/service/lightsail v1.50.10 // indirect
@@ -268,13 +268,13 @@ require (
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/hashicorp/nomad/api v0.0.0-20251216171439-1dee0671280e // indirect
+	github.com/hashicorp/nomad/api v0.0.0-20260106084653-e8f2200c7039 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb // indirect
 	github.com/hetznercloud/hcloud-go/v2 v2.34.0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/ionos-cloud/sdk-go/v6 v6.3.5 // indirect
+	github.com/ionos-cloud/sdk-go/v6 v6.3.6 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -350,14 +350,14 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/alertmanager v0.30.0 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
-	github.com/prometheus/client_golang/exp v0.0.0-20251212205219-7ba246a648ca // indirect
+	github.com/prometheus/client_golang/exp v0.0.0-20260101091701-2cd067eb23c9 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/common/assets v0.2.0 // indirect
 	github.com/prometheus/exporter-toolkit v0.15.1 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.19.2 // indirect
-	github.com/prometheus/prometheus v0.309.1 // indirect
+	github.com/prometheus/prometheus v0.309.2-0.20260113063212-c980c74f51e9 // indirect
 	github.com/prometheus/sigv4 v0.3.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/richardartoul/molecule v1.0.1-0.20240531184615-7ca0df43c0b3 // indirect
@@ -494,7 +494,7 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/tools v0.40.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
-	google.golang.org/api v0.257.0 // indirect
+	google.golang.org/api v0.258.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251222181119-0a764e51fe1b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
 	google.golang.org/grpc v1.78.0 // indirect

@@ -6,7 +6,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.54.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.54.0
 	github.com/prometheus/otlptranslator v1.0.0
-	github.com/prometheus/prometheus v0.309.1
+	github.com/prometheus/prometheus v0.309.2-0.20260113063212-c980c74f51e9
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.49.1-0.20260115162016-5e41fb551263
 	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260115162016-5e41fb551263
@@ -91,7 +91,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
-	github.com/prometheus/client_golang/exp v0.0.0-20251212205219-7ba246a648ca // indirect
+	github.com/prometheus/client_golang/exp v0.0.0-20260101091701-2cd067eb23c9 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.4 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
@@ -183,7 +183,7 @@ require (
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
-	google.golang.org/api v0.257.0 // indirect
+	google.golang.org/api v0.258.0 // indirect
 	google.golang.org/genproto v0.0.0-20250922171735-9219d122eba9 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251222181119-0a764e51fe1b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect

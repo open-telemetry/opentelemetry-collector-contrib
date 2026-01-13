@@ -81,6 +81,14 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 	if err := cfg.PrometheusConfig.Reload(); err != nil {
 		return nil, fmt.Errorf("failed to reload Prometheus config: %w", err)
 	}
+
+	// This serves as the default for all ScrapeConfigs that don't have it explicitly set.
+	// TODO: Remove this once feature-gates and configuration options are removed.
+	extraMetrics := enableReportExtraScrapeMetricsGate.IsEnabled() || (cfg.ReportExtraScrapeMetrics && !removeReportExtraScrapeMetricsConfigGate.IsEnabled())
+	if cfg.PrometheusConfig.GlobalConfig.ExtraScrapeMetrics == nil {
+		cfg.PrometheusConfig.GlobalConfig.ExtraScrapeMetrics = &extraMetrics
+	}
+
 	baseCfg := promconfig.Config(*cfg.PrometheusConfig)
 	registry := prometheus.NewRegistry()
 	registerer := prometheus.WrapRegistererWith(
@@ -212,8 +220,6 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 func (r *pReceiver) initScrapeOptions() *scrape.Options {
 	opts := &scrape.Options{
 		PassMetadataInContext: true,
-		// We're slowly switching to the feature gate, so we need to check both the feature gate and the config option for a few releases.
-		ExtraMetrics: enableReportExtraScrapeMetricsGate.IsEnabled() || (r.cfg.ReportExtraScrapeMetrics && !removeReportExtraScrapeMetricsConfigGate.IsEnabled()),
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},

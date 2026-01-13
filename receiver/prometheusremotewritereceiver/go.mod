@@ -10,9 +10,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.143.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.143.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.143.0
-	github.com/prometheus/client_golang/exp v0.0.0-20251212205219-7ba246a648ca
+	github.com/prometheus/client_golang/exp v0.0.0-20260101091701-2cd067eb23c9
 	github.com/prometheus/common v0.67.5
-	github.com/prometheus/prometheus v0.309.1
+	github.com/prometheus/prometheus v0.309.2-0.20260113063212-c980c74f51e9
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.49.1-0.20260115162016-5e41fb551263
 	go.opentelemetry.io/collector/component/componentstatus v0.143.1-0.20260115162016-5e41fb551263
@@ -133,7 +133,7 @@ require (
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	google.golang.org/api v0.257.0 // indirect
+	google.golang.org/api v0.258.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
 	google.golang.org/grpc v1.78.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
