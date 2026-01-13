@@ -21,9 +21,10 @@ func TestValidate(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id          component.ID
-		expected    component.Config
-		expectedErr error
+		id                 component.ID
+		expected           component.Config
+		expectedErr        error
+		expectUnmarshalErr bool
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
@@ -99,6 +100,10 @@ func TestValidate(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "invalid_partition_format"),
 			expectedErr: errFormatInvalid,
 		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "invalid_compression"),
+			expectUnmarshalErr: true, // This config should fail to unmarshal due to invalid compression type
+		},
 	}
 
 	for _, tt := range tests {
@@ -111,7 +116,14 @@ func TestValidate(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, sub.Unmarshal(cfg))
+
+			err = sub.Unmarshal(cfg)
+			if tt.expectUnmarshalErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "unsupported compression type")
+				return // Skip validation for configs that fail to unmarshal
+			}
+			require.NoError(t, err)
 
 			err = xconfmap.Validate(cfg)
 			if tt.expectedErr != nil {

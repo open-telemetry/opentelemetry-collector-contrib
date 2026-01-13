@@ -94,7 +94,7 @@ func (c *bucketConfig) Validate() error {
 	compression := c.Compression
 	if compression.IsCompressed() {
 		if compression != configcompression.TypeGzip && compression != configcompression.TypeZstd {
-			return fmt.Errorf("unknown compression type %q, valid values are %s", compression, validCompressionType)
+			return fmt.Errorf("unknown compression type %q, valid values are %q and %q", compression, configcompression.TypeGzip, configcompression.TypeZstd)
 		}
 	}
 
