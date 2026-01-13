@@ -118,6 +118,9 @@ When spans are aggregated, the summary span includes:
 - **StartTimestamp**: Earliest start time of all spans in the group
 - **EndTimestamp**: Latest end time of all spans in the group
 - **Status**: Same as original spans (spans are grouped by status code)
+- **Attributes**: Inherited from the slowest span in the group
+
+> **Note**: The summary span's duration (`EndTimestamp - StartTimestamp`) represents the total time window covered by all aggregated spans, which may exceed `duration_max_ns`. For example, if spans overlap or are staggered, the time range can be larger than any individual span's duration. Use `duration_max_ns` to find the slowest individual operation.
 
 ### Aggregation Attributes
 The following attributes are added to the summary span (shown with default `aggregation_attribute_prefix: "aggregation."`):
