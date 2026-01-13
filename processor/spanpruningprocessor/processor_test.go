@@ -1608,3 +1608,82 @@ func createTestTraceWithNoRoot(t *testing.T) ptrace.Traces {
 
 	return td
 }
+
+// TestLeafSpanPruning_LongestDurationTemplate tests that the span with the longest
+// duration is used as the template for the summary span
+func TestLeafSpanPruning_LongestDurationTemplate(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.GroupByAttributes = []string{"db.operation"}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// Create trace with spans of varying durations and unique identifying attributes
+	// The span with the longest duration should become the template
+	td := createTestTraceWithVaryingDurations(t)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// Find the summary span
+	summarySpan := findSummarySpan(td)
+	require.NotNil(t, summarySpan, "summary span should exist")
+
+	// Verify the template attribute from the longest-duration span is present
+	// The span with 500ns duration should be the template
+	identifier, exists := summarySpan.Attributes().Get("span.identifier")
+	require.True(t, exists, "span.identifier attribute should exist")
+	assert.Equal(t, "longest", identifier.Str(), "summary should use attributes from longest-duration span")
+
+	// Verify duration stats
+	attrs := summarySpan.Attributes()
+	minDuration, _ := attrs.Get("aggregation.duration_min_ns")
+	assert.Equal(t, int64(100), minDuration.Int())
+
+	maxDuration, _ := attrs.Get("aggregation.duration_max_ns")
+	assert.Equal(t, int64(500), maxDuration.Int())
+}
+
+func createTestTraceWithVaryingDurations(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	// Parent span
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("parent")
+
+	// Define spans with different durations and unique identifiers
+	// Duration order: 100ns, 500ns, 200ns - the 500ns span should be template
+	spanConfigs := []struct {
+		duration   int64
+		identifier string
+	}{
+		{100, "short"},
+		{500, "longest"}, // This one should be the template
+		{200, "medium"},
+	}
+
+	baseTime := int64(1000000000)
+	for i, cfg := range spanConfigs {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("db_query")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + cfg.duration))
+		span.Attributes().PutStr("db.operation", "select")          // Grouping key - same for all
+		span.Attributes().PutStr("span.identifier", cfg.identifier) // Unique per span
+	}
+
+	return td
+}

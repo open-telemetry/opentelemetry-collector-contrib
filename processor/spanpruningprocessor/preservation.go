@@ -32,18 +32,18 @@ func (s attributeLossSummary) isEmpty() bool {
 }
 
 // analyzeAttributeLoss examines spans being aggregated to determine which
-// attributes will lose information in the summary span. The first node is the
-// template whose attributes are preserved on the summary. Results include:
+// attributes will lose information in the summary span. The template node's
+// attributes are preserved on the summary. Results include:
 // - diverse: present in all spans but with multiple unique values (loss = unique - 1)
 // - missing: absent from some spans (loss depends on template presence)
 // Both slices are sorted by uniqueValues descending.
-func analyzeAttributeLoss(nodes []*spanNode) attributeLossSummary {
-	if len(nodes) < 2 {
+func analyzeAttributeLoss(nodes []*spanNode, template *spanNode) attributeLossSummary {
+	if len(nodes) < 2 || template == nil {
 		return attributeLossSummary{}
 	}
 
 	numSpans := len(nodes)
-	templateSpan := nodes[0].span
+	templateSpan := template.span
 
 	// Track unique values and presence count per attribute key
 	// map[attributeKey]map[attributeValue]struct{}
