@@ -35,6 +35,11 @@ type zstdWriter interface {
 	Reset(w io.Writer)
 }
 
+type poolItem interface {
+	io.WriteCloser
+	Reset(io.Writer)
+}
+
 type storageExporter struct {
 	cfg             *Config
 	logsMarshaler   plog.Marshaler
@@ -295,84 +300,55 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 func (s *storageExporter) compressContent(raw []byte) ([]byte, error) {
 	switch s.cfg.Bucket.Compression {
 	case configcompression.TypeGzip:
-		return s.compressGzip(raw)
+		return compress[*gzip.Writer](s.gzipWriterPool, raw, func(w io.Writer) *gzip.Writer {
+			return gzip.NewWriter(w)
+		})
 	case configcompression.TypeZstd:
-		return s.compressZstd(raw)
+		return compress[zstdWriter](s.zstdWriterPool, raw, func(w io.Writer) zstdWriter {
+			writer, err := zstd.NewWriter(w)
+			if err != nil {
+				panic(fmt.Sprintf("failed to create zstd writer: %v", err))
+			}
+			return writer
+		})
 	default:
 		return raw, nil
 	}
 }
 
-func (s *storageExporter) compressGzip(raw []byte) ([]byte, error) {
+func compress[T poolItem](pool *sync.Pool, raw []byte, newItem func(io.Writer) T) ([]byte, error) {
+	if pool == nil {
+		return nil, errors.New("unexpected: compress pool is nil")
+	}
+
 	content := bytes.NewBuffer(nil)
 
-	// Try to get a gzip writer from the pool
-	var zipper *gzip.Writer
-	if pooled := s.gzipWriterPool.Get(); pooled != nil {
-		if w, ok := pooled.(*gzip.Writer); ok {
+	// Try to get a writer from the pool
+	var zipper T
+	if pooled := pool.Get(); pooled != nil {
+		if w, ok := pooled.(T); ok {
 			zipper = w
 			zipper.Reset(content)
 		}
 	}
 
 	// If we didn't get a valid writer from pool, create a new one
-	if zipper == nil {
-		zipper = gzip.NewWriter(content)
+	if any(zipper) == nil {
+		zipper = newItem(content)
 	}
+
+	// Always return the writer to the pool (even on error).
+	defer pool.Put(zipper)
 
 	// Write the data
 	if _, err := zipper.Write(raw); err != nil {
-		s.gzipWriterPool.Put(zipper) // Return to pool even on error
 		return nil, err
 	}
 
 	// Close the writer
 	if err := zipper.Close(); err != nil {
-		s.gzipWriterPool.Put(zipper) // Return to pool even on error
 		return nil, err
 	}
-
-	// Return the writer to the pool for reuse
-	s.gzipWriterPool.Put(zipper)
-
-	return content.Bytes(), nil
-}
-
-func (s *storageExporter) compressZstd(raw []byte) ([]byte, error) {
-	content := bytes.NewBuffer(nil)
-
-	// Try to get a zstd writer from the pool
-	var zipper zstdWriter
-	if pooled := s.zstdWriterPool.Get(); pooled != nil {
-		if w, ok := pooled.(zstdWriter); ok {
-			zipper = w
-			zipper.Reset(content)
-		}
-	}
-
-	// If we didn't get a valid writer from pool, create a new one
-	if zipper == nil {
-		var err error
-		zipper, err = zstd.NewWriter(content)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Write the data
-	if _, err := zipper.Write(raw); err != nil {
-		s.zstdWriterPool.Put(zipper) // Return to pool even on error
-		return nil, err
-	}
-
-	// Close the writer
-	if err := zipper.Close(); err != nil {
-		s.zstdWriterPool.Put(zipper) // Return to pool even on error
-		return nil, err
-	}
-
-	// Return the writer to the pool for reuse
-	s.zstdWriterPool.Put(zipper)
 
 	return content.Bytes(), nil
 }
