@@ -599,8 +599,8 @@ github.com/hashicorp/serf v0.10.1 h1:Z1H2J60yRKvfDYAOZLd2MU0ND4AH/WDz7xYHDWQsIPY
 github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfEvMqbG+4=
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb h1:PGufWXXDq9yaev6xX1YQauaO1MV90e6Mpoq1I7Lz/VM=
 github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb/go.mod h1:QiyDdbZLaJ/mZP4Zwc9g2QsfaEA4o7XvvgZegSci5/E=
-github.com/hetznercloud/hcloud-go/v2 v2.33.0 h1:g9hwuo60IXbupXJCYMlO4xDXgxxMPuFk31iOpLXDCV4=
-github.com/hetznercloud/hcloud-go/v2 v2.33.0/go.mod h1:GzYEl7slIGKc6Ttt08hjiJvGj8/PbWzcQf6IUi02dIs=
+github.com/hetznercloud/hcloud-go/v2 v2.34.0 h1:mxasKipFPDPzni85xcMgwYci2PH8TalLgyPJoTlhWDA=
+github.com/hetznercloud/hcloud-go/v2 v2.34.0/go.mod h1:aF9x0XYNRRQ7N4gux/4cEJeGAHcggu7sX+BBA1rv8ks=
 github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUqJM=
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
 github.com/iancoleman/strcase v0.3.0 h1:nTXanmYxhfFAMjZL34Ov6gkzEsSJZ5DbhxWjvSASxEI=
