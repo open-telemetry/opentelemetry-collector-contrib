@@ -31,6 +31,9 @@ type attributeBuffer struct {
 var attributeBufferPool = sync.Pool{
 	New: func() any {
 		return &attributeBuffer{
+			// Pre-allocate capacity of 32 to avoid reallocations for typical metrics
+			// which usually have 5-20 attributes. For metrics with >32 attributes,
+			// the slice will grow automatically and retain the larger capacity for reuse.
 			attrs: make([]string, 0, 32),
 		}
 	},
