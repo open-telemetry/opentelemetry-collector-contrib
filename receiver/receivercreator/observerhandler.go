@@ -198,13 +198,14 @@ func (obs *observerHandler) handleEndpointChange(e observer.Endpoint) {
 
 // findTemplateForReceiver finds the template that matches the given receiver ID.
 func (obs *observerHandler) findTemplateForReceiver(id component.ID, env observer.EndpointEnv) (receiverTemplate, bool) {
-	for _, template := range obs.config.receiverTemplates {
-		if template.id == id {
-			// Check if the rule still matches
-			if matches, err := template.rule.eval(env); err == nil && matches {
-				return template, true
-			}
-		}
+	template, found := obs.config.receiverTemplates[id.String()]
+	if !found {
+		return receiverTemplate{}, false
+	}
+	// Check if the rule still matches
+	matches, err := template.rule.eval(env)
+	if err == nil && matches {
+		return template, true
 	}
 	return receiverTemplate{}, false
 }
