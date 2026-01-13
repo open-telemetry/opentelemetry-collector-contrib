@@ -38,7 +38,7 @@ func basicConfig(portNumber uint) *Config {
 			MaxRowsPerQuery: 100,
 		},
 		TopQueryCollection: TopQueryCollection{
-			LookbackTime:        1000,
+			LookbackTime:        1 * time.Second,
 			MaxQuerySampleCount: 100,
 			TopQueryCount:       100,
 			CollectionInterval:  1 * time.Millisecond,
@@ -152,24 +152,38 @@ func TestEventsScraper(t *testing.T) {
 					// collection interval it will not be considered as a top query.
 					return queryCount.Load() > currentQueriesCount+1
 				}, 10*time.Second, 2*time.Second, "Query did not execute enough times")
+
 				var actualLog plog.Logs
+				var found bool
 				assert.EventuallyWithT(t, func(tt *assert.CollectT) {
 					actualLog, err = scraper.ScrapeLogs(t.Context())
-					assert.NotNil(tt, actualLog)
 					assert.NoError(tt, err)
-					assert.Positive(tt, actualLog.LogRecordCount())
-				}, 10*time.Second, 100*time.Millisecond)
-				found := false
-				logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-				for i := 0; i < logRecords.Len(); i++ {
-					attributes := logRecords.At(i).Attributes().AsRaw()
+					assert.NotNil(tt, actualLog)
 
-					query := attributes["db.query.text"].(string)
-					if query == "SELECT * FROM dbo.test_table" {
-						found = true
+					if actualLog.LogRecordCount() == 0 {
+						assert.Fail(tt, "No log records found")
+						return
 					}
-				}
-				assert.True(t, found)
+
+					if actualLog.ResourceLogs().Len() == 0 {
+						assert.Fail(tt, "No resource logs found")
+						return
+					}
+
+					found = false
+					logRecords := actualLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+					for i := 0; i < logRecords.Len(); i++ {
+						attributes := logRecords.At(i).Attributes().AsRaw()
+						query := attributes["db.query.text"].(string)
+						if query == "SELECT * FROM dbo.test_table" {
+							found = true
+							break
+						}
+					}
+
+					assert.True(tt, found, "Expected query not found in logs")
+				}, 10*time.Second, 100*time.Millisecond)
+
 				finished.Store(true)
 			},
 		},
@@ -208,8 +222,6 @@ func TestEventsScraper(t *testing.T) {
 					}
 				}
 			}(queryContext)
-
-			time.Sleep(10 * time.Second)
 
 			portNumber, err := strconv.Atoi(p.Port())
 			assert.NoError(t, err)
