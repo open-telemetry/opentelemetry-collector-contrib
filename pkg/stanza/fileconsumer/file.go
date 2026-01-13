@@ -22,6 +22,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
+const (
+	// maxUnreadableEntries limits the number of paths tracked in the unreadable map
+	// to prevent memory issues when many files have permission errors.
+	maxUnreadableEntries = 10000
+)
+
 type Manager struct {
 	set    component.TelemetrySettings
 	wg     sync.WaitGroup
@@ -194,24 +200,23 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 		if os.IsPermission(err) {
 			_, seen := m.unreadable[path]
 			if !seen {
+				// Limit map size to prevent unbounded growth
+				if len(m.unreadable) < maxUnreadableEntries {
+					m.unreadable[path] = struct{}{}
+				}
 				m.set.Logger.Error("Failed to open file", zap.Error(err))
-				m.unreadable[path] = struct{}{}
 			} else {
 				m.set.Logger.Debug("Failed to open file (already reported)", zap.Error(err))
 			}
-		} else {
-			m.set.Logger.Error("Failed to open file", zap.Error(err))
 		}
 		m.set.Logger.Error("Failed to open file", zap.Error(err), zap.String("original_path", path), zap.String("normalized_path", normalizedPath))
 		return nil, nil
 	}
 
 	// Notify if previously unreadable file is now able to be read
-	if m.unreadable != nil {
-		if _, seen := m.unreadable[path]; seen {
-			m.set.Logger.Info("Previously unreadable file is now readable", zap.String("path", path))
-			delete(m.unreadable, path)
-		}
+	if _, seen := m.unreadable[path]; seen {
+		m.set.Logger.Info("Previously unreadable file is now readable", zap.String("path", path))
+		delete(m.unreadable, path)
 	}
 
 	fp, err := m.readerFactory.NewFingerprint(file)

@@ -53,50 +53,34 @@ func TestUnreadableFileLoggedOnce(t *testing.T) {
 
 	// First poll should attempt to open and log an error once
 	operator.poll(t.Context())
-	// small delay to ensure logs are recorded
-	time.Sleep(10 * time.Millisecond)
 
-	// Log debug info: observed entries and unreadable map contents
-	entries := obs.All()
-	t.Logf("entries after first poll: %+v", entries)
-	keys := make([]string, 0, len(operator.unreadable))
-	for k := range operator.unreadable {
-		keys = append(keys, k)
-	}
-	t.Logf("unreadable map after first poll: %v", keys)
+	// Verify the unreadable map recorded the path and exactly one error was logged
+	require.Eventually(t, func() bool {
+		return len(operator.unreadable) == 1
+	}, 2*time.Second, 10*time.Millisecond, "expected unreadable map to have one entry after first poll")
 
-	// Verify the unreadable map recorded the path
-	require.Len(t, operator.unreadable, 1, "expected unreadable map to have one entry after first poll")
-
-	// Count error messages with the exact message
-	countErrMsgs := 0
-	for _, e := range obs.All() {
-		if e.Level == zapcore.ErrorLevel && e.Message == "Failed to open file" {
-			countErrMsgs++
+	require.Eventually(t, func() bool {
+		countErrMsgs := 0
+		for _, e := range obs.All() {
+			if e.Level == zapcore.ErrorLevel && e.Message == "Failed to open file" {
+				countErrMsgs++
+			}
 		}
-	}
-	require.Equal(t, 1, countErrMsgs, "expected exactly one 'Failed to open file' error after first poll")
+		return countErrMsgs == 1
+	}, 2*time.Second, 10*time.Millisecond, "expected exactly one 'Failed to open file' error after first poll")
 
 	// Second poll should not add another error-level log for the same path
 	operator.poll(t.Context())
-	time.Sleep(10 * time.Millisecond)
 
-	// Log debug info after second poll
-	entries2 := obs.All()
-	t.Logf("entries after second poll: %+v", entries2)
-	keys2 := make([]string, 0, len(operator.unreadable))
-	for k := range operator.unreadable {
-		keys2 = append(keys2, k)
-	}
-	t.Logf("unreadable map after second poll: %v", keys2)
-
-	countErrMsgs2 := 0
-	for _, e := range entries2 {
-		if e.Level == zapcore.ErrorLevel && e.Message == "Failed to open file" {
-			countErrMsgs2++
+	require.Eventually(t, func() bool {
+		countErrMsgs := 0
+		for _, e := range obs.All() {
+			if e.Level == zapcore.ErrorLevel && e.Message == "Failed to open file" {
+				countErrMsgs++
+			}
 		}
-	}
-	require.Equal(t, 1, countErrMsgs2, "expected still exactly one 'Failed to open file' error after second poll")
+		return countErrMsgs == 1
+	}, 2*time.Second, 10*time.Millisecond, "expected still exactly one 'Failed to open file' error after second poll")
 
 	// Verify the unreadable map still contains the entry (no reinitialization)
 	require.Len(t, operator.unreadable, 1, "expected unreadable map to still have one entry after second poll")
@@ -104,13 +88,78 @@ func TestUnreadableFileLoggedOnce(t *testing.T) {
 	// Now make the file readable again and poll; should emit an info message
 	require.NoError(t, os.Chmod(f.Name(), 0o644))
 	operator.poll(t.Context())
-	time.Sleep(10 * time.Millisecond)
 
-	infoCount := 0
+	require.Eventually(t, func() bool {
+		for _, e := range obs.All() {
+			if e.Level == zapcore.InfoLevel && e.Message == "Previously unreadable file is now readable" {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 10*time.Millisecond, "expected at least one info message when file becomes readable")
+}
+
+// TestNonPermissionErrorsAlwaysLogged verifies that errors other than permission
+// errors (e.g., file not found) are always logged and not suppressed.
+func TestNonPermissionErrorsAlwaysLogged(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	operator, _ := testManager(t, cfg)
+
+	core, obs := observer.New(zapcore.DebugLevel)
+	logger := zap.New(core)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = logger
+
+	operator.set.Logger = set.Logger
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	// Directly call makeFingerprint with a non-existent file path
+	// This simulates a file being deleted after matching but before opening
+	nonExistentPath := tempDir + "/non_existent_file.log"
+
+	// First call should log an error
+	fp, file := operator.makeFingerprint(nonExistentPath)
+	require.Nil(t, fp)
+	require.Nil(t, file)
+
+	require.Eventually(t, func() bool {
+		for _, e := range obs.All() {
+			if e.Level == zapcore.ErrorLevel && e.Message == "Failed to open file" {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 10*time.Millisecond, "expected an error log on first call for non-existent file")
+
+	countBeforeSecondCall := 0
 	for _, e := range obs.All() {
-		if e.Level == zapcore.InfoLevel && e.Message == "Previously unreadable file is now readable" {
-			infoCount++
+		if e.Level == zapcore.ErrorLevel && e.Message == "Failed to open file" {
+			countBeforeSecondCall++
 		}
 	}
-	require.GreaterOrEqual(t, infoCount, 1, "expected at least one info message when file becomes readable")
+
+	// Second call should also log an error (not suppressed like permission errors)
+	fp, file = operator.makeFingerprint(nonExistentPath)
+	require.Nil(t, fp)
+	require.Nil(t, file)
+
+	require.Eventually(t, func() bool {
+		countAfterSecondCall := 0
+		for _, e := range obs.All() {
+			if e.Level == zapcore.ErrorLevel && e.Message == "Failed to open file" {
+				countAfterSecondCall++
+			}
+		}
+		// Should have at least one more error than before
+		return countAfterSecondCall > countBeforeSecondCall
+	}, 2*time.Second, 10*time.Millisecond, "expected another error log on second call for non-permission errors")
+
+	// Verify the unreadable map is empty (non-permission errors shouldn't be tracked)
+	require.Empty(t, operator.unreadable, "expected unreadable map to be empty for non-permission errors")
 }
