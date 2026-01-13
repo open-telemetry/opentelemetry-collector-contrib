@@ -53,6 +53,7 @@ type k8sResolver struct {
 	svcNs   string
 	port    []int32
 
+	client         kubernetes.Interface
 	handler        *handler
 	once           *sync.Once
 	epsListWatcher cache.ListerWatcher
@@ -118,20 +119,6 @@ func newK8sResolver(clt kubernetes.Interface,
 		}
 	}
 
-	epsSelector := fmt.Sprintf("kubernetes.io/service-name=%s", name)
-	epsListWatcher := &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			options.LabelSelector = epsSelector
-			options.TimeoutSeconds = ptr.To[int64](int64(timeout.Seconds()))
-			return clt.DiscoveryV1().EndpointSlices(namespace).List(context.Background(), options)
-		},
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			options.LabelSelector = epsSelector
-			options.TimeoutSeconds = ptr.To[int64](int64(timeout.Seconds()))
-			return clt.DiscoveryV1().EndpointSlices(namespace).Watch(context.Background(), options)
-		},
-	}
-
 	epsStore := &sync.Map{}
 	h := &handler{
 		endpoints:   epsStore,
@@ -144,9 +131,9 @@ func newK8sResolver(clt kubernetes.Interface,
 		svcName:        name,
 		svcNs:          namespace,
 		port:           ports,
+		client:         clt,
 		once:           &sync.Once{},
 		endpointsStore: epsStore,
-		epsListWatcher: epsListWatcher,
 		handler:        h,
 		stopCh:         make(chan struct{}),
 		lwTimeout:      timeout,
@@ -161,6 +148,31 @@ func newK8sResolver(clt kubernetes.Interface,
 func (r *k8sResolver) start(_ context.Context) error {
 	var initErr error
 	r.once.Do(func() {
+		// Create the k8s client if not already provided (for testing)
+		if r.client == nil {
+			var err error
+			r.client, err = newInClusterClient()
+			if err != nil {
+				initErr = err
+				return
+			}
+		}
+
+		// Create the epsListWatcher now that we have a client
+		epsSelector := fmt.Sprintf("kubernetes.io/service-name=%s", r.svcName)
+		r.epsListWatcher = &cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				options.LabelSelector = epsSelector
+				options.TimeoutSeconds = ptr.To[int64](int64(r.lwTimeout.Seconds()))
+				return r.client.DiscoveryV1().EndpointSlices(r.svcNs).List(context.Background(), options)
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				options.LabelSelector = epsSelector
+				options.TimeoutSeconds = ptr.To[int64](int64(r.lwTimeout.Seconds()))
+				return r.client.DiscoveryV1().EndpointSlices(r.svcNs).Watch(context.Background(), options)
+			},
+		}
+
 		if r.epsListWatcher != nil {
 			r.logger.Debug("creating and starting endpoints informer")
 			epsInformer := cache.NewSharedInformer(r.epsListWatcher, &discoveryv1.EndpointSlice{}, 0)
