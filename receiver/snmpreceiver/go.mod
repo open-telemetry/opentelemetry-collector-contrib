@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpre
 go 1.24.0
 
 require (
-	github.com/gosnmp/gosnmp v1.43.1
+	github.com/gosnmp/gosnmp v1.43.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.143.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.143.0
 	github.com/stretchr/testify v1.11.1
@@ -156,7 +156,7 @@ require (
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251222181119-0a764e51fe1b // indirect
