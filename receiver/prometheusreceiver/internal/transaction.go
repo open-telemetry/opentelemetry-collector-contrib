@@ -246,6 +246,11 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		fn := mn
 		if _, ok := t.mc.GetMetadata(mn); !ok {
 			fn = normalizeMetricName(mn)
+			// NB (eriksywu): see https://github.com/prometheus/prometheus/issues/14823
+			if isCounterCreatedLine(mn, fn, t.mc) {
+				fn += metricSuffixTotal
+			}
+			// END NB (eriksywu)
 		}
 		fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
 		mf, ok := t.families[key][scope][fnKey]
