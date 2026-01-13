@@ -163,7 +163,7 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 			for k := 0; k < sm.Metrics().Len(); k++ {
 				metric := sm.Metrics().At(k)
 
-				baseMetricSignal := baseMetricSignal{
+				bmetricSignal := baseMetricSignal{
 					ResourceSchemaURL:  schemaURL,
 					ResourceAttributes: resourceAttributes,
 					ServiceName:        serviceName,
@@ -182,9 +182,9 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 					dps := sum.DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						loadDataPoint(&baseMetricSignal, dp)
+						loadDataPoint(&bmetricSignal, dp)
 						sumSignal := sumMetricSignal{
-							baseMetricSignal:       baseMetricSignal,
+							baseMetricSignal:       bmetricSignal,
 							Value:                  covertValue(dp),
 							AggregationTemporality: int32(sum.AggregationTemporality()),
 							IsMonotonic:            sum.IsMonotonic(),
@@ -198,10 +198,10 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 					dps := metric.Gauge().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						loadDataPoint(&baseMetricSignal, dp)
+						loadDataPoint(&bmetricSignal, dp)
 
 						gaugeSignal := gaugeMetricSignal{
-							baseMetricSignal: baseMetricSignal,
+							baseMetricSignal: bmetricSignal,
 							Value:            covertValue(dp),
 						}
 
@@ -214,7 +214,7 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 					dps := hist.DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						loadDataPoint(&baseMetricSignal, dp)
+						loadDataPoint(&bmetricSignal, dp)
 
 						var minVal, maxVal *float64
 						if dp.HasMin() {
@@ -227,7 +227,7 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 						}
 
 						histogramSignal := histogramMetricSignal{
-							baseMetricSignal:       baseMetricSignal,
+							baseMetricSignal:       bmetricSignal,
 							Count:                  dp.Count(),
 							Sum:                    dp.Sum(),
 							BucketCounts:           dp.BucketCounts().AsRaw(),
@@ -245,7 +245,7 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 					dps := ehist.DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						loadDataPoint(&baseMetricSignal, dp)
+						loadDataPoint(&bmetricSignal, dp)
 
 						var minVal, maxVal *float64
 						if dp.HasMin() {
@@ -258,7 +258,7 @@ func ConvertMetrics(md pmetric.Metrics, sumEncoder, gaugeEncoder, histogramEncod
 						}
 
 						exponentialHistogramSignal := exponentialHistogramMetricSignal{
-							baseMetricSignal:       baseMetricSignal,
+							baseMetricSignal:       bmetricSignal,
 							Count:                  dp.Count(),
 							Sum:                    dp.Sum(),
 							Scale:                  dp.Scale(),
