@@ -238,6 +238,10 @@ func (obs *observerHandler) resolveConfig(template receiverTemplate, env observe
 		discoveredCfg[tmpSetEndpointConfigKey] = struct{}{}
 	}
 
+	// We expand discoveredCfg even though it typically contains just e.Target (a plain
+	// address like "192.168.1.5:6379"). This is defensive: the observer API doesn't prevent
+	// a custom observer from setting Target to a backtick expression like "`pod.name`:8080",
+	// which would need expansion. Contrib observers never do this, but we handle it anyway.
 	resolvedDiscoveredConfig, err = expandConfig(discoveredCfg, env)
 	if err != nil {
 		return nil, nil, err
