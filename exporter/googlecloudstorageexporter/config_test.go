@@ -21,10 +21,11 @@ func TestValidate(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id                 component.ID
-		expected           component.Config
-		expectedErr        error
-		expectUnmarshalErr bool
+		id                             component.ID
+		expected                       component.Config
+		expectedErr                    error
+		expectUnmarshalErr             bool
+		expectedValidationErrSubstring string
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
@@ -101,8 +102,8 @@ func TestValidate(t *testing.T) {
 			expectedErr: errFormatInvalid,
 		},
 		{
-			id:                 component.NewIDWithName(metadata.Type, "invalid_compression"),
-			expectUnmarshalErr: true, // This config should fail to unmarshal due to invalid compression type
+			id:                             component.NewIDWithName(metadata.Type, "unsupported_compression"),
+			expectedValidationErrSubstring: "unknown compression type",
 		},
 	}
 
@@ -128,6 +129,8 @@ func TestValidate(t *testing.T) {
 			err = xconfmap.Validate(cfg)
 			if tt.expectedErr != nil {
 				require.ErrorIs(t, err, tt.expectedErr)
+			} else if tt.expectedValidationErrSubstring != "" {
+				require.ErrorContains(t, err, tt.expectedValidationErrSubstring)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.expected, cfg)
