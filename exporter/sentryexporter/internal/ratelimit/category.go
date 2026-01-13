@@ -45,10 +45,11 @@ func (c Category) String() string {
 	default:
 		// For unknown categories, use the original formatting logic
 		caser := cases.Title(language.English)
-		rv := "Category"
-		for _, w := range strings.Fields(string(c)) {
-			rv += caser.String(w)
+		var rv strings.Builder
+		rv.WriteString("Category")
+		for w := range strings.FieldsSeq(string(c)) {
+			rv.WriteString(caser.String(w))
 		}
-		return rv
+		return rv.String()
 	}
 }

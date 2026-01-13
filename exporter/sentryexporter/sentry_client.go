@@ -98,7 +98,7 @@ func parseNextCursor(header http.Header) (cursor string, hasMore, found bool) {
 		return "", false, false
 	}
 
-	for _, part := range strings.Split(linkHeader, ",") {
+	for part := range strings.SplitSeq(linkHeader, ",") {
 		part = strings.TrimSpace(part)
 		if !strings.Contains(part, `rel="next"`) {
 			continue

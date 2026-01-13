@@ -153,7 +153,7 @@ func TestValidateRejectsTooManyProjectMappings(t *testing.T) {
 	cfg := minimalValidConfig()
 	cfg.Routing.AttributeToProjectMapping = make(map[string]string, maxProjects+1)
 
-	for i := 0; i < maxProjects+1; i++ {
+	for i := range maxProjects + 1 {
 		attr := fmt.Sprintf("service-%d", i)
 		project := fmt.Sprintf("project-%d", i)
 		cfg.Routing.AttributeToProjectMapping[attr] = project

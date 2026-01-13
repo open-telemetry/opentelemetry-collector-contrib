@@ -27,7 +27,7 @@ var errInvalidXSRLRetryAfter = errors.New("invalid retry-after value")
 func parseXSentryRateLimits(s string, now time.Time) Map {
 	// https://github.com/getsentry/relay/blob/0424a2e017d193a93918053c90cdae9472d164bf/relay-server/src/utils/rate_limits.rs#L44-L82
 	m := make(Map, len(knownCategories))
-	for _, limit := range strings.Split(s, ",") {
+	for limit := range strings.SplitSeq(s, ",") {
 		limit = strings.TrimSpace(limit)
 		if limit == "" {
 			continue
@@ -44,7 +44,7 @@ func parseXSentryRateLimits(s string, now time.Time) Map {
 		if len(components) > 1 {
 			categories = components[1]
 		}
-		for _, category := range strings.Split(categories, ";") {
+		for category := range strings.SplitSeq(categories, ";") {
 			c := Category(strings.ToLower(strings.TrimSpace(category)))
 			if _, ok := knownCategories[c]; !ok {
 				// skip unknown categories, keep m small
@@ -72,8 +72,6 @@ func parseXSRLRetryAfter(s string, now time.Time) (Deadline, error) {
 		return Deadline{}, errInvalidXSRLRetryAfter
 	}
 	d := time.Duration(math.Ceil(math.Max(f, 0.0))) * time.Second
-	if d < 0 {
-		d = 0
-	}
+	d = max(d, 0)
 	return Deadline(now.Add(d)), nil
 }
