@@ -210,25 +210,40 @@ func (obs *observerHandler) findTemplateForReceiver(id component.ID, env observe
 	return receiverTemplate{}, false
 }
 
-// resolveConfig expands the template config with the endpoint environment.
-func (obs *observerHandler) resolveConfig(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) (userConfigMap, userConfigMap, error) {
-	resolvedConfig, err := expandConfig(template.config, env)
+// resolveConfig expands the receiver template's config using the endpoint environment.
+//
+// It returns two configs that are later merged by the runner:
+//   - resolvedUserConfig: the user's template config with backtick expressions expanded
+//   - resolvedDiscoveredConfig: auto-discovered values from the endpoint (e.g., endpoint target)
+//
+// These are kept separate so the runner can validate whether auto-discovered fields
+// (like "endpoint") are actually supported by the receiver before merging them.
+func (obs *observerHandler) resolveConfig(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) (resolvedUserConfig, resolvedDiscoveredConfig userConfigMap, err error) {
+	resolvedUserConfig, err = expandConfig(template.config, env)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// Build the "discovered" config which contains values derived from the endpoint
+	// rather than from the user's template. Currently this is just the endpoint target.
+	//
+	// If the user didn't explicitly set an "endpoint" field in their config, we auto-populate
+	// it from the discovered endpoint's Target. The tmpSetEndpointConfigKey flag tells
+	// mergeTemplatedAndDiscoveredConfigs (in runner.go) that we auto-set this value, so it
+	// can validate whether the receiver actually supports an "endpoint" config field and
+	// remove it if not (avoiding "unknown field" errors for receivers without that field).
 	discoveredCfg := userConfigMap{}
-	if _, ok := resolvedConfig[endpointConfigKey]; !ok {
+	if _, ok := resolvedUserConfig[endpointConfigKey]; !ok {
 		discoveredCfg[endpointConfigKey] = e.Target
 		discoveredCfg[tmpSetEndpointConfigKey] = struct{}{}
 	}
 
-	resolvedDiscoveredConfig, err := expandConfig(discoveredCfg, env)
+	resolvedDiscoveredConfig, err = expandConfig(discoveredCfg, env)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return resolvedConfig, resolvedDiscoveredConfig, nil
+	return resolvedUserConfig, resolvedDiscoveredConfig, nil
 }
 
 // addReceiversForEndpoint starts receivers for an endpoint, skipping any that already exist.
