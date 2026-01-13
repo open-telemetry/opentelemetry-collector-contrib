@@ -3861,3 +3861,78 @@ func TestResolveReplicaSetDeploymentLinkage_ReuseCache(t *testing.T) {
 	assert.Equal(t, "test-deployment", rsView.DeploymentName)
 	assert.Equal(t, "test-deployment-uid", rsView.DeploymentUID)
 }
+
+func TestCreateRestConfigFailure(t *testing.T) {
+	// Simulate a failure in CreateRestConfig by returning nil for the informer
+	factory := InformersFactoryList{
+		newReplicaSetInformer: func(_ kubernetes.Interface, _ string) cache.SharedInformer {
+			return nil // Simulate failure
+		},
+	}
+
+	// Set a rule to enable deployment monitoring
+	rules := ExtractionRules{
+		DeploymentName: true, // This ensures that the replicasetInformer is created
+	}
+
+	c, err := New(
+		componenttest.NewNopTelemetrySettings(),
+		k8sconfig.APIConfig{}, // Invalid API config
+		rules,                 // Pass the rules for deployment monitoring
+		Filters{},
+		[]Association{},
+		Excludes{},
+		newFakeAPIClientset,
+		factory,
+		false,
+		10*time.Second,
+	)
+
+	// Assert that the client is nil and an error is returned
+	assert.Nil(t, c)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create ReplicaSet informer")
+}
+
+func TestMetadataNewForConfigFailure(t *testing.T) {
+	factory := InformersFactoryList{
+		newInformer: NewFakeInformer,
+	}
+	clientProvider := func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		return nil, errors.New("metadata.NewForConfig failed")
+	}
+
+	c, err := New(
+		componenttest.NewNopTelemetrySettings(),
+		k8sconfig.APIConfig{},
+		ExtractionRules{},
+		Filters{},
+		[]Association{},
+		Excludes{},
+		clientProvider,
+		factory,
+		false,
+		10*time.Second,
+	)
+	assert.Nil(t, c)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "metadata.NewForConfig failed")
+}
+
+func TestNormalizeRSWithNil(t *testing.T) {
+	rsView, ok := normalizeRS(nil)
+	assert.False(t, ok)
+	assert.Equal(t, replicasetView{}, rsView)
+}
+
+func TestNormalizeRSWithInvalidMetadata(t *testing.T) {
+	obj := &apps_v1.ReplicaSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: "",
+			UID:  "",
+		},
+	}
+	rsView, ok := normalizeRS(obj)
+	assert.False(t, ok)
+	assert.Equal(t, replicasetView{}, rsView)
+}

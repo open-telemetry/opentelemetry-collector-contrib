@@ -168,33 +168,6 @@ func Test_fakeNamespaceInformer(t *testing.T) {
 	assert.NoError(t, store.Add(api_v1.Namespace{}))
 }
 
-func Test_newReplicaSetSharedInformer(t *testing.T) {
-	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-	require.NoError(t, err)
-	informer := newReplicaSetSharedInformer(client, "testns")
-	assert.NotNil(t, informer)
-}
-
-func Test_replicasetListFuncWithSelectors(t *testing.T) {
-	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-	assert.NoError(t, err)
-	listFunc := replicasetListFuncWithSelectors(c, "test-ns")
-	opts := metav1.ListOptions{}
-	obj, err := listFunc(t.Context(), opts)
-	assert.NoError(t, err)
-	assert.NotNil(t, obj)
-}
-
-func Test_replicasetWatchFuncWithSelectors(t *testing.T) {
-	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-	assert.NoError(t, err)
-	watchFunc := replicasetWatchFuncWithSelectors(c, "test-ns")
-	opts := metav1.ListOptions{}
-	obj, err := watchFunc(t.Context(), opts)
-	assert.NoError(t, err)
-	assert.NotNil(t, obj)
-}
-
 func Test_deploymentListFuncWithSelectors(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
@@ -203,6 +176,25 @@ func Test_deploymentListFuncWithSelectors(t *testing.T) {
 	obj, err := listFunc(t.Context(), opts)
 	assert.NoError(t, err)
 	assert.NotNil(t, obj)
+}
+
+func Test_newReplicaSetMetaInformer(t *testing.T) {
+	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
+
+	apiCfg := k8sconfig.APIConfig{
+		AuthType: "none",
+	}
+
+	replicaSetInformerFactory := newReplicaSetMetaInformer(apiCfg)
+	client, err := newFakeAPIClientset(apiCfg)
+	require.NoError(t, err)
+
+	informer := replicaSetInformerFactory(client, "test-ns")
+	if informer == nil {
+		t.Fatalf("Expected informer to be non-nil, but got nil. Check logs for details.")
+	}
+	assert.NotNil(t, informer)
 }
 
 func Test_deploymentWatchFuncWithSelectors(t *testing.T) {

@@ -214,7 +214,16 @@ func New(
 		}
 		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.kc, c.Filters.Namespace)
 		if c.replicasetInformer == nil {
-			return nil, fmt.Errorf("failed to create ReplicaSet informer")
+			return nil, errors.New("failed to create ReplicaSet informer")
+		}
+
+		err = c.replicasetInformer.SetTransform(
+			func(object any) (any, error) {
+				return removeUnnecessaryReplicaSetData(object), nil
+			},
+		)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -778,7 +787,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
-				// Always OK to emit RS UID if requested
 				if c.Rules.ReplicaSetID {
 					tags[string(conventions.K8SReplicaSetUIDKey)] = string(ref.UID)
 				}
@@ -804,10 +812,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 						}
 					}
 				}
-				// Deployment UID
 				if c.Rules.DeploymentUID {
 					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						// rs.Deployment.UID non-empty only when controller=true
 						if replicaset.Deployment.UID != "" {
 							tags[string(conventions.K8SDeploymentUIDKey)] = replicaset.Deployment.UID
 						}
@@ -1753,7 +1759,6 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newObj any) {
 		return
 	}
 
-	// Centralized fallback with cache reuse
 	c.resolveReplicaSetDeploymentLinkage(&rsView)
 
 	c.upsertReplicaSet(rsView)
@@ -1774,17 +1779,6 @@ func (c *WatchClient) resolveReplicaSetDeploymentLinkage(rsView *replicasetView)
 		return
 	}
 
-	// Reuse cached linkage to avoid repeated GETs
-	c.m.RLock()
-	if cached := c.ReplicaSets[rsView.UID]; cached != nil && cached.Deployment.UID != "" {
-		depName, depUID := cached.Deployment.Name, cached.Deployment.UID
-		c.m.RUnlock()
-		rsView.DeploymentName = depName
-		rsView.DeploymentUID = depUID
-		return
-	}
-	c.m.RUnlock()
-
 	rsFull, err := c.kc.AppsV1().ReplicaSets(rsView.Namespace).Get(context.Background(), rsView.Name, meta_v1.GetOptions{})
 	if err != nil {
 		c.logger.Debug("failed to fetch full RS for ownerRefs",
@@ -1799,6 +1793,33 @@ func (c *WatchClient) resolveReplicaSetDeploymentLinkage(rsView *replicasetView)
 		}
 	}
 	// If no controller owner is found, leave Deployment* empty
+}
+
+// This function removes all data from the ReplicaSet except what is required by extraction rules
+func removeUnnecessaryReplicaSetData(obj any) any {
+	switch old := obj.(type) {
+	case *apps_v1.ReplicaSet:
+		// Transform the ReplicaSet to keep only necessary fields
+		return &apps_v1.ReplicaSet{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name:      old.GetName(),
+				Namespace: old.GetNamespace(),
+				UID:       old.GetUID(),
+			},
+		}
+	case *meta_v1.PartialObjectMetadata:
+		// Transform the PartialObjectMetadata to keep only necessary fields
+		return &meta_v1.PartialObjectMetadata{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name:      old.GetName(),
+				Namespace: old.GetNamespace(),
+				UID:       old.GetUID(),
+			},
+		}
+	default:
+		// means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+		return obj
+	}
 }
 
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
@@ -1844,6 +1865,11 @@ func normalizeRS(obj any) (replicasetView, bool) {
 		UID:       string(meta.GetUID()),
 		Name:      meta.GetName(),
 		Namespace: meta.GetNamespace(),
+	}
+
+	// Check for invalid metadata
+	if rv.UID == "" || rv.Name == "" {
+		return replicasetView{}, false
 	}
 
 	// Process owner references to find the Deployment
