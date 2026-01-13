@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promet
 
 go 1.24.9
 
-toolchain go1.24.11
-
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/gogo/protobuf v1.3.2

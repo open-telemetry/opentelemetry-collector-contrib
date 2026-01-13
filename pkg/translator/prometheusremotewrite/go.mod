@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 
 go 1.24.9
 
-toolchain go1.24.11
-
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/google/go-cmp v0.7.0

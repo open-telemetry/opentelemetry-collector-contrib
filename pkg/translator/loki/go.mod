@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 
 go 1.24.9
 
-toolchain go1.24.11
-
 require (
 	github.com/go-logfmt/logfmt v0.6.1
 	github.com/grafana/loki/pkg/push v0.0.0-20240514112848-a1b1eeb09583
