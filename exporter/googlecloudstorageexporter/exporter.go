@@ -9,8 +9,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
@@ -29,11 +31,13 @@ import (
 
 type storageExporter struct {
 	cfg             *Config
-	marshaler       marshaler
+	logsMarshaler   plog.Marshaler
 	storageClient   *storage.Client
 	bucketHandle    *storage.BucketHandle
 	logger          *zap.Logger
 	partitionFormat *strftime.Strftime
+	gzipWriterPool  *sync.Pool
+	zstdWriterPool  *sync.Pool
 }
 
 var _ exporter.Logs = (*storageExporter)(nil)
@@ -89,7 +93,37 @@ func newStorageExporter(
 		cfg:             cfg,
 		logger:          logger,
 		partitionFormat: partitionFormat,
+		gzipWriterPool: &sync.Pool{
+			New: func() any {
+				// Create a new gzip writer that writes to a dummy buffer initially
+				// It will be reset to the actual destination when used
+				writer := gzip.NewWriter(io.Discard)
+				return writer
+			},
+		},
+		zstdWriterPool: &sync.Pool{
+			New: func() any {
+				// Create a new zstd writer that writes to a dummy buffer initially
+				// It will be reset to the actual destination when used
+				writer, _ := zstd.NewWriter(io.Discard)
+				return writer
+			},
+		},
 	}, nil
+}
+
+// loadExtension tries to load an available extension for the given id.
+func loadExtension[T any](host component.Host, id component.ID, extensionType string) (T, error) {
+	var zero T
+	ext, ok := host.GetExtensions()[id]
+	if !ok {
+		return zero, fmt.Errorf("unknown extension %q", id)
+	}
+	extT, ok := ext.(T)
+	if !ok {
+		return zero, fmt.Errorf("extension %q is not a %s", id, extensionType)
+	}
+	return extT, nil
 }
 
 func isBucketConflictError(err error) bool {
@@ -101,19 +135,14 @@ func isBucketConflictError(err error) bool {
 }
 
 func (s *storageExporter) Start(ctx context.Context, host component.Host) error {
-	var m marshaler
-	var err error
+	s.logsMarshaler = &plog.JSONMarshaler{}
 	if s.cfg.Encoding != nil {
-		if m, err = newMarshalerFromEncoding(s.cfg.Encoding, "json", host, s.logger); err != nil {
-			return err
+		encoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
+		if err != nil {
+			return fmt.Errorf("failed to load logs extension: %w", err)
 		}
-	} else {
-		if m, err = newMarshaler("json", s.logger); err != nil {
-			return err
-		}
+		s.logsMarshaler = encoding
 	}
-
-	s.marshaler = m
 
 	// TODO Add option for authenticator
 	client, err := storage.NewClient(ctx)
@@ -152,7 +181,7 @@ func (*storageExporter) Capabilities() consumer.Capabilities {
 }
 
 func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	buf, err := s.marshaler.MarshalLogs(ld)
+	buf, err := s.logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return fmt.Errorf("failed to marshal logs: %w", err)
 	}
@@ -257,29 +286,92 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 func (s *storageExporter) compressContent(raw []byte) ([]byte, error) {
 	switch s.cfg.Bucket.Compression {
 	case configcompression.TypeGzip:
-		content := bytes.NewBuffer(nil)
-		zipper := gzip.NewWriter(content)
-		if _, err := zipper.Write(raw); err != nil {
-			return nil, err
-		}
-		if err := zipper.Close(); err != nil {
-			return nil, err
-		}
-		return content.Bytes(), nil
+		return s.compressGzip(raw)
 	case configcompression.TypeZstd:
-		content := bytes.NewBuffer(nil)
-		zipper, err := zstd.NewWriter(content)
-		if err != nil {
-			return nil, err
-		}
-		if _, err := zipper.Write(raw); err != nil {
-			return nil, err
-		}
-		if err := zipper.Close(); err != nil {
-			return nil, err
-		}
-		return content.Bytes(), nil
+		return s.compressZstd(raw)
 	default:
 		return raw, nil
 	}
+}
+
+func (s *storageExporter) compressGzip(raw []byte) ([]byte, error) {
+	content := bytes.NewBuffer(nil)
+
+	// Try to get a gzip writer from the pool
+	var zipper *gzip.Writer
+	if pooled := s.gzipWriterPool.Get(); pooled != nil {
+		if w, ok := pooled.(*gzip.Writer); ok {
+			zipper = w
+			zipper.Reset(content)
+		}
+	}
+
+	// If we didn't get a valid writer from pool, create a new one
+	if zipper == nil {
+		zipper = gzip.NewWriter(content)
+	}
+
+	// Write the data
+	if _, err := zipper.Write(raw); err != nil {
+		s.gzipWriterPool.Put(zipper) // Return to pool even on error
+		return nil, err
+	}
+
+	// Close the writer
+	if err := zipper.Close(); err != nil {
+		s.gzipWriterPool.Put(zipper) // Return to pool even on error
+		return nil, err
+	}
+
+	// Return the writer to the pool for reuse
+	s.gzipWriterPool.Put(zipper)
+
+	return content.Bytes(), nil
+}
+
+func (s *storageExporter) compressZstd(raw []byte) ([]byte, error) {
+	content := bytes.NewBuffer(nil)
+
+	// Try to get a zstd writer from the pool
+	var zipper interface {
+		Write(p []byte) (int, error)
+		Close() error
+		Reset(w io.Writer)
+	}
+	if pooled := s.zstdWriterPool.Get(); pooled != nil {
+		if w, ok := pooled.(interface {
+			Write(p []byte) (int, error)
+			Close() error
+			Reset(w io.Writer)
+		}); ok {
+			zipper = w
+			zipper.Reset(content)
+		}
+	}
+
+	// If we didn't get a valid writer from pool, create a new one
+	if zipper == nil {
+		var err error
+		zipper, err = zstd.NewWriter(content)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Write the data
+	if _, err := zipper.Write(raw); err != nil {
+		s.zstdWriterPool.Put(zipper) // Return to pool even on error
+		return nil, err
+	}
+
+	// Close the writer
+	if err := zipper.Close(); err != nil {
+		s.zstdWriterPool.Put(zipper) // Return to pool even on error
+		return nil, err
+	}
+
+	// Return the writer to the pool for reuse
+	s.zstdWriterPool.Put(zipper)
+
+	return content.Bytes(), nil
 }

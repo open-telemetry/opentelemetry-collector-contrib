@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -150,9 +151,7 @@ func TestStart(t *testing.T) {
 	t.Run("unset encoding", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.NoError(t, err)
-		gcsMarshaler, ok := gcsExporter.marshaler.(*gcsMarshaler)
-		require.True(t, ok, "marshaler should be of type *gcsMarshaler")
-		require.Equal(t, &plog.JSONMarshaler{}, gcsMarshaler.logsMarshaler)
+		require.Equal(t, &plog.JSONMarshaler{}, gcsExporter.logsMarshaler)
 	})
 
 	gcsExporter.cfg.Encoding = &id
@@ -418,6 +417,17 @@ func TestCompression(t *testing.T) {
 				cfg: &Config{
 					Bucket: bucketConfig{
 						Compression: tt.compression,
+					},
+				},
+				gzipWriterPool: &sync.Pool{
+					New: func() any {
+						writer := gzip.NewWriter(io.Discard)
+						return writer
+					},
+				},
+				zstdWriterPool: &sync.Pool{
+					New: func() any {
+						return nil
 					},
 				},
 			}
