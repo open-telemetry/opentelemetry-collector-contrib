@@ -140,11 +140,6 @@ func (obs *observerHandler) handleEndpointChange(e observer.Endpoint) {
 	}
 
 	existingEntries := obs.receiversByEndpointID.Get(e.ID)
-	if len(existingEntries) == 0 {
-		// No existing receivers, treat as add
-		obs.addReceiversForEndpoint(e, env)
-		return
-	}
 
 	// Check each existing receiver to see if its config would change
 	var entriesToKeep []receiverEntry
