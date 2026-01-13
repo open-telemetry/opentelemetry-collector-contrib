@@ -155,10 +155,10 @@ func (c *sentryClient) GetAllProjects(ctx context.Context, orgSlug string) ([]pr
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute request: %w", err)
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
 			return nil, &sentryHTTPError{
 				statusCode: resp.StatusCode,
 				body:       string(body),
@@ -168,11 +168,15 @@ func (c *sentryClient) GetAllProjects(ctx context.Context, orgSlug string) ([]pr
 
 		var pageProjects []projectInfo
 		if err := json.NewDecoder(resp.Body).Decode(&pageProjects); err != nil {
+			resp.Body.Close()
 			return nil, fmt.Errorf("failed to decode response: %w", err)
 		}
-		projects = append(projects, pageProjects...)
 
 		nextCursor, hasMore, found := parseNextCursor(resp.Header)
+		resp.Body.Close()
+
+		projects = append(projects, pageProjects...)
+
 		if !found || !hasMore || nextCursor == "" {
 			break
 		}
@@ -207,10 +211,10 @@ func (c *sentryClient) GetProjectKeys(ctx context.Context, orgSlug, projectSlug 
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute request: %w", err)
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
 			return nil, &sentryHTTPError{
 				statusCode: resp.StatusCode,
 				body:       string(body),
@@ -220,11 +224,15 @@ func (c *sentryClient) GetProjectKeys(ctx context.Context, orgSlug, projectSlug 
 
 		var pageKeys []projectKey
 		if err := json.NewDecoder(resp.Body).Decode(&pageKeys); err != nil {
+			resp.Body.Close()
 			return nil, fmt.Errorf("failed to decode response: %w", err)
 		}
-		keys = append(keys, pageKeys...)
 
 		nextCursor, hasMore, found := parseNextCursor(resp.Header)
+		resp.Body.Close()
+
+		keys = append(keys, pageKeys...)
+
 		if !found || !hasMore || nextCursor == "" {
 			break
 		}
