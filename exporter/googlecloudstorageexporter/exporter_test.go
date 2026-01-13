@@ -4,18 +4,24 @@
 package googlecloudstorageexporter
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/lestrrat-go/strftime"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -144,7 +150,9 @@ func TestStart(t *testing.T) {
 	t.Run("unset encoding", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.NoError(t, err)
-		require.Equal(t, &plog.JSONMarshaler{}, gcsExporter.logsMarshaler)
+		gcsMarshaler, ok := gcsExporter.marshaler.(*gcsMarshaler)
+		require.True(t, ok, "marshaler should be of type *gcsMarshaler")
+		require.Equal(t, &plog.JSONMarshaler{}, gcsMarshaler.logsMarshaler)
 	})
 
 	gcsExporter.cfg.Encoding = &id
@@ -225,35 +233,41 @@ func TestGenerateFilename(t *testing.T) {
 		partitionPrefix  string
 		filePrefix       string
 		uniqueID         string
+		compression      configcompression.Type
 		expectedFilename string
 	}{
 		{
 			name:             "empty partition format and prefix",
 			uniqueID:         "uuid",
+			compression:      "",
 			expectedFilename: "uuid",
 		},
 		{
 			name:             "file prefix set",
 			filePrefix:       "logs",
 			uniqueID:         "uuid",
+			compression:      "",
 			expectedFilename: "logs_uuid",
 		},
 		{
 			name:             "file prefix with slash",
 			filePrefix:       "folder/",
 			uniqueID:         "uuid",
+			compression:      "",
 			expectedFilename: "folder/uuid",
 		},
 		{
 			name:             "partition prefix set",
 			partitionPrefix:  "my-logs",
 			uniqueID:         "uuid",
+			compression:      "",
 			expectedFilename: "my-logs/uuid",
 		},
 		{
 			name:             "partition format set",
 			partitionFormat:  "year=%Y",
 			uniqueID:         "uuid",
+			compression:      "",
 			expectedFilename: "year=2023/uuid",
 		},
 		{
@@ -261,6 +275,7 @@ func TestGenerateFilename(t *testing.T) {
 			partitionFormat:  "year=%Y",
 			filePrefix:       "logs",
 			uniqueID:         "uuid",
+			compression:      "",
 			expectedFilename: "year=2023/logs_uuid",
 		},
 		{
@@ -269,7 +284,27 @@ func TestGenerateFilename(t *testing.T) {
 			partitionPrefix:  "archive",
 			filePrefix:       "logs",
 			uniqueID:         "uuid",
+			compression:      "",
 			expectedFilename: "archive/year=2023/logs_uuid",
+		},
+		{
+			name:             "gzip compression",
+			uniqueID:         "uuid",
+			compression:      configcompression.TypeGzip,
+			expectedFilename: "uuid.gz",
+		},
+		{
+			name:             "zstd compression",
+			uniqueID:         "uuid",
+			compression:      configcompression.TypeZstd,
+			expectedFilename: "uuid.zst",
+		},
+		{
+			name:             "gzip compression with file prefix",
+			filePrefix:       "logs",
+			uniqueID:         "uuid",
+			compression:      configcompression.TypeGzip,
+			expectedFilename: "logs_uuid.gz",
 		},
 	}
 
@@ -283,7 +318,7 @@ func TestGenerateFilename(t *testing.T) {
 				partitionFormat, err = strftime.New(tt.partitionFormat)
 				require.NoError(t, err)
 			}
-			got := generateFilename(tt.uniqueID, tt.filePrefix, tt.partitionPrefix, partitionFormat, fixedTime)
+			got := generateFilename(tt.uniqueID, tt.filePrefix, tt.partitionPrefix, tt.compression, partitionFormat, fixedTime)
 			require.Equal(t, tt.expectedFilename, got)
 		})
 	}
@@ -349,6 +384,90 @@ func TestConsumeLogs(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestCompression(t *testing.T) {
+	tests := []struct {
+		name            string
+		compression     configcompression.Type
+		expectExtension string
+	}{
+		{
+			name:            "gzip compression",
+			compression:     configcompression.TypeGzip,
+			expectExtension: ".gz",
+		},
+		{
+			name:            "zstd compression",
+			compression:     configcompression.TypeZstd,
+			expectExtension: ".zst",
+		},
+		{
+			name:            "no compression",
+			compression:     "",
+			expectExtension: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test compression logic directly
+			exporter := &storageExporter{
+				cfg: &Config{
+					Bucket: bucketConfig{
+						Compression: tt.compression,
+					},
+				},
+			}
+
+			// Test compression of content directly
+			testData := []byte(strings.Repeat("This is a test string that will compress very well when repeated many times. ", 100))
+			compressedData, err := exporter.compressContent(testData)
+			require.NoError(t, err)
+
+			switch tt.compression {
+			case "":
+				// For uncompressed content, verify it matches the original directly
+				assert.Equal(t, testData, compressedData, "Uncompressed content should match original")
+			case configcompression.TypeGzip:
+				// For gzip compressed content, verify it can be decompressed back to original
+				reader, err := gzip.NewReader(bytes.NewReader(compressedData))
+				require.NoError(t, err)
+				defer func() {
+					closeErr := reader.Close()
+					require.NoError(t, closeErr)
+				}()
+				decompressed, err := io.ReadAll(reader)
+				require.NoError(t, err)
+
+				// The decompressed content should match the original
+				assert.Equal(t, testData, decompressed, "Decompressed content should match original")
+
+				// Compressed content should be smaller than original
+				assert.Less(t, len(compressedData), len(testData),
+					"Compressed content should be smaller than uncompressed")
+			case configcompression.TypeZstd:
+				// For zstd compressed content, verify it can be decompressed back to original
+				reader, err := zstd.NewReader(bytes.NewReader(compressedData))
+				require.NoError(t, err)
+				defer reader.Close()
+				decompressed, err := io.ReadAll(reader)
+				require.NoError(t, err)
+
+				// The decompressed content should match the original
+				assert.Equal(t, testData, decompressed, "Decompressed content should match original")
+
+				// Compressed content should be smaller than original
+				assert.Less(t, len(compressedData), len(testData),
+					"Compressed content should be smaller than uncompressed")
+			}
+
+			// Test filename generation includes correct extension
+			filename := generateFilename("test-id", "test-prefix", "", tt.compression, nil, time.Now())
+			assert.True(t, strings.HasSuffix(filename, tt.expectExtension),
+				"Generated filename should end with %q, got %q", tt.expectExtension, filename)
 		})
 	}
 }

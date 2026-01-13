@@ -6,10 +6,12 @@ require (
 	cloud.google.com/go/compute/metadata v0.9.0
 	cloud.google.com/go/storage v1.58.0
 	github.com/google/uuid v1.6.0
+	github.com/klauspost/compress v1.18.2
 	github.com/lestrrat-go/strftime v1.1.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.49.1-0.20260109195331-fbd5d3f9faae
 	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260109195331-fbd5d3f9faae
+	go.opentelemetry.io/collector/config/configcompression v1.49.1-0.20260109195331-fbd5d3f9faae
 	go.opentelemetry.io/collector/confmap v1.49.1-0.20260109195331-fbd5d3f9faae
 	go.opentelemetry.io/collector/confmap/xconfmap v0.143.1-0.20260109195331-fbd5d3f9faae
 	go.opentelemetry.io/collector/consumer v1.49.1-0.20260109195331-fbd5d3f9faae

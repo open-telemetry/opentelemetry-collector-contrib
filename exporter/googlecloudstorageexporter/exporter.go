@@ -4,6 +4,8 @@
 package googlecloudstorageexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudstorageexporter"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -14,8 +16,10 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
+	"github.com/klauspost/compress/zstd"
 	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -25,7 +29,7 @@ import (
 
 type storageExporter struct {
 	cfg             *Config
-	logsMarshaler   plog.Marshaler
+	marshaler       marshaler
 	storageClient   *storage.Client
 	bucketHandle    *storage.BucketHandle
 	logger          *zap.Logger
@@ -97,14 +101,19 @@ func isBucketConflictError(err error) bool {
 }
 
 func (s *storageExporter) Start(ctx context.Context, host component.Host) error {
-	s.logsMarshaler = &plog.JSONMarshaler{}
+	var m marshaler
+	var err error
 	if s.cfg.Encoding != nil {
-		encoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
-		if err != nil {
-			return fmt.Errorf("failed to load logs extension: %w", err)
+		if m, err = newMarshalerFromEncoding(s.cfg.Encoding, "json", host, s.logger); err != nil {
+			return err
 		}
-		s.logsMarshaler = encoding
+	} else {
+		if m, err = newMarshaler("json", s.logger); err != nil {
+			return err
+		}
 	}
+
+	s.marshaler = m
 
 	// TODO Add option for authenticator
 	client, err := storage.NewClient(ctx)
@@ -143,7 +152,7 @@ func (*storageExporter) Capabilities() consumer.Capabilities {
 }
 
 func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	buf, err := s.logsMarshaler.MarshalLogs(ld)
+	buf, err := s.marshaler.MarshalLogs(ld)
 	if err != nil {
 		return fmt.Errorf("failed to marshal logs: %w", err)
 	}
@@ -158,6 +167,7 @@ func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 // It starts from a unique ID, and prepends the partitionFormat and the prefix to it.
 func generateFilename(
 	uniqueID, filePrefix, partitionPrefix string,
+	compression configcompression.Type,
 	partitionFormat *strftime.Strftime,
 	now time.Time,
 ) string {
@@ -184,6 +194,15 @@ func generateFilename(
 		}
 		filename = partitionPrefix + filename
 	}
+
+	// Add compression extension
+	switch compression {
+	case configcompression.TypeGzip:
+		filename += ".gz"
+	case configcompression.TypeZstd:
+		filename += ".zst"
+	}
+
 	return filename
 }
 
@@ -193,6 +212,12 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 		return nil
 	}
 
+	// Compress the content if compression is configured
+	compressedContent, err := s.compressContent(content)
+	if err != nil {
+		return fmt.Errorf("failed to compress content: %w", err)
+	}
+
 	// if we have multiple files coming, we need to make sure the name is unique so they do
 	// not overwrite each other
 	uniqueID := uuid.New().String()
@@ -200,6 +225,7 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 		uniqueID,
 		s.cfg.Bucket.FilePrefix,
 		s.cfg.Bucket.Partition.Prefix,
+		s.cfg.Bucket.Compression,
 		s.partitionFormat,
 		time.Now().UTC(),
 	)
@@ -216,28 +242,44 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 			)
 		}
 	}()
-	if _, err = writer.Write(content); err != nil {
+	if _, err = writer.Write(compressedContent); err != nil {
 		return fmt.Errorf("failed to write to file: %w", err)
 	}
 	s.logger.Info(
 		"New file uploaded",
 		zap.String("filename", filename),
 		zap.String("bucket", s.cfg.Bucket.Name),
-		zap.Int("size", len(content)),
+		zap.Int("size", len(compressedContent)),
 	)
 	return nil
 }
 
-// loadExtension tries to load an available extension for the given id.
-func loadExtension[T any](host component.Host, id component.ID, extensionType string) (T, error) {
-	var zero T
-	ext, ok := host.GetExtensions()[id]
-	if !ok {
-		return zero, fmt.Errorf("unknown extension %q", id)
+func (s *storageExporter) compressContent(raw []byte) ([]byte, error) {
+	switch s.cfg.Bucket.Compression {
+	case configcompression.TypeGzip:
+		content := bytes.NewBuffer(nil)
+		zipper := gzip.NewWriter(content)
+		if _, err := zipper.Write(raw); err != nil {
+			return nil, err
+		}
+		if err := zipper.Close(); err != nil {
+			return nil, err
+		}
+		return content.Bytes(), nil
+	case configcompression.TypeZstd:
+		content := bytes.NewBuffer(nil)
+		zipper, err := zstd.NewWriter(content)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := zipper.Write(raw); err != nil {
+			return nil, err
+		}
+		if err := zipper.Close(); err != nil {
+			return nil, err
+		}
+		return content.Bytes(), nil
+	default:
+		return raw, nil
 	}
-	extT, ok := ext.(T)
-	if !ok {
-		return zero, fmt.Errorf("extension %q is not a %s", id, extensionType)
-	}
-	return extT, nil
 }
