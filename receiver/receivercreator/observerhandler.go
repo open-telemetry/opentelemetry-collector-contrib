@@ -218,7 +218,7 @@ func (obs *observerHandler) findTemplateForReceiver(id component.ID, env observe
 //
 // These are kept separate so the runner can validate whether auto-discovered fields
 // (like "endpoint") are actually supported by the receiver before merging them.
-func (obs *observerHandler) resolveConfig(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) (resolvedUserConfig, resolvedDiscoveredConfig userConfigMap, err error) {
+func (*observerHandler) resolveConfig(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) (resolvedUserConfig, resolvedDiscoveredConfig userConfigMap, err error) {
 	resolvedUserConfig, err = expandConfig(template.config, env)
 	if err != nil {
 		return nil, nil, err
