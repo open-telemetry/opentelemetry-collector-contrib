@@ -631,6 +631,57 @@ func TestOnChangeConfigChanged(t *testing.T) {
 	assert.Same(t, newRcvr, handler.receiversByEndpointID.Get("port-1")[0].receiver)
 }
 
+func TestResolveConfigErrors(t *testing.T) {
+	handler := &observerHandler{}
+
+	t.Run("user template config expansion error", func(t *testing.T) {
+		template := receiverTemplate{
+			receiverConfig: receiverConfig{
+				id:     component.MustNewID("test"),
+				config: userConfigMap{"endpoint": "`(`"}, // Invalid expression syntax
+			},
+		}
+		env := observer.EndpointEnv{"type": "port"}
+		endpoint := observer.Endpoint{ID: "test-1", Target: "localhost:1234"}
+
+		_, _, err := handler.resolveConfig(template, env, endpoint)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expanding user template config")
+	})
+
+	t.Run("discovered config expansion error", func(t *testing.T) {
+		template := receiverTemplate{
+			receiverConfig: receiverConfig{
+				id:     component.MustNewID("test"),
+				config: userConfigMap{}, // No endpoint set, so Target will be used
+			},
+		}
+		env := observer.EndpointEnv{"type": "port"}
+		// Simulate a custom observer that puts an invalid backtick expression in Target
+		endpoint := observer.Endpoint{ID: "test-1", Target: "`(`"}
+
+		_, _, err := handler.resolveConfig(template, env, endpoint)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expanding discovered config")
+	})
+
+	t.Run("successful resolution", func(t *testing.T) {
+		template := receiverTemplate{
+			receiverConfig: receiverConfig{
+				id:     component.MustNewID("test"),
+				config: userConfigMap{"endpoint": "`host`:`port`"},
+			},
+		}
+		env := observer.EndpointEnv{"type": "port", "host": "192.168.1.1", "port": 8080}
+		endpoint := observer.Endpoint{ID: "test-1", Target: "192.168.1.1:8080"}
+
+		userConfig, discoveredConfig, err := handler.resolveConfig(template, env, endpoint)
+		require.NoError(t, err)
+		assert.Equal(t, "192.168.1.1:8080", userConfig["endpoint"])
+		assert.Empty(t, discoveredConfig) // User set endpoint, so discovered is empty
+	})
+}
+
 type mockRunner struct {
 	receiverRunner
 	startedComponent  component.Component

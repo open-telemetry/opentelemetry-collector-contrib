@@ -221,7 +221,7 @@ func (obs *observerHandler) findTemplateForReceiver(id component.ID, env observe
 func (*observerHandler) resolveConfig(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) (resolvedUserConfig, resolvedDiscoveredConfig userConfigMap, err error) {
 	resolvedUserConfig, err = expandConfig(template.config, env)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("expanding user template config: %w", err)
 	}
 
 	// Build the "discovered" config which contains values derived from the endpoint
@@ -244,7 +244,7 @@ func (*observerHandler) resolveConfig(template receiverTemplate, env observer.En
 	// which would need expansion. Contrib observers never do this, but we handle it anyway.
 	resolvedDiscoveredConfig, err = expandConfig(discoveredCfg, env)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("expanding discovered config: %w", err)
 	}
 
 	return resolvedUserConfig, resolvedDiscoveredConfig, nil
@@ -298,7 +298,7 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 
 	resolvedConfig, resolvedDiscoveredConfig, err := obs.resolveConfig(template, env, e)
 	if err != nil {
-		obs.params.Logger.Error("unable to resolve template config", zap.String("receiver", template.id.String()), zap.Error(err))
+		obs.params.Logger.Error("unable to resolve receiver config", zap.String("receiver", template.id.String()), zap.Error(err))
 		return
 	}
 
@@ -341,8 +341,8 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		zap.String("endpoint_id", string(e.ID)),
 		zap.Any("config", resolvedConfig))
 
-	var rcvr component.Component
-	if rcvr, err = obs.runner.start(
+	var receiver component.Component
+	if receiver, err = obs.runner.start(
 		receiverConfig{
 			id:         template.id,
 			config:     resolvedConfig,
@@ -356,7 +356,7 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 	}
 
 	obs.receiversByEndpointID.Put(e.ID, receiverEntry{
-		receiver:                 rcvr,
+		receiver:                 receiver,
 		id:                       template.id,
 		resolvedConfig:           resolvedConfig,
 		resolvedDiscoveredConfig: resolvedDiscoveredConfig,
