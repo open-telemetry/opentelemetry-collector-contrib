@@ -422,6 +422,8 @@ func (m *mockMetricsExporter) GetMetrics() []pmetric.Metrics {
 }
 
 func TestUpdateDurationMetrics(t *testing.T) {
+	defaultLatencyHistogramBuckets := createDefaultConfig().(*Config).LatencyHistogramBuckets
+
 	p := serviceGraphConnector{
 		reqTotal:                             make(map[string]int64),
 		reqFailedTotal:                       make(map[string]int64),
@@ -431,7 +433,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 		reqClientDurationSecondsSum:          make(map[string]float64),
 		reqClientDurationSecondsCount:        make(map[string]uint64),
 		reqClientDurationSecondsBucketCounts: make(map[string][]uint64),
-		reqDurationBounds:                    defaultLatencyHistogramBuckets,
+		reqDurationBounds:                    mapDurationsToFloat(defaultLatencyHistogramBuckets),
 		keyToMetric:                          make(map[string]metricSeries),
 		config: &Config{
 			Dimensions: []string{},
@@ -640,7 +642,7 @@ func TestExtraDimensionsLabels(t *testing.T) {
 		Dimensions:              extraDimensions,
 		LatencyHistogramBuckets: []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
 		Store:                   StoreConfig{MaxItems: 10},
-		MetricsFlushInterval:    ptr(0 * time.Millisecond),
+		MetricsFlushInterval:    0 * time.Millisecond,
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
@@ -678,7 +680,7 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 		Store:                     StoreConfig{MaxItems: 10},
 		VirtualNodePeerAttributes: virtualNodeDimensions,
 		VirtualNodeExtraLabel:     true,
-		MetricsFlushInterval:      ptr(time.Millisecond),
+		MetricsFlushInterval:      time.Millisecond,
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
@@ -727,7 +729,7 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 		Store:                     StoreConfig{MaxItems: 10},
 		VirtualNodePeerAttributes: virtualNodeDimensions,
 		VirtualNodeExtraLabel:     true,
-		MetricsFlushInterval:      ptr(time.Millisecond),
+		MetricsFlushInterval:      time.Millisecond,
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
@@ -856,9 +858,4 @@ func verifyExpDuration(t *testing.T, m pmetric.Metric, expectedDp pmetric.Expone
 	dp.SetTimestamp(pcommon.Timestamp(0))
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
 	assert.Equal(t, expectedDp, dp)
-}
-
-// ptr returns a pointer to the given value.
-func ptr[T any](value T) *T {
-	return &value
 }
