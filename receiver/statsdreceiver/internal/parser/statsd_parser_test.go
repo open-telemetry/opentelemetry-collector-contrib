@@ -1050,7 +1050,7 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			assert.NoError(t, p.Initialize(false, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
+			assert.NoError(t, p.Initialize(false, false, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 			addrKey := newNetAddr(addr)
@@ -1159,7 +1159,7 @@ func TestStatsDParser_AggregateByAddress(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &StatsDParser{}
-			assert.NoError(t, p.Initialize(true, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
+			assert.NoError(t, p.Initialize(true, false, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			for i, addr := range tt.addresses {
 				for _, line := range tt.input[i] {
@@ -1267,7 +1267,7 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			assert.NoError(t, p.Initialize(true, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
+			assert.NoError(t, p.Initialize(true, false, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 			addrKey := newNetAddr(addr)
@@ -1337,7 +1337,7 @@ func TestStatsDParser_AggregateWithIsMonotonicCounter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			assert.NoError(t, p.Initialize(false, false, true, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
+			assert.NoError(t, p.Initialize(false, false, true, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 			addrKey := newNetAddr(addr)
@@ -1464,7 +1464,7 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			assert.NoError(t, p.Initialize(false, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "summary"}, {StatsdType: "histogram", ObserverType: "summary", Summary: protocol.SummaryConfig{Percentiles: []float64{0, 95, 99}}}}))
+			assert.NoError(t, p.Initialize(false, false, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "summary"}, {StatsdType: "histogram", ObserverType: "summary", Summary: protocol.SummaryConfig{Percentiles: []float64{0, 95, 99}}}}))
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 			addrKey := newNetAddr(addr)
 			for _, line := range tt.input {
@@ -1481,7 +1481,7 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 
 func TestStatsDParser_Initialize(t *testing.T) {
 	p := &StatsDParser{}
-	assert.NoError(t, p.Initialize(true, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
+	assert.NoError(t, p.Initialize(true, false, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 	teststatsdDMetricdescription := statsDMetricDescription{
 		name:       "test",
 		metricType: "g",
@@ -1500,7 +1500,7 @@ func TestStatsDParser_Initialize(t *testing.T) {
 
 func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
 	p := &StatsDParser{}
-	assert.NoError(t, p.Initialize(true, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
+	assert.NoError(t, p.Initialize(true, false, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 	instrument := newInstruments(nil)
 	instrument.gauges[testDescription("statsdTestMetric1", "g",
 		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] = buildGaugeMetric(
@@ -1613,7 +1613,7 @@ func TestStatsDParser_Mappings(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &StatsDParser{}
 
-			assert.NoError(t, p.Initialize(false, false, false, false, tc.mapping))
+			assert.NoError(t, p.Initialize(false, false, false, false, false, tc.mapping))
 
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 			assert.NoError(t, p.Aggregate("H:10|h", addr))
@@ -1646,7 +1646,7 @@ func TestStatsDParser_ScopeIsIncluded(t *testing.T) {
 	}
 	testAddress, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 
-	err := p.Initialize(true, false, false, false,
+	err := p.Initialize(true, false, false, false, false,
 		[]protocol.TimerHistogramMapping{
 			{StatsdType: "timer", ObserverType: "summary"},
 			{StatsdType: "histogram", ObserverType: "histogram"},
@@ -1915,7 +1915,7 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			assert.NoError(t, p.Initialize(false, false, false, false, tt.mapping))
+			assert.NoError(t, p.Initialize(false, false, false, false, false, tt.mapping))
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 			for _, line := range tt.input {
 				err = p.Aggregate(line, addr)
@@ -1923,6 +1923,170 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 			}
 			var nodiffs []*metricstestutil.MetricDiff
 			assert.Equal(t, nodiffs, metricstestutil.DiffMetrics(nodiffs, tt.expected, p.GetMetrics()[0].Metrics))
+		})
+	}
+}
+
+func TestStatsDParser_HistogramExplicitBucket(t *testing.T) {
+	timeNowFunc = func() time.Time {
+		return time.Unix(711, 0)
+	}
+	newPoint := func(name string) (pmetric.Metrics, pmetric.HistogramDataPoint) {
+		data := pmetric.NewMetrics()
+		ilm := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := ilm.Metrics().AppendEmpty()
+		m.SetName(name)
+		ep := m.SetEmptyHistogram()
+		ep.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := ep.DataPoints().AppendEmpty()
+
+		return data, dp
+	}
+	tt := []struct {
+		Name           string
+		Input          []string
+		ExpectedOutput pmetric.Metrics
+	}{
+		{
+			Name: "foo matched pattern",
+			Input: []string{
+				"foo:0.1|h",
+				"foo:0.3|h",
+				"foo:0.6|h",
+			},
+			ExpectedOutput: func() pmetric.Metrics {
+				data, dp := newPoint("foo")
+				dp.SetCount(3)
+				dp.SetSum(1)
+				dp.SetMin(.1)
+				dp.SetMax(.6)
+				dp.BucketCounts().FromRaw([]uint64{1, 1, 1, 0})
+				dp.ExplicitBounds().FromRaw([]float64{.1, .5, 1})
+
+				return data
+			}(),
+		},
+		{
+			Name: "foo.bar matched first pattern",
+			Input: []string{
+				"foo.bar:0.1|h",
+				"foo.bar:0.3|h",
+			},
+			ExpectedOutput: func() pmetric.Metrics {
+				data, dp := newPoint("foo.bar")
+				dp.SetCount(2)
+				dp.SetSum(.4)
+				dp.SetMin(.1)
+				dp.SetMax(.3)
+				dp.BucketCounts().FromRaw([]uint64{1, 1, 0, 0})
+				dp.ExplicitBounds().FromRaw([]float64{.1, .5, 1})
+				return data
+			}(),
+		},
+		{
+			Name: "foo.bar matched first pattern Inf bucket",
+			Input: []string{
+				"foo.bar:0.1|h",
+				"foo.bar:0.3|h",
+				"foo.bar:3|h",
+			},
+			ExpectedOutput: func() pmetric.Metrics {
+				data, dp := newPoint("foo.bar")
+				dp.SetCount(3)
+				dp.SetSum(3.4)
+				dp.SetMin(.1)
+				dp.SetMax(3)
+				dp.BucketCounts().FromRaw([]uint64{1, 1, 0, 1})
+				dp.ExplicitBounds().FromRaw([]float64{.1, .5, 1})
+				return data
+			}(),
+		},
+		{
+			Name: "fox.bar.baz matched second pattern Inf bucket",
+			Input: []string{
+				"fox.bar.baz:1|h",
+				"fox.bar.baz:3|h",
+				"fox.bar.baz:30|h",
+			},
+			ExpectedOutput: func() pmetric.Metrics {
+				data, dp := newPoint("fox.bar.baz")
+				dp.SetCount(3)
+				dp.SetSum(34)
+				dp.SetMin(1)
+				dp.SetMax(30)
+				dp.BucketCounts().FromRaw([]uint64{1, 1, 0, 1})
+				dp.ExplicitBounds().FromRaw([]float64{1, 5, 10})
+				return data
+			}(),
+		},
+		{
+			// copied from TestStatsDParser_AggregateTimerWithHistogram/one_each_distribution
+			Name: "no match pattern for explicit bucket",
+			Input: []string{
+				"expohisto:1|d|#mykey:myvalue",
+				"expohisto:0|d|#mykey:myvalue",
+				"expohisto:-1|d|#mykey:myvalue",
+			},
+			ExpectedOutput: func() pmetric.Metrics {
+				data := pmetric.NewMetrics()
+				ilm := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+				m := ilm.Metrics().AppendEmpty()
+				m.SetName("expohisto")
+				ep := m.SetEmptyExponentialHistogram()
+				ep.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				dp := ep.DataPoints().AppendEmpty()
+				dp.Attributes().PutStr("mykey", "myvalue")
+
+				dp.SetCount(3)
+				dp.SetSum(0)
+				dp.SetMin(-1)
+				dp.SetMax(1)
+				dp.SetZeroCount(1)
+				dp.SetScale(logarithm.MaxScale)
+				dp.Positive().SetOffset(-1)
+				dp.Negative().SetOffset(-1)
+				dp.Positive().BucketCounts().FromRaw([]uint64{
+					1,
+				})
+				dp.Negative().BucketCounts().FromRaw([]uint64{
+					1,
+				})
+				return data
+			}(),
+		},
+	}
+	addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+
+	for i := range tt {
+		tc := tt[i]
+		t.Run(tc.Name, func(t *testing.T) {
+			r := require.New(t)
+			p := &StatsDParser{}
+			r.NoError(p.Initialize(false, false, false, false, false, false, []protocol.TimerHistogramMapping{
+				{
+					StatsdType:   "histogram",
+					ObserverType: "histogram",
+					Histogram: protocol.HistogramConfig{
+						ExplicitBuckets: []protocol.ExplicitBucket{
+							{
+								MatcherPattern: "foo.*",
+								Buckets:        []float64{0.1, 0.5, 1},
+							},
+							{
+								MatcherPattern: "fox.bar.*",
+								Buckets:        []float64{1, 5, 10},
+							},
+						},
+						MaxSize: 10,
+					},
+				},
+			}))
+
+			for j := range tc.Input {
+				r.NoError(p.Aggregate(tc.Input[j], addr))
+			}
+			var nodiffs []*metricstestutil.MetricDiff
+			assert.Equal(t, nodiffs, metricstestutil.DiffMetrics(nodiffs, tc.ExpectedOutput, p.GetMetrics()[0].Metrics))
 		})
 	}
 }
@@ -1937,7 +2101,7 @@ func TestStatsDParser_IPOnlyAggregation(t *testing.T) {
 	testAddr01, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 	testAddr02, _ := net.ResolveUDPAddr("udp", "1.2.3.4:8765")
 
-	err := p.Initialize(true, false, false, true,
+	err := p.Initialize(true, false, false, true, false,
 		[]protocol.TimerHistogramMapping{
 			{StatsdType: "timer", ObserverType: "summary"},
 			{StatsdType: "histogram", ObserverType: "histogram"},
@@ -1956,6 +2120,47 @@ func TestStatsDParser_IPOnlyAggregation(t *testing.T) {
 	metrics := p.GetMetrics()
 	require.Len(t, metrics, 1)
 
+	value := metrics[0].Metrics.
+		ResourceMetrics().At(0).
+		ScopeMetrics().At(0).
+		Metrics().At(0).Sum().DataPoints().At(0).IntValue()
+
+	assert.Equal(t, int64(4), value)
+}
+
+func TestStatsDParser_IgnoreHost(t *testing.T) {
+	const devVersion = "dev-0.0.1"
+	p := &StatsDParser{
+		BuildInfo: component.BuildInfo{
+			Version: devVersion,
+		},
+	}
+	// Two different source IPs
+	testAddr01, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+	testAddr02, _ := net.ResolveUDPAddr("udp", "5.6.7.8:1234")
+
+	err := p.Initialize(true, false, false, false, true,
+		[]protocol.TimerHistogramMapping{
+			{StatsdType: "timer", ObserverType: "summary"},
+			{StatsdType: "histogram", ObserverType: "histogram"},
+		},
+	)
+
+	require.NoError(t, err)
+	require.NoError(t, p.Aggregate("test.metric:1|c", testAddr01))
+	require.NoError(t, p.Aggregate("test.metric:3|c", testAddr02))
+	// With ignoreHost=true, all metrics should aggregate into a single entry
+	require.Len(t, p.instrumentsByAddress, 1)
+
+	// The key should be an empty netAddr
+	for k := range p.instrumentsByAddress {
+		assert.Empty(t, k.String)
+		assert.Empty(t, k.Network)
+	}
+	metrics := p.GetMetrics()
+	require.Len(t, metrics, 1)
+
+	// Values should be aggregated: 1 + 3 = 4
 	value := metrics[0].Metrics.
 		ResourceMetrics().At(0).
 		ScopeMetrics().At(0).

@@ -58,6 +58,7 @@ type StatsDParser struct {
 	enableSimpleTags        bool
 	isMonotonicCounter      bool
 	enableIPOnlyAggregation bool
+	ignoreHost              bool
 	timerEvents             ObserverCategory
 	histogramEvents         ObserverCategory
 	lastIntervalTime        time.Time
@@ -136,7 +137,7 @@ func (p *StatsDParser) resetState(when time.Time) {
 	p.instrumentsByAddress = make(map[netAddr]*instruments)
 }
 
-func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotonicCounter, enableIPOnlyAggregation bool, sendTimerHistogram []protocol.TimerHistogramMapping) error {
+func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotonicCounter, enableIPOnlyAggregation, ignoreHost bool, sendTimerHistogram []protocol.TimerHistogramMapping) error {
 	p.resetState(timeNowFunc())
 
 	p.histogramEvents = defaultObserverCategory
@@ -145,6 +146,7 @@ func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotoni
 	p.enableSimpleTags = enableSimpleTags
 	p.isMonotonicCounter = isMonotonicCounter
 	p.enableIPOnlyAggregation = enableIPOnlyAggregation
+	p.ignoreHost = ignoreHost
 
 	// Note: validation occurs in ("../".Config).validate()
 	for _, eachMap := range sendTimerHistogram {
@@ -264,7 +266,9 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 	}
 
 	addrKey := newNetAddr(addr)
-	if p.enableIPOnlyAggregation {
+	if p.ignoreHost {
+		addrKey = netAddr{}
+	} else if p.enableIPOnlyAggregation {
 		addrKey = newIPOnlyNetAddr(addr)
 	}
 
