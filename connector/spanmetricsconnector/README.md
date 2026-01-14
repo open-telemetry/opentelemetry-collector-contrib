@@ -314,11 +314,13 @@ Beyond degrading APM interfaces with numerous non-meaningful operation names, th
 
 The span metrics connector provides an optional circuit breaker through the `aggregation_cardinality_limit` attribute (disabled by default) to mitigate cardinality explosion. While this feature addresses performance and cost concerns, it does not resolve the underlying issue of semantically meaningless operation names.
 
-**Fixing high cardinality span name issues**
+### Fixing high cardinality span name issues
 
 The ideal long-term solution is to modify the OpenTelemetry instrumentation code to comply with semantic conventions, preventing the generation of non-compliant high cardinality span names.
 
 However, deploying updated instrumentation libraries can be time-consuming, often requiring an immediate interim solution to restore observability backend functionality.
+
+#### Addressing high cardinality span names in the ingestion pipeline
 
 An effective short-term solution is to implement a span sanitization layer within the observability ingestion pipeline. This can be achieved by using the OpenTelemetry Collector Transform Processor's [`set_semconv_span_name()` function](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#set_semconv_span_name) immediately before the Span Metrics Connector to enforce semantic conventions on span names.
 
@@ -359,6 +361,7 @@ service:
       exporters: [otlphttp/observability-backend]
     # ...
 ```
+
 </details>
 
 Aggressive span name sanitization may be overly restrictive for instrumentations with incomplete resource attributes. For instance, HTTP service operations may be reduced to generic names like `GET` and `POST` when HTTP spans lack the `http.route` attribute. This information loss can impact the monitoring of critical business operations.
@@ -413,4 +416,44 @@ service:
       processors: [...]
       exporters: [otlphttp/observability-backend]
     # ...
+```
+
+#### Addressing high cardinality span names in the instrumentation code
+
+The preferred long-term solution is to ensure span names and attributes comply with [OpenTelemetry Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/) directly in the instrumentation code.
+
+Custom web frameworks are a common source of high cardinality span names. While default OpenTelemetry instrumentation (e.g., Java Servlet) may assign generic span names like `GET /my-web-fwk/*`, your framework has access to more specific routing information. By overwriting span attributes in your framework code, you can create compliant, low-cardinality span names that preserve operational granularity.
+
+**Example: Custom Web Framework in Java**
+
+Consider a custom web framework that intercepts the generic route `/my-web-fwk/*` and dispatches requests like `/my-web-fwk/product/123456ABCD` or `/my-web-fwk/user/john.doe`. 
+
+The default Java Servlet instrumentation produces vague span names (`GET /my-web-fwk/*`), while directly using request URIs creates high cardinality (`GET /my-web-fwk/product/123456ABCD`).
+
+The solution is to override span attributes with templated route patterns like `/my-web-fwk/product/{productId}` or `/my-web-fwk/user/{userId}`:
+
+```java
+@WebServlet(urlPatterns = "/my-web-fwk/*")
+public class MyWebFrameworkServlet extends HttpServlet {
+
+    @Override
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Default Servlet instrumentation sets vague span names: `GET /my-web-fwk/*` (and `http.route=/my-web-fwk/*`)
+        // Using the request URI directly would cause high cardinality and violate semantic conventions
+        // Instead, use the framework's low-cardinality routing information below
+
+        // Example routing logic
+        String uri = request.getRequestURI();
+        MyWebOperation myWebOperation = getWebOperation(uri);
+
+        // Fix span details to add details while complying with semantic conventions and maintaining low cardinality
+        String httpRoute = "/my-web-fwk/" + myWebOperation.getSubHttpRoute();
+        Span.current().setAttribute(HttpAttributes.HTTP_ROUTE, httpRoute);
+        Span.current().updateName(request.getMethod() + " " + httpRoute);
+
+        // execute the web operation
+        myWebOperation.execute(request, response);
+    }
+    ...
+}
 ```
