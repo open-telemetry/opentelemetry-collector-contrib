@@ -8,7 +8,7 @@ status:
   codeowners:
     active: [shalper2, MovieStoreGuy, greatestusername]
 
-reaggregation_enabled: true 
+reaggregation_enabled: true
 attributes:
   splunk.bucket.dir:
     description: The bucket super-directory (home, cold, thawed) for each index
