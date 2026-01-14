@@ -60,7 +60,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	moduleInfoJSON := createModuleInfoFromSampleConfig()
 
 	// Test PopulateActiveComponents with the loaded configuration
-	activeComponents, err := componentchecker.PopulateActiveComponents(confMap, moduleInfoJSON)
+	activeComponents, err := componentchecker.PopulateActiveComponents(zap.NewNop(), confMap, moduleInfoJSON)
 	require.NoError(t, err, "PopulateActiveComponents should not return error")
 	require.NotNil(t, activeComponents, "activeComponents should not be nil")
 
@@ -331,7 +331,7 @@ func createTestOtelCollectorPayload() *payload.OtelCollectorPayload {
 
 	// Create module info and populate active components
 	moduleInfoJSON := createModuleInfoFromSampleConfig()
-	activeComponents, _ := componentchecker.PopulateActiveComponents(confMap, moduleInfoJSON)
+	activeComponents, _ := componentchecker.PopulateActiveComponents(zap.NewNop(), confMap, moduleInfoJSON)
 
 	// Create build info
 	buildInfo := payload.CustomBuildInfo{
@@ -548,7 +548,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 
 	// Create module info and populate active components for realistic test data
 	moduleInfoJSON := createModuleInfoFromSampleConfig()
-	activeComponents, err := componentchecker.PopulateActiveComponents(confMap, moduleInfoJSON)
+	activeComponents, err := componentchecker.PopulateActiveComponents(zap.NewNop(), confMap, moduleInfoJSON)
 	require.NoError(t, err)
 
 	// Create OtelCollector metadata
