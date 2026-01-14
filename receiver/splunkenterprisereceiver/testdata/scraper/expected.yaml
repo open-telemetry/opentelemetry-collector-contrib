@@ -6,6 +6,16 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "51"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.data.indexes.extended.bucket.count
@@ -14,6 +24,19 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "107267027"
+                  attributes:
+                    - key: splunk.bucket.dir
+                      value:
+                        stringValue: home
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.data.indexes.extended.bucket.event.count
@@ -22,6 +45,19 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "1"
+                  attributes:
+                    - key: splunk.bucket.dir
+                      value:
+                        stringValue: hot
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.data.indexes.extended.bucket.hot.count
@@ -30,6 +66,19 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "50"
+                  attributes:
+                    - key: splunk.bucket.dir
+                      value:
+                        stringValue: warm
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.data.indexes.extended.bucket.warm.count
@@ -38,6 +87,16 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "108411855"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.data.indexes.extended.event.count
@@ -46,6 +105,16 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "70825079209"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.data.indexes.extended.raw.size
@@ -54,6 +123,16 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "20818468798"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: _audit
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.data.indexes.extended.total.size
@@ -62,6 +141,16 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 69.2
+                  attributes:
+                    - key: splunk.host
+                      value:
+                        stringValue: some-host
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.indexer.cpu.time
@@ -70,6 +159,19 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "0"
+                  attributes:
+                    - key: splunk.rollingorrestart
+                      value:
+                        boolValue: false
+                    - key: splunk.searchable.restart
+                      value:
+                        boolValue: false
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.indexer.rollingrestart.status
@@ -78,6 +180,16 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 25579.690815904476
+                  attributes:
+                    - key: splunk.indexer.status
+                      value:
+                        stringValue: normal
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.indexer.throughput
@@ -86,6 +198,16 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "200400"
+                  attributes:
+                    - key: splunk.host
+                      value:
+                        stringValue: some-host
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.io.avg.iops
@@ -94,21 +216,29 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "101"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "101"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "100"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "101"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "100"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "100"
+                  attributes:
+                    - key: splunk.index.name
+                      value:
+                        stringValue: some_val2
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.license.index.usage
@@ -117,6 +247,16 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 200.4
+                  attributes:
+                    - key: splunk.host
+                      value:
+                        stringValue: some-host
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.scheduler.avg.run.time
@@ -125,6 +265,16 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "1"
+                  attributes:
+                    - key: splunk.queue.name
+                      value:
+                        stringValue: AEQ
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.server.introspection.queues.current
@@ -133,6 +283,16 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "100"
+                  attributes:
+                    - key: splunk.queue.name
+                      value:
+                        stringValue: AEQ
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.server.introspection.queues.current.bytes
