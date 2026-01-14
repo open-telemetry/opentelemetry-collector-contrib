@@ -232,6 +232,9 @@ func (*observerHandler) resolveConfig(template receiverTemplate, env observer.En
 	// mergeTemplatedAndDiscoveredConfigs (in runner.go) that we auto-set this value, so it
 	// can validate whether the receiver actually supports an "endpoint" config field and
 	// remove it if not (avoiding "unknown field" errors for receivers without that field).
+	//
+	// Caveat: If a receiver has an optional "endpoint" field that's mutually exclusive with
+	// another field (e.g., "url"), users must explicitly set endpoint: "" to prevent auto-discovery.
 	discoveredCfg := userConfigMap{}
 	if _, ok := resolvedUserConfig[endpointConfigKey]; !ok {
 		discoveredCfg[endpointConfigKey] = e.Target

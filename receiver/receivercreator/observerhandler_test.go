@@ -644,97 +644,102 @@ func TestOnChange(t *testing.T) {
 	}
 }
 
-// TestResolveConfigErrors verifies that resolveConfig properly handles errors during
-// template expansion. The resolveConfig method expands backtick expressions (e.g., `host`:`port`)
-// in receiver configurations against endpoint environment variables. This test ensures that
-// invalid expressions in both user-provided config and discovered endpoint targets produce
-// appropriate errors.
-func TestResolveConfigErrors(t *testing.T) {
+// TestResolveConfig verifies resolveConfig expands backtick expressions and properly
+// separates user-specified config from auto-discovered config.
+//
+// The endpoint "config" comes from two sources:
+//   - User config: What the user specifies in their template (may contain backtick expressions)
+//   - Discovered config: Auto-populated when user doesn't set "endpoint" (uses endpoint.Target)
+//
+// The discovered config includes a marker flag (tmpSetEndpointConfigKey) so the runner
+// knows to validate whether the receiver actually supports an "endpoint" field.
+func TestResolveConfig(t *testing.T) {
+	tests := []struct {
+		name                     string
+		templateConfig           userConfigMap
+		env                      observer.EndpointEnv
+		endpointTarget           string
+		expectError              string // empty string means success expected
+		expectUserEndpoint       string // expected endpoint in user config (empty if not expected)
+		expectDiscoveredEndpoint string // expected endpoint in discovered config (empty if not expected)
+		expectDiscoveredMarker   bool   // whether tmpSetEndpointConfigKey should be present
+	}{
+		{
+			name:           "user template config expansion error",
+			templateConfig: userConfigMap{"endpoint": "`(`"}, // Invalid expression syntax
+			env:            observer.EndpointEnv{"type": "port"},
+			endpointTarget: "localhost:1234",
+			expectError:    "expanding user template config",
+		},
+		{
+			name:           "discovered config expansion error",
+			templateConfig: userConfigMap{}, // No endpoint, so Target will be used
+			env:            observer.EndpointEnv{"type": "port"},
+			endpointTarget: "`(`", // Invalid expression in Target (custom observer edge case)
+			expectError:    "expanding discovered config",
+		},
+		{
+			name:                     "user-specified endpoint goes into user config only",
+			templateConfig:           userConfigMap{"endpoint": "`host`:`port`"},
+			env:                      observer.EndpointEnv{"type": "port", "host": "192.168.1.1", "port": 8080},
+			endpointTarget:           "192.168.1.1:8080",
+			expectUserEndpoint:       "192.168.1.1:8080",
+			expectDiscoveredEndpoint: "", // Empty - user set endpoint, nothing auto-discovered
+			expectDiscoveredMarker:   false,
+		},
+		{
+			name:                     "auto-discovered endpoint goes into discovered config",
+			templateConfig:           userConfigMap{"some_field": "value"}, // No endpoint
+			env:                      observer.EndpointEnv{"type": "port"},
+			endpointTarget:           "192.168.1.1:8080",
+			expectUserEndpoint:       "", // Empty - user didn't set endpoint
+			expectDiscoveredEndpoint: "192.168.1.1:8080",
+			expectDiscoveredMarker:   true, // Marker tells runner this was auto-discovered
+		},
+	}
+
 	handler := &observerHandler{}
 
-	t.Run("user template config expansion error", func(t *testing.T) {
-		template := receiverTemplate{
-			receiverConfig: receiverConfig{
-				id:     component.MustNewID("test"),
-				config: userConfigMap{"endpoint": "`(`"}, // Invalid expression syntax
-			},
-		}
-		env := observer.EndpointEnv{"type": "port"}
-		endpoint := observer.Endpoint{ID: "test-1", Target: "localhost:1234"}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			template := receiverTemplate{
+				receiverConfig: receiverConfig{
+					id:     component.MustNewID("test"),
+					config: tt.templateConfig,
+				},
+			}
+			endpoint := observer.Endpoint{ID: "test-1", Target: tt.endpointTarget}
 
-		_, _, err := handler.resolveConfig(template, env, endpoint)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "expanding user template config")
-	})
+			userConfig, discoveredConfig, err := handler.resolveConfig(template, tt.env, endpoint)
 
-	t.Run("discovered config expansion error", func(t *testing.T) {
-		template := receiverTemplate{
-			receiverConfig: receiverConfig{
-				id:     component.MustNewID("test"),
-				config: userConfigMap{}, // No endpoint set, so Target will be used
-			},
-		}
-		env := observer.EndpointEnv{"type": "port"}
-		// Simulate a custom observer that puts an invalid backtick expression in Target
-		endpoint := observer.Endpoint{ID: "test-1", Target: "`(`"}
+			if tt.expectError != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectError)
+				return
+			}
 
-		_, _, err := handler.resolveConfig(template, env, endpoint)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "expanding discovered config")
-	})
+			require.NoError(t, err)
 
-	// Test the two paths for endpoint configuration:
-	//
-	// Path 1 (user-specified): User explicitly sets "endpoint" in their template config.
-	//   - The endpoint value goes into resolvedUserConfig
-	//   - resolvedDiscoveredConfig is empty (nothing to auto-discover)
-	//   - Example: config: { endpoint: "`host`:`port`" }
-	//
-	// Path 2 (auto-discovered): User does NOT set "endpoint" in their template.
-	//   - resolvedUserConfig contains only what the user specified
-	//   - resolvedDiscoveredConfig contains the endpoint from e.Target, plus a marker flag
-	//   - The marker (tmpSetEndpointConfigKey) tells the runner to validate if the receiver
-	//     actually supports an "endpoint" field before merging
-	//   - Example: config: { collection_interval: "10s" } (no endpoint)
+			// Check user config endpoint
+			if tt.expectUserEndpoint != "" {
+				assert.Equal(t, tt.expectUserEndpoint, userConfig[endpointConfigKey])
+			} else {
+				assert.NotContains(t, userConfig, endpointConfigKey)
+			}
 
-	t.Run("user-specified endpoint goes into user config only", func(t *testing.T) {
-		template := receiverTemplate{
-			receiverConfig: receiverConfig{
-				id:     component.MustNewID("test"),
-				config: userConfigMap{"endpoint": "`host`:`port`"}, // User explicitly sets endpoint
-			},
-		}
-		env := observer.EndpointEnv{"type": "port", "host": "192.168.1.1", "port": 8080}
-		endpoint := observer.Endpoint{ID: "test-1", Target: "192.168.1.1:8080"}
+			// Check discovered config endpoint
+			if tt.expectDiscoveredEndpoint != "" {
+				assert.Equal(t, tt.expectDiscoveredEndpoint, discoveredConfig[endpointConfigKey])
+			} else {
+				assert.Empty(t, discoveredConfig)
+			}
 
-		userConfig, discoveredConfig, err := handler.resolveConfig(template, env, endpoint)
-		require.NoError(t, err)
-		assert.Equal(t, "192.168.1.1:8080", userConfig["endpoint"])
-		assert.Empty(t, discoveredConfig) // User set endpoint, so nothing auto-discovered
-	})
-
-	t.Run("auto-discovered endpoint goes into discovered config", func(t *testing.T) {
-		template := receiverTemplate{
-			receiverConfig: receiverConfig{
-				id:     component.MustNewID("test"),
-				config: userConfigMap{"some_field": "value"}, // No endpoint - will be auto-discovered
-			},
-		}
-		env := observer.EndpointEnv{"type": "port"}
-		endpoint := observer.Endpoint{ID: "test-1", Target: "192.168.1.1:8080"}
-
-		userConfig, discoveredConfig, err := handler.resolveConfig(template, env, endpoint)
-		require.NoError(t, err)
-
-		// User config should NOT have endpoint (user didn't set it)
-		assert.NotContains(t, userConfig, endpointConfigKey)
-		assert.Equal(t, "value", userConfig["some_field"])
-
-		// Discovered config should have endpoint from Target plus the marker flag
-		assert.Equal(t, "192.168.1.1:8080", discoveredConfig[endpointConfigKey])
-		assert.Contains(t, discoveredConfig, tmpSetEndpointConfigKey,
-			"marker flag should be set so runner knows this was auto-discovered")
-	})
+			// Check marker flag
+			if tt.expectDiscoveredMarker {
+				assert.Contains(t, discoveredConfig, tmpSetEndpointConfigKey)
+			}
+		})
+	}
 }
 
 type mockRunner struct {
