@@ -480,7 +480,7 @@ func (o *opampAgent) onCommand(_ context.Context, command *protobufs.ServerToAge
 			o.logger.Warn("received restart command, but SIGHUP signal unsupported on windows systems")
 			return nil
 		}
-		o.logger.Info("received remote config — sending SIGHUP to reload")
+		o.logger.Info("received restart command, sending SIGHUP to reload")
 		collectorProcess, err := os.FindProcess(os.Getpid())
 		if err != nil {
 			return fmt.Errorf("finding current process from pid: %w", err)
