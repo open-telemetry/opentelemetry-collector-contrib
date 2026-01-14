@@ -78,7 +78,7 @@ The `SIGHUP` signal is already trapped in the collector and initiates a graceful
 **NOTE** on the `SIGHUP` signal for restarts:
 SIGHUP is not supported in the `windows` operating system, and the current implementation will short circuit evaluation on windows systems (until the collector can also handle a cross-platform signal like SIGUSR2).
 
-**<ins>Please note that an invalid config (capability enabled without feature gate)</ins>** will cause the collector to error out and stay down until it is manually restarted using some other mechanism (since the opamp extension won't be active). Regular healthchecks and using the `validate` subcommand on the collector are **highly recommended** when using this functionality to prevent data loss due to config issues.
+**<ins>Please note</ins>**: an invalid config will cause the Collector to error out and stay down until it is manually restarted using some other mechanism (since the OpAMP extension won't be active). Regular healthchecks and using the Collector's `validate` subcommand to validate config before applying it are **highly recommended** when using this functionality to prevent data loss due to config issues.
 
 ## Status
 
