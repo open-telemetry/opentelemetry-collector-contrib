@@ -38,8 +38,9 @@ type Config struct {
 	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
 	// The default value is `propagate`.
 	ErrorMode ottl.ErrorMode           `mapstructure:"error_mode"`
-	Spans     filterconfig.MatchConfig `mapstructure:"spans"`
 
+	// Deprecated: use TraceConditions instead.
+	Spans     filterconfig.MatchConfig `mapstructure:"spans"`
 	// Deprecated: use MetricConditions instead.
 	Metrics MetricFilters `mapstructure:"metrics"`
 	// Deprecated: use LogConditions instead.
