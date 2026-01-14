@@ -631,6 +631,11 @@ func TestOnChangeConfigChanged(t *testing.T) {
 	assert.Same(t, newRcvr, handler.receiversByEndpointID.Get("port-1")[0].receiver)
 }
 
+// TestResolveConfigErrors verifies that resolveConfig properly handles errors during
+// template expansion. The resolveConfig method expands backtick expressions (e.g., `host`:`port`)
+// in receiver configurations against endpoint environment variables. This test ensures that
+// invalid expressions in both user-provided config and discovered endpoint targets produce
+// appropriate errors.
 func TestResolveConfigErrors(t *testing.T) {
 	handler := &observerHandler{}
 
