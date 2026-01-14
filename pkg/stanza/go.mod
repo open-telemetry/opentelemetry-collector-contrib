@@ -36,7 +36,7 @@ require (
 	go.uber.org/zap v1.27.1
 	golang.org/x/sys v0.39.0
 	golang.org/x/text v0.31.0
-	gonum.org/v1/gonum v0.16.0
+	gonum.org/v1/gonum v0.17.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
