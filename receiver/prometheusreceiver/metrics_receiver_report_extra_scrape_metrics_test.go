@@ -95,7 +95,6 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			testScraperMetrics(t, []*testData{target(tc.expectExtra)}, tc.featureGate, tc.globalExtra, tc.scrapeExtra, tc.expectExtra)
 		})
@@ -103,7 +102,7 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testScraperMetrics(t *testing.T, targets []*testData, featureGateEnabled bool, globalExtra *bool, scrapeExtra *bool, expectExtraScrapeMetrics bool) {
+func testScraperMetrics(t *testing.T, targets []*testData, featureGateEnabled bool, globalExtra, scrapeExtra *bool, expectExtraScrapeMetrics bool) {
 	defer testutil.SetFeatureGateForTest(t, enableReportExtraScrapeMetricsGate, featureGateEnabled)()
 
 	ctx := t.Context()

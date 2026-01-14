@@ -167,7 +167,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 	return mp, (*PromConfig)(pCfg), err
 }
 
-func setupMockPrometheusWithExtraScrapeMetrics(globalExtra *bool, scrapeExtra *bool, tds ...*testData) (*mockPrometheus, *PromConfig, error) {
+func setupMockPrometheusWithExtraScrapeMetrics(globalExtra, scrapeExtra *bool, tds ...*testData) (*mockPrometheus, *PromConfig, error) {
 	mp, cfg, err := setupMockPrometheus(tds...)
 	if err != nil {
 		return mp, cfg, err
