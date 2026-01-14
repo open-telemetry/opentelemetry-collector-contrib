@@ -73,6 +73,12 @@ processors:
     # Any keys in this list are allowed so they don't need to be in both lists.
     ignored_keys:
       - safe_attribute
+    # ignored_key_patterns is a list of regular expressions for ignoring keys.
+    # Keys matching any of these patterns are allowed to pass through without
+    # their values being checked or modified.
+    ignored_key_patterns:
+      - "^safe_.*"
+      - ".*_trusted$"
     # redact_all_types will check incoming fields for sensitive data based on their AsString() representation. This allows the processor to redact sensitive data from ints. This is useful for redacting credit card numbers
     redact_all_types: true
     # blocked_key_patterns is a list of blocked span attribute key patterns. Span attributes
@@ -115,7 +121,8 @@ into an OpenTelemetry Collector pipeline definition.
 
 Ignored attributes are processed first so they're always allowed and never
 blocked. This field should only be used where you know the data is always
-safe to send to the telemetry system.
+safe to send to the telemetry system. You can use either `ignored_keys` for
+exact key matches or `ignored_key_patterns` for regex-based pattern matching.
 
 Only span/log/datapoint attributes included on the list of allowed keys list are retained.
 If `allowed_keys` is empty, then no attributes are allowed. All
