@@ -34,10 +34,16 @@ const testDataDirectory = "testdata"
 func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 	t.Parallel()
 
+	type s3Content struct {
+		bucketName string
+		objectKey  string
+		data       []byte
+	}
+
 	tests := []struct {
 		name          string
 		s3Event       events.S3Event
-		bucketData    []byte
+		s3MockContent s3Content
 		unmarshaler   func(buf []byte) (plog.Logs, error)
 		eventConsumer consumer.Logs
 		expectedErr   string
@@ -59,7 +65,36 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 					},
 				},
 			},
-			bucketData:    []byte("Some log in S3 object"),
+			s3MockContent: s3Content{
+				bucketName: "test-bucket",
+				objectKey:  "test-file.txt",
+				data:       []byte("Some log in S3 object"),
+			},
+			unmarshaler:   customLogUnmarshaler{}.UnmarshalLogs,
+			eventConsumer: &noOpLogsConsumer{},
+		},
+		{
+			name: "URL encoded S3 object key with custom unmarshaler and custom consumer",
+			s3Event: events.S3Event{
+				Records: []events.S3EventRecord{
+					{
+						EventSource: "aws:s3",
+						EventTime:   time.Unix(1764625361, 0),
+						S3: events.S3Entity{
+							Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
+							Object: events.S3Object{
+								Key:  "Test-file%2810x10%29%231.txt", // Test-file(10x10)#1.txt
+								Size: 10,
+							},
+						},
+					},
+				},
+			},
+			s3MockContent: s3Content{
+				bucketName: "test-bucket",
+				objectKey:  "Test-file(10x10)#1.txt",
+				data:       []byte("Some log in S3 object"),
+			},
 			unmarshaler:   customLogUnmarshaler{}.UnmarshalLogs,
 			eventConsumer: &noOpLogsConsumer{},
 		},
@@ -81,7 +116,11 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 					},
 				},
 			},
-			bucketData:    []byte("Some log in S3 object"),
+			s3MockContent: s3Content{
+				bucketName: "test-bucket",
+				objectKey:  "test-file.txt",
+				data:       []byte("Some log in S3 object"),
+			},
 			unmarshaler:   bytesToPlogs,
 			eventConsumer: &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "s3_log_expected_string.yaml")},
 		},
@@ -103,7 +142,11 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 					},
 				},
 			},
-			bucketData:    []byte("H4sIAAAAAAAAAwvOz01VyMlPV8jMUwg2VshPykpNLgEAo01BGxUAAAA="),
+			s3MockContent: s3Content{
+				bucketName: "test-bucket",
+				objectKey:  "test-file.txt",
+				data:       []byte("H4sIAAAAAAAAAwvOz01VyMlPV8jMUwg2VshPykpNLgEAo01BGxUAAAA="),
+			},
 			unmarshaler:   bytesToPlogs,
 			eventConsumer: &logConsumerWithGoldenValidation{logsExpectedPath: filepath.Join(testDataDirectory, "s3_log_expected_gzip.yaml")},
 		},
@@ -131,6 +174,11 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 					},
 				},
 			},
+			s3MockContent: s3Content{
+				bucketName: "test-bucket",
+				objectKey:  "test-file.txt",
+				data:       []byte("Some log in S3 object"),
+			},
 			unmarshaler:   customLogUnmarshaler{error: errors.New("failed to unmarshal logs")}.UnmarshalLogs,
 			eventConsumer: &noOpLogsConsumer{},
 			expectedErr:   "failed to unmarshal logs",
@@ -151,7 +199,11 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 					},
 				},
 			},
-			bucketData:    []byte{},
+			s3MockContent: s3Content{
+				bucketName: "test-bucket",
+				objectKey:  "test-file.txt",
+				data:       []byte{},
+			},
 			eventConsumer: &noOpLogsConsumer{},
 		},
 	}
@@ -161,7 +213,10 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			s3Service := internal.NewMockS3Service(ctr)
-			s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Return(test.bucketData, nil).AnyTimes()
+			s3Service.EXPECT().
+				ReadObject(gomock.Any(), test.s3MockContent.bucketName, test.s3MockContent.objectKey).
+				Return(test.s3MockContent.data, nil).
+				AnyTimes()
 
 			// Wrap the consumer to match the new s3EventConsumerFunc signature
 			logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
