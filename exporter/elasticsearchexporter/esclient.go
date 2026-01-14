@@ -11,12 +11,14 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"net/url"
+	"sync/atomic"
 	"time"
 
 	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/service/telemetry"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
@@ -99,6 +101,47 @@ func (cl *clientLogger) ResponseBodyEnabled() bool {
 	return cl.logResponseBody
 }
 
+const unknownProduct = "the client noticed that the server is not Elasticsearch and we do not support this unknown product"
+
+// genuineCheckHeader validates the presence of the X-Elastic-Product header
+func genuineCheckHeader(header http.Header) error {
+	if header.Get("X-Elastic-Product") != "Elasticsearch" {
+		return errors.New(unknownProduct)
+	}
+	return nil
+}
+
+type esClient struct {
+	transport           elastictransport.Interface
+	productCheckSuccess atomic.Bool
+}
+
+func (e *esClient) Perform(req *http.Request) (*http.Response, error) {
+	res, err := e.transport.Perform(req)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode >= 200 && res.StatusCode < 300 {
+		checkHeader := func() error { return genuineCheckHeader(res.Header) }
+		if err := e.doProductCheck(checkHeader); err != nil {
+			res.Body.Close()
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (e *esClient) doProductCheck(f func() error) error {
+	if e.productCheckSuccess.Load() {
+		return nil
+	}
+	if err := f(); err != nil {
+		return err
+	}
+	e.productCheckSuccess.Store(true)
+	return nil
+}
+
 // newElasticsearchClient returns a new elastictransport.Interface.
 func newElasticsearchClient(
 	ctx context.Context,
@@ -113,7 +156,6 @@ func newElasticsearchClient(
 	}
 
 	headers := make(http.Header)
-	// FIXME: meta header and compatibility header
 
 	// endpoints converts Config.Endpoints, Config.CloudID,
 	// and Config.ClientConfig.Endpoint to a list of addresses.
@@ -187,7 +229,7 @@ func newElasticsearchClient(
 		go tp.DiscoverNodes() // FIXME: deprecated
 	}
 
-	return tp, nil
+	return &esClient{transport: tp}, nil
 }
 
 func addrsToURLs(addrs []string) ([]*url.URL, error) {
