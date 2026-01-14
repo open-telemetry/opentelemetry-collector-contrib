@@ -548,109 +548,100 @@ func TestOnRemoveForTraces(t *testing.T) {
 	require.NoError(t, r.lastError)
 }
 
-// setupOnChangeTest creates an observerHandler with a single receiver template using the given
-// user config. It adds portEndpoint and returns the handler, mock runner, and the initial receiver.
-// This helper reduces boilerplate in OnChange tests that all need similar setup.
-func setupOnChangeTest(t *testing.T, templateConfig userConfigMap) (*observerHandler, *mockRunner, component.Component) {
-	cfg := createDefaultConfig().(*Config)
-	rcvrCfg := receiverConfig{
-		id:         component.MustNewIDWithName("with_endpoint", "some.name"),
-		config:     templateConfig,
-		endpointID: portEndpoint.ID,
-	}
-	cfg.receiverTemplates = map[string]receiverTemplate{
-		rcvrCfg.id.String(): {
-			receiverConfig:     rcvrCfg,
-			rule:               portRule,
-			Rule:               `type == "port"`,
-			ResourceAttributes: map[string]any{},
-			signals:            receiverSignals{metrics: true, logs: true, traces: true},
+// TestOnChange verifies that OnChange only restarts receivers when their effective config changes.
+//
+// The endpoint "config" comes from two sources that are merged:
+//   - User config: What the user specifies in their receiver template (may contain backtick expressions)
+//   - Discovered config: Auto-populated values like endpoint target (when user doesn't specify them)
+//
+// A receiver should restart when EITHER source would produce different values.
+func TestOnChange(t *testing.T) {
+	tests := []struct {
+		name           string
+		templateConfig userConfigMap
+		modifyEndpoint func(e observer.Endpoint) observer.Endpoint // nil means no modification
+		expectRestart  bool
+	}{
+		{
+			name:           "static config unchanged - no restart",
+			templateConfig: userConfigMap{"endpoint": "some.endpoint"}, // Static value, won't change
+			modifyEndpoint: nil,                                        // Same endpoint
+			expectRestart:  false,
+		},
+		{
+			name:           "dynamic user config changed - restart",
+			templateConfig: userConfigMap{"endpoint": "`endpoint`"}, // References endpoint target
+			modifyEndpoint: func(e observer.Endpoint) observer.Endpoint {
+				e.Target = "new.target:5678"
+				return e
+			},
+			expectRestart: true,
+		},
+		{
+			// When user doesn't specify "endpoint", it's auto-discovered from endpoint.Target.
+			// If Target changes (e.g., pod IP change), receiver must restart.
+			name:           "auto-discovered endpoint changed - restart",
+			templateConfig: userConfigMap{"int_field": 12345}, // No endpoint - will be auto-discovered
+			modifyEndpoint: func(e observer.Endpoint) observer.Endpoint {
+				e.Target = "new.host:9999"
+				return e
+			},
+			expectRestart: true,
 		},
 	}
-	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
-	handler.OnAdd([]observer.Endpoint{portEndpoint})
 
-	origRcvr := r.startedComponent
-	require.NotNil(t, origRcvr)
-	require.NoError(t, r.lastError)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup: create handler and add initial endpoint
+			cfg := createDefaultConfig().(*Config)
+			rcvrCfg := receiverConfig{
+				id:         component.MustNewIDWithName("with_endpoint", "some.name"),
+				config:     tt.templateConfig,
+				endpointID: portEndpoint.ID,
+			}
+			cfg.receiverTemplates = map[string]receiverTemplate{
+				rcvrCfg.id.String(): {
+					receiverConfig:     rcvrCfg,
+					rule:               portRule,
+					Rule:               `type == "port"`,
+					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true},
+				},
+			}
+			handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
+			handler.OnAdd([]observer.Endpoint{portEndpoint})
 
-	return handler, r, origRcvr
-}
+			origRcvr := r.startedComponent
+			require.NotNil(t, origRcvr)
+			require.NoError(t, r.lastError)
 
-func TestOnChangeConfigUnchanged(t *testing.T) {
-	// When endpoint changes but resolved config is the same, receiver should NOT restart.
-	// Using a static endpoint value that won't change when the endpoint metadata changes.
-	handler, r, origRcvr := setupOnChangeTest(t, userConfigMap{"endpoint": "some.endpoint"})
+			// Clear mock to track OnChange calls
+			r.shutdownComponent = nil
+			r.startedComponent = nil
 
-	// Clear the mock to track new calls
-	r.shutdownComponent = nil
-	r.startedComponent = nil
+			// Apply endpoint modification if specified
+			endpoint := portEndpoint
+			if tt.modifyEndpoint != nil {
+				endpoint = tt.modifyEndpoint(portEndpoint)
+			}
 
-	// Trigger OnChange with the same endpoint - config hasn't changed
-	handler.OnChange([]observer.Endpoint{portEndpoint})
+			// Trigger OnChange
+			handler.OnChange([]observer.Endpoint{endpoint})
+			require.NoError(t, r.lastError)
 
-	// Receiver should NOT have been restarted since config is unchanged
-	require.NoError(t, r.lastError)
-	assert.Nil(t, r.shutdownComponent, "receiver should not be shutdown when config unchanged")
-	assert.Nil(t, r.startedComponent, "receiver should not be restarted when config unchanged")
-
-	// Original receiver should still be in the map
-	assert.Equal(t, 1, handler.receiversByEndpointID.Size())
-	assert.Same(t, origRcvr, handler.receiversByEndpointID.Get("port-1")[0].receiver)
-}
-
-func TestOnChangeConfigChanged(t *testing.T) {
-	// When endpoint changes and resolved config changes, receiver SHOULD restart.
-	// Using a dynamic endpoint template that references the endpoint target.
-	handler, r, origRcvr := setupOnChangeTest(t, userConfigMap{"endpoint": "`endpoint`"})
-
-	// Create a modified endpoint with different target
-	modifiedEndpoint := portEndpoint
-	modifiedEndpoint.Target = "new.target:5678"
-
-	handler.OnChange([]observer.Endpoint{modifiedEndpoint})
-
-	// Receiver SHOULD be restarted since config changed
-	require.NoError(t, r.lastError)
-	assert.Same(t, origRcvr, r.shutdownComponent, "original receiver should be shutdown")
-
-	newRcvr := r.startedComponent
-	require.NotNil(t, newRcvr, "new receiver should be started")
-	require.NotSame(t, origRcvr, newRcvr, "new receiver should be different from original")
-
-	assert.Equal(t, 1, handler.receiversByEndpointID.Size())
-	assert.Same(t, newRcvr, handler.receiversByEndpointID.Get("port-1")[0].receiver)
-}
-
-func TestOnChangeDiscoveredEndpointChanged(t *testing.T) {
-	// This test covers the auto-discovered endpoint path during OnChange.
-	//
-	// When the user does NOT specify "endpoint" in their template config, the endpoint
-	// is auto-discovered from the observer's endpoint.Target field. If that Target changes
-	// (e.g., a pod's IP changed), the receiver must restart to connect to the new address.
-	//
-	// This is different from TestOnChangeConfigChanged which tests a user-specified
-	// dynamic endpoint (using backtick expressions like `endpoint`). Here we test that
-	// changes to auto-discovered endpoints also trigger restarts.
-	handler, r, origRcvr := setupOnChangeTest(t, userConfigMap{"int_field": 12345}) // No endpoint - auto-discovered
-
-	// Change the endpoint's Target - simulates a pod IP change or service port update.
-	// Even though the user's template config hasn't changed, the auto-discovered
-	// endpoint has changed, so the receiver must restart.
-	modifiedEndpoint := portEndpoint
-	modifiedEndpoint.Target = "new.host:9999"
-
-	handler.OnChange([]observer.Endpoint{modifiedEndpoint})
-
-	// Receiver SHOULD be restarted since the discovered endpoint changed
-	require.NoError(t, r.lastError)
-	assert.Same(t, origRcvr, r.shutdownComponent, "original receiver should be shutdown")
-
-	newRcvr := r.startedComponent
-	require.NotNil(t, newRcvr, "new receiver should be started with new endpoint")
-	require.NotSame(t, origRcvr, newRcvr, "new receiver should be different from original")
-
-	assert.Equal(t, 1, handler.receiversByEndpointID.Size())
+			// Verify restart behavior
+			if tt.expectRestart {
+				assert.Same(t, origRcvr, r.shutdownComponent, "original receiver should be shutdown")
+				require.NotNil(t, r.startedComponent, "new receiver should be started")
+				require.NotSame(t, origRcvr, r.startedComponent, "should be a different receiver instance")
+			} else {
+				assert.Nil(t, r.shutdownComponent, "receiver should not be shutdown")
+				assert.Nil(t, r.startedComponent, "no new receiver should be started")
+				assert.Same(t, origRcvr, handler.receiversByEndpointID.Get("port-1")[0].receiver)
+			}
+			assert.Equal(t, 1, handler.receiversByEndpointID.Size())
+		})
+	}
 }
 
 // TestResolveConfigErrors verifies that resolveConfig properly handles errors during
