@@ -11,6 +11,7 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -101,7 +102,10 @@ func (cl *clientLogger) ResponseBodyEnabled() bool {
 	return cl.logResponseBody
 }
 
-const unknownProduct = "the client noticed that the server is not Elasticsearch and we do not support this unknown product"
+const (
+	unknownProduct = "the client noticed that the server is not Elasticsearch and we do not support this unknown product"
+	defaultURL     = "http://localhost:9200"
+)
 
 // genuineCheckHeader validates the presence of the X-Elastic-Product header
 func genuineCheckHeader(header http.Header) error {
@@ -182,12 +186,16 @@ func newElasticsearchClient(
 		return nil, fmt.Errorf("cannot create client: %s", err)
 	}
 
-	// Extract username/password from URL if present, matching elasticsearch.newTransport
-	// This allows authentication via URL like http://user:pass@localhost:9200
+	if len(urls) == 0 {
+		u, _ := url.Parse(defaultURL)
+		urls = append(urls, u)
+	}
+
+	username := config.Authentication.User
 	password := string(config.Authentication.Password)
-	if len(urls) > 0 && urls[0].User != nil {
-		config.Authentication.User = urls[0].User.Username()
-		password, _ = urls[0].User.Password()
+	if user := urls[0].User; user != nil {
+		username = user.Username()
+		password, _ = user.Password()
 	}
 
 	// Create transport configuration matching elasticsearch.newTransport structure
@@ -195,7 +203,7 @@ func newElasticsearchClient(
 		UserAgent: userAgent,
 
 		URLs:     urls,
-		Username: config.Authentication.User,
+		Username: username,
 		Password: password,
 		APIKey:   string(config.Authentication.APIKey),
 
@@ -236,13 +244,15 @@ func newElasticsearchClient(
 	return &esClient{transport: tp}, nil
 }
 
+// addrsToURLs creates a list of url.URL structures from url list.
 func addrsToURLs(addrs []string) ([]*url.URL, error) {
 	var urls []*url.URL
 	for _, addr := range addrs {
-		u, err := url.Parse(addr)
+		u, err := url.Parse(strings.TrimRight(addr, "/"))
 		if err != nil {
-			return nil, fmt.Errorf("cannot parse url %q: %w", addr, err)
+			return nil, fmt.Errorf("cannot parse url: %v", err)
 		}
+
 		urls = append(urls, u)
 	}
 	return urls, nil
