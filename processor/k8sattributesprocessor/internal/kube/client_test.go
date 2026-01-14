@@ -569,6 +569,7 @@ func TestNodeDelete(t *testing.T) {
 }
 
 func TestDeleteLoop(t *testing.T) {
+	// go c.deleteLoop(time.Second * 1)
 	c, _ := newTestClient(t)
 
 	pod := &api_v1.Pod{}
@@ -1510,6 +1511,8 @@ func TestDeleteQueue(t *testing.T) {
 }
 
 func TestNodeExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
 	node := &api_v1.Node{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "k8s-node-example",
@@ -1619,7 +1622,6 @@ func TestNodeExtractionRules(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 			if tc.singularFeatureGate {
 				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
 				defer func() {
@@ -1643,6 +1645,8 @@ func TestNodeExtractionRules(t *testing.T) {
 }
 
 func TestDeploymentExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
 	deployment := &apps_v1.Deployment{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "k8s-node-example",
@@ -1721,7 +1725,6 @@ func TestDeploymentExtractionRules(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 			c.Rules = tc.rules
 			c.handleDeploymentAdd(deployment)
 			n, ok := c.GetDeployment(string(deployment.UID))
@@ -1779,6 +1782,8 @@ func TestDeploymentNameFromReplicaSet(t *testing.T) {
 }
 
 func TestStatefulSetExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
 	statefulset := &apps_v1.StatefulSet{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "k8s-node-example",
@@ -1857,7 +1862,6 @@ func TestStatefulSetExtractionRules(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 			c.Rules = tc.rules
 			c.handleStatefulSetAdd(statefulset)
 			n, ok := c.GetStatefulSet(string(statefulset.UID))
@@ -1874,6 +1878,8 @@ func TestStatefulSetExtractionRules(t *testing.T) {
 }
 
 func TestDaemonSetExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
 	daemonset := &apps_v1.DaemonSet{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "k8s-node-example",
@@ -1952,7 +1958,6 @@ func TestDaemonSetExtractionRules(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 			c.Rules = tc.rules
 			c.handleDaemonSetAdd(daemonset)
 			n, ok := c.GetDaemonSet(string(daemonset.UID))
@@ -1969,6 +1974,8 @@ func TestDaemonSetExtractionRules(t *testing.T) {
 }
 
 func TestJobExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
 	job := &batch_v1.Job{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "k8s-node-example",
@@ -2047,7 +2054,6 @@ func TestJobExtractionRules(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 			c.Rules = tc.rules
 			c.handleJobAdd(job)
 			n, ok := c.GetJob(string(job.UID))
