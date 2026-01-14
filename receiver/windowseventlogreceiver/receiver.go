@@ -52,7 +52,7 @@ type ResolveSIDsConfig struct {
 }
 
 // Validate checks if the configuration is valid
-func (c *ResolveSIDsConfig) Validate() error {
+func (*ResolveSIDsConfig) Validate() error {
 	// No validation needed - all fields have sensible defaults in the cache
 	return nil
 }

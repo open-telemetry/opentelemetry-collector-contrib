@@ -11,28 +11,36 @@ This directory contains test configurations for the windowseventlogreceiver.
 
 The windowseventlogreceiver only works on Windows operating systems. To test:
 
-### 1. Build for Windows
+### 1. Build the Collector
 
-From the repository root on any platform:
+From the repository root:
 
 ```bash
-make build-windows
+make otelcontribcol
 ```
 
-This creates a Windows binary at: `./dist/observiq-otel-collector_windows_amd64_v1/observiq-otel-collector.exe`
+This builds the OpenTelemetry Collector Contrib binary and places it in `./bin/otelcontribcol_<OS>_<ARCH>`.
 
-### 2. Transfer to Windows Machine
+For cross-compilation to Windows from another platform:
+
+```bash
+GOOS=windows GOARCH=amd64 make otelcontribcol
+```
+
+This creates `./bin/otelcontribcol_windows_amd64.exe`.
+
+### 2. Transfer to Windows Machine (if cross-compiling)
 
 Copy the following files to a Windows machine:
-- The collector binary
-- The example configuration file(s)
+- The collector binary from `./bin/otelcontribcol_windows_amd64.exe`
+- The example configuration file(s) from this directory
 
 ### 3. Run the Collector
 
 On the Windows machine, run:
 
 ```powershell
-.\observiq-otel-collector.exe --config collector-config-example.yaml
+.\otelcontribcol_windows_amd64.exe --config collector-config-example.yaml
 ```
 
 ### 4. Verify Event Collection

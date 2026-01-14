@@ -4,9 +4,9 @@
 # IMPORTANT: This receiver only works on Windows operating systems
 #
 # To test this configuration on Windows:
-# 1. Build the collector for Windows: make build-windows
-# 2. Copy the binary and this config to a Windows machine
-# 3. Run: observiq-otel-collector.exe --config collector-config-example.yaml
+# 1. Build the collector: GOOS=windows GOARCH=amd64 make otelcontribcol
+# 2. Copy the binary (./bin/otelcontribcol_windows_amd64.exe) and this config to a Windows machine
+# 3. Run: otelcontribcol_windows_amd64.exe --config collector-config-example.yaml
 
 receivers:
   # Example 1: Basic Application Event Log monitoring
