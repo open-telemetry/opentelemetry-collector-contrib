@@ -185,7 +185,7 @@ func TestStart(t *testing.T) {
 	gcsExporter.cfg.Encoding = &id
 	t.Run("encoding id not a logs marshaler", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
-		require.ErrorContains(t, err, "is not a")
+		require.ErrorIs(t, err, errNotLogsMarshaler)
 	})
 
 	id = component.MustNewID(encodingLogsOnlyID)
@@ -427,30 +427,28 @@ func TestConsumeTracesWithLogsOnlyEncoding(t *testing.T) {
 	}
 	id := component.MustNewID(encodingLogsOnlyID)
 	// Create a traces exporter with logs-only encoding
-	exp, err := newStorageExporter(
-		t.Context(),
-		&Config{
-			Bucket: bucketConfig{
-				Name: uploadBucketName,
-			},
-			Encoding: &id,
+	gcsExporter := newTestGCSExporter(t, &Config{
+		Bucket: bucketConfig{
+			Name: uploadBucketName,
 		},
-		func(_ context.Context) (string, error) {
-			return "test", nil
-		},
-		func(_ context.Context) (string, error) {
-			return "test", nil
-		},
-		zap.NewNop(),
-		signalTypeTraces,
-	)
-	require.NoError(t, err)
+		Encoding: &id,
+	}, signalTypeTraces)
 
-	errStart := exp.Start(t.Context(), mHost)
-	require.ErrorContains(t, errStart, "is not a traces marshaler")
+	errStart := gcsExporter.Start(t.Context(), mHost)
+	require.NoError(t, errStart)
+	// Verify it falls back to JSON marshaler
+	require.IsType(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
+
+	// Verify it can consume traces successfully
+	err := gcsExporter.ConsumeTraces(t.Context(), ptrace.NewTraces())
+	require.NoError(t, err)
 }
 
-func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
+func newTestGCSExporter(t *testing.T, cfg *Config, signal ...signalType) *storageExporter {
+	sig := signalTypeLogs
+	if len(signal) > 0 {
+		sig = signal[0]
+	}
 	exp, err := newStorageExporter(
 		t.Context(),
 		cfg,
@@ -461,7 +459,7 @@ func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
 			return "test", nil
 		},
 		zap.NewNop(),
-		signalTypeLogs,
+		sig,
 	)
 	require.NoError(t, err)
 	return exp

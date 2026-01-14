@@ -31,6 +31,11 @@ const (
 	signalTypeTraces signalType = "traces"
 )
 
+var (
+	errNotLogsMarshaler   = errors.New("extension is not a logs marshaler")
+	errNotTracesMarshaler = errors.New("extension is not a traces marshaler")
+)
+
 var validSignals = []signalType{signalTypeLogs, signalTypeTraces}
 
 type storageExporter struct {
@@ -131,17 +136,22 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 	if s.cfg.Encoding != nil {
 		switch s.signal {
 		case signalTypeLogs:
-			logsEncoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
+			logsEncoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler", errNotLogsMarshaler)
 			if err != nil {
 				return fmt.Errorf("failed to load logs extension: %w", err)
 			}
 			s.logsMarshaler = logsEncoding
 		case signalTypeTraces:
-			tracesEncoding, err := loadExtension[ptrace.Marshaler](host, *s.cfg.Encoding, "traces marshaler")
+			tracesEncoding, err := loadExtension[ptrace.Marshaler](host, *s.cfg.Encoding, "traces marshaler", errNotTracesMarshaler)
 			if err != nil {
-				return fmt.Errorf("failed to load traces extension: %w", err)
+				if errors.Is(err, errNotTracesMarshaler) {
+					s.logger.Warn("Configured encoding extension does not support traces, falling back to JSON marshaler", zap.String("encoding", s.cfg.Encoding.String()))
+				} else {
+					return fmt.Errorf("failed to load traces extension: %w", err)
+				}
+			} else {
+				s.tracesMarshaler = tracesEncoding
 			}
-			s.tracesMarshaler = tracesEncoding
 		}
 	}
 
@@ -280,7 +290,7 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 }
 
 // loadExtension tries to load an available extension for the given id.
-func loadExtension[T any](host component.Host, id component.ID, extensionType string) (T, error) {
+func loadExtension[T any](host component.Host, id component.ID, extensionType string, errNotMarshaler error) (T, error) {
 	var zero T
 	ext, ok := host.GetExtensions()[id]
 	if !ok {
@@ -288,7 +298,7 @@ func loadExtension[T any](host component.Host, id component.ID, extensionType st
 	}
 	extT, ok := ext.(T)
 	if !ok {
-		return zero, fmt.Errorf("extension %q is not a %s", id, extensionType)
+		return zero, fmt.Errorf("extension %q: %w", id, errNotMarshaler)
 	}
 	return extT, nil
 }
