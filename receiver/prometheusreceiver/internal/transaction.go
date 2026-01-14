@@ -107,8 +107,8 @@ func newTransaction(
 	}
 }
 
-// Append always returns 0 to disable label caching.
-func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
+// Append returns a stable series reference to enable Prometheus staleness tracking.
+func (t *transaction) Append(ref storage.SeriesRef, ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
 	t.addingNativeHistogram = false
 	t.addingNHCB = false
 
@@ -183,6 +183,7 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	curMF := t.getOrCreateMetricFamily(*rKey, scope, metricName)
 
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
+	cacheRef := ls.Hash()
 	err = curMF.addSeries(seriesRef, metricName, ls, atMs, val)
 	if err != nil {
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
@@ -192,8 +193,8 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	}
 
 	// never return errors, as that fails the whole scrape
-	// return ref==1 indicating that the series was added and needs staleness tracking
-	return 1, nil
+	// return a stable ref so Prometheus can track series staleness
+	return storage.SeriesRef(cacheRef), nil
 }
 
 // detectAndStoreNativeHistogramStaleness returns true if it detects
