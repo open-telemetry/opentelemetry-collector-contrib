@@ -102,7 +102,8 @@ func TestSyncBulkIndexer(t *testing.T) {
 							StatusCode: http.StatusOK,
 						}, nil
 					},
-				}})
+				},
+			})
 			require.NoError(t, err)
 
 			ct := componenttest.NewTelemetry()
@@ -205,6 +206,7 @@ func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 
 func TestNewBulkIndexer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoints = []string{"http://localhost:9200"}
 
 	client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
 	require.NoError(t, err)

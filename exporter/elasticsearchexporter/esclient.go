@@ -183,7 +183,7 @@ func newElasticsearchClient(
 	// Convert addresses to URLs
 	urls, err := addrsToURLs(endpoints)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create client: %s", err)
+		return nil, fmt.Errorf("cannot create client: %w", err)
 	}
 
 	if len(urls) == 0 {
@@ -233,12 +233,14 @@ func newElasticsearchClient(
 
 	tp, err := elastictransport.New(tpConfig)
 	if err != nil {
-		return nil, fmt.Errorf("error creating transport: %s", err)
+		return nil, fmt.Errorf("error creating transport: %w", err)
 	}
 
 	// Handle node discovery on start, matching elasticsearch.NewClient behavior
 	if config.Discovery.OnStart {
-		go tp.DiscoverNodesContext(ctx)
+		go func() {
+			_ = tp.DiscoverNodesContext(ctx)
+		}()
 	}
 
 	return &esClient{transport: tp}, nil
@@ -250,7 +252,7 @@ func addrsToURLs(addrs []string) ([]*url.URL, error) {
 	for _, addr := range addrs {
 		u, err := url.Parse(strings.TrimRight(addr, "/"))
 		if err != nil {
-			return nil, fmt.Errorf("cannot parse url: %v", err)
+			return nil, fmt.Errorf("cannot parse url: %w", err)
 		}
 
 		urls = append(urls, u)
