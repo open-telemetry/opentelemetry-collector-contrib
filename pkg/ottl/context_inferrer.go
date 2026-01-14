@@ -168,7 +168,7 @@ func (s *priorityContextInferrer) inferFromHints(hints []priorityContextInferrer
 	}
 	// No inferred context
 	if inferredContext == "" {
-		s.telemetrySettings.Logger.Debug("No context candidate found in the OTTLs")
+		s.telemetrySettings.Logger.Debug("No OTTL context candidate found")
 		return "", nil
 	}
 	// If no functions or enums are required, return the inferred context directly.
