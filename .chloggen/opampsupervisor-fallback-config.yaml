@@ -16,12 +16,9 @@ issues: [44368]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The Supervisor now supports switching to a fallback configuration in two scenarios:
-  1. Cannot connect to the OpAMP backend at startup, controlled by `fallback_startup_timeout`.
-  2. Lost connection to the OpAMP backend after startup, controlled by `fallback_runtime_timeout`.
-  Both options are time durations, allowing the OpAMP client to handle retries before switching.
-  They can be disabled by setting them to zero or omitting them entirely. The two timeouts are
-  independent, allowing different behaviors for startup vs runtime connection failures.
+  The Supervisor now supports switching to a fallback configuration when it cannot connect 
+  to the OpAMP backend at startup. The amount of time it will wait until applying the fallback
+  configuration is controlled by the `fallback_startup_timeout` configuration option.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

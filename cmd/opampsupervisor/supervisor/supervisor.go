@@ -361,7 +361,6 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	if s.config.Agent.FallbackEnabled() {
 		s.connStateTracker = NewConnectionStateTracker(ConnectionStateTrackerConfig{
 			StartupTimeout: s.config.Agent.FallbackStartupTimeout,
-			RuntimeTimeout: s.config.Agent.FallbackRuntimeTimeout,
 			Logger:         s.telemetrySettings.Logger.Named("connstate"),
 		})
 		s.connStateTracker.Start()

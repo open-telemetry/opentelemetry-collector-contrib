@@ -52,7 +52,6 @@ func TestNewConnectionStateTracker(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	config := ConnectionStateTrackerConfig{
 		StartupTimeout: 5 * time.Second,
-		RuntimeTimeout: 10 * time.Second,
 		Logger:         logger,
 	}
 
@@ -111,7 +110,6 @@ func TestConnectionStateTracker_OnConnectFailed_WhileWaiting(t *testing.T) {
 func TestConnectionStateTracker_OnConnectFailed_WhileConnected(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	tracker := NewConnectionStateTracker(ConnectionStateTrackerConfig{
-		RuntimeTimeout: 100 * time.Millisecond,
 		Logger:         logger,
 	})
 
@@ -136,32 +134,6 @@ func TestConnectionStateTracker_StartupFallbackTimeout(t *testing.T) {
 
 	tracker.Start()
 	defer tracker.Stop()
-
-	// Wait for the fallback event
-	select {
-	case event := <-tracker.Events():
-		assert.Equal(t, ConnectionStateEventFallbackTriggered, event)
-		assert.True(t, tracker.IsUsingFallback())
-	case <-time.After(200 * time.Millisecond):
-		t.Fatal("Expected fallback event but got timeout")
-	}
-}
-
-func TestConnectionStateTracker_RuntimeFallbackTimeout(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-	tracker := NewConnectionStateTracker(ConnectionStateTrackerConfig{
-		RuntimeTimeout: 50 * time.Millisecond,
-		Logger:         logger,
-	})
-
-	tracker.Start()
-	defer tracker.Stop()
-
-	// First connect
-	tracker.OnConnect()
-
-	// Then disconnect
-	tracker.OnConnectFailed()
 
 	// Wait for the fallback event
 	select {
@@ -241,7 +213,6 @@ func TestConnectionStateTracker_NoTimeoutConfigured(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	tracker := NewConnectionStateTracker(ConnectionStateTrackerConfig{
 		StartupTimeout: 0, // Disabled
-		RuntimeTimeout: 0, // Disabled
 		Logger:         logger,
 	})
 
@@ -335,100 +306,6 @@ func TestConnectionStateTracker_ConnectWhileAlreadyUsingFallback(t *testing.T) {
 	assert.False(t, tracker.IsUsingFallback())
 }
 
-func TestConnectionStateTracker_RuntimeTimerOnlyStartsAfterConnected(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-	tracker := NewConnectionStateTracker(ConnectionStateTrackerConfig{
-		StartupTimeout: 0,                     // Disabled
-		RuntimeTimeout: 50 * time.Millisecond, // Enabled
-		Logger:         logger,
-	})
-
-	tracker.Start()
-	defer tracker.Stop()
-
-	// OnConnectFailed while in Waiting state should NOT start runtime timer
-	tracker.OnConnectFailed()
-	assert.Equal(t, ConnectionStateWaiting, tracker.State())
-
-	// Wait past the runtime timeout
-	time.Sleep(100 * time.Millisecond)
-
-	// Should NOT have triggered fallback because we were never connected
-	assert.False(t, tracker.IsUsingFallback())
-
-	// Now connect and then disconnect
-	tracker.OnConnect()
-	assert.Equal(t, ConnectionStateConnected, tracker.State())
-
-	tracker.OnConnectFailed()
-	assert.Equal(t, ConnectionStateDisconnected, tracker.State())
-
-	// NOW the runtime timer should start and trigger fallback
-	select {
-	case event := <-tracker.Events():
-		assert.Equal(t, ConnectionStateEventFallbackTriggered, event)
-		assert.True(t, tracker.IsUsingFallback())
-	case <-time.After(200 * time.Millisecond):
-		t.Fatal("Expected fallback event after disconnect from connected state")
-	}
-}
-
-func TestConnectionStateTracker_MultipleDisconnectReconnectCycles(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-	tracker := NewConnectionStateTracker(ConnectionStateTrackerConfig{
-		RuntimeTimeout: 50 * time.Millisecond,
-		Logger:         logger,
-	})
-
-	tracker.Start()
-	defer tracker.Stop()
-
-	// Cycle 1: Connect -> Disconnect -> Reconnect before timeout
-	tracker.OnConnect()
-	assert.Equal(t, ConnectionStateConnected, tracker.State())
-
-	tracker.OnConnectFailed()
-	assert.Equal(t, ConnectionStateDisconnected, tracker.State())
-
-	// Reconnect before timeout
-	time.Sleep(20 * time.Millisecond)
-	tracker.OnConnect()
-	assert.Equal(t, ConnectionStateConnected, tracker.State())
-	assert.False(t, tracker.IsUsingFallback())
-
-	// Cycle 2: Disconnect -> Reconnect before timeout again
-	tracker.OnConnectFailed()
-	time.Sleep(20 * time.Millisecond)
-	tracker.OnConnect()
-	assert.Equal(t, ConnectionStateConnected, tracker.State())
-	assert.False(t, tracker.IsUsingFallback())
-
-	// Cycle 3: Disconnect and let it timeout
-	tracker.OnConnectFailed()
-
-	// Wait for fallback
-	select {
-	case event := <-tracker.Events():
-		assert.Equal(t, ConnectionStateEventFallbackTriggered, event)
-		assert.True(t, tracker.IsUsingFallback())
-	case <-time.After(200 * time.Millisecond):
-		t.Fatal("Expected fallback event")
-	}
-
-	// Cycle 4: Reconnect after fallback
-	tracker.OnConnect()
-
-	select {
-	case event := <-tracker.Events():
-		assert.Equal(t, ConnectionStateEventConnected, event)
-	case <-time.After(100 * time.Millisecond):
-		t.Fatal("Expected connected event")
-	}
-
-	assert.False(t, tracker.IsUsingFallback())
-	assert.Equal(t, ConnectionStateConnected, tracker.State())
-}
-
 func TestConnectionStateTracker_StopDuringFallbackTimer(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	tracker := NewConnectionStateTracker(ConnectionStateTrackerConfig{
@@ -478,45 +355,4 @@ func TestConnectionStateTracker_OnConnectNotUsingFallback(t *testing.T) {
 
 	assert.Equal(t, ConnectionStateConnected, tracker.State())
 	assert.False(t, tracker.IsUsingFallback())
-}
-
-func TestConnectionStateTracker_NoRuntimeFallbackWhenAlreadyUsingFallback(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-	tracker := NewConnectionStateTracker(ConnectionStateTrackerConfig{
-		StartupTimeout: 30 * time.Millisecond,
-		RuntimeTimeout: 30 * time.Millisecond,
-		Logger:         logger,
-	})
-
-	tracker.Start()
-	defer tracker.Stop()
-
-	// Wait for startup fallback to trigger
-	select {
-	case event := <-tracker.Events():
-		assert.Equal(t, ConnectionStateEventFallbackTriggered, event)
-	case <-time.After(100 * time.Millisecond):
-		t.Fatal("Expected fallback event")
-	}
-
-	assert.True(t, tracker.IsUsingFallback())
-
-	// Connect and then disconnect
-	tracker.OnConnect()
-	<-tracker.Events() // Consume the connected event
-
-	tracker.OnConnectFailed()
-
-	// Wait past the runtime timeout
-	time.Sleep(100 * time.Millisecond)
-
-	// Should not trigger another fallback event because we just recovered
-	// The usingFallback flag was cleared when we connected
-	select {
-	case event := <-tracker.Events():
-		// We should get a fallback event since we disconnected again
-		assert.Equal(t, ConnectionStateEventFallbackTriggered, event)
-	case <-time.After(100 * time.Millisecond):
-		t.Fatal("Expected fallback event after disconnect")
-	}
 }

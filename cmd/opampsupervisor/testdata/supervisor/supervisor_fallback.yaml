@@ -25,9 +25,6 @@ agent:
   {{- if .fallback_startup_timeout }}
   fallback_startup_timeout: {{ .fallback_startup_timeout }}
   {{- end }}
-  {{- if .fallback_runtime_timeout }}
-  fallback_runtime_timeout: {{ .fallback_runtime_timeout }}
-  {{- end }}
   {{- if .use_hup_config_reload }}
   use_hup_config_reload: {{ .use_hup_config_reload }}
   {{- end }}

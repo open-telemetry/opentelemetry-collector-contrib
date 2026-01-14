@@ -64,9 +64,6 @@ type ConnectionStateTrackerConfig struct {
 	// StartupTimeout is the duration to wait for the initial connection before
 	// triggering fallback. If zero, startup fallback is disabled.
 	StartupTimeout time.Duration
-	// RuntimeTimeout is the duration to wait after disconnection before
-	// triggering fallback. If zero, runtime fallback is disabled.
-	RuntimeTimeout time.Duration
 	// Logger is the logger to use for logging state changes.
 	Logger *zap.Logger
 }
@@ -183,19 +180,10 @@ func (t *ConnectionStateTracker) OnConnectFailed() {
 	}
 
 	// Only transition to disconnected if we were previously connected.
-	// Otherwise, we stay in waiting state.
+	// Otherwise, we stay in waiting state. A post-startup disconnect does not trigger fallback.
 	switch t.state {
 	case ConnectionStateConnected:
 		t.state = ConnectionStateDisconnected
-
-		// Start runtime fallback timer if configured and not already using fallback
-		if t.config.RuntimeTimeout > 0 && !t.usingFallback {
-			t.logger.Debug(
-				"Starting runtime fallback timer",
-				zap.Duration("timeout", t.config.RuntimeTimeout),
-			)
-			t.startFallbackTimer(t.config.RuntimeTimeout)
-		}
 	case ConnectionStateWaiting:
 		t.logger.Debug(
 			"OpAMP connection attempt failed while waiting for initial connection",

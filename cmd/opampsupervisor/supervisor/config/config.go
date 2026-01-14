@@ -231,10 +231,6 @@ type Agent struct {
 	// OpAMP server before using the fallback configuration. If not set or zero,
 	// fallback on startup is disabled.
 	FallbackStartupTimeout time.Duration `mapstructure:"fallback_startup_timeout"`
-	// FallbackRuntimeTimeout is how long to allow disconnection from the OpAMP
-	// server during runtime before switching to the fallback configuration.
-	// If not set or zero, fallback during runtime is disabled.
-	FallbackRuntimeTimeout time.Duration `mapstructure:"fallback_runtime_timeout"`
 }
 
 func (a Agent) Validate() error {
@@ -304,10 +300,6 @@ func (a Agent) validateFallbackConfigs() error {
 
 	if a.FallbackStartupTimeout < 0 {
 		return errors.New("agent::fallback_startup_timeout must be non-negative")
-	}
-
-	if a.FallbackRuntimeTimeout < 0 {
-		return errors.New("agent::fallback_runtime_timeout must be non-negative")
 	}
 
 	return nil

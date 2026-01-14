@@ -186,11 +186,6 @@ agent:
   # fallback is disabled.
   fallback_startup_timeout: 30s
 
-  # How long to allow disconnection from the OpAMP server during runtime
-  # before switching to the fallback configuration. If not set or zero,
-  # runtime fallback is disabled.
-  fallback_runtime_timeout: 60s
-
 # Supervisor's internal telemetry settings.
 telemetry:
   # Logs configuration.
@@ -328,20 +323,12 @@ to ensure that they are valid configurations.
 
 If more than one fallback configuration is specified, the Supervisor will merge them in order.
 
-There are two scenarios where the Supervisor will switch to the fallback configuration:
+There is one scenario where the Supervisor will switch to the fallback configuration:
 
 **Startup Fallback**: If `fallback_startup_timeout` is set and the Supervisor cannot
 establish an initial connection to the OpAMP server within that duration, the Collector
 will be started with the fallback configuration specified in `fallback_config`. The
 default value for this timeout is 30 seconds. It'll only be used if `fallback_configs` is set.
-
-**Runtime Fallback**: If `fallback_runtime_timeout` is set and the connection to the
-OpAMP server is lost after being previously connected, the Supervisor will wait for
-the specified duration. If the connection is not restored, the Collector will be
-switched to the fallback configuration. This can be useful to avoid a potentially
-problematic configuration drift if the agent cannot receive a remote configuration
-for a long time. The default value of this timeout is 0 (disabled). It must be set
-to a non-zero value to enable runtime fallback.
 
 **Recovery**: When the connection to the OpAMP server is restored after using the
 fallback configuration, the Supervisor automatically switches back to the remote
