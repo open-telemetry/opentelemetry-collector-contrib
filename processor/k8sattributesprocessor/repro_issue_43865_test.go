@@ -4,7 +4,6 @@
 package k8sattributesprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -18,7 +17,7 @@ func TestNodeUIDWithoutNodeName(t *testing.T) {
 	cfg.Extract.Metadata = []string{"k8s.node.uid"}
 
 	settings := processortest.NewNopSettings(factory.Type())
-	tp, err := factory.CreateTraces(context.Background(), settings, cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(t.Context(), settings, cfg, consumertest.NewNop())
 
 	require.NoError(t, err)
 	require.NotNil(t, tp)
