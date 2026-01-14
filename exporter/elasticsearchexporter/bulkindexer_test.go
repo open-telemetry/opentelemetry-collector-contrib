@@ -191,10 +191,11 @@ func TestSyncBulkIndexer(t *testing.T) {
 }
 
 func TestQueryParamsParsedFromEndpoints(t *testing.T) {
-	client, err := elasticsearch.NewDefaultClient()
-	require.NoError(t, err)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline"}
+
+	client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
+	require.NoError(t, err)
 
 	bi := bulkIndexerConfig(client, cfg, true, zaptest.NewLogger(t))
 	require.Equal(t, map[string][]string{
@@ -203,13 +204,12 @@ func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 }
 
 func TestNewBulkIndexer(t *testing.T) {
-	client, err := elastictransport.New(elastictransport.Config{
-		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
-	})
-	require.NoError(t, err)
-	cfg := createDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 
-	bi := newBulkIndexer(client, cfg.(*Config), true, nil, nil)
+	client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
+	require.NoError(t, err)
+
+	bi := newBulkIndexer(client, cfg, true, nil, nil)
 	t.Cleanup(func() { bi.Close(t.Context()) })
 }
 
