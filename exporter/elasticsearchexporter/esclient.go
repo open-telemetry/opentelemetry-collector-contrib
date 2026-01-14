@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/elastic/elastic-transport-go/v8/elastictransport"
+	elastictransportversion "github.com/elastic/elastic-transport-go/v8/elastictransport/version"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -214,9 +215,13 @@ func newElasticsearchClient(
 
 		DiscoverNodesInterval: config.Discovery.Interval,
 
-		Transport:       httpClient.Transport,
-		Logger:          esLogger,
-		Instrumentation: elastictransport.NewOtelInstrumentation(telemetry.TracerProvider, false, "otelcol-contrib"), // FIXME: use collector version
+		Transport: httpClient.Transport,
+		Logger:    esLogger,
+		Instrumentation: elastictransport.NewOtelInstrumentation(
+			telemetry.TracerProvider,
+			false,
+			elastictransportversion.Version,
+		),
 	}
 
 	tp, err := elastictransport.New(tpConfig)
