@@ -73,7 +73,7 @@ See the [opampcustommessages](../opampcustommessages/README.md) module for more 
 ## Using the AcceptsRestartCommand capability to orchestrate collector config updates
 If the `accepts_restart_command` capability is enabled (along with the `extension.opampextension.RemoteRestarts` feature gate), upon receiving a restart `ServerToAgentCommand`, the extension will send a `SIGHUP` signal to the collector process. 
 
-The `SIGHUP` signal is already trapped in the collector and initiates a graceful restart of all the components. This functionality might be desired if the collectors config was updated and the restart would fetch the latest config values.
+The `SIGHUP` signal is trapped in the Collector and initiates a graceful restart of all the components by restarting the Collectors service, which restarts all components, pipelines, and Collector self-monitoring. This functionality might be desired if the Collector's config was updated, as the restart also fetches all configuration sources passed to the Collector through `--config` flags passed to the command invocation.
 
 **NOTE** on the `SIGHUP` signal for restarts:
 SIGHUP is not supported in the `windows` operating system, and the current implementation will short circuit evaluation on windows systems (until the collector can also handle a cross-platform signal like SIGUSR2).
