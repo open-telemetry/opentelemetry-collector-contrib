@@ -279,6 +279,9 @@ func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 }
 
 func IsEmptyResource(res pcommon.Resource) bool {
+	if res == (pcommon.Resource{}) {
+		return true
+	}
 	return res.Attributes().Len() == 0
 }
 
