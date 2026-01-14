@@ -156,6 +156,7 @@ func (m *metricSystemdServiceCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemdServiceCPUTime(cfg MetricConfig) metricSystemdServiceCPUTime {
 	m := metricSystemdServiceCPUTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -207,6 +208,7 @@ func (m *metricSystemdServiceRestarts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemdServiceRestarts(cfg MetricConfig) metricSystemdServiceRestarts {
 	m := metricSystemdServiceRestarts{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -260,6 +262,7 @@ func (m *metricSystemdUnitState) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemdUnitState(cfg MetricConfig) metricSystemdUnitState {
 	m := metricSystemdUnitState{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

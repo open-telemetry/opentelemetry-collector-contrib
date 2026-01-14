@@ -33,6 +33,8 @@ type redaction struct {
 	allowList map[string]string
 	// Attribute keys ignored in a span
 	ignoreList map[string]string
+	// Attribute key patterns ignored in a span
+	ignoreKeyRegexList map[string]*regexp.Regexp
 	// Attribute values blocked in a span
 	blockRegexList map[string]*regexp.Regexp
 	// Attribute values allowed in a span
@@ -55,6 +57,11 @@ type redaction struct {
 func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*redaction, error) {
 	allowList := makeAllowList(config)
 	ignoreList := makeIgnoreList(config)
+	ignoreKeysRegexList, err := makeRegexList(ctx, config.IgnoredKeyPatterns)
+	if err != nil {
+		// TODO: Placeholder for an error metric in the next PR
+		return nil, fmt.Errorf("failed to process ignore keys list: %w", err)
+	}
 	blockRegexList, err := makeRegexList(ctx, config.BlockedValues)
 	if err != nil {
 		// TODO: Placeholder for an error metric in the next PR
@@ -82,16 +89,17 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 	dbObfuscator := db.NewObfuscator(config.DBSanitizer)
 
 	return &redaction{
-		allowList:         allowList,
-		ignoreList:        ignoreList,
-		blockRegexList:    blockRegexList,
-		allowRegexList:    allowRegexList,
-		blockKeyRegexList: blockKeysRegexList,
-		hashFunction:      config.HashFunction,
-		config:            config,
-		logger:            logger,
-		urlSanitizer:      urlSanitizer,
-		dbObfuscator:      dbObfuscator,
+		allowList:          allowList,
+		ignoreList:         ignoreList,
+		ignoreKeyRegexList: ignoreKeysRegexList,
+		blockRegexList:     blockRegexList,
+		allowRegexList:     allowRegexList,
+		blockKeyRegexList:  blockKeysRegexList,
+		hashFunction:       config.HashFunction,
+		config:             config,
+		logger:             logger,
+		urlSanitizer:       urlSanitizer,
+		dbObfuscator:       dbObfuscator,
 	}, nil
 }
 
@@ -495,6 +503,12 @@ func (s *redaction) shouldAllowValue(strVal string) bool {
 func (s *redaction) shouldIgnoreKey(k string) bool {
 	if _, ignored := s.ignoreList[k]; ignored {
 		return true
+	}
+	// Check if key matches any of the ignored key patterns
+	for _, compiledRE := range s.ignoreKeyRegexList {
+		if compiledRE.MatchString(k) {
+			return true
+		}
 	}
 	return false
 }
