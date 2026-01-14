@@ -1,0 +1,66 @@
+# Example OpenTelemetry Collector configuration using the windowseventlogreceiver
+# This configuration demonstrates various Windows Event Log monitoring scenarios
+#
+# IMPORTANT: This receiver only works on Windows operating systems
+#
+# To test this configuration on Windows:
+# 1. Build the collector for Windows: make build-windows
+# 2. Copy the binary and this config to a Windows machine
+# 3. Run: observiq-otel-collector.exe --config collector-config-example.yaml
+
+receivers:
+  # Example 1: Basic Application Event Log monitoring
+  windowseventlog/application:
+    channel: application
+    start_at: end  # Start reading from the end (new events only)
+
+  # Example 2: System Event Log with custom polling
+  windowseventlog/system:
+    channel: system
+    start_at: beginning  # Read all events from the beginning
+    max_reads: 100  # Maximum records to read per poll
+    poll_interval: 1s  # Poll every second
+
+  # Example 3: Security Event Log monitoring
+  windowseventlog/security:
+    channel: security
+    start_at: end
+    # Security logs often require elevated privileges
+
+  # Example 4: Custom Event Log channel
+  windowseventlog/custom:
+    channel: "Microsoft-Windows-PowerShell/Operational"
+    start_at: end
+    max_reads: 50
+
+processors:
+  # Add batch processing to improve performance
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+exporters:
+  # Export to console for testing
+  debug:
+    verbosity: detailed
+
+  # Example: Export to file
+  file:
+    path: ./windows-events.json
+    rotation:
+      max_megabytes: 100
+      max_backups: 3
+
+service:
+  pipelines:
+    logs:
+      receivers:
+        - windowseventlog/application
+        - windowseventlog/system
+        - windowseventlog/security
+        - windowseventlog/custom
+      processors:
+        - batch
+      exporters:
+        - debug
+        - file
