@@ -4,9 +4,9 @@ go 1.24.0
 
 require (
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
-	k8s.io/api v0.34.2
-	k8s.io/apimachinery v0.34.2
-	k8s.io/client-go v0.34.2
+	k8s.io/api v0.34.3
+	k8s.io/apimachinery v0.34.3
+	k8s.io/client-go v0.34.3
 )
 
 require (
@@ -59,3 +59,6 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+// Can be removed after 0.144.0 release
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260109195331-fbd5d3f9faae

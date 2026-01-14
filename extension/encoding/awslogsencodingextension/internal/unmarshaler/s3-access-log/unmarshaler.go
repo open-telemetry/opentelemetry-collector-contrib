@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
@@ -80,9 +80,9 @@ func (s *s3AccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plo
 // setResourceAttributes based on the resourceAttributes
 func (*s3AccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, logs plog.ResourceLogs) {
 	attr := logs.Resource().Attributes()
-	attr.PutStr(string(semconv.CloudProviderKey), semconv.CloudProviderAWS.Value.AsString())
+	attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	if r.bucketName != "" {
-		attr.PutStr(string(semconv.AWSS3BucketKey), r.bucketName)
+		attr.PutStr(string(conventions.AWSS3BucketKey), r.bucketName)
 	}
 	if r.bucketOwner != "" {
 		attr.PutStr(attributeAWSS3BucketOwner, r.bucketOwner)
@@ -217,7 +217,7 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		if method == "" {
 			return fmt.Errorf("unexpected: request uri %q has no method", value)
 		}
-		record.Attributes().PutStr(string(semconv.HTTPRequestMethodKey), method)
+		record.Attributes().PutStr(string(conventions.HTTPRequestMethodKey), method)
 
 		requestURI, remaining, _ := strings.Cut(remaining, " ")
 		if requestURI == "" {
@@ -228,13 +228,13 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 			return fmt.Errorf("request uri path is invalid: %w", err)
 		}
 		if res.Path != "" {
-			record.Attributes().PutStr(string(semconv.URLPathKey), res.Path)
+			record.Attributes().PutStr(string(conventions.URLPathKey), res.Path)
 		}
 		if res.RawQuery != "" {
-			record.Attributes().PutStr(string(semconv.URLQueryKey), res.RawQuery)
+			record.Attributes().PutStr(string(conventions.URLQueryKey), res.RawQuery)
 		}
 		if res.Scheme != "" {
-			record.Attributes().PutStr(string(semconv.URLSchemeKey), res.Scheme)
+			record.Attributes().PutStr(string(conventions.URLSchemeKey), res.Scheme)
 		}
 
 		protocol, remaining, _ := strings.Cut(remaining, " ")
@@ -248,8 +248,8 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		if err != nil {
 			return err
 		}
-		record.Attributes().PutStr(string(semconv.NetworkProtocolNameKey), name)
-		record.Attributes().PutStr(string(semconv.NetworkProtocolVersionKey), version)
+		record.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), name)
+		record.Attributes().PutStr(string(conventions.NetworkProtocolVersionKey), version)
 	default:
 		attrName := attributeNames[field]
 		record.Attributes().PutStr(attrName, value)

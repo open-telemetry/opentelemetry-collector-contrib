@@ -11,10 +11,9 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 )
 
 const (
@@ -89,15 +88,15 @@ func handleConnection(conn *connection, attr pcommon.Map) {
 		return
 	}
 
-	shared.PutStr(string(semconv.ClientAddressKey), conn.ClientIP, attr)
-	shared.PutInt(string(semconv.ClientPortKey), conn.ClientPort, attr)
+	shared.PutStr(string(conventions.ClientAddressKey), conn.ClientIP, attr)
+	shared.PutInt(string(conventions.ClientPortKey), conn.ClientPort, attr)
 
-	shared.PutStr(string(semconv.ServerAddressKey), conn.ServerIP, attr)
-	shared.PutInt(string(semconv.ServerPortKey), conn.ServerPort, attr)
+	shared.PutStr(string(conventions.ServerAddressKey), conn.ServerIP, attr)
+	shared.PutInt(string(conventions.ServerPortKey), conn.ServerPort, attr)
 
 	if conn.Protocol != nil {
-		if protoName, ok := vpcflowlog.ProtocolName(uint32(*conn.Protocol)); ok {
-			attr.PutStr(string(semconv.NetworkTransportKey), protoName)
+		if protoName, ok := shared.ProtocolName(uint32(*conn.Protocol)); ok {
+			attr.PutStr(string(conventions.NetworkTransportKey), protoName)
 		}
 	}
 }

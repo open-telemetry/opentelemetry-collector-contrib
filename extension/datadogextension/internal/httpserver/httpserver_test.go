@@ -219,7 +219,8 @@ const successfulInstanceResponse = `{
     "full_configuration": "",
     "health_status": "",
     "collector_resource_attributes": {},
-    "collector_deployment_type": "unknown"
+    "collector_deployment_type": "unknown",
+    "ttl": 900000000000
   },
   "uuid": "test-uuid"
 }`
@@ -297,6 +298,7 @@ func TestHandleMetadata(t *testing.T) {
 						ActiveComponents:            []payload.ServiceComponent{},
 						CollectorResourceAttributes: map[string]string{},
 						CollectorDeploymentType:     "unknown", // Default value set by config validation
+						TTL:                         int64(5 * time.Minute * 3),
 					},
 				},
 			}

@@ -13,6 +13,7 @@ components:
     - cmd/opampsupervisor
     - cmd/otelcontribcol
     - cmd/oteltestbedcol
+    - cmd/schemagen
     - cmd/telemetrygen
     - connector/count
     - connector/datadog
@@ -136,6 +137,7 @@ components:
     - internal/healthcheck
     - internal/k8sconfig
     - internal/k8sinventory
+    - internal/k8sleaderelectortest
     - internal/kafka
     - internal/kubelet
     - internal/metadataproviders
@@ -168,12 +170,12 @@ components:
     - pkg/translator/azurelogs
     - pkg/translator/jaeger
     - pkg/translator/loki
-    - pkg/translator/opencensus
     - pkg/translator/pprof
     - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
     - pkg/translator/skywalking
+    - pkg/translator/splunk
     - pkg/translator/zipkin
     - pkg/winperfcounters
     - pkg/xk8stest
@@ -198,6 +200,7 @@ components:
     - processor/k8sattributes
     - processor/logdedup
     - processor/logstransform
+    - processor/lookup
     - processor/metricsgeneration
     - processor/metricstarttime
     - processor/metricstransform

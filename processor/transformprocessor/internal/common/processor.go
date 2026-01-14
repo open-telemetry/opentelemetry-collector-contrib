@@ -22,8 +22,8 @@ import (
 var _ baseContext = &resourceStatements{}
 
 type resourceStatements struct {
-	ottl.StatementSequence[ottlresource.TransformContext]
-	expr.BoolExpr[ottlresource.TransformContext]
+	ottl.StatementSequence[*ottlresource.TransformContext]
+	expr.BoolExpr[*ottlresource.TransformContext]
 }
 
 func (resourceStatements) Context() ContextID {
@@ -32,68 +32,80 @@ func (resourceStatements) Context() ContextID {
 
 func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for _, rspans := range td.ResourceSpans().All() {
-		tCtx := ottlresource.NewTransformContext(rspans.Resource(), rspans)
+		tCtx := ottlresource.NewTransformContextPtr(rspans.Resource(), rspans)
 		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
+			tCtx.Close()
 			return err
 		}
 		if condition {
-			err := r.Execute(ctx, tCtx)
+			err = r.Execute(ctx, tCtx)
 			if err != nil {
+				tCtx.Close()
 				return err
 			}
 		}
+		tCtx.Close()
 	}
 	return nil
 }
 
 func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	for _, rmetrics := range md.ResourceMetrics().All() {
-		tCtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics)
+		tCtx := ottlresource.NewTransformContextPtr(rmetrics.Resource(), rmetrics)
 		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
+			tCtx.Close()
 			return err
 		}
 		if condition {
-			err := r.Execute(ctx, tCtx)
+			err = r.Execute(ctx, tCtx)
 			if err != nil {
+				tCtx.Close()
 				return err
 			}
 		}
+		tCtx.Close()
 	}
 	return nil
 }
 
 func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for _, rlogs := range ld.ResourceLogs().All() {
-		tCtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
+		tCtx := ottlresource.NewTransformContextPtr(rlogs.Resource(), rlogs)
 		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
+			tCtx.Close()
 			return err
 		}
 		if condition {
-			err := r.Execute(ctx, tCtx)
+			err = r.Execute(ctx, tCtx)
 			if err != nil {
+				tCtx.Close()
 				return err
 			}
 		}
+		tCtx.Close()
 	}
 	return nil
 }
 
 func (r resourceStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
 	for _, rprofiles := range ld.ResourceProfiles().All() {
-		tCtx := ottlresource.NewTransformContext(rprofiles.Resource(), rprofiles)
+		tCtx := ottlresource.NewTransformContextPtr(rprofiles.Resource(), rprofiles)
 		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
+			tCtx.Close()
 			return err
 		}
 		if condition {
-			err := r.Execute(ctx, tCtx)
+			err = r.Execute(ctx, tCtx)
 			if err != nil {
+				tCtx.Close()
 				return err
 			}
 		}
+		tCtx.Close()
 	}
 	return nil
 }
@@ -101,8 +113,8 @@ func (r resourceStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Pro
 var _ baseContext = &scopeStatements{}
 
 type scopeStatements struct {
-	ottl.StatementSequence[ottlscope.TransformContext]
-	expr.BoolExpr[ottlscope.TransformContext]
+	ottl.StatementSequence[*ottlscope.TransformContext]
+	expr.BoolExpr[*ottlscope.TransformContext]
 }
 
 func (scopeStatements) Context() ContextID {
@@ -112,17 +124,20 @@ func (scopeStatements) Context() ContextID {
 func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for _, rspans := range td.ResourceSpans().All() {
 		for _, sspans := range rspans.ScopeSpans().All() {
-			tCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource(), sspans)
+			tCtx := ottlscope.NewTransformContextPtr(sspans.Scope(), rspans.Resource(), sspans)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
+				tCtx.Close()
 				return err
 			}
 			if condition {
-				err := s.Execute(ctx, tCtx)
+				err = s.Execute(ctx, tCtx)
 				if err != nil {
+					tCtx.Close()
 					return err
 				}
 			}
+			tCtx.Close()
 		}
 	}
 	return nil
@@ -131,17 +146,20 @@ func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	for _, rmetrics := range md.ResourceMetrics().All() {
 		for _, smetrics := range rmetrics.ScopeMetrics().All() {
-			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource(), smetrics)
+			tCtx := ottlscope.NewTransformContextPtr(smetrics.Scope(), rmetrics.Resource(), smetrics)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
+				tCtx.Close()
 				return err
 			}
 			if condition {
-				err := s.Execute(ctx, tCtx)
+				err = s.Execute(ctx, tCtx)
 				if err != nil {
+					tCtx.Close()
 					return err
 				}
 			}
+			tCtx.Close()
 		}
 	}
 	return nil
@@ -150,17 +168,20 @@ func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics)
 func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for _, rlogs := range ld.ResourceLogs().All() {
 		for _, slogs := range rlogs.ScopeLogs().All() {
-			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource(), slogs)
+			tCtx := ottlscope.NewTransformContextPtr(slogs.Scope(), rlogs.Resource(), slogs)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
+				tCtx.Close()
 				return err
 			}
 			if condition {
 				err := s.Execute(ctx, tCtx)
 				if err != nil {
+					tCtx.Close()
 					return err
 				}
 			}
+			tCtx.Close()
 		}
 	}
 	return nil
@@ -169,17 +190,20 @@ func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 func (s scopeStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
 	for _, rprofiles := range ld.ResourceProfiles().All() {
 		for _, sprofiles := range rprofiles.ScopeProfiles().All() {
-			tCtx := ottlscope.NewTransformContext(sprofiles.Scope(), rprofiles.Resource(), sprofiles)
+			tCtx := ottlscope.NewTransformContextPtr(sprofiles.Scope(), rprofiles.Resource(), sprofiles)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
+				tCtx.Close()
 				return err
 			}
 			if condition {
-				err := s.Execute(ctx, tCtx)
+				err = s.Execute(ctx, tCtx)
 				if err != nil {
+					tCtx.Close()
 					return err
 				}
 			}
+			tCtx.Close()
 		}
 	}
 	return nil
@@ -203,12 +227,12 @@ func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
 			return err
 		}
 
-		err = ottl.WithParserCollectionContext(ottlresource.ContextName, &rp, ottl.WithStatementConverter[ottlresource.TransformContext, R](parseResourceContextStatements))(pc)
+		err = ottl.WithParserCollectionContext(ottlresource.ContextName, &rp, ottl.WithStatementConverter[*ottlresource.TransformContext, R](parseResourceContextStatements))(pc)
 		if err != nil {
 			return err
 		}
 
-		err = ottl.WithParserCollectionContext(ottlscope.ContextName, &sp, ottl.WithStatementConverter[ottlscope.TransformContext, R](parseScopeContextStatements))(pc)
+		err = ottl.WithParserCollectionContext(ottlscope.ContextName, &sp, ottl.WithStatementConverter[*ottlscope.TransformContext, R](parseScopeContextStatements))(pc)
 		if err != nil {
 			return err
 		}
@@ -220,7 +244,7 @@ func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
 func parseResourceContextStatements[R any](
 	pc *ottl.ParserCollection[R],
 	statements ottl.StatementsGetter,
-	parsedStatements []*ottl.Statement[ottlresource.TransformContext],
+	parsedStatements []*ottl.Statement[*ottlresource.TransformContext],
 ) (R, error) {
 	contextStatements, err := toContextStatements(statements)
 	if err != nil {
@@ -230,7 +254,7 @@ func parseResourceContextStatements[R any](
 	if contextStatements.ErrorMode != "" {
 		errorMode = contextStatements.ErrorMode
 	}
-	var parserOptions []ottl.Option[ottlresource.TransformContext]
+	var parserOptions []ottl.Option[*ottlresource.TransformContext]
 	if contextStatements.Context == "" {
 		parserOptions = append(parserOptions, ottlresource.EnablePathContextNames())
 	}
@@ -246,7 +270,7 @@ func parseResourceContextStatements[R any](
 func parseScopeContextStatements[R any](
 	pc *ottl.ParserCollection[R],
 	statements ottl.StatementsGetter,
-	parsedStatements []*ottl.Statement[ottlscope.TransformContext],
+	parsedStatements []*ottl.Statement[*ottlscope.TransformContext],
 ) (R, error) {
 	contextStatements, err := toContextStatements(statements)
 	if err != nil {
@@ -256,7 +280,7 @@ func parseScopeContextStatements[R any](
 	if contextStatements.ErrorMode != "" {
 		errorMode = contextStatements.ErrorMode
 	}
-	var parserOptions []ottl.Option[ottlscope.TransformContext]
+	var parserOptions []ottl.Option[*ottlscope.TransformContext]
 	if contextStatements.Context == "" {
 		parserOptions = append(parserOptions, ottlscope.EnablePathContextNames())
 	}

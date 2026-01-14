@@ -454,6 +454,7 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 
 - [Base64Decode](#base64decode)
+- [Bool](#bool)
 - [Decode](#decode)
 - [CommunityID](#communityid)
 - [Concat](#concat)
@@ -559,6 +560,36 @@ Examples:
 
 
 - `Base64Decode(resource.attributes["encoded field"])`
+
+### Bool
+
+`Bool(value)`
+
+The `Bool` Converter converts the `value` to a bool type.
+
+The returned type is `bool`.
+
+The accepted input `value` types are:
+
+- `bool`: Returns the value without changes.
+- `float64`: Returns `true` if non-zero, otherwise `false`.
+- `int64`: Returns `true` if non-zero, otherwise `false`.
+- `string`: Tries to parse a boolean from the string. It returns `true` for "1", "t", "T", "true", "TRUE", or "True"; returns `false` for "0", "f", "F", "false", "FALSE" or "False".
+- `nil`: Returns `nil`.
+
+If `value` is another type or parsing failed, `nil` is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Bool(log.attributes["truthy_attribute"])`
+
+
+- `Bool("true")`
+
+
+- `Bool("0")`
 
 ### Decode
 
@@ -1897,15 +1928,17 @@ Examples:
 
 ### ProfileID
 
-`ProfileID(bytes)`
+`ProfileID(bytes|string)`
 
-The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice.
+The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice OR hex string.
 
-`bytes` is a byte slice of exactly 16 bytes.
+`bytes`  byte slice of exactly 16 bytes.
+`string` is a string of exactly 32 hex characters solely composed of valid hexadecimal chars.
 
 Examples:
 
 - `ProfileID(0x00112233445566778899aabbccddeeff)`
+- `ProfileID("a389023abaa839283293ed323892389d")`
 
 ### RemoveXML
 
@@ -2163,15 +2196,17 @@ Examples:
 
 ### SpanID
 
-`SpanID(bytes)`
+`SpanID(bytes|string)`
 
-The `SpanID` Converter returns a `pdata.SpanID` struct from the given byte slice.
+The `SpanID` Converter returns a `pdata.SpanID` struct from the given byte slice OR hex string.
 
-`bytes` is a byte slice of exactly 8 bytes.
+`bytes`  byte slice of exactly 8 bytes.
+`string` is a string of exactly 16 hex characters solely composed of valid hexadecimal chars.
 
 Examples:
 
 - `SpanID(0x0000000000000000)`
+- `SpanID("0102030405060708")`
 
 ### Split
 
@@ -2448,15 +2483,18 @@ Examples:
 
 ### TraceID
 
-`TraceID(bytes)`
+`TraceID(bytes|string)`
 
-The `TraceID` Converter returns a `pdata.TraceID` struct from the given byte slice.
+The `TraceID` Converter returns a `pdata.TraceID` struct from the given byte slice OR hex string.
 
-`bytes` is a byte slice of exactly 16 bytes.
+`bytes`  byte slice of exactly 16 bytes.
+`string` is a string of exactly 16 bytes solely composed of valid hexadecimal chars.
 
 Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
+- `TraceID("a389023abaa839283293ed323892389d")`
+
 
 ### TruncateTime
 
