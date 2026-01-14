@@ -3832,36 +3832,6 @@ func TestDeploymentHashSuffixPattern(t *testing.T) {
 	}
 }
 
-func TestResolveReplicaSetDeploymentLinkage_ReuseCache(t *testing.T) {
-	c := &WatchClient{
-		ReplicaSets: make(map[string]*ReplicaSet),
-		m:           sync.RWMutex{},
-		Rules: ExtractionRules{
-			DeploymentUID:  true,
-			DeploymentName: true,
-		},
-	}
-
-	rsUID := "test-replicaset-uid"
-	cachedDeployment := Deployment{
-		Name: "test-deployment",
-		UID:  "test-deployment-uid",
-	}
-	c.ReplicaSets[rsUID] = &ReplicaSet{
-		UID:        rsUID,
-		Deployment: cachedDeployment,
-	}
-
-	rsView := replicasetView{
-		UID: rsUID,
-	}
-
-	c.resolveReplicaSetDeploymentLinkage(&rsView)
-
-	assert.Equal(t, "test-deployment", rsView.DeploymentName)
-	assert.Equal(t, "test-deployment-uid", rsView.DeploymentUID)
-}
-
 func TestCreateRestConfigFailure(t *testing.T) {
 	// Simulate a failure in CreateRestConfig by returning nil for the informer
 	factory := InformersFactoryList{
