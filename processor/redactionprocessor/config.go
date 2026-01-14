@@ -49,6 +49,11 @@ type Config struct {
 	// without being changed or removed.
 	IgnoredKeys []string `mapstructure:"ignored_keys"`
 
+	// IgnoredKeyPatterns is a list of attribute key patterns (regex) that are not redacted.
+	// attributes matching any of these patterns are allowed to pass through the filter
+	// without their values being checked or modified.
+	IgnoredKeyPatterns []string `mapstructure:"ignored_key_patterns"`
+
 	// RedactAllTypes of attributes, including those that are not string, by converting to a string representation.
 	// By default only string values are redacted.
 	RedactAllTypes bool `mapstructure:"redact_all_types"`
