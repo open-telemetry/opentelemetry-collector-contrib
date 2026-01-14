@@ -226,7 +226,7 @@ func newElasticsearchClient(
 
 	// Handle node discovery on start, matching elasticsearch.NewClient behavior
 	if config.Discovery.OnStart {
-		go tp.DiscoverNodes() // FIXME: deprecated
+		go tp.DiscoverNodesContext(ctx)
 	}
 
 	return &esClient{transport: tp}, nil
