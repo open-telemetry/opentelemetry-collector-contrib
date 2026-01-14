@@ -12,7 +12,9 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/pprof/profile"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
@@ -28,13 +30,9 @@ func TestConvertPprofToPprofile(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			inbytes, err := os.ReadFile(filepath.Join("internal/testdata/", name))
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 			p, err := profile.Parse(bytes.NewBuffer(inbytes))
-			if err != nil {
-				t.Fatalf("%s: %s", name, err)
-			}
+			require.NoError(t, err)
 
 			pprofile, err := convertPprofToPprofile(p)
 			switch {
@@ -44,10 +42,11 @@ func TestConvertPprofToPprofile(t *testing.T) {
 			default:
 				t.Fatalf("expected error '%s' but got '%s'", tc.expectedError, err)
 			}
-			if err != nil {
-				t.Fatalf("%s: %s", name, err)
+			roundTrip, err := convertPprofileToPprof(pprofile)
+			require.NoError(t, err)
+			if diff := cmp.Diff(p.String(), roundTrip.String()); diff != "" {
+				t.Fatalf("round-trip profile mismatch (-want +got):\n%s", diff)
 			}
-			_ = pprofile
 		})
 	}
 }
@@ -80,7 +79,7 @@ func TestStringToAttrIdx(t *testing.T) {
 		{input: "", output: []int32{}},
 		{input: "73", output: []int32{73}},
 		{input: "3;5;7", output: []int32{3, 5, 7}},
-		{input: "7;5;3", expectedError: errInalIdxFomrat},
+		{input: "7;5;3", expectedError: errIdxFormatInvalid},
 		{input: "invalid", expectedError: strconv.ErrSyntax},
 	} {
 		t.Run(tc.input, func(t *testing.T) {
@@ -133,13 +132,13 @@ func TestStringToLine(t *testing.T) {
 			name:          "invalid format",
 			input:         "invalid",
 			expected:      nil,
-			expectedError: errInalIdxFomrat,
+			expectedError: errIdxFormatInvalid,
 		},
 		{
 			name:          "incomplete format",
 			input:         "1:10:5;2:20",
 			expected:      nil,
-			expectedError: errInalIdxFomrat,
+			expectedError: errIdxFormatInvalid,
 		},
 		{
 			name:          "invalid function ID",

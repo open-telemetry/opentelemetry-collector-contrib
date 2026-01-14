@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecs
 go 1.24.0
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.41.0
+	github.com/aws/aws-sdk-go-v2 v1.41.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.143.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.143.0
 	github.com/stretchr/testify v1.11.1
