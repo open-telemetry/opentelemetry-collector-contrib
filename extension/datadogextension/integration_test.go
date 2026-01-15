@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.uber.org/zap"
@@ -606,7 +607,10 @@ func TestHTTPServerIntegration(t *testing.T) {
 	// Step 3: Create HTTP server configuration
 	serverConfig := &httpserver.Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0", // Use any available port for testing
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:0",
+			},
 		},
 		Path: "/otel/metadata",
 	}
@@ -739,7 +743,10 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 			name: "default_config",
 			config: &httpserver.Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: httpserver.DefaultServerEndpoint,
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  httpserver.DefaultServerEndpoint,
+					},
 				},
 				Path: "/metadata",
 			},
@@ -748,7 +755,10 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 			name: "custom_endpoint_and_path",
 			config: &httpserver.Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:9999",
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:9999",
+					},
 				},
 				Path: "/custom/otel/metadata",
 			},
@@ -823,7 +833,10 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 	// Create server
 	serverConfig := &httpserver.Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0",
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:0",
+			},
 		},
 		Path: "/concurrent/metadata",
 	}
