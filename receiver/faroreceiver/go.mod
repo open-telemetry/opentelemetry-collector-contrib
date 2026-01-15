@@ -7,6 +7,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component/componentstatus v0.143.1-0.20260114115623-0755152e21d3
 	go.opentelemetry.io/collector/config/confighttp v0.143.1-0.20260114115623-0755152e21d3
+	go.opentelemetry.io/collector/config/confignet v1.49.1-0.20260114115623-0755152e21d3
 	go.opentelemetry.io/collector/config/configoptional v1.49.1-0.20260114115623-0755152e21d3
 	go.opentelemetry.io/collector/consumer/consumertest v0.143.1-0.20260114115623-0755152e21d3
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.143.1-0.20260114115623-0755152e21d3
@@ -46,7 +47,6 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.49.1-0.20260114115623-0755152e21d3 // indirect
-	go.opentelemetry.io/collector/config/confignet v1.49.1-0.20260114115623-0755152e21d3 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.143.1-0.20260114115623-0755152e21d3 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.143.1-0.20260114115623-0755152e21d3 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.143.1-0.20260114115623-0755152e21d3 // indirect

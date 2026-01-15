@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/component v1.49.1-0.20260114115623-0755152e21d3
 	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260114115623-0755152e21d3
 	go.opentelemetry.io/collector/config/confighttp v0.143.1-0.20260114115623-0755152e21d3
+	go.opentelemetry.io/collector/config/confignet v1.49.1-0.20260114115623-0755152e21d3
 	go.opentelemetry.io/collector/config/configoptional v1.49.1-0.20260114115623-0755152e21d3
 	go.opentelemetry.io/collector/confmap v1.49.1-0.20260114115623-0755152e21d3
 	go.opentelemetry.io/collector/consumer v1.49.1-0.20260114115623-0755152e21d3
@@ -34,7 +35,6 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.49.1-0.20260114115623-0755152e21d3 // indirect
-	go.opentelemetry.io/collector/config/confignet v1.49.1-0.20260114115623-0755152e21d3 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.143.1-0.20260114115623-0755152e21d3 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.143.1-0.20260114115623-0755152e21d3 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.49.1-0.20260114115623-0755152e21d3 // indirect
