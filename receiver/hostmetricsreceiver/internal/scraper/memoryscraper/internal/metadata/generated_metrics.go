@@ -140,6 +140,7 @@ func (m *metricSystemLinuxMemoryAvailable) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemLinuxMemoryAvailable(cfg MetricConfig) metricSystemLinuxMemoryAvailable {
 	m := metricSystemLinuxMemoryAvailable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -191,6 +192,7 @@ func (m *metricSystemLinuxMemoryDirty) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemLinuxMemoryDirty(cfg MetricConfig) metricSystemLinuxMemoryDirty {
 	m := metricSystemLinuxMemoryDirty{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -242,6 +244,7 @@ func (m *metricSystemMemoryLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemMemoryLimit(cfg MetricConfig) metricSystemMemoryLimit {
 	m := metricSystemMemoryLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -291,6 +294,7 @@ func (m *metricSystemMemoryPageSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemMemoryPageSize(cfg MetricConfig) metricSystemMemoryPageSize {
 	m := metricSystemMemoryPageSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -395,6 +399,7 @@ func (m *metricSystemMemoryUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemMemoryUsage(cfg MetricConfig) metricSystemMemoryUsage {
 	m := metricSystemMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -446,6 +451,7 @@ func (m *metricSystemMemoryUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemMemoryUtilization(cfg MetricConfig) metricSystemMemoryUtilization {
 	m := metricSystemMemoryUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

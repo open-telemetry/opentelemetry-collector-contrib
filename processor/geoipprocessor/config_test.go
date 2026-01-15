@@ -147,7 +147,7 @@ func TestLoadConfig_ValidProviderKey(t *testing.T) {
 	factories.Processors[metadata.Type] = factory
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-mockProvider.yaml"), factories)
 
-	require.ErrorContains(t, err, "has invalid keys: database")
+	require.ErrorContains(t, err, "'geoipprocessor.providerConfigMock' has invalid keys: database")
 }
 
 func TestLoadConfig_ProviderValidateError(t *testing.T) {
