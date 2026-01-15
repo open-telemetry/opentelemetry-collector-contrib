@@ -29,10 +29,11 @@ import (
 	_ "go.opentelemetry.io/collector/cmd/builder"
 	_ "go.opentelemetry.io/collector/cmd/mdatagen"
 	_ "golang.org/x/tools/cmd/goimports"
-	_ "golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize"
+	_ "golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize"
 	_ "golang.org/x/vuln/cmd/govulncheck"
 	_ "gotest.tools/gotestsum"
 	_ "mvdan.cc/gofumpt"
 
 	_ "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen"
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen"
 )
