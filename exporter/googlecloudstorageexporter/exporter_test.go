@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -388,6 +387,36 @@ func TestConsumeLogs(t *testing.T) {
 }
 
 func TestCompression(t *testing.T) {
+	// Test compression logic directly (independent of compression type)
+	testData := []byte(strings.Repeat("This is a test string that will compress very well when repeated many times. ", 100))
+
+	// Test with gzip compression
+	gzipExporter := newTestGCSExporter(t, &Config{
+		Bucket: bucketConfig{
+			Compression: configcompression.TypeGzip,
+		},
+	})
+	_, err := gzipExporter.compressContent(testData)
+	require.NoError(t, err)
+
+	// Test with zstd compression
+	zstdExporter := newTestGCSExporter(t, &Config{
+		Bucket: bucketConfig{
+			Compression: configcompression.TypeZstd,
+		},
+	})
+	_, err = zstdExporter.compressContent(testData)
+	require.NoError(t, err)
+
+	// Test with no compression
+	noCompressionExporter := newTestGCSExporter(t, &Config{
+		Bucket: bucketConfig{
+			Compression: "",
+		},
+	})
+	_, err = noCompressionExporter.compressContent(testData)
+	require.NoError(t, err)
+
 	tests := []struct {
 		name            string
 		compression     configcompression.Type
@@ -412,15 +441,13 @@ func TestCompression(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test compression logic directly
+			// Test type-specific compression behavior
 			exporter := newTestGCSExporter(t, &Config{
 				Bucket: bucketConfig{
 					Compression: tt.compression,
 				},
 			})
 
-			// Test compression of content directly
-			testData := []byte(strings.Repeat("This is a test string that will compress very well when repeated many times. ", 100))
 			compressedData, err := exporter.compressContent(testData)
 			require.NoError(t, err)
 
@@ -428,30 +455,12 @@ func TestCompression(t *testing.T) {
 			case "":
 				// For uncompressed content, verify it matches the original directly
 				assert.Equal(t, testData, compressedData, "Uncompressed content should match original")
-			case configcompression.TypeGzip:
-				// For gzip compressed content, verify it can be decompressed back to original
-				reader, err := gzip.NewReader(bytes.NewReader(compressedData))
-				require.NoError(t, err)
-				defer func() {
-					closeErr := reader.Close()
-					require.NoError(t, closeErr)
-				}()
-				decompressed, err := io.ReadAll(reader)
-				require.NoError(t, err)
-
-				// The decompressed content should match the original
-				assert.Equal(t, testData, decompressed, "Decompressed content should match original")
-
-				// Compressed content should be smaller than original
-				assert.Less(t, len(compressedData), len(testData),
-					"Compressed content should be smaller than uncompressed")
-			case configcompression.TypeZstd:
-				// For zstd compressed content, verify it can be decompressed back to original
-				reader, err := zstd.NewReader(bytes.NewReader(compressedData))
-				require.NoError(t, err)
-				defer reader.Close()
-				decompressed, err := io.ReadAll(reader)
-				require.NoError(t, err)
+			case configcompression.TypeGzip, configcompression.TypeZstd:
+				// For compressed content, verify it can be decompressed back to original
+				decompressed, closer := decompressData(t, compressedData, tt.compression)
+				if closer != nil {
+					defer closer()
+				}
 
 				// The decompressed content should match the original
 				assert.Equal(t, testData, decompressed, "Decompressed content should match original")
@@ -466,6 +475,33 @@ func TestCompression(t *testing.T) {
 			assert.True(t, strings.HasSuffix(filename, tt.expectExtension),
 				"Generated filename should end with %q, got %q", tt.expectExtension, filename)
 		})
+	}
+}
+
+// decompressData decompresses data based on the compression type and returns the decompressed data
+// along with a closer function that should be deferred (or nil if no special closing needed)
+func decompressData(t *testing.T, compressedData []byte, compression configcompression.Type) ([]byte, func()) {
+	switch compression {
+	case configcompression.TypeGzip:
+		reader, err := gzip.NewReader(bytes.NewReader(compressedData))
+		require.NoError(t, err)
+		decompressed, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		return decompressed, func() {
+			closeErr := reader.Close()
+			require.NoError(t, closeErr)
+		}
+	case configcompression.TypeZstd:
+		reader, err := zstd.NewReader(bytes.NewReader(compressedData))
+		require.NoError(t, err)
+		decompressed, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		return decompressed, func() {
+			reader.Close()
+		}
+	default:
+		t.Fatalf("Unsupported compression type: %s", compression)
+		return nil, nil
 	}
 }
 
