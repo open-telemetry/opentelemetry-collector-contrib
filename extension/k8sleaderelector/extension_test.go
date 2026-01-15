@@ -125,3 +125,179 @@ func TestExtension_WithDelay(t *testing.T) {
 	require.True(t, onStartLeadingInvoked.Load())
 	require.NoError(t, leaderElection.Shutdown(ctx))
 }
+
+func TestExtension_MultipleCallbacks(t *testing.T) {
+	config := &Config{
+		LeaseName:      "foo",
+		LeaseNamespace: "default",
+		LeaseDuration:  15 * time.Second,
+		RenewDuration:  10 * time.Second,
+		RetryPeriod:    2 * time.Second,
+	}
+
+	ctx := t.Context()
+	fakeClient := fake.NewClientset()
+	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		return fakeClient, nil
+	}
+
+	observedZapCore, _ := observer.New(zap.WarnLevel)
+
+	leaderElection := leaderElectionExtension{
+		config:        config,
+		client:        fakeClient,
+		logger:        zap.New(observedZapCore),
+		leaseHolderID: "foo",
+	}
+
+	var onStartLeading1Invoked, onStartLeading2Invoked atomic.Bool
+	var onStopLeading1Invoked, onStopLeading2Invoked atomic.Bool
+
+	// Set first callback before starting
+	leaderElection.SetCallBackFuncs(
+		func(_ context.Context) {
+			onStartLeading1Invoked.Store(true)
+		},
+		func() {
+			onStopLeading1Invoked.Store(true)
+		},
+	)
+
+	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
+
+	// Wait for leadership
+	require.EventuallyWithT(t, func(t *assert.CollectT) {
+		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
+		require.NoError(t, err)
+		require.NotNil(t, lease)
+		require.True(t, onStartLeading1Invoked.Load())
+	}, 10*time.Second, 100*time.Millisecond)
+
+	// Add second callback after becoming leader
+	leaderElection.SetCallBackFuncs(
+		func(_ context.Context) {
+			onStartLeading2Invoked.Store(true)
+		},
+		func() {
+			onStopLeading2Invoked.Store(true)
+		},
+	)
+
+	// Second callback should be invoked immediately since we're already leader
+	require.True(t, onStartLeading2Invoked.Load())
+
+	require.NoError(t, leaderElection.Shutdown(ctx))
+
+	// Both stop callbacks should have been invoked
+	require.True(t, onStopLeading1Invoked.Load())
+	require.True(t, onStopLeading2Invoked.Load())
+}
+
+func TestExtension_StartError(t *testing.T) {
+	config := &Config{
+		LeaseName:      "foo",
+		LeaseNamespace: "default",
+		LeaseDuration:  -1 * time.Second, // Invalid duration will cause error
+		RenewDuration:  10 * time.Second,
+		RetryPeriod:    2 * time.Second,
+	}
+
+	ctx := t.Context()
+	fakeClient := fake.NewClientset()
+	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		return fakeClient, nil
+	}
+
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+
+	leaderElection := leaderElectionExtension{
+		config:        config,
+		client:        fakeClient,
+		logger:        zap.New(observedZapCore),
+		leaseHolderID: "foo",
+	}
+
+	err := leaderElection.Start(ctx, componenttest.NewNopHost())
+	require.Error(t, err)
+
+	// Verify error was logged
+	require.Eventually(t, func() bool {
+		return observedLogs.Len() > 0
+	}, 2*time.Second, 50*time.Millisecond)
+}
+
+func TestExtension_ShutdownBeforeStart(t *testing.T) {
+	config := &Config{
+		LeaseName:      "foo",
+		LeaseNamespace: "default",
+		LeaseDuration:  15 * time.Second,
+		RenewDuration:  10 * time.Second,
+		RetryPeriod:    2 * time.Second,
+	}
+
+	ctx := t.Context()
+	fakeClient := fake.NewClientset()
+	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		return fakeClient, nil
+	}
+
+	observedZapCore, _ := observer.New(zap.WarnLevel)
+
+	leaderElection := leaderElectionExtension{
+		config:        config,
+		client:        fakeClient,
+		logger:        zap.New(observedZapCore),
+		leaseHolderID: "foo",
+	}
+
+	// Shutdown without starting should not error
+	require.NoError(t, leaderElection.Shutdown(ctx))
+}
+
+func TestExtension_CallbacksNotSetImmediately(t *testing.T) {
+	config := &Config{
+		LeaseName:      "foo",
+		LeaseNamespace: "default",
+		LeaseDuration:  15 * time.Second,
+		RenewDuration:  10 * time.Second,
+		RetryPeriod:    2 * time.Second,
+	}
+
+	ctx := t.Context()
+	fakeClient := fake.NewClientset()
+	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		return fakeClient, nil
+	}
+
+	observedZapCore, _ := observer.New(zap.WarnLevel)
+
+	leaderElection := leaderElectionExtension{
+		config:        config,
+		client:        fakeClient,
+		logger:        zap.New(observedZapCore),
+		leaseHolderID: "foo",
+	}
+
+	var onStartLeadingInvoked atomic.Bool
+
+	// Start without setting callbacks
+	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
+
+	// Wait for lease to be acquired
+	require.EventuallyWithT(t, func(t *assert.CollectT) {
+		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
+		require.NoError(t, err)
+		require.NotNil(t, lease)
+	}, 10*time.Second, 100*time.Millisecond)
+
+	// Now set callback - should be invoked immediately since we're already leader
+	leaderElection.SetCallBackFuncs(
+		func(_ context.Context) {
+			onStartLeadingInvoked.Store(true)
+		},
+		func() {},
+	)
+
+	require.True(t, onStartLeadingInvoked.Load())
+	require.NoError(t, leaderElection.Shutdown(ctx))
+}
