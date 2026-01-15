@@ -55,13 +55,13 @@ func TestScrape(t *testing.T) {
 						SystemMemoryPageSize: metadata.MetricConfig{
 							Enabled: true,
 						},
+						SystemMemoryLinuxShared: metadata.MetricConfig{
+							Enabled: true,
+						},
 						SystemLinuxMemoryAvailable: metadata.MetricConfig{
 							Enabled: true,
 						},
 						SystemLinuxMemoryDirty: metadata.MetricConfig{
-							Enabled: true,
-						},
-						SystemMemoryShared: metadata.MetricConfig{
 							Enabled: true,
 						},
 					},

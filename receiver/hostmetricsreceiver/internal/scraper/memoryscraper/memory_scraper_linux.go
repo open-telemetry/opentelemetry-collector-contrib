@@ -37,8 +37,8 @@ func (s *memoryScraper) recordMemoryUsageMetric(now pcommon.Timestamp, memInfo *
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Sunreclaim), metadata.AttributeStateSlabUnreclaimable)
 }
 
-func (s *memoryScraper) recordMemorySharedMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	s.mb.RecordSystemMemorySharedDataPoint(now, int64(memInfo.Shared))
+func (s *memoryScraper) recordMemoryLinuxSharedMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
+	s.mb.RecordSystemMemoryLinuxSharedDataPoint(now, int64(memInfo.Shared))
 }
 
 func (s *memoryScraper) recordMemoryUtilizationMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
@@ -70,5 +70,5 @@ func (s *memoryScraper) recordLinuxMemoryDirtyMetric(now pcommon.Timestamp, memI
 func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
 	s.recordLinuxMemoryAvailableMetric(now, memInfo)
 	s.recordLinuxMemoryDirtyMetric(now, memInfo)
-	s.recordMemorySharedMetric(now, memInfo)
+	s.recordMemoryLinuxSharedMetric(now, memInfo)
 }

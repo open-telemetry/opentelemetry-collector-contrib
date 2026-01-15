@@ -57,7 +57,7 @@ func TestScrape_UseMemAvailable(t *testing.T) {
 
 func TestScrape_SharedMemory(t *testing.T) {
 	mbc := metadata.DefaultMetricsBuilderConfig()
-	mbc.Metrics.SystemMemoryShared.Enabled = true
+	mbc.Metrics.SystemMemoryLinuxShared.Enabled = true
 	scraperConfig := Config{
 		MetricsBuilderConfig: mbc,
 	}
@@ -70,7 +70,7 @@ func TestScrape_SharedMemory(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, memInfo)
 
-	scraper.recordMemorySharedMetric(pcommon.NewTimestampFromTime(time.Now()), memInfo)
+	scraper.recordMemoryLinuxSharedMetric(pcommon.NewTimestampFromTime(time.Now()), memInfo)
 	md := scraper.mb.Emit()
 
 	require.Equal(t, 1, md.ResourceMetrics().Len())
@@ -80,7 +80,7 @@ func TestScrape_SharedMemory(t *testing.T) {
 	require.Equal(t, 1, metrics.Len(), "Expected exactly one metric")
 
 	metric := metrics.At(0)
-	assert.Equal(t, "system.memory.shared", metric.Name())
+	assert.Equal(t, "system.memory.linux.shared", metric.Name())
 	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
 
 	dataPoints := metric.Sum().DataPoints()
