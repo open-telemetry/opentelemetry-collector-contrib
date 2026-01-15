@@ -31,19 +31,19 @@ func TestComponentParser(t *testing.T) {
 			title:              "Test Array field Config Parsing",
 			inputFile:          "testdata/test01/ArrayFieldConfig.go",
 			expectedSchemaFile: "testdata/test01/array_field_config.schema.yaml",
-			rootType:           "ArrayFieldConfig",
+			rootType:           "SimpleArrayConfig",
 		},
 		{
 			title:              "Test Nested Struct Config Parsing",
 			inputFile:          "testdata/test02/NestedStructConfig.go",
 			expectedSchemaFile: "testdata/test02/nested_struct_config.schema.yaml",
-			rootType:           "NestedStructConfig",
+			rootType:           "Config",
 		},
 		{
 			title:              "Test Map field Config Parsing",
 			inputFile:          "testdata/test03/MapFieldConfig.go",
 			expectedSchemaFile: "testdata/test03/map_field_config.schema.yaml",
-			rootType:           "MapFieldConfig",
+			rootType:           "MapConfig",
 		},
 		{
 			title:              "Test Ref field Config Parsing",
@@ -106,7 +106,6 @@ func TestComponentParser(t *testing.T) {
 			dir, _ := filepath.Abs(filepath.Dir(tc.inputFile))
 			cfg := &Config{
 				Mode:     Component,
-				FilePath: tc.inputFile,
 				DirPath:  dir,
 				Mappings: testMappings(),
 			}
