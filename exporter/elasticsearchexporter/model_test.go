@@ -526,6 +526,8 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		"id": "01020304050607080807060504030201"
 	  },
 	  "span": {
+		"id": "1920212223242526",
+		"name": "client span",
 		"kind": "CLIENT",
 		"db": {
 		  "instance": "users",
