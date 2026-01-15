@@ -9,6 +9,8 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
@@ -18,9 +20,10 @@ import (
 )
 
 // This file implements config for Prometheus receiver.
-var useCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.UseCreatedMetric",
-	featuregate.StageAlpha,
+	featuregate.StageDeprecated,
+	featuregate.WithRegisterToVersion("v0.141.0"),
 	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
 		" retrieve the start time for Summary, Histogram and Sum metrics from _created metric"),
 )
@@ -49,6 +52,12 @@ var enableReportExtraScrapeMetricsGate = featuregate.GlobalRegistry().MustRegist
 		" Extra scrape metrics are metrics that are not scraped by Prometheus but are reported by the Prometheus server."),
 )
 
+var removeReportExtraScrapeMetricsConfigGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Removes the report_extra_scrape_metrics configuration option."),
+)
+
 // NewFactory creates a new Prometheus receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -58,9 +67,17 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
 	return &Config{
 		PrometheusConfig: &PromConfig{
 			GlobalConfig: promconfig.DefaultGlobalConfig,
+		},
+		APIServer: APIServer{
+			Enabled: false,
+			ServerConfig: confighttp.ServerConfig{
+				NetAddr: netAddr,
+			},
 		},
 	}
 }

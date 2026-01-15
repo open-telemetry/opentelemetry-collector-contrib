@@ -126,7 +126,10 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).HTTP = &confighttp.ServerConfig{
-		Endpoint: "0.0.0.0:12800",
+		NetAddr: confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "0.0.0.0:12800",
+		},
 		TLS: configoptional.Some(configtls.ServerConfig{
 			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
@@ -146,7 +149,10 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).HTTP = &confighttp.ServerConfig{
-		Endpoint: "0.0.0.0:12800",
+		NetAddr: confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
+			Endpoint:  "0.0.0.0:12800",
+		},
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
 	traceSink := new(consumertest.TracesSink)

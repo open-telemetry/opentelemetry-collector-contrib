@@ -5,17 +5,17 @@ go 1.24.0
 require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.141.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.141.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.141.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.143.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
-	go.opentelemetry.io/collector/component v1.47.1-0.20251211181959-97fcd3d13b4a
-	go.opentelemetry.io/collector/component/componenttest v0.141.1-0.20251211181959-97fcd3d13b4a
-	go.opentelemetry.io/collector/confmap v1.47.1-0.20251211181959-97fcd3d13b4a
-	go.opentelemetry.io/collector/confmap/xconfmap v0.141.1-0.20251211181959-97fcd3d13b4a
-	go.opentelemetry.io/collector/extension v1.47.1-0.20251211181959-97fcd3d13b4a
-	go.opentelemetry.io/collector/extension/extensiontest v0.141.1-0.20251211181959-97fcd3d13b4a
+	go.opentelemetry.io/collector/component v1.49.1-0.20260114115623-0755152e21d3
+	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260114115623-0755152e21d3
+	go.opentelemetry.io/collector/confmap v1.49.1-0.20260114115623-0755152e21d3
+	go.opentelemetry.io/collector/confmap/xconfmap v0.143.1-0.20260114115623-0755152e21d3
+	go.opentelemetry.io/collector/extension v1.49.1-0.20260114115623-0755152e21d3
+	go.opentelemetry.io/collector/extension/extensiontest v0.143.1-0.20260114115623-0755152e21d3
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/sync v0.17.0
@@ -40,7 +40,7 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.8.0 // indirect
@@ -74,8 +74,9 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.47.1-0.20251211181959-97fcd3d13b4a // indirect
-	go.opentelemetry.io/collector/pdata v1.47.1-0.20251211181959-97fcd3d13b4a // indirect
+	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260114115623-0755152e21d3 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/pdata v1.49.1-0.20260114115623-0755152e21d3 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.19.0 // indirect
@@ -106,3 +107,6 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+// Can be removed after 0.144.0 release
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260114115623-0755152e21d3

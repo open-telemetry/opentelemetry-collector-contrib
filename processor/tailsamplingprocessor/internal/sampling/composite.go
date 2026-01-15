@@ -107,6 +107,7 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 			return samplingpolicy.Unspecified, err
 		}
 
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 		if decision == samplingpolicy.Sampled || decision == samplingpolicy.InvertSampled {
 			// The subpolicy made a decision to Sample. Now we need to make our decision.
 
@@ -119,7 +120,7 @@ func (c *Composite) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace
 
 				// Let the sampling happen
 				if c.recordSubPolicy {
-					SetAttrOnScopeSpans(trace, "tailsampling.composite_policy", sub.name)
+					SetAttrOnScopeSpans(trace.ReceivedBatches, "tailsampling.composite_policy", sub.name)
 				}
 				return samplingpolicy.Sampled, nil
 			}
