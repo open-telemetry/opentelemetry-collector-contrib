@@ -118,7 +118,7 @@ func TestK8sResolverStartErrorPropagation(t *testing.T) {
 
 	// When running outside a k8s cluster, start() should fail with an error from newInClusterClient()
 	// This test verifies that the error is properly propagated
-	err = resolver.start(context.Background())
+	err = resolver.start(t.Context())
 
 	// Outside a k8s cluster, we expect an error from newInClusterClient()
 	// The error should be returned from start(), not silently ignored
@@ -131,7 +131,7 @@ func TestK8sResolverStartErrorPropagation(t *testing.T) {
 		t.Log("start() succeeded - likely running inside a k8s cluster")
 		require.NotNil(t, resolver.client, "client must be created when start() succeeds")
 		// Clean up
-		_ = resolver.shutdown(context.Background())
+		_ = resolver.shutdown(t.Context())
 	}
 }
 
@@ -156,12 +156,12 @@ func TestK8sResolverStartWithClientDoesNotCreateNew(t *testing.T) {
 	require.Equal(t, fakeClient, resolver.client, "client should be the one provided")
 
 	// Start with an existing client should not attempt to create a new one
-	err = resolver.start(context.Background())
+	err = resolver.start(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, fakeClient, resolver.client, "client should still be the one provided, not replaced")
 
 	// Clean up
-	_ = resolver.shutdown(context.Background())
+	_ = resolver.shutdown(t.Context())
 }
 
 // TestLoadBalancerWithK8sResolverCreation tests that loadbalancer can be created with k8s resolver
