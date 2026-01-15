@@ -464,7 +464,7 @@ func TestBatchProcessingAllEntriesFailQuietMode(t *testing.T) {
 				if tc.expectProcessed {
 					require.Len(t, processedEntries, 3, "expected all 3 entries to be sent in SendOnErrorQuiet mode")
 				} else {
-					require.Len(t, processedEntries, 0, "expected 0 entries to be sent in DropOnErrorQuiet mode")
+					require.Empty(t, processedEntries, "expected 0 entries to be sent in DropOnErrorQuiet mode")
 				}
 			}
 		})
@@ -651,7 +651,7 @@ func TestBatchProcessingAllEntriesFailNonQuietMode(t *testing.T) {
 				if tc.expectProcessed {
 					require.Len(t, processedEntries, 3, "expected all 3 entries to be sent in SendOnError mode")
 				} else {
-					require.Len(t, processedEntries, 0, "expected 0 entries to be sent in DropOnError mode")
+					require.Empty(t, processedEntries, "expected 0 entries to be sent in DropOnError mode")
 				}
 			}
 		})
