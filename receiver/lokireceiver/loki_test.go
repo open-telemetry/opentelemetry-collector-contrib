@@ -125,7 +125,10 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 	config := &Config{
 		Protocols: Protocols{
 			HTTP: &confighttp.ServerConfig{
-				Endpoint: addr,
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  addr,
+				},
 			},
 		},
 		KeepTimestamp: true,
@@ -407,7 +410,10 @@ func TestExpectedStatus(t *testing.T) {
 						},
 					},
 					HTTP: &confighttp.ServerConfig{
-						Endpoint: httpAddr,
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  httpAddr,
+						},
 					},
 				},
 				KeepTimestamp: true,
@@ -469,7 +475,10 @@ func TestNewLokiReceiver_SupportedContentTypeWithCharset(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
 			HTTP: &confighttp.ServerConfig{
-				Endpoint: "localhost:0",
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  "localhost:0",
+				},
 			},
 		},
 	}
