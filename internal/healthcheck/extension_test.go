@@ -29,7 +29,7 @@ import (
 
 func TestComponentStatus(t *testing.T) {
 	cfg := NewDefaultConfig().(*Config)
-	cfg.HTTPConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.HTTPConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.GRPCConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.UseV2 = true
 	ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
@@ -116,7 +116,7 @@ func TestNotifyConfig(t *testing.T) {
 
 	cfg := NewDefaultConfig().(*Config)
 	cfg.UseV2 = true
-	cfg.HTTPConfig.Endpoint = endpoint
+	cfg.HTTPConfig.NetAddr.Endpoint = endpoint
 	cfg.HTTPConfig.Config.Enabled = true
 	cfg.HTTPConfig.Config.Path = "/config"
 
@@ -164,7 +164,7 @@ func TestShutdown(t *testing.T) {
 
 		cfg := NewDefaultConfig().(*Config)
 		cfg.UseV2 = true
-		cfg.HTTPConfig.Endpoint = endpoint
+		cfg.HTTPConfig.NetAddr.Endpoint = endpoint
 
 		ext := NewHealthCheckExtension(t.Context(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
 		// Get address already in use here

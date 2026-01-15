@@ -251,10 +251,10 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	o := &web.Options{
 		ScrapeManager:   r.scrapeManager,
 		Context:         ctx,
-		ListenAddresses: []string{r.cfg.APIServer.ServerConfig.Endpoint},
+		ListenAddresses: []string{r.cfg.APIServer.ServerConfig.NetAddr.Endpoint},
 		ExternalURL: &url.URL{
 			Scheme: "http",
-			Host:   r.cfg.APIServer.ServerConfig.Endpoint,
+			Host:   r.cfg.APIServer.ServerConfig.NetAddr.Endpoint,
 			Path:   "",
 		},
 		RoutePrefix:    "/",
