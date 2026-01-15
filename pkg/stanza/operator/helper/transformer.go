@@ -108,7 +108,7 @@ func (t *TransformerOperator) ProcessBatchWithTransform(ctx context.Context, ent
 		if err = transform(ent); err != nil {
 			if handleErr := t.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
 				// Only append error if not in quiet mode
-				if t.OnError != DropOnErrorQuiet && t.OnError != SendOnErrorQuiet {
+				if !t.isQuietMode() {
 					errs = append(errs, handleErr)
 				}
 			}
@@ -135,14 +135,12 @@ func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entr
 	}
 
 	if err := transform(entry); err != nil {
-		if handleErr := t.HandleEntryError(ctx, entry, err); handleErr != nil {
-			// Return nil for quiet modes to prevent error from bubbling up
-			if t.OnError == DropOnErrorQuiet || t.OnError == SendOnErrorQuiet {
-				return nil
-			}
-			return handleErr
+		handleErr := t.HandleEntryError(ctx, entry, err)
+		// Return nil for quiet modes to prevent error from bubbling up
+		if t.isQuietMode() {
+			return nil
 		}
-		return nil
+		return handleErr
 	}
 	return t.Write(ctx, entry)
 }
@@ -157,7 +155,7 @@ func (t *TransformerOperator) HandleEntryErrorWithWrite(ctx context.Context, ent
 		return errors.New("got a nil entry, this should not happen and is potentially a bug")
 	}
 
-	if t.OnError == SendOnErrorQuiet || t.OnError == DropOnErrorQuiet {
+	if t.isQuietMode() {
 		// No need to construct the zap attributes if logging not enabled at debug level.
 		if t.Logger().Core().Enabled(zapcore.DebugLevel) {
 			t.Logger().Debug("Failed to process entry", zapAttributes(entry, t.OnError, err)...)
@@ -172,6 +170,11 @@ func (t *TransformerOperator) HandleEntryErrorWithWrite(ctx context.Context, ent
 	}
 
 	return err
+}
+
+// isQuietMode returns true if the operator is configured to use quiet mode
+func (t *TransformerOperator) isQuietMode() bool {
+	return t.OnError == DropOnErrorQuiet || t.OnError == SendOnErrorQuiet
 }
 
 func (t *TransformerOperator) Skip(_ context.Context, entry *entry.Entry) (bool, error) {
