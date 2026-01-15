@@ -77,7 +77,7 @@ If the `accepts_restart_command` capability is enabled (along with the `extensio
 The `SIGHUP` signal is trapped in the Collector and initiates a graceful restart of all the components by restarting the Collectors service, which restarts all components, pipelines, and Collector self-monitoring. This functionality might be desired if the Collector's config was updated, as the restart also fetches all configuration sources passed to the Collector through `--config` flags passed to the command invocation.
 
 **NOTE** on the `SIGHUP` signal for restarts:
-SIGHUP is not supported in the `windows` operating system, and the current implementation will short circuit evaluation on windows systems (until the collector can also handle a cross-platform signal like SIGUSR2).
+SIGHUP is not supported on Windows, and the collector will error on startup if the capability and feature gate are enabled (until the collector can also handle a cross-platform signal like SIGUSR2).
 
 **<ins>Please note</ins>**: an invalid config will cause the Collector to error out and stay down until it is manually restarted using some other mechanism (since the OpAMP extension won't be active). Regular healthchecks and using the Collector's `validate` subcommand to validate config before applying it are **highly recommended** when using this functionality to prevent data loss due to config issues.
 
