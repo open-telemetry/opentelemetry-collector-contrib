@@ -60,6 +60,14 @@ Total bytes of memory available.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
+### system.memory.linux.shared
+
+Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
 ### system.memory.page_size
 
 A constant value for the system's configured page size.
@@ -67,14 +75,6 @@ A constant value for the system's configured page size.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
-
-### system.memory.shared
-
-Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | Development |
 
 ### system.memory.utilization
 

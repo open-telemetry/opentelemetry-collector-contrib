@@ -68,10 +68,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemMemoryLimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSystemMemoryPageSizeDataPoint(ts, 1)
+			mb.RecordSystemMemoryLinuxSharedDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSystemMemorySharedDataPoint(ts, 1)
+			mb.RecordSystemMemoryPageSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -144,6 +144,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.linux.shared":
+					assert.False(t, validatedMetrics["system.memory.linux.shared"], "Found a duplicate in the metrics slice: system.memory.linux.shared")
+					validatedMetrics["system.memory.linux.shared"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "system.memory.page_size":
 					assert.False(t, validatedMetrics["system.memory.page_size"], "Found a duplicate in the metrics slice: system.memory.page_size")
 					validatedMetrics["system.memory.page_size"] = true
@@ -152,20 +166,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "A constant value for the system's configured page size.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "system.memory.shared":
-					assert.False(t, validatedMetrics["system.memory.shared"], "Found a duplicate in the metrics slice: system.memory.shared")
-					validatedMetrics["system.memory.shared"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

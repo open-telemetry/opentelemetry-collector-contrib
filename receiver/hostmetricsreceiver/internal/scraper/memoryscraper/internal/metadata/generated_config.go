@@ -31,8 +31,8 @@ type MetricsConfig struct {
 	SystemLinuxMemoryAvailable MetricConfig `mapstructure:"system.linux.memory.available"`
 	SystemLinuxMemoryDirty     MetricConfig `mapstructure:"system.linux.memory.dirty"`
 	SystemMemoryLimit          MetricConfig `mapstructure:"system.memory.limit"`
+	SystemMemoryLinuxShared    MetricConfig `mapstructure:"system.memory.linux.shared"`
 	SystemMemoryPageSize       MetricConfig `mapstructure:"system.memory.page_size"`
-	SystemMemoryShared         MetricConfig `mapstructure:"system.memory.shared"`
 	SystemMemoryUsage          MetricConfig `mapstructure:"system.memory.usage"`
 	SystemMemoryUtilization    MetricConfig `mapstructure:"system.memory.utilization"`
 }
@@ -48,10 +48,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		SystemMemoryLimit: MetricConfig{
 			Enabled: false,
 		},
-		SystemMemoryPageSize: MetricConfig{
+		SystemMemoryLinuxShared: MetricConfig{
 			Enabled: false,
 		},
-		SystemMemoryShared: MetricConfig{
+		SystemMemoryPageSize: MetricConfig{
 			Enabled: false,
 		},
 		SystemMemoryUsage: MetricConfig{

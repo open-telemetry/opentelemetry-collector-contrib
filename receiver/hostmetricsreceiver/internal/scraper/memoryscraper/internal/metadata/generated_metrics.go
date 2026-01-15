@@ -68,11 +68,11 @@ var MetricsInfo = metricsInfo{
 	SystemMemoryLimit: metricInfo{
 		Name: "system.memory.limit",
 	},
+	SystemMemoryLinuxShared: metricInfo{
+		Name: "system.memory.linux.shared",
+	},
 	SystemMemoryPageSize: metricInfo{
 		Name: "system.memory.page_size",
-	},
-	SystemMemoryShared: metricInfo{
-		Name: "system.memory.shared",
 	},
 	SystemMemoryUsage: metricInfo{
 		Name: "system.memory.usage",
@@ -86,8 +86,8 @@ type metricsInfo struct {
 	SystemLinuxMemoryAvailable metricInfo
 	SystemLinuxMemoryDirty     metricInfo
 	SystemMemoryLimit          metricInfo
+	SystemMemoryLinuxShared    metricInfo
 	SystemMemoryPageSize       metricInfo
-	SystemMemoryShared         metricInfo
 	SystemMemoryUsage          metricInfo
 	SystemMemoryUtilization    metricInfo
 }
@@ -252,6 +252,58 @@ func newMetricSystemMemoryLimit(cfg MetricConfig) metricSystemMemoryLimit {
 	return m
 }
 
+type metricSystemMemoryLinuxShared struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.linux.shared metric with initial data.
+func (m *metricSystemMemoryLinuxShared) init() {
+	m.data.SetName("system.memory.linux.shared")
+	m.data.SetDescription("Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemMemoryLinuxShared) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryLinuxShared) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryLinuxShared) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryLinuxShared(cfg MetricConfig) metricSystemMemoryLinuxShared {
+	m := metricSystemMemoryLinuxShared{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemMemoryPageSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -295,57 +347,6 @@ func (m *metricSystemMemoryPageSize) emit(metrics pmetric.MetricSlice) {
 func newMetricSystemMemoryPageSize(cfg MetricConfig) metricSystemMemoryPageSize {
 	m := metricSystemMemoryPageSize{config: cfg}
 
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSystemMemoryShared struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills system.memory.shared metric with initial data.
-func (m *metricSystemMemoryShared) init() {
-	m.data.SetName("system.memory.shared")
-	m.data.SetDescription("Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricSystemMemoryShared) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSystemMemoryShared) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSystemMemoryShared) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSystemMemoryShared(cfg MetricConfig) metricSystemMemoryShared {
-	m := metricSystemMemoryShared{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -470,8 +471,8 @@ type MetricsBuilder struct {
 	metricSystemLinuxMemoryAvailable metricSystemLinuxMemoryAvailable
 	metricSystemLinuxMemoryDirty     metricSystemLinuxMemoryDirty
 	metricSystemMemoryLimit          metricSystemMemoryLimit
+	metricSystemMemoryLinuxShared    metricSystemMemoryLinuxShared
 	metricSystemMemoryPageSize       metricSystemMemoryPageSize
-	metricSystemMemoryShared         metricSystemMemoryShared
 	metricSystemMemoryUsage          metricSystemMemoryUsage
 	metricSystemMemoryUtilization    metricSystemMemoryUtilization
 }
@@ -502,8 +503,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricSystemLinuxMemoryAvailable: newMetricSystemLinuxMemoryAvailable(mbc.Metrics.SystemLinuxMemoryAvailable),
 		metricSystemLinuxMemoryDirty:     newMetricSystemLinuxMemoryDirty(mbc.Metrics.SystemLinuxMemoryDirty),
 		metricSystemMemoryLimit:          newMetricSystemMemoryLimit(mbc.Metrics.SystemMemoryLimit),
+		metricSystemMemoryLinuxShared:    newMetricSystemMemoryLinuxShared(mbc.Metrics.SystemMemoryLinuxShared),
 		metricSystemMemoryPageSize:       newMetricSystemMemoryPageSize(mbc.Metrics.SystemMemoryPageSize),
-		metricSystemMemoryShared:         newMetricSystemMemoryShared(mbc.Metrics.SystemMemoryShared),
 		metricSystemMemoryUsage:          newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
 		metricSystemMemoryUtilization:    newMetricSystemMemoryUtilization(mbc.Metrics.SystemMemoryUtilization),
 	}
@@ -575,8 +576,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSystemLinuxMemoryAvailable.emit(ils.Metrics())
 	mb.metricSystemLinuxMemoryDirty.emit(ils.Metrics())
 	mb.metricSystemMemoryLimit.emit(ils.Metrics())
+	mb.metricSystemMemoryLinuxShared.emit(ils.Metrics())
 	mb.metricSystemMemoryPageSize.emit(ils.Metrics())
-	mb.metricSystemMemoryShared.emit(ils.Metrics())
 	mb.metricSystemMemoryUsage.emit(ils.Metrics())
 	mb.metricSystemMemoryUtilization.emit(ils.Metrics())
 
@@ -615,14 +616,14 @@ func (mb *MetricsBuilder) RecordSystemMemoryLimitDataPoint(ts pcommon.Timestamp,
 	mb.metricSystemMemoryLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordSystemMemoryLinuxSharedDataPoint adds a data point to system.memory.linux.shared metric.
+func (mb *MetricsBuilder) RecordSystemMemoryLinuxSharedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemMemoryLinuxShared.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordSystemMemoryPageSizeDataPoint adds a data point to system.memory.page_size metric.
 func (mb *MetricsBuilder) RecordSystemMemoryPageSizeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSystemMemoryPageSize.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordSystemMemorySharedDataPoint adds a data point to system.memory.shared metric.
-func (mb *MetricsBuilder) RecordSystemMemorySharedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSystemMemoryShared.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemMemoryUsageDataPoint adds a data point to system.memory.usage metric.
