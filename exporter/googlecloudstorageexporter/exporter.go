@@ -112,7 +112,10 @@ func newStorageExporter(
 				// It will be reset to the actual destination when used
 				writer, err := zstd.NewWriter(io.Discard)
 				if err != nil {
-					panic(fmt.Sprintf("failed to create zstd writer for pool: %v", err))
+					logger.Error("failed to create zstd writer for pool, falling back to on-demand creation",
+						zap.Error(err))
+					// Return nil on error - sync.Pool will handle this gracefully
+					return nil
 				}
 				return writer
 			},
@@ -332,11 +335,10 @@ func compress[T poolItem](pool *sync.Pool, raw []byte, newItem func(io.Writer) (
 		}
 	}
 
-	// Always return the writer to the pool (even on error).
-	defer pool.Put(zipper)
-
 	// Write the data
 	if _, err := zipper.Write(raw); err != nil {
+		// Always close to release resources, but ignore close error on write failure
+		_ = zipper.Close()
 		return nil, err
 	}
 
@@ -344,6 +346,9 @@ func compress[T poolItem](pool *sync.Pool, raw []byte, newItem func(io.Writer) (
 	if err := zipper.Close(); err != nil {
 		return nil, err
 	}
+
+	// Only return the writer to the pool after successful write and close
+	pool.Put(zipper)
 
 	return content.Bytes(), nil
 }
