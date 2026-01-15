@@ -19,3 +19,6 @@ allOf:
 properties:
   app_name:
     type: string
+  version:
+    type: string
+

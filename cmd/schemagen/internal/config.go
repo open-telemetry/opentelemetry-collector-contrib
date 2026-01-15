@@ -21,17 +21,17 @@ const (
 
 type Config = struct {
 	Mode         RunMode
-	FilePath     string
 	DirPath      string
 	OutputFolder string
 	RootTypeName string
 	FileType     string
+	Class        string
 	Mappings     Mappings
 }
 
 var (
-	rootType     = flag.String("r", "", "Root type name (default is derived from file name)")
-	outputFolder = flag.String("o", "", "Output schema folder")
+	rootType     = flag.String("r", "Config", "Root type name for component schema generation")
+	outputFolder = flag.String("o", "", "Output schema folder (defaults to input folder)")
 	fileType     = flag.String("t", "yaml", "Output file type (yaml or json)")
 )
 
@@ -41,10 +41,9 @@ func usage() {
 		"This script is a tiny utility that walks a Go configuration file and emits JSON Schema that mirrors the exported structs.\n",
 		"Options:\n",
 		"\nArguments:",
-		`  <input_file > Path to the file/dir to be processed (required). Depending on whether the path to a file or directory is specified, the script will generate a component or package schema.`,
+		`  <input_file > Path to the dir to be processed. If not provided, the current working directory is used.`,
 		"\nExamples:",
-		"  > schemagen ./components/test_receiver/config.go  # Generate schema for a single config file",
-		"  > schemagen ./config/test_lib/                    # Generate schema for all types in a package",
+		"  > schemagen ./components/test_receiver/  		 # Generate schema for a component",
 		"  > schemagen -o component.schema ./config.go       # Generate schema with a custom output file name",
 		"  > schemagen -t json ./config.go                   # Generate schema in JSON format",
 		"  > schemagen -r DatabaseConfig ./config.go         # Generate schema for component with a custom root type name",
@@ -58,10 +57,10 @@ func ReadConfig() (*Config, error) {
 	flag.Usage = usage
 	flag.Parse()
 
-	if len(flag.Args()) < 1 {
-		return nil, errors.New("usage: schemagen [options] <path>; run with -h to see help text")
-	}
 	inputPath := flag.Arg(0)
+	if inputPath == "" {
+		inputPath = "."
+	}
 	info, err := os.Stat(inputPath)
 	if err != nil {
 		return nil, err
@@ -71,18 +70,21 @@ func ReadConfig() (*Config, error) {
 		filePath string
 		dirPath  string
 		output   = *outputFolder
-		mode     RunMode
+		mode     = Package
 		mappings Mappings
+		ctype    string
+		class    string
 	)
 
 	switch {
 	case info.IsDir():
 		dirPath, _ = filepath.Abs(inputPath)
-		mode = Package
 	default:
-		filePath = inputPath
-		dirPath, _ = filepath.Abs(filepath.Dir(filePath))
-		mode = Component
+		dirPath, _ = filepath.Abs(filepath.Dir(inputPath))
+	}
+
+	if output == "" {
+		output = dirPath
 	}
 
 	if *rootType == "" {
@@ -96,26 +98,35 @@ func ReadConfig() (*Config, error) {
 		return nil, errors.New("unknown schema file type - use yaml or json: " + *fileType)
 	}
 
-	s, ok := ReadSettingsFile()
-	if ok {
-		mappings = s.Mappings
-		if output == "" && s.OutputFolder != "" {
-			output = s.OutputFolder
+	if md, ok := ReadMetadata(dirPath); ok {
+		ctype = md.Type
+		class = md.Status.Class
+		switch class {
+		case "receiver", "processor", "exporter", "connector", "extension":
+			mode = Component
+		case "pkg":
+			mode = Package
+		default:
+			return nil, fmt.Errorf("schema generation for class '%s' is not supported", md.Status.Class)
 		}
 	}
 
-	if output == "" {
-		output = dirPath
+	if s, ok := ReadSettingsFile(); ok {
+		mappings = s.Mappings
+		comp := class + "/" + ctype
+		if override, found := s.ComponentOverrides[comp]; found {
+			*rootType = override.ConfigName
+		}
 	}
 
 	return &Config{
-		FilePath:     filePath,
 		DirPath:      dirPath,
 		OutputFolder: output,
 		RootTypeName: *rootType,
 		FileType:     *fileType,
 		Mode:         mode,
 		Mappings:     mappings,
+		Class:        class,
 	}, nil
 }
 
