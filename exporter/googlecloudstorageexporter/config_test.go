@@ -21,11 +21,9 @@ func TestValidate(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id                             component.ID
-		expected                       component.Config
-		expectedErr                    error
-		expectUnmarshalErr             bool
-		expectedValidationErrSubstring string
+		id          component.ID
+		expected    component.Config
+		expectedErr error
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
@@ -102,8 +100,8 @@ func TestValidate(t *testing.T) {
 			expectedErr: errFormatInvalid,
 		},
 		{
-			id:                             component.NewIDWithName(metadata.Type, "unsupported_compression"),
-			expectedValidationErrSubstring: "unknown compression type",
+			id:          component.NewIDWithName(metadata.Type, "unsupported_compression"),
+			expectedErr: errUnknownCompression,
 		},
 	}
 
@@ -117,20 +115,11 @@ func TestValidate(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-
-			err = sub.Unmarshal(cfg)
-			if tt.expectUnmarshalErr {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), "unsupported compression type")
-				return // Skip validation for configs that fail to unmarshal
-			}
-			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			err = xconfmap.Validate(cfg)
 			if tt.expectedErr != nil {
 				require.ErrorIs(t, err, tt.expectedErr)
-			} else if tt.expectedValidationErrSubstring != "" {
-				require.ErrorContains(t, err, tt.expectedValidationErrSubstring)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.expected, cfg)

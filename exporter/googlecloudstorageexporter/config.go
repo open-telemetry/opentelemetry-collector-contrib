@@ -14,8 +14,9 @@ import (
 )
 
 var (
-	errNameRequired  = errors.New("name is required")
-	errFormatInvalid = errors.New("invalid format")
+	errNameRequired       = errors.New("name is required")
+	errFormatInvalid      = errors.New("invalid format")
+	errUnknownCompression = errors.New("unknown compression type")
 )
 
 type Config struct {
@@ -94,7 +95,10 @@ func (c *bucketConfig) Validate() error {
 	compression := c.Compression
 	if compression.IsCompressed() {
 		if compression != configcompression.TypeGzip && compression != configcompression.TypeZstd {
-			return fmt.Errorf("unknown compression type %q, valid values are %q and %q", compression, configcompression.TypeGzip, configcompression.TypeZstd)
+			return fmt.Errorf(
+				"%w %q, valid values are %q and %q",
+				errUnknownCompression, compression,
+				configcompression.TypeGzip, configcompression.TypeZstd)
 		}
 	}
 
