@@ -1150,13 +1150,10 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `mysqlreceiver`: Fix for the conversion error on mysql.event_id. Setting an int (0) as default value in SQL. (#42040)
 - `windowseventlogreceiver`: Fixes issue for remote log collection where domain was not properly passed into EvtOpenSession syscall (#41950)
 
-
 <!-- previous-version -->
 
 
-
 ## v0.132.0
-
 ### 🛑 Breaking changes 🛑
 
 - `azuremonitorreceiver`: Updated `append_tags_as_attributes` configuration type from boolean to array. It controls which Azure resource tags are added as resource attributes to the metrics. The values can be a list of specific tag names or `["*"]` to include all tags.
