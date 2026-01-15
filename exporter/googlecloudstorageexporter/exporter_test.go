@@ -304,6 +304,15 @@ func TestGenerateFilename(t *testing.T) {
 			compression:      configcompression.TypeGzip,
 			expectedFilename: "logs_uuid.gz",
 		},
+		{
+			name:             "compression, partitioning and prefix combined",
+			partitionFormat:  "year=%Y",
+			partitionPrefix:  "archive",
+			filePrefix:       "logs",
+			uniqueID:         "uuid",
+			compression:      configcompression.TypeGzip,
+			expectedFilename: "archive/year=2023/logs_uuid.gz",
+		},
 	}
 
 	for _, tt := range tests {
