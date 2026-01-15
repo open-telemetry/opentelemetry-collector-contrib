@@ -50,6 +50,17 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
 
+  system.memory.linux.shared:
+    enabled: false
+    description: Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.
+    unit: By
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
   system.memory.page_size:
     enabled: false
     description: A constant value for the system's configured page size.
@@ -57,17 +68,6 @@ metrics:
     stability:
       level: development
     gauge:
-      value_type: int
-      aggregation_temporality: cumulative
-      monotonic: false
-
-  system.memory.shared:
-    enabled: false
-    description: Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.
-    unit: By
-    stability:
-      level: development
-    sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
