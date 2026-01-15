@@ -29,12 +29,6 @@ import (
 	"google.golang.org/api/googleapi"
 )
 
-type zstdWriter interface {
-	Write(p []byte) (int, error)
-	Close() error
-	Reset(w io.Writer)
-}
-
 type poolItem interface {
 	io.WriteCloser
 	Reset(io.Writer)
@@ -304,7 +298,7 @@ func (s *storageExporter) compressContent(raw []byte) ([]byte, error) {
 			return gzip.NewWriter(w), nil
 		})
 	case configcompression.TypeZstd:
-		return compress[zstdWriter](s.zstdWriterPool, raw, func(w io.Writer) (zstdWriter, error) {
+		return compress[*zstd.Encoder](s.zstdWriterPool, raw, func(w io.Writer) (*zstd.Encoder, error) {
 			return zstd.NewWriter(w)
 		})
 	default:
