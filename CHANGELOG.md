@@ -957,7 +957,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `servicegraphconnector`: Fix exponential histogram doesn't clean when expire (#42019)
 - `awss3receiver`: Ensures default wait time is applied in SQS configuration when not explicitly set. (#42608)
 - `exporter/loadbalancing`: Drop resources if the service routing key does not exist (#41550)
-- processor/redaction: Support redaction of scope level attributes (#42659)
+- `processor/redaction`: Support redaction of scope level atrributes (#42659)
 - `faroexporter`: Fix success response handling in faroexporter so any HTTP 2xx status code indicates success instead of only 202 Accepted. (#42658)
 - `splunkenterprisereceiver`: Fix a typo from a previous PR implementing the search artifact size metrics, which has caused errors from parsing empty strings. (#42615)
 - `signalfxexporter`: Only validate the root_path of the collector if `sync_host_metadata` is enabled. (#42688)
@@ -1152,8 +1152,8 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- previous-version -->
 
-
 ## v0.132.0
+
 ### 🛑 Breaking changes 🛑
 
 - `azuremonitorreceiver`: Updated `append_tags_as_attributes` configuration type from boolean to array. It controls which Azure resource tags are added as resource attributes to the metrics. The values can be a list of specific tag names or `["*"]` to include all tags.
