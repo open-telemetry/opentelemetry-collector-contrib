@@ -352,7 +352,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			resourceAttributes := resourceLogs.Resource().Attributes()
 			resourceAttributes.PutStr("aws.region", l.region)
 			resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
-			if l.accountID != "" {
+			if len(l.accountID) > 0 {
 				resourceAttributes.PutStr("cloud.account.id", l.accountID)
 			}
 			if logStreamName != "" {
@@ -460,14 +460,13 @@ func (l *logsReceiver) ensureSession() error {
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), cfgOptions...)
-	if err != nil {
-		return err
-	}
 	l.client = cloudwatchlogs.NewFromConfig(cfg)
 
 	stsClient := sts.NewFromConfig(cfg)
-	stsResult, err := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
-	l.accountID = *stsResult.Account
+	stsResult, _ := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
+	if len(*stsResult.Account) > 0 {
+		l.accountID = *stsResult.Account
+	}
 
 	return err
 }
