@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -66,7 +67,10 @@ func TestPrometheusAPIServer(t *testing.T) {
 			APIServer: APIServer{
 				Enabled: true,
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: endpoint,
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  endpoint,
+					},
 				},
 			},
 		}, new(consumertest.MetricsSink))
