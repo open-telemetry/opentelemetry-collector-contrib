@@ -47,12 +47,18 @@ type WebHook struct {
 	Secret                  string                         `mapstructure:"secret"`           // secret for webhook
 	ServiceName             string                         `mapstructure:"service_name"`
 	IncludeSpanEvents       bool                           `mapstructure:"include_span_events"` // attach raw webhook event JSON as span events
+	IDGeneration            string                         `mapstructure:"id_generation"`       // ID generation mode: "legacy" (default) or "simplified"
 }
 
 type GitHubHeaders struct {
 	Customizable map[string]string `mapstructure:","` // can be overwritten via required_headers
 	Fixed        map[string]string `mapstructure:","` // are not allowed to be overwritten
 }
+
+const (
+	idGenerationLegacy     = "legacy"
+	idGenerationSimplified = "simplified"
+)
 
 var (
 	_ component.Config    = (*Config)(nil)
@@ -64,6 +70,7 @@ var (
 	errRequiredHeader              = errors.New("both key and value are required to assign a required_header")
 	errRequireOneScraper           = errors.New("must specify at least one scraper")
 	errGitHubHeader                = errors.New("github default headers [X-GitHub-Event, X-GitHub-Delivery, X-GitHub-Hook-ID, X-Hub-Signature-256] cannot be configured")
+	errInvalidIDGeneration         = errors.New("id_generation must be 'legacy' or 'simplified'")
 )
 
 // Validate the configuration passed through the OTEL config.yaml
@@ -98,6 +105,11 @@ func (cfg *Config) Validate() error {
 		if _, exists := cfg.WebHook.GitHubHeaders.Fixed[key]; exists {
 			errs = multierr.Append(errs, errGitHubHeader)
 		}
+	}
+
+	// Validate id_generation is one of the allowed values
+	if cfg.WebHook.IDGeneration != "" && cfg.WebHook.IDGeneration != idGenerationLegacy && cfg.WebHook.IDGeneration != idGenerationSimplified {
+		errs = multierr.Append(errs, errInvalidIDGeneration)
 	}
 
 	return errs
