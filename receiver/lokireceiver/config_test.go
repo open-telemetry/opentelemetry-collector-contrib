@@ -118,7 +118,7 @@ func TestConfigWithUnknownKeysConfig(t *testing.T) {
 	}{
 		{
 			id:  component.NewIDWithName(metadata.Type, "extra_keys"),
-			err: "'' has invalid keys: foo",
+			err: "'lokireceiver.Config' has invalid keys: foo",
 		},
 	}
 
