@@ -40,7 +40,10 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					HTTP: &confighttp.ServerConfig{
-						Endpoint: "localhost:3500",
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:3500",
+						},
 					},
 				},
 			},
@@ -56,7 +59,10 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					HTTP: &confighttp.ServerConfig{
-						Endpoint: "localhost:4500",
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:4500",
+						},
 					},
 				},
 				KeepTimestamp: true,

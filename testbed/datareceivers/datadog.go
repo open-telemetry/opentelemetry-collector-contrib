@@ -29,7 +29,7 @@ func NewDataDogDataReceiver() testbed.DataReceiver {
 func (dd *datadogDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := datadogreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*datadogreceiver.Config)
-	cfg.Endpoint = "0.0.0.0:8126"
+	cfg.NetAddr.Endpoint = "0.0.0.0:8126"
 
 	set := receiver.Settings{}
 	var err error

@@ -30,8 +30,8 @@ type prometheusExporter struct {
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
 
 func newPrometheusExporter(config *Config, set exporter.Settings) (*prometheusExporter, error) {
-	addr := strings.TrimSpace(config.Endpoint)
-	if strings.TrimSpace(config.Endpoint) == "" {
+	addr := strings.TrimSpace(config.NetAddr.Endpoint)
+	if strings.TrimSpace(config.NetAddr.Endpoint) == "" {
 		return nil, errBlankPrometheusAddress
 	}
 

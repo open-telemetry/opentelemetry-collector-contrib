@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap/zapcore"
@@ -467,7 +468,10 @@ func TestValidate(t *testing.T) {
 				},
 				HealthCheck: HealthCheck{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:-1",
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  "localhost:-1",
+						},
 					},
 				},
 			},
@@ -650,7 +654,8 @@ agent:
 						ConfigApplyTimeout:      DefaultSupervisor().Agent.ConfigApplyTimeout,
 						BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
 					},
-					Telemetry: DefaultSupervisor().Telemetry,
+					Telemetry:   DefaultSupervisor().Telemetry,
+					HealthCheck: DefaultSupervisor().HealthCheck,
 				}
 
 				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
@@ -745,6 +750,7 @@ telemetry:
 							ErrorOutputPaths: []string{"stderr"},
 						},
 					},
+					HealthCheck: DefaultSupervisor().HealthCheck,
 				}
 
 				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
@@ -773,7 +779,8 @@ agent:
 						ConfigApplyTimeout:      DefaultSupervisor().Agent.ConfigApplyTimeout,
 						BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
 					},
-					Telemetry: DefaultSupervisor().Telemetry,
+					Telemetry:   DefaultSupervisor().Telemetry,
+					HealthCheck: DefaultSupervisor().HealthCheck,
 				}
 
 				t.Setenv("TEST_ENDPOINT", "ws://localhost/v1/opamp")

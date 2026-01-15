@@ -102,7 +102,7 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return nil
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.NetAddr.Endpoint))
 
 	httpMux := http.NewServeMux()
 	httpMux.HandleFunc(faroPath, func(resp http.ResponseWriter, req *http.Request) {

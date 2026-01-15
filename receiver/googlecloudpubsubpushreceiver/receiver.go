@@ -165,7 +165,7 @@ func (p *pubSubPushReceiver) Start(ctx context.Context, host component.Host) err
 	}
 	p.server = server
 
-	p.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", p.cfg.Endpoint))
+	p.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", p.cfg.NetAddr.Endpoint))
 	lis, err := p.cfg.ToListener(ctx)
 	if err != nil {
 		return err

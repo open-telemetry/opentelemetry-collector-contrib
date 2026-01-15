@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
 
@@ -43,7 +44,10 @@ func createDefaultConfig() component.Config {
 		Config: healthcheck.Config{
 			LegacyConfig: healthcheck.HTTPLegacyConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.EndpointForPort(defaultPort),
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  testutil.EndpointForPort(defaultPort),
+					},
 				},
 				Path: "/",
 				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{

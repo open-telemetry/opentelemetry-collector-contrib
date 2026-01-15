@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -2114,7 +2115,10 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		s.config = config.Supervisor{
 			HealthCheck: config.HealthCheck{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:23233",
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "localhost:23233",
+					},
 				},
 			},
 		}
@@ -2198,7 +2202,10 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 			config: config.Supervisor{
 				HealthCheck: config.HealthCheck{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:23233",
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  "localhost:23233",
+						},
 					},
 				},
 			},
