@@ -164,6 +164,8 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 				setResourceAttribute(resource.Attributes(), key, val)
 			}
 			kp.addContainerAttributes(resource.Attributes(), pod)
+		} else {
+			kp.logger.Debug("unable to find pod based on identifier", zap.Any("value", podIdentifierValue))
 		}
 	}
 
