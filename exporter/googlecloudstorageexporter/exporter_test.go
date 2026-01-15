@@ -413,24 +413,11 @@ func TestCompression(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test compression logic directly
-			exporter := &storageExporter{
-				cfg: &Config{
-					Bucket: bucketConfig{
-						Compression: tt.compression,
-					},
+			exporter := newTestGCSExporter(t, &Config{
+				Bucket: bucketConfig{
+					Compression: tt.compression,
 				},
-				gzipWriterPool: &sync.Pool{
-					New: func() any {
-						writer := gzip.NewWriter(io.Discard)
-						return writer
-					},
-				},
-				zstdWriterPool: &sync.Pool{
-					New: func() any {
-						return nil
-					},
-				},
-			}
+			})
 
 			// Test compression of content directly
 			testData := []byte(strings.Repeat("This is a test string that will compress very well when repeated many times. ", 100))
