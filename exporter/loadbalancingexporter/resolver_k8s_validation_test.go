@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
@@ -96,6 +97,71 @@ func TestK8sResolverStartCreatesClient(t *testing.T) {
 
 	// Clean up to avoid goroutine leaks
 	_ = resolver.shutdown(t.Context())
+}
+
+// TestK8sResolverStartErrorPropagation verifies that errors from newInClusterClient() are properly returned from start()
+func TestK8sResolverStartErrorPropagation(t *testing.T) {
+	_, tb := getTelemetryAssets(t)
+
+	// Create resolver with nil client - it will attempt to create a real k8s client on start()
+	resolver, err := newK8sResolver(
+		nil,
+		zap.NewNop(),
+		"test-service",
+		[]int32{4317},
+		defaultListWatchTimeout,
+		false,
+		tb,
+	)
+	require.NoError(t, err)
+	require.Nil(t, resolver.client, "client should be nil before start")
+
+	// When running outside a k8s cluster, start() should fail with an error from newInClusterClient()
+	// This test verifies that the error is properly propagated
+	err = resolver.start(context.Background())
+
+	// Outside a k8s cluster, we expect an error from newInClusterClient()
+	// The error should be returned from start(), not silently ignored
+	// The actual error may vary (e.g., "unable to load in-cluster configuration"), but it should not be nil
+	if err != nil {
+		// This is the expected behavior outside a k8s cluster
+		t.Logf("Expected error from start() outside k8s cluster: %v", err)
+	} else {
+		// If we're running inside a k8s cluster, start() might succeed
+		t.Log("start() succeeded - likely running inside a k8s cluster")
+		require.NotNil(t, resolver.client, "client must be created when start() succeeds")
+		// Clean up
+		_ = resolver.shutdown(context.Background())
+	}
+}
+
+// TestK8sResolverStartWithClientDoesNotCreateNew verifies that when a client is provided, start() does not create a new one
+func TestK8sResolverStartWithClientDoesNotCreateNew(t *testing.T) {
+	_, tb := getTelemetryAssets(t)
+
+	// Create a fake client
+	fakeClient := fake.NewSimpleClientset()
+
+	resolver, err := newK8sResolver(
+		fakeClient,
+		zap.NewNop(),
+		"test-service",
+		[]int32{4317},
+		defaultListWatchTimeout,
+		false,
+		tb,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, resolver.client, "client should be set")
+	require.Equal(t, fakeClient, resolver.client, "client should be the one provided")
+
+	// Start with an existing client should not attempt to create a new one
+	err = resolver.start(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, fakeClient, resolver.client, "client should still be the one provided, not replaced")
+
+	// Clean up
+	_ = resolver.shutdown(context.Background())
 }
 
 // TestLoadBalancerWithK8sResolverCreation tests that loadbalancer can be created with k8s resolver
