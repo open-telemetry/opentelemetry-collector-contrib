@@ -226,7 +226,7 @@ func newElasticsearchClient(
 		Logger:    esLogger,
 		Instrumentation: elastictransport.NewOtelInstrumentation(
 			telemetry.TracerProvider,
-			false,
+			false, /* captureSearchBody */
 			elastictransportversion.Version,
 		),
 	}
