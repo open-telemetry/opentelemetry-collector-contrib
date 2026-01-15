@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-viper/mapstructure/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/noop"
+	yamlsource "github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/yaml"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/lookupsource"
 )
 
@@ -52,7 +54,7 @@ type lookupProcessorFactory struct {
 func defaultSources() map[string]lookupsource.SourceFactory {
 	return map[string]lookupsource.SourceFactory{
 		"noop": noop.NewFactory(),
-		// yaml and dns sources will be added in subsequent branches
+		"yaml": yamlsource.NewFactory(),
 	}
 }
 
@@ -108,7 +110,7 @@ func (f *lookupProcessorFactory) createLogsProcessor(
 		return nil, err
 	}
 
-	proc := newLookupProcessor(source, set.Logger)
+	proc := newLookupProcessor(source, processorCfg, set.Logger)
 
 	return processorhelper.NewLogs(
 		ctx,
@@ -137,10 +139,26 @@ func (f *lookupProcessorFactory) createSource(
 		return nil, fmt.Errorf("unknown source type %q", sourceType)
 	}
 
-	// Get the source-specific config from the raw config
-	sourceCfg := cfg.Source.Config
-	if sourceCfg == nil {
-		sourceCfg = factory.CreateDefaultConfig()
+	sourceCfg := factory.CreateDefaultConfig()
+	if len(cfg.Source.Config) > 0 {
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			TagName:          "mapstructure",
+			Result:           sourceCfg,
+			WeaklyTypedInput: true,
+			DecodeHook: mapstructure.ComposeDecodeHookFunc(
+				mapstructure.StringToTimeDurationHookFunc(),
+			),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create decoder for source %q: %w", sourceType, err)
+		}
+		if err := decoder.Decode(cfg.Source.Config); err != nil {
+			return nil, fmt.Errorf("failed to decode config for source %q: %w", sourceType, err)
+		}
+	}
+
+	if err := sourceCfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid config for source %q: %w", sourceType, err)
 	}
 
 	createSettings := lookupsource.CreateSettings{
