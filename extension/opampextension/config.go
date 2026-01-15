@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"runtime"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/client"
@@ -209,6 +210,8 @@ func (cfg *Config) Validate() error {
 	switch {
 	case cfg.Capabilities.AcceptsRestartCommand && !RemoteRestartsFeatureGate.IsEnabled():
 		return errors.New("extension.opampextension.RemoteRestarts feature gate must be enabled to use the accepts_restart_command capability")
+	case cfg.Capabilities.AcceptsRestartCommand && RemoteRestartsFeatureGate.IsEnabled() && runtime.GOOS == "windows":
+		return errors.New("remote restart functionality is not available on the windows operating system")
 	case cfg.Server.WS == nil && cfg.Server.HTTP == nil:
 		return errors.New("opamp server must have at least ws or http set")
 	case cfg.Server.WS != nil && cfg.Server.HTTP != nil:
