@@ -123,9 +123,7 @@ func TestExtension_WithDelay(t *testing.T) {
 	)
 
 	// Wait for the callback to be invoked (may take a moment for leader election to complete)
-	require.Eventually(t, func() bool {
-		return onStartLeadingInvoked.Load()
-	}, 10*time.Second, 100*time.Millisecond)
+	require.Eventually(t, onStartLeadingInvoked.Load, 10*time.Second, 100*time.Millisecond)
 
 	require.NoError(t, leaderElection.Shutdown(ctx))
 }
@@ -303,9 +301,7 @@ func TestExtension_CallbacksNotSetImmediately(t *testing.T) {
 	)
 
 	// Wait for the callback to be invoked (should be immediate but account for timing)
-	require.Eventually(t, func() bool {
-		return onStartLeadingInvoked.Load()
-	}, 10*time.Second, 100*time.Millisecond)
+	require.Eventually(t, onStartLeadingInvoked.Load, 10*time.Second, 100*time.Millisecond)
 
 	require.NoError(t, leaderElection.Shutdown(ctx))
 }
