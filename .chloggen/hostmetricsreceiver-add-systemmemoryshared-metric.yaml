@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: receiver/hostmetrics
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add optional `system.memory.shared` metric (currently Linux only)
+note: Add optional `system.memory.linux.shared` metric
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [32712]
