@@ -173,16 +173,14 @@ func (r *k8sResolver) start(_ context.Context) error {
 			},
 		}
 
-		if r.epsListWatcher != nil {
-			r.logger.Debug("creating and starting endpoints informer")
-			epsInformer := cache.NewSharedInformer(r.epsListWatcher, &discoveryv1.EndpointSlice{}, 0)
-			if _, err := epsInformer.AddEventHandler(r.handler); err != nil {
-				r.logger.Error("unable to start watching for changes to the specified service names", zap.Error(err))
-			}
-			go epsInformer.Run(r.stopCh)
-			if !cache.WaitForCacheSync(r.stopCh, epsInformer.HasSynced) {
-				initErr = errors.New("endpoints informer not sync")
-			}
+		r.logger.Debug("creating and starting endpoints informer")
+		epsInformer := cache.NewSharedInformer(r.epsListWatcher, &discoveryv1.EndpointSlice{}, 0)
+		if _, err := epsInformer.AddEventHandler(r.handler); err != nil {
+			r.logger.Error("unable to start watching for changes to the specified service names", zap.Error(err))
+		}
+		go epsInformer.Run(r.stopCh)
+		if !cache.WaitForCacheSync(r.stopCh, epsInformer.HasSynced) {
+			initErr = errors.New("endpoints informer not sync")
 		}
 	})
 	if initErr != nil {
