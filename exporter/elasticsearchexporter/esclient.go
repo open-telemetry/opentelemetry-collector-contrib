@@ -11,8 +11,6 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"net/url"
-	"regexp"
-	"runtime"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -105,12 +103,9 @@ func (cl *clientLogger) ResponseBodyEnabled() bool {
 }
 
 const (
-	unknownProduct   = "the client noticed that the server is not Elasticsearch and we do not support this unknown product"
-	defaultURL       = "http://localhost:9200"
-	HeaderClientMeta = "x-elastic-client-meta"
+	unknownProduct = "the client noticed that the server is not Elasticsearch and we do not support this unknown product"
+	defaultURL     = "http://localhost:9200"
 )
-
-var reMetaVersion = regexp.MustCompile("([0-9.]+)(.*)")
 
 // genuineCheckHeader validates the presence of the X-Elastic-Product header
 func genuineCheckHeader(header http.Header) error {
@@ -118,56 +113,6 @@ func genuineCheckHeader(header http.Header) error {
 		return errors.New(unknownProduct)
 	}
 	return nil
-}
-
-func metaHeader() string {
-	// The version value must be the version of the client library that is communicating with the service
-	// and not the version of the service being communicated with.
-	strippedEsVersion := buildStrippedVersion("") // Empty here as we are not using go-elasticsearch
-
-	strippedGoVersion := buildStrippedVersion(runtime.Version())
-	strippedTransportVersion := elastictransportversion.Transport
-
-	var duos = [][]string{
-		{
-			"es",
-			strippedEsVersion,
-		},
-		{
-			"go",
-			strippedGoVersion,
-		},
-		{
-			"t",
-			strippedTransportVersion,
-		},
-		{
-			"hc",
-			strippedGoVersion,
-		},
-	}
-
-	var arr []string
-	for _, duo := range duos {
-		arr = append(arr, strings.Join(duo, "="))
-	}
-
-	return strings.Join(arr, ",")
-}
-
-func buildStrippedVersion(version string) string {
-	v := reMetaVersion.FindStringSubmatch(version)
-
-	if len(v) == 3 && !strings.Contains(version, "devel") {
-		switch {
-		case v[2] != "":
-			return v[1] + "p"
-		default:
-			return v[1]
-		}
-	}
-
-	return "0.0p"
 }
 
 type esClient struct {
@@ -215,7 +160,6 @@ func newElasticsearchClient(
 	}
 
 	headers := make(http.Header)
-	headers.Set(HeaderClientMeta, metaHeader())
 
 	// endpoints converts Config.Endpoints, Config.CloudID,
 	// and Config.ClientConfig.Endpoint to a list of addresses.
