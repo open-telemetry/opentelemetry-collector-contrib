@@ -200,6 +200,24 @@ func TestMergeResource(t *testing.T) {
 	}
 }
 
+func TestMergeResourceZeroValueFrom(t *testing.T) {
+	t.Parallel()
+
+	to := pcommon.NewResource()
+	require.NoError(t, to.Attributes().FromRaw(map[string]any{"keep": "me"}))
+
+	assert.NotPanics(t, func() {
+		MergeResource(to, pcommon.Resource{}, false)
+	})
+	assert.Equal(t, map[string]any{"keep": "me"}, to.Attributes().AsRaw())
+}
+
+func TestIsEmptyResourceZeroValue(t *testing.T) {
+	t.Parallel()
+
+	assert.True(t, IsEmptyResource(pcommon.Resource{}))
+}
+
 type mockParallelDetector struct {
 	mock.Mock
 	ch chan struct{}
