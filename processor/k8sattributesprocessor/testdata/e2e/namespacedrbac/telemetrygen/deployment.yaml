@@ -30,7 +30,7 @@ spec:
 {{- if eq .DataType "traces" }}
         - --status-code=
 {{- end }}
-        image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:@sha256:ab71b820ab3f7761100ad14e7e9aea3cd624e47263e49b011582082e84a035d0
+        image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:ab71b820ab3f7761100ad14e7e9aea3cd624e47263e49b011582082e84a035d0
         imagePullPolicy: IfNotPresent
         name: telemetrygen
       restartPolicy: Always
