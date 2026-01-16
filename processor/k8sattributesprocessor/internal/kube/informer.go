@@ -6,7 +6,6 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 
-	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
 	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
@@ -19,8 +18,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 const kubeSystemNamespace = "kube-system"
@@ -50,7 +47,7 @@ type InformerProviderNode func(
 // allow passing custom shared informers to the watch client.
 // It's used for high-level workloads such as ReplicaSets, Deployments, DaemonSets, StatefulSets or Jobs
 type InformerProviderWorkload func(
-	client kubernetes.Interface,
+	client metadata.Interface,
 	namespace string,
 ) cache.SharedInformer
 
@@ -200,29 +197,14 @@ func replicaSetWatchFuncWithSelectors(mc metadata.Interface, gvr schema.GroupVer
 	}
 }
 
-func newReplicaSetSharedInformer(apiCfg k8sconfig.APIConfig) func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
-	return func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
-		restConfig, err := k8sconfig.CreateRestConfig(apiCfg)
-		if err != nil {
-			zap.L().Error("failed to create REST config", zap.Error(err))
-			return nil
-		}
-
-		mc, err := metadata.NewForConfig(restConfig)
-		if err != nil {
-			zap.L().Error("failed to create metadata client", zap.Error(err))
-			return nil
-		}
-
+func newReplicaSetSharedInformer() func(client metadata.Interface, namespace string) cache.SharedInformer {
+	return func(client metadata.Interface, namespace string) cache.SharedInformer {
 		gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
-
-		lw := &cache.ListWatch{
-			ListWithContextFunc:  replicaSetListFuncWithSelectors(mc, gvr, namespace),
-			WatchFuncWithContext: replicaSetWatchFuncWithSelectors(mc, gvr, namespace),
-		}
-
 		return cache.NewSharedInformer(
-			lw,
+			&cache.ListWatch{
+				ListWithContextFunc:  replicaSetListFuncWithSelectors(client, gvr, namespace),
+				WatchFuncWithContext: replicaSetWatchFuncWithSelectors(client, gvr, namespace),
+			},
 			&metav1.PartialObjectMetadata{},
 			watchSyncPeriod,
 		)

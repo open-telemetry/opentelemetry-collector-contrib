@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/distribution/reference"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/attribute"
@@ -27,11 +28,11 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
+	clientmeta "k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 
 	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 const (
@@ -249,9 +250,19 @@ func New(
 
 	if rules.DeploymentName || rules.DeploymentUID {
 		if informersFactory.newReplicaSetInformer == nil {
-			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer(apiCfg)
+			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer()
 		}
-		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.kc, c.Filters.Namespace)
+		restConfig, err := k8sconfig.CreateRestConfig(apiCfg)
+		if err != nil {
+			return nil, err
+		}
+
+		mc, err := clientmeta.NewForConfig(restConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		c.replicasetInformer = informersFactory.newReplicaSetInformer(mc, c.Filters.Namespace)
 		if c.replicasetInformer == nil {
 			return nil, errors.New("failed to create ReplicaSet informer")
 		}
@@ -847,6 +858,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 							tags[string(conventions.K8SDeploymentNameKey)] = deploymentName
 						}
 						if c.Rules.ServiceName {
+							// deployment name wins over replicaset name
 							tags[string(conventions.ServiceNameKey)] = deploymentName
 						}
 					}
