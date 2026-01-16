@@ -381,7 +381,7 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	assert.NotNil(t, r0.PrometheusConfig)
 	assert.True(t, r0.APIServer.Enabled)
 	assert.NotNil(t, r0.APIServer.ServerConfig)
-	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.Endpoint)
+	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.NetAddr.Endpoint)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIDisabled").String())
 	require.NoError(t, err)
