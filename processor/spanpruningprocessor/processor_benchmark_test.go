@@ -125,7 +125,8 @@ func BenchmarkExecuteAggregations(b *testing.B) {
 		groups := make(map[string]aggregationGroup, len(leafGroups))
 		for key, nodes := range leafGroups {
 			if len(nodes) >= proc.config.MinSpansToAggregate {
-				groups[key] = aggregationGroup{nodes: nodes, depth: 0}
+				templateNode := findLongestDurationNode(nodes)
+				groups[key] = aggregationGroup{nodes: nodes, depth: 0, templateNode: templateNode}
 			}
 		}
 
