@@ -189,7 +189,7 @@ func TestNewReaderFromMetadataConcurrentAccess(t *testing.T) {
 	// (simulating test assertions or persistence reading)
 	go func() {
 		defer func() { done <- true }()
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			// This simulates what reflect.DeepEqual does in test assertions
 			_ = len(originalAttrs)
 			for k, v := range originalAttrs {
@@ -204,7 +204,7 @@ func TestNewReaderFromMetadataConcurrentAccess(t *testing.T) {
 	// (simulating the polling goroutine calling NewReaderFromMetadata)
 	go func() {
 		defer func() { done <- true }()
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			temp2 := filetest.OpenFile(t, temp.Name())
 			_, err := f.NewReaderFromMetadata(temp2, metadata)
 			if err != nil {
@@ -220,6 +220,6 @@ func TestNewReaderFromMetadataConcurrentAccess(t *testing.T) {
 
 	// Verify that the original map was not mutated
 	// (it should still have the same length, though a new map may have been created)
-	require.Equal(t, originalLen, len(originalAttrs),
+	require.Len(t, originalAttrs, originalLen,
 		"Original FileAttributes map should not be mutated")
 }
