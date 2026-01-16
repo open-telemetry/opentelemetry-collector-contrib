@@ -234,17 +234,53 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 				}
 			}
 
-			aggregationGroups[groupKey] = aggregationGroup{
-				nodes:        nodes,
-				depth:        0,
-				lossInfo:     lossInfo,
-				templateNode: templateNode,
+			// Outlier correlation analysis for leaf aggregation (only when enabled)
+			var outlierResult *outlierAnalysisResult
+			var preservedOutliers []*spanNode
+			aggregateNodes := nodes
+
+			if p.config.EnableOutlierAnalysis {
+				outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
+
+				// Filter out outliers to preserve them
+				if p.config.OutlierAnalysis.PreserveOutliers && outlierResult != nil {
+					aggregateNodes, preservedOutliers = filterOutlierNodes(
+						nodes,
+						outlierResult,
+						p.config.OutlierAnalysis,
+					)
+
+					// Skip aggregation if too few normal spans remain
+					if len(aggregateNodes) < p.config.MinSpansToAggregate {
+						continue
+					}
+
+					// Recalculate template from normal spans only
+					if len(preservedOutliers) > 0 {
+						templateNode = findLongestDurationNode(aggregateNodes)
+					}
+				}
 			}
-			// Mark nodes for removal using field instead of map
-			for _, node := range nodes {
+
+			aggregationGroups[groupKey] = aggregationGroup{
+				nodes:             aggregateNodes,
+				depth:             0,
+				lossInfo:          lossInfo,
+				templateNode:      templateNode,
+				outlierAnalysis:   outlierResult,
+				preservedOutliers: preservedOutliers,
+			}
+
+			// Mark only normal spans for removal
+			for _, node := range aggregateNodes {
 				node.markedForRemoval = true
 			}
-			markedNodes = append(markedNodes, nodes...)
+			markedNodes = append(markedNodes, aggregateNodes...)
+
+			// Mark outliers as preserved (not marked for removal)
+			for _, outlier := range preservedOutliers {
+				outlier.isPreservedOutlier = true
+			}
 		}
 	}
 
@@ -312,11 +348,18 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 					}
 				}
 
+				// Outlier correlation analysis for parent aggregation (only when enabled)
+				var outlierResult *outlierAnalysisResult
+				if p.config.EnableOutlierAnalysis {
+					outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
+				}
+
 				aggregationGroups[parentKey] = aggregationGroup{
-					nodes:        nodes,
-					depth:        depth,
-					lossInfo:     lossInfo,
-					templateNode: templateNode,
+					nodes:           nodes,
+					depth:           depth,
+					lossInfo:        lossInfo,
+					templateNode:    templateNode,
+					outlierAnalysis: outlierResult,
 				}
 				// Mark parent nodes for removal
 				for _, node := range nodes {

@@ -1687,3 +1687,226 @@ func createTestTraceWithVaryingDurations(t *testing.T) ptrace.Traces {
 
 	return td
 }
+
+// TestProcessorPreservesOutlierSpans tests that outlier spans are preserved as individual
+// spans when preserve_outliers is enabled, while normal spans are aggregated.
+func TestProcessorPreservesOutlierSpans(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis = OutlierAnalysisConfig{
+		PreserveOutliers:               true,
+		MaxPreservedOutliers:           2,
+		IQRMultiplier:                  1.5,
+		MinGroupSize:                   7,
+		CorrelationMinOccurrence:       0.75,
+		CorrelationMaxNormalOccurrence: 0.25,
+		MaxCorrelatedAttributes:        5,
+	}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// Create trace with outliers
+	td := createTestTraceWithOutliers(t)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// Collect all spans from the result
+	var spans []ptrace.Span
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rs := td.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := 0; k < ss.Spans().Len(); k++ {
+				spans = append(spans, ss.Spans().At(k))
+			}
+		}
+	}
+
+	// Find summary span
+	var summarySpan ptrace.Span
+	var outlierSpans []ptrace.Span
+
+	for _, span := range spans {
+		if isSummary, exists := span.Attributes().Get("aggregation.is_summary"); exists && isSummary.Bool() {
+			summarySpan = span
+		}
+		if isOutlier, exists := span.Attributes().Get("aggregation.is_preserved_outlier"); exists && isOutlier.Bool() {
+			outlierSpans = append(outlierSpans, span)
+		}
+	}
+
+	// Verify we have the expected structure:
+	// - 1 parent span (not aggregated)
+	// - 1 summary span (aggregated normal spans)
+	// - 2 preserved outlier spans
+	// Total: 4 spans
+	require.NotNil(t, summarySpan, "summary span should exist")
+	assert.Len(t, outlierSpans, 2, "should have 2 preserved outliers")
+
+	// Verify summary span has correct count (10 total - 2 outliers = 8 aggregated)
+	spanCount, exists := summarySpan.Attributes().Get("aggregation.span_count")
+	require.True(t, exists)
+	assert.Equal(t, int64(8), spanCount.Int(), "summary should aggregate 8 normal spans")
+
+	// Verify summary span has preserved outlier count
+	outlierCount, exists := summarySpan.Attributes().Get("aggregation.preserved_outlier_count")
+	require.True(t, exists)
+	assert.Equal(t, int64(2), outlierCount.Int(), "summary should track 2 preserved outliers")
+
+	// Verify preserved outliers reference the summary span
+	summarySpanIDStr := summarySpan.SpanID().String()
+	for _, outlier := range outlierSpans {
+		summaryRef, exists := outlier.Attributes().Get("aggregation.summary_span_id")
+		require.True(t, exists, "preserved outlier should reference summary span")
+		assert.Equal(t, summarySpanIDStr, summaryRef.Str())
+	}
+}
+
+func createTestTraceWithOutliers(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	// Parent span
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("handler")
+	parentSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	parentSpan.SetEndTimestamp(pcommon.Timestamp(1001000000))
+
+	// Create 10 SELECT spans: 8 normal (5-12ms) and 2 outliers (500ms, 600ms)
+	// The outliers are ~50x slower than normal spans, well outside IQR threshold
+	baseTime := int64(1000000000)
+	ms := int64(1000000) // nanoseconds per millisecond
+
+	normalDurations := []int64{5, 6, 7, 8, 9, 10, 11, 12} // 8 normal spans (ms)
+	outlierDurations := []int64{500, 600}                 // 2 outlier spans (ms)
+
+	// Add normal spans
+	for i, dur := range normalDurations {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
+		span.Attributes().PutStr("cache_hit", "true")
+	}
+
+	// Add outlier spans
+	for i, dur := range outlierDurations {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
+		span.Attributes().PutStr("cache_hit", "false") // Distinguishing attribute for outliers
+	}
+
+	return td
+}
+
+// TestProcessorSkipsAggregationWhenTooFewNormalSpans tests that aggregation is skipped
+// when preserving outliers would leave too few normal spans to aggregate.
+func TestProcessorSkipsAggregationWhenTooFewNormalSpans(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 11 // Require 11 spans to aggregate
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis = OutlierAnalysisConfig{
+		PreserveOutliers:               true,
+		MaxPreservedOutliers:           0, // Preserve all outliers
+		IQRMultiplier:                  1.5,
+		MinGroupSize:                   7,
+		CorrelationMinOccurrence:       0.5,
+		CorrelationMaxNormalOccurrence: 0.5,
+		MaxCorrelatedAttributes:        5,
+	}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// Create trace with 13 leaf spans: 10 normal + 3 outliers
+	// After filtering outliers, only 10 normal remain, which is < 11 (MinSpansToAggregate)
+	// So aggregation should be skipped entirely
+	td := createTestTraceWithManyOutliers(t)
+
+	initialSpanCount := countSpans(td)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	finalSpanCount := countSpans(td)
+
+	// No aggregation should occur - all spans preserved
+	assert.Equal(t, initialSpanCount, finalSpanCount, "no spans should be aggregated")
+
+	// Verify no summary span exists by checking span count matches expectations
+	// If aggregation happened, we'd have fewer spans (aggregated + summary instead of all original)
+	// Since span counts are equal, no aggregation occurred
+}
+
+func createTestTraceWithManyOutliers(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	// Parent span
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("handler")
+	parentSpan.SetStartTimestamp(pcommon.Timestamp(1000000000))
+	parentSpan.SetEndTimestamp(pcommon.Timestamp(1001000000))
+
+	baseTime := int64(1000000000)
+	ms := int64(1000000)
+
+	// 10 normal spans (tight distribution for small IQR)
+	normalDurations := []int64{5, 6, 6, 7, 7, 8, 8, 9, 9, 10}
+	for i, dur := range normalDurations {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
+	}
+
+	// 3 outlier spans (way outside IQR threshold)
+	outlierDurations := []int64{500, 600, 700}
+	for i, dur := range outlierDurations {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.SetStartTimestamp(pcommon.Timestamp(baseTime))
+		span.SetEndTimestamp(pcommon.Timestamp(baseTime + dur*ms))
+		span.Attributes().PutStr("db.operation", "SELECT")
+	}
+
+	return td
+}
