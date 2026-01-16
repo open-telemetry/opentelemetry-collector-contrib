@@ -23,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.Endpoint = ""
+	oCfg.NetAddr.Endpoint = ""
 	exp, err := createMetricsExporter(
 		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
@@ -36,7 +36,7 @@ func TestCreateMetricsExportHelperError(t *testing.T) {
 	cfg, ok := createDefaultConfig().(*Config)
 	require.True(t, ok)
 
-	cfg.Endpoint = "http://localhost:8889"
+	cfg.NetAddr.Endpoint = "http://localhost:8889"
 
 	set := exportertest.NewNopSettings(metadata.Type)
 	set.Logger = nil

@@ -6,18 +6,18 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	go.etcd.io/bbolt v1.4.3
-	go.opentelemetry.io/collector/component v1.49.0
-	go.opentelemetry.io/collector/component/componenttest v0.143.0
-	go.opentelemetry.io/collector/confmap v1.49.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.143.0
-	go.opentelemetry.io/collector/extension v1.49.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.143.0
-	go.opentelemetry.io/collector/extension/xextension v0.143.0
+	go.opentelemetry.io/collector/component v1.49.1-0.20260115162016-5e41fb551263
+	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260115162016-5e41fb551263
+	go.opentelemetry.io/collector/confmap v1.49.1-0.20260115162016-5e41fb551263
+	go.opentelemetry.io/collector/confmap/xconfmap v0.143.1-0.20260115162016-5e41fb551263
+	go.opentelemetry.io/collector/extension v1.49.1-0.20260115162016-5e41fb551263
+	go.opentelemetry.io/collector/extension/extensiontest v0.143.1-0.20260115162016-5e41fb551263
+	go.opentelemetry.io/collector/extension/xextension v0.143.1-0.20260115162016-5e41fb551263
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 )
 
-require github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+require github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -36,8 +36,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.49.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.49.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260115162016-5e41fb551263 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260115162016-5e41fb551263 // indirect
+	go.opentelemetry.io/collector/pdata v1.49.1-0.20260115162016-5e41fb551263 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
@@ -49,3 +50,6 @@ require (
 	golang.org/x/sys v0.39.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+// Can be removed after 0.144.0 release
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260115162016-5e41fb551263

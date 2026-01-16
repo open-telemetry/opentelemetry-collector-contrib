@@ -1,5 +1,3 @@
-#!/bin/bash
-
 beta_modules=(
   "go.opentelemetry.io/collector"
   "go.opentelemetry.io/collector/internal/memorylimiter"
