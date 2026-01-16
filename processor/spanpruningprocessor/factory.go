@@ -47,7 +47,9 @@ func createDefaultConfig() component.Config {
 		AttributeLossExemplarSampleRate: 0.01, // 1% default
 		EnableOutlierAnalysis:           false,
 		OutlierAnalysis: OutlierAnalysisConfig{
+			Method:                         OutlierMethodIQR,
 			IQRMultiplier:                  1.5,
+			MADMultiplier:                  3.0,
 			MinGroupSize:                   7,
 			CorrelationMinOccurrence:       0.75,
 			CorrelationMaxNormalOccurrence: 0.25,

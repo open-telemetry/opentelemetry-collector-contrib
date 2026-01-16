@@ -50,7 +50,9 @@ func TestLoadConfig(t *testing.T) {
 				AttributeLossExemplarSampleRate: 0.01,
 				EnableOutlierAnalysis:           false,
 				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodIQR,
 					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
 					MinGroupSize:                   7,
 					CorrelationMinOccurrence:       0.75,
 					CorrelationMaxNormalOccurrence: 0.25,
@@ -73,7 +75,9 @@ func TestLoadConfig(t *testing.T) {
 				AttributeLossExemplarSampleRate: 0.01,
 				EnableOutlierAnalysis:           false,
 				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodIQR,
 					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
 					MinGroupSize:                   7,
 					CorrelationMinOccurrence:       0.75,
 					CorrelationMaxNormalOccurrence: 0.25,
@@ -224,7 +228,9 @@ func TestConfig_Validate(t *testing.T) {
 				AggregationAttributePrefix: "aggregation.",
 				EnableOutlierAnalysis:      true,
 				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodIQR,
 					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
 					MinGroupSize:                   7,
 					CorrelationMinOccurrence:       0.75,
 					CorrelationMaxNormalOccurrence: 0.25,
@@ -232,6 +238,42 @@ func TestConfig_Validate(t *testing.T) {
 				},
 			},
 			expectError: false,
+		},
+		{
+			name: "valid outlier analysis with MAD method",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodMAD,
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid outlier method",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         "invalid",
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: true,
 		},
 		{
 			name: "outlier analysis disabled skips validation",
@@ -253,6 +295,24 @@ func TestConfig_Validate(t *testing.T) {
 				EnableOutlierAnalysis:      true,
 				OutlierAnalysis: OutlierAnalysisConfig{
 					IQRMultiplier:                  0,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid outlier mad_multiplier",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  0,
 					MinGroupSize:                   7,
 					CorrelationMinOccurrence:       0.75,
 					CorrelationMaxNormalOccurrence: 0.25,

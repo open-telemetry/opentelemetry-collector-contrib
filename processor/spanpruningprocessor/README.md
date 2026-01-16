@@ -88,11 +88,22 @@ processors:
 
     # Outlier analysis configuration (optional)
     outlier_analysis:
-      # IQR multiplier for outlier detection threshold
+      # Statistical method for outlier detection
+      # "iqr" (default): Interquartile Range method
+      # "mad": Median Absolute Deviation method (more robust to extreme outliers)
+      method: iqr
+
+      # IQR multiplier for outlier detection threshold (when method=iqr)
       # Outliers are spans with duration > Q3 + (iqr_multiplier * IQR)
       # Common values: 1.5 (standard), 3.0 (extreme only)
       # Default: 1.5
       iqr_multiplier: 1.5
+
+      # MAD multiplier for outlier detection threshold (when method=mad)
+      # Outliers are spans with duration > median + (mad_multiplier * MAD * 1.4826)
+      # Common values: 2.5-3.0 (standard), 3.5+ (extreme only)
+      # Default: 3.0
+      mad_multiplier: 3.0
 
       # Minimum group size for reliable IQR calculation
       # Groups smaller than this skip outlier analysis
@@ -144,8 +155,10 @@ processors:
 | `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for histogram buckets |
 | `enable_attribute_loss_analysis` | bool | false | Enable attribute loss analysis (adds metrics and span attributes showing attribute differences) |
 | `attribute_loss_exemplar_sample_rate` | float64 | 0.01 | Fraction of attribute-loss metric recordings that include trace exemplars (0.0–1.0). Only applies when `enable_attribute_loss_analysis` is true. |
-| `enable_outlier_analysis` | bool | false | Enable IQR-based outlier correlation analysis |
-| `outlier_analysis.iqr_multiplier` | float64 | 1.5 | IQR threshold multiplier for outlier detection |
+| `enable_outlier_analysis` | bool | false | Enable outlier detection and correlation analysis |
+| `outlier_analysis.method` | string | "iqr" | Statistical method: "iqr" or "mad" |
+| `outlier_analysis.iqr_multiplier` | float64 | 1.5 | IQR threshold multiplier (when method=iqr) |
+| `outlier_analysis.mad_multiplier` | float64 | 3.0 | MAD threshold multiplier (when method=mad) |
 | `outlier_analysis.min_group_size` | int | 7 | Minimum group size for outlier analysis |
 | `outlier_analysis.correlation_min_occurrence` | float64 | 0.75 | Minimum outlier occurrence fraction for correlation |
 | `outlier_analysis.correlation_max_normal_occurrence` | float64 | 0.25 | Maximum normal occurrence fraction for correlation |
@@ -203,6 +216,7 @@ When `enable_outlier_analysis: true`, the following additional attributes are ad
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
+| `<prefix>outlier_method` | string | Detection method used: "iqr" or "mad" |
 | `<prefix>duration_median_ns` | int64 | Median duration (more robust than average for skewed distributions) |
 | `<prefix>outlier_correlated_attributes` | string | Attributes that distinguish outliers from normal spans (format: `key=value(outlier%/normal%), ...`) |
 
@@ -220,19 +234,42 @@ The histogram provides a latency distribution of the aggregated spans. The bucke
 
 ### Outlier Analysis (Optional)
 
-When `enable_outlier_analysis: true`, the processor uses the IQR (Interquartile Range) method to detect duration outliers and identify attributes that correlate with slow spans.
+When `enable_outlier_analysis: true`, the processor detects duration outliers and identifies attributes that correlate with slow spans.
+
+#### Detection Methods
+
+The processor supports two statistical methods for outlier detection:
+
+| Method | Formula | Characteristics |
+|--------|---------|----------------|
+| **IQR** (default) | `threshold = Q3 + (multiplier × IQR)` | Standard method; sensitive to moderate outliers; uses quartiles |
+| **MAD** | `threshold = median + (multiplier × MAD × 1.4826)` | More robust to extreme outliers; uses median |
+
+**When to use each:**
+
+- **IQR**: Best for typical distributions with moderate outliers. Standard choice for most use cases.
+- **MAD**: Better when you have extreme outliers that would skew IQR calculations, or when you need more stable detection thresholds.
 
 #### How It Works
 
-1. **IQR Outlier Detection**: The processor uses Tukey's IQR method:
-   - Sort spans by duration
-   - Calculate Q1 (25th percentile) and Q3 (75th percentile)
-   - Calculate IQR = Q3 - Q1
-   - Flag spans with duration > Q3 + (iqr_multiplier × IQR) as outliers
+**IQR (Interquartile Range) Method:**
+1. Sort spans by duration
+2. Calculate Q1 (25th percentile) and Q3 (75th percentile)
+3. Calculate IQR = Q3 - Q1
+4. Flag spans with duration > Q3 + (iqr_multiplier × IQR) as outliers
 
-2. **Attribute Correlation**: Compare attribute values between outliers and normal spans:
-   - Find attribute values that appear frequently in outliers but rarely in normal spans
-   - Report the strongest correlations based on the configured thresholds
+**MAD (Median Absolute Deviation) Method:**
+1. Sort spans by duration and find the median
+2. Calculate |duration - median| for each span
+3. MAD = median of those deviations
+4. Flag spans with duration > median + (mad_multiplier × MAD × 1.4826) as outliers
+
+*Note: The 1.4826 scale factor makes MAD comparable to standard deviation for normal distributions.*
+
+**Attribute Correlation** (same for both methods):
+- Compare attribute values between outliers and normal spans
+- Find attribute values that appear frequently in outliers but rarely in normal spans
+- Report the strongest correlations based on the configured thresholds
 
 #### Configuration Example
 
@@ -241,7 +278,9 @@ processors:
   spanpruning:
     enable_outlier_analysis: true
     outlier_analysis:
-      iqr_multiplier: 1.5        # Standard outlier threshold
+      method: iqr                # or "mad" for more robustness
+      iqr_multiplier: 1.5        # Standard outlier threshold (IQR method)
+      mad_multiplier: 3.0        # Standard outlier threshold (MAD method)
       min_group_size: 7          # Skip groups with <7 spans
       correlation_min_occurrence: 0.75   # 75% of outliers must share value
       correlation_max_normal_occurrence: 0.25  # <25% of normal spans can have it

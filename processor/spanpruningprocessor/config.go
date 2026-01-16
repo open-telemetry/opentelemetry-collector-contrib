@@ -13,16 +13,40 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// OutlierAnalysisConfig controls IQR-based outlier detection and attribute correlation.
+// OutlierMethod defines the statistical method for outlier detection.
+type OutlierMethod string
+
+const (
+	// OutlierMethodIQR uses Interquartile Range for outlier detection.
+	// Threshold: Q3 + (IQRMultiplier * IQR)
+	OutlierMethodIQR OutlierMethod = "iqr"
+
+	// OutlierMethodMAD uses Median Absolute Deviation for outlier detection.
+	// Threshold: median + (MADMultiplier * MAD * 1.4826)
+	// MAD is more robust to extreme outliers than IQR.
+	OutlierMethodMAD OutlierMethod = "mad"
+)
+
+// OutlierAnalysisConfig controls outlier detection and attribute correlation.
 type OutlierAnalysisConfig struct {
-	// IQRMultiplier sets the threshold for outlier detection.
+	// Method selects the statistical method for outlier detection.
+	// Valid values: "iqr" (default), "mad"
+	Method OutlierMethod `mapstructure:"method"`
+
+	// IQRMultiplier sets the threshold for IQR-based outlier detection.
 	// Outliers are spans with duration > Q3 + (IQRMultiplier * IQR).
 	// Common values: 1.5 (standard), 3.0 (extreme only).
 	// Default: 1.5
 	IQRMultiplier float64 `mapstructure:"iqr_multiplier"`
 
+	// MADMultiplier sets the threshold for MAD-based outlier detection.
+	// Outliers are spans with duration > median + (MADMultiplier * MAD * 1.4826).
+	// Common values: 2.5-3.0 (standard), 3.5+ (extreme only).
+	// Default: 3.0
+	MADMultiplier float64 `mapstructure:"mad_multiplier"`
+
 	// MinGroupSize is the minimum number of spans needed for reliable
-	// IQR calculation. Groups smaller than this skip outlier analysis.
+	// outlier detection. Groups smaller than this skip outlier analysis.
 	// Must be at least 4 (need quartiles).
 	// Default: 7
 	MinGroupSize int `mapstructure:"min_group_size"`
@@ -180,8 +204,14 @@ func (cfg *OutlierAnalysisConfig) Validate(enabled bool) error {
 	if !enabled {
 		return nil // Skip validation when disabled
 	}
+	if cfg.Method != "" && cfg.Method != OutlierMethodIQR && cfg.Method != OutlierMethodMAD {
+		return fmt.Errorf("outlier_analysis.method must be %q or %q", OutlierMethodIQR, OutlierMethodMAD)
+	}
 	if cfg.IQRMultiplier <= 0 {
 		return errors.New("outlier_analysis.iqr_multiplier must be positive")
+	}
+	if cfg.MADMultiplier <= 0 {
+		return errors.New("outlier_analysis.mad_multiplier must be positive")
 	}
 	if cfg.MinGroupSize < 4 {
 		return errors.New("outlier_analysis.min_group_size must be at least 4")

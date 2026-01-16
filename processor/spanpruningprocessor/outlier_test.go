@@ -413,3 +413,187 @@ func TestGetDuration(t *testing.T) {
 
 	assert.Equal(t, 100*time.Millisecond, dur)
 }
+
+func TestDetectOutliersMAD_Basic(t *testing.T) {
+	ms := time.Millisecond
+
+	// Create sorted durations with clear outliers
+	durations := []indexedDuration{
+		{0, 5 * ms}, {1, 6 * ms}, {2, 7 * ms}, {3, 8 * ms},
+		{4, 9 * ms}, {5, 10 * ms}, {6, 11 * ms}, {7, 12 * ms},
+		{8, 500 * ms}, {9, 600 * ms}, // outliers
+	}
+
+	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0)
+
+	// n=10, median = (durations[4] + durations[5]) / 2 = (9ms + 10ms) / 2 = 9.5ms
+	assert.Equal(t, (9*ms+10*ms)/2, median)
+	assert.Len(t, outlierIndices, 2)
+	assert.Len(t, normalIndices, 8)
+	assert.Contains(t, outlierIndices, 8)
+	assert.Contains(t, outlierIndices, 9)
+}
+
+func TestDetectOutliersMAD_ZeroMAD(t *testing.T) {
+	ms := time.Millisecond
+
+	// All same value except one spike
+	durations := []indexedDuration{
+		{0, 10 * ms}, {1, 10 * ms}, {2, 10 * ms}, {3, 10 * ms},
+		{4, 10 * ms}, {5, 10 * ms}, {6, 1000 * ms}, // spike
+	}
+
+	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0)
+
+	assert.Equal(t, 10*ms, median)
+	// With MAD=0, anything > median is an outlier
+	assert.Len(t, outlierIndices, 1)
+	assert.Equal(t, 6, outlierIndices[0])
+	assert.Len(t, normalIndices, 6)
+}
+
+func TestDetectOutliersMAD_BimodalDistribution(t *testing.T) {
+	ms := time.Millisecond
+
+	// Cache hit/miss pattern: bimodal distribution
+	// Fast (cache hits): 5-15ms
+	// Slow (cache misses): 100-120ms
+	durations := []indexedDuration{
+		{0, 5 * ms}, {1, 7 * ms}, {2, 8 * ms}, {3, 10 * ms},
+		{4, 12 * ms}, {5, 15 * ms}, // cache hits
+		{6, 100 * ms}, {7, 110 * ms}, {8, 120 * ms}, // cache misses
+	}
+
+	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0)
+
+	// Median should be around 12ms
+	assert.Equal(t, 12*ms, median)
+	// The slow cache misses should be outliers
+	assert.Len(t, outlierIndices, 3)
+	assert.Len(t, normalIndices, 6)
+}
+
+func TestDetectOutliersMAD_SmallGroup(t *testing.T) {
+	ms := time.Millisecond
+
+	// 7 spans (minimum valid group size)
+	durations := []indexedDuration{
+		{0, 5 * ms}, {1, 6 * ms}, {2, 7 * ms}, {3, 8 * ms},
+		{4, 9 * ms}, {5, 10 * ms}, {6, 500 * ms}, // outlier
+	}
+
+	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0)
+
+	assert.Equal(t, 8*ms, median)
+	assert.Len(t, outlierIndices, 1)
+	assert.Equal(t, 6, outlierIndices[0])
+	assert.Len(t, normalIndices, 6)
+}
+
+func TestAnalyzeOutliers_MethodSelection(t *testing.T) {
+	ms := time.Millisecond
+
+	durations := []time.Duration{
+		5 * ms, 6 * ms, 7 * ms, 8 * ms, 9 * ms, 10 * ms, 11 * ms, 12 * ms,
+		500 * ms, 600 * ms, // outliers
+	}
+	attrs := []map[string]string{
+		{"key": "a"}, {"key": "b"}, {"key": "c"}, {"key": "d"},
+		{"key": "e"}, {"key": "f"}, {"key": "g"}, {"key": "h"},
+		{"key": "i"}, {"key": "j"},
+	}
+
+	tests := []struct {
+		name       string
+		method     OutlierMethod
+		wantMethod OutlierMethod
+	}{
+		{
+			name:       "default (empty) uses IQR",
+			method:     "",
+			wantMethod: OutlierMethodIQR,
+		},
+		{
+			name:       "explicit IQR",
+			method:     OutlierMethodIQR,
+			wantMethod: OutlierMethodIQR,
+		},
+		{
+			name:       "explicit MAD",
+			method:     OutlierMethodMAD,
+			wantMethod: OutlierMethodMAD,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nodes := makeNodesWithAttrs(durations, attrs)
+			cfg := OutlierAnalysisConfig{
+				Method:                         tt.method,
+				IQRMultiplier:                  1.5,
+				MADMultiplier:                  3.0,
+				MinGroupSize:                   7,
+				CorrelationMinOccurrence:       0.5,
+				CorrelationMaxNormalOccurrence: 0.5,
+				MaxCorrelatedAttributes:        5,
+			}
+
+			result := analyzeOutliers(nodes, cfg)
+
+			require.NotNil(t, result)
+			assert.Equal(t, tt.wantMethod, result.method)
+			assert.True(t, result.hasOutliers)
+		})
+	}
+}
+
+func TestMADvsIQR_Comparison(t *testing.T) {
+	ms := time.Millisecond
+
+	// Distribution with moderate outliers
+	// MAD should be more sensitive to this pattern
+	durations := []time.Duration{
+		10 * ms, 11 * ms, 12 * ms, 13 * ms, 14 * ms,
+		15 * ms, 16 * ms, 17 * ms, 18 * ms, 19 * ms,
+		100 * ms, // moderate outlier
+	}
+
+	nodes := makeNodesWithAttrs(durations, nil)
+
+	iqrCfg := OutlierAnalysisConfig{
+		Method:                         OutlierMethodIQR,
+		IQRMultiplier:                  1.5,
+		MADMultiplier:                  3.0,
+		MinGroupSize:                   7,
+		CorrelationMinOccurrence:       0.5,
+		CorrelationMaxNormalOccurrence: 0.5,
+		MaxCorrelatedAttributes:        5,
+	}
+
+	madCfg := OutlierAnalysisConfig{
+		Method:                         OutlierMethodMAD,
+		IQRMultiplier:                  1.5,
+		MADMultiplier:                  3.0,
+		MinGroupSize:                   7,
+		CorrelationMinOccurrence:       0.5,
+		CorrelationMaxNormalOccurrence: 0.5,
+		MaxCorrelatedAttributes:        5,
+	}
+
+	iqrResult := analyzeOutliers(nodes, iqrCfg)
+	madResult := analyzeOutliers(nodes, madCfg)
+
+	require.NotNil(t, iqrResult)
+	require.NotNil(t, madResult)
+
+	// Both should detect the 100ms outlier
+	assert.True(t, iqrResult.hasOutliers)
+	assert.True(t, madResult.hasOutliers)
+
+	// Both should have the same median
+	assert.Equal(t, iqrResult.median, madResult.median)
+
+	// Method should be recorded correctly
+	assert.Equal(t, OutlierMethodIQR, iqrResult.method)
+	assert.Equal(t, OutlierMethodMAD, madResult.method)
+}

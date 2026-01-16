@@ -12,8 +12,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// outlierAnalysisResult contains IQR analysis and attribute correlations.
+// outlierAnalysisResult contains outlier analysis and attribute correlations.
 type outlierAnalysisResult struct {
+	method         OutlierMethod
 	median         time.Duration
 	correlations   []attributeCorrelation
 	outlierIndices []int // indices of outlier spans (sorted by duration desc)
@@ -30,7 +31,7 @@ type attributeCorrelation struct {
 	score             float64 // outlierOccurrence - normalOccurrence
 }
 
-// analyzeOutliers performs IQR-based outlier detection and attribute correlation.
+// analyzeOutliers performs outlier detection and attribute correlation.
 // Returns nil if group is too small or no meaningful correlations found.
 func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnalysisResult {
 	n := len(nodes)
@@ -39,10 +40,6 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 	}
 
 	// Collect and sort durations
-	type indexedDuration struct {
-		index    int
-		duration time.Duration
-	}
 	durations := make([]indexedDuration, n)
 	for i, node := range nodes {
 		start := node.span.StartTimestamp().AsTime()
@@ -53,29 +50,20 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 		return durations[i].duration < durations[j].duration
 	})
 
-	// Calculate median
-	var median time.Duration
-	if n%2 == 1 {
-		median = durations[n/2].duration
-	} else {
-		median = (durations[n/2-1].duration + durations[n/2].duration) / 2
+	// Determine method (default to IQR)
+	method := cfg.Method
+	if method == "" {
+		method = OutlierMethodIQR
 	}
 
-	// Calculate IQR
-	q1 := durations[n/4].duration
-	q3 := durations[3*n/4].duration
-	iqr := q3 - q1
-
-	// Classify spans
-	upperThreshold := q3 + time.Duration(float64(iqr)*cfg.IQRMultiplier)
 	var outlierIndices, normalIndices []int
-	// Use sorted durations for outlier indices to maintain duration order
-	for _, d := range durations {
-		if d.duration > upperThreshold {
-			outlierIndices = append(outlierIndices, d.index)
-		} else {
-			normalIndices = append(normalIndices, d.index)
-		}
+	var median time.Duration
+
+	switch method {
+	case OutlierMethodMAD:
+		outlierIndices, normalIndices, median = detectOutliersMAD(durations, cfg.MADMultiplier)
+	default: // IQR
+		outlierIndices, normalIndices, median = detectOutliersIQR(durations, cfg.IQRMultiplier)
 	}
 
 	hasOutliers := len(outlierIndices) > 0
@@ -92,6 +80,7 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 	// Need both outliers and normals for correlation
 	if len(outlierIndices) == 0 || len(normalIndices) == 0 {
 		return &outlierAnalysisResult{
+			method:         method,
 			median:         median,
 			outlierIndices: outlierIndices,
 			normalIndices:  normalIndices,
@@ -110,12 +99,117 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 	)
 
 	return &outlierAnalysisResult{
+		method:         method,
 		median:         median,
 		correlations:   correlations,
 		outlierIndices: outlierIndices,
 		normalIndices:  normalIndices,
 		hasOutliers:    true,
 	}
+}
+
+// indexedDuration pairs an index with its duration for sorting.
+type indexedDuration struct {
+	index    int
+	duration time.Duration
+}
+
+// detectOutliersIQR identifies outliers using Interquartile Range method.
+// Returns (outlierIndices, normalIndices, median).
+func detectOutliersIQR(durations []indexedDuration, multiplier float64) ([]int, []int, time.Duration) {
+	n := len(durations)
+
+	// Calculate median
+	var median time.Duration
+	if n%2 == 1 {
+		median = durations[n/2].duration
+	} else {
+		median = (durations[n/2-1].duration + durations[n/2].duration) / 2
+	}
+
+	// Calculate IQR
+	q1 := durations[n/4].duration
+	q3 := durations[3*n/4].duration
+	iqr := q3 - q1
+
+	// Classify spans
+	upperThreshold := q3 + time.Duration(float64(iqr)*multiplier)
+	var outlierIndices, normalIndices []int
+
+	for _, d := range durations {
+		if d.duration > upperThreshold {
+			outlierIndices = append(outlierIndices, d.index)
+		} else {
+			normalIndices = append(normalIndices, d.index)
+		}
+	}
+
+	return outlierIndices, normalIndices, median
+}
+
+// madScaleFactor converts MAD to a consistent scale with standard deviation.
+// For normally distributed data, MAD ≈ 0.6745 * σ, so multiplying by 1.4826
+// makes MAD comparable to standard deviation.
+const madScaleFactor = 1.4826
+
+// detectOutliersMAD identifies outliers using Median Absolute Deviation method.
+// Returns (outlierIndices, normalIndices, median).
+// MAD is more robust to extreme outliers than IQR.
+func detectOutliersMAD(durations []indexedDuration, multiplier float64) ([]int, []int, time.Duration) {
+	n := len(durations)
+
+	// Calculate median (durations are already sorted)
+	var median time.Duration
+	if n%2 == 1 {
+		median = durations[n/2].duration
+	} else {
+		median = (durations[n/2-1].duration + durations[n/2].duration) / 2
+	}
+
+	// Calculate absolute deviations from median
+	deviations := make([]time.Duration, n)
+	for i, d := range durations {
+		dev := d.duration - median
+		if dev < 0 {
+			dev = -dev
+		}
+		deviations[i] = dev
+	}
+
+	// Sort deviations to find MAD (median of absolute deviations)
+	sort.Slice(deviations, func(i, j int) bool {
+		return deviations[i] < deviations[j]
+	})
+
+	var mad time.Duration
+	if n%2 == 1 {
+		mad = deviations[n/2]
+	} else {
+		mad = (deviations[n/2-1] + deviations[n/2]) / 2
+	}
+
+	// Handle edge case: MAD = 0 (all values identical or clustered)
+	// In this case, any value different from median is an outlier
+	var upperThreshold time.Duration
+	if mad == 0 {
+		// Use median as threshold - anything above is an outlier
+		upperThreshold = median
+	} else {
+		// Threshold = median + multiplier * MAD * scaleFactor
+		upperThreshold = median + time.Duration(multiplier*madScaleFactor*float64(mad))
+	}
+
+	// Classify spans
+	var outlierIndices, normalIndices []int
+	for _, d := range durations {
+		if d.duration > upperThreshold {
+			outlierIndices = append(outlierIndices, d.index)
+		} else {
+			normalIndices = append(normalIndices, d.index)
+		}
+	}
+
+	return outlierIndices, normalIndices, median
 }
 
 // findCorrelations identifies attributes that distinguish outliers from normal spans.
