@@ -197,18 +197,16 @@ func replicaSetWatchFuncWithSelectors(mc metadata.Interface, gvr schema.GroupVer
 	}
 }
 
-func newReplicaSetSharedInformer() func(client metadata.Interface, namespace string) cache.SharedInformer {
-	return func(client metadata.Interface, namespace string) cache.SharedInformer {
-		gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
-		return cache.NewSharedInformer(
-			&cache.ListWatch{
-				ListWithContextFunc:  replicaSetListFuncWithSelectors(client, gvr, namespace),
-				WatchFuncWithContext: replicaSetWatchFuncWithSelectors(client, gvr, namespace),
-			},
-			&metav1.PartialObjectMetadata{},
-			watchSyncPeriod,
-		)
-	}
+func newReplicaSetSharedInformer(client metadata.Interface, namespace string) cache.SharedInformer {
+	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
+	return cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListWithContextFunc:  replicaSetListFuncWithSelectors(client, gvr, namespace),
+			WatchFuncWithContext: replicaSetWatchFuncWithSelectors(client, gvr, namespace),
+		},
+		&metav1.PartialObjectMetadata{},
+		watchSyncPeriod,
+	)
 }
 
 func newDaemonSetSharedInformer(

@@ -211,7 +211,7 @@ func New(
 
 	if rules.DeploymentName || rules.DeploymentUID {
 		if informersFactory.newReplicaSetInformer == nil {
-			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer()
+			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
 		}
 		restConfig, err := k8sconfig.CreateRestConfig(apiCfg)
 		if err != nil {

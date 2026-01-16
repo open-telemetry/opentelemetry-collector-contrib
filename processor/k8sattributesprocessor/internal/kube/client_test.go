@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -3595,6 +3596,12 @@ func newTrackableInformer(client kubernetes.Interface, namespace string, labelSe
 	}
 }
 
+func newTrackableInformerReplicaset(client metadata.Interface, namespace string) cache.SharedInformer {
+	return &trackableInformer{
+		SharedInformer: NewFakeReplicaSetInformer(client, namespace),
+	}
+}
+
 func TestReplicaSetInformerConditionalStart(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -3627,18 +3634,24 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 			expectRun: true,
 		},
 	}
+	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
+
+	apiCfg := k8sconfig.APIConfig{
+		AuthType: "none",
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := InformersFactoryList{
 				newInformer:          NewFakeInformer,
 				newNamespaceInformer: NewFakeNamespaceInformer,
-				newReplicaSetInformer: func(kc kubernetes.Interface, ns string) cache.SharedInformer {
-					return newTrackableInformer(kc, ns, labels.Everything(), fields.Everything())
+				newReplicaSetInformer: func(kc metadata.Interface, ns string) cache.SharedInformer {
+					return newTrackableInformerReplicaset(kc, ns)
 				},
 			}
 
-			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, tt.rules, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second)
+			c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, tt.rules, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second)
 			require.NoError(t, err)
 			wc := c.(*WatchClient)
 
@@ -4065,7 +4078,7 @@ func TestHandleJobDelete(t *testing.T) {
 func TestCreateRestConfigFailure(t *testing.T) {
 	// Simulate a failure in CreateRestConfig by returning nil for the informer
 	factory := InformersFactoryList{
-		newReplicaSetInformer: func(_ kubernetes.Interface, _ string) cache.SharedInformer {
+		newReplicaSetInformer: func(_ metadata.Interface, _ string) cache.SharedInformer {
 			return nil // Simulate failure
 		},
 	}
@@ -4091,7 +4104,7 @@ func TestCreateRestConfigFailure(t *testing.T) {
 	// Assert that the client is nil and an error is returned
 	assert.Nil(t, c)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to create ReplicaSet informer")
+	assert.Contains(t, err.Error(), "unable to load k8s config")
 }
 
 func TestMetadataNewForConfigFailure(t *testing.T) {

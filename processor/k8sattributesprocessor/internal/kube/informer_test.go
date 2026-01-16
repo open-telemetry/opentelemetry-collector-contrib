@@ -12,6 +12,7 @@ import (
 	api_v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
+	clientmeta "k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -197,11 +198,15 @@ func Test_newReplicaSetsharedInformer(t *testing.T) {
 		AuthType: "none",
 	}
 
-	replicaSetInformerFactory := newReplicaSetSharedInformer(apiCfg)
-	client, err := newFakeAPIClientset(apiCfg)
+	// Create rest.Config from apiCfg
+	restCfg, err := k8sconfig.CreateRestConfig(apiCfg)
 	require.NoError(t, err)
 
-	informer := replicaSetInformerFactory(client, "test-ns")
+	// Create metadata client from rest.Config
+	mc, err := clientmeta.NewForConfig(restCfg)
+	require.NoError(t, err)
+
+	informer := newReplicaSetSharedInformer(mc, "test-ns")
 	if informer == nil {
 		t.Fatalf("Expected informer to be non-nil, but got nil. Check logs for details.")
 	}
