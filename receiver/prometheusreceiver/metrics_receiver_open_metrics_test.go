@@ -4,6 +4,7 @@
 package prometheusreceiver
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,9 +12,11 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -326,4 +329,226 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 		},
 	}
 	doCompare(t, "scrape-infostatesetmetrics-1", wantAttributes, m1, e1)
+}
+
+var counterPayload = `# TYPE test_counter counter
+test_counter_total 12
+test_counter_created 1.55555e+09
+`
+
+// shuffle the order of _created and _total lines
+// with an orphaned _created line {foo=bar3} that should not produce a Sum datapoint
+var counterMultiPayload = `# TYPE test_counter counter
+test_counter_created{foo="bar2"} 1000
+test_counter_total{foo="bar1"} 12
+test_counter_created{foo="bar1"} 1.55555e+09
+test_counter_created{foo="bar3"} 100
+test_counter_total{foo="bar2"} 100
+`
+
+var counterReversePayload = `# TYPE test_counter counter
+test_counter_created 1.55555e+09
+test_counter_total 12
+`
+
+var counterNoValue = `# TYPE test_counter counter
+test_counter_created 1.55555e+09
+`
+
+var summaryPayload = `# TYPE test_summary summary
+test_summary_count 1
+test_summary_sum 2
+test_summary_created 1.55555e+09
+test_summary{quantile="0.5"} 0.7
+test_summary{quantile="1"} 0.8
+`
+
+var histogramPayload = `# TYPE test_histogram histogram
+test_histogram_bucket{le="0.0"} 0.0
+test_histogram_bucket{le="10.0"} 15.0
+test_histogram_bucket{le="+Inf"} 50.0
+test_histogram_count 50.0
+test_histogram_sum 123.3
+test_histogram_created 1.55555e+09
+`
+
+func formPage(payloads ...string) string {
+	sb := strings.Builder{}
+	for _, payload := range payloads {
+		sb.Write([]byte(payload))
+	}
+	sb.Write([]byte("# EOF\n"))
+	return sb.String()
+}
+
+func TestCreatedMetric(t *testing.T) {
+	tests := []testData{
+		{
+			name: "counter",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: formPage(counterPayload)},
+			},
+			validateFunc: verifyCreatedTimeMetric(verifyOpts{true, false, false, nil}),
+		},
+
+		{
+			name: "counter reversed",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: formPage(counterReversePayload)},
+			},
+			validateFunc: verifyCreatedTimeMetric(verifyOpts{true, false, false, nil}),
+		},
+		{
+			name: "counter multiple series",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: formPage(counterMultiPayload)},
+			},
+			validateFunc: verifyCreatedTimeMetric(verifyOpts{true, false, false, func(t *testing.T, metrics []pmetric.Metric) {
+				for _, metric := range metrics {
+					if metric.Name() != "test_counter_total" {
+						continue
+					}
+					require.Equal(t, 2, metric.Sum().DataPoints().Len())
+					var first, second pmetric.NumberDataPoint
+					if v, k := metric.Sum().DataPoints().At(0).Attributes().Get("foo"); k && v.AsString() == "bar1" {
+						first = metric.Sum().DataPoints().At(0)
+						second = metric.Sum().DataPoints().At(1)
+					} else {
+						first = metric.Sum().DataPoints().At(1)
+						second = metric.Sum().DataPoints().At(0)
+					}
+					fooValue, _ := first.Attributes().Get("foo")
+					require.Equal(t, "bar1", fooValue.AsString())
+					require.Equal(t, expectedST, first.StartTimestamp())
+					require.Equal(t, 12.0, first.DoubleValue())
+					fooValue, _ = second.Attributes().Get("foo")
+					require.Equal(t, "bar2", fooValue.AsString())
+					require.Equal(t, pcommon.Timestamp(time.Unix(1000, 0).UnixNano()), second.StartTimestamp())
+					require.Equal(t, 100.0, second.DoubleValue())
+					return
+				}
+				t.Fatalf("did not find expected metric")
+			}}),
+		},
+		{
+			name: "counter no value",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: formPage(counterNoValue)},
+			},
+			validateFunc: verifyCreatedTimeMetric(verifyOpts{false, false, false, nil}),
+		},
+		{
+			name: "all",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: formPage(counterPayload, summaryPayload, histogramPayload)},
+			},
+			validateFunc: verifyCreatedTimeMetric(verifyOpts{true, true, true, nil}),
+		},
+	}
+	for _, useOM := range []bool{false, true} {
+		for i := range tests {
+			testCopy := tests[i]
+			testCopy.pages = make([]mockPrometheusResponse, len(tests[i].pages))
+			copy(testCopy.pages, tests[i].pages)
+			t.Run(fmt.Sprintf("%s with useOpenMetrics=%v", testCopy.name, useOM), func(t *testing.T) {
+				t.Parallel()
+				for i := range testCopy.pages {
+					testCopy.pages[i].useOpenMetrics = useOM
+				}
+				testComponent(t, []*testData{&testCopy}, nil)
+			})
+		}
+	}
+}
+
+type verifyOpts struct {
+	wantCounter   bool
+	wantSummary   bool
+	wantHisto     bool
+	checkOverride func(t *testing.T, metrics []pmetric.Metric)
+}
+
+const ctMetricValueAsSecFloat = 1.55555e+09
+
+var (
+	expectedSTSecsPart  = int64(ctMetricValueAsSecFloat)
+	expectedSTNanosPart = int64((ctMetricValueAsSecFloat - float64(expectedSTSecsPart)) * float64(time.Second))
+	expectedST          = pcommon.Timestamp(expectedSTSecsPart*int64(time.Second) + expectedSTNanosPart)
+)
+
+func verifyCreatedTimeMetric(o verifyOpts) func(t *testing.T, _ *testData, mds []pmetric.ResourceMetrics) {
+	return func(t *testing.T, _ *testData, mds []pmetric.ResourceMetrics) {
+		wantCounter, wantSummary, wantHisto := o.wantCounter, o.wantSummary, o.wantHisto
+		require.NotEmpty(t, mds, "At least one resource metric should be present")
+		metrics := getMetrics(mds[0])
+		assertUp(t, 1, metrics)
+
+		if !wantCounter && !wantSummary && !wantHisto {
+			require.Equal(t, len(metrics), countScrapeMetrics(metrics, false))
+			return
+		}
+		require.Greater(t, len(metrics), countScrapeMetrics(metrics, false))
+
+		if len(mds) > 1 {
+			// We expect a single scrape and the rest (if exists) to be stale (up==0).
+			for _, m := range mds[1:] {
+				metrics = getMetrics(m)
+				assertUp(t, 0, metrics)
+			}
+		}
+
+		if o.checkOverride != nil {
+			o.checkOverride(t, metrics)
+			return
+		}
+
+		var (
+			seenHisto   bool
+			seenSummary bool
+			seenCounter bool
+		)
+		// inspect the scraped metric
+		for _, m := range metrics {
+			name := m.Name()
+			if !strings.HasPrefix(name, "test_") {
+				continue
+			}
+			switch name {
+			case "test_histogram":
+				h := m.Histogram()
+				require.NotNil(t, h)
+				require.Equal(t, expectedST, h.DataPoints().At(0).StartTimestamp())
+				seenHisto = true
+			case "test_summary":
+				s := m.Summary()
+				require.NotNil(t, s)
+				require.Equal(t, expectedST, s.DataPoints().At(0).StartTimestamp())
+				seenSummary = true
+			case "test_counter_total":
+				s := m.Sum()
+				require.NotNil(t, s)
+				require.Equal(t, expectedST, s.DataPoints().At(0).StartTimestamp())
+				seenCounter = true
+			default:
+				require.Fail(t, "unexpected metric name", name)
+			}
+		}
+
+		msgFn := func(seen bool) string {
+			if seen {
+				return "scraped metric contains %s which is not expected"
+			}
+			return "scraped metric does not contain expected %s"
+		}
+		if wantHisto != seenHisto {
+			require.Fail(t, fmt.Sprintf(msgFn(seenHisto), "histogram test_histogram"))
+		}
+
+		if wantSummary != seenSummary {
+			require.Fail(t, fmt.Sprintf(msgFn(seenSummary), "summary test_summary"))
+		}
+		if wantCounter != seenCounter {
+			require.Fail(t, fmt.Sprintf(msgFn(seenCounter), "counter test_counter_total"))
+		}
+	}
 }

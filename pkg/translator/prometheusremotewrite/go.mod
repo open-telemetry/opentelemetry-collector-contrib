@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.308.1
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/pdata v1.49.1-0.20260109195331-fbd5d3f9faae
+	go.opentelemetry.io/collector/pdata v1.49.1-0.20260115162016-5e41fb551263
 	go.opentelemetry.io/otel v1.39.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -69,8 +69,8 @@ require (
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/prometheus/sigv4 v0.3.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260109195331-fbd5d3f9faae // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.143.1-0.20260109195331-fbd5d3f9faae // indirect
+	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260115162016-5e41fb551263 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.143.1-0.20260115162016-5e41fb551263 // indirect
 	go.opentelemetry.io/collector/semconv v0.128.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
@@ -113,4 +113,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../prometheus
 
 // Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260109195331-fbd5d3f9faae
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260115162016-5e41fb551263
