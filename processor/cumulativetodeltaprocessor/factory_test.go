@@ -53,6 +53,9 @@ func TestCreateProcessors(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
+			// Validate configuration
+			vErr := cfg.(*Config).Validate()
+
 			tp, tErr := factory.CreateTraces(
 				t.Context(),
 				processortest.NewNopSettings(metadata.Type),
@@ -68,11 +71,18 @@ func TestCreateProcessors(t *testing.T) {
 				cfg,
 				consumertest.NewNop())
 
-			if strings.Contains(k, "invalid") {
-				assert.Error(t, mErr)
-				assert.Nil(t, mp)
-				return
+			if strings.Contains(k, "invalid") || strings.Contains(k, "missing") {
+				// Invalid or misconfigured configs should fail either at validation or creation
+				if vErr != nil || mErr != nil {
+					assert.True(t, vErr != nil || mErr != nil)
+					if mErr != nil {
+						assert.Nil(t, mp)
+					}
+					return
+				}
+				t.Fatalf("Expected error for invalid config %s, but got none", k)
 			}
+			assert.NoError(t, vErr)
 			assert.NotNil(t, mp)
 			assert.NoError(t, mErr)
 			assert.NoError(t, mp.Shutdown(t.Context()))

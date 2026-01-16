@@ -93,3 +93,12 @@ cumulativetodelta/keep:
 
 cumulativetodelta/drop:
   initial_value: drop
+
+cumulativetodelta/invalid_max_staleness:
+  max_staleness: 300
+
+cumulativetodelta/valid_max_staleness_zero:
+  max_staleness: 0
+
+cumulativetodelta/valid_max_staleness_milliseconds:
+  max_staleness: 100ms
