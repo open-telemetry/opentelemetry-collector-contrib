@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
-metadata:
+metadata: 
   name: {{ .Name }}-{{ .DataType }}-deployment
   namespace: e2ek8sattribute-namespacedrbac
 spec:
@@ -24,13 +24,12 @@ spec:
         - --otlp-endpoint={{ .OTLPEndpoint }}
         - --duration=36000s
         - --rate=1
-        - --batch=false
         - --otlp-attributes=service.name="test-{{ .DataType }}-deployment"
         - --otlp-attributes=k8s.container.name="telemetrygen"
 {{- if eq .DataType "traces" }}
         - --status-code=
 {{- end }}
-        image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:ab71b820ab3f7761100ad14e7e9aea3cd624e47263e49b011582082e84a035d0
+        image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:b248ef911f93ae27cbbc85056d1ffacc87fd941bbdc2ffd951b6df8df72b8096
         imagePullPolicy: IfNotPresent
         name: telemetrygen
       restartPolicy: Always
