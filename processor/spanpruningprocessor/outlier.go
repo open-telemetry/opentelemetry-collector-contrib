@@ -42,9 +42,11 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 	// Collect and sort durations
 	durations := make([]indexedDuration, n)
 	for i, node := range nodes {
-		start := node.span.StartTimestamp().AsTime()
-		end := node.span.EndTimestamp().AsTime()
-		durations[i] = indexedDuration{index: i, duration: end.Sub(start)}
+		// Use raw timestamps to avoid time.Time allocations
+		durations[i] = indexedDuration{
+			index:    i,
+			duration: time.Duration(node.span.EndTimestamp() - node.span.StartTimestamp()),
+		}
 	}
 	sort.Slice(durations, func(i, j int) bool {
 		return durations[i].duration < durations[j].duration
@@ -132,9 +134,10 @@ func detectOutliersIQR(durations []indexedDuration, multiplier float64) ([]int, 
 	q3 := durations[3*n/4].duration
 	iqr := q3 - q1
 
-	// Classify spans
+	// Classify spans (pre-allocate: outliers typically <20%)
 	upperThreshold := q3 + time.Duration(float64(iqr)*multiplier)
-	var outlierIndices, normalIndices []int
+	outlierIndices := make([]int, 0, n/5+1)
+	normalIndices := make([]int, 0, n)
 
 	for _, d := range durations {
 		if d.duration > upperThreshold {
@@ -199,8 +202,9 @@ func detectOutliersMAD(durations []indexedDuration, multiplier float64) ([]int, 
 		upperThreshold = median + time.Duration(multiplier*madScaleFactor*float64(mad))
 	}
 
-	// Classify spans
-	var outlierIndices, normalIndices []int
+	// Classify spans (pre-allocate: outliers typically <20%)
+	outlierIndices := make([]int, 0, n/5+1)
+	normalIndices := make([]int, 0, n)
 	for _, d := range durations {
 		if d.duration > upperThreshold {
 			outlierIndices = append(outlierIndices, d.index)
