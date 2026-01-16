@@ -66,11 +66,6 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 	q3 := durations[3*n/4].duration
 	iqr := q3 - q1
 
-	// No variance = no outliers
-	if iqr == 0 {
-		return &outlierAnalysisResult{median: median}
-	}
-
 	// Classify spans
 	upperThreshold := q3 + time.Duration(float64(iqr)*cfg.IQRMultiplier)
 	var outlierIndices, normalIndices []int
@@ -83,21 +78,26 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 		}
 	}
 
+	hasOutliers := len(outlierIndices) > 0
+
+	// Sort outlier indices by duration descending (most extreme first)
+	if hasOutliers {
+		sort.Slice(outlierIndices, func(i, j int) bool {
+			iDur := getDuration(nodes[outlierIndices[i]])
+			jDur := getDuration(nodes[outlierIndices[j]])
+			return iDur > jDur
+		})
+	}
+
 	// Need both outliers and normals for correlation
 	if len(outlierIndices) == 0 || len(normalIndices) == 0 {
 		return &outlierAnalysisResult{
-			median:        median,
-			normalIndices: normalIndices,
-			hasOutliers:   len(outlierIndices) > 0,
+			median:         median,
+			outlierIndices: outlierIndices,
+			normalIndices:  normalIndices,
+			hasOutliers:    hasOutliers,
 		}
 	}
-
-	// Sort outlier indices by duration descending (most extreme first)
-	sort.Slice(outlierIndices, func(i, j int) bool {
-		iDur := getDuration(nodes[outlierIndices[i]])
-		jDur := getDuration(nodes[outlierIndices[j]])
-		return iDur > jDur
-	})
 
 	// Analyze attribute correlations
 	correlations := findCorrelations(

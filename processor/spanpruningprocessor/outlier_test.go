@@ -129,6 +129,67 @@ func TestAnalyzeOutliers(t *testing.T) {
 	}
 }
 
+func TestAnalyzeOutliers_IQRZeroDetectsSpikeOutlier(t *testing.T) {
+	ms := time.Millisecond
+
+	cfg := OutlierAnalysisConfig{
+		IQRMultiplier:                  1.5,
+		MinGroupSize:                   7,
+		CorrelationMinOccurrence:       0.75,
+		CorrelationMaxNormalOccurrence: 0.25,
+		MaxCorrelatedAttributes:        5,
+	}
+
+	durations := []time.Duration{10 * ms, 10 * ms, 10 * ms, 10 * ms, 10 * ms, 10 * ms, 1000 * ms}
+	attrs := []map[string]string{
+		{"cache_hit": "true"},
+		{"cache_hit": "true"},
+		{"cache_hit": "true"},
+		{"cache_hit": "true"},
+		{"cache_hit": "true"},
+		{"cache_hit": "true"},
+		{"cache_hit": "false"}, // spike outlier
+	}
+
+	nodes := makeNodesWithAttrs(durations, attrs)
+	result := analyzeOutliers(nodes, cfg)
+
+	require.NotNil(t, result)
+	assert.Equal(t, 10*ms, result.median)
+	require.True(t, result.hasOutliers)
+	require.Len(t, result.outlierIndices, 1)
+	assert.Equal(t, 6, result.outlierIndices[0])
+	require.Len(t, result.normalIndices, 6)
+
+	// Ensure correlation is computed (outliers=1, normals=6)
+	require.NotEmpty(t, result.correlations)
+	assert.Equal(t, "cache_hit", result.correlations[0].key)
+	assert.Equal(t, "false", result.correlations[0].value)
+}
+
+func TestAnalyzeOutliers_AllOutliersStillReturnsIndices(t *testing.T) {
+	ms := time.Millisecond
+
+	// Negative multipliers are rejected by config validation, but analyzeOutliers
+	// should still behave consistently if called with a malformed config.
+	cfg := OutlierAnalysisConfig{
+		IQRMultiplier:                  -100,
+		MinGroupSize:                   7,
+		CorrelationMinOccurrence:       0.75,
+		CorrelationMaxNormalOccurrence: 0.25,
+		MaxCorrelatedAttributes:        5,
+	}
+
+	durations := []time.Duration{5 * ms, 6 * ms, 7 * ms, 8 * ms, 9 * ms, 10 * ms, 11 * ms}
+	nodes := makeNodesWithAttrs(durations, nil)
+	result := analyzeOutliers(nodes, cfg)
+
+	require.NotNil(t, result)
+	require.True(t, result.hasOutliers)
+	assert.Len(t, result.outlierIndices, len(durations))
+	assert.Empty(t, result.normalIndices)
+}
+
 func TestFormatCorrelations(t *testing.T) {
 	tests := []struct {
 		name         string
