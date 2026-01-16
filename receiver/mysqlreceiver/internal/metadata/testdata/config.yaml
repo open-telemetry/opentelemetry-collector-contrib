@@ -105,6 +105,10 @@ all_set:
   resource_attributes:
     mysql.instance.endpoint:
       enabled: true
+    service.instance.id:
+      enabled: true
+    service.name:
+      enabled: true
 none_set:
   metrics:
     mysql.buffer_pool.data_pages:
@@ -211,9 +215,25 @@ none_set:
   resource_attributes:
     mysql.instance.endpoint:
       enabled: false
+    service.instance.id:
+      enabled: false
+    service.name:
+      enabled: false
 filter_set_include:
   resource_attributes:
     mysql.instance.endpoint:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.instance.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -227,3 +247,15 @@ filter_set_exclude:
         - strict: "mysql.instance.endpoint-val"
       events_exclude:
         - strict: "mysql.instance.endpoint-val"
+    service.instance.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.instance.id-val"
+      events_exclude:
+        - strict: "service.instance.id-val"
+    service.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.name-val"
+      events_exclude:
+        - strict: "service.name-val"
