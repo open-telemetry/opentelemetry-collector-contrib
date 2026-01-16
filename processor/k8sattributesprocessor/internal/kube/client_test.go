@@ -3888,21 +3888,3 @@ func TestMetadataNewForConfigFailure(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "metadata.NewForConfig failed")
 }
-
-func TestNormalizeRSWithNil(t *testing.T) {
-	rsView, ok := normalizeRS(nil)
-	assert.False(t, ok)
-	assert.Equal(t, replicasetView{}, rsView)
-}
-
-func TestNormalizeRSWithInvalidMetadata(t *testing.T) {
-	obj := &apps_v1.ReplicaSet{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: "",
-			UID:  "",
-		},
-	}
-	rsView, ok := normalizeRS(obj)
-	assert.False(t, ok)
-	assert.Equal(t, replicasetView{}, rsView)
-}

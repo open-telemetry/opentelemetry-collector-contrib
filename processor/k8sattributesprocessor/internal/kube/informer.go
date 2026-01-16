@@ -6,6 +6,7 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 
+	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
 	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
@@ -187,44 +188,43 @@ func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace st
 	}
 }
 
-func newReplicaSetMetaInformer(apiCfg k8sconfig.APIConfig) func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
+func replicaSetListFuncWithSelectors(mc metadata.Interface, gvr schema.GroupVersionResource, namespace string) cache.ListWithContextFunc {
+	return func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
+		return mc.Resource(gvr).Namespace(namespace).List(ctx, opts)
+	}
+}
+
+func replicaSetWatchFuncWithSelectors(mc metadata.Interface, gvr schema.GroupVersionResource, namespace string) cache.WatchFuncWithContext {
+	return func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+		return mc.Resource(gvr).Namespace(namespace).Watch(ctx, opts)
+	}
+}
+
+func newReplicaSetSharedInformer(apiCfg k8sconfig.APIConfig) func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
 	return func(_ kubernetes.Interface, namespace string) cache.SharedInformer {
-		// Create the REST config
-		restCfg, err := k8sconfig.CreateRestConfig(apiCfg)
+		restConfig, err := k8sconfig.CreateRestConfig(apiCfg)
 		if err != nil {
+			zap.L().Error("failed to create REST config", zap.Error(err))
 			return nil
 		}
 
-		// Create the metadata client
-		mc, err := metadata.NewForConfig(restCfg)
+		mc, err := metadata.NewForConfig(restConfig)
 		if err != nil {
+			zap.L().Error("failed to create metadata client", zap.Error(err))
 			return nil
 		}
 
-		// Define the GroupVersionResource for ReplicaSets
 		gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
 
-		// Define the ListWatch
 		lw := &cache.ListWatch{
-			ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
-				if namespace == "" {
-					return mc.Resource(gvr).List(ctx, opts)
-				}
-				return mc.Resource(gvr).Namespace(namespace).List(ctx, opts)
-			},
-			WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-				if namespace == "" {
-					return mc.Resource(gvr).Watch(ctx, opts)
-				}
-				return mc.Resource(gvr).Namespace(namespace).Watch(ctx, opts)
-			},
+			ListWithContextFunc:  replicaSetListFuncWithSelectors(mc, gvr, namespace),
+			WatchFuncWithContext: replicaSetWatchFuncWithSelectors(mc, gvr, namespace),
 		}
 
-		return cache.NewSharedIndexInformer(
+		return cache.NewSharedInformer(
 			lw,
 			&metav1.PartialObjectMetadata{},
 			watchSyncPeriod,
-			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 		)
 	}
 }
