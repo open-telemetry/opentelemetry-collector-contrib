@@ -67,7 +67,7 @@ func NewServer(
 		config:     config,
 		payload:    oc, // store as interface
 		server: &http.Server{
-			Addr:         config.Endpoint,
+			Addr:         config.NetAddr.Endpoint,
 			ReadTimeout:  5 * time.Second,
 			WriteTimeout: 10 * time.Second,
 			BaseContext:  func(net.Listener) context.Context { return context.Background() },
@@ -85,12 +85,17 @@ func NewServer(
 func (s *Server) Start() {
 	// Start HTTP server
 	go func() {
-		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		lis, err := s.config.ToListener(context.Background())
+		if err != nil {
+			s.logger.Error("HTTP server error", zap.Error(err))
+			return
+		}
+		if err := s.server.Serve(lis); err != nil && err != http.ErrServerClosed {
 			s.logger.Error("HTTP server error", zap.Error(err))
 		}
 	}()
 
-	s.logger.Info("HTTP Server started at " + s.config.Endpoint + s.config.Path)
+	s.logger.Info("HTTP Server started at " + s.config.NetAddr.Endpoint + s.config.Path)
 }
 
 // Stop shuts down the HTTP server, pass a context to allow for cancellation.
