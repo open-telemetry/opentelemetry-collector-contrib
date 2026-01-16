@@ -207,34 +207,7 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 
 	for groupKey, nodes := range leafGroups {
 		if len(nodes) >= p.config.MinSpansToAggregate {
-			// Find the template node (longest duration) for this group
-			templateNode := findLongestDurationNode(nodes)
-
-			// Analyze attribute loss for leaf aggregation (only when enabled)
-			var lossInfo attributeLossSummary
-			if p.enableAttributeLossAnalysis {
-				lossInfo = analyzeAttributeLoss(nodes, templateNode)
-
-				// Determine context for recording (with or without exemplar)
-				recordCtx := ctx
-				if p.shouldSampleAttributeLossExemplar() {
-					exemplarSpan := templateNode.span
-					recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
-				}
-
-				if !lossInfo.isEmpty() {
-					p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(
-						recordCtx,
-						int64(len(lossInfo.diverse)),
-					)
-					p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(
-						recordCtx,
-						int64(len(lossInfo.missing)),
-					)
-				}
-			}
-
-			// Outlier correlation analysis for leaf aggregation (only when enabled)
+			// Outlier analysis and filtering FIRST (before attribute loss)
 			var outlierResult *outlierAnalysisResult
 			var preservedOutliers []*spanNode
 			aggregateNodes := nodes
@@ -254,11 +227,33 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 					if len(aggregateNodes) < p.config.MinSpansToAggregate {
 						continue
 					}
+				}
+			}
 
-					// Recalculate template from normal spans only
-					if len(preservedOutliers) > 0 {
-						templateNode = findLongestDurationNode(aggregateNodes)
-					}
+			// Find template from filtered nodes (excludes preserved outliers)
+			templateNode := findLongestDurationNode(aggregateNodes)
+
+			// Analyze attribute loss on filtered nodes with correct template
+			var lossInfo attributeLossSummary
+			if p.enableAttributeLossAnalysis {
+				lossInfo = analyzeAttributeLoss(aggregateNodes, templateNode)
+
+				// Determine context for recording (with or without exemplar)
+				recordCtx := ctx
+				if p.shouldSampleAttributeLossExemplar() {
+					exemplarSpan := templateNode.span
+					recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
+				}
+
+				if !lossInfo.isEmpty() {
+					p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(
+						recordCtx,
+						int64(len(lossInfo.diverse)),
+					)
+					p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(
+						recordCtx,
+						int64(len(lossInfo.missing)),
+					)
 				}
 			}
 
@@ -321,6 +316,12 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 		markedNodes = markedNodes[:0] // reset for this round
 		for parentKey, nodes := range parentGroups {
 			if len(nodes) >= 2 {
+				// Outlier analysis FIRST (before attribute loss) for consistency
+				var outlierResult *outlierAnalysisResult
+				if p.config.EnableOutlierAnalysis {
+					outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
+				}
+
 				// Find the template node (longest duration) for this group
 				templateNode := findLongestDurationNode(nodes)
 
@@ -346,12 +347,6 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 							int64(len(lossInfo.missing)),
 						)
 					}
-				}
-
-				// Outlier correlation analysis for parent aggregation (only when enabled)
-				var outlierResult *outlierAnalysisResult
-				if p.config.EnableOutlierAnalysis {
-					outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
 				}
 
 				aggregationGroups[parentKey] = aggregationGroup{
