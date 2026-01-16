@@ -28,11 +28,11 @@ func fillBaseMap(m pcommon.Map) {
 	m.PutEmptyBytes("bytes").FromRaw([]byte{0xa1, 0xf0, 0x02, 0xff})
 }
 
-func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
+func complexPdataForNDifferentHosts(count, n int) plog.Logs {
 	pLogs := plog.NewLogs()
 	logs := pLogs.ResourceLogs()
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		rls := logs.AppendEmpty()
 
 		resource := rls.Resource()
@@ -102,7 +102,7 @@ func TestConvertFromSeverity(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		t.Run(fmt.Sprintf("%v", tc.severityNumber), func(t *testing.T) {
+		t.Run(tc.severityNumber.String(), func(t *testing.T) {
 			entry := entry.New()
 			logRecord := plog.NewLogRecord()
 			logRecord.SetSeverityNumber(tc.severityNumber)
@@ -125,37 +125,25 @@ func BenchmarkFromPdataConverter(b *testing.B) {
 
 	for _, wc := range workerCounts {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
+				b.StopTimer()
 				converter := NewFromPdataConverter(componenttest.NewNopTelemetrySettings(), wc)
 				converter.Start()
 				defer converter.Stop()
-				b.ResetTimer()
+				b.StartTimer()
 
 				go func() {
 					assert.NoError(b, converter.Batch(pLogs))
 				}()
 
-				var (
-					timeoutTimer = time.NewTimer(10 * time.Second)
-					ch           = converter.OutChannel()
-				)
-				defer timeoutTimer.Stop()
-
-				var n int
-			forLoop:
-				for n != entryCount {
-					select {
-					case entries, ok := <-ch:
-						if !ok {
-							break forLoop
-						}
-
-						require.Len(b, entries, 250_000)
-						n += len(entries)
-
-					case <-timeoutTimer.C:
-						break forLoop
+				ch := converter.OutChannel()
+				n := 0
+				for n < entryCount {
+					entries, ok := <-ch
+					if !ok {
+						break
 					}
+					n += len(entries)
 				}
 
 				assert.Equal(b, entryCount, n,

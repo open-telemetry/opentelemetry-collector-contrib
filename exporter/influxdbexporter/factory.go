@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,13 +37,13 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = 5 * time.Second
-	clientConfig.Headers = map[string]configopaque.String{
-		"User-Agent": "OpenTelemetry -> Influx",
+	clientConfig.Headers = configopaque.MapList{
+		{Name: "User-Agent", Value: "OpenTelemetry -> Influx"},
 	}
 
 	return &Config{
 		ClientConfig:        clientConfig,
-		QueueSettings:       exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:       configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		BackOffConfig:       configretry.NewDefaultBackOffConfig(),
 		MetricsSchema:       common.MetricsSchemaTelegrafPrometheusV1.String(),
 		SpanDimensions:      otel2influx.DefaultOtelTracesToLineProtocolConfig().SpanDimensions,
@@ -51,6 +52,7 @@ func createDefaultConfig() component.Config {
 		// https://docs.influxdata.com/influxdb/cloud-serverless/write-data/best-practices/optimize-writes/#batch-writes
 		PayloadMaxLines: 10_000,
 		PayloadMaxBytes: 10_000_000,
+		Precision:       "ns",
 	}
 }
 

@@ -26,7 +26,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/compare"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/sdktest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/testar"
 )
@@ -60,7 +59,7 @@ func TestProcessor(t *testing.T) {
 				return filepath.Join("testdata", dir, f)
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 			cfg := config(t, file("config.yaml"))
 
 			sink := new(consumertest.MetricsSink)
@@ -69,21 +68,15 @@ func TestProcessor(t *testing.T) {
 			stages, _ := filepath.Glob(file("*.test"))
 			for _, file := range stages {
 				var stage Stage
-				err := read(file, &stage)
-				require.NoError(t, err)
+				require.NoError(t, read(file, &stage))
 
 				sink.Reset()
-				err = proc.ConsumeMetrics(ctx, stage.In)
-				require.NoError(t, err)
+				require.NoError(t, proc.ConsumeMetrics(ctx, stage.In))
 
 				out := []pmetric.Metrics{stage.Out}
-				if diff := compare.Diff(out, sink.AllMetrics()); diff != "" {
-					t.Fatal(diff)
-				}
+				assert.Equal(t, out, sink.AllMetrics())
 
-				if err := sdktest.Test(stage.Sdk, tel.reader); err != nil {
-					t.Fatal(err)
-				}
+				require.NoError(t, sdktest.Test(stage.Sdk, tel.reader))
 			}
 		})
 	}
@@ -110,10 +103,10 @@ func setup(tb testing.TB, cfg *Config, next consumer.Metrics) (processor.Metrics
 
 	tt := setupTestTelemetry()
 	tb.Cleanup(func() {
-		assert.NoError(tb, tt.Shutdown(context.Background()))
+		assert.NoError(tb, tt.Shutdown(tb.Context()))
 	})
 	proc, err := NewFactory().CreateMetrics(
-		context.Background(),
+		tb.Context(),
 		tt.newSettings(),
 		cfg,
 		next,
@@ -147,7 +140,7 @@ func TestTelemetry(t *testing.T) {
 	cfg := createDefaultConfig()
 
 	_, err := NewFactory().CreateMetrics(
-		context.Background(),
+		t.Context(),
 		tt.newSettings(),
 		cfg,
 		next,
@@ -155,7 +148,7 @@ func TestTelemetry(t *testing.T) {
 	require.NoError(t, err)
 
 	var rm metricdata.ResourceMetrics
-	require.NoError(t, tt.reader.Collect(context.Background(), &rm))
+	require.NoError(t, tt.reader.Collect(t.Context(), &rm))
 }
 
 type testTelemetry struct {

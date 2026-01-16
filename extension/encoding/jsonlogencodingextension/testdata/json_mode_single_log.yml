@@ -1,0 +1,19 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - body:
+              kvlistValue:
+                values:
+                  - key: key-boolean
+                    value:
+                      boolValue: true
+                  - key: key-string
+                    value:
+                      stringValue: value
+                  - key: key-int
+                    value:
+                      doubleValue: 1.23456789e+08
+            spanId: ""
+            traceId: ""
+        scope: {}

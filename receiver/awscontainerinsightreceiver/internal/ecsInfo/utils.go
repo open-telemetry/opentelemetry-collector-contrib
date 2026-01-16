@@ -35,14 +35,15 @@ func GetContainerInstanceIDFromArn(arn string) (containerInstanceID string, err 
 		tmpResult := strings.Split(splitList[5], "/")
 		if len(tmpResult) == 2 {
 			containerInstanceID = tmpResult[1]
-			return
-		} else if len(tmpResult) == 3 {
+			return containerInstanceID, err
+		}
+		if len(tmpResult) == 3 {
 			containerInstanceID = tmpResult[2]
-			return
+			return containerInstanceID, err
 		}
 	}
 	err = errors.New("Can't get ecs container instance id from ContainerInstance arn: " + arn)
-	return
+	return containerInstanceID, err
 }
 
 // Check the channel is closed or not.
@@ -96,7 +97,7 @@ func request(ctx context.Context, endpoint string, client doer) ([]byte, error) 
 }
 
 func clientGet(ctx context.Context, url string, client doer) (resp *http.Response, err error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

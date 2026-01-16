@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -35,11 +36,11 @@ versions:%s`, transformations)
 	return data, nil
 }
 
-func newTestSchemaProcessor(t *testing.T, transformations string, targerVerion string) *schemaProcessor {
+func newTestSchemaProcessor(t *testing.T, transformations, targerVerion string) *schemaProcessor {
 	cfg := &Config{
 		Targets: []string{fmt.Sprintf("http://opentelemetry.io/schemas/%s", targerVerion)},
 	}
-	trans, err := newSchemaProcessor(context.Background(), cfg, processor.Settings{
+	trans, err := newSchemaProcessor(t.Context(), cfg, processor.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zaptest.NewLogger(t),
 		},
@@ -55,7 +56,7 @@ func TestSchemaProcessorStart(t *testing.T) {
 	t.Parallel()
 
 	trans := newTestSchemaProcessor(t, "", "1.9.0")
-	assert.NoError(t, trans.start(context.Background(), nil))
+	assert.NoError(t, trans.start(t.Context(), componenttest.NewNopHost()))
 }
 
 func TestSchemaProcessorProcessing(t *testing.T) {
@@ -75,7 +76,7 @@ func TestSchemaProcessorProcessing(t *testing.T) {
 		m.SetUnit("seconds")
 		m.CopyTo(in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0))
 
-		out, err := trans.processMetrics(context.Background(), in)
+		out, err := trans.processMetrics(t.Context(), in)
 		assert.NoError(t, err, "Must not error when processing metrics")
 		assert.Equal(t, in, out, "Must return the same data")
 	})
@@ -91,7 +92,7 @@ func TestSchemaProcessorProcessing(t *testing.T) {
 		s.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 		s.CopyTo(in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0))
 
-		out, err := trans.processTraces(context.Background(), in)
+		out, err := trans.processTraces(t.Context(), in)
 		assert.NoError(t, err, "Must not error when processing traces")
 		assert.Equal(t, in, out, "Must return the same data")
 	})
@@ -106,7 +107,7 @@ func TestSchemaProcessorProcessing(t *testing.T) {
 		l.SetVersion("alpha")
 		l.CopyTo(in.ResourceLogs().At(0).ScopeLogs().At(0).Scope())
 
-		out, err := trans.processLogs(context.Background(), in)
+		out, err := trans.processLogs(t.Context(), in)
 		assert.NoError(t, err, "Must not error when processing metrics")
 		assert.Equal(t, in, out, "Must return the same data")
 	})

@@ -117,13 +117,13 @@ func (run *receiverRunner) start(
 }
 
 // shutdown the given receiver.
-func (run *receiverRunner) shutdown(rcvr component.Component) error {
+func (*receiverRunner) shutdown(rcvr component.Component) error {
 	return rcvr.Shutdown(context.Background())
 }
 
 // loadRuntimeReceiverConfig loads the given receiverTemplate merged with config values
 // that may have been discovered at runtime.
-func (run *receiverRunner) loadRuntimeReceiverConfig(
+func (*receiverRunner) loadRuntimeReceiverConfig(
 	factory rcvr.Factory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,

@@ -67,6 +67,6 @@ func (cr *SyslogDataReceiver) GenConfigYAMLStr() string {
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (cr *SyslogDataReceiver) ProtocolName() string {
+func (*SyslogDataReceiver) ProtocolName() string {
 	return "tcp"
 }

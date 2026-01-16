@@ -4,7 +4,6 @@
 package purefareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,6 +22,6 @@ func TestStartAndShutdown(t *testing.T) {
 	sink := &consumertest.MetricsSink{}
 	recv := newReceiver(cfg, receivertest.NewNopSettings(metadata.Type), sink)
 
-	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, recv.Shutdown(context.Background()))
+	require.NoError(t, recv.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, recv.Shutdown(t.Context()))
 }

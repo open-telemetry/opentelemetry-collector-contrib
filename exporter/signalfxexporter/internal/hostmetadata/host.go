@@ -8,10 +8,6 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
-	"errors"
-	"os"
-	"path/filepath"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -20,23 +16,14 @@ import (
 	"github.com/shirou/gopsutil/v4/mem"
 )
 
-// etcPath is the path to host etc and can be set using the env var "HOST_ETC"
-// this is to maintain consistency with gopsutil
-var etcPath = func() string {
-	if etcPath := os.Getenv("HOST_ETC"); etcPath != "" {
-		return etcPath
-	}
-	return "/etc"
-}
-
 const cpuStatsTimeout = 10 * time.Second
 
 // Map library functions to unexported package variables for testing purposes.
 var (
 	cpuInfo          = cpu.InfoWithContext
 	cpuCounts        = cpu.CountsWithContext
-	memVirtualMemory = mem.VirtualMemory
-	hostInfo         = host.Info
+	memVirtualMemory = mem.VirtualMemoryWithContext
+	hostInfo         = host.InfoWithContext
 )
 
 // hostCPU information about the host
@@ -62,14 +49,14 @@ func (c *hostCPU) toStringMap() map[string]string {
 }
 
 // getCPU - adds information about the host cpu to the supplied map
-func getCPU() (info *hostCPU, err error) {
+func getCPU(ctx context.Context) (info *hostCPU, err error) {
 	info = &hostCPU{}
 
 	// get physical cpu stats
 	var cpus []cpu.InfoStat
 
 	// On Windows this can sometimes take longer than the default timeout (10 seconds).
-	ctx, cancel := context.WithTimeout(context.Background(), cpuStatsTimeout)
+	ctx, cancel := context.WithTimeout(ctx, cpuStatsTimeout)
 	defer cancel()
 
 	cpus, err = cpuInfo(ctx)
@@ -119,9 +106,9 @@ func (o *hostOS) toStringMap() map[string]string {
 }
 
 // getOS returns a struct with information about the host os
-func getOS() (info *hostOS, err error) {
+func getOS(ctx context.Context) (info *hostOS, err error) {
 	info = &hostOS{}
-	hInfo, err := hostInfo()
+	hInfo, err := hostInfo(ctx)
 	if err != nil {
 		return info, err
 	}
@@ -130,29 +117,8 @@ func getOS() (info *hostOS, err error) {
 	info.HostKernelName = hInfo.OS
 	// in gopsutil KernelVersion returns what we would expect for Kernel Release
 	info.HostKernelRelease = hInfo.KernelVersion
-	err = fillPlatformSpecificOSData(info)
+	err = fillPlatformSpecificOSData(ctx, info)
 	return info, err
-}
-
-// getLinuxVersion - adds information about the host linux version to the supplied map
-func getLinuxVersion() (string, error) {
-	etc := etcPath()
-	if value, err := getStringFromFile(`DISTRIB_DESCRIPTION="(.*)"`, filepath.Join(etc, "lsb-release")); err == nil {
-		return value, nil
-	}
-	if value, err := getStringFromFile(`PRETTY_NAME="(.*)"`, filepath.Join(etc, "os-release")); err == nil {
-		return value, nil
-	}
-	if value, err := os.ReadFile(filepath.Join(etc, "centos-release")); err == nil {
-		return string(value), nil
-	}
-	if value, err := os.ReadFile(filepath.Join(etc, "redhat-release")); err == nil {
-		return string(value), nil
-	}
-	if value, err := os.ReadFile(filepath.Join(etc, "system-release")); err == nil {
-		return string(value), nil
-	}
-	return "", errors.New("unable to find linux version")
 }
 
 // Memory stores memory collected from the host
@@ -169,25 +135,13 @@ func (m *Memory) toStringMap() map[string]string {
 }
 
 // getMemory returns the amount of memory on the host as datatype.USize
-func getMemory() (*Memory, error) {
+func getMemory(ctx context.Context) (*Memory, error) {
 	m := &Memory{}
-	memoryStat, err := memVirtualMemory()
+	memoryStat, err := memVirtualMemory(ctx)
 	if err == nil {
 		m.Total = int(memoryStat.Total)
 	}
 	return m, err
-}
-
-func getStringFromFile(pattern string, path string) (string, error) {
-	var err error
-	var file []byte
-	reg := regexp.MustCompile(pattern)
-	if file, err = os.ReadFile(path); err == nil {
-		if match := reg.FindSubmatch(file); len(match) > 1 {
-			return string(match[1]), nil
-		}
-	}
-	return "", err
 }
 
 func bytesToKilobytes(b int) int {

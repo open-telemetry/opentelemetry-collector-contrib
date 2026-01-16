@@ -4,7 +4,6 @@
 package httpforwarderextension
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
@@ -21,7 +21,7 @@ func TestFactory(t *testing.T) {
 	require.Equal(t, expectType, f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	require.Equal(t, ":6060", cfg.Ingress.Endpoint)
+	require.Equal(t, ":6060", cfg.Ingress.NetAddr.Endpoint)
 	require.Equal(t, 10*time.Second, cfg.Egress.Timeout)
 
 	tests := []struct {
@@ -43,14 +43,22 @@ func TestFactory(t *testing.T) {
 			wantErrMessage: "enter a valid URL for 'egress.endpoint': parse \"123.456.7.89:9090\": first path segment in URL cannot",
 		},
 		{
-			name:   "Valid config",
-			config: &Config{Egress: confighttp.ClientConfig{Endpoint: "localhost:9090"}},
+			name: "Valid config",
+			config: &Config{
+				Ingress: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  ":0",
+					},
+				},
+				Egress: confighttp.ClientConfig{Endpoint: "localhost:9090"},
+			},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			e, err := f.Create(
-				context.Background(),
+				t.Context(),
 				extensiontest.NewNopSettings(expectType),
 				test.config,
 			)
@@ -63,7 +71,7 @@ func TestFactory(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, e)
-				ctx := context.Background()
+				ctx := t.Context()
 				require.NoError(t, e.Start(ctx, componenttest.NewNopHost()))
 				require.NoError(t, e.Shutdown(ctx))
 			}

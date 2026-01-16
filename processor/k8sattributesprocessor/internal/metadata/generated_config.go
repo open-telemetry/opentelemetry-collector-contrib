@@ -34,6 +34,7 @@ type ResourceAttributesConfig struct {
 	K8sClusterUID             ResourceAttributeConfig `mapstructure:"k8s.cluster.uid"`
 	K8sContainerName          ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sCronjobName            ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
+	K8sCronjobUID             ResourceAttributeConfig `mapstructure:"k8s.cronjob.uid"`
 	K8sDaemonsetName          ResourceAttributeConfig `mapstructure:"k8s.daemonset.name"`
 	K8sDaemonsetUID           ResourceAttributeConfig `mapstructure:"k8s.daemonset.uid"`
 	K8sDeploymentName         ResourceAttributeConfig `mapstructure:"k8s.deployment.name"`
@@ -52,6 +53,10 @@ type ResourceAttributesConfig struct {
 	K8sReplicasetUID          ResourceAttributeConfig `mapstructure:"k8s.replicaset.uid"`
 	K8sStatefulsetName        ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
 	K8sStatefulsetUID         ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
+	ServiceInstanceID         ResourceAttributeConfig `mapstructure:"service.instance.id"`
+	ServiceName               ResourceAttributeConfig `mapstructure:"service.name"`
+	ServiceNamespace          ResourceAttributeConfig `mapstructure:"service.namespace"`
+	ServiceVersion            ResourceAttributeConfig `mapstructure:"service.version"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -75,6 +80,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		K8sCronjobName: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sCronjobUID: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		K8sDaemonsetName: ResourceAttributeConfig{
@@ -129,6 +137,18 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		K8sStatefulsetUID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServiceInstanceID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServiceName: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServiceNamespace: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServiceVersion: ResourceAttributeConfig{
 			Enabled: false,
 		},
 	}

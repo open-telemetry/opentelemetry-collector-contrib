@@ -10,11 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
@@ -65,6 +67,23 @@ func TestPdataTracesMarshaler(t *testing.T) {
 		testPdataMarshaler(t, input, compare,
 			NewPdataTracesMarshaler(&ptrace.JSONMarshaler{}).MarshalTraces,
 			(&ptrace.JSONUnmarshaler{}).UnmarshalTraces,
+		)
+	})
+}
+
+func TestPdataProfilesMarshaler(t *testing.T) {
+	input := testdata.GenerateProfiles(2)
+	compare := func(expected, actual pprofile.Profiles) error { return pprofiletest.CompareProfiles(expected, actual) }
+	t.Run("protobuf", func(t *testing.T) {
+		testPdataMarshaler(t, input, compare,
+			NewPdataProfilesMarshaler(&pprofile.ProtoMarshaler{}).MarshalProfiles,
+			(&pprofile.ProtoUnmarshaler{}).UnmarshalProfiles,
+		)
+	})
+	t.Run("json", func(t *testing.T) {
+		testPdataMarshaler(t, input, compare,
+			NewPdataProfilesMarshaler(&pprofile.JSONMarshaler{}).MarshalProfiles,
+			(&pprofile.JSONUnmarshaler{}).UnmarshalProfiles,
 		)
 	})
 }

@@ -5,46 +5,40 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"errors"
 	"iter"
-	"strconv"
-	"sync"
-	"time"
 
-	"github.com/IBM/sarama"
 	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
-const (
-	transport = "kafka"
-	// TODO: update the following attributes to reflect semconv
-	attrInstanceName = "name"
-	attrTopic        = "topic"
-	attrPartition    = "partition"
-)
+const transport = "kafka"
 
-var errMemoryLimiterDataRefused = errors.New("data refused due to high memory usage")
+type consumeMessageFunc func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error
 
-type consumeMessageFunc func(ctx context.Context, message *sarama.ConsumerMessage) error
+type newConsumeMessageFunc func(host component.Host, obsrecv *receiverhelper.ObsReport,
+	telBldr *metadata.TelemetryBuilder,
+) (consumeMessageFunc, error)
 
 // messageHandler provides a generic interface for handling messages for a pdata type.
-type messageHandler[T plog.Logs | pmetric.Metrics | ptrace.Traces] interface {
+type messageHandler[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Profiles] interface {
 	// unmarshalData unmarshals the message payload into a pdata type (plog.Logs, etc.)
 	// and returns the number of items (log records, metric data points, spans) within it.
 	unmarshalData(data []byte) (T, int, error)
@@ -59,129 +53,154 @@ type messageHandler[T plog.Logs | pmetric.Metrics | ptrace.Traces] interface {
 
 	// startObsReport starts an observation report for the unmarshaled data.
 	//
-	// This simply calls the the signal-specific receiverhelper.ObsReport.Start*Op method.
+	// This simply calls the signal-specific receiverhelper.ObsReport.Start*Op method.
 	startObsReport(ctx context.Context) context.Context
 
 	// endObsReport ends the observation report for the unmarshaled data.
 	//
-	// This simply calls the signal-specific receiverherlper.ObsReport.End*Op method,
+	// This simply calls the signal-specific receiverhelper.ObsReport.End*Op method,
 	// passing the configured encoding and number of items returned by unmarshalData.
 	endObsReport(ctx context.Context, n int, err error)
+
+	// getUnmarshalFailureCounter returns the appropriate telemetry counter for unmarshal failures
+	getUnmarshalFailureCounter(telBldr *metadata.TelemetryBuilder) metric.Int64Counter
 }
 
 func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Logs) (receiver.Logs, error) {
-	newConsumeMessageFunc := func(c *consumerGroupHandler, host component.Host) (consumeMessageFunc, error) {
+	newConsumeMessageFunc := func(host component.Host,
+		obsrecv *receiverhelper.ObsReport,
+		telBldr *metadata.TelemetryBuilder,
+	) (consumeMessageFunc, error) {
 		unmarshaler, err := newLogsUnmarshaler(config.Logs.Encoding, set, host)
 		if err != nil {
 			return nil, err
 		}
-		return newMessageHandlerConsumeFunc(
-			config, set.Logger,
-			c.telemetryBuilder.KafkaReceiverUnmarshalFailedLogRecords,
-			[]metric.AddOption{
-				metric.WithAttributeSet(attribute.NewSet(
-					attribute.String(attrInstanceName, c.id.String()),
-					attribute.String(attrTopic, config.Logs.Topic),
-				)),
-			},
-			&logsHandler{
-				unmarshaler: unmarshaler,
-				obsrecv:     c.obsrecv,
-				consumer:    nextConsumer,
-				encoding:    config.Logs.Encoding,
-			},
-		), nil
+		if config.Logs.topicAlias != "" {
+			set.Logger.Warn("logs.topic is deprecated, please use logs.topics instead")
+		}
+		if config.Logs.excludeTopicAlias != "" {
+			set.Logger.Warn("logs.exclude_topic is deprecated, please use logs.exclude_topics instead")
+		}
+		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
+			return processMessage(ctx, message, config, set.Logger, telBldr,
+				&logsHandler{
+					unmarshaler: unmarshaler,
+					obsrecv:     obsrecv,
+					consumer:    nextConsumer,
+					encoding:    config.Logs.Encoding,
+				},
+				attrs,
+			)
+		}, nil
 	}
-	return newKafkaConsumer(config, set, []string{config.Logs.Topic}, newConsumeMessageFunc)
+	return newReceiver(config, set, config.Logs.Topics, config.Logs.ExcludeTopics, newConsumeMessageFunc)
 }
 
 func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-	newConsumeMessageFunc := func(c *consumerGroupHandler, host component.Host) (consumeMessageFunc, error) {
+	newConsumeMessageFunc := func(host component.Host,
+		obsrecv *receiverhelper.ObsReport,
+		telBldr *metadata.TelemetryBuilder,
+	) (consumeMessageFunc, error) {
 		unmarshaler, err := newMetricsUnmarshaler(config.Metrics.Encoding, set, host)
 		if err != nil {
 			return nil, err
 		}
-		return newMessageHandlerConsumeFunc(
-			config, set.Logger,
-			c.telemetryBuilder.KafkaReceiverUnmarshalFailedMetricPoints,
-			[]metric.AddOption{
-				metric.WithAttributeSet(attribute.NewSet(
-					attribute.String(attrInstanceName, c.id.String()),
-					attribute.String(attrTopic, config.Metrics.Topic),
-				)),
-			},
-			&metricsHandler{
-				unmarshaler: unmarshaler,
-				obsrecv:     c.obsrecv,
-				consumer:    nextConsumer,
-				encoding:    config.Metrics.Encoding,
-			},
-		), nil
+		if config.Metrics.topicAlias != "" {
+			set.Logger.Warn("metrics.topic is deprecated, please use metrics.topics instead")
+		}
+		if config.Metrics.excludeTopicAlias != "" {
+			set.Logger.Warn("metrics.exclude_topic is deprecated, please use metrics.exclude_topics instead")
+		}
+
+		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
+			return processMessage(ctx, message, config, set.Logger, telBldr,
+				&metricsHandler{
+					unmarshaler: unmarshaler,
+					obsrecv:     obsrecv,
+					consumer:    nextConsumer,
+					encoding:    config.Metrics.Encoding,
+				},
+				attrs,
+			)
+		}, nil
 	}
-	return newKafkaConsumer(config, set, []string{config.Metrics.Topic}, newConsumeMessageFunc)
+	return newReceiver(config, set, config.Metrics.Topics, config.Metrics.ExcludeTopics, newConsumeMessageFunc)
 }
 
 func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (receiver.Traces, error) {
-	newConsumeMessageFunc := func(c *consumerGroupHandler, host component.Host) (consumeMessageFunc, error) {
+	consumeFn := func(host component.Host,
+		obsrecv *receiverhelper.ObsReport,
+		telBldr *metadata.TelemetryBuilder,
+	) (consumeMessageFunc, error) {
 		unmarshaler, err := newTracesUnmarshaler(config.Traces.Encoding, set, host)
 		if err != nil {
 			return nil, err
 		}
-		return newMessageHandlerConsumeFunc(
-			config, set.Logger,
-			c.telemetryBuilder.KafkaReceiverUnmarshalFailedSpans,
-			[]metric.AddOption{
-				metric.WithAttributeSet(attribute.NewSet(
-					attribute.String(attrInstanceName, c.id.String()),
-					attribute.String(attrTopic, config.Traces.Topic),
-				)),
-			},
-			&tracesHandler{
-				unmarshaler: unmarshaler,
-				obsrecv:     c.obsrecv,
-				consumer:    nextConsumer,
-				encoding:    config.Traces.Encoding,
-			},
-		), nil
+
+		if config.Traces.topicAlias != "" {
+			set.Logger.Warn("traces.topic is deprecated, please use traces.topics instead")
+		}
+		if config.Traces.excludeTopicAlias != "" {
+			set.Logger.Warn("traces.exclude_topic is deprecated, please use traces.exclude_topics instead")
+		}
+
+		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
+			return processMessage(ctx, message, config, set.Logger, telBldr,
+				&tracesHandler{
+					unmarshaler: unmarshaler,
+					obsrecv:     obsrecv,
+					consumer:    nextConsumer,
+					encoding:    config.Traces.Encoding,
+				},
+				attrs,
+			)
+		}, nil
 	}
-	return newKafkaConsumer(config, set, []string{config.Traces.Topic}, newConsumeMessageFunc)
+	return newReceiver(config, set, config.Traces.Topics, config.Traces.ExcludeTopics, consumeFn)
 }
 
-func newMessageHandlerConsumeFunc[T plog.Logs | pmetric.Metrics | ptrace.Traces](
-	config *Config,
-	logger *zap.Logger,
-	unmarshalFailedCounter metric.Int64Counter,
-	metricAddOpts []metric.AddOption,
-	h messageHandler[T],
-) consumeMessageFunc {
-	return func(ctx context.Context, message *sarama.ConsumerMessage) (err error) {
-		ctx = h.startObsReport(ctx)
-		var data T
-		var n int
-		defer func() {
-			h.endObsReport(ctx, n, err)
-		}()
-
-		data, n, err = h.unmarshalData(message.Value)
+func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xconsumer.Profiles) (xreceiver.Profiles, error) {
+	consumeFn := func(host component.Host,
+		obsrecv *receiverhelper.ObsReport,
+		telBldr *metadata.TelemetryBuilder,
+	) (consumeMessageFunc, error) {
+		unmarshaler, err := newProfilesUnmarshaler(config.Profiles.Encoding, set, host)
 		if err != nil {
-			logger.Error("failed to unmarshal message", zap.Error(err))
-			metricAddOpts = append(metricAddOpts, metric.WithAttributes(attribute.String(attrPartition, strconv.Itoa(int(message.Partition)))))
-			unmarshalFailedCounter.Add(ctx, 1, metricAddOpts...)
-			return err
+			return nil, err
+		}
+		if config.Profiles.topicAlias != "" {
+			set.Logger.Warn("profiles.topic is deprecated, please use profiles.topics instead")
+		}
+		if config.Profiles.excludeTopicAlias != "" {
+			set.Logger.Warn("profiles.exclude_topic is deprecated, please use profiles.exclude_topics instead")
 		}
 
-		if config.HeaderExtraction.ExtractHeaders {
-			for key, value := range getMessageHeaderResourceAttributes(
-				message, config.HeaderExtraction.Headers,
-			) {
-				for resource := range h.getResources(data) {
-					resource.Attributes().PutStr(key, value)
-				}
-			}
-		}
-
-		return h.consumeData(ctx, data)
+		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
+			return processMessage(ctx, message, config, set.Logger, telBldr,
+				&profilesHandler{
+					unmarshaler: unmarshaler,
+					obsrecv:     obsrecv,
+					consumer:    nextConsumer,
+					encoding:    config.Profiles.Encoding,
+				},
+				attrs,
+			)
+		}, nil
 	}
+	return newReceiver(config, set, config.Profiles.Topics, config.Profiles.ExcludeTopics, consumeFn)
+}
+
+func newReceiver(
+	config *Config,
+	set receiver.Settings,
+	topics []string,
+	excludeTopics []string,
+	consumeFn func(host component.Host,
+		obsrecv *receiverhelper.ObsReport,
+		telBldr *metadata.TelemetryBuilder,
+	) (consumeMessageFunc, error),
+) (component.Component, error) {
+	return newFranzKafkaConsumer(config, set, topics, excludeTopics, consumeFn)
 }
 
 type logsHandler struct {
@@ -211,7 +230,7 @@ func (h *logsHandler) endObsReport(ctx context.Context, n int, err error) {
 	h.obsrecv.EndLogsOp(ctx, h.encoding, n, err)
 }
 
-func (h *logsHandler) getResources(data plog.Logs) iter.Seq[pcommon.Resource] {
+func (*logsHandler) getResources(data plog.Logs) iter.Seq[pcommon.Resource] {
 	return func(yield func(pcommon.Resource) bool) {
 		for _, rm := range data.ResourceLogs().All() {
 			if !yield(rm.Resource()) {
@@ -219,6 +238,10 @@ func (h *logsHandler) getResources(data plog.Logs) iter.Seq[pcommon.Resource] {
 			}
 		}
 	}
+}
+
+func (*logsHandler) getUnmarshalFailureCounter(telBldr *metadata.TelemetryBuilder) metric.Int64Counter {
+	return telBldr.KafkaReceiverUnmarshalFailedLogRecords
 }
 
 type metricsHandler struct {
@@ -248,7 +271,7 @@ func (h *metricsHandler) endObsReport(ctx context.Context, n int, err error) {
 	h.obsrecv.EndMetricsOp(ctx, h.encoding, n, err)
 }
 
-func (h *metricsHandler) getResources(data pmetric.Metrics) iter.Seq[pcommon.Resource] {
+func (*metricsHandler) getResources(data pmetric.Metrics) iter.Seq[pcommon.Resource] {
 	return func(yield func(pcommon.Resource) bool) {
 		for _, rm := range data.ResourceMetrics().All() {
 			if !yield(rm.Resource()) {
@@ -256,6 +279,10 @@ func (h *metricsHandler) getResources(data pmetric.Metrics) iter.Seq[pcommon.Res
 			}
 		}
 	}
+}
+
+func (*metricsHandler) getUnmarshalFailureCounter(telBldr *metadata.TelemetryBuilder) metric.Int64Counter {
+	return telBldr.KafkaReceiverUnmarshalFailedMetricPoints
 }
 
 type tracesHandler struct {
@@ -285,7 +312,7 @@ func (h *tracesHandler) endObsReport(ctx context.Context, n int, err error) {
 	h.obsrecv.EndTracesOp(ctx, h.encoding, n, err)
 }
 
-func (h *tracesHandler) getResources(data ptrace.Traces) iter.Seq[pcommon.Resource] {
+func (*tracesHandler) getResources(data ptrace.Traces) iter.Seq[pcommon.Resource] {
 	return func(yield func(pcommon.Resource) bool) {
 		for _, rm := range data.ResourceSpans().All() {
 			if !yield(rm.Resource()) {
@@ -295,266 +322,111 @@ func (h *tracesHandler) getResources(data ptrace.Traces) iter.Seq[pcommon.Resour
 	}
 }
 
-func newKafkaConsumer(
-	config *Config,
-	set receiver.Settings,
-	topics []string,
-	newConsumeMessageFunc func(*consumerGroupHandler, component.Host) (consumeMessageFunc, error),
-) (*kafkaConsumer, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
-	if err != nil {
-		return nil, err
-	}
-
-	return &kafkaConsumer{
-		config:                config,
-		topics:                topics,
-		newConsumeMessageFunc: newConsumeMessageFunc,
-		settings:              set,
-		telemetryBuilder:      telemetryBuilder,
-	}, nil
+func (*tracesHandler) getUnmarshalFailureCounter(telBldr *metadata.TelemetryBuilder) metric.Int64Counter {
+	return telBldr.KafkaReceiverUnmarshalFailedSpans
 }
 
-// kafkaConsumer consumes messages from a set of Kafka topics,
-// decodes telemetry data using a given unmarshaler, and passes
-// them to a consumer.
-type kafkaConsumer struct {
-	config                *Config
-	topics                []string
-	settings              receiver.Settings
-	telemetryBuilder      *metadata.TelemetryBuilder
-	newConsumeMessageFunc func(*consumerGroupHandler, component.Host) (consumeMessageFunc, error)
-
-	mu                sync.Mutex
-	started           bool
-	shutdown          bool
-	consumeLoopClosed chan struct{}
-	consumerGroup     sarama.ConsumerGroup
+type profilesHandler struct {
+	unmarshaler pprofile.Unmarshaler
+	obsrecv     *receiverhelper.ObsReport
+	consumer    xconsumer.Profiles
+	encoding    string
 }
 
-func (c *kafkaConsumer) Start(_ context.Context, host component.Host) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.shutdown {
-		return errors.New("kafka consumer already shut down")
-	}
-	if c.started {
-		return errors.New("kafka consumer already started")
-	}
-
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             c.settings.ID,
-		Transport:              transport,
-		ReceiverCreateSettings: c.settings,
-	})
+func (h *profilesHandler) unmarshalData(data []byte) (pprofile.Profiles, int, error) {
+	profiles, err := h.unmarshaler.UnmarshalProfiles(data)
 	if err != nil {
-		return err
+		return pprofile.Profiles{}, 0, err
 	}
-
-	consumerGroup, err := kafka.NewSaramaConsumerGroup(
-		context.Background(),
-		c.config.ClientConfig,
-		c.config.ConsumerConfig,
-	)
-	if err != nil {
-		return err
-	}
-	c.consumerGroup = consumerGroup
-
-	handler := &consumerGroupHandler{
-		id:                c.settings.ID,
-		logger:            c.settings.Logger,
-		ready:             make(chan bool),
-		obsrecv:           obsrecv,
-		autocommitEnabled: c.config.AutoCommit.Enable,
-		messageMarking:    c.config.MessageMarking,
-		telemetryBuilder:  c.telemetryBuilder,
-		backOff:           newExponentialBackOff(c.config.ErrorBackOff),
-	}
-	consumeMessage, err := c.newConsumeMessageFunc(handler, host)
-	if err != nil {
-		return err
-	}
-	handler.consumeMessage = consumeMessage
-
-	c.consumeLoopClosed = make(chan struct{})
-	c.started = true
-	go c.consumeLoop(handler)
-	return nil
+	return profiles, profiles.SampleCount(), nil
 }
 
-func (c *kafkaConsumer) consumeLoop(handler sarama.ConsumerGroupHandler) {
-	defer close(c.consumeLoopClosed)
+func (h *profilesHandler) consumeData(ctx context.Context, data pprofile.Profiles) error {
+	return h.consumer.ConsumeProfiles(ctx, data)
+}
 
-	ctx := context.Background()
-	for {
-		// `Consume` should be called inside an infinite loop, when a
-		// server-side rebalance happens, the consumer session will need to be
-		// recreated to get the new claims
-		if err := c.consumerGroup.Consume(ctx, c.topics, handler); err != nil {
-			if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-				c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
+func (h *profilesHandler) startObsReport(ctx context.Context) context.Context {
+	return h.obsrecv.StartTracesOp(ctx)
+}
+
+func (h *profilesHandler) endObsReport(ctx context.Context, n int, err error) {
+	h.obsrecv.EndTracesOp(ctx, h.encoding, n, err)
+}
+
+func (*profilesHandler) getResources(data pprofile.Profiles) iter.Seq[pcommon.Resource] {
+	return func(yield func(pcommon.Resource) bool) {
+		for _, rm := range data.ResourceProfiles().All() {
+			if !yield(rm.Resource()) {
 				return
 			}
-			c.settings.Logger.Error("Error from consumer", zap.Error(err))
 		}
 	}
 }
 
-func (c *kafkaConsumer) Shutdown(ctx context.Context) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.shutdown {
-		return nil
-	}
-	c.shutdown = true
-	if !c.started {
-		return nil
-	}
-
-	if err := c.consumerGroup.Close(); err != nil {
-		return err
-	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-c.consumeLoopClosed:
-	}
-	return nil
+func (*profilesHandler) getUnmarshalFailureCounter(telBldr *metadata.TelemetryBuilder) metric.Int64Counter {
+	return telBldr.KafkaReceiverUnmarshalFailedProfiles
 }
 
-type consumerGroupHandler struct {
-	id             component.ID
-	consumeMessage consumeMessageFunc
-	ready          chan bool
-	readyCloser    sync.Once
-	logger         *zap.Logger
-
-	obsrecv          *receiverhelper.ObsReport
-	telemetryBuilder *metadata.TelemetryBuilder
-
-	autocommitEnabled bool
-	messageMarking    MessageMarking
-	backOff           *backoff.ExponentialBackOff
-	backOffMutex      sync.Mutex
-}
-
-func (c *consumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
-	c.readyCloser.Do(func() {
-		close(c.ready)
-	})
-	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(
-		session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())),
-	)
-	return nil
-}
-
-func (c *consumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
-	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(
-		session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())),
-	)
-	return nil
-}
-
-func (c *consumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	c.logger.Info("Starting consumer group", zap.Int32("partition", claim.Partition()))
-	if !c.autocommitEnabled {
-		defer session.Commit()
-	}
-	for {
-		select {
-		case <-session.Context().Done():
-			// Should return when the session's context is canceled.
-			//
-			// If we do not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout`
-			// when rebalancing. See: https://github.com/IBM/sarama/issues/1192
-			return nil
-		case message, ok := <-claim.Messages():
-			if !ok {
-				return nil
-			}
-			if err := c.handleMessage(session, claim, message); err != nil {
-				return err
-			}
-		}
-	}
-}
-
-func (c *consumerGroupHandler) handleMessage(
-	session sarama.ConsumerGroupSession,
-	claim sarama.ConsumerGroupClaim,
-	message *sarama.ConsumerMessage,
+// processMessage is a generic function that processes any KafkaMessage using a messageHandler
+func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Profiles](
+	ctx context.Context,
+	message kafkaMessage,
+	config *Config,
+	logger *zap.Logger,
+	telBldr *metadata.TelemetryBuilder,
+	handler messageHandler[T],
+	attrs attribute.Set,
 ) error {
-	c.logger.Debug("Kafka message claimed",
-		zap.String("value", string(message.Value)),
-		zap.Time("timestamp", message.Timestamp),
-		zap.String("topic", message.Topic))
-	if !c.messageMarking.After {
-		session.MarkMessage(message, "")
+	if logger.Core().Enabled(zap.DebugLevel) {
+		logger.Debug("kafka message received",
+			zap.String("value", string(message.value())),
+			zap.Time("timestamp", message.timestamp()),
+			zap.String("topic", message.topic()),
+			zap.Int32("partition", message.partition()),
+			zap.Int64("offset", message.offset()),
+		)
 	}
 
-	// If the Kafka exporter has propagated headers in the message,
-	// create a new context with client.Info in it.
-	ctx := newContextWithHeaders(session.Context(), message.Headers)
-	attrs := attribute.NewSet(
-		attribute.String(attrInstanceName, c.id.String()),
-		attribute.String(attrTopic, message.Topic),
-		attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
-	)
-	c.telemetryBuilder.KafkaReceiverMessages.Add(ctx, 1, metric.WithAttributeSet(attrs))
-	c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, metric.WithAttributeSet(attrs))
-	c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, metric.WithAttributeSet(attrs))
+	ctx = contextWithHeaders(ctx, message.headers())
 
-	if err := c.consumeMessage(ctx, message); err != nil {
-		if errorRequiresBackoff(err) && c.backOff != nil {
-			backOffDelay := c.getNextBackoff()
-			if backOffDelay != backoff.Stop {
-				c.logger.Info("Backing off due to error from the next consumer.",
-					zap.Error(err),
-					zap.Duration("delay", backOffDelay),
-					zap.String("topic", message.Topic),
-					zap.Int32("partition", claim.Partition()))
-				select {
-				case <-session.Context().Done():
-					return nil
-				case <-time.After(backOffDelay):
-					if !c.messageMarking.After {
-						// Unmark the message so it can be retried
-						session.ResetOffset(claim.Topic(), claim.Partition(), message.Offset, "")
-					}
-					return err
-				}
+	obsCtx := handler.startObsReport(ctx)
+	data, n, err := handler.unmarshalData(message.value())
+	if err != nil {
+		handler.getUnmarshalFailureCounter(telBldr).Add(ctx, 1, metric.WithAttributeSet(attrs))
+		logger.Error("failed to unmarshal message", zap.Error(err))
+		handler.endObsReport(obsCtx, n, err)
+		// Return permanent error for unmarshalling failures
+		return consumererror.NewPermanent(err)
+	}
+
+	// Add resource attributes from headers if configured
+	if config.HeaderExtraction.ExtractHeaders {
+		for key, value := range getMessageHeaderResourceAttributes(
+			message.headers(), config.HeaderExtraction.Headers,
+		) {
+			for resource := range handler.getResources(data) {
+				resource.Attributes().PutStr(key, value)
 			}
-			c.logger.Info("Stop error backoff because the configured max_elapsed_time is reached",
-				zap.Duration("max_elapsed_time", c.backOff.MaxElapsedTime))
 		}
-		if c.messageMarking.After && c.messageMarking.OnError {
-			session.MarkMessage(message, "")
-		}
-		return err
 	}
-	if c.backOff != nil {
-		c.resetBackoff()
-	}
-	if c.messageMarking.After {
-		session.MarkMessage(message, "")
-	}
-	if !c.autocommitEnabled {
-		session.Commit()
-	}
-	return nil
+
+	err = handler.consumeData(ctx, data)
+	handler.endObsReport(obsCtx, n, err)
+	return err
 }
 
-func (c *consumerGroupHandler) getNextBackoff() time.Duration {
-	c.backOffMutex.Lock()
-	defer c.backOffMutex.Unlock()
-	return c.backOff.NextBackOff()
-}
-
-func (c *consumerGroupHandler) resetBackoff() {
-	c.backOffMutex.Lock()
-	defer c.backOffMutex.Unlock()
-	c.backOff.Reset()
+func getMessageHeaderResourceAttributes(h messageHeaders, resHeaders []string) iter.Seq2[string, string] {
+	return func(yield func(string, string) bool) {
+		for _, resHeader := range resHeaders {
+			value, ok := h.get(resHeader)
+			if !ok {
+				continue
+			}
+			if !yield("kafka.header."+resHeader, value) {
+				return
+			}
+		}
+	}
 }
 
 func newExponentialBackOff(config configretry.BackOffConfig) *backoff.ExponentialBackOff {
@@ -571,48 +443,15 @@ func newExponentialBackOff(config configretry.BackOffConfig) *backoff.Exponentia
 	return backOff
 }
 
-func errorRequiresBackoff(err error) bool {
-	return err.Error() == errMemoryLimiterDataRefused.Error()
-}
-
-func newContextWithHeaders(ctx context.Context,
-	headers []*sarama.RecordHeader,
-) context.Context {
-	if len(headers) == 0 {
-		return ctx
-	}
-	m := make(map[string][]string, len(headers))
-	for _, header := range headers {
-		key := string(header.Key)
-		value := string(header.Value)
+func contextWithHeaders(ctx context.Context, headers messageHeaders) context.Context {
+	m := make(map[string][]string)
+	for header := range headers.all() {
+		key := header.key
+		value := string(header.value)
 		m[key] = append(m[key], value)
 	}
+	if len(m) == 0 {
+		return ctx
+	}
 	return client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(m)})
-}
-
-// getMessageHeaderResourceAttributes returns key-value pairs to add
-// to the resource attributes of decoded data. This is used by the
-// "header extraction" feature of the receiver.
-func getMessageHeaderResourceAttributes(message *sarama.ConsumerMessage, headers []string) iter.Seq2[string, string] {
-	return func(yield func(string, string) bool) {
-		for _, header := range headers {
-			value, ok := getHeaderValue(message.Headers, header)
-			if !ok {
-				continue
-			}
-			if !yield("kafka.header."+header, value) {
-				return
-			}
-		}
-	}
-}
-
-func getHeaderValue(headers []*sarama.RecordHeader, header string) (string, bool) {
-	for _, kafkaHeader := range headers {
-		headerKey := string(kafkaHeader.Key)
-		if headerKey == header {
-			return string(kafkaHeader.Value), true
-		}
-	}
-	return "", false
 }

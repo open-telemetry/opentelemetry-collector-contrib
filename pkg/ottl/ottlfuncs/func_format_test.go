@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -36,7 +37,7 @@ func Test_Format(t *testing.T) {
 			name:         "padded int",
 			formatString: "test-%04d",
 			formatArgs: []ottl.Getter[any]{
-				getterFunc[any](func(_ context.Context, _ any) (any, error) {
+				getterFunc[any](func(context.Context, any) (any, error) {
 					return 2, nil
 				}),
 			},
@@ -46,10 +47,10 @@ func Test_Format(t *testing.T) {
 			name:         "multiple-args",
 			formatString: "test-%04d-%4s",
 			formatArgs: []ottl.Getter[any]{
-				getterFunc[any](func(_ context.Context, _ any) (any, error) {
+				getterFunc[any](func(context.Context, any) (any, error) {
 					return 2, nil
 				}),
-				getterFunc[any](func(_ context.Context, _ any) (any, error) {
+				getterFunc[any](func(context.Context, any) (any, error) {
 					return "te", nil
 				}),
 			},
@@ -61,18 +62,18 @@ func Test_Format(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := format(tt.formatString, tt.formatArgs)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
 func TestFormat_error(t *testing.T) {
-	target := getterFunc[any](func(_ context.Context, _ any) (any, error) {
+	target := getterFunc[any](func(context.Context, any) (any, error) {
 		return nil, errors.New("failed to get")
 	})
 
 	exprFunc := format[any]("test-%d", []ottl.Getter[any]{target})
-	_, err := exprFunc(context.Background(), nil)
+	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }

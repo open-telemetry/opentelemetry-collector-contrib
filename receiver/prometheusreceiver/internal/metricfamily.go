@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
@@ -36,24 +37,35 @@ type metricFamily struct {
 // a couple data complexValue (buckets and count/sum), a group of a metric family always share a same set of tags. for
 // simple types like counter and gauge, each data point is a group of itself
 type metricGroup struct {
-	mtype        pmetric.MetricType
-	ts           int64
-	ls           labels.Labels
-	count        float64
-	hasCount     bool
-	sum          float64
-	hasSum       bool
-	created      float64
-	value        float64
-	hValue       *histogram.Histogram
-	fhValue      *histogram.FloatHistogram
-	complexValue []*dataPoint
-	exemplars    pmetric.ExemplarSlice
+	mtype    pmetric.MetricType
+	ts       int64
+	ls       labels.Labels
+	count    float64
+	hasCount bool
+	sum      float64
+	hasSum   bool
+	// This corresponds to the `_created` sample found from the metric parsing.
+	// - https://github.com/prometheus/OpenMetrics/blob/main/specification/OpenMetrics.md#timestamps
+	// - https://github.com/prometheus/OpenMetrics/blob/main/specification/OpenMetrics.md#counter-1
+	createdSeconds float64
+	value          float64
+	hasValue       bool
+	hValue         *histogram.Histogram
+	fhValue        *histogram.FloatHistogram
+	complexValue   []*dataPoint
+	exemplars      pmetric.ExemplarSlice
+	isNHCB         bool // true if this is a Native Histogram Custom Buckets (schema -53)
 }
 
-func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger) *metricFamily {
+func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger, isNativeHistogram, isNHCB bool) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
-	mtype, isMonotonic := convToMetricType(metadata.Type)
+	// Native histograms have intrinsic metric type, use it,
+	// regardless of what metadata says.
+	if isNativeHistogram {
+		metadata.Type = model.MetricTypeHistogram
+	}
+
+	mtype, isMonotonic := convToMetricType(metadata.Type, isNativeHistogram && !isNHCB)
 	if mtype == pmetric.MetricTypeEmpty {
 		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}
@@ -69,6 +81,9 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 
 // includesMetric returns true if the metric is part of the family
 func (mf *metricFamily) includesMetric(metricName string) bool {
+	if mf.mtype == pmetric.MetricTypeSum {
+		return normalizeMetricName(metricName) == mf.metadata.MetricFamily
+	}
 	if mf.mtype != pmetric.MetricTypeGauge {
 		// If it is a merged family type, then it should match the
 		// family name when suffixes are trimmed.
@@ -91,41 +106,63 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 
 	mg.sortPoints()
 
-	bucketCount := len(mg.complexValue) + 1
-	// if the final bucket is +Inf, we ignore it
-	if bucketCount > 1 && mg.complexValue[bucketCount-2].boundary == math.Inf(1) {
-		bucketCount--
-	}
-
-	// for OTLP the bounds won't include +inf
-	bounds := make([]float64, bucketCount-1)
-	bucketCounts := make([]uint64, bucketCount)
-	var adjustedCount float64
-
+	var bounds []float64
+	var bucketCounts []uint64
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
-	for i := 0; i < bucketCount-1; i++ {
-		bounds[i] = mg.complexValue[i].boundary
-		adjustedCount = mg.complexValue[i].value
 
-		// Buckets still need to be sent to know to set them as stale,
-		// but a staleness NaN converted to uint64 would be an extremely large number.
-		// Setting to 0 instead.
+	if mg.isNHCB {
+		switch {
+		case mg.hValue != nil:
+			if len(mg.hValue.CustomValues) == 0 {
+				return
+			}
+			bounds = make([]float64, len(mg.hValue.CustomValues))
+			copy(bounds, mg.hValue.CustomValues)
+			bucketCounts = convertNHCBBDeltBuckets(mg.hValue)
+		case mg.fhValue != nil:
+			if len(mg.fhValue.CustomValues) == 0 {
+				return
+			}
+			bounds = make([]float64, len(mg.fhValue.CustomValues))
+			copy(bounds, mg.fhValue.CustomValues)
+			bucketCounts = convertNHCBAbsoluteBuckets(mg.fhValue)
+		}
+	} else {
+		bucketCount := len(mg.complexValue) + 1
+		// if the final bucket is +Inf, we ignore it
+		if bucketCount > 1 && mg.complexValue[bucketCount-2].boundary == math.Inf(1) {
+			bucketCount--
+		}
+
+		// for OTLP the bounds won't include +inf
+		bounds = make([]float64, bucketCount-1)
+		bucketCounts = make([]uint64, bucketCount)
+		var adjustedCount float64
+
+		for i := 0; i < bucketCount-1; i++ {
+			bounds[i] = mg.complexValue[i].boundary
+			adjustedCount = mg.complexValue[i].value
+
+			// Buckets still need to be sent to know to set them as stale,
+			// but a staleness NaN converted to uint64 would be an extremely large number.
+			// Setting to 0 instead.
+			if pointIsStale {
+				adjustedCount = 0
+			} else if i != 0 {
+				adjustedCount -= mg.complexValue[i-1].value
+			}
+			bucketCounts[i] = uint64(adjustedCount)
+		}
+
+		// Add the final bucket based on the total count
+		adjustedCount = mg.count
 		if pointIsStale {
 			adjustedCount = 0
-		} else if i != 0 {
-			adjustedCount -= mg.complexValue[i-1].value
+		} else if bucketCount > 1 {
+			adjustedCount -= mg.complexValue[bucketCount-2].value
 		}
-		bucketCounts[i] = uint64(adjustedCount)
+		bucketCounts[bucketCount-1] = uint64(adjustedCount)
 	}
-
-	// Add the final bucket based on the total count
-	adjustedCount = mg.count
-	if pointIsStale {
-		adjustedCount = 0
-	} else if bucketCount > 1 {
-		adjustedCount -= mg.complexValue[bucketCount-2].value
-	}
-	bucketCounts[bucketCount-1] = uint64(adjustedCount)
 
 	point := dest.AppendEmpty()
 
@@ -143,11 +180,8 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
-	if mg.created != 0 {
-		point.SetStartTimestamp(timestampFromFloat64(mg.created))
-	} else if !removeStartTimeAdjustment.IsEnabled() {
-		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-		point.SetStartTimestamp(tsNanos)
+	if mg.createdSeconds != 0 {
+		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
@@ -221,11 +255,8 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 	}
 
 	tsNanos := timestampFromMs(mg.ts)
-	if mg.created != 0 {
-		point.SetStartTimestamp(timestampFromFloat64(mg.created))
-	} else if !removeStartTimeAdjustment.IsEnabled() {
-		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-		point.SetStartTimestamp(tsNanos)
+	if mg.createdSeconds != 0 {
+		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
@@ -264,6 +295,53 @@ func convertAbsoluteBuckets(spans []histogram.Span, counts []float64, buckets pc
 			bucketIdx++
 		}
 	}
+}
+
+// convertNHCBBDeltBuckets converts NHCB delta buckets to otel bucket counts.
+func convertNHCBBDeltBuckets(histogram *histogram.Histogram) []uint64 {
+	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
+	if len(histogram.PositiveSpans) == 0 {
+		return bucketCounts
+	}
+	bucketIdx := 0
+	bucketCount := int64(0)
+	deltaIdx := 0
+
+	for _, span := range histogram.PositiveSpans {
+		bucketIdx += int(span.Offset)
+
+		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && deltaIdx < len(histogram.PositiveBuckets); i++ {
+			bucketCount += histogram.PositiveBuckets[deltaIdx]
+			deltaIdx++
+
+			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
+				bucketCounts[bucketIdx] = uint64(bucketCount)
+			}
+			bucketIdx++
+		}
+	}
+	return bucketCounts
+}
+
+// convertNHCBAbsoluteBuckets converts NHCB absolute buckets to otel bucket counts.
+func convertNHCBAbsoluteBuckets(histogram *histogram.FloatHistogram) []uint64 {
+	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
+	if len(histogram.PositiveSpans) == 0 {
+		return bucketCounts
+	}
+	bucketIdx := 0
+	for _, span := range histogram.PositiveSpans {
+		bucketIdx += int(span.Offset)
+
+		for i := uint32(0); i < span.Length && bucketIdx < len(bucketCounts) && i < uint32(len(histogram.PositiveBuckets)); i++ {
+			if bucketIdx >= 0 && bucketIdx < len(bucketCounts) {
+				// This intentionally truncates the float value to an integer (e.g. 5.7 becomes 5).
+				bucketCounts[bucketIdx] = uint64(histogram.PositiveBuckets[i])
+			}
+			bucketIdx++
+		}
+	}
+	return bucketCounts
 }
 
 func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
@@ -315,25 +393,22 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
 	point.SetTimestamp(tsNanos)
-	if mg.created != 0 {
-		point.SetStartTimestamp(timestampFromFloat64(mg.created))
-	} else if !removeStartTimeAdjustment.IsEnabled() {
-		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-		point.SetStartTimestamp(tsNanos)
+	if mg.createdSeconds != 0 {
+		point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
 	}
 	populateAttributes(pmetric.MetricTypeSummary, mg.ls, point.Attributes())
 }
 
 func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
+	if !mg.hasValue {
+		return
+	}
 	tsNanos := timestampFromMs(mg.ts)
 	point := dest.AppendEmpty()
 	// gauge/undefined types have no start time.
 	if mg.mtype == pmetric.MetricTypeSum {
-		if mg.created != 0 {
-			point.SetStartTimestamp(timestampFromFloat64(mg.created))
-		} else if !removeStartTimeAdjustment.IsEnabled() {
-			// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-			point.SetStartTimestamp(tsNanos)
+		if mg.createdSeconds != 0 {
+			point.SetStartTimestamp(timestampFromFloat64(mg.createdSeconds))
 		}
 	}
 	point.SetTimestamp(tsNanos)
@@ -397,8 +472,8 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.ts = t
 			mg.count = v
 			mg.hasCount = true
-		case metricName == mf.metadata.Metric+metricSuffixCreated:
-			mg.created = v
+		case metricName == mf.metadata.MetricFamily+metricSuffixCreated:
+			mg.createdSeconds = v
 		default:
 			boundary, err := getBoundary(mf.mtype, ls)
 			if err != nil {
@@ -407,27 +482,30 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.complexValue = append(mg.complexValue, &dataPoint{value: v, boundary: boundary})
 		}
 	case pmetric.MetricTypeExponentialHistogram:
-		if metricName == mf.metadata.Metric+metricSuffixCreated {
-			mg.created = v
+		if metricName == mf.metadata.MetricFamily+metricSuffixCreated {
+			mg.createdSeconds = v
 		}
 	case pmetric.MetricTypeSum:
-		if metricName == mf.metadata.Metric+metricSuffixCreated {
-			mg.created = v
+		if metricName == mf.metadata.MetricFamily+metricSuffixCreated {
+			mg.createdSeconds = v
 		} else {
 			mg.value = v
+			mg.hasValue = true
 		}
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge:
-		fallthrough
 	default:
 		mg.value = v
+		mg.hasValue = true
 	}
 
 	return nil
 }
 
-func (mf *metricFamily) addCreationTimestamp(seriesRef uint64, ls labels.Labels, atMs, created int64) {
+// addCreationTimestamp updates the metric group cache with the created timestamp for the group.
+// The parser gets the created time in ms however and we must convert it to seconds here.
+// - https://github.com/prometheus/prometheus/blob/2bf6f4c9dcbb1ad2e8fef70c6a48d8fc44a7f57c/model/textparse/interface.go#L77-L80
+func (mf *metricFamily) addCreationTimestamp(seriesRef uint64, ls labels.Labels, atMs, ctMs int64) {
 	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, atMs)
-	mg.created = float64(created)
+	mg.createdSeconds = float64(ctMs) / 1000.0
 }
 
 func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram) error {
@@ -458,6 +536,37 @@ func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricNa
 		mg.hasSum = true
 		mg.hValue = h
 	}
+	return nil
+}
+
+// addNHCBSeries adds a Native Histogram Custom Buckets (NHCB) series to the metric family.
+func (mf *metricFamily) addNHCBSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram) error {
+	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, t)
+	if mg.ts != t {
+		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
+	}
+	if mg.mtype != pmetric.MetricTypeHistogram {
+		return fmt.Errorf("metric type mismatch for NHCB metric %v type %s", metricName, mg.mtype.String())
+	}
+	mg.isNHCB = true
+
+	switch {
+	case h != nil:
+		mg.hValue = h
+		mg.count = float64(h.Count)
+		mg.hasCount = true
+		mg.sum = h.Sum
+		mg.hasSum = true
+	case fh != nil:
+		mg.fhValue = fh
+		mg.count = fh.Count
+		mg.hasCount = true
+		mg.sum = fh.Sum
+		mg.hasSum = true
+	default:
+		return fmt.Errorf("NHCB metric %v has no histogram data", metricName)
+	}
+
 	return nil
 }
 
@@ -512,8 +621,6 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 		}
 		pointCount = hdpL.Len()
 
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge:
-		fallthrough
 	default: // Everything else should be set to a Gauge.
 		gauge := metric.SetEmptyGauge()
 		gdpL := gauge.DataPoints()
@@ -574,7 +681,7 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 2. If len(src) = len(dst) -> copy src to dst as it is
 3. If len(src) < len(dst) -> prepend required 0s and then add src to dst. Example -> src = []byte{0xab, 0xcd}, dst = [8]byte, result dst = [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xab, 0xcd}
 */
-func decodeAndCopyToLowerBytes(dst []byte, src []byte) error {
+func decodeAndCopyToLowerBytes(dst, src []byte) error {
 	var err error
 	decodedLen := hex.DecodedLen(len(src))
 	if decodedLen >= len(dst) {

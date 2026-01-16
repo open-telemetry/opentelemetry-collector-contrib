@@ -6,7 +6,6 @@
 package podmanreceiver
 
 import (
-	"context"
 	"errors"
 	"io"
 	"net"
@@ -87,7 +86,7 @@ func TestStats(t *testing.T) {
 		Duration:      309165846000,
 	}
 
-	stats, err := cli.stats(context.Background(), nil)
+	stats, err := cli.stats(t.Context(), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedStats, stats[0])
 }
@@ -122,7 +121,7 @@ func TestStatsError(t *testing.T) {
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
 
-	stats, err := cli.stats(context.Background(), nil)
+	stats, err := cli.stats(t.Context(), nil)
 	assert.Nil(t, stats)
 	assert.EqualError(t, err, errNoStatsFound.Error())
 }
@@ -183,7 +182,7 @@ func TestList(t *testing.T) {
 		Status:     "",
 	}
 
-	containers, err := cli.list(context.Background(), nil)
+	containers, err := cli.list(t.Context(), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedContainer, containers[0])
 }
@@ -231,7 +230,7 @@ func TestEvents(t *testing.T) {
 		{ID: "d5c43c6954e4bfe62170c75f9f18f81da644bd35bfd22dbfafda349192d4940a", Status: "died"},
 	}
 
-	events, errs := cli.events(context.Background(), nil)
+	events, errs := cli.events(t.Context(), nil)
 	var actualEvents []event
 
 loop:

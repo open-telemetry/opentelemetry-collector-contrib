@@ -32,7 +32,7 @@ func (r *textLogCodec) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 			if atEOF && len(data) == 0 {
 				return 0, nil, nil
 			}
-			if loc := r.unmarshalingSeparator.FindIndex(data); loc != nil && loc[0] >= 0 {
+			if loc := r.unmarshalingSeparator.FindIndex(data); len(loc) > 0 && loc[0] >= 0 {
 				return loc[1], data[0:loc[0]], nil
 			}
 			if atEOF {
@@ -63,14 +63,19 @@ func (r *textLogCodec) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 func (r *textLogCodec) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	var b []byte
+	appendedLogRecord := false
+
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rl := ld.ResourceLogs().At(i)
 		for j := 0; j < rl.ScopeLogs().Len(); j++ {
 			sl := rl.ScopeLogs().At(j)
 			for k := 0; k < sl.LogRecords().Len(); k++ {
 				lr := sl.LogRecords().At(k)
+				if appendedLogRecord {
+					b = append(b, []byte(r.marshalingSeparator)...)
+				}
 				b = append(b, []byte(lr.Body().AsString())...)
-				b = append(b, []byte(r.marshalingSeparator)...)
+				appendedLogRecord = true
 			}
 		}
 	}

@@ -4,14 +4,15 @@
 package remotetapprocessor
 
 import (
-	"context"
 	"net"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -25,15 +26,18 @@ import (
 func TestSocketConnectionLogs(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:12001",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:12001",
+			},
 		},
 		Limit: 1,
 	}
 	logSink := &consumertest.LogsSink{}
-	processor, err := NewFactory().CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg,
+	processor, err := NewFactory().CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg,
 		logSink)
 	require.NoError(t, err)
-	err = processor.Start(context.Background(), componenttest.NewNopHost())
+	err = processor.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	rawConn, err := net.Dial("tcp", "localhost:12001")
 	require.NoError(t, err)
@@ -43,18 +47,16 @@ func TestSocketConnectionLogs(t *testing.T) {
 	require.NoError(t, err)
 	log := plog.NewLogs()
 	log.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("foo")
-	err = processor.ConsumeLogs(context.Background(), log)
+	err = processor.ConsumeLogs(t.Context(), log)
 	require.NoError(t, err)
 	buf := make([]byte, 1024)
-	require.Eventuallyf(t, func() bool {
-		err = processor.ConsumeLogs(context.Background(), log)
-		require.NoError(t, err)
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		n, _ := wsConn.Read(buf)
-		return n == 132
-	}, 1*time.Second, 100*time.Millisecond, "received message")
-	require.JSONEq(t, `{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"stringValue":"foo"},"traceId":"","spanId":""}]}]}]}`, string(buf[0:132]))
+		assert.Equal(tt, 107, n)
+	}, 1*time.Second, 100*time.Millisecond)
+	require.JSONEq(t, `{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"stringValue":"foo"}}]}]}]}`, string(buf[0:107]))
 
-	err = processor.Shutdown(context.Background())
+	err = processor.Shutdown(t.Context())
 	require.NoError(t, err)
 	err = rawConn.Close()
 	require.NoError(t, err)
@@ -63,15 +65,18 @@ func TestSocketConnectionLogs(t *testing.T) {
 func TestSocketConnectionMetrics(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:12002",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:12002",
+			},
 		},
 		Limit: 1,
 	}
 	metricsSink := &consumertest.MetricsSink{}
-	processor, err := NewFactory().CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg,
+	processor, err := NewFactory().CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg,
 		metricsSink)
 	require.NoError(t, err)
-	err = processor.Start(context.Background(), componenttest.NewNopHost())
+	err = processor.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	rawConn, err := net.Dial("tcp", "localhost:12002")
 	require.NoError(t, err)
@@ -82,15 +87,15 @@ func TestSocketConnectionMetrics(t *testing.T) {
 	metric := pmetric.NewMetrics()
 	metric.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
 	buf := make([]byte, 1024)
-	require.Eventuallyf(t, func() bool {
-		err = processor.ConsumeMetrics(context.Background(), metric)
-		require.NoError(t, err)
+	err = processor.ConsumeMetrics(t.Context(), metric)
+	require.NoError(t, err)
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		n, _ := wsConn.Read(buf)
-		return n == 94
-	}, 1*time.Second, 100*time.Millisecond, "received message")
+		assert.Equal(tt, 94, n)
+	}, 1*time.Second, 100*time.Millisecond)
 	require.JSONEq(t, `{"resourceMetrics":[{"resource":{},"scopeMetrics":[{"scope":{},"metrics":[{"name":"foo"}]}]}]}`, string(buf[0:94]))
 
-	err = processor.Shutdown(context.Background())
+	err = processor.Shutdown(t.Context())
 	require.NoError(t, err)
 	err = rawConn.Close()
 	require.NoError(t, err)
@@ -99,15 +104,18 @@ func TestSocketConnectionMetrics(t *testing.T) {
 func TestSocketConnectionTraces(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:12003",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:12003",
+			},
 		},
 		Limit: 1,
 	}
 	tracesSink := &consumertest.TracesSink{}
-	processor, err := NewFactory().CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg,
+	processor, err := NewFactory().CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg,
 		tracesSink)
 	require.NoError(t, err)
-	err = processor.Start(context.Background(), componenttest.NewNopHost())
+	err = processor.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	rawConn, err := net.Dial("tcp", "localhost:12003")
 	require.NoError(t, err)
@@ -118,15 +126,15 @@ func TestSocketConnectionTraces(t *testing.T) {
 	trace := ptrace.NewTraces()
 	trace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
 	buf := make([]byte, 1024)
-	require.Eventuallyf(t, func() bool {
-		err = processor.ConsumeTraces(context.Background(), trace)
-		require.NoError(t, err)
+	err = processor.ConsumeTraces(t.Context(), trace)
+	require.NoError(t, err)
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		n, _ := wsConn.Read(buf)
-		return n == 143
-	}, 1*time.Second, 100*time.Millisecond, "received message")
-	require.JSONEq(t, `{"resourceSpans":[{"resource":{},"scopeSpans":[{"scope":{},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"foo","status":{}}]}]}]}`, string(buf[0:143]))
+		assert.Equal(tt, 100, n)
+	}, 1*time.Second, 100*time.Millisecond)
+	require.JSONEq(t, `{"resourceSpans":[{"resource":{},"scopeSpans":[{"scope":{},"spans":[{"name":"foo","status":{}}]}]}]}`, string(buf[0:100]))
 
-	err = processor.Shutdown(context.Background())
+	err = processor.Shutdown(t.Context())
 	require.NoError(t, err)
 	err = rawConn.Close()
 	require.NoError(t, err)

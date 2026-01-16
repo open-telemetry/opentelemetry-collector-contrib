@@ -6,6 +6,7 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkubeletstats%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fkubeletstats) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkubeletstats%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fkubeletstats) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_kubeletstats)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_kubeletstats&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -15,10 +16,6 @@
 
 The Kubelet Stats Receiver pulls node, pod, container, and volume metrics from the API server on a kubelet
 and sends it down the metric pipeline for further processing.
-
-> [!WARNING]
-> The `receiver.kubeletstats.enableCPUUsageMetrics` feature gate was moved to stage `Beta` what results in a breaking change in metrics names.
-> For more information which metrics are affected see [here](#metrics-deprecation).
 
 ## Metrics
 
@@ -330,26 +327,3 @@ rules:
     resources: ["nodes/proxy"]
     verbs: ["get"]
 ```
-
-### Metrics deprecation
-
-The following metrics were deprecated and renamed from version `v0.125.0`:
-
-- `k8s.node.cpu.utilization` (renamed to `k8s.node.cpu.usage`)
-- `k8s.pod.cpu.utilization` (renamed to `k8s.pod.cpu.usage`)
-- `container.cpu.utilization` (renamed to `container.cpu.usage`)
-
-The above metrics show usage counted in CPUs and it's not a percentage of used resources.
-These metrics were previously incorrectly named using the utilization term.
-
-You can enable the usage of the deprecated metrics by disabling the `receiver.kubeletstats.enableCPUUsageMetrics` feature gate.
-
-#### `receiver.kubeletstats.enableCPUUsageMetrics` feature gate
-
-- alpha: when enabled it makes the `.cpu.usage` metrics enabled by default, disabling the `.cpu.utilization` metrics
-- beta: `.cpu.usage` metrics are enabled by default and any configuration enabling the deprecated `.cpu.utilization` metrics will be failing. Explicitly disabling the feature gate provides the old (deprecated) behavior.
-- stable: `.cpu.usage` metrics are enabled by default and the deprecated metrics are completely removed.
-- removed three releases after stable.
-
-More information about the deprecation plan and
-the background reasoning can be found at <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27885>.

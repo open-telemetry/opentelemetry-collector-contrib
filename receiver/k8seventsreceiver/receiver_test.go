@@ -4,12 +4,12 @@
 package k8seventsreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -20,13 +20,14 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
 func TestNewReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
-		return fake.NewSimpleClientset(), nil
+		return fake.NewClientset(), nil
 	}
 	r, err := newReceiver(
 		receivertest.NewNopSettings(metadata.Type),
@@ -36,8 +37,8 @@ func TestNewReceiver(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, r.Shutdown(context.Background()))
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, r.Shutdown(t.Context()))
 
 	rCfg.Namespaces = []string{"test", "another_test"}
 	r1, err := newReceiver(
@@ -48,8 +49,8 @@ func TestNewReceiver(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, r1)
-	require.NoError(t, r1.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, r1.Shutdown(context.Background()))
+	require.NoError(t, r1.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, r1.Shutdown(t.Context()))
 }
 
 func TestHandleEvent(t *testing.T) {
@@ -63,8 +64,8 @@ func TestHandleEvent(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	recv := r.(*k8seventsReceiver)
-	recv.ctx = context.Background()
-	k8sEvent := getEvent()
+	recv.ctx = t.Context()
+	k8sEvent := getEvent("Normal")
 	recv.handleEvent(k8sEvent)
 
 	assert.Equal(t, 1, sink.LogRecordCount())
@@ -81,8 +82,8 @@ func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	recv := r.(*k8seventsReceiver)
-	recv.ctx = context.Background()
-	k8sEvent := getEvent()
+	recv.ctx = t.Context()
+	k8sEvent := getEvent("Normal")
 	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
 	recv.handleEvent(k8sEvent)
 
@@ -90,7 +91,7 @@ func TestDropEventsOlderThanStartupTime(t *testing.T) {
 }
 
 func TestGetEventTimestamp(t *testing.T) {
-	k8sEvent := getEvent()
+	k8sEvent := getEvent("Normal")
 	eventTimestamp := getEventTimestamp(k8sEvent)
 	assert.Equal(t, k8sEvent.FirstTimestamp.Time, eventTimestamp)
 
@@ -116,7 +117,7 @@ func TestAllowEvent(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	recv := r.(*k8seventsReceiver)
-	k8sEvent := getEvent()
+	k8sEvent := getEvent("Normal")
 
 	shouldAllowEvent := recv.allowEvent(k8sEvent)
 	assert.True(t, shouldAllowEvent)
@@ -130,7 +131,56 @@ func TestAllowEvent(t *testing.T) {
 	assert.False(t, shouldAllowEvent)
 }
 
-func getEvent() *corev1.Event {
+func TestReceiverWithLeaderElection(t *testing.T) {
+	le := &k8sleaderelectortest.FakeLeaderElection{}
+	host := &k8sleaderelectortest.FakeHost{FakeLeaderElection: le}
+	leaderID := component.MustNewID("k8s_leader_elector")
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.K8sLeaderElector = &leaderID
+	cfg.makeClient = func(_ k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewClientset(), nil
+	}
+
+	sink := new(consumertest.LogsSink)
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		sink,
+	)
+	require.NoError(t, err)
+	recv := r.(*k8seventsReceiver)
+
+	require.NoError(t, r.Start(t.Context(), host))
+
+	// Become leader: start processing events
+	le.InvokeOnLeading()
+	recv.handleEvent(getEvent("Normal"))
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() == 1
+	}, 5*time.Second, 100*time.Millisecond, "logs not collected while leader")
+
+	// lose leadership - this will trigger Shutdown()
+	le.InvokeOnStopping()
+
+	// Verify count remains at 1 after losing leadership
+	time.Sleep(100 * time.Millisecond)
+	require.Equal(t, 1, sink.LogRecordCount(), "count should remain at 1 after losing leadership")
+
+	// regain leadership
+	le.InvokeOnLeading()
+	recv.handleEvent(getEvent("Normal"))
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() == 2
+	}, 5*time.Second, 100*time.Millisecond, "logs not collected after regaining leadership")
+
+	// Final cleanup
+	require.NoError(t, r.Shutdown(t.Context()))
+}
+
+func getEvent(eventType string) *corev1.Event {
 	return &corev1.Event{
 		InvolvedObject: corev1.ObjectReference{
 			APIVersion: "v1",
@@ -142,7 +192,7 @@ func getEvent() *corev1.Event {
 		Reason:         "testing_event_1",
 		Count:          2,
 		FirstTimestamp: v1.Now(),
-		Type:           "Normal",
+		Type:           eventType,
 		Message:        "testing event message",
 		ObjectMeta: v1.ObjectMeta{
 			UID:               types.UID("289686f9-a5c0"),

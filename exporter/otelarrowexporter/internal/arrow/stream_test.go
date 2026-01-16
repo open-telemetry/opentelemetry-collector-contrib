@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowRecordMock "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record/mock"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowRecordMock "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"
@@ -44,7 +44,7 @@ func newStreamTestCase(t *testing.T, pname PrioritizerName) *streamTestCase {
 	ctrl := gomock.NewController(t)
 	producer := arrowRecordMock.NewMockProducerAPI(ctrl)
 
-	bg, dc := newDoneCancel(context.Background())
+	bg, dc := newDoneCancel(t.Context())
 	prio, state := newStreamPrioritizer(dc, pname, 1, 10*time.Second)
 
 	ctc := newCommonTestCase(t, NotNoisy)

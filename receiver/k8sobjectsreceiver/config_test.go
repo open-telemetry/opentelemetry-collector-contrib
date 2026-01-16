@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -177,6 +178,141 @@ func TestValidate(t *testing.T) {
 					{
 						Name: "pods",
 						Mode: PullMode,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestDeepCopy(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		expected *K8sObjectsConfig
+	}{
+		{
+			name: "deep copy",
+			expected: &K8sObjectsConfig{
+				Name:             "pods",
+				Group:            "group",
+				Namespaces:       []string{"default"},
+				Mode:             PullMode,
+				FieldSelector:    "status.phase=Running",
+				LabelSelector:    "environment in (production),tier in (frontend)",
+				Interval:         time.Hour,
+				ResourceVersion:  "1",
+				ExcludeWatchType: []apiWatch.EventType{apiWatch.Added},
+				exclude:          map[apiWatch.EventType]bool{apiWatch.Added: true},
+				gvr: &schema.GroupVersionResource{
+					Group:    "group",
+					Version:  "v1",
+					Resource: "pods",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.expected.DeepCopy()
+			shallowCopy := tt.expected
+
+			// Change all of the fields in the deep copy
+			actual.Name = "changed"
+			actual.Group = "changed"
+			actual.Namespaces[0] = "changed"
+			actual.Mode = WatchMode
+			actual.FieldSelector = "changed"
+			actual.LabelSelector = "changed"
+			actual.Interval = time.Minute
+			actual.ResourceVersion = "changed"
+			actual.ExcludeWatchType[0] = apiWatch.Deleted
+			actual.exclude[apiWatch.Bookmark] = true
+			actual.gvr.Group = "changed"
+			actual.gvr.Version = "changed"
+			actual.gvr.Resource = "changed"
+
+			// Make sure changing the deep copy didn't change the original value
+			assert.Equal(t, tt.expected, shallowCopy)
+		})
+	}
+}
+
+func TestCreateDefaultConfigIncludeInitialState(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	// Verify that IncludeInitialState defaults to nil/false
+	assert.False(t, cfg.IncludeInitialState)
+}
+
+func TestConfigValidationIncludeInitialState(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc        string
+		cfg         *Config
+		expectedErr string
+	}{
+		{
+			desc: "include_initial_state true with watch mode is valid",
+			cfg: &Config{
+				ErrorMode:           PropagateError,
+				IncludeInitialState: true,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: WatchMode,
+					},
+				},
+			},
+		},
+		{
+			desc: "include_initial_state false with watch mode is valid",
+			cfg: &Config{
+				ErrorMode:           PropagateError,
+				IncludeInitialState: false,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: WatchMode,
+					},
+				},
+			},
+		},
+		{
+			desc: "include_initial_state true with pull mode is invalid",
+			cfg: &Config{
+				ErrorMode:           PropagateError,
+				IncludeInitialState: true,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: PullMode,
+					},
+				},
+			},
+			expectedErr: "include_initial_state can only be used with watch mode",
+		},
+		{
+			desc: "include_initial_state nil with watch mode is valid (defaults to false)",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name: "pods",
+						Mode: WatchMode,
 					},
 				},
 			},

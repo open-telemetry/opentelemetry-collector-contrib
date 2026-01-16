@@ -5,7 +5,6 @@ package s3accesslog // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -17,9 +16,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
 const (
@@ -34,9 +35,7 @@ type s3AccessLogUnmarshaler struct {
 	buildInfo component.BuildInfo
 }
 
-var _ plog.Unmarshaler = (*s3AccessLogUnmarshaler)(nil)
-
-func NewS3AccessLogUnmarshaler(buildInfo component.BuildInfo) plog.Unmarshaler {
+func NewS3AccessLogUnmarshaler(buildInfo component.BuildInfo) unmarshaler.AWSUnmarshaler {
 	return &s3AccessLogUnmarshaler{
 		buildInfo: buildInfo,
 	}
@@ -47,8 +46,8 @@ type resourceAttributes struct {
 	bucketName  string
 }
 
-func (s *s3AccessLogUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	scanner := bufio.NewScanner(bytes.NewReader(buf))
+func (s *s3AccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
+	scanner := bufio.NewScanner(reader)
 
 	logs, resourceLogs, scopeLogs := s.createLogs()
 	resourceAttr := &resourceAttributes{}
@@ -74,15 +73,16 @@ func (s *s3AccessLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plo
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(s.buildInfo.Version)
+	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatS3AccessLog)
 	return logs, resourceLogs, scopeLogs
 }
 
 // setResourceAttributes based on the resourceAttributes
-func (s *s3AccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, logs plog.ResourceLogs) {
+func (*s3AccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, logs plog.ResourceLogs) {
 	attr := logs.Resource().Attributes()
-	attr.PutStr(semconv.AttributeCloudProvider, semconv.AttributeCloudProviderAWS)
+	attr.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	if r.bucketName != "" {
-		attr.PutStr(semconv.AttributeAWSS3Bucket, r.bucketName)
+		attr.PutStr(string(conventions.AWSS3BucketKey), r.bucketName)
 	}
 	if r.bucketOwner != "" {
 		attr.PutStr(attributeAWSS3BucketOwner, r.bucketOwner)
@@ -112,7 +112,7 @@ func scanField(logLine string) (string, string, error) {
 	}
 
 	// Remove space after closing quote if present
-	if len(remaining) > 0 && remaining[0] == ' ' {
+	if remaining != "" && remaining[0] == ' ' {
 		remaining = remaining[1:]
 	}
 
@@ -153,7 +153,7 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 			value = value + " " + zone
 		}
 
-		if err = addField(i, value, resourceAttr, record); err != nil {
+		if err := addField(i, value, resourceAttr, record); err != nil {
 			return err
 		}
 	}
@@ -217,7 +217,7 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		if method == "" {
 			return fmt.Errorf("unexpected: request uri %q has no method", value)
 		}
-		record.Attributes().PutStr(semconv.AttributeHTTPRequestMethod, method)
+		record.Attributes().PutStr(string(conventions.HTTPRequestMethodKey), method)
 
 		requestURI, remaining, _ := strings.Cut(remaining, " ")
 		if requestURI == "" {
@@ -228,13 +228,13 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 			return fmt.Errorf("request uri path is invalid: %w", err)
 		}
 		if res.Path != "" {
-			record.Attributes().PutStr(semconv.AttributeURLPath, res.Path)
+			record.Attributes().PutStr(string(conventions.URLPathKey), res.Path)
 		}
 		if res.RawQuery != "" {
-			record.Attributes().PutStr(semconv.AttributeURLQuery, res.RawQuery)
+			record.Attributes().PutStr(string(conventions.URLQueryKey), res.RawQuery)
 		}
 		if res.Scheme != "" {
-			record.Attributes().PutStr(semconv.AttributeURLScheme, res.Scheme)
+			record.Attributes().PutStr(string(conventions.URLSchemeKey), res.Scheme)
 		}
 
 		protocol, remaining, _ := strings.Cut(remaining, " ")
@@ -248,8 +248,8 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		if err != nil {
 			return err
 		}
-		record.Attributes().PutStr(semconv.AttributeNetworkProtocolName, name)
-		record.Attributes().PutStr(semconv.AttributeNetworkProtocolVersion, version)
+		record.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), name)
+		record.Attributes().PutStr(string(conventions.NetworkProtocolVersionKey), version)
 	default:
 		attrName := attributeNames[field]
 		record.Attributes().PutStr(attrName, value)

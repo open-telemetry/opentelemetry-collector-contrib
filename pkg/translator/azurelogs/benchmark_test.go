@@ -27,7 +27,7 @@ func newBuf(b *testing.B, nRecords int) []byte {
 
 	buf := bytes.NewBuffer(make([]byte, 0, nRecords*(len(data))))
 	buf.WriteString(`{"records": [`)
-	for i := 0; i < nRecords; i++ {
+	for i := range nRecords {
 		if i > 0 {
 			buf.WriteByte(',')
 		}
@@ -61,7 +61,7 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 		buf := newBuf(b, test.nRecords)
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, err := u.UnmarshalLogs(buf)
 				require.NoError(b, err)
 			}

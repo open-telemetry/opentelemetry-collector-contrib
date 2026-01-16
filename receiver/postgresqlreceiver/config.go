@@ -28,14 +28,19 @@ const (
 )
 
 type TopQueryCollection struct {
-	Enabled         bool  `mapstructure:"enabled"`
-	MaxRowsPerQuery int64 `mapstructure:"max_rows_per_query"`
-	TopNQuery       int64 `mapstructure:"top_n_query"`
+	MaxRowsPerQuery        int64         `mapstructure:"max_rows_per_query"`
+	TopNQuery              int64         `mapstructure:"top_n_query"`
+	MaxExplainEachInterval int64         `mapstructure:"max_explain_each_interval"`
+	QueryPlanCacheSize     int           `mapstructure:"query_plan_cache_size"`
+	QueryPlanCacheTTL      time.Duration `mapstructure:"query_plan_cache_ttl"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type QuerySampleCollection struct {
-	Enabled         bool  `mapstructure:"enabled"`
 	MaxRowsPerQuery int64 `mapstructure:"max_rows_per_query"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Config struct {
@@ -48,6 +53,7 @@ type Config struct {
 	configtls.ClientConfig         `mapstructure:"tls,omitempty"` // provides SSL details
 	ConnectionPool                 `mapstructure:"connection_pool,omitempty"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	metadata.LogsBuilderConfig     `mapstructure:",squash"`
 	QuerySampleCollection          `mapstructure:"query_sample_collection,omitempty"`
 	TopQueryCollection             `mapstructure:"top_query_collection,omitempty"`
 }

@@ -4,7 +4,6 @@
 package opampextension
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -40,8 +39,9 @@ func TestUnmarshalConfig(t *testing.T) {
 			},
 			InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
 			Capabilities: Capabilities{
-				ReportsEffectiveConfig: true,
-				ReportsHealth:          true,
+				ReportsEffectiveConfig:     true,
+				ReportsHealth:              true,
+				ReportsAvailableComponents: true,
 			},
 			PPIDPollInterval: 5 * time.Second,
 		}, cfg)
@@ -65,8 +65,9 @@ func TestUnmarshalHttpConfig(t *testing.T) {
 			},
 			InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
 			Capabilities: Capabilities{
-				ReportsEffectiveConfig: true,
-				ReportsHealth:          true,
+				ReportsEffectiveConfig:     true,
+				ReportsHealth:              true,
+				ReportsAvailableComponents: true,
 			},
 			PPIDPollInterval: 5 * time.Second,
 		}, cfg)
@@ -106,7 +107,7 @@ func TestConfig_Getters(t *testing.T) {
 						Headers: map[string]configopaque.String{
 							"test": configopaque.String("test"),
 						},
-						TLSSetting: configtls.ClientConfig{
+						TLS: configtls.ClientConfig{
 							Insecure: true,
 						},
 					},
@@ -128,7 +129,7 @@ func TestConfig_Getters(t *testing.T) {
 							Headers: map[string]configopaque.String{
 								"test": configopaque.String("test"),
 							},
-							TLSSetting: configtls.ClientConfig{
+							TLS: configtls.ClientConfig{
 								Insecure: true,
 							},
 						},
@@ -145,7 +146,7 @@ func TestConfig_Getters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.expected.headers(t, tt.fields.Server.GetHeaders())
-			tt.expected.tls(t, tt.fields.Server.getTLSSetting())
+			tt.expected.tls(t, tt.fields.Server.getTLS())
 			tt.expected.endpoint(t, tt.fields.Server.GetEndpoint())
 		})
 	}
@@ -161,8 +162,8 @@ func TestOpAMPServer_GetTLSConfig(t *testing.T) {
 			name: "wss endpoint",
 			server: OpAMPServer{
 				WS: &commonFields{
-					Endpoint:   "wss://example.com",
-					TLSSetting: configtls.NewDefaultClientConfig(),
+					Endpoint: "wss://example.com",
+					TLS:      configtls.NewDefaultClientConfig(),
 				},
 			},
 			expectedTLSConfig: assert.NotNil,
@@ -172,8 +173,8 @@ func TestOpAMPServer_GetTLSConfig(t *testing.T) {
 			server: OpAMPServer{
 				HTTP: &httpFields{
 					commonFields: commonFields{
-						Endpoint:   "https://example.com",
-						TLSSetting: configtls.NewDefaultClientConfig(),
+						Endpoint: "https://example.com",
+						TLS:      configtls.NewDefaultClientConfig(),
 					},
 				},
 			},
@@ -203,7 +204,7 @@ func TestOpAMPServer_GetTLSConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			tlsConfig, err := tt.server.GetTLSConfig(ctx)
 			assert.NoError(t, err)
 			tt.expectedTLSConfig(t, tlsConfig)

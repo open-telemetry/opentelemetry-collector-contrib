@@ -4,7 +4,6 @@
 package k8sobjectsreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,8 @@ func TestDefaultConfig(t *testing.T) {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
-		ErrorMode: PropagateError,
+		ErrorMode:           PropagateError,
+		IncludeInitialState: false,
 	}, rCfg)
 }
 
@@ -41,18 +41,18 @@ func TestCreateReceiver(t *testing.T) {
 
 	// Fails with bad K8s Config.
 	r, err := createLogsReceiver(
-		context.Background(), receivertest.NewNopSettings(metadata.Type),
+		t.Context(), receivertest.NewNopSettings(metadata.Type),
 		rCfg, consumertest.NewNop(),
 	)
 	assert.NoError(t, err)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	assert.Error(t, err)
 
 	// Override for test.
 	rCfg.makeDynamicClient = newMockDynamicClient().getMockDynamicClient
 
 	r, err = createLogsReceiver(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		rCfg, consumertest.NewNop(),
 	)

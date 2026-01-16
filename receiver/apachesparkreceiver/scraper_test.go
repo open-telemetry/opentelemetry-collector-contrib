@@ -4,7 +4,6 @@
 package apachesparkreceiver
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"path/filepath"
@@ -230,7 +229,7 @@ func TestScraper(t *testing.T) {
 			scraper := newSparkScraper(zap.NewNop(), tc.config, receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
 
-			actualMetrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(t.Context())
 
 			if tc.expectedErr == nil {
 				require.NoError(t, err)

@@ -51,11 +51,12 @@ func TestIsContainerInContainer(t *testing.T) {
 func TestProcessContainers(t *testing.T) {
 	// set the metrics extractors for testing
 	metricsExtractors := []extractors.MetricExtractor{}
-	metricsExtractors = append(metricsExtractors, extractors.NewCPUMetricExtractor(zap.NewNop()))
-	metricsExtractors = append(metricsExtractors, extractors.NewMemMetricExtractor(zap.NewNop()))
-	metricsExtractors = append(metricsExtractors, extractors.NewDiskIOMetricExtractor(zap.NewNop()))
-	metricsExtractors = append(metricsExtractors, extractors.NewNetMetricExtractor(zap.NewNop()))
-	metricsExtractors = append(metricsExtractors, extractors.NewFileSystemMetricExtractor(zap.NewNop()))
+	metricsExtractors = append(metricsExtractors,
+		extractors.NewCPUMetricExtractor(zap.NewNop()),
+		extractors.NewMemMetricExtractor(zap.NewNop()),
+		extractors.NewDiskIOMetricExtractor(zap.NewNop()),
+		extractors.NewNetMetricExtractor(zap.NewNop()),
+		extractors.NewFileSystemMetricExtractor(zap.NewNop()))
 
 	containerInfos := testutils.LoadContainerInfo(t, "./extractors/testdata/CurInfoContainer.json")
 	podInfos := testutils.LoadContainerInfo(t, "./extractors/testdata/InfoPod.json")

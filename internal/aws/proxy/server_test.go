@@ -7,7 +7,6 @@
 package proxy
 
 import (
-	"context"
 	"errors"
 	"net"
 	"net/http"
@@ -16,7 +15,9 @@ import (
 	"testing"
 	"time"
 
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -44,7 +45,7 @@ func TestHappyCase(t *testing.T) {
 		_ = srv.ListenAndServe()
 	}()
 	defer func() {
-		assert.NoError(t, srv.Shutdown(context.Background()))
+		assert.NoError(t, srv.Shutdown(t.Context()))
 	}()
 
 	assert.Eventuallyf(t, func() bool {
@@ -128,7 +129,7 @@ func TestHandlerNilBodyIsOk(t *testing.T) {
 
 	handler := srv.(*http.Server).Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
-		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", nil)
+		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", http.NoBody)
 	rec := httptest.NewRecorder()
 	handler(rec, req)
 
@@ -189,7 +190,7 @@ func TestCantGetAWSConfigSession(t *testing.T) {
 	}()
 
 	expectedErr := errors.New("expected newAWSSessionError")
-	newAWSSession = func(_ string, _ string, _ *zap.Logger) (*session.Session, error) {
+	newAWSSession = func(string, string, *zap.Logger) (*session.Session, error) {
 		return nil, expectedErr
 	}
 	_, err := NewServer(cfg, logger)
@@ -256,6 +257,6 @@ func (m *mockReadCloser) Read(_ []byte) (n int, err error) {
 	return 0, nil
 }
 
-func (m *mockReadCloser) Close() error {
+func (*mockReadCloser) Close() error {
 	return nil
 }

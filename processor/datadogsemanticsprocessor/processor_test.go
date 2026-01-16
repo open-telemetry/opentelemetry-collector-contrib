@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor/internal/metadata"
 )
@@ -53,7 +52,7 @@ func newMultiTest(
 
 	tp, err := newTestTracesProcessor(cfg, m.nextTrace)
 	require.NoError(t, err)
-	err = tp.Start(context.Background(), &nopHost{
+	err = tp.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
 			errFunc(event.Err())
 		},
@@ -96,7 +95,7 @@ func TestNewProcessor(t *testing.T) {
 func TestNilBatch(t *testing.T) {
 	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
 	m.testConsume(
-		context.Background(),
+		t.Context(),
 		ptrace.NewTraces(),
 		func(err error) {
 			assert.NoError(t, err)
@@ -105,7 +104,7 @@ func TestNilBatch(t *testing.T) {
 	m.assertBatchesLen(1)
 }
 
-func assertKeyInAttributesMatchesValue(t *testing.T, attr pcommon.Map, key string, expected string) {
+func assertKeyInAttributesMatchesValue(t *testing.T, attr pcommon.Map, key, expected string) {
 	v, ok := attr.Get(key)
 	require.True(t, ok)
 	require.Equal(t, expected, v.AsString())
@@ -141,8 +140,8 @@ func TestBasicTranslation(t *testing.T) {
 							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
 							Kind:     ptrace.SpanKindServer,
 							Attributes: map[string]any{
-								"operation.name":                "test-operation",
-								semconv.AttributeHTTPStatusCode: 200,
+								"operation.name":   "test-operation",
+								"http.status_code": 200,
 							},
 						},
 					},
@@ -196,9 +195,9 @@ func TestBasicTranslation(t *testing.T) {
 									Timestamp: 66,
 									Name:      "exception",
 									Attributes: map[string]any{
-										semconv.AttributeExceptionMessage:    "overridden-msg",
-										semconv.AttributeExceptionType:       "overridden-type",
-										semconv.AttributeExceptionStacktrace: "overridden-stack",
+										"exception.message":    "overridden-msg",
+										"exception.type":       "overridden-type",
+										"exception.stacktrace": "overridden-stack",
 									},
 									Dropped: 4,
 								},
@@ -210,20 +209,20 @@ func TestBasicTranslation(t *testing.T) {
 							ParentID:   [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
 							Kind:       ptrace.SpanKindServer,
 							Attributes: map[string]any{
-								"datadog.service":               "specified-service",
-								"datadog.resource":              "specified-resource",
-								"datadog.name":                  "specified-operation",
-								"datadog.type":                  "specified-type",
-								"datadog.host.name":             "specified-hostname",
-								"datadog.span.kind":             "specified-span-kind",
-								"datadog.env":                   "specified-env",
-								"datadog.http_status_code":      "500",
-								"datadog.error":                 1,
-								"datadog.error.msg":             "specified-error-msg",
-								"datadog.error.type":            "specified-error-type",
-								"datadog.error.stack":           "specified-error-stack",
-								"operation.name":                "test-operation",
-								semconv.AttributeHTTPStatusCode: 200,
+								"datadog.service":          "specified-service",
+								"datadog.resource":         "specified-resource",
+								"datadog.name":             "specified-operation",
+								"datadog.type":             "specified-type",
+								"datadog.host.name":        "specified-hostname",
+								"datadog.span.kind":        "specified-span-kind",
+								"datadog.env":              "specified-env",
+								"datadog.http_status_code": "500",
+								"datadog.error":            1,
+								"datadog.error.msg":        "specified-error-msg",
+								"datadog.error.type":       "specified-error-type",
+								"datadog.error.stack":      "specified-error-stack",
+								"operation.name":           "test-operation",
+								"http.status_code":         200,
 							},
 						},
 					},
@@ -233,7 +232,7 @@ func TestBasicTranslation(t *testing.T) {
 				rs := out.ResourceSpans().At(0)
 				rattr := rs.Resource().Attributes()
 				assertKeyInAttributesMatchesValue(t, rattr, "datadog.service", "test-service")
-				assertKeyInAttributesMatchesValue(t, rattr, "datadog.env", "spanenv2")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.env", "specified-env")
 				assertKeyInAttributesMatchesValue(t, rattr, "datadog.version", "overridden-version")
 				assertKeyInAttributesMatchesValue(t, rattr, "datadog.host.name", "overridden-host-name")
 
@@ -243,12 +242,90 @@ func TestBasicTranslation(t *testing.T) {
 				assertKeyInAttributesMatchesValue(t, sattr, "datadog.resource", "test-resource")
 				assertKeyInAttributesMatchesValue(t, sattr, "datadog.type", "web")
 				assertKeyInAttributesMatchesValue(t, sattr, "datadog.span.kind", "server")
-				assertKeyInAttributesMatchesValue(t, sattr, "datadog.http_status_code", "200")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.http_status_code", "500")
 				ddError, _ := sattr.Get("datadog.error")
 				require.Equal(t, int64(1), ddError.Int())
 				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.msg", "overridden-msg")
 				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.type", "overridden-type")
 				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.stack", "overridden-stack")
+			},
+		},
+		{
+			name:                          "overrideIncomingDatadogFields even if override would be empty",
+			overrideIncomingDatadogFields: true,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "",
+						"resource.name":               "",
+						"deployment.environment.name": "",
+						"host.name":                   "",
+						"service.version":             "",
+						"datadog.env":                 "specified-host-name",
+						"datadog.host.name":           "specified-host-name",
+						"datadog.version":             "specified-version",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							Events: []testutil.OTLPSpanEvent{
+								{
+									Timestamp: 66,
+									Name:      "exception",
+									Attributes: map[string]any{
+										"exception.message":    "",
+										"exception.type":       "",
+										"exception.stacktrace": "",
+									},
+									Dropped: 4,
+								},
+							},
+							StatusCode: ptrace.StatusCodeError,
+							StatusMsg:  "overridden-error-msg",
+							TraceID:    [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:     [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID:   [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:       ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"datadog.service":          "specified-service",
+								"datadog.resource":         "specified-resource",
+								"datadog.name":             "specified-operation",
+								"datadog.type":             "specified-type",
+								"datadog.host.name":        "specified-hostname",
+								"datadog.span.kind":        "specified-span-kind",
+								"datadog.env":              "specified-env",
+								"datadog.http_status_code": "500",
+								"datadog.error":            1,
+								"datadog.error.msg":        "specified-error-msg",
+								"datadog.error.type":       "specified-error-type",
+								"datadog.error.stack":      "specified-error-stack",
+								"http.status_code":         200,
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				rs := out.ResourceSpans().At(0)
+				rattr := rs.Resource().Attributes()
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.service", "otlpresourcenoservicename")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.env", "specified-env")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.version", "")
+				assertKeyInAttributesMatchesValue(t, rattr, "datadog.host.name", "")
+
+				span := rs.ScopeSpans().At(0).Spans().At(0)
+				sattr := span.Attributes()
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.name", "server.request")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.resource", "")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.type", "web")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.span.kind", "server")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.http_status_code", "500")
+				ddError, _ := sattr.Get("datadog.error")
+				require.Equal(t, int64(1), ddError.Int())
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.msg", "")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.type", "")
+				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.stack", "")
 			},
 		},
 		{
@@ -275,9 +352,9 @@ func TestBasicTranslation(t *testing.T) {
 									Timestamp: 66,
 									Name:      "exception",
 									Attributes: map[string]any{
-										semconv.AttributeExceptionMessage:    "overridden-msg",
-										semconv.AttributeExceptionType:       "overridden-type",
-										semconv.AttributeExceptionStacktrace: "overridden-stack",
+										"exception.message":    "overridden-msg",
+										"exception.type":       "overridden-type",
+										"exception.stacktrace": "overridden-stack",
 									},
 									Dropped: 4,
 								},
@@ -289,17 +366,17 @@ func TestBasicTranslation(t *testing.T) {
 							ParentID:   [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
 							Kind:       ptrace.SpanKindServer,
 							Attributes: map[string]any{
-								"datadog.resource":              "specified-resource",
-								"datadog.name":                  "specified-operation",
-								"datadog.type":                  "specified-type",
-								"datadog.span.kind":             "specified-span-kind",
-								"datadog.http_status_code":      "500",
-								"datadog.error":                 1,
-								"datadog.error.msg":             "specified-error-msg",
-								"datadog.error.type":            "specified-error-type",
-								"datadog.error.stack":           "specified-error-stack",
-								"operation.name":                "test-operation",
-								semconv.AttributeHTTPStatusCode: 200,
+								"datadog.resource":         "specified-resource",
+								"datadog.name":             "specified-operation",
+								"datadog.type":             "specified-type",
+								"datadog.span.kind":        "specified-span-kind",
+								"datadog.http_status_code": "500",
+								"datadog.error":            1,
+								"datadog.error.msg":        "specified-error-msg",
+								"datadog.error.type":       "specified-error-type",
+								"datadog.error.stack":      "specified-error-stack",
+								"operation.name":           "test-operation",
+								"http.status_code":         200,
 							},
 						},
 					},
@@ -327,6 +404,192 @@ func TestBasicTranslation(t *testing.T) {
 				assertKeyInAttributesMatchesValue(t, sattr, "datadog.error.stack", "specified-error-stack")
 			},
 		},
+		{
+			name:                          "VCS attributes mapping - span level",
+			overrideIncomingDatadogFields: false,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "test-service",
+						"deployment.environment.name": "test-env",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							TraceID:  [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:     ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"operation.name":          "test-operation",
+								"vcs.ref.head.revision":   "9d59409acf479dfa0df1aa568182e43e43df8bbe28d60fcf2bc52e30068802cc",
+								"vcs.repository.url.full": "https://github.com/opentelemetry/opentelemetry-collector-contrib",
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				span := out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+				sattr := span.Attributes()
+				assertKeyInAttributesMatchesValue(t, sattr, "git.commit.sha", "9d59409acf479dfa0df1aa568182e43e43df8bbe28d60fcf2bc52e30068802cc")
+				assertKeyInAttributesMatchesValue(t, sattr, "git.repository_url", "github.com/opentelemetry/opentelemetry-collector-contrib")
+				// Verify original VCS attributes are still present
+				assertKeyInAttributesMatchesValue(t, sattr, "vcs.ref.head.revision", "9d59409acf479dfa0df1aa568182e43e43df8bbe28d60fcf2bc52e30068802cc")
+				assertKeyInAttributesMatchesValue(t, sattr, "vcs.repository.url.full", "https://github.com/opentelemetry/opentelemetry-collector-contrib")
+			},
+		},
+		{
+			name:                          "VCS attributes mapping - resource level",
+			overrideIncomingDatadogFields: false,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "test-service",
+						"deployment.environment.name": "test-env",
+						"vcs.ref.head.revision":       "abc123def456",
+						"vcs.repository.url.full":     "https://gitlab.com/my-org/my-project",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							TraceID:  [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:     ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"operation.name": "test-operation",
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				rs := out.ResourceSpans().At(0)
+				rattr := rs.Resource().Attributes()
+				assertKeyInAttributesMatchesValue(t, rattr, "git.commit.sha", "abc123def456")
+				assertKeyInAttributesMatchesValue(t, rattr, "git.repository_url", "gitlab.com/my-org/my-project")
+				// Verify original VCS attributes are still present
+				assertKeyInAttributesMatchesValue(t, rattr, "vcs.ref.head.revision", "abc123def456")
+				assertKeyInAttributesMatchesValue(t, rattr, "vcs.repository.url.full", "https://gitlab.com/my-org/my-project")
+			},
+		},
+		{
+			name:                          "VCS attributes mapping - both levels",
+			overrideIncomingDatadogFields: false,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "test-service",
+						"deployment.environment.name": "test-env",
+						"vcs.ref.head.revision":       "resource-level-commit",
+						"vcs.repository.url.full":     "https://github.com/resource-repo",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							TraceID:  [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:     ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"operation.name":          "test-operation",
+								"vcs.ref.head.revision":   "span-level-commit",
+								"vcs.repository.url.full": "https://github.com/span-repo",
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				rs := out.ResourceSpans().At(0)
+				rattr := rs.Resource().Attributes()
+				// Resource level mappings
+				assertKeyInAttributesMatchesValue(t, rattr, "git.commit.sha", "resource-level-commit")
+				assertKeyInAttributesMatchesValue(t, rattr, "git.repository_url", "github.com/resource-repo")
+
+				span := rs.ScopeSpans().At(0).Spans().At(0)
+				sattr := span.Attributes()
+				// Span level mappings
+				assertKeyInAttributesMatchesValue(t, sattr, "git.commit.sha", "span-level-commit")
+				assertKeyInAttributesMatchesValue(t, sattr, "git.repository_url", "github.com/span-repo")
+			},
+		},
+		{
+			name:                          "VCS attributes mapping with override",
+			overrideIncomingDatadogFields: true,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "test-service",
+						"deployment.environment.name": "test-env",
+						"vcs.ref.head.revision":       "new-commit",
+						"vcs.repository.url.full":     "https://github.com/new-repo",
+						"git.commit.sha":              "old-commit",
+						"git.repository_url":          "github.com/old-repo",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							TraceID:  [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:     ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"operation.name": "test-operation",
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				rs := out.ResourceSpans().At(0)
+				rattr := rs.Resource().Attributes()
+				// Should override existing Datadog attributes with new VCS values
+				assertKeyInAttributesMatchesValue(t, rattr, "git.commit.sha", "new-commit")
+				assertKeyInAttributesMatchesValue(t, rattr, "git.repository_url", "github.com/new-repo")
+			},
+		},
+		{
+			name:                          "VCS attributes mapping without override",
+			overrideIncomingDatadogFields: false,
+			in: []testutil.OTLPResourceSpan{
+				{
+					LibName:    "libname",
+					LibVersion: "1.2",
+					Attributes: map[string]any{
+						"service.name":                "test-service",
+						"deployment.environment.name": "test-env",
+						"vcs.ref.head.revision":       "new-commit",
+						"vcs.repository.url.full":     "https://github.com/new-repo",
+						"git.commit.sha":              "existing-commit",
+						"git.repository_url":          "github.com/existing-repo",
+					},
+					Spans: []*testutil.OTLPSpan{
+						{
+							TraceID:  [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:     ptrace.SpanKindServer,
+							Attributes: map[string]any{
+								"operation.name": "test-operation",
+							},
+						},
+					},
+				},
+			},
+			fn: func(out *ptrace.Traces) {
+				rs := out.ResourceSpans().At(0)
+				rattr := rs.Resource().Attributes()
+				// Should preserve existing Datadog attributes when override is false
+				assertKeyInAttributesMatchesValue(t, rattr, "git.commit.sha", "existing-commit")
+				assertKeyInAttributesMatchesValue(t, rattr, "git.repository_url", "github.com/existing-repo")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -339,7 +602,7 @@ func TestBasicTranslation(t *testing.T) {
 		)
 
 		traces := testutil.NewOTLPTracesRequest(tt.in)
-		m.testConsume(context.Background(),
+		m.testConsume(t.Context(),
 			traces.Traces(),
 			nil,
 		)
@@ -362,7 +625,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

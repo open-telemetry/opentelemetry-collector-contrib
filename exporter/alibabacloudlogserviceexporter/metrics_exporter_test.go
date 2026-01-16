@@ -4,7 +4,6 @@
 package alibabacloudlogserviceexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ func TestNewMetricsExporter(t *testing.T) {
 	require.NotNil(t, got)
 
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1))
+	err = got.ConsumeMetrics(t.Context(), testdata.GenerateMetrics(1))
 	assert.NoError(t, err)
 }
 

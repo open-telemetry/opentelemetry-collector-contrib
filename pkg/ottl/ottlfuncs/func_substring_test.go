@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -23,7 +24,7 @@ func Test_substring(t *testing.T) {
 		{
 			name: "substring",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "123456789", nil
 				},
 			},
@@ -42,7 +43,7 @@ func Test_substring(t *testing.T) {
 		{
 			name: "substring with result of total string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "123456789", nil
 				},
 			},
@@ -63,7 +64,7 @@ func Test_substring(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := substring(tt.target, tt.start, tt.length)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -79,7 +80,7 @@ func Test_substring_validation(t *testing.T) {
 		{
 			name: "substring with result of empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "123456789", nil
 				},
 			},
@@ -97,7 +98,7 @@ func Test_substring_validation(t *testing.T) {
 		{
 			name: "substring with invalid start index",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "123456789", nil
 				},
 			},
@@ -133,7 +134,7 @@ func Test_substring_error(t *testing.T) {
 		{
 			name: "substring empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "", nil
 				},
 			},
@@ -151,7 +152,7 @@ func Test_substring_error(t *testing.T) {
 		{
 			name: "substring with invalid length index",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "123456789", nil
 				},
 			},
@@ -169,7 +170,7 @@ func Test_substring_error(t *testing.T) {
 		{
 			name: "substring non-string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 123456789, nil
 				},
 			},
@@ -187,7 +188,7 @@ func Test_substring_error(t *testing.T) {
 		{
 			name: "substring nil string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return nil, nil
 				},
 			},

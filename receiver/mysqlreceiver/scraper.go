@@ -4,62 +4,64 @@
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
-	"bytes"
+	"container/heap"
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"go.opentelemetry.io/collector/pdata/plog"
+	"net"
 	"sort"
 	"strconv"
-	"strings"
-	"sync"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
 type mySQLScraper struct {
-	buildInfo component.BuildInfo
-	sqlclient client
-	logger    *zap.Logger
-	config    *Config
-	mb        *metadata.MetricsBuilder
+	sqlclient              client
+	logger                 *zap.Logger
+	config                 *Config
+	mb                     *metadata.MetricsBuilder
+	lb                     *metadata.LogsBuilder
+	cache                  *lru.Cache[string, int64]
+	queryPlanCache         *expirable.LRU[string, string]
+	obfuscator             *obfuscator
+	lastExecutionTimestamp time.Time
 
 	// Feature gates regarding resource attributes
 	renameCommands bool
-
-	lastLogsQueryMetricsGatheringTime    int64
-	lastMetricsQueryMetricsGatheringTime int64
-	gatheringExplainPlans                bool
 }
 
 func newMySQLScraper(
 	settings receiver.Settings,
 	config *Config,
+	cache *lru.Cache[string, int64],
+	queryPlanCache *expirable.LRU[string, string],
 ) *mySQLScraper {
-
 	return &mySQLScraper{
-		buildInfo:                            settings.BuildInfo,
-		logger:                               settings.Logger,
-		config:                               config,
-		mb:                                   metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		lastLogsQueryMetricsGatheringTime:    -1,
-		lastMetricsQueryMetricsGatheringTime: -1,
+		logger:                 settings.Logger,
+		config:                 config,
+		mb:                     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		lb:                     metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
+		cache:                  cache,
+		queryPlanCache:         queryPlanCache,
+		obfuscator:             newObfuscator(),
+		lastExecutionTimestamp: time.Unix(0, 0),
 	}
 }
 
 // start starts the scraper by initializing the db client connection.
 func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
-	sqlclient, err := newMySQLClient(m.config, m.logger)
+	sqlclient, err := newMySQLClient(m.config)
 	if err != nil {
 		return err
 	}
@@ -69,7 +71,6 @@ func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
 		return err
 	}
 	m.sqlclient = sqlclient
-	sqlclient.checkPerformanceCollectionSettings()
 
 	return nil
 }
@@ -82,9 +83,8 @@ func (m *mySQLScraper) shutdown(context.Context) error {
 	return m.sqlclient.Close()
 }
 
-// scrapeMetrics scrapes the mysql db metric stats, transforms them and labels them into a metric slices.
-func (m *mySQLScraper) scrapeMetrics(context.Context) (pmetric.Metrics, error) {
-	m.logger.Debug("scrapeMetrics() called")
+// scrape scrapes the mysql db metric stats, transforms them and labels them into a metric slices.
+func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if m.sqlclient == nil {
 		return pmetric.Metrics{}, errors.New("failed to connect to http client")
 	}
@@ -126,27 +126,40 @@ func (m *mySQLScraper) scrapeMetrics(context.Context) (pmetric.Metrics, error) {
 
 	rb := m.mb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
-
 	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
 }
 
-func (m *mySQLScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
-	m.logger.Debug("scrapeLogs() called")
+func (m *mySQLScraper) scrapeTopQueryFunc(ctx context.Context) (plog.Logs, error) {
+	if m.sqlclient == nil {
+		return plog.NewLogs(), errors.New("failed to connect to http client")
+	}
+
 	errs := &scrapererror.ScrapeErrors{}
-	logs := plog.NewLogs()
-	recLogs := logs.ResourceLogs().AppendEmpty()
-	recRes := recLogs.Resource().Attributes()
-	recRes.PutStr("mysql.instance.endpoint", m.config.Endpoint)
-	scopeLogs := recLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName(metadata.ScopeName)
-	scopeLogs.Scope().SetVersion(m.buildInfo.Version)
 
-	m.scrapeQueryLogs(scopeLogs, pcommon.NewTimestampFromTime(time.Now()), errs)
-	m.scrapeSampleQueryData(scopeLogs, pcommon.NewTimestampFromTime(time.Now()), errs)
+	now := pcommon.NewTimestampFromTime(time.Now())
 
-	return logs, errs.Combine()
+	if m.lastExecutionTimestamp.Add(m.config.TopQueryCollection.CollectionInterval).After(now.AsTime()) {
+		m.logger.Debug("Skipping top queries scrape, not enough time has passed since last execution")
+	} else {
+		m.scrapeTopQueries(ctx, now, errs)
+	}
+	return m.lb.Emit(), errs.Combine()
+}
+
+func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, error) {
+	if m.sqlclient == nil {
+		return plog.NewLogs(), errors.New("failed to connect to http client")
+	}
+
+	errs := &scrapererror.ScrapeErrors{}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	m.scrapeQuerySamples(ctx, now, errs)
+
+	return m.lb.Emit(), errs.Combine()
 }
 
 func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -175,6 +188,9 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Innodb_buffer_pool_pages_free":
 			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
 				metadata.AttributeBufferPoolPagesFree))
+		case "Innodb_buffer_pool_pages_total":
+			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
+				metadata.AttributeBufferPoolPagesTotal))
 		case "Innodb_buffer_pool_pages_misc":
 			_, err := strconv.ParseInt(v, 10, 64)
 			if err != nil {
@@ -242,6 +258,8 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		// connection
 		case "Connections":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionCountDataPoint(now, v))
+		case "Max_used_connections":
+			addPartialIfError(errs, m.mb.RecordMysqlMaxUsedConnectionsDataPoint(now, v))
 
 		// prepared_statements_commands
 		case "Com_stmt_execute":
@@ -336,6 +354,8 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsWriteRequests))
 		case "Innodb_log_writes":
 			addPartialIfError(errs, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsWrites))
+		case "Innodb_os_log_fsyncs":
+			addPartialIfError(errs, m.mb.RecordMysqlLogOperationsDataPoint(now, v, metadata.AttributeLogOperationsFsyncs))
 
 		// operations
 		case "Innodb_data_fsyncs":
@@ -452,6 +472,10 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		// uptime
 		case "Uptime":
 			addPartialIfError(errs, m.mb.RecordMysqlUptimeDataPoint(now, v))
+
+		// page size
+		case "Innodb_page_size":
+			addPartialIfError(errs, m.mb.RecordMysqlPageSizeDataPoint(now, v))
 		}
 	}
 }
@@ -464,7 +488,7 @@ func (m *mySQLScraper) scrapeTableStats(now pcommon.Timestamp, errs *scrapererro
 		return
 	}
 
-	for i := 0; i < len(tableStats); i++ {
+	for i := range tableStats {
 		s := tableStats[i]
 		// counts
 		m.mb.RecordMysqlTableRowsDataPoint(now, s.rows, s.name, s.schema)
@@ -482,7 +506,7 @@ func (m *mySQLScraper) scrapeTableIoWaitsStats(now pcommon.Timestamp, errs *scra
 		return
 	}
 
-	for i := 0; i < len(tableIoWaitsStats); i++ {
+	for i := range tableIoWaitsStats {
 		s := tableIoWaitsStats[i]
 		// counts
 		m.mb.RecordMysqlTableIoWaitCountDataPoint(now, s.countDelete, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema)
@@ -514,7 +538,7 @@ func (m *mySQLScraper) scrapeIndexIoWaitsStats(now pcommon.Timestamp, errs *scra
 		return
 	}
 
-	for i := 0; i < len(indexIoWaitsStats); i++ {
+	for i := range indexIoWaitsStats {
 		s := indexIoWaitsStats[i]
 		// counts
 		m.mb.RecordMysqlIndexIoWaitCountDataPoint(now, s.countDelete, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema, s.index)
@@ -546,7 +570,7 @@ func (m *mySQLScraper) scrapeStatementEventsStats(now pcommon.Timestamp, errs *s
 		return
 	}
 
-	for i := 0; i < len(statementEventsStats); i++ {
+	for i := range statementEventsStats {
 		s := statementEventsStats[i]
 		m.mb.RecordMysqlStatementEventCountDataPoint(now, s.countCreatedTmpDiskTables, s.schema, s.digest, s.digestText, metadata.AttributeEventStateCreatedTmpDiskTables)
 		m.mb.RecordMysqlStatementEventCountDataPoint(now, s.countCreatedTmpTables, s.schema, s.digest, s.digestText, metadata.AttributeEventStateCreatedTmpTables)
@@ -571,7 +595,7 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 		return
 	}
 
-	for i := 0; i < len(tableLockWaitEventStats); i++ {
+	for i := range tableLockWaitEventStats {
 		s := tableLockWaitEventStats[i]
 		// read data points
 		m.mb.RecordMysqlTableLockWaitReadCountDataPoint(now, s.countReadNormal, s.schema, s.name, metadata.AttributeReadLockTypeNormal)
@@ -603,241 +627,6 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 	}
 }
 
-/*
-scrapeQueryLogs collects the top query logs and returns them as plog.Logs.
-Note that individual metric values are tracked and reported similarly to the query logs.
-*/
-func (m *mySQLScraper) scrapeQueryLogs(logs plog.ScopeLogs, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	m.logger.Debug("scrapeQueryLogs called")
-	if !m.config.TopQueryCollection.Enabled {
-		m.logger.Debug("Top query collection is disabled, skipping")
-		return
-	}
-	const (
-		eventNameKey         = "db.server.top_query"
-		executionCountKey    = "mysql.execution_count"
-		fullJoinsKey         = "mysql.query.full_joins"
-		fullRangeJoinsKey    = "mysql.query.full_range_joins"
-		noGoodIndexUsedKey   = "mysql.query.no_good_indexes_used"
-		noIndexUsedKey       = "mysql.query.no_indexes_used"
-		queryDbsKey          = "mysql.query.dbs"
-		queryHashKey         = "mysql.query_hash"
-		queryHostsKey        = "mysql.query.hosts"
-		querySchemasKey      = "mysql.query.schemas"
-		queryTextKey         = "db.query.text"
-		queryUsersKey        = "mysql.query.users"
-		rowsAffectedKey      = "mysql.query.rows.affected"
-		rowsReturnedKey      = "mysql.query.rows.returned"
-		selectRangeChecksKey = "mysql.query.select_range_checks"
-		selectRangesKey      = "mysql.query.select_ranges"
-		selectScansKey       = "mysql.query.select_scans"
-		sortMergePassesKey   = "mysql.query.sort.merge_passes"
-		sortRangesKey        = "mysql.query.sort.ranges"
-		sortScansKey         = "mysql.query.sort.scans"
-		timeCpuKey           = "mysql.query.time.cpu"
-		timeLockKey          = "mysql.query.time.lock"
-		totalElapsedTimeKey  = "mysql.total_elapsed_time"
-		totalRowsKey         = "mysql.total_rows"
-	)
-	queryStats, err := m.sqlclient.getQueryStats(m.lastLogsQueryMetricsGatheringTime, m.config.TopQueryCollection.TopQueryCount)
-	m.lastLogsQueryMetricsGatheringTime = now.AsTime().UnixNano()
-	if err != nil {
-		m.logger.Error("Failed to fetch query logs stats", zap.Error(err))
-		errs.AddPartial(1, err)
-		return
-	}
-	if len(queryStats) == 0 {
-		m.logger.Debug("No query logs stats found")
-		return
-	}
-
-	matchedStats := m.sortAndReduceTopQueryStats(queryStats)
-	if len(matchedStats) == 0 {
-		m.logger.Debug("No query logs stats found after sorting and reducing")
-		return
-	}
-	// Gathering of explain plans is done via goroutines, so we need to track if we are already in the process of gathering
-	if m.gatheringExplainPlans {
-		m.logger.Warn("Query plan gathering is already in progress from a previous run")
-	}
-	m.gatheringExplainPlans = true
-	wg := sync.WaitGroup{}
-	for _, s := range matchedStats {
-		log := logs.LogRecords().AppendEmpty()
-		wg.Add(1)
-		// This is an additional query, and is peeled off as a separate goroutine while the rest of the metrics are being processed
-		go m.addQueryPlanToLogAttributes(log, s.querySample, &wg)
-		log.SetTimestamp(now)
-		log.SetEventName(eventNameKey)
-		atts := log.Attributes()
-		atts.PutInt(executionCountKey, s.count)
-		atts.PutInt(totalRowsKey, s.rowsExamined)
-		atts.PutDouble(totalElapsedTimeKey, s.totalDuration)
-		atts.PutStr(queryTextKey, s.queryText)
-		atts.PutStr(queryHashKey, s.queryDigest)
-		atts.PutInt(rowsReturnedKey, s.rowsReturned)
-		atts.PutDouble(timeCpuKey, s.cpuTime)
-		atts.PutDouble(timeLockKey, s.lockTime)
-		// Additional values added for good measure
-		atts.PutInt(rowsAffectedKey, s.rowsAffected)
-		atts.PutInt(fullJoinsKey, s.fullJoins)
-		atts.PutInt(fullRangeJoinsKey, s.fullRangeJoins)
-		atts.PutInt(selectRangesKey, s.selectRanges)
-		atts.PutInt(selectRangeChecksKey, s.selectRangesChecks)
-		atts.PutInt(selectScansKey, s.selectScans)
-		atts.PutInt(sortMergePassesKey, s.sortMergePasses)
-		atts.PutInt(sortRangesKey, s.sortRanges)
-		atts.PutInt(sortScansKey, s.sortScans)
-		atts.PutInt(noIndexUsedKey, s.noIndexUsed)
-		atts.PutInt(noGoodIndexUsedKey, s.noGoodIndexUsed)
-		if s.schema != "" {
-			atts.PutStr(querySchemasKey, s.schema)
-		}
-		if s.users != "" {
-			atts.PutStr(queryUsersKey, s.users)
-		}
-		if s.hosts != "" {
-			atts.PutStr(queryHostsKey, s.hosts)
-		}
-		if s.dbs != "" {
-			atts.PutStr(queryDbsKey, s.dbs)
-		}
-
-	}
-	// wait until all of the explain plan go-routines have returned
-	wg.Wait()
-	m.gatheringExplainPlans = false
-}
-
-func (m *mySQLScraper) addQueryPlanToLogAttributes(log plog.LogRecord, queryString string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	const planKey = "mysql.query_plan"
-	const planHashKey = "mysql.query_plan_hash"
-	// if the query string ends with "...", it means that the query is truncated and cannot be used to derive a plan
-	if strings.LastIndex(queryString, "...") == len(queryString)-3 {
-		log.Attributes().PutStr(planKey, "Truncated example query; unable to derive EXPLAIN plan. ")
-		return
-	}
-	queryPlan, err := m.sqlclient.getExplainPlanAsJsonForDigestQuery(queryString)
-	if err != nil {
-		m.logger.Error("Failed to fetch query plan", zap.Error(err))
-		return
-	}
-	if len(queryPlan) == 0 {
-		log.Attributes().PutStr(planKey, "NO EXPLAIN PLAN FOUND")
-		return
-	}
-	buffer := &bytes.Buffer{}
-	if err = json.Compact(buffer, []byte(queryPlan)); err != nil {
-		m.logger.Error("Failed to compact query plan JSON", zap.Error(err))
-	}
-	log.Attributes().PutStr(planKey, buffer.String())
-	log.Attributes().PutStr(planHashKey, fmt.Sprintf("%x", sha256.Sum256([]byte(queryPlan))))
-}
-
-func (m *mySQLScraper) sortAndReduceTopQueryStats(stats []QueryStats) []QueryStats {
-	if len(stats) == 0 {
-		m.logger.Debug("No query stats submitted")
-		return stats
-	}
-	matchedStats := make([]QueryStats, 0, len(stats))
-	for _, stat := range stats {
-		if stat.totalWait > 0 {
-			matchedStats = append(matchedStats, stat)
-		}
-	}
-	if len(matchedStats) == 0 {
-		return matchedStats
-	}
-	sort.Slice(matchedStats, func(i, j int) bool {
-		return matchedStats[i].totalWait < matchedStats[j].totalWait
-	})
-	if len(matchedStats) == 0 {
-		return matchedStats
-	}
-	if len(matchedStats) > int(m.config.TopQueryCollection.TopQueryCount) {
-		matchedStats = matchedStats[:m.config.TopQueryCollection.TopQueryCount]
-	}
-	return matchedStats
-}
-
-func (m *mySQLScraper) scrapeSampleQueryData(logs plog.ScopeLogs, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	const (
-		eventNameKey           = "db.server.query_sample"
-		currentSchemaKey       = "mysql.current_schema"
-		sqlTextKey             = "mysql.sql_text"
-		digestKey              = "mysql.query_hash"
-		digestTextKey          = "mysql.query_hash_text"
-		endEventIdKey          = "mysql.end_event_id"
-		timerStartKey          = "mysql.timer_start"
-		uptimeKey              = "mysql.uptime"
-		nowKey                 = "mysql.now"
-		timerEndKey            = "mysql.timer_end"
-		timerWaitKey           = "mysql.timer_wait"
-		lockTimeKey            = "mysql.lock_time"
-		rowsAffectedKey        = "mysql.rows_affected"
-		rowsSentKey            = "mysql.rows_sent"
-		rowsExaminedKey        = "mysql.rows_examined"
-		selectFullJoinKey      = "mysql.select_full_join"
-		selectFullRangeJoinKey = "mysql.select_full_range_join"
-		selectRangeKey         = "mysql.select_range"
-		selectRangeCheckKey    = "mysql.select_range_check"
-		selectScanKey          = "mysql.select_scan"
-		sortMergePassesKey     = "mysql.sort_merge_passes"
-		sortRangeKey           = "mysql.sort_range"
-		sortRowsKey            = "mysql.sort_rows"
-		sortScanKey            = "mysql.sort_scan"
-		noGoodIndexUsedKey     = "mysql.no_good_index_used"
-		noIndexUsedKey         = "mysql.no_index_used"
-		processListUserKey     = "mysql.process_list_user"
-		processListHostKey     = "mysql.process_list_host"
-		processListDbKey       = "mysql.process_list_db"
-	)
-	samples, err := m.sqlclient.getQuerySamples(m.config.TopQueryCollection.MaxQuerySampleCount)
-	if err != nil {
-		m.logger.Error("Failed to fetch sample query and plan", zap.Error(err))
-		errs.AddPartial(1, err)
-		return
-	}
-
-	rec := logs.LogRecords().AppendEmpty()
-	rec.SetTimestamp(now)
-	rec.SetEventName(eventNameKey)
-	wg := sync.WaitGroup{}
-	for _, sample := range samples {
-		wg.Add(1)
-		go m.addQueryPlanToLogAttributes(rec, sample.sql_text, &wg)
-		atts := rec.Attributes()
-		atts.PutStr(currentSchemaKey, sample.currentSchema)
-		atts.PutStr(digestKey, sample.digest)
-		atts.PutStr(digestTextKey, sample.digest_query)
-		atts.PutInt(endEventIdKey, sample.end_event_id)
-		atts.PutDouble(timerStartKey, sample.timer_start)
-		atts.PutInt(uptimeKey, sample.uptime)
-		atts.PutDouble(timerEndKey, sample.timer_end)
-		atts.PutDouble(timerWaitKey, sample.timer_wait)
-		atts.PutDouble(lockTimeKey, sample.lock_time)
-		atts.PutInt(rowsAffectedKey, sample.rows_affected)
-		atts.PutInt(rowsSentKey, sample.rows_sent)
-		atts.PutInt(rowsExaminedKey, sample.rows_examined)
-		atts.PutInt(selectFullJoinKey, sample.select_full_join)
-		atts.PutInt(selectFullRangeJoinKey, sample.select_full_range_join)
-		atts.PutInt(selectRangeKey, sample.select_range)
-		atts.PutInt(selectRangeCheckKey, sample.select_range_check)
-		atts.PutInt(selectScanKey, sample.select_scan)
-		atts.PutInt(sortMergePassesKey, sample.sort_merge_passes)
-		atts.PutInt(sortRangeKey, sample.sort_range)
-		atts.PutInt(sortRowsKey, sample.sort_rows)
-		atts.PutInt(sortScanKey, sample.sort_scan)
-		atts.PutInt(noIndexUsedKey, sample.no_index_used)
-		atts.PutInt(noGoodIndexUsedKey, sample.no_good_index_used)
-		atts.PutStr(processListUserKey, sample.processlist_user)
-		atts.PutStr(processListHostKey, sample.processlist_host)
-		atts.PutStr(processListDbKey, sample.processlist_db)
-	}
-	wg.Wait()
-}
-
 func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 	replicaStatusStats, err := m.sqlclient.getReplicaStatusStats()
 	if err != nil {
@@ -845,7 +634,7 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 		return
 	}
 
-	for i := 0; i < len(replicaStatusStats); i++ {
+	for i := range replicaStatusStats {
 		s := replicaStatusStats[i]
 
 		val, _ := s.secondsBehindSource.Value()
@@ -854,6 +643,128 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 		}
 
 		m.mb.RecordMysqlReplicaSQLDelayDataPoint(now, s.sqlDelay)
+	}
+}
+
+func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	queries, err := m.sqlclient.getTopQueries(m.config.TopQueryCollection.MaxQuerySampleCount, m.config.TopQueryCollection.LookbackTime)
+	if err != nil {
+		m.logger.Error("Failed to fetch top queries", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+
+	sumTimerWaitInPicoSecondsDiff := make([]int64, len(queries))
+	for i, q := range queries {
+		if cached, diff := m.cacheAndDiff(q.schemaName, q.digest, "sum_timer_wait", q.sumTimerWaitInPicoSeconds); cached && diff > 0 {
+			sumTimerWaitInPicoSecondsDiff[i] = diff
+		}
+	}
+
+	// sort the rows based on the sumTimerWaitInPicoSecondsDiff in descending order,
+	// only report first T(T=topQueryCount) rows.
+	queries = sortTopQueries(queries, sumTimerWaitInPicoSecondsDiff, m.config.TopQueryCollection.TopQueryCount)
+
+	// sort the totalElapsedTimeDiffs in descending order as well
+	sort.Slice(sumTimerWaitInPicoSecondsDiff, func(i, j int) bool { return sumTimerWaitInPicoSecondsDiff[i] > sumTimerWaitInPicoSecondsDiff[j] })
+
+	m.lastExecutionTimestamp = now.AsTime()
+
+	for i, q := range queries {
+		// skip the rest queries due to desc order
+		if sumTimerWaitInPicoSecondsDiff[i] == 0 {
+			break
+		}
+
+		sumTimerWaitVal := float64(sumTimerWaitInPicoSecondsDiff[i]) / 1_000_000_000_000.0 // convert to seconds
+
+		cached, countStarVal := m.cacheAndDiff(q.schemaName, q.digest, "count_star", q.countStar)
+		if !cached {
+			countStarVal = 0
+		}
+
+		obfuscatedQuery, err := m.obfuscator.obfuscateSQLString(q.digestText)
+		if err != nil {
+			m.logger.Error("Failed to obfuscate query", zap.Error(err))
+		}
+
+		queryPlan := m.sqlclient.explainQuery(q.querySampleText, q.schemaName, m.logger)
+
+		var obfuscatedPlan string
+		var ok bool
+		if obfuscatedPlan, ok = m.queryPlanCache.Get(q.schemaName + "-" + q.digest); !ok {
+			obfuscatedPlan, err = m.obfuscator.obfuscatePlan(queryPlan)
+			if err != nil {
+				m.logger.Error("Failed to obfuscate query", zap.Error(err))
+			}
+			m.queryPlanCache.Add(q.schemaName+"-"+q.digest, obfuscatedPlan)
+		}
+
+		m.lb.RecordDbServerTopQueryEvent(
+			ctx,
+			now,
+			metadata.AttributeDbSystemNameMysql,
+			obfuscatedQuery,
+			obfuscatedPlan,
+			q.digest,
+			countStarVal,
+			sumTimerWaitVal,
+		)
+	}
+}
+
+func (m *mySQLScraper) scrapeQuerySamples(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	samples, err := m.sqlclient.getQuerySamples(m.config.QuerySampleCollection.MaxRowsPerQuery)
+	if err != nil {
+		m.logger.Error("Failed to fetch query samples", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+
+	for i := range samples {
+		sample := &samples[i]
+		clientAddress := ""
+		clientPort := int64(0)
+		networkPeerAddress := ""
+		networkPeerPort := int64(0)
+
+		if sample.processlistHost != "" {
+			addr, port, err := net.SplitHostPort(sample.processlistHost)
+			if err != nil {
+				m.logger.Error("Failed to parse processlistHost value", zap.Error(err))
+				errs.AddPartial(1, err)
+			} else {
+				clientAddress = addr
+				clientPort, _ = parseInt(port)
+				networkPeerAddress = addr
+				networkPeerPort, _ = parseInt(port)
+			}
+		}
+
+		obfuscatedQuery, err := m.obfuscator.obfuscateSQLString(sample.sqlText)
+		if err != nil {
+			m.logger.Error("Failed to obfuscate query", zap.Error(err))
+		}
+
+		m.lb.RecordDbServerQuerySampleEvent(
+			ctx,
+			now,
+			metadata.AttributeDbSystemNameMysql,
+			sample.threadID,
+			sample.processlistUser,
+			sample.processlistDB,
+			sample.processlistCommand,
+			sample.processlistState,
+			obfuscatedQuery,
+			sample.digest,
+			sample.eventID,
+			sample.waitEvent,
+			sample.waitTime,
+			clientAddress,
+			clientPort,
+			networkPeerAddress,
+			networkPeerPort,
+		)
 	}
 }
 
@@ -898,4 +809,58 @@ func (m *mySQLScraper) recordDataUsage(now pcommon.Timestamp, globalStats map[st
 // parseInt converts string to int64.
 func parseInt(value string) (int64, error) {
 	return strconv.ParseInt(value, 10, 64)
+}
+
+// cacheAndDiff store row(in int) with schema name and digest variables
+// (1) returns true if the key is cached before
+// (2) returns positive value if the value is larger than the cached value
+func (m *mySQLScraper) cacheAndDiff(schemaName, digest, column string, val int64) (bool, int64) {
+	if val < 0 {
+		return false, 0
+	}
+
+	key := schemaName + "-" + digest + "-" + column
+
+	cached, ok := m.cache.Get(key)
+	if !ok {
+		m.cache.Add(key, val)
+		return false, val
+	}
+
+	if val > cached {
+		m.cache.Add(key, val)
+		return true, val - cached
+	}
+
+	return true, 0
+}
+
+// sortTopQueries sorts the top queries based on the `values` slice in descending order and returns the first M(M=maximum) queries
+// Input: (row: [query1, query2, query3], values: [100, 10, 1000], maximum: 2
+// Expected Output: (row: [query3, query1])
+func sortTopQueries(queries []topQuery, values []int64, maximum uint64) []topQuery {
+	results := make([]topQuery, 0)
+
+	if len(queries) == 0 ||
+		len(values) == 0 ||
+		len(queries) != len(values) ||
+		maximum <= 0 {
+		return []topQuery{}
+	}
+	pq := make(priorityqueue.PriorityQueue[topQuery, int64], len(queries))
+	for i, q := range queries {
+		value := values[i]
+		pq[i] = &priorityqueue.QueueItem[topQuery, int64]{
+			Value:    q,
+			Priority: value,
+			Index:    i,
+		}
+	}
+	heap.Init(&pq)
+
+	for pq.Len() > 0 && len(results) < int(maximum) {
+		item := heap.Pop(&pq).(*priorityqueue.QueueItem[topQuery, int64])
+		results = append(results, item.Value)
+	}
+	return results
 }

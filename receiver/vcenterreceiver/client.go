@@ -380,7 +380,7 @@ const (
 )
 
 // getLabelsForQueryType returns the appropriate labels for each query type
-func (vc *vcenterClient) getLabelsForQueryType(queryType vSANQueryType) []string {
+func (*vcenterClient) getLabelsForQueryType(queryType vSANQueryType) []string {
 	switch queryType {
 	case vSANQueryTypeClusters:
 		return []string{
@@ -555,7 +555,8 @@ func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanP
 	}
 
 	// Parse all metrics
-	for _, vSANValue := range vSANResult.Value {
+	for i := range vSANResult.Value {
+		vSANValue := vSANResult.Value[i]
 		metricDetails, err := vc.convertVSANValueToMetricDetails(vSANValue, timestamps)
 		if err != nil {
 			return &metricResults, err
@@ -603,7 +604,7 @@ func (vc *vcenterClient) convertVSANValueToMetricDetails(
 }
 
 // uuidFromEntityRefID returns the UUID portion of the EntityRefId
-func (vc *vcenterClient) uuidFromEntityRefID(id string) (string, error) {
+func (*vcenterClient) uuidFromEntityRefID(id string) (string, error) {
 	colonIndex := strings.Index(id, ":")
 	if colonIndex != -1 {
 		uuid := id[colonIndex+1:]

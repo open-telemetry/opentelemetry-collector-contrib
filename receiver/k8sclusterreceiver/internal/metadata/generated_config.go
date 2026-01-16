@@ -9,8 +9,7 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
@@ -18,10 +17,12 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
@@ -36,6 +37,8 @@ type MetricsConfig struct {
 	K8sContainerMemoryRequest           MetricConfig `mapstructure:"k8s.container.memory_request"`
 	K8sContainerReady                   MetricConfig `mapstructure:"k8s.container.ready"`
 	K8sContainerRestarts                MetricConfig `mapstructure:"k8s.container.restarts"`
+	K8sContainerStatusReason            MetricConfig `mapstructure:"k8s.container.status.reason"`
+	K8sContainerStatusState             MetricConfig `mapstructure:"k8s.container.status.state"`
 	K8sContainerStorageLimit            MetricConfig `mapstructure:"k8s.container.storage_limit"`
 	K8sContainerStorageRequest          MetricConfig `mapstructure:"k8s.container.storage_request"`
 	K8sCronjobActiveJobs                MetricConfig `mapstructure:"k8s.cronjob.active_jobs"`
@@ -99,6 +102,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sContainerRestarts: MetricConfig{
 			Enabled: true,
+		},
+		K8sContainerStatusReason: MetricConfig{
+			Enabled: false,
+		},
+		K8sContainerStatusState: MetricConfig{
+			Enabled: false,
 		},
 		K8sContainerStorageLimit: MetricConfig{
 			Enabled: true,
@@ -253,6 +262,9 @@ type ResourceAttributesConfig struct {
 	K8sDeploymentName                      ResourceAttributeConfig `mapstructure:"k8s.deployment.name"`
 	K8sDeploymentUID                       ResourceAttributeConfig `mapstructure:"k8s.deployment.uid"`
 	K8sHpaName                             ResourceAttributeConfig `mapstructure:"k8s.hpa.name"`
+	K8sHpaScaletargetrefApiversion         ResourceAttributeConfig `mapstructure:"k8s.hpa.scaletargetref.apiversion"`
+	K8sHpaScaletargetrefKind               ResourceAttributeConfig `mapstructure:"k8s.hpa.scaletargetref.kind"`
+	K8sHpaScaletargetrefName               ResourceAttributeConfig `mapstructure:"k8s.hpa.scaletargetref.name"`
 	K8sHpaUID                              ResourceAttributeConfig `mapstructure:"k8s.hpa.uid"`
 	K8sJobName                             ResourceAttributeConfig `mapstructure:"k8s.job.name"`
 	K8sJobUID                              ResourceAttributeConfig `mapstructure:"k8s.job.uid"`
@@ -321,6 +333,15 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		K8sHpaName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		K8sHpaScaletargetrefApiversion: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sHpaScaletargetrefKind: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sHpaScaletargetrefName: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sHpaUID: ResourceAttributeConfig{
 			Enabled: true,

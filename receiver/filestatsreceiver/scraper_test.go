@@ -4,7 +4,6 @@
 package filestatsreceiver
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -21,7 +20,7 @@ func Test_Scrape(t *testing.T) {
 	cfg := newDefaultConfig().(*Config)
 	cfg.Include = filepath.Join(tmpDir, "*.log")
 	s := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, 0, metrics.ResourceMetrics().Len())
 	logFile := filepath.Join(tmpDir, "my.log")
@@ -36,7 +35,7 @@ func Test_Scrape(t *testing.T) {
 	matches, err := doublestar.FilepathGlob(cfg.Include)
 	require.NoError(t, err)
 	require.Equal(t, []string{logFile}, matches)
-	metrics, err = s.scrape(context.Background())
+	metrics, err = s.scrape(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, 1, metrics.ResourceMetrics().Len())
 	require.Equal(t, 2, metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
@@ -57,7 +56,7 @@ func Test_Scrape_All(t *testing.T) {
 	cfg.Metrics.FileCount.Enabled = true
 
 	s := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, 1, metrics.ResourceMetrics().Len())
 	fileCount := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
@@ -75,7 +74,7 @@ func Test_Scrape_All(t *testing.T) {
 	matches, err := doublestar.FilepathGlob(cfg.Include)
 	require.NoError(t, err)
 	require.Equal(t, []string{logFile}, matches)
-	metrics, err = s.scrape(context.Background())
+	metrics, err = s.scrape(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, 2, metrics.ResourceMetrics().Len())
 	require.Equal(t, 4, metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())

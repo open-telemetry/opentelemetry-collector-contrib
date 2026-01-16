@@ -4,69 +4,102 @@
 package azuremonitorexporter
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.7.0"
 )
 
-func TestHTTPAttributeMapping(t *testing.T) {
+func testHTTPAttributeMapping(t *testing.T, variant string) {
 	httpAttributeValues := map[string]any{
-		conventions.AttributeHTTPMethod: conventions.AttributeHTTPMethod,
-		conventions.AttributeHTTPURL:    conventions.AttributeHTTPURL,
-		conventions.AttributeHTTPTarget: conventions.AttributeHTTPTarget,
-		conventions.AttributeHTTPHost:   conventions.AttributeHTTPHost,
-		conventions.AttributeHTTPScheme: conventions.AttributeHTTPScheme,
+		"http.request.method": "http.request.method",
+		"url.full":            "url.full",
+		"url.path":            "url.path",
+		"url.query":           "url.query",
+		"url.scheme":          "url.scheme",
 
-		// Exercise the INT or STRING logic
-		conventions.AttributeHTTPStatusCode:                        "200",
-		"http.status_text":                                         "http.status_text",
-		conventions.AttributeHTTPFlavor:                            conventions.AttributeHTTPFlavor,
-		conventions.AttributeHTTPUserAgent:                         conventions.AttributeHTTPUserAgent,
-		conventions.AttributeHTTPRequestContentLength:              1,
-		conventions.AttributeHTTPRequestContentLengthUncompressed:  2,
-		conventions.AttributeHTTPResponseContentLength:             3,
-		conventions.AttributeHTTPResponseContentLengthUncompressed: 4,
+		"http.response.status_code":           "200",
+		"network.protocol.name":               "network.protocol.name",
+		"user_agent.original":                 "user_agent.original",
+		"http.request.header.content-length":  "1",
+		"http.request.body.size":              2,
+		"http.response.header.content-length": "3",
+		"http.response.body.size":             4,
 
-		conventions.AttributeHTTPRoute:      conventions.AttributeHTTPRoute,
-		conventions.AttributeHTTPServerName: conventions.AttributeHTTPServerName,
-		conventions.AttributeHTTPClientIP:   conventions.AttributeHTTPClientIP,
+		"http.route": "http.route",
 	}
 
 	attributeMap := pcommon.NewMap()
 	assert.NoError(t, attributeMap.FromRaw(httpAttributeValues))
-
 	addNetworkAttributes(attributeMap)
 
-	httpAttributes := &HTTPAttributes{}
+	httpAttributes := &httpAttributes{}
+
+	switch variant {
+	case "client":
+		addClientAttributes(attributeMap)
+	case "server":
+		addServerAttributes(attributeMap)
+	default:
+		t.Fatalf("Unknown variant: %s", variant)
+	}
+
 	attributeMap.Range(httpAttributes.MapAttribute)
 
-	assert.Equal(t, conventions.AttributeHTTPMethod, httpAttributes.HTTPMethod)
-	assert.Equal(t, conventions.AttributeHTTPURL, httpAttributes.HTTPURL)
-	assert.Equal(t, conventions.AttributeHTTPTarget, httpAttributes.HTTPTarget)
-	assert.Equal(t, conventions.AttributeHTTPHost, httpAttributes.HTTPHost)
-	assert.Equal(t, conventions.AttributeHTTPScheme, httpAttributes.HTTPScheme)
-	assert.Equal(t, int64(200), httpAttributes.HTTPStatusCode)
-	assert.Equal(t, "http.status_text", httpAttributes.HTTPStatusText)
-	assert.Equal(t, conventions.AttributeHTTPFlavor, httpAttributes.HTTPFlavor)
-	assert.Equal(t, conventions.AttributeHTTPUserAgent, httpAttributes.HTTPUserAgent)
-	assert.Equal(t, int64(1), httpAttributes.HTTPRequestContentLength)
-	assert.Equal(t, int64(2), httpAttributes.HTTPRequestContentLengthUncompressed)
-	assert.Equal(t, int64(3), httpAttributes.HTTPResponseContentLength)
-	assert.Equal(t, int64(4), httpAttributes.HTTPResponseContentLengthUncompressed)
-	assert.Equal(t, conventions.AttributeHTTPRoute, httpAttributes.HTTPRoute)
-	assert.Equal(t, conventions.AttributeHTTPServerName, httpAttributes.HTTPServerName)
-	assert.Equal(t, conventions.AttributeHTTPClientIP, httpAttributes.HTTPClientIP)
+	assert.Equal(t, "http.request.method", httpAttributes.HTTPRequestMethod)
+	assert.Equal(t, "url.full", httpAttributes.URLAttributes.URLFull)
+	assert.Equal(t, "url.path", httpAttributes.URLAttributes.URLPath)
+	assert.Equal(t, "url.query", httpAttributes.URLAttributes.URLQuery)
+	assert.Equal(t, "url.scheme", httpAttributes.URLAttributes.URLScheme)
+	assert.Equal(t, int64(200), httpAttributes.HTTPResponseStatusCode)
+	assert.Equal(t, "network.protocol.name", httpAttributes.NetworkAttributes.NetworkProtocolName)
+	assert.Equal(t, "user_agent.original", httpAttributes.UserAgentAttributes.UserAgentOriginal)
+
+	vals, ok := httpAttributes.HTTPRequestHeaders["content-length"]
+	require.True(t, ok)
+	require.NotEmpty(t, vals)
+	reqCL := vals[0]
+	reqCLInt, err := strconv.ParseInt(reqCL, 10, 64)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), reqCLInt)
+
+	assert.Equal(t, int64(2), httpAttributes.HTTPRequestBodySize)
+
+	valsRes, okRes := httpAttributes.HTTPResponseHeaders["content-length"]
+	require.True(t, okRes)
+	require.NotEmpty(t, valsRes)
+	reqRes := valsRes[0]
+	reqResInt, err := strconv.ParseInt(reqRes, 10, 64)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), reqResInt)
+
+	assert.Equal(t, int64(4), httpAttributes.HTTPResponseBodySize)
+	assert.Equal(t, "http.route", httpAttributes.HTTPRoute)
 
 	networkAttributesValidations(t, httpAttributes.NetworkAttributes)
+
+	if variant == "client" {
+		clientAttributesValidations(t, httpAttributes.ClientAttributes)
+	} else {
+		serverAttributesValidations(t, httpAttributes.ServerAttributes)
+	}
 }
 
-func TestRPCPAttributeMapping(t *testing.T) {
+func TestHTTPAttributeMapping(t *testing.T) {
+	for _, variant := range []string{"client", "server"} {
+		t.Run(variant, func(t *testing.T) {
+			testHTTPAttributeMapping(t, variant)
+		})
+	}
+}
+
+func testRPCPAttributeMapping(t *testing.T, variant string) {
 	rpcAttributeValues := map[string]any{
-		conventions.AttributeRPCSystem:  conventions.AttributeRPCSystem,
-		conventions.AttributeRPCService: conventions.AttributeRPCService,
-		conventions.AttributeRPCMethod:  conventions.AttributeRPCMethod,
+		"rpc.system":  "rpc.system",
+		"rpc.service": "rpc.service",
+		"rpc.method":  "rpc.method",
 	}
 
 	attributeMap := pcommon.NewMap()
@@ -74,29 +107,50 @@ func TestRPCPAttributeMapping(t *testing.T) {
 
 	addNetworkAttributes(attributeMap)
 
-	rpcAttributes := &RPCAttributes{}
+	switch variant {
+	case "client":
+		addClientAttributes(attributeMap)
+	case "server":
+		addServerAttributes(attributeMap)
+	default:
+		t.Fatalf("Unknown variant: %s", variant)
+	}
+
+	rpcAttributes := &rpcAttributes{}
 	attributeMap.Range(rpcAttributes.MapAttribute)
 
-	assert.Equal(t, conventions.AttributeRPCSystem, rpcAttributes.RPCSystem)
-	assert.Equal(t, conventions.AttributeRPCService, rpcAttributes.RPCService)
-	assert.Equal(t, conventions.AttributeRPCMethod, rpcAttributes.RPCMethod)
+	assert.Equal(t, "rpc.system", rpcAttributes.RPCSystem)
+	assert.Equal(t, "rpc.service", rpcAttributes.RPCService)
+	assert.Equal(t, "rpc.method", rpcAttributes.RPCMethod)
 
 	networkAttributesValidations(t, rpcAttributes.NetworkAttributes)
+
+	if variant == "client" {
+		clientAttributesValidations(t, rpcAttributes.ClientAttributes)
+	} else {
+		serverAttributesValidations(t, rpcAttributes.ServerAttributes)
+	}
 }
 
-func TestDatabaseAttributeMapping(t *testing.T) {
+func TestRPCPAttributeMapping(t *testing.T) {
+	for _, variant := range []string{"client", "server"} {
+		t.Run(variant, func(t *testing.T) {
+			testRPCPAttributeMapping(t, variant)
+		})
+	}
+}
+
+func testDatabaseAttributeMapping(t *testing.T, variant string) {
 	databaseAttributeValues := map[string]any{
-		conventions.AttributeDBSystem:              conventions.AttributeDBSystem,
-		conventions.AttributeDBConnectionString:    conventions.AttributeDBConnectionString,
-		conventions.AttributeDBUser:                conventions.AttributeDBUser,
-		conventions.AttributeDBStatement:           conventions.AttributeDBStatement,
-		conventions.AttributeDBOperation:           conventions.AttributeDBOperation,
-		conventions.AttributeDBMSSQLInstanceName:   conventions.AttributeDBMSSQLInstanceName,
-		conventions.AttributeDBJDBCDriverClassname: conventions.AttributeDBJDBCDriverClassname,
-		conventions.AttributeDBCassandraKeyspace:   conventions.AttributeDBCassandraKeyspace,
-		conventions.AttributeDBHBaseNamespace:      conventions.AttributeDBHBaseNamespace,
-		conventions.AttributeDBRedisDBIndex:        conventions.AttributeDBRedisDBIndex,
-		conventions.AttributeDBMongoDBCollection:   conventions.AttributeDBMongoDBCollection,
+		"db.collection.name":       "db.collection.name",
+		"db.namespace":             "db.namespace",
+		"db.operation.batch.size":  0,
+		"db.operation.name":        "db.operation.name",
+		"db.query.summary":         "db.query.summary",
+		"db.query.text":            "db.query.text",
+		"db.response.status_code":  "db.response.status_code",
+		"db.stored_procedure.name": "db.stored_procedure.name",
+		"db.system.name":           "db.system.name",
 	}
 
 	attributeMap := pcommon.NewMap()
@@ -104,36 +158,63 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 
 	addNetworkAttributes(attributeMap)
 
-	databaseAttributes := &DatabaseAttributes{}
+	switch variant {
+	case "client":
+		addClientAttributes(attributeMap)
+	case "server":
+		addServerAttributes(attributeMap)
+	default:
+		t.Fatalf("Unknown variant: %s", variant)
+	}
+
+	databaseAttributes := &databaseAttributes{}
 	attributeMap.Range(databaseAttributes.MapAttribute)
 
-	assert.Equal(t, conventions.AttributeDBSystem, databaseAttributes.DBSystem)
-	assert.Equal(t, conventions.AttributeDBConnectionString, databaseAttributes.DBConnectionString)
-	assert.Equal(t, conventions.AttributeDBUser, databaseAttributes.DBUser)
-	assert.Equal(t, conventions.AttributeDBStatement, databaseAttributes.DBStatement)
-	assert.Equal(t, conventions.AttributeDBOperation, databaseAttributes.DBOperation)
-	assert.Equal(t, conventions.AttributeDBMSSQLInstanceName, databaseAttributes.DBMSSQLInstanceName)
-	assert.Equal(t, conventions.AttributeDBJDBCDriverClassname, databaseAttributes.DBJDBCDriverClassName)
-	assert.Equal(t, conventions.AttributeDBCassandraKeyspace, databaseAttributes.DBCassandraKeyspace)
-	assert.Equal(t, conventions.AttributeDBHBaseNamespace, databaseAttributes.DBHBaseNamespace)
-	assert.Equal(t, conventions.AttributeDBMongoDBCollection, databaseAttributes.DBMongoDBCollection)
+	assert.Equal(t, "db.collection.name", databaseAttributes.DBCollectionName)
+	assert.Equal(t, "db.namespace", databaseAttributes.DBNamespace)
+	assert.Equal(t, int64(0), databaseAttributes.DBOperationBatchSize)
+	assert.Equal(t, "db.operation.name", databaseAttributes.DBOperationName)
+	assert.Equal(t, "db.query.summary", databaseAttributes.DBQuerySummary)
+	assert.Equal(t, "db.query.text", databaseAttributes.DBQueryText)
+	assert.Equal(t, "db.response.status_code", databaseAttributes.DBResponseStatusCode)
+	assert.Equal(t, "db.stored_procedure.name", databaseAttributes.DBStoredProcedureName)
+	assert.Equal(t, "db.system.name", databaseAttributes.DBSystemName)
+
 	networkAttributesValidations(t, databaseAttributes.NetworkAttributes)
+
+	if variant == "client" {
+		clientAttributesValidations(t, databaseAttributes.ClientAttributes)
+	} else {
+		serverAttributesValidations(t, databaseAttributes.ServerAttributes)
+	}
 }
 
-func TestMessagingAttributeMapping(t *testing.T) {
+func TestDatabaseAttributeMapping(t *testing.T) {
+	for _, variant := range []string{"client", "server"} {
+		t.Run(variant, func(t *testing.T) {
+			testDatabaseAttributeMapping(t, variant)
+		})
+	}
+}
+
+func testMessagingAttributeMapping(t *testing.T, variant string) {
 	messagingAttributeValues := map[string]any{
-		conventions.AttributeMessagingSystem:                            conventions.AttributeMessagingSystem,
-		conventions.AttributeMessagingDestination:                       conventions.AttributeMessagingDestination,
-		conventions.AttributeMessagingDestinationKind:                   conventions.AttributeMessagingDestinationKind,
-		conventions.AttributeMessagingTempDestination:                   conventions.AttributeMessagingTempDestination,
-		conventions.AttributeMessagingProtocol:                          conventions.AttributeMessagingProtocol,
-		conventions.AttributeMessagingProtocolVersion:                   conventions.AttributeMessagingProtocolVersion,
-		conventions.AttributeMessagingURL:                               conventions.AttributeMessagingURL,
-		conventions.AttributeMessagingMessageID:                         conventions.AttributeMessagingMessageID,
-		conventions.AttributeMessagingConversationID:                    conventions.AttributeMessagingConversationID,
-		conventions.AttributeMessagingMessagePayloadSizeBytes:           1,
-		conventions.AttributeMessagingMessagePayloadCompressedSizeBytes: 2,
-		conventions.AttributeMessagingOperation:                         conventions.AttributeMessagingOperation,
+		"messaging.batch.message_count":           0,
+		"messaging.client.id":                     "messaging.client.id",
+		"messaging.consumer.group.name":           "messaging.consumer.group.name",
+		"messaging.destination.anonymous":         true,
+		"messaging.destination.name":              "messaging.destination.name",
+		"messaging.destination.partition.id":      "messaging.destination.partition.id",
+		"messaging.destination.subscription.name": "messaging.destination.subscription.name",
+		"messaging.destination.template":          "messaging.destination.template",
+		"messaging.destination.temporary":         false,
+		"messaging.message.body.size":             1,
+		"messaging.message.conversation_id":       "messaging.message.conversation_id",
+		"messaging.message.envelope.size":         2,
+		"messaging.message.id":                    "messaging.message.id",
+		"messaging.operation.name":                "messaging.operation.name",
+		"messaging.operation.type":                "messaging.operation.type",
+		"messaging.system":                        "messaging.system",
 	}
 
 	attributeMap := pcommon.NewMap()
@@ -141,52 +222,93 @@ func TestMessagingAttributeMapping(t *testing.T) {
 
 	addNetworkAttributes(attributeMap)
 
-	messagingAttributes := &MessagingAttributes{}
+	switch variant {
+	case "client":
+		addClientAttributes(attributeMap)
+	case "server":
+		addServerAttributes(attributeMap)
+	default:
+		t.Fatalf("Unknown variant: %s", variant)
+	}
+
+	messagingAttributes := &messagingAttributes{}
 	attributeMap.Range(messagingAttributes.MapAttribute)
 
-	assert.Equal(t, conventions.AttributeMessagingSystem, messagingAttributes.MessagingSystem)
-	assert.Equal(t, conventions.AttributeMessagingDestination, messagingAttributes.MessagingDestination)
-	assert.Equal(t, conventions.AttributeMessagingDestinationKind, messagingAttributes.MessagingDestinationKind)
-	assert.Equal(t, conventions.AttributeMessagingTempDestination, messagingAttributes.MessagingTempDestination)
-	assert.Equal(t, conventions.AttributeMessagingProtocol, messagingAttributes.MessagingProtocol)
-	assert.Equal(t, conventions.AttributeMessagingProtocolVersion, messagingAttributes.MessagingProtocolVersion)
-	assert.Equal(t, conventions.AttributeMessagingURL, messagingAttributes.MessagingURL)
-	assert.Equal(t, conventions.AttributeMessagingMessageID, messagingAttributes.MessagingMessageID)
-	assert.Equal(t, conventions.AttributeMessagingConversationID, messagingAttributes.MessagingConversationID)
-	assert.Equal(t, conventions.AttributeMessagingOperation, messagingAttributes.MessagingOperation)
-	assert.Equal(t, int64(1), messagingAttributes.MessagingMessagePayloadSize)
-	assert.Equal(t, int64(2), messagingAttributes.MessagingMessagePayloadCompressedSize)
+	assert.Equal(t, int64(0), messagingAttributes.MessagingBatchMessageCount)
+	assert.Equal(t, "messaging.client.id", messagingAttributes.MessagingClientID)
+	assert.Equal(t, "messaging.consumer.group.name", messagingAttributes.MessagingConsumerGroup)
+	assert.True(t, messagingAttributes.MessagingDestinationAnonymous)
+	assert.Equal(t, "messaging.destination.name", messagingAttributes.MessagingDestination)
+	assert.Equal(t, "messaging.destination.partition.id", messagingAttributes.MessagingDestinationPartitionID)
+	assert.Equal(t, "messaging.destination.subscription.name", messagingAttributes.MessagingDestinationSubName)
+	assert.Equal(t, "messaging.destination.template", messagingAttributes.MessagingDestinationTemplate)
+	assert.False(t, messagingAttributes.MessagingDestinationTemporary)
+	assert.Equal(t, int64(1), messagingAttributes.MessagingMessageBodySize)
+	assert.Equal(t, "messaging.message.conversation_id", messagingAttributes.MessagingMessageConversationID)
+	assert.Equal(t, int64(2), messagingAttributes.MessagingMessageEnvelopeSize)
+	assert.Equal(t, "messaging.message.id", messagingAttributes.MessagingMessageID)
+	assert.Equal(t, "messaging.operation.name", messagingAttributes.MessagingOperation)
+	assert.Equal(t, "messaging.operation.type", messagingAttributes.MessagingOperationType)
+	assert.Equal(t, "messaging.system", messagingAttributes.MessagingSystem)
 	networkAttributesValidations(t, messagingAttributes.NetworkAttributes)
+
+	if variant == "client" {
+		clientAttributesValidations(t, messagingAttributes.ClientAttributes)
+	} else {
+		serverAttributesValidations(t, messagingAttributes.ServerAttributes)
+	}
+}
+
+func TestMessagingAttributeMapping(t *testing.T) {
+	for _, variant := range []string{"client", "server"} {
+		t.Run(variant, func(t *testing.T) {
+			testMessagingAttributeMapping(t, variant)
+		})
+	}
 }
 
 // Tests what happens when an attribute that should be an int is not
 func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 	attributeMap := pcommon.NewMap()
-	attributeMap.PutStr(conventions.AttributeNetPeerPort, "xx")
+	attributeMap.PutStr("network.peer.port", "xx")
 
-	attrs := &NetworkAttributes{}
+	attrs := &networkAttributes{}
 	attributeMap.Range(attrs.MapAttribute)
 
 	// unset from default
-	assert.Equal(t, int64(0), attrs.NetPeerPort)
+	assert.Equal(t, int64(0), attrs.NetworkPeerPort)
+}
+
+func addClientAttributes(m pcommon.Map) {
+	m.PutStr("client.address", "client.address")
+	m.PutInt("client.port", 3000)
+}
+
+func addServerAttributes(m pcommon.Map) {
+	m.PutStr("server.address", "server.address")
+	m.PutInt("server.port", 61461)
 }
 
 func addNetworkAttributes(m pcommon.Map) {
-	m.PutStr(conventions.AttributeNetTransport, conventions.AttributeNetTransport)
-	m.PutStr(conventions.AttributeNetPeerIP, conventions.AttributeNetPeerIP)
-	m.PutInt(conventions.AttributeNetPeerPort, 1)
-	m.PutStr(conventions.AttributeNetPeerName, conventions.AttributeNetPeerName)
-	m.PutStr(conventions.AttributeNetHostIP, conventions.AttributeNetHostIP)
-	m.PutInt(conventions.AttributeNetHostPort, 2)
-	m.PutStr(conventions.AttributeNetHostName, conventions.AttributeNetHostName)
+	m.PutStr("network.transport", "network.transport")
+	m.PutStr("network.peer.address", "network.peer.address")
+	m.PutInt("network.peer.port", 1)
+	m.PutStr("network.local.address", "network.local.address")
 }
 
-func networkAttributesValidations(t *testing.T, networkAttributes NetworkAttributes) {
-	assert.Equal(t, conventions.AttributeNetTransport, networkAttributes.NetTransport)
-	assert.Equal(t, conventions.AttributeNetPeerIP, networkAttributes.NetPeerIP)
-	assert.Equal(t, int64(1), networkAttributes.NetPeerPort)
-	assert.Equal(t, conventions.AttributeNetPeerName, networkAttributes.NetPeerName)
-	assert.Equal(t, conventions.AttributeNetHostIP, networkAttributes.NetHostIP)
-	assert.Equal(t, int64(2), networkAttributes.NetHostPort)
-	assert.Equal(t, conventions.AttributeNetHostName, networkAttributes.NetHostName)
+func networkAttributesValidations(t *testing.T, networkAttributes networkAttributes) {
+	assert.Equal(t, "network.transport", networkAttributes.NetworkTransport)
+	assert.Equal(t, "network.peer.address", networkAttributes.NetworkPeerAddress)
+	assert.Equal(t, int64(1), networkAttributes.NetworkPeerPort)
+	assert.Equal(t, "network.local.address", networkAttributes.NetworkLocalAddress)
+}
+
+func serverAttributesValidations(t *testing.T, serverAttributes serverAttributes) {
+	assert.Equal(t, "server.address", serverAttributes.ServerAddress)
+	assert.Equal(t, int64(61461), serverAttributes.ServerPort)
+}
+
+func clientAttributesValidations(t *testing.T, clientAttributes clientAttributes) {
+	assert.Equal(t, "client.address", clientAttributes.ClientAddress)
+	assert.Equal(t, int64(3000), clientAttributes.ClientPort)
 }

@@ -4,7 +4,6 @@
 package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 
 import (
-	"context"
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
@@ -19,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 func init() {
@@ -52,6 +51,9 @@ func TestNewSaramaClientConfig(t *testing.T) {
 				cfg.Consumer.Group.Rebalance.GroupStrategies = nil
 				cfg.MetricRegistry = nil
 				cfg.Producer.Partitioner = nil
+
+				// Out client ID default differs from Sarama's.
+				expected.ClientID = "otel-collector"
 
 				// Our metadata defaults differ from those of Sarama's.
 				defaultMetadataConfig := configkafka.NewDefaultMetadataConfig()
@@ -148,7 +150,7 @@ func TestNewSaramaClientConfig(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			output, err := newSaramaClientConfig(context.Background(), tt.input)
+			output, err := newSaramaClientConfig(t.Context(), tt.input)
 			if tt.expectedErr != "" {
 				require.Error(t, err)
 				require.ErrorContains(t, err, tt.expectedErr)
@@ -163,7 +165,7 @@ func TestNewSaramaClientConfig(t *testing.T) {
 
 func TestNewSaramaClient(t *testing.T) {
 	_, clientConfig := kafkatest.NewCluster(t)
-	client, err := NewSaramaClient(context.Background(), clientConfig)
+	client, err := NewSaramaClient(t.Context(), clientConfig)
 	require.NoError(t, err)
 	assert.NoError(t, client.Close())
 }
@@ -184,7 +186,7 @@ func TestNewSaramaClient_SASL(t *testing.T) {
 			Password:  password,
 			Version:   1, // kfake only supports version 1
 		}
-		client, err := NewSaramaClient(context.Background(), clientConfig)
+		client, err := NewSaramaClient(t.Context(), clientConfig)
 		if err != nil {
 			return err
 		}
@@ -256,7 +258,7 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 	tryConnect := func(cfg configtls.ClientConfig) error {
 		clientConfig := clientConfig // copy
 		clientConfig.TLS = &cfg
-		client, err := NewSaramaClient(context.Background(), clientConfig)
+		client, err := NewSaramaClient(t.Context(), clientConfig)
 		if err != nil {
 			return err
 		}
@@ -287,7 +289,7 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 		clientConfig := clientConfig // copy
 		clientConfig.Authentication.TLS = &tlsConfig
 
-		client, err := NewSaramaClient(context.Background(), clientConfig)
+		client, err := NewSaramaClient(t.Context(), clientConfig)
 		require.NoError(t, err)
 		assert.NoError(t, client.Close())
 
@@ -295,7 +297,7 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 		// top-level TLS config is specified.
 		invalidTLSConfig := configtls.NewDefaultClientConfig()
 		clientConfig.TLS = &invalidTLSConfig
-		_, err = NewSaramaClient(context.Background(), clientConfig)
+		_, err = NewSaramaClient(t.Context(), clientConfig)
 		assert.ErrorContains(t, err, "x509: certificate signed by unknown authority")
 	})
 
@@ -314,176 +316,29 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 	})
 }
 
-func TestNewSaramaConsumerGroup_RebalanceAndInstanceId(t *testing.T) {
-	cluster, clientConfig := kafkatest.NewCluster(t)
-	defer cluster.Close()
-	clientConfig.ProtocolVersion = "3.7.1"
-	tests := []struct {
-		name                   string
-		groupInstanceID        string
-		groupRebalanceStrategy string
-		checkFunc              func(t *testing.T, cfg *sarama.Config)
-	}{
-		{
-			name:                   "No GroupInstanceID and No RebalanceStrategy",
-			groupInstanceID:        "",
-			groupRebalanceStrategy: "",
-			checkFunc: func(t *testing.T, cfg *sarama.Config) {
-				assert.Empty(t, cfg.Consumer.Group.InstanceId)
-				require.NotNil(t, cfg.Consumer.Group.Rebalance.GroupStrategies)
-				assert.Len(t, cfg.Consumer.Group.Rebalance.GroupStrategies, 1)
-				assert.IsType(t, sarama.NewBalanceStrategyRange(), cfg.Consumer.Group.Rebalance.GroupStrategies[0])
-			},
-		},
-		{
-			name:                   "Only RebalanceStrategy",
-			groupInstanceID:        "",
-			groupRebalanceStrategy: sarama.RoundRobinBalanceStrategyName,
-			checkFunc: func(t *testing.T, cfg *sarama.Config) {
-				assert.Empty(t, cfg.Consumer.Group.InstanceId)
-				require.NotNil(t, cfg.Consumer.Group.Rebalance.GroupStrategies)
-				assert.Len(t, cfg.Consumer.Group.Rebalance.GroupStrategies, 1)
-				assert.IsType(t, sarama.NewBalanceStrategyRoundRobin(), cfg.Consumer.Group.Rebalance.GroupStrategies[0])
-			},
-		},
-		{
-			name:                   "Both GroupInstanceID and RebalanceStrategy",
-			groupInstanceID:        "instance-2",
-			groupRebalanceStrategy: sarama.StickyBalanceStrategyName,
-			checkFunc: func(t *testing.T, cfg *sarama.Config) {
-				assert.Equal(t, "instance-2", cfg.Consumer.Group.InstanceId)
-				require.NotNil(t, cfg.Consumer.Group.Rebalance.GroupStrategies)
-				assert.Len(t, cfg.Consumer.Group.Rebalance.GroupStrategies, 1)
-				assert.IsType(t, sarama.NewBalanceStrategySticky(), cfg.Consumer.Group.Rebalance.GroupStrategies[0])
+func TestNewSaramaClientConfigWithAWSMSKIAM(t *testing.T) {
+	// Test case for AWS_MSK_IAM_OAUTHBEARER mechanism
+	clientConfig := configkafka.ClientConfig{
+		Brokers: []string{"localhost:9092"},
+		Authentication: configkafka.AuthenticationConfig{
+			SASL: &configkafka.SASLConfig{
+				Mechanism: "AWS_MSK_IAM_OAUTHBEARER",
+				AWSMSK: configkafka.AWSMSKConfig{
+					Region: "us-west-2",
+				},
 			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			consumerConfig := configkafka.NewDefaultConsumerConfig()
-			consumerConfig.GroupID = "test-group"
-			consumerConfig.GroupInstanceID = tt.groupInstanceID
-			consumerConfig.GroupRebalanceStrategy = tt.groupRebalanceStrategy
+	saramaConfig, err := newSaramaClientConfig(t.Context(), clientConfig)
+	assert.NoError(t, err)
 
-			saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
-			require.NoError(t, err)
-			rebalanceStrategy := rebalanceStrategy(consumerConfig.GroupRebalanceStrategy)
-			if rebalanceStrategy != nil {
-				saramaConfig.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{rebalanceStrategy}
-			}
-			saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
+	// Verify that TLS is enabled, not just SASL
+	assert.True(t, saramaConfig.Net.TLS.Enable, "TLS should be enabled for AWS_MSK_IAM_OAUTHBEARER")
+	assert.NotNil(t, saramaConfig.Net.TLS.Config, "TLS config should not be nil for AWS_MSK_IAM_OAUTHBEARER")
 
-			consumerGroup, err := NewSaramaConsumerGroup(context.Background(), clientConfig, consumerConfig)
-			require.NoError(t, err)
-			assert.NotNil(t, consumerGroup)
-
-			tt.checkFunc(t, saramaConfig)
-
-			err = consumerGroup.Close()
-			require.NoError(t, err)
-		})
-	}
-}
-
-func TestNewSaramaConsumerGroup_GroupInstanceID(t *testing.T) {
-	cluster, clientConfig := kafkatest.NewCluster(t)
-	defer cluster.Close()
-	clientConfig.ProtocolVersion = "3.7.1"
-
-	tests := []struct {
-		name            string
-		groupInstanceID string
-	}{
-		{
-			name:            "No GroupInstanceID",
-			groupInstanceID: "",
-		},
-		{
-			name:            "With GroupInstanceID",
-			groupInstanceID: "test-instance-id",
-		},
-		{
-			name:            "With Another GroupInstanceID",
-			groupInstanceID: "another-test-instance-id",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			consumerConfig := configkafka.NewDefaultConsumerConfig()
-			consumerConfig.GroupID = "test-group"
-			consumerConfig.GroupInstanceID = tt.groupInstanceID
-
-			saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
-			require.NoError(t, err)
-
-			saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
-
-			consumerGroup, err := NewSaramaConsumerGroup(context.Background(), clientConfig, consumerConfig)
-			require.NoError(t, err)
-			assert.NotNil(t, consumerGroup)
-
-			if tt.groupInstanceID == "" {
-				assert.Empty(t, saramaConfig.Consumer.Group.InstanceId)
-			} else {
-				assert.Equal(t, tt.groupInstanceID, saramaConfig.Consumer.Group.InstanceId)
-			}
-
-			err = consumerGroup.Close()
-			require.NoError(t, err)
-		})
-	}
-}
-
-func TestNewSaramaConsumerGroup_GroupInstanceID_InvalidProtocolVersion(t *testing.T) {
-	cluster, clientConfig := kafkatest.NewCluster(t)
-	defer cluster.Close()
-
-	tests := []struct {
-		name            string
-		groupInstanceID string
-		protocolVersion string
-		expectedErr     string
-	}{
-		{
-			name:            "GroupInstanceID with Invalid Protocol Version",
-			groupInstanceID: "test-instance-id",
-			protocolVersion: "2.2.0",
-			expectedErr:     "Consumer.Group.InstanceId need Version >= 2.3",
-		},
-		{
-			name:            "No GroupInstanceID with Invalid Protocol Version",
-			groupInstanceID: "",
-			protocolVersion: "2.2.0",
-			expectedErr:     "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			consumerConfig := configkafka.NewDefaultConsumerConfig()
-			consumerConfig.GroupID = "test-group"
-			consumerConfig.GroupInstanceID = tt.groupInstanceID
-			clientConfig.ProtocolVersion = tt.protocolVersion
-
-			saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
-			require.NoError(t, err)
-			saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
-			consumerGroup, err := NewSaramaConsumerGroup(context.Background(), clientConfig, consumerConfig)
-
-			if tt.expectedErr != "" {
-				require.Error(t, err)
-				require.ErrorContains(t, err, tt.expectedErr)
-			} else {
-				require.NoError(t, err)
-				assert.NotNil(t, consumerGroup)
-			}
-
-			if consumerGroup != nil {
-				err = consumerGroup.Close()
-				require.NoError(t, err)
-			}
-		})
-	}
+	// Also verify that SASL is enabled and properly configured
+	assert.True(t, saramaConfig.Net.SASL.Enable, "SASL should be enabled for AWS_MSK_IAM_OAUTHBEARER")
+	assert.Equal(t, sarama.SASLMechanism(sarama.SASLTypeOAuth), saramaConfig.Net.SASL.Mechanism)
+	assert.NotNil(t, saramaConfig.Net.SASL.TokenProvider, "TokenProvider should not be nil for AWS_MSK_IAM_OAUTHBEARER")
 }

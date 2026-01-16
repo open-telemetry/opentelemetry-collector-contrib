@@ -27,7 +27,7 @@ func TestHex(t *testing.T) {
 			name: "int64",
 			args: args{
 				target: &ottl.StandardByteSliceLikeGetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
+					Getter: func(context.Context, any) (any, error) {
 						return int64(12), nil
 					},
 				},
@@ -40,7 +40,7 @@ func TestHex(t *testing.T) {
 			name: "nil",
 			args: args{
 				target: &ottl.StandardByteSliceLikeGetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
+					Getter: func(context.Context, any) (any, error) {
 						return nil, nil
 					},
 				},
@@ -54,7 +54,7 @@ func TestHex(t *testing.T) {
 			name: "error",
 			args: args{
 				target: &ottl.StandardByteSliceLikeGetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
+					Getter: func(context.Context, any) (any, error) {
 						return map[string]string{"hi": "hi"}, nil
 					},
 				},
@@ -68,7 +68,7 @@ func TestHex(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expressionFunc, _ := Hex(tt.args.target)
-			got, err := expressionFunc(context.Background(), tt.args)
+			got, err := expressionFunc(t.Context(), tt.args)
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantFunc(), got)
 		})

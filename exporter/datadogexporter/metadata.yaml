@@ -7,7 +7,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, ankitpatel96, jade-guiton-dd, IbraheemA]
-    emeritus: [gbbr]
+    emeritus: [gbbr, jackgopack4]
 
 tests:
   config:

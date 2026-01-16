@@ -20,7 +20,7 @@ type endpointSink struct {
 	changed []observer.Endpoint
 }
 
-func (e *endpointSink) ID() observer.NotifyID {
+func (*endpointSink) ID() observer.NotifyID {
 	return "endpointSink"
 }
 

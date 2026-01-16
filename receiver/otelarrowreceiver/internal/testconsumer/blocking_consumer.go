@@ -41,6 +41,6 @@ func (bc *BlockingConsumer) Unblock() {
 	close(bc.block)
 }
 
-func (bc *BlockingConsumer) Capabilities() consumer.Capabilities {
+func (*BlockingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }

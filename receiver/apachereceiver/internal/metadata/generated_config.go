@@ -9,8 +9,7 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
@@ -18,16 +17,19 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
 // MetricsConfig provides config for apache metrics.
 type MetricsConfig struct {
+	ApacheConnectionsAsync   MetricConfig `mapstructure:"apache.connections.async"`
 	ApacheCPULoad            MetricConfig `mapstructure:"apache.cpu.load"`
 	ApacheCPUTime            MetricConfig `mapstructure:"apache.cpu.time"`
 	ApacheCurrentConnections MetricConfig `mapstructure:"apache.current_connections"`
@@ -44,6 +46,9 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		ApacheConnectionsAsync: MetricConfig{
+			Enabled: true,
+		},
 		ApacheCPULoad: MetricConfig{
 			Enabled: true,
 		},

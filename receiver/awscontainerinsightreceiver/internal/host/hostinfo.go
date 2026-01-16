@@ -32,7 +32,7 @@ type Info struct {
 	ebsVolume    ebsVolumeProvider
 	ec2Tags      ec2TagsProvider
 
-	awsConfigCreator    func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error)
+	awsConfigCreator    func(context.Context, *zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error)
 	nodeCapacityCreator func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error)
 	ec2MetadataCreator  func(context.Context, aws.Config, time.Duration, chan bool, chan bool, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
 	ebsVolumeCreator    func(context.Context, aws.Config, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider
@@ -74,10 +74,11 @@ func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger
 	mInfo.nodeCapacity = nodeCapacity
 
 	defaultSessionConfig := awsutil.CreateDefaultSessionConfig()
-	cfg, err := mInfo.awsConfigCreator(logger, &defaultSessionConfig)
+	cfg, err := mInfo.awsConfigCreator(ctx, logger, &defaultSessionConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create aws session: %w", err)
 	}
+	mInfo.awsConfig = cfg
 
 	mInfo.ec2Metadata = mInfo.ec2MetadataCreator(ctx, cfg, refreshInterval, mInfo.instanceIDReadyC, mInfo.instanceIPReadyC, logger)
 

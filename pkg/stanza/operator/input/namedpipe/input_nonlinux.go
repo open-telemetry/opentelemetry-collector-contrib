@@ -13,6 +13,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-func (c *Config) Build(_ component.TelemetrySettings) (operator.Operator, error) {
+func (*Config) Build(component.TelemetrySettings) (operator.Operator, error) {
 	return nil, errors.New("namedpipe input operator is only supported on linux")
 }

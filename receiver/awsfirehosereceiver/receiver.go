@@ -122,7 +122,7 @@ func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) err
 	}
 
 	var err error
-	fmr.server, err = fmr.config.ToServer(ctx, host, fmr.settings.TelemetrySettings, fmr)
+	fmr.server, err = fmr.config.ToServer(ctx, host.GetExtensions(), fmr.settings.TelemetrySettings, fmr)
 	if err != nil {
 		return fmt.Errorf("failed to initialize HTTP server: %w", err)
 	}
@@ -246,7 +246,7 @@ func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
 }
 
 // getCommonAttributes unmarshalls the common attributes from the request header
-func (fmr *firehoseReceiver) getCommonAttributes(r *http.Request) (map[string]string, error) {
+func (*firehoseReceiver) getCommonAttributes(r *http.Request) (map[string]string, error) {
 	attributes := make(map[string]string)
 	if commonAttributes := r.Header.Get(headerFirehoseCommonAttributes); commonAttributes != "" {
 		var fca firehoseCommonAttributes
@@ -296,12 +296,11 @@ func loadEncodingExtension[T any](host component.Host, encoding, signalType stri
 	return unmarshaler, nil
 }
 
-// encodingToComponentID converts an encoding string to a component ID using the given encoding as type.
+// encodingToComponentID attempts to parse the encoding string as a component ID.
 func encodingToComponentID(encoding string) (*component.ID, error) {
-	componentType, err := component.NewType(encoding)
-	if err != nil {
+	var id component.ID
+	if err := id.UnmarshalText([]byte(encoding)); err != nil {
 		return nil, fmt.Errorf("invalid component type: %w", err)
 	}
-	id := component.NewID(componentType)
 	return &id, nil
 }

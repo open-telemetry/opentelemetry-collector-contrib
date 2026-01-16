@@ -4,7 +4,6 @@
 package ecsobserver
 
 import (
-	"context"
 	"runtime"
 	"testing"
 	"time"
@@ -29,7 +28,7 @@ func TestExtensionStartStop(t *testing.T) {
 	refreshInterval := 100 * time.Millisecond
 
 	createTestExt := func(c *ecsmock.Cluster, output string) extension.Extension {
-		f := newTestTaskFetcher(t, c)
+		f := newTestTaskFetcher(t, c, c)
 		cfg := createDefaultConfig()
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = refreshInterval
@@ -44,17 +43,17 @@ func TestExtensionStartStop(t *testing.T) {
 		c := ecsmock.NewCluster()
 		ext := createTestExt(c, "testdata/ut_ext_noop.actual.yaml")
 		require.IsType(t, &ecsObserver{}, ext)
-		require.NoError(t, ext.Start(context.TODO(), &nopHost{
+		require.NoError(t, ext.Start(t.Context(), &nopHost{
 			reportFunc: func(event *componentstatus.Event) {
 				require.NoError(t, event.Err())
 			},
 		}))
-		require.NoError(t, ext.Shutdown(context.TODO()))
+		require.NoError(t, ext.Shutdown(t.Context()))
 	})
 
 	t.Run("critical error", func(t *testing.T) {
 		c := ecsmock.NewClusterWithName("different than default config")
-		f := newTestTaskFetcher(t, c)
+		f := newTestTaskFetcher(t, c, c)
 		cfg := createDefaultConfig()
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = 100 * time.Millisecond
@@ -63,7 +62,7 @@ func TestExtensionStartStop(t *testing.T) {
 		statusEventChan := make(chan *componentstatus.Event)
 		ext, err := createExtensionWithFetcher(cs, sdCfg, f)
 		require.NoError(t, err)
-		err = ext.Start(context.Background(), &nopHost{
+		err = ext.Start(t.Context(), &nopHost{
 			reportFunc: func(e *componentstatus.Event) {
 				statusEventChan <- e
 			},
@@ -81,7 +80,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (*nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

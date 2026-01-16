@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -27,7 +28,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					ContainerCPUTime:                     MetricConfig{Enabled: true},
 					ContainerCPUUsage:                    MetricConfig{Enabled: true},
-					ContainerCPUUtilization:              MetricConfig{Enabled: true},
 					ContainerFilesystemAvailable:         MetricConfig{Enabled: true},
 					ContainerFilesystemCapacity:          MetricConfig{Enabled: true},
 					ContainerFilesystemUsage:             MetricConfig{Enabled: true},
@@ -46,7 +46,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sContainerMemoryRequestUtilization: MetricConfig{Enabled: true},
 					K8sNodeCPUTime:                       MetricConfig{Enabled: true},
 					K8sNodeCPUUsage:                      MetricConfig{Enabled: true},
-					K8sNodeCPUUtilization:                MetricConfig{Enabled: true},
 					K8sNodeFilesystemAvailable:           MetricConfig{Enabled: true},
 					K8sNodeFilesystemCapacity:            MetricConfig{Enabled: true},
 					K8sNodeFilesystemUsage:               MetricConfig{Enabled: true},
@@ -62,7 +61,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodCPUNodeUtilization:             MetricConfig{Enabled: true},
 					K8sPodCPUTime:                        MetricConfig{Enabled: true},
 					K8sPodCPUUsage:                       MetricConfig{Enabled: true},
-					K8sPodCPUUtilization:                 MetricConfig{Enabled: true},
 					K8sPodCPULimitUtilization:            MetricConfig{Enabled: true},
 					K8sPodCPURequestUtilization:          MetricConfig{Enabled: true},
 					K8sPodFilesystemAvailable:            MetricConfig{Enabled: true},
@@ -80,6 +78,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodNetworkErrors:                  MetricConfig{Enabled: true},
 					K8sPodNetworkIo:                      MetricConfig{Enabled: true},
 					K8sPodUptime:                         MetricConfig{Enabled: true},
+					K8sPodVolumeUsage:                    MetricConfig{Enabled: true},
 					K8sVolumeAvailable:                   MetricConfig{Enabled: true},
 					K8sVolumeCapacity:                    MetricConfig{Enabled: true},
 					K8sVolumeInodes:                      MetricConfig{Enabled: true},
@@ -111,7 +110,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					ContainerCPUTime:                     MetricConfig{Enabled: false},
 					ContainerCPUUsage:                    MetricConfig{Enabled: false},
-					ContainerCPUUtilization:              MetricConfig{Enabled: false},
 					ContainerFilesystemAvailable:         MetricConfig{Enabled: false},
 					ContainerFilesystemCapacity:          MetricConfig{Enabled: false},
 					ContainerFilesystemUsage:             MetricConfig{Enabled: false},
@@ -130,7 +128,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sContainerMemoryRequestUtilization: MetricConfig{Enabled: false},
 					K8sNodeCPUTime:                       MetricConfig{Enabled: false},
 					K8sNodeCPUUsage:                      MetricConfig{Enabled: false},
-					K8sNodeCPUUtilization:                MetricConfig{Enabled: false},
 					K8sNodeFilesystemAvailable:           MetricConfig{Enabled: false},
 					K8sNodeFilesystemCapacity:            MetricConfig{Enabled: false},
 					K8sNodeFilesystemUsage:               MetricConfig{Enabled: false},
@@ -146,7 +143,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodCPUNodeUtilization:             MetricConfig{Enabled: false},
 					K8sPodCPUTime:                        MetricConfig{Enabled: false},
 					K8sPodCPUUsage:                       MetricConfig{Enabled: false},
-					K8sPodCPUUtilization:                 MetricConfig{Enabled: false},
 					K8sPodCPULimitUtilization:            MetricConfig{Enabled: false},
 					K8sPodCPURequestUtilization:          MetricConfig{Enabled: false},
 					K8sPodFilesystemAvailable:            MetricConfig{Enabled: false},
@@ -164,6 +160,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodNetworkErrors:                  MetricConfig{Enabled: false},
 					K8sPodNetworkIo:                      MetricConfig{Enabled: false},
 					K8sPodUptime:                         MetricConfig{Enabled: false},
+					K8sPodVolumeUsage:                    MetricConfig{Enabled: false},
 					K8sVolumeAvailable:                   MetricConfig{Enabled: false},
 					K8sVolumeCapacity:                    MetricConfig{Enabled: false},
 					K8sVolumeInodes:                      MetricConfig{Enabled: false},
@@ -205,7 +202,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 

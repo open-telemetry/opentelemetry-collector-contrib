@@ -4,7 +4,6 @@
 package googlecloudpubsubexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +32,7 @@ func TestCreateTraces(t *testing.T) {
 	eCfg.Endpoint = "http://testing.invalid"
 
 	te, err := factory.CreateTraces(
-		context.Background(),
+		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
 		eCfg,
 	)
@@ -48,7 +47,7 @@ func TestCreateMetrics(t *testing.T) {
 	eCfg.Endpoint = "http://testing.invalid"
 
 	me, err := factory.CreateMetrics(
-		context.Background(),
+		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
 		eCfg,
 	)
@@ -63,7 +62,7 @@ func TestLogsCreateExporter(t *testing.T) {
 	eCfg.Endpoint = "http://testing.invalid"
 
 	me, err := factory.CreateLogs(
-		context.Background(),
+		t.Context(),
 		exportertest.NewNopSettings(metadata.Type),
 		eCfg,
 	)

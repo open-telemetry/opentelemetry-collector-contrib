@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: my-namespace-1
+data:
+  relay: |
+    exporters:
+      otlp:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+      debug:
+        verbosity: normal
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    processors:
+    receivers:
+      k8s_cluster:
+        namespaces: 
+          - my-namespace-1
+          - my-namespace-2
+        
+    service:
+      telemetry:
+        logs:
+          level: "debug"
+      extensions:
+      - health_check
+      pipelines:
+        metrics:
+          exporters:
+          - otlp
+          - debug
+          receivers:
+          - k8s_cluster

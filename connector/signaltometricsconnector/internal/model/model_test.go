@@ -11,15 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 const (
 	testServiceInstanceID = "627cc493-f310-47de-96bd-71410b7dec09"
-	testServiceName       = "testsignaltometrics"
-	testNamespace         = "test"
 )
 
 func TestFilterResourceAttributes(t *testing.T) {
@@ -45,8 +42,6 @@ func TestFilterResourceAttributes(t *testing.T) {
 				"key.4": "val.4",
 				// Collector instance info will be added
 				"signaltometrics.service.instance.id": testServiceInstanceID,
-				"signaltometrics.service.name":        testServiceName,
-				"signaltometrics.service.namespace":   testNamespace,
 			},
 		},
 		{
@@ -80,13 +75,11 @@ func TestFilterResourceAttributes(t *testing.T) {
 				"key.302": "anything",
 				// Collector instance info will be added
 				"signaltometrics.service.instance.id": testServiceInstanceID,
-				"signaltometrics.service.name":        testServiceName,
-				"signaltometrics.service.namespace":   testNamespace,
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			md := MetricDef[ottlspan.TransformContext]{
+			md := MetricDef[*ottlspan.TransformContext]{
 				IncludeResourceAttributes: tc.includeResourceAttributes,
 			}
 			inputResourceAttrsM := pcommon.NewMap()
@@ -155,7 +148,7 @@ func TestFilterAttributes(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			md := MetricDef[ottlspan.TransformContext]{
+			md := MetricDef[*ottlspan.TransformContext]{
 				Attributes: tc.attributes,
 			}
 			inputAttrM := pcommon.NewMap()
@@ -174,9 +167,7 @@ func testCollectorInstanceInfo(t *testing.T) CollectorInstanceInfo {
 	t.Helper()
 
 	set := componenttest.NewNopTelemetrySettings()
-	set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, testServiceInstanceID)
-	set.Resource.Attributes().PutStr(semconv.AttributeServiceName, testServiceName)
-	set.Resource.Attributes().PutStr(semconv.AttributeServiceNamespace, testNamespace)
+	set.Resource.Attributes().PutStr("service.instance.id", testServiceInstanceID)
 	return NewCollectorInstanceInfo(set)
 }
 

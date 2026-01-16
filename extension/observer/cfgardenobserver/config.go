@@ -84,6 +84,9 @@ func fieldError(authType authType, param string) error {
 type GardenConfig struct {
 	// The URL of the CF Garden api. Default is "/var/vcap/data/garden/garden.sock"
 	Endpoint string `mapstructure:"endpoint"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type CfConfig struct {
@@ -92,6 +95,9 @@ type CfConfig struct {
 
 	// Authentication details
 	Auth CfAuth `mapstructure:"auth"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type CfAuth struct {

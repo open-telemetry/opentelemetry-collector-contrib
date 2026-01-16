@@ -4,7 +4,6 @@
 package helper
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -117,7 +116,7 @@ func TestParserMissingField(t *testing.T) {
 	parse := func(i any) (any, error) {
 		return i, nil
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
 	require.ErrorContains(t, err, "Entry is missing the expected parse_from field.")
@@ -135,7 +134,7 @@ func TestParserInvalidParseDrop(t *testing.T) {
 	parse := func(i any) (any, error) {
 		return i, errors.New("parse failure")
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
 	require.ErrorContains(t, err, "parse failure")
@@ -154,7 +153,7 @@ func TestParserInvalidParseDropQuiet(t *testing.T) {
 	parse := func(i any) (any, error) {
 		return i, errors.New("parse failure")
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
 	require.NoError(t, err, "error should be silent")
@@ -173,7 +172,7 @@ func TestParserInvalidParseSend(t *testing.T) {
 	parse := func(i any) (any, error) {
 		return i, errors.New("parse failure")
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
 	require.ErrorContains(t, err, "parse failure")
@@ -193,7 +192,7 @@ func TestParserInvalidParseSendQuiet(t *testing.T) {
 	parse := func(i any) (any, error) {
 		return i, errors.New("parse failure")
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
 	require.NoError(t, err, "error should be silent")
@@ -220,7 +219,7 @@ func TestParserInvalidTimeParseDrop(t *testing.T) {
 	parse := func(i any) (any, error) {
 		return i, nil
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
 	require.ErrorContains(t, err, "time parser: log entry does not have the expected parse_from field")
@@ -246,7 +245,7 @@ func TestParserInvalidTimeParseSend(t *testing.T) {
 	parse := func(i any) (any, error) {
 		return i, nil
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
 	require.ErrorContains(t, err, "time parser: log entry does not have the expected parse_from field")
@@ -270,7 +269,7 @@ func TestParserInvalidSeverityParseDrop(t *testing.T) {
 	parse := func(i any) (any, error) {
 		return i, nil
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
 	require.ErrorContains(t, err, "severity parser: log entry does not have the expected parse_from field")
@@ -309,7 +308,7 @@ func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
 	parse := func(i any) (any, error) {
 		return i, nil
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	err := testEntry.Set(entry.NewBodyField("severity"), "info")
 	require.NoError(t, err)
@@ -363,7 +362,7 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 	parse := func(i any) (any, error) {
 		return i, nil
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	err = testEntry.Set(entry.NewBodyField("timestamp"), sample)
 	require.NoError(t, err)
@@ -400,7 +399,7 @@ func TestParserOutput(t *testing.T) {
 	parse := func(i any) (any, error) {
 		return i, nil
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
 	require.NoError(t, err)
@@ -676,7 +675,7 @@ func TestParserFields(t *testing.T) {
 			require.NoError(t, err)
 
 			e := tc.input()
-			err = parser.ProcessWith(context.Background(), e, parse)
+			err = parser.ProcessWith(t.Context(), e, parse)
 
 			require.NoError(t, err)
 			require.Equal(t, tc.output(), e)

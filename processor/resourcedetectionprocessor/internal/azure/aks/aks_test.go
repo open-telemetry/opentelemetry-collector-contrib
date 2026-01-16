@@ -4,7 +4,6 @@
 package aks
 
 import (
-	"context"
 	"errors"
 	"os"
 	"testing"
@@ -12,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 )
@@ -28,9 +26,9 @@ func TestDetector_Detect_K8s_Azure(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
 	resourceAttributes := CreateDefaultConfig().ResourceAttributes
 	detector := &Detector{provider: mockProvider(), resourceAttributes: resourceAttributes}
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	assert.Equal(t, map[string]any{
 		"cloud.provider": "azure",
 		"cloud.platform": "azure_aks",
@@ -43,7 +41,7 @@ func TestDetector_Detect_K8s_NonAzure(t *testing.T) {
 	mp.On("Metadata").Return(nil, errors.New(""))
 	resourceAttributes := CreateDefaultConfig().ResourceAttributes
 	detector := &Detector{provider: mp, resourceAttributes: resourceAttributes}
-	res, _, err := detector.Detect(context.Background())
+	res, _, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	attrs := res.Attributes()
 	assert.Equal(t, 0, attrs.Len())
@@ -53,7 +51,7 @@ func TestDetector_Detect_NonK8s(t *testing.T) {
 	os.Clearenv()
 	resourceAttributes := CreateDefaultConfig().ResourceAttributes
 	detector := &Detector{provider: mockProvider(), resourceAttributes: resourceAttributes}
-	res, _, err := detector.Detect(context.Background())
+	res, _, err := detector.Detect(t.Context())
 	require.NoError(t, err)
 	attrs := res.Attributes()
 	assert.Equal(t, 0, attrs.Len())

@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: default
+data:
+  relay: |
+    exporters:
+      otlp:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    
+      k8s_observer:
+        auth_type: kubeConfig
+        observe_pods: true
+        observe_services: true
+        namespaces: 
+          - default
+    processors:
+      
+    receivers:
+      receiver_creator:
+        watch_observers: [k8s_observer]
+        receivers:
+          prometheus_simple:
+            # Configure prometheus scraping if standard prometheus annotations are set on the pod.
+            rule: type == "pod" && annotations["prometheus.io/scrape"] == "true"
+            config:
+              metrics_path: "/metrics"
+              endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 8888`'
+            resource_attributes:
+              source: pod
+          #prometheus_simple:
+          #  # Configure prometheus scraping if standard prometheus annotations are set on the pod.
+          #  rule: type == "k8s.service"
+          #  config:
+          #    metrics_path: "/metrics"
+          #    endpoint: '`endpoint`:8888'
+          #  resource_attributes:
+          #    source: service
+    service:
+      telemetry:
+        metrics:
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: 0.0.0.0
+                    port: 8888
+      extensions:
+      - health_check
+      - k8s_observer
+      pipelines:
+        metrics:
+          exporters:
+          - otlp
+          receivers:
+          - receiver_creator

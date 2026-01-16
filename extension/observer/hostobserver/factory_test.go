@@ -4,7 +4,6 @@
 package hostobserver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -19,7 +18,7 @@ func TestValidConfig(t *testing.T) {
 
 func TestCreateMetrics(t *testing.T) {
 	hostObserver, err := createExtension(
-		context.Background(),
+		t.Context(),
 		extensiontest.NewNopSettings(extensiontest.NopType),
 		&Config{},
 	)

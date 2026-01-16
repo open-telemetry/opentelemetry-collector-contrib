@@ -35,7 +35,7 @@ func (rc *metricsRecordConsumer) ConsumeMetrics(_ context.Context, metrics pmetr
 	return nil
 }
 
-func (rc *metricsRecordConsumer) Capabilities() consumer.Capabilities {
+func (*metricsRecordConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -49,12 +49,25 @@ func TestMetricsReceiver_Start(t *testing.T) {
 		"WithDefaultEncoding": {
 			wantUnmarshalerType: &cwmetricstream.Unmarshaler{},
 		},
+		"WithOTLP_v1Encoding": {
+			recordType: "otlp_v1",
+			wantUnmarshalerType: func() pmetric.Unmarshaler {
+				c := metricsConsumer{}
+				u, err := c.newUnmarshalerFromEncoding(t.Context(), "otlp_v1", "opentelemetry1.0")
+				require.NoError(t, err)
+				return u
+			}(),
+		},
 		"WithBuiltinEncoding": {
 			encoding:            "cwmetrics",
 			wantUnmarshalerType: &cwmetricstream.Unmarshaler{},
 		},
 		"WithExtensionEncoding": {
 			encoding:            "otlp_metrics",
+			wantUnmarshalerType: pmetricUnmarshalerExtension{},
+		},
+		"WithExtensionEncodingNamed": {
+			encoding:            "otlp_metrics/name",
 			wantUnmarshalerType: pmetricUnmarshalerExtension{},
 		},
 		"WithDeprecatedRecordType": {
@@ -83,17 +96,18 @@ func TestMetricsReceiver_Start(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, got)
 			t.Cleanup(func() {
-				require.NoError(t, got.Shutdown(context.Background()))
+				require.NoError(t, got.Shutdown(t.Context()))
 			})
 
 			host := hostWithExtensions{
 				extensions: map[component.ID]component.Component{
-					component.MustNewID("otlp_logs"):    plogUnmarshalerExtension{},
-					component.MustNewID("otlp_metrics"): pmetricUnmarshalerExtension{},
+					component.MustNewID("otlp_logs"):                    plogUnmarshalerExtension{},
+					component.MustNewID("otlp_metrics"):                 pmetricUnmarshalerExtension{},
+					component.MustNewIDWithName("otlp_metrics", "name"): pmetricUnmarshalerExtension{},
 				},
 			}
 
-			err = got.Start(context.Background(), host)
+			err = got.Start(t.Context(), host)
 			if testCase.wantErr != "" {
 				require.EqualError(t, err, testCase.wantErr)
 			} else {
@@ -142,7 +156,7 @@ func TestMetricsConsumer_Errors(t *testing.T) {
 				consumer:    consumertest.NewErr(testCase.consumerErr),
 			}
 			gotStatus, gotErr := mc.Consume(
-				context.Background(),
+				t.Context(),
 				newNextRecordFunc([][]byte{{}}),
 				nil,
 			)
@@ -162,7 +176,7 @@ func TestMetricsConsumer(t *testing.T) {
 			consumer:    &rc,
 		}
 		gotStatus, gotErr := mc.Consume(
-			context.Background(),
+			t.Context(),
 			newNextRecordFunc([][]byte{{}}),
 			map[string]string{
 				"CommonAttributes": "Test",
@@ -201,7 +215,7 @@ func TestMetricsConsumer(t *testing.T) {
 		rc := metricsRecordConsumer{}
 		lc := &metricsConsumer{unmarshaler: unmarshaler, consumer: &rc}
 		nextRecord := newNextRecordFunc(make([][]byte, len(metricsRemaining)))
-		gotStatus, gotErr := lc.Consume(context.Background(), nextRecord, nil)
+		gotStatus, gotErr := lc.Consume(t.Context(), nextRecord, nil)
 		require.Equal(t, http.StatusOK, gotStatus)
 		require.NoError(t, gotErr)
 		require.Len(t, rc.results, 2)

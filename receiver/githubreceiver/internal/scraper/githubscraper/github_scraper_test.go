@@ -4,14 +4,13 @@
 package githubscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver"
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v81/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -100,6 +99,18 @@ func TestScrape(t *testing.T) {
 								{
 									Merged: false,
 								},
+							},
+						},
+					},
+					responseCode: http.StatusOK,
+				},
+				mergedPRResponse: mergedPRResponse{
+					prs: []getMergedPullRequestDataRepositoryPullRequestsPullRequestConnection{
+						{
+							PageInfo: getMergedPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
+								HasPreviousPage: false,
+							},
+							Nodes: []MergedPullRequestNode{
 								{
 									Merged: true,
 								},
@@ -169,10 +180,10 @@ func TestScrape(t *testing.T) {
 			ghs.cfg.GitHubOrg = "open-telemetry"
 			ghs.cfg.Endpoint = server.URL
 
-			err := ghs.start(context.Background(), componenttest.NewNopHost())
+			err := ghs.start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
-			actualMetrics, err := ghs.scrape(context.Background())
+			actualMetrics, err := ghs.scrape(t.Context())
 			require.NoError(t, err)
 
 			expectedFile := filepath.Join("testdata", "scraper", tc.testFile)
@@ -194,6 +205,11 @@ func TestScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricDataPointsOrder(),
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreMetricValues(
+					"vcs.ref.time",
+					"vcs.change.duration",
+					"vcs.change.time_to_merge",
+				),
 			))
 		})
 	}

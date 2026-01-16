@@ -6,10 +6,9 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -60,7 +59,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ReceiverReceivedStatsdMetrics, err = builder.meter.Int64Counter(
 		"otelcol_receiver_received_statsd_metrics",
-		metric.WithDescription("Number of statsd metrics received."),
+		metric.WithDescription("Number of statsd metrics received. [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)

@@ -3,38 +3,39 @@
 
 package conventions // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/convention"
 
-// TODO: replace for semconv once https://github.com/open-telemetry/semantic-conventions/issues/1033 is closed.
+import conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+
 const (
 	// AttributeGeoCityName represents the attribute name for the city name in geographical data.
 	AttributeGeoCityName = "geo.city_name"
 
 	// AttributeGeoPostalCode represents the attribute name for the city postal code.
-	AttributeGeoPostalCode = "geo.postal_code"
+	AttributeGeoPostalCode = string(conventions.GeoPostalCodeKey)
 
 	// AttributeGeoCountryName represents the attribute name for the country name in geographical data.
 	AttributeGeoCountryName = "geo.country_name"
 
 	// AttributeGeoCountryIsoCode represents the attribute name for the Two-letter ISO Country Code.
-	AttributeGeoCountryIsoCode = "geo.country_iso_code"
+	AttributeGeoCountryIsoCode = string(conventions.GeoCountryISOCodeKey)
 
 	// AttributeGeoContinentName represents the attribute name for the continent name in geographical data.
 	AttributeGeoContinentName = "geo.continent_name"
 
 	// AttributeGeoContinentIsoCode represents the attribute name for the Two-letter Continent Code.
-	AttributeGeoContinentCode = "geo.continent_code"
+	AttributeGeoContinentCode = string(conventions.GeoContinentCodeKey)
 
 	// AttributeGeoRegionName represents the attribute name for the region name in geographical data.
 	AttributeGeoRegionName = "geo.region_name"
 
 	// AttributeGeoRegionIsoCode represents the attribute name for the Two-letter ISO Region Code.
-	AttributeGeoRegionIsoCode = "geo.region_iso_code"
+	AttributeGeoRegionIsoCode = string(conventions.GeoRegionISOCodeKey)
 
 	// AttributeGeoTimezone represents the attribute name for the timezone.
 	AttributeGeoTimezone = "geo.timezone"
 
 	// AttributeGeoLocationLat represents the attribute name for the latitude.
-	AttributeGeoLocationLat = "geo.location.lat"
+	AttributeGeoLocationLat = string(conventions.GeoLocationLatKey)
 
 	// AttributeGeoLocationLon represents the attribute name for the longitude.
-	AttributeGeoLocationLon = "geo.location.lon"
+	AttributeGeoLocationLon = string(conventions.GeoLocationLonKey)
 )

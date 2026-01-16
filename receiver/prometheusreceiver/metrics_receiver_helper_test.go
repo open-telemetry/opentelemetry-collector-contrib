@@ -5,7 +5,6 @@ package prometheusreceiver
 
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -19,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/common/promslog"
 	promcfg "github.com/prometheus/prometheus/config"
@@ -33,8 +33,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
@@ -142,7 +140,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 	}
 	mp := newMockPrometheus(endpoints)
 	u, _ := url.Parse(mp.srv.URL)
-	for i := 0; i < len(tds); i++ {
+	for i := range tds {
 		job := make(map[string]any)
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
@@ -245,7 +243,7 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, target *testDa
 	// for metrics retrieved with 'honor_labels: true', there will be a resource metric containing the scrape metrics, based on the scrape job config,
 	// and resources containing only the retrieved metrics, without additional scrape metrics, based on the job/instance label pairs that are detected
 	// during a scrape
-	for i := 0; i < len(rms); i++ {
+	for i := range rms {
 		allMetrics := getMetrics(rms[i])
 		if expectedScrapeMetricCount <= len(allMetrics) && countScrapeMetrics(allMetrics, target.normalizedName) == expectedScrapeMetricCount ||
 			expectedExtraScrapeMetricCount <= len(allMetrics) && countScrapeMetrics(allMetrics, target.normalizedName) == expectedExtraScrapeMetricCount {
@@ -266,20 +264,20 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, target *testDa
 }
 
 func isScrapeConfigResource(rms pmetric.ResourceMetrics, target *testData) bool {
-	targetJobName, ok := target.attributes.Get(semconv.AttributeServiceName)
+	targetJobName, ok := target.attributes.Get("service.name")
 	if !ok {
 		return false
 	}
-	targetInstanceID, ok := target.attributes.Get(semconv.AttributeServiceInstanceID)
+	targetInstanceID, ok := target.attributes.Get("service.instance.id")
 	if !ok {
 		return false
 	}
 
-	resourceJobName, ok := rms.Resource().Attributes().Get(semconv.AttributeServiceName)
+	resourceJobName, ok := rms.Resource().Attributes().Get("service.name")
 	if !ok {
 		return false
 	}
-	resourceInstanceID, ok := rms.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+	resourceInstanceID, ok := rms.Resource().Attributes().Get("service.instance.id")
 	if !ok {
 		return false
 	}
@@ -448,7 +446,7 @@ func assertExpectedAttributes(t *testing.T, want pcommon.Map, got pmetric.Resour
 	}
 }
 
-func assertExpectedMetrics(t *testing.T, metricExpectations []metricExpectation, got pmetric.ResourceMetrics, normalizedNames bool, existsOnly bool) {
+func assertExpectedMetrics(t *testing.T, metricExpectations []metricExpectation, got pmetric.ResourceMetrics, normalizedNames, existsOnly bool) {
 	var defaultExpectations []metricExpectation
 	switch {
 	case existsOnly:
@@ -769,7 +767,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
 func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config), cfgMuts ...func(*PromConfig)) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	for _, cfgMut := range cfgMuts {
 		cfgMut(cfg)
@@ -778,15 +776,15 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	defer mp.Close()
 
 	config := &Config{
-		PrometheusConfig:     cfg,
-		StartTimeMetricRegex: "",
+		PrometheusConfig: cfg,
 	}
 	if alterConfig != nil {
 		alterConfig(config)
 	}
 
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), config, cms)
+	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), config, cms)
+	require.NoError(t, err, "Failed to create Prometheus receiver")
 	receiver.skipOffsetting = true
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
@@ -794,7 +792,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	t.Cleanup(func() {
 		// verify state after shutdown is called
 		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-		require.NoError(t, receiver.Shutdown(context.Background()))
+		require.NoError(t, receiver.Shutdown(t.Context()))
 		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()), "expected scrape manager to have no targets")
 	})
 

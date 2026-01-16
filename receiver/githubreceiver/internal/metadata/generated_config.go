@@ -9,8 +9,7 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
@@ -18,10 +17,12 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
@@ -103,16 +104,16 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for github resource attributes.
 type ResourceAttributesConfig struct {
-	OrganizationName ResourceAttributeConfig `mapstructure:"organization.name"`
-	VcsVendorName    ResourceAttributeConfig `mapstructure:"vcs.vendor.name"`
+	VcsOwnerName    ResourceAttributeConfig `mapstructure:"vcs.owner.name"`
+	VcsProviderName ResourceAttributeConfig `mapstructure:"vcs.provider.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		OrganizationName: ResourceAttributeConfig{
+		VcsOwnerName: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		VcsVendorName: ResourceAttributeConfig{
+		VcsProviderName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

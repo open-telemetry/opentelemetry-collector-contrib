@@ -1,0 +1,30 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: ${env:OTLP_HTTP_SERVER}
+
+exporters:
+  datadog:
+    api:
+      key: "aaa"
+    tls:
+      insecure_skip_verify: true
+    only_metadata: true  # Only send metadata, not actual log data
+    host_metadata:
+      enabled: true
+      hostname_source: first_resource  # Required when only_metadata=true
+      reporter_period: 5m  # Minimum allowed period
+    logs:
+      endpoint: ${env:SERVER_URL}
+    metrics:
+      endpoint: ${env:SERVER_URL}  # Host metadata is sent to metrics endpoint
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [datadog] 

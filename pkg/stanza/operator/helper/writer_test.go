@@ -4,7 +4,6 @@
 package helper
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -51,7 +50,7 @@ func TestWriterOperatorWrite(t *testing.T) {
 		OutputOperators: []operator.Operator{output1, output2},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 
 	err := writer.Write(ctx, testEntry)
@@ -79,7 +78,7 @@ func TestWriterOperatorWriteAfterError(t *testing.T) {
 	err = writer.SetOutputs([]operator.Operator{output1, output2})
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 
 	err = writer.Write(ctx, testEntry)
@@ -102,7 +101,7 @@ func TestWriterOperatorOutputs(t *testing.T) {
 		OutputOperators: []operator.Operator{output1, output2},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	testEntry := entry.New()
 
 	err := writer.Write(ctx, testEntry)
@@ -174,8 +173,8 @@ func TestUnmarshalWriterConfig(t *testing.T) {
 				}(),
 			},
 			{
-				Name:      "invalid",
-				ExpectErr: true,
+				Name:               "invalid",
+				ExpectUnmarshalErr: true,
 			},
 		},
 	}.Run(t)

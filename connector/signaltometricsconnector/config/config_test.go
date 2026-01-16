@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -100,6 +101,12 @@ func TestConfig(t *testing.T) {
 			},
 		},
 		{
+			path: "invalid_grok_type_map",
+			errorMsgs: []string{
+				fullErrorForSignal(t, "logs", "ExtractGrokPatterns: a single key selector[key] is required for signal to gauge"),
+			},
+		},
+		{
 			path: "invalid_ottl_value_expression",
 			errorMsgs: []string{
 				fullErrorForSignal(t, "spans", "failed to parse value OTTL expression"),
@@ -134,11 +141,11 @@ func TestConfig(t *testing.T) {
 							`attributes["some.optional.1"] != nil`,
 							`resource.attributes["some.optional.2"] != nil`,
 						},
-						ExponentialHistogram: &ExponentialHistogram{
+						ExponentialHistogram: configoptional.Some(ExponentialHistogram{
 							MaxSize: 10,
 							Count:   "1",
 							Value:   "Microseconds(end_time - start_time)",
-						},
+						}),
 					},
 					{
 						Name:                      "span.histogram",
@@ -153,11 +160,11 @@ func TestConfig(t *testing.T) {
 							`attributes["some.optional.1"] != nil`,
 							`resource.attributes["some.optional.2"] != nil`,
 						},
-						Histogram: &Histogram{
+						Histogram: configoptional.Some(Histogram{
 							Buckets: []float64{1.1, 11.1, 111.1},
 							Count:   "1",
 							Value:   "Microseconds(end_time - start_time)",
-						},
+						}),
 					},
 				},
 				Datapoints: []MetricInfo{
@@ -174,9 +181,9 @@ func TestConfig(t *testing.T) {
 							`attributes["some.optional.1"] != nil`,
 							`IsDouble(attributes["some.optional.1"])`,
 						},
-						Sum: &Sum{
+						Sum: configoptional.Some(Sum{
 							Value: `attributes["some.optional.1"]`,
-						},
+						}),
 					},
 				},
 				Logs: []MetricInfo{
@@ -192,9 +199,9 @@ func TestConfig(t *testing.T) {
 						Conditions: []string{
 							`attributes["some.optional.1"] != nil`,
 						},
-						Sum: &Sum{
+						Sum: configoptional.Some(Sum{
 							Value: "1",
-						},
+						}),
 					},
 				},
 				Profiles: []MetricInfo{
@@ -210,9 +217,9 @@ func TestConfig(t *testing.T) {
 						Conditions: []string{
 							`duration_unix_nano > 0`,
 						},
-						Sum: &Sum{
+						Sum: configoptional.Some(Sum{
 							Value: "1",
-						},
+						}),
 					},
 				},
 			},

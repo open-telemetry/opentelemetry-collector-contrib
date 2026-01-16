@@ -4,7 +4,6 @@
 package azuremonitorexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +18,7 @@ type badConfig struct{}
 func TestCreateTracesUsingSpecificTransportChannel(t *testing.T) {
 	// mock transport channel creation
 	f := &factory{}
-	ctx := context.Background()
+	ctx := t.Context()
 	params := exportertest.NewNopSettings(metadata.Type)
 	config := createDefaultConfig().(*Config)
 	config.ConnectionString = "InstrumentationKey=test-key;IngestionEndpoint=https://test-endpoint/"
@@ -31,7 +30,7 @@ func TestCreateTracesUsingSpecificTransportChannel(t *testing.T) {
 func TestCreateTracesUsingDefaultTransportChannel(t *testing.T) {
 	// We get the default transport channel creation, if we don't specify one during f creation
 	f := factory{}
-	ctx := context.Background()
+	ctx := t.Context()
 	config := createDefaultConfig().(*Config)
 	config.ConnectionString = "InstrumentationKey=test-key;IngestionEndpoint=https://test-endpoint/"
 	exporter, err := f.createTracesExporter(ctx, exportertest.NewNopSettings(metadata.Type), config)
@@ -42,7 +41,7 @@ func TestCreateTracesUsingDefaultTransportChannel(t *testing.T) {
 func TestCreateTracesUsingBadConfig(t *testing.T) {
 	// We get the default transport channel creation, if we don't specify one during factory creation
 	f := factory{}
-	ctx := context.Background()
+	ctx := t.Context()
 	params := exportertest.NewNopSettings(metadata.Type)
 
 	badConfig := &badConfig{}

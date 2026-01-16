@@ -23,10 +23,12 @@ const (
 
 	ExecutablesSymQueueIndex = "profiling-sq-executables"
 	LeafFramesSymQueueIndex  = "profiling-sq-leafframes"
+
+	HostsMetadataIndex = "profiling-hosts"
 )
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
-func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
+func (s *Serializer) SerializeProfile(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
 	err := s.createLRUs()
 	if err != nil {
 		return err
@@ -40,27 +42,31 @@ func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.I
 		return pushData(c, id, index)
 	}
 
-	data, err := serializeprofiles.Transform(resource, scope, profile)
+	data, err := serializeprofiles.Transform(dic, resource, scope, profile)
 	if err != nil {
 		return err
 	}
 
 	err = s.knownTraces.WithLock(func(tracesSet lru.LockedLRUSet) error {
-		for _, payload := range data {
+		for i := range data {
+			payload := &data[i]
 			event := payload.StackTraceEvent
 
 			if event.StackTraceID != "" {
-				if err = pushDataAsJSON(event, "", AllEventsIndex); err != nil {
+				err = pushDataAsJSON(event, "", AllEventsIndex)
+				if err != nil {
 					return err
 				}
-				if err = serializeprofiles.IndexDownsampledEvent(event, pushDataAsJSON); err != nil {
+				err = serializeprofiles.IndexDownsampledEvent(event, pushDataAsJSON)
+				if err != nil {
 					return err
 				}
 			}
 
 			if payload.StackTrace.DocID != "" {
 				if !tracesSet.CheckAndAdd(payload.StackTrace.DocID) {
-					if err = pushDataAsJSON(payload.StackTrace, payload.StackTrace.DocID, StackTraceIndex); err != nil {
+					err = pushDataAsJSON(payload.StackTrace, payload.StackTrace.DocID, StackTraceIndex)
+					if err != nil {
 						return err
 					}
 				}
@@ -74,10 +80,13 @@ func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.I
 	}
 
 	err = s.knownFrames.WithLock(func(framesSet lru.LockedLRUSet) error {
-		for _, payload := range data {
-			for _, stackFrame := range payload.StackFrames {
+		for i := range data {
+			payload := &data[i]
+			for j := range payload.StackFrames {
+				stackFrame := &payload.StackFrames[j]
 				if !framesSet.CheckAndAdd(stackFrame.DocID) {
-					if err = pushDataAsJSON(stackFrame, stackFrame.DocID, StackFrameIndex); err != nil {
+					err = pushDataAsJSON(stackFrame, stackFrame.DocID, StackFrameIndex)
+					if err != nil {
 						return err
 					}
 				}
@@ -91,10 +100,12 @@ func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.I
 	}
 
 	err = s.knownExecutables.WithLock(func(executablesSet lru.LockedLRUSet) error {
-		for _, payload := range data {
+		for i := range data {
+			payload := &data[i]
 			for _, executable := range payload.Executables {
 				if !executablesSet.CheckAndAdd(executable.DocID) {
-					if err = pushDataAsJSON(executable, executable.DocID, ExecutablesIndex); err != nil {
+					err = pushDataAsJSON(executable, executable.DocID, ExecutablesIndex)
+					if err != nil {
 						return err
 					}
 				}
@@ -108,10 +119,12 @@ func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.I
 	}
 
 	err = s.knownUnsymbolizedFrames.WithLock(func(unsymbolizedFramesSet lru.LockedLRUSet) error {
-		for _, payload := range data {
+		for i := range data {
+			payload := &data[i]
 			for _, frame := range payload.UnsymbolizedLeafFrames {
 				if !unsymbolizedFramesSet.CheckAndAdd(frame.DocID) {
-					if err = pushDataAsJSON(frame, frame.DocID, LeafFramesSymQueueIndex); err != nil {
+					err = pushDataAsJSON(frame, frame.DocID, LeafFramesSymQueueIndex)
+					if err != nil {
 						return err
 					}
 				}
@@ -124,11 +137,34 @@ func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.I
 		return err
 	}
 
+	err = s.knownHosts.WithLock(func(hostMetadata lru.LockedLRUSet) error {
+		for i := range data {
+			payload := &data[i]
+			hostID := payload.HostMetadata.HostID
+			if hostID == "" {
+				continue
+			}
+
+			if !hostMetadata.CheckAndAdd(hostID) {
+				err = pushDataAsJSON(payload.HostMetadata, "", HostsMetadataIndex)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
 	return s.knownUnsymbolizedExecutables.WithLock(func(unsymbolizedExecutablesSet lru.LockedLRUSet) error {
-		for _, payload := range data {
+		for i := range data {
+			payload := &data[i]
 			for _, executable := range payload.UnsymbolizedExecutables {
 				if !unsymbolizedExecutablesSet.CheckAndAdd(executable.DocID) {
-					if err = pushDataAsJSON(executable, executable.DocID, ExecutablesSymQueueIndex); err != nil {
+					err = pushDataAsJSON(executable, executable.DocID, ExecutablesSymQueueIndex)
+					if err != nil {
 						return err
 					}
 				}
@@ -180,6 +216,12 @@ func (s *Serializer) createLRUs() error {
 		s.knownUnsymbolizedExecutables, err = lru.NewLRUSet(knownUnsymbolizedExecutablesCacheSize, minILMRolloverTime)
 		if err != nil {
 			s.lruErr = fmt.Errorf("failed to create unsymbolized executables LRU: %w", err)
+			return
+		}
+
+		s.knownHosts, err = lru.NewLRUSet(knownHostsCacheSize, minILMRolloverTime)
+		if err != nil {
+			s.lruErr = fmt.Errorf("failed to create hosts LRU: %w", err)
 			return
 		}
 	})

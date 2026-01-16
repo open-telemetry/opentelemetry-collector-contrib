@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 )
 
 // LogsBuilder provides an interface for scrapers to report logs while taking care of all the transformations
@@ -68,7 +68,7 @@ func (lb *LogsBuilder) AppendLogRecord(lr plog.LogRecord) {
 // just `Emit` function can be called instead.
 // Resource attributes should be provided as ResourceLogsOption arguments.
 func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
-	rl := lb.logsBuffer.ResourceLogs().AppendEmpty()
+	rl := plog.NewResourceLogs()
 	rl.SetSchemaUrl(conventions.SchemaURL)
 	ils := rl.ScopeLogs().AppendEmpty()
 	ils.Scope().SetName(ScopeName)
@@ -81,6 +81,10 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	if lb.logRecordsBuffer.Len() > 0 {
 		lb.logRecordsBuffer.MoveAndAppendTo(ils.LogRecords())
 		lb.logRecordsBuffer = plog.NewLogRecordSlice()
+	}
+
+	if ils.LogRecords().Len() > 0 {
+		rl.MoveTo(lb.logsBuffer.ResourceLogs().AppendEmpty())
 	}
 }
 

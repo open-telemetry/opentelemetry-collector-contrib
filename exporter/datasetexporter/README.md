@@ -6,6 +6,7 @@
 | Stability     | [alpha]: logs, traces   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fdataset%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fdataset) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fdataset%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fdataset) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_dataset)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_dataset&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@martin-majlis-s1](https://www.github.com/martin-majlis-s1), [@zdaratom-s1](https://www.github.com/zdaratom-s1), [@tomaz-s1](https://www.github.com/tomaz-s1) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -237,6 +238,9 @@ exporters:
       server_host: ${env:SERVER_HOST}
       # If server_host is not set, use the hostname value
       use_hostname: true
+    sending_queue:
+      # Enable batching
+      batch:
 
   dataset/traces:
     # DataSet API URL, https://app.eu.scalyr.com for DataSet EU instance
@@ -247,17 +251,19 @@ exporters:
       max_lifetime: 15s
       group_by:
         - resource_service.instance.id
+    sending_queue:
+      # Enable batching
+      batch:
 
 service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: [batch, attributes]
+      processors: [attributes]
       # add dataset among your exporters
       exporters: [dataset/logs]
     traces:
       receivers: [otlp]
-      processors: [batch]
       # add dataset among your exporters
       exporters: [dataset/traces]
 ```
@@ -302,7 +308,6 @@ To enable metrics you have to:
        metrics:
          # add prometheus among metrics receivers
          receivers: [prometheus]
-         processors: [batch]
          exporters: [otlphttp/prometheus, debug]
    ```
 

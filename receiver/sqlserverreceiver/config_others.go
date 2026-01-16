@@ -5,6 +5,6 @@
 
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
-func (cfg *Config) validateInstanceAndComputerName() error {
+func (*Config) validateInstanceAndComputerName() error {
 	return nil
 }

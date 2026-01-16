@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -37,13 +36,13 @@ func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/"
-	attributes[conventionsv112.AttributeRPCService] = "DynamoDB"
-	attributes[conventionsv112.AttributeRPCMethod] = "GetItem"
-	attributes[conventionsv112.AttributeRPCSystem] = "aws-api"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "dynamodb.us-east-1.amazonaws.com"
+	attributes["http.target"] = "/"
+	attributes["rpc.service"] = "DynamoDB"
+	attributes["rpc.method"] = "GetItem"
+	attributes["rpc.system"] = "aws-api"
 	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
 	attributes[awsxray.AWSTableNameAttribute] = "otel-dev-Testing"
 	resource := constructDefaultResource()
@@ -51,7 +50,7 @@ func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 	assert.Equal(t, "DynamoDB", *segment.Name)
-	assert.Equal(t, conventionsv112.AttributeCloudProviderAWS, *segment.Namespace)
+	assert.Equal(t, "aws", *segment.Namespace)
 	assert.Equal(t, "GetItem", *segment.AWS.Operation)
 	assert.Equal(t, "subsegment", *segment.Type)
 
@@ -70,12 +69,12 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "dynamodb.us-east-1.amazonaws.com"
+	attributes["http.target"] = "/"
 	attributes[awsxray.AWSServiceAttribute] = "DynamoDB"
-	attributes[conventionsv112.AttributeRPCMethod] = "IncorrectAWSSDKOperation"
+	attributes["rpc.method"] = "IncorrectAWSSDKOperation"
 	attributes[awsxray.AWSOperationAttribute] = "GetItem"
 	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
 	attributes[awsxray.AWSTableNameAttribute] = "otel-dev-Testing"
@@ -84,7 +83,7 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 	assert.Equal(t, "DynamoDB", *segment.Name)
-	assert.Equal(t, conventionsv112.AttributeCloudProviderAWS, *segment.Namespace)
+	assert.Equal(t, "aws", *segment.Namespace)
 	assert.Equal(t, "GetItem", *segment.AWS.Operation)
 	assert.Equal(t, "subsegment", *segment.Type)
 
@@ -102,11 +101,11 @@ func TestClientSpanWithPeerService(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/"
-	attributes[conventionsv112.AttributePeerService] = "cats-table"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "dynamodb.us-east-1.amazonaws.com"
+	attributes["http.target"] = "/"
+	attributes["peer.service"] = "cats-table"
 	attributes[awsxray.AWSServiceAttribute] = "DynamoDB"
 	attributes[awsxray.AWSOperationAttribute] = "GetItem"
 	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
@@ -125,13 +124,13 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	userAgent := "PostmanRuntime/7.21.0"
 	enduser := "go.tester@example.com"
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeHTTPURL] = "https://api.example.org/api/locations"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/api/locations"
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 500
+	attributes["http.method"] = http.MethodPost
+	attributes["http.url"] = "https://api.example.org/api/locations"
+	attributes["http.target"] = "/api/locations"
+	attributes["http.status_code"] = 500
 	attributes["http.status_text"] = "java.lang.NullPointerException"
-	attributes[conventionsv112.AttributeHTTPUserAgent] = userAgent
-	attributes[conventionsv112.AttributeEnduserID] = enduser
+	attributes["http.user_agent"] = userAgent
+	attributes["enduser.id"] = enduser
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, errorMessage, attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
@@ -152,13 +151,13 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	userAgent := "PostmanRuntime/7.21.0"
 	enduser := "go.tester@example.com"
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeHTTPURL] = "https://api.example.org/api/locations"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/api/locations"
-	attributes[conventionsv112.AttributeHTTPStatusCode] = 429
+	attributes["http.method"] = http.MethodPost
+	attributes["http.url"] = "https://api.example.org/api/locations"
+	attributes["http.target"] = "/api/locations"
+	attributes["http.status_code"] = 429
 	attributes["http.status_text"] = "java.lang.NullPointerException"
-	attributes[conventionsv112.AttributeHTTPUserAgent] = userAgent
-	attributes[conventionsv112.AttributeEnduserID] = enduser
+	attributes["http.user_agent"] = userAgent
+	attributes["enduser.id"] = enduser
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, errorMessage, attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
@@ -220,13 +219,13 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	parentSpanID := newSegmentID()
 	enterpriseAppID := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeDBSystem] = "mysql"
-	attributes[conventionsv112.AttributeDBName] = "customers"
-	attributes[conventionsv112.AttributeDBStatement] = spanName
-	attributes[conventionsv112.AttributeDBUser] = "userprefsvc"
-	attributes[conventionsv112.AttributeDBConnectionString] = "jdbc:mysql://db.dev.example.com:3306"
-	attributes[conventionsv112.AttributeNetPeerName] = "db.dev.example.com"
-	attributes[conventionsv112.AttributeNetPeerPort] = "3306"
+	attributes["db.system"] = "mysql"
+	attributes["db.name"] = "customers"
+	attributes["db.statement"] = spanName
+	attributes["db.user"] = "userprefsvc"
+	attributes["db.connection_string"] = "jdbc:mysql://db.dev.example.com:3306"
+	attributes["net.peer.name"] = "db.dev.example.com"
+	attributes["net.peer.port"] = "3306"
 	attributes["enterprise.app.id"] = enterpriseAppID
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
@@ -259,13 +258,13 @@ func TestClientSpanWithHttpHost(t *testing.T) {
 	spanName := "GET /"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
-	attributes[conventionsv112.AttributeNetPeerPort] = "9443"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/"
-	attributes[conventionsv112.AttributeHTTPHost] = "foo.com"
-	attributes[conventionsv112.AttributeNetPeerName] = "bar.com"
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "https"
+	attributes["net.peer.ip"] = "2607:f8b0:4000:80c::2004"
+	attributes["net.peer.port"] = "9443"
+	attributes["http.target"] = "/"
+	attributes["http.host"] = "foo.com"
+	attributes["net.peer.name"] = "bar.com"
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
@@ -279,12 +278,12 @@ func TestClientSpanWithoutHttpHost(t *testing.T) {
 	spanName := "GET /"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
-	attributes[conventionsv112.AttributeNetPeerPort] = "9443"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/"
-	attributes[conventionsv112.AttributeNetPeerName] = "bar.com"
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "https"
+	attributes["net.peer.ip"] = "2607:f8b0:4000:80c::2004"
+	attributes["net.peer.port"] = "9443"
+	attributes["http.target"] = "/"
+	attributes["net.peer.name"] = "bar.com"
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
@@ -298,13 +297,13 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 	spanName := "GET /com.foo.AnimalService/GetCats"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
-	attributes[conventionsv112.AttributeNetPeerPort] = "9443"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/com.foo.AnimalService/GetCats"
-	attributes[conventionsv112.AttributeRPCService] = "com.foo.AnimalService"
-	attributes[conventionsv112.AttributeNetPeerName] = "bar.com"
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "https"
+	attributes["net.peer.ip"] = "2607:f8b0:4000:80c::2004"
+	attributes["net.peer.port"] = "9443"
+	attributes["http.target"] = "/com.foo.AnimalService/GetCats"
+	attributes["rpc.service"] = "com.foo.AnimalService"
+	attributes["net.peer.name"] = "bar.com"
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
@@ -317,11 +316,11 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 func TestSpanWithInvalidTraceId(t *testing.T) {
 	spanName := "platformapi.widgets.searchWidgets"
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventionsv112.AttributeHTTPScheme] = "ipv6"
-	attributes[conventionsv112.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
-	attributes[conventionsv112.AttributeNetPeerPort] = "9443"
-	attributes[conventionsv112.AttributeHTTPTarget] = spanName
+	attributes["http.method"] = http.MethodGet
+	attributes["http.scheme"] = "ipv6"
+	attributes["net.peer.ip"] = "2607:f8b0:4000:80c::2004"
+	attributes["net.peer.port"] = "9443"
+	attributes["http.target"] = spanName
 	resource := constructDefaultResource()
 	span := constructClientSpan(pcommon.NewSpanIDEmpty(), spanName, ptrace.StatusCodeUnset, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
@@ -352,11 +351,11 @@ func TestSpanWithInvalidTraceIdWithoutTimestampValidation(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeHTTPHost] = "payment.amazonaws.com"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/"
-	attributes[conventionsv112.AttributeRPCService] = "ABC"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "payment.amazonaws.com"
+	attributes["http.target"] = "/"
+	attributes["rpc.service"] = "ABC"
 	attributes[awsRemoteService] = "ProducerService"
 
 	resource := constructDefaultResource()
@@ -676,11 +675,11 @@ func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
 	attributes[awsxray.AWSOperationAttribute] = "aws_operation_val"
-	attributes[conventionsv112.AttributeRPCMethod] = "rpc_method_val"
+	attributes["rpc.method"] = "rpc_method_val"
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventionsv112.AttributeRPCMethod}, false, nil, false)
+	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, "rpc.method"}, false, nil, false)
 
 	assert.NotNil(t, segment)
 	assert.Len(t, segment.Annotations, 2)
@@ -696,16 +695,16 @@ func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
 	attributes[awsxray.AWSOperationAttribute] = "aws_operation_val"
-	attributes[conventionsv112.AttributeRPCMethod] = "rpc_method_val"
+	attributes["rpc.method"] = "rpc_method_val"
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventionsv112.AttributeRPCMethod}, false, nil, false)
+	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, "rpc.method"}, false, nil, false)
 
 	assert.NotNil(t, segment)
 	assert.Len(t, segment.Annotations, 2)
 	assert.Equal(t, "aws_operation_val", segment.Annotations[awsxray.AWSOperationAttribute])
-	assert.Equal(t, "rpc_method_val", segment.Annotations[conventionsv112.AttributeRPCMethod])
+	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc.method"])
 }
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
@@ -716,11 +715,11 @@ func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
 	attributes[awsxray.AWSOperationAttribute] = "aws_operation_val"
-	attributes[conventionsv112.AttributeRPCMethod] = "rpc_method_val"
+	attributes["rpc.method"] = "rpc_method_val"
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventionsv112.AttributeRPCMethod}, true, nil, false)
+	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, "rpc.method"}, true, nil, false)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, "aws_operation_val", segment.Annotations["aws_operation"])
@@ -735,15 +734,15 @@ func TestSpanWithSpecialAttributesAsListedAndIndexAllWithAllowDot(t *testing.T) 
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
 	attributes[awsxray.AWSOperationAttribute] = "aws_operation_val"
-	attributes[conventionsv112.AttributeRPCMethod] = "rpc_method_val"
+	attributes["rpc.method"] = "rpc_method_val"
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventionsv112.AttributeRPCMethod}, true, nil, false)
+	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, "rpc.method"}, true, nil, false)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, "aws_operation_val", segment.Annotations[awsxray.AWSOperationAttribute])
-	assert.Equal(t, "rpc_method_val", segment.Annotations[conventionsv112.AttributeRPCMethod])
+	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc.method"])
 }
 
 func TestSpanWithSpecialAttributesNotListedAndIndexAll(t *testing.T) {
@@ -751,7 +750,7 @@ func TestSpanWithSpecialAttributesNotListedAndIndexAll(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
 	attributes[awsxray.AWSOperationAttribute] = "val1"
-	attributes[conventionsv112.AttributeRPCMethod] = "val2"
+	attributes["rpc.method"] = "val2"
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
@@ -768,8 +767,8 @@ func TestOriginNotAws(t *testing.T) {
 	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderGCP)
-	attrs.PutStr(conventionsv112.AttributeHostID, "instance-123")
+	attrs.PutStr("cloud.provider", "gcp")
+	attrs.PutStr("host.id", "instance-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false, nil, false)
@@ -784,9 +783,9 @@ func TestOriginEc2(t *testing.T) {
 	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
-	attrs.PutStr(conventionsv112.AttributeCloudPlatform, conventionsv112.AttributeCloudPlatformAWSEC2)
-	attrs.PutStr(conventionsv112.AttributeHostID, "instance-123")
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.platform", "aws_ec2")
+	attrs.PutStr("host.id", "instance-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false, nil, false)
@@ -801,10 +800,10 @@ func TestOriginEcs(t *testing.T) {
 	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
-	attrs.PutStr(conventionsv112.AttributeCloudPlatform, conventionsv112.AttributeCloudPlatformAWSECS)
-	attrs.PutStr(conventionsv112.AttributeHostID, "instance-123")
-	attrs.PutStr(conventionsv112.AttributeContainerName, "container-123")
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.platform", "aws_ecs")
+	attrs.PutStr("host.id", "instance-123")
+	attrs.PutStr("container.name", "container-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false, nil, false)
@@ -819,11 +818,11 @@ func TestOriginEcsEc2(t *testing.T) {
 	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
-	attrs.PutStr(conventionsv112.AttributeCloudPlatform, conventionsv112.AttributeCloudPlatformAWSECS)
-	attrs.PutStr(conventionsv112.AttributeAWSECSLaunchtype, conventionsv112.AttributeAWSECSLaunchtypeEC2)
-	attrs.PutStr(conventionsv112.AttributeHostID, "instance-123")
-	attrs.PutStr(conventionsv112.AttributeContainerName, "container-123")
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.platform", "aws_ecs")
+	attrs.PutStr("aws.ecs.launchtype", "ec2")
+	attrs.PutStr("host.id", "instance-123")
+	attrs.PutStr("container.name", "container-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false, nil, false)
@@ -838,11 +837,11 @@ func TestOriginEcsFargate(t *testing.T) {
 	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
-	attrs.PutStr(conventionsv112.AttributeCloudPlatform, conventionsv112.AttributeCloudPlatformAWSECS)
-	attrs.PutStr(conventionsv112.AttributeAWSECSLaunchtype, conventionsv112.AttributeAWSECSLaunchtypeFargate)
-	attrs.PutStr(conventionsv112.AttributeHostID, "instance-123")
-	attrs.PutStr(conventionsv112.AttributeContainerName, "container-123")
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.platform", "aws_ecs")
+	attrs.PutStr("aws.ecs.launchtype", "fargate")
+	attrs.PutStr("host.id", "instance-123")
+	attrs.PutStr("container.name", "container-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false, nil, false)
@@ -857,11 +856,11 @@ func TestOriginEb(t *testing.T) {
 	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
-	attrs.PutStr(conventionsv112.AttributeCloudPlatform, conventionsv112.AttributeCloudPlatformAWSElasticBeanstalk)
-	attrs.PutStr(conventionsv112.AttributeHostID, "instance-123")
-	attrs.PutStr(conventionsv112.AttributeContainerName, "container-123")
-	attrs.PutStr(conventionsv112.AttributeServiceInstanceID, "service-123")
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.platform", "aws_elastic_beanstalk")
+	attrs.PutStr("host.id", "instance-123")
+	attrs.PutStr("container.name", "container-123")
+	attrs.PutStr("service.instance.id", "service-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false, nil, false)
@@ -879,20 +878,20 @@ func TestOriginEks(t *testing.T) {
 	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
-	attrs.PutStr(conventionsv112.AttributeCloudPlatform, conventionsv112.AttributeCloudPlatformAWSEKS)
-	attrs.PutStr(conventionsv112.AttributeCloudAccountID, "123456789")
-	attrs.PutStr(conventionsv112.AttributeCloudAvailabilityZone, "us-east-1c")
-	attrs.PutStr(conventionsv112.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.PutStr(conventionsv112.AttributeContainerImageTag, "v1")
-	attrs.PutStr(conventionsv112.AttributeK8SClusterName, "production")
-	attrs.PutStr(conventionsv112.AttributeK8SNamespaceName, "default")
-	attrs.PutStr(conventionsv112.AttributeK8SDeploymentName, "signup_aggregator")
-	attrs.PutStr(conventionsv112.AttributeK8SPodName, "my-deployment-65dcf7d447-ddjnl")
-	attrs.PutStr(conventionsv112.AttributeContainerName, containerName)
-	attrs.PutStr(conventionsv112.AttributeContainerID, containerID)
-	attrs.PutStr(conventionsv112.AttributeHostID, instanceID)
-	attrs.PutStr(conventionsv112.AttributeHostType, "m5.xlarge")
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.platform", "aws_eks")
+	attrs.PutStr("cloud.account.id", "123456789")
+	attrs.PutStr("cloud.availability_zone", "us-east-1c")
+	attrs.PutStr("container.image.name", "otel/signupaggregator")
+	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutStr("k8s.cluster.name", "production")
+	attrs.PutStr("k8s.namespace.name", "default")
+	attrs.PutStr("k8s.deployment.name", "signup_aggregator")
+	attrs.PutStr("k8s.pod.name", "my-deployment-65dcf7d447-ddjnl")
+	attrs.PutStr("container.name", containerName)
+	attrs.PutStr("container.id", containerID)
+	attrs.PutStr("host.id", instanceID)
+	attrs.PutStr("host.type", "m5.xlarge")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false, nil, false)
@@ -907,8 +906,8 @@ func TestOriginAppRunner(t *testing.T) {
 	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
-	attrs.PutStr(conventionsv112.AttributeCloudPlatform, conventionsv112.AttributeCloudPlatformAWSAppRunner)
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.platform", "aws_app_runner")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false, nil, false)
@@ -923,7 +922,7 @@ func TestOriginBlank(t *testing.T) {
 	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
+	attrs.PutStr("cloud.provider", "aws")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false, nil, false)
@@ -938,12 +937,12 @@ func TestOriginPrefersInfraService(t *testing.T) {
 	attributes := make(map[string]any)
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
-	attrs.PutStr(conventionsv112.AttributeCloudPlatform, conventionsv112.AttributeCloudPlatformAWSEC2)
-	attrs.PutStr(conventionsv112.AttributeK8SClusterName, "cluster-123")
-	attrs.PutStr(conventionsv112.AttributeHostID, "instance-123")
-	attrs.PutStr(conventionsv112.AttributeContainerName, "container-123")
-	attrs.PutStr(conventionsv112.AttributeServiceInstanceID, "service-123")
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.platform", "aws_ec2")
+	attrs.PutStr("k8s.cluster.name", "cluster-123")
+	attrs.PutStr("host.id", "instance-123")
+	attrs.PutStr("container.name", "container-123")
+	attrs.PutStr("service.instance.id", "service-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false, nil, false)
@@ -995,7 +994,7 @@ func TestSpanWithSingleDynamoDBTableHasTableName(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeAWSDynamoDBTableNames] = []string{"table1"}
+	attributes["aws.dynamodb.table_names"] = []string{"table1"}
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
@@ -1004,14 +1003,14 @@ func TestSpanWithSingleDynamoDBTableHasTableName(t *testing.T) {
 	assert.NotNil(t, segment)
 	assert.Equal(t, "table1", *segment.AWS.TableName)
 	assert.Nil(t, segment.AWS.TableNames)
-	assert.Equal(t, []any{"table1"}, segment.Metadata["default"][conventionsv112.AttributeAWSDynamoDBTableNames])
+	assert.Equal(t, []any{"table1"}, segment.Metadata["default"]["aws.dynamodb.table_names"])
 }
 
 func TestSpanWithMultipleDynamoDBTablesHasTableNames(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeAWSDynamoDBTableNames] = []string{"table1", "table2"}
+	attributes["aws.dynamodb.table_names"] = []string{"table1", "table2"}
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
@@ -1020,7 +1019,7 @@ func TestSpanWithMultipleDynamoDBTablesHasTableNames(t *testing.T) {
 	assert.NotNil(t, segment)
 	assert.Nil(t, segment.AWS.TableName)
 	assert.Equal(t, []string{"table1", "table2"}, segment.AWS.TableNames)
-	assert.Equal(t, []any{"table1", "table2"}, segment.Metadata["default"][conventionsv112.AttributeAWSDynamoDBTableNames])
+	assert.Equal(t, []any{"table1", "table2"}, segment.Metadata["default"]["aws.dynamodb.table_names"])
 }
 
 func TestSegmentWithLogGroupsFromConfig(t *testing.T) {
@@ -1068,11 +1067,11 @@ func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeHTTPHost] = "payment.amazonaws.com"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/"
-	attributes[conventionsv112.AttributeRPCService] = "ABC"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "payment.amazonaws.com"
+	attributes["http.target"] = "/"
+	attributes["rpc.service"] = "ABC"
 	attributes[awsRemoteService] = "PaymentService"
 
 	resource := constructDefaultResource()
@@ -1096,10 +1095,10 @@ func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeRPCSystem] = "aws-api"
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeRPCService] = "DynamoDb"
+	attributes["rpc.system"] = "aws-api"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["rpc.service"] = "DynamoDb"
 	attributes[awsRemoteService] = "AWS.SDK.DynamoDb"
 
 	resource := constructDefaultResource()
@@ -1124,10 +1123,10 @@ func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeRPCSystem] = "aws-api"
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeRPCService] = "DynamoDb"
+	attributes["rpc.system"] = "aws-api"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["rpc.service"] = "DynamoDb"
 	attributes[awsRemoteService] = "AWS::DynamoDB"
 
 	resource := constructDefaultResource()
@@ -1152,11 +1151,11 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeHTTPHost] = "payment.amazonaws.com"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/"
-	attributes[conventionsv112.AttributeRPCService] = "ABC"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "payment.amazonaws.com"
+	attributes["http.target"] = "/"
+	attributes["rpc.service"] = "ABC"
 	attributes[awsRemoteService] = "ProducerService"
 
 	resource := constructDefaultResource()
@@ -1165,6 +1164,7 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 	assert.Equal(t, "ProducerService", *segment.Name)
 	assert.Equal(t, "subsegment", *segment.Type)
+	assert.Equal(t, "remote", *segment.Namespace)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
@@ -1173,6 +1173,22 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	assert.Contains(t, jsonStr, "ProducerService")
 	assert.NotContains(t, jsonStr, user)
 	assert.NotContains(t, jsonStr, "user")
+}
+
+func TestProducerSpanNonAwsRemoteServiceName(t *testing.T) {
+	spanName := "my-topic send"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes["peer.service"] = "ProducerService"
+	resource := constructDefaultResource()
+	span := constructProducerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "ProducerService", *segment.Name)
+	assert.Equal(t, "subsegment", *segment.Type)
+	assert.Equal(t, "remote", *segment.Namespace)
 }
 
 func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
@@ -1199,11 +1215,11 @@ func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeHTTPHost] = "payment.amazonaws.com"
-	attributes[conventionsv112.AttributeHTTPTarget] = "/"
-	attributes[conventionsv112.AttributeRPCService] = "ABC"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["http.host"] = "payment.amazonaws.com"
+	attributes["http.target"] = "/"
+	attributes["rpc.service"] = "ABC"
 	attributes[awsLocalService] = "PaymentLocalService"
 	attributes[awsRemoteService] = "PaymentService"
 
@@ -1239,7 +1255,7 @@ func validateLocalRootDependencySubsegment(t *testing.T, segment *awsxray.Segmen
 	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
 
 	assert.Len(t, segment.Metadata["default"], 8)
-	assert.Equal(t, "receive", segment.Metadata["default"][conventionsv112.AttributeMessagingOperation])
+	assert.Equal(t, "receive", segment.Metadata["default"]["messaging.operation"])
 	assert.Equal(t, "LOCAL_ROOT", segment.Metadata["default"][awsSpanKind])
 	assert.Equal(t, "myRemoteOperation", segment.Metadata["default"][awsRemoteOperation])
 	assert.Equal(t, "myTarget", segment.Metadata["default"][remoteTarget])
@@ -1288,11 +1304,77 @@ func validateLocalRootServiceSegment(t *testing.T, segment *awsxray.Segment, spa
 	assert.Nil(t, segment.Namespace)
 }
 
+func validateLocalRootSegmentTypeDependencySubsegment(t *testing.T, segment *awsxray.Segment, span ptrace.Span, parentID string) {
+	tempTraceID := span.TraceID()
+	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
+
+	assert.Equal(t, "subsegment", *segment.Type)
+	assert.Equal(t, "myRemoteService", *segment.Name)
+	assert.Equal(t, span.SpanID().String(), *segment.ID)
+	assert.Equal(t, parentID, *segment.ParentID)
+	assert.Equal(t, expectedTraceID, *segment.TraceID)
+	assert.NotNil(t, segment.HTTP)
+	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
+	assert.Len(t, segment.Annotations, 2)
+	assert.Nil(t, segment.Annotations[awsRemoteService])
+	assert.Nil(t, segment.Annotations[remoteTarget])
+	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
+
+	assert.Len(t, segment.Metadata["default"], 30)
+	assert.Equal(t, "receive", segment.Metadata["default"]["messaging.operation"])
+	assert.Equal(t, "LOCAL_ROOT", segment.Metadata["default"][awsSpanKind])
+	assert.Equal(t, "myRemoteOperation", segment.Metadata["default"][awsRemoteOperation])
+	assert.Equal(t, "myTarget", segment.Metadata["default"][remoteTarget])
+	assert.Equal(t, "k8sRemoteNamespace", segment.Metadata["default"][k8sRemoteNamespace])
+	assert.Equal(t, "myLocalService", segment.Metadata["default"][awsLocalService])
+	assert.Equal(t, "awsLocalOperation", segment.Metadata["default"][awsLocalOperation])
+	assert.Equal(t, "service.name=myTest", segment.Metadata["default"]["otel.resource.attributes"])
+
+	assert.Equal(t, "MySDK", *segment.AWS.XRay.SDK)
+	assert.Equal(t, "1.20.0", *segment.AWS.XRay.SDKVersion)
+	assert.True(t, *segment.AWS.XRay.AutoInstrumentation)
+
+	assert.Equal(t, "UpdateItem", *segment.AWS.Operation)
+	assert.Equal(t, "AWSAccountAttribute", *segment.AWS.AccountID)
+	assert.Equal(t, "AWSRegionAttribute", *segment.AWS.RemoteRegion)
+	assert.Equal(t, "AWSRequestIDAttribute", *segment.AWS.RequestID)
+	assert.Equal(t, "AWSQueueURLAttribute", *segment.AWS.QueueURL)
+	assert.Equal(t, "TableName", *segment.AWS.TableName)
+
+	assert.Equal(t, "remote", *segment.Namespace)
+}
+
+func validateLocalRootSegmentTypeServiceSegment(t *testing.T, segment *awsxray.Segment, span ptrace.Span) {
+	tempTraceID := span.TraceID()
+	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
+
+	assert.Nil(t, segment.Type)
+	assert.Equal(t, "myLocalService", *segment.Name)
+	assert.Equal(t, expectedTraceID, *segment.TraceID)
+	assert.Nil(t, segment.HTTP)
+	assert.Len(t, segment.Annotations, 1)
+	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
+	assert.Len(t, segment.Metadata["default"], 23)
+	assert.Equal(t, "service.name=myTest", segment.Metadata["default"]["otel.resource.attributes"])
+	assert.Equal(t, "MySDK", *segment.AWS.XRay.SDK)
+	assert.Equal(t, "1.20.0", *segment.AWS.XRay.SDKVersion)
+	assert.True(t, *segment.AWS.XRay.AutoInstrumentation)
+	assert.Nil(t, segment.AWS.Operation)
+	assert.Nil(t, segment.AWS.AccountID)
+	assert.Nil(t, segment.AWS.RemoteRegion)
+	assert.Nil(t, segment.AWS.RequestID)
+	assert.Nil(t, segment.AWS.QueueURL)
+	assert.Nil(t, segment.AWS.TableName)
+	assert.Nil(t, segment.Namespace)
+
+	assert.Nil(t, segment.Namespace)
+}
+
 func getBasicAttributes() map[string]any {
 	attributes := make(map[string]any)
 
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeMessagingOperation] = "receive"
+	attributes["http.method"] = http.MethodPost
+	attributes["messaging.operation"] = "receive"
 
 	attributes["otel.resource.attributes"] = "service.name=myTest"
 
@@ -1319,9 +1401,9 @@ func getBasicAttributes() map[string]any {
 func getBasicResource() pcommon.Resource {
 	resource := constructDefaultResource()
 
-	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKName, "MySDK")
-	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKVersion, "1.20.0")
-	resource.Attributes().PutStr(conventionsv112.AttributeTelemetryAutoVersion, "1.2.3")
+	resource.Attributes().PutStr("telemetry.sdk.name", "MySDK")
+	resource.Attributes().PutStr("telemetry.sdk.version", "1.20.0")
+	resource.Attributes().PutStr("telemetry.auto.version", "1.2.3")
 
 	return resource
 }
@@ -1352,15 +1434,20 @@ func TestLocalRootConsumer(t *testing.T) {
 	assert.Len(t, segments, 2)
 	assert.NoError(t, err)
 
-	validateLocalRootDependencySubsegment(t, segments[0], span, *segments[1].ID)
+	validateLocalRootSegmentTypeDependencySubsegment(t, segments[0], span, *segments[1].ID)
 	assert.Nil(t, segments[0].Links)
 
-	validateLocalRootServiceSegment(t, segments[1], span)
+	validateLocalRootSegmentTypeServiceSegment(t, segments[1], span)
 	assert.Len(t, segments[1].Links, 1)
 
 	// Checks these values are the same for both
 	assert.Equal(t, segments[0].StartTime, segments[1].StartTime)
 	assert.Equal(t, segments[0].EndTime, segments[1].EndTime)
+
+	// Check that segment EndTime matches span's EndTime
+	expectedEndTime := float64(span.EndTimestamp()) / float64(time.Second)
+	assert.Equal(t, expectedEndTime, *segments[0].EndTime)
+	assert.Equal(t, expectedEndTime, *segments[1].EndTime)
 }
 
 func TestNonLocalRootConsumerProcess(t *testing.T) {
@@ -1387,7 +1474,7 @@ func TestNonLocalRootConsumerProcess(t *testing.T) {
 	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
 
 	// Validate segment 1 (dependency subsegment)
-	assert.Equal(t, "subsegment", *segments[0].Type)
+	assert.Nil(t, segments[0].Type)
 	assert.Equal(t, "destination operation", *segments[0].Name)
 	assert.NotEqual(t, parentSpanID.String(), *segments[0].ID)
 	assert.Equal(t, span.SpanID().String(), *segments[0].ID)
@@ -1397,10 +1484,10 @@ func TestNonLocalRootConsumerProcess(t *testing.T) {
 	assert.Equal(t, http.MethodPost, *segments[0].HTTP.Request.Method)
 	assert.Len(t, segments[0].Annotations, 1)
 	assert.Equal(t, "myAnnotationValue", segments[0].Annotations["myAnnotationKey"])
-	assert.Len(t, segments[0].Metadata["default"], 7)
+	assert.Len(t, segments[0].Metadata["default"], 29)
 	assert.Equal(t, "Consumer", segments[0].Metadata["default"][awsSpanKind])
 	assert.Equal(t, "myLocalService", segments[0].Metadata["default"][awsLocalService])
-	assert.Equal(t, "receive", segments[0].Metadata["default"][conventionsv112.AttributeMessagingOperation])
+	assert.Equal(t, "receive", segments[0].Metadata["default"]["messaging.operation"])
 	assert.Equal(t, "service.name=myTest", segments[0].Metadata["default"]["otel.resource.attributes"])
 	assert.Equal(t, "MySDK", *segments[0].AWS.XRay.SDK)
 	assert.Equal(t, "1.20.0", *segments[0].AWS.XRay.SDKVersion)
@@ -1415,7 +1502,7 @@ func TestLocalRootConsumerAWSNamespace(t *testing.T) {
 	parentSpanID := newSegmentID()
 
 	attributes := getBasicAttributes()
-	attributes[conventionsv112.AttributeRPCSystem] = "aws-api"
+	attributes["rpc.system"] = "aws-api"
 
 	span := constructConsumerSpan(parentSpanID, spanName, 200, "OK", attributes)
 
@@ -1474,10 +1561,10 @@ func TestLocalRootClientAwsServiceMetrics(t *testing.T) {
 
 	attributes := getBasicAttributes()
 	attributes[awsSpanKind] = "LOCAL_ROOT"
-	attributes[conventionsv112.AttributeRPCSystem] = "aws-api"
-	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodPost
-	attributes[conventionsv112.AttributeHTTPScheme] = "https"
-	attributes[conventionsv112.AttributeRPCService] = "SQS"
+	attributes["rpc.system"] = "aws-api"
+	attributes["http.method"] = http.MethodPost
+	attributes["http.scheme"] = "https"
+	attributes["rpc.service"] = "SQS"
 	attributes[awsRemoteService] = "AWS.SDK.SQS"
 
 	span := constructClientSpan(parentSpanID, spanName, 200, "OK", attributes)
@@ -1549,7 +1636,7 @@ func validateLocalRootWithoutDependency(t *testing.T, segment *awsxray.Segment, 
 	}
 
 	assert.Len(t, segment.Metadata["default"], numberOfMetadataKeys)
-	assert.Equal(t, "receive", segment.Metadata["default"][conventionsv112.AttributeMessagingOperation])
+	assert.Equal(t, "receive", segment.Metadata["default"]["messaging.operation"])
 	assert.Equal(t, "LOCAL_ROOT", segment.Metadata["default"][awsSpanKind])
 	assert.Equal(t, "myRemoteOperation", segment.Metadata["default"][awsRemoteOperation])
 	assert.Equal(t, "myTarget", segment.Metadata["default"][remoteTarget])
@@ -1662,8 +1749,8 @@ func TestNotLocalRootConsumer(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Validate segment
-	assert.Equal(t, "subsegment", *segments[0].Type)
-	assert.Equal(t, "remote", *segments[0].Namespace)
+	assert.Nil(t, segments[0].Type)
+	assert.Nil(t, segments[0].Namespace)
 	assert.Equal(t, "myRemoteService", *segments[0].Name)
 }
 
@@ -1879,16 +1966,19 @@ func constructProducerSpan(parentSpanID pcommon.SpanID, name string, code ptrace
 func constructSpanAttributes(attributes map[string]any) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
-		if cast, ok := value.(int); ok {
+		switch cast := value.(type) {
+		case int:
 			attrs.PutInt(key, int64(cast))
-		} else if cast, ok := value.(int64); ok {
+		case int64:
 			attrs.PutInt(key, cast)
-		} else if cast, ok := value.([]string); ok {
+		case bool:
+			attrs.PutBool(key, cast)
+		case []string:
 			slice := attrs.PutEmptySlice(key)
 			for _, v := range cast {
 				slice.AppendEmpty().SetStr(v)
 			}
-		} else {
+		default:
 			attrs.PutStr(key, fmt.Sprintf("%v", value))
 		}
 	}
@@ -1898,19 +1988,19 @@ func constructSpanAttributes(attributes map[string]any) pcommon.Map {
 func constructDefaultResource() pcommon.Resource {
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventionsv112.AttributeServiceName, "signup_aggregator")
-	attrs.PutStr(conventionsv112.AttributeServiceVersion, "semver:1.1.4")
-	attrs.PutStr(conventionsv112.AttributeContainerName, "signup_aggregator")
-	attrs.PutStr(conventionsv112.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.PutStr(conventionsv112.AttributeContainerImageTag, "v1")
-	attrs.PutStr(conventionsv112.AttributeK8SClusterName, "production")
-	attrs.PutStr(conventionsv112.AttributeK8SNamespaceName, "default")
-	attrs.PutStr(conventionsv112.AttributeK8SDeploymentName, "signup_aggregator")
-	attrs.PutStr(conventionsv112.AttributeK8SPodName, "signup_aggregator-x82ufje83")
-	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
-	attrs.PutStr(conventionsv112.AttributeCloudAccountID, "123456789")
-	attrs.PutStr(conventionsv112.AttributeCloudRegion, "us-east-1")
-	attrs.PutStr(conventionsv112.AttributeCloudAvailabilityZone, "us-east-1c")
+	attrs.PutStr("service.name", "signup_aggregator")
+	attrs.PutStr("service.version", "semver:1.1.4")
+	attrs.PutStr("container.name", "signup_aggregator")
+	attrs.PutStr("container.image.name", "otel/signupaggregator")
+	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutStr("k8s.cluster.name", "production")
+	attrs.PutStr("k8s.namespace.name", "default")
+	attrs.PutStr("k8s.deployment.name", "signup_aggregator")
+	attrs.PutStr("k8s.pod.name", "signup_aggregator-x82ufje83")
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.account.id", "123456789")
+	attrs.PutStr("cloud.region", "us-east-1")
+	attrs.PutStr("cloud.availability_zone", "us-east-1c")
 	attrs.PutStr(resourceStringKey, "string")
 	attrs.PutInt(resourceIntKey, 10)
 	attrs.PutDouble(resourceDoubleKey, 5.0)
@@ -1932,9 +2022,9 @@ func constructTimedEventsWithReceivedMessageEvent(tm pcommon.Timestamp) ptrace.S
 
 	eventAttr := event.Attributes()
 	eventAttr.PutStr("message.type", "RECEIVED")
-	eventAttr.PutInt(conventionsv112.AttributeMessagingMessageID, 1)
-	eventAttr.PutInt(conventionsv112.AttributeMessagingMessagePayloadCompressedSizeBytes, 6478)
-	eventAttr.PutInt(conventionsv112.AttributeMessagingMessagePayloadSizeBytes, 12452)
+	eventAttr.PutInt("messaging.message_id", 1)
+	eventAttr.PutInt("messaging.message_payload_compressed_size_bytes", 6478)
+	eventAttr.PutInt("messaging.message_payload_size_bytes", 12452)
 
 	event.SetTimestamp(tm)
 	event.SetDroppedAttributesCount(0)
@@ -1948,8 +2038,8 @@ func constructTimedEventsWithSentMessageEvent(tm pcommon.Timestamp) ptrace.SpanE
 
 	eventAttr := event.Attributes()
 	eventAttr.PutStr("message.type", "SENT")
-	eventAttr.PutInt(conventionsv112.AttributeMessagingMessageID, 1)
-	eventAttr.PutInt(conventionsv112.AttributeMessagingMessagePayloadSizeBytes, 7480)
+	eventAttr.PutInt("messaging.message_id", 1)
+	eventAttr.PutInt("messaging.message_payload_size_bytes", 7480)
 
 	event.SetTimestamp(tm)
 	event.SetDroppedAttributesCount(0)
@@ -1958,6 +2048,40 @@ func constructTimedEventsWithSentMessageEvent(tm pcommon.Timestamp) ptrace.SpanE
 }
 
 // newTraceID generates a new valid X-Ray TraceID
+func TestSpanWithInProgressTrue(t *testing.T) {
+	spanName := "/api/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes[awsxray.AWSXRayInProgressAttribute] = true
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.NotNil(t, segment.InProgress)
+	assert.True(t, *segment.InProgress)
+	assert.Nil(t, segment.EndTime)
+	assert.Nil(t, segment.Metadata["default"][awsxray.AWSXRayInProgressAttribute])
+}
+
+func TestSpanWithInProgressFalse(t *testing.T) {
+	spanName := "/api/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes[awsxray.AWSXRayInProgressAttribute] = false
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Nil(t, segment.InProgress)
+	assert.NotNil(t, segment.EndTime)
+	assert.Empty(t, segment.Annotations)
+	assert.Nil(t, segment.Metadata["default"][awsxray.AWSXRayInProgressAttribute])
+}
+
 func newTraceID() pcommon.TraceID {
 	var r [16]byte
 	epoch := time.Now().Unix()

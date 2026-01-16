@@ -7,7 +7,9 @@
 |               | [beta]: traces, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fclickhouse%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fclickhouse) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fclickhouse%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fclickhouse) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@hanjm](https://www.github.com/hanjm), [@dmitryax](https://www.github.com/dmitryax), [@Frapschen](https://www.github.com/Frapschen), [@SpencerTorres](https://www.github.com/SpencerTorres) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_clickhouse)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_clickhouse&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@hanjm](https://www.github.com/hanjm), [@Frapschen](https://www.github.com/Frapschen), [@SpencerTorres](https://www.github.com/SpencerTorres) |
+| Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -47,7 +49,7 @@ If the official plugin doesn't meet your needs, you can try the [Altinity plugin
 - Get log severity count time series.
 
 ```sql
-SELECT toDateTime(toStartOfInterval(TimestampTime, INTERVAL 60 second)) as time, SeverityText, count() as count
+SELECT toDateTime(toStartOfInterval(Timestamp, INTERVAL 60 second)) as time, SeverityText, count() as count
 FROM otel_logs
 WHERE time >= NOW() - INTERVAL 1 HOUR
 GROUP BY SeverityText, time
@@ -59,7 +61,7 @@ ORDER BY time;
 ```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
-WHERE TimestampTime >= NOW() - INTERVAL 1 HOUR
+WHERE Timestamp >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -69,7 +71,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE ServiceName = 'clickhouse-exporter'
-  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
+  AND Timestamp >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -79,7 +81,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE LogAttributes['container_name'] = '/example_flog_1'
-  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
+  AND Timestamp >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -89,7 +91,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE hasToken(Body, 'http')
-  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
+  AND Timestamp >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -99,7 +101,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE Body like '%http%'
-  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
+  AND Timestamp >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -109,7 +111,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE match(Body, 'http')
-  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
+  AND Timestamp >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -119,7 +121,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE JSONExtractFloat(Body, 'bytes') > 1000
-  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
+  AND Timestamp >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -289,6 +291,7 @@ Connection options:
 - `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
 - `compress` (default = lz4): Controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4). Ignored if `compress` is set in the `endpoint` or `connection_params`.
 - `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
+- `tls` Advanced TLS configuration (See [TLS](#tls)).
 
 Additional DSN features:
 
@@ -341,23 +344,85 @@ Processing:
 
 ## TLS
 
-The exporter supports TLS. To enable TLS, you need to specify the `secure=true` query parameter in the `endpoint` URL or
-use the `https` scheme.
+The exporter supports TLS. To enable TLS, you must specify the `secure=true` query parameter in the `endpoint` URL or use the `https` scheme.
+
+You may also use certificate authentication with the `tls` setting:
+
+```yaml
+exporters:
+  clickhouse:
+    endpoint: . . .
+    tls:
+      insecure: false
+      insecure_skip_verify: false
+      ca_file: CAroot.crt
+      cert_file: client.crt
+      key_file: client.key
+```
+
+The available `tls` options are inherited from [OpenTelemetry's TLS config structure](https://pkg.go.dev/go.opentelemetry.io/collector/config/configtls#ClientConfig), more options are available than shown in this example.
 
 ## Schema management
 
-By default the exporter will create the database and tables under the names defined in the config. This is fine for simple deployments, but for production workloads, it is recommended that you manage your own schema by setting `create_schema` to `false` in the config.
+By default, the exporter will create the database and tables under the names defined in the config. This is fine for simple deployments, but for production workloads, it is recommended that you manage your own schema by setting `create_schema` to `false` in the config.
 This prevents each exporter process from racing to create the database and tables, and makes it easier to upgrade the exporter in the future.
 
 In this mode, the only SQL sent to your server will be for `INSERT` statements.
 
-The default DDL used by the exporter can be found in `example/default_ddl`.
+The default DDL used by the exporter can be found in `internal/sqltemplates`.
 Be sure to customize the indexes, TTL, and partitioning to fit your deployment.
 Column names and types must be the same to preserve compatibility with the exporter's `INSERT` statements.
 As long as the column names/types match the `INSERT` statement, you can create whatever kind of table you want.
 See [ClickHouse's LogHouse](https://clickhouse.com/blog/building-a-logging-platform-with-clickhouse-and-saving-millions-over-datadog#schema) as an example of this flexibility.
 
-## Example
+### Upgrading existing tables
+
+Sometimes new columns are added to the exporter in a backwards compatible way.
+The exporter runs a `DESC TABLE` command on startup to determine which of these new columns are available on the table schema.
+
+If you already have tables created by a previous version of the exporter, you will need to add these new columns manually.
+
+Here is an example of a command you can use to update your existing table (adjust database and table names as needed):
+
+```sql
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1));
+```
+
+To find the newest columns available check the `internal/sqltemplates` folder.
+The `CREATE TABLE` statements will always have the latest columns.
+
+In some cases the table changes will not be backwards compatible. Be sure to check the changelog for breaking changes before upgrading your collector.
+
+
+### Optional table upgrades
+
+As mentioned in the previous section, the exporter is able to detect which columns are present on the schema for backwards compatibility.
+Here are some columns you can add to your table to update the schema:
+
+```sql
+-- These 3 columns are part of one feature, you must add all 3 at once.
+ALTER TABLE otel.otel_logs
+  ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  ADD COLUMN IF NOT EXISTS ScopeAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  ADD COLUMN IF NOT EXISTS LogAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  -- Optional indices
+  ADD INDEX IF NOT EXISTS idx_res_attr_keys ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
+  ADD INDEX IF NOT EXISTS idx_scope_attr_keys ScopeAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
+  ADD INDEX IF NOT EXISTS idx_log_attr_keys LogAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1;
+
+-- EventName
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1)),
+
+-- These 2 columns are part of one feature, you must add all 2 at once.
+ALTER TABLE otel.otel_traces
+  ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  ADD COLUMN IF NOT EXISTS SpanAttributesKeys  Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  -- Optional indices
+  ADD INDEX IF NOT EXISTS idx_res_attr_keys ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
+  ADD INDEX IF NOT EXISTS idx_span_attr_keys SpanAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1;
+```
+
+## Example Config
 
 This example shows how to configure the exporter to send data to a ClickHouse server.
 It uses the native protocol without TLS. The exporter will create the database and tables if they don't exist.
@@ -366,10 +431,6 @@ The data is stored for 72 hours (3 days).
 ```yaml
 receivers:
   examplereceiver:
-processors:
-  batch:
-    timeout: 5s
-    send_batch_size: 100000
 exporters:
   clickhouse:
     endpoint: tcp://127.0.0.1:9000?dial_timeout=10s
@@ -405,9 +466,17 @@ service:
   pipelines:
     logs:
       receivers: [ examplereceiver ]
-      processors: [ batch ]
       exporters: [ clickhouse ]
 ```
+
+## Experimental JSON support
+
+A feature gate is available for testing the experimental JSON pipeline.
+Enable the `clickhouse.json` feature gate by following the [feature gate documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md).
+You may also need to add `enable_json_type=1` to your `endpoint` query string parameters.
+DDL has been updated, but feel free to tune the schema as needed. DDL can be found in the `internal/sqltemplates` package.
+All `Map` columns have been replaced with `JSON`.
+ClickHouse v25+ is recommended for reliable JSON support.
 
 ## Contributing
 
@@ -415,8 +484,8 @@ Before contributing, review the contribution guidelines in [CONTRIBUTING.md](htt
 
 #### Integration tests
 
-Integration tests can be run with the following command:
+Integration tests can be run with the following command (includes unit tests):
 ```sh
-go test -tags integration -run=TestIntegration
+go test -tags integration
 ```
 *Note: Make sure integration tests pass after making changes to SQL.*

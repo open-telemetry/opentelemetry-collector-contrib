@@ -78,7 +78,7 @@ func extractLogData(keyvals []any) logData {
 }
 
 // check if a given key-value pair represents go-kit log message and return it
-func matchLogMessage(key any, val any) (string, bool) {
+func matchLogMessage(key, val any) (string, bool) {
 	if strKey, ok := key.(string); !ok || strKey != msgKey {
 		return "", false
 	}
@@ -91,7 +91,7 @@ func matchLogMessage(key any, val any) (string, bool) {
 }
 
 // check if a given key-value pair represents go-kit log level and return it
-func matchLogLevel(key any, val any) (level.Value, bool) {
+func matchLogLevel(key, val any) (level.Value, bool) {
 	strKey, ok := key.(string)
 	if !ok || strKey != levelKey {
 		return nil, false
@@ -107,7 +107,7 @@ func matchLogLevel(key any, val any) (level.Value, bool) {
 //revive:disable:error-return
 
 // check if a given key-value pair represents an error and return it
-func matchError(key any, val any) (error, bool) {
+func matchError(key, val any) (error, bool) {
 	strKey, ok := key.(string)
 	if !ok || strKey != errKey {
 		return nil, false

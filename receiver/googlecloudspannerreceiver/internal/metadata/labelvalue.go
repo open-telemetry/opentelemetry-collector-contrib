@@ -244,7 +244,7 @@ func newLockRequestSliceLabelValue(metadata LabelValueMetadata, valueHolder any)
 	}
 }
 
-func NewLabelValueMetadata(name string, columnName string, valueType ValueType) (LabelValueMetadata, error) {
+func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelValueMetadata, error) {
 	var newLabelValueFunc newLabelValueFunction
 	var valueHolderFunc valueHolderFunction
 
@@ -285,8 +285,6 @@ func NewLabelValueMetadata(name string, columnName string, valueType ValueType) 
 			var valueHolder []*lockRequest
 			return &valueHolder
 		}
-	case UnknownValueType, FloatValueType, NullFloatValueType:
-		fallthrough
 	default:
 		return nil, fmt.Errorf("invalid value type received for label %q", name)
 	}

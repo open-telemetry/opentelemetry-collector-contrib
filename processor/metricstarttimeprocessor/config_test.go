@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/starttimemetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/subtractinitial"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/truereset"
 )
@@ -55,6 +56,29 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_strategy"),
 			errorMessage: "\"bad\" is not a valid strategy",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "true_reset_point"),
+			expected: &Config{
+				Strategy:   truereset.Type,
+				GCInterval: 10 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "start_time_metric"),
+			expected: &Config{
+				Strategy:             starttimemetric.Type,
+				GCInterval:           10 * time.Minute,
+				StartTimeMetricRegex: "^.+_process_start_time_seconds$",
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_regex"),
+			errorMessage: "error parsing regexp: missing closing ): `((((`",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "regex_with_subtract_initial_point"),
+			errorMessage: "start_time_metric_regex can only be used with the start_time_metric strategy",
 		},
 	}
 

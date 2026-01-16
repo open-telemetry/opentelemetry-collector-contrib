@@ -73,6 +73,24 @@ type PDH_FMT_COUNTERVALUE_ITEM_LONG struct {
 	FmtValue PDH_FMT_COUNTERVALUE_LONG
 }
 
+// PDH_RAW_COUNTER structure contains the raw data value of a counter.
+type PDH_RAW_COUNTER struct {
+	CStatus     uint32 // Counter status that indicates if the counter value is valid.
+	padding     [4]byte
+	TimeStamp   FILETIME // Time at which the sample was taken.
+	FirstValue  int64    // First raw counter value.
+	SecondValue int64    // Second raw counter value (used for some calculations).
+	MultiCount  uint32   // Counter type-specific value.
+	padding2    [4]byte
+}
+
+// PDH_RAW_COUNTER_ITEM structure contains the raw counter value for a specific instance.
+type PDH_RAW_COUNTER_ITEM struct {
+	SzName   *uint16 // Pointer to the instance name.
+	padding  [4]byte
+	RawValue PDH_RAW_COUNTER // Raw counter value for the instance.
+}
+
 // PDH_COUNTER_INFO structure contains information describing the properties of a counter. This information also includes the counter path.
 type PDH_COUNTER_INFO struct {
 	// Size of the structure, including the appended strings, in bytes.

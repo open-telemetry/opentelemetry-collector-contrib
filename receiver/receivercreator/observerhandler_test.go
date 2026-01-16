@@ -63,7 +63,7 @@ func TestOnAddForMetrics(t *testing.T) {
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "'' has invalid keys: endpoint",
+			expectedError:          "'receivercreator.nopWithoutEndpointConfig' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -226,7 +226,7 @@ func TestOnAddForLogs(t *testing.T) {
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "'' has invalid keys: endpoint",
+			expectedError:          "'receivercreator.nopWithoutEndpointConfig' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -398,7 +398,7 @@ func TestOnAddForTraces(t *testing.T) {
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "'' has invalid keys: endpoint",
+			expectedError:          "'receivercreator.nopWithoutEndpointConfig' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -505,6 +505,36 @@ func TestOnRemoveForLogs(t *testing.T) {
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil)
+	handler.OnAdd([]observer.Endpoint{portEndpoint})
+
+	rcvr := r.startedComponent
+	require.NotNil(t, rcvr)
+	require.NoError(t, r.lastError)
+
+	handler.OnRemove([]observer.Endpoint{portEndpoint})
+
+	assert.Equal(t, 0, handler.receiversByEndpointID.Size())
+	require.Same(t, rcvr, r.shutdownComponent)
+	require.NoError(t, r.lastError)
+}
+
+func TestOnRemoveForTraces(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	rcvrCfg := receiverConfig{
+		id:         component.MustNewIDWithName("with_endpoint", "some.name"),
+		config:     userConfigMap{"endpoint": "some.endpoint"},
+		endpointID: portEndpoint.ID,
+	}
+	cfg.receiverTemplates = map[string]receiverTemplate{
+		rcvrCfg.id.String(): {
+			receiverConfig:     rcvrCfg,
+			rule:               portRule,
+			Rule:               `type == "port"`,
+			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
+		},
+	}
+	handler, r := newObserverHandler(t, cfg, nil, nil, consumertest.NewNop())
 	handler.OnAdd([]observer.Endpoint{portEndpoint})
 
 	rcvr := r.startedComponent
@@ -642,7 +672,7 @@ type reportingHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *reportingHost) GetExtensions() map[component.ID]component.Component {
+func (*reportingHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 

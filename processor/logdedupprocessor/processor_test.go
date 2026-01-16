@@ -81,7 +81,7 @@ func Test_newProcessor(t *testing.T) {
 }
 
 func TestProcessorShutdownCtxError(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
 	logsSink := &consumertest.LogsSink{}
@@ -94,7 +94,7 @@ func TestProcessorShutdownCtxError(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := createLogsProcessor(context.Background(), settings, cfg, logsSink)
+	p, err := createLogsProcessor(t.Context(), settings, cfg, logsSink)
 	require.NoError(t, err)
 
 	// Start then stop the processor checking for errors
@@ -123,10 +123,10 @@ func TestShutdownBeforeStart(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := createLogsProcessor(context.Background(), settings, cfg, logsSink)
+	p, err := createLogsProcessor(t.Context(), settings, cfg, logsSink)
 	require.NoError(t, err)
 	require.NotPanics(t, func() {
-		err := p.Shutdown(context.Background())
+		err := p.Shutdown(t.Context())
 		require.NoError(t, err)
 	})
 }
@@ -145,17 +145,17 @@ func TestProcessorConsume(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := createLogsProcessor(context.Background(), settings, cfg, logsSink)
+	p, err := createLogsProcessor(t.Context(), settings, cfg, logsSink)
 	require.NoError(t, err)
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "basicLogs.yaml"))
 	require.NoError(t, err)
 
 	// Consume the payload
-	err = p.ConsumeLogs(context.Background(), logs)
+	err = p.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 
 	// Wait for the logs to be emitted
@@ -172,7 +172,7 @@ func TestProcessorConsume(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp")))
 
 	// Cleanup
-	err = p.Shutdown(context.Background())
+	err = p.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -186,9 +186,9 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 	}
 
 	// Create & start a processor
-	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
 	require.NoError(t, err)
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// Create logs payload
@@ -198,11 +198,11 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 	sl.LogRecords().AppendEmpty()
 
 	// Consume the logs
-	err = p.ConsumeLogs(context.Background(), logs)
+	err = p.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 
 	// Shutdown the processor before it exports the logs
-	err = p.Shutdown(context.Background())
+	err = p.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	// Ensure the logs are exported
@@ -223,17 +223,17 @@ func TestProcessorConsumeCondition(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
 	require.NoError(t, err)
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "conditionLogs.yaml"))
 	require.NoError(t, err)
 
 	// Consume the payload
-	err = p.ConsumeLogs(context.Background(), logs)
+	err = p.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 
 	// Wait for the logs to be emitted
@@ -256,7 +256,7 @@ func TestProcessorConsumeCondition(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordsOrder()))
 
 	// Cleanup
-	err = p.Shutdown(context.Background())
+	err = p.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -273,17 +273,17 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
 	require.NoError(t, err)
 
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err = p.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "conditionLogs.yaml"))
 	require.NoError(t, err)
 
 	// Consume the payload
-	err = p.ConsumeLogs(context.Background(), logs)
+	err = p.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 
 	// Wait for the logs to be emitted
@@ -306,7 +306,7 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"), plogtest.IgnoreLogRecordsOrder()))
 
 	// Cleanup
-	err = p.Shutdown(context.Background())
+	err = p.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -357,17 +357,17 @@ func TestProcessorIncludeFields(t *testing.T) {
 			settings := processortest.NewNopSettings(metadata.Type)
 
 			// Create a processor
-			p, err := createLogsProcessor(context.Background(), settings, tt.cfg, logsSink)
+			p, err := createLogsProcessor(t.Context(), settings, tt.cfg, logsSink)
 			require.NoError(t, err)
 
-			err = p.Start(context.Background(), componenttest.NewNopHost())
+			err = p.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "includeFieldsLogs.yaml"))
 			require.NoError(t, err)
 
 			// Consume the payload
-			err = p.ConsumeLogs(context.Background(), logs)
+			err = p.ConsumeLogs(t.Context(), logs)
 			require.NoError(t, err)
 
 			// Wait for the logs to be emitted
@@ -384,7 +384,7 @@ func TestProcessorIncludeFields(t *testing.T) {
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp")))
 
 			// Cleanup
-			err = p.Shutdown(context.Background())
+			err = p.Shutdown(t.Context())
 			require.NoError(t, err)
 		})
 	}
@@ -398,7 +398,7 @@ func TestProcessorConfigValidate(t *testing.T) {
 		Timezone:          "",
 	}
 
-	_, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), invalidCfg, consumertest.NewNop())
+	_, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), invalidCfg, consumertest.NewNop())
 	require.Error(t, err)
 
 	validCfg := &Config{
@@ -407,6 +407,6 @@ func TestProcessorConfigValidate(t *testing.T) {
 		Timezone:          defaultTimezone,
 	}
 
-	_, err = createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), validCfg, consumertest.NewNop())
+	_, err = createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), validCfg, consumertest.NewNop())
 	require.NoError(t, err)
 }

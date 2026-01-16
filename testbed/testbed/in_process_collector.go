@@ -7,15 +7,19 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/process"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/otelcol"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 // inProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
@@ -46,15 +50,14 @@ func (ipp *inProcessCollector) PrepareConfig(t *testing.T, configStr string) (co
 	return configCleanup, err
 }
 
-func (ipp *inProcessCollector) Start(_ StartParams) error {
+func (ipp *inProcessCollector) Start(StartParams) error {
 	var err error
-
-	confFile, err := os.CreateTemp(ipp.t.TempDir(), "conf-")
+	confFile, err := os.CreateTemp(testutil.TempDir(ipp.t), "conf-")
 	if err != nil {
 		return err
 	}
 
-	if _, err = confFile.Write([]byte(ipp.configStr)); err != nil {
+	if _, err = confFile.WriteString(ipp.configStr); err != nil {
 		os.Remove(confFile.Name())
 		return err
 	}
@@ -102,22 +105,26 @@ func (ipp *inProcessCollector) Stop() (stopped bool, err error) {
 	if !ipp.stopped {
 		ipp.stopped = true
 		ipp.svc.Shutdown()
-		os.Remove(ipp.configFile)
+		// Do not delete temporary files on Windows because it fails too much on scoped tests.
+		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42639
+		if runtime.GOOS != "windows" {
+			require.NoError(ipp.t, os.Remove(ipp.configFile))
+		}
 	}
 	ipp.wg.Wait()
 	stopped = ipp.stopped
 	return stopped, err
 }
 
-func (ipp *inProcessCollector) WatchResourceConsumption() error {
+func (*inProcessCollector) WatchResourceConsumption() error {
 	return nil
 }
 
-func (ipp *inProcessCollector) GetProcessMon() *process.Process {
+func (*inProcessCollector) GetProcessMon() *process.Process {
 	return nil
 }
 
-func (ipp *inProcessCollector) GetTotalConsumption() *ResourceConsumption {
+func (*inProcessCollector) GetTotalConsumption() *ResourceConsumption {
 	return &ResourceConsumption{
 		CPUPercentAvg:   0,
 		CPUPercentMax:   0,
@@ -128,6 +135,6 @@ func (ipp *inProcessCollector) GetTotalConsumption() *ResourceConsumption {
 	}
 }
 
-func (ipp *inProcessCollector) GetResourceConsumption() string {
+func (*inProcessCollector) GetResourceConsumption() string {
 	return ""
 }

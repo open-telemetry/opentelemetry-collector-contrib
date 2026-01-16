@@ -57,7 +57,7 @@ func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel strin
 	}
 
 	flags := s.createFlags(startAt, bookmark)
-	subscriptionHandle, err := evtSubscribeFunc(sessionHandle, signalEvent, channelPtr, queryPtr, bookmark.handle, 0, 0, flags)
+	subscriptionHandle, err := evtSubscribe(sessionHandle, signalEvent, channelPtr, queryPtr, bookmark.handle, 0, 0, flags)
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to %s channel: %w", channel, err)
 	}
@@ -145,7 +145,7 @@ func (s *Subscription) readWithRetry(maxReads int) ([]Event, int, error) {
 }
 
 // createFlags will create the necessary subscription flags from the supplied arguments.
-func (s *Subscription) createFlags(startAt string, bookmark Bookmark) uint32 {
+func (*Subscription) createFlags(startAt string, bookmark Bookmark) uint32 {
 	if bookmark.handle != 0 {
 		return EvtSubscribeStartAfterBookmark
 	}

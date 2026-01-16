@@ -10,9 +10,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	trc "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -272,7 +274,7 @@ func TestLibhoneyEvent_GetScope(t *testing.T) {
 				},
 			},
 			serviceName: "test-service",
-			want:        "libhoney.receiver",
+			want:        "test-service-libhoney.receiver",
 			wantErr:     true,
 		},
 	}
@@ -331,6 +333,76 @@ func TestToPTraceSpan(t *testing.T) {
 				s.Attributes().PutStr("string_attr", "value")
 				s.Attributes().PutInt("int_attr", 42)
 				s.Attributes().PutBool("bool_attr", true)
+			},
+		},
+		{
+			name: "valid hex parent ID is correctly parsed",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"name":            "child-span",
+					"trace.span_id":   "abcdef1234567890",
+					"trace.trace_id":  "1234567890abcdef1234567890abcdef",
+					"trace.parent_id": "1234567890abcdef", // Valid hex-encoded span ID
+					"duration_ms":     50.0,
+				},
+				Samplerate: 1,
+			},
+			want: func(s ptrace.Span) {
+				s.SetName("child-span")
+				s.SetSpanID([8]byte{0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90})
+				s.SetTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				// Parent ID should be the actual hex-decoded value, not a hash
+				s.SetParentSpanID([8]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+				s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(50 * time.Millisecond)))
+			},
+		},
+		{
+			name: "invalid parent ID falls back to hash",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"name":            "child-span",
+					"trace.span_id":   "abcdef1234567890",
+					"trace.trace_id":  "1234567890abcdef1234567890abcdef",
+					"trace.parent_id": "invalid-hex-string", // Invalid hex, should fall back to hash
+					"duration_ms":     50.0,
+				},
+				Samplerate: 1,
+			},
+			want: func(s ptrace.Span) {
+				s.SetName("child-span")
+				s.SetSpanID([8]byte{0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90})
+				s.SetTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				// Parent ID should be the hash of "invalid-hex-string"
+				expectedHash := spanIDFrom("invalid-hex-string")
+				s.SetParentSpanID(pcommon.SpanID(expectedHash))
+				s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+				s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(50 * time.Millisecond)))
+			},
+		},
+		{
+			name: "sub-1-millisecond duration",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"name":           "fast-span",
+					"trace.span_id":  "1234567890abcdef",
+					"trace.trace_id": "1234567890abcdef1234567890abcdef",
+					"duration_ms":    0.5, // 500 microseconds
+				},
+				Samplerate: 1,
+			},
+			want: func(s ptrace.Span) {
+				s.SetName("fast-span")
+				s.SetSpanID([8]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				s.SetTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+				s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(500 * time.Microsecond)))
 			},
 		},
 	}
@@ -392,6 +464,437 @@ func TestToPTraceSpan(t *testing.T) {
 
 				// Verify no fewer attributes, extras are expected
 				assert.LessOrEqual(t, want.Attributes().Len(), span.Attributes().Len())
+			}
+		})
+	}
+}
+
+func TestParentIDHandlingDifference(t *testing.T) {
+	validHexParentID := "1234567890abcdef"
+
+	oldApproachResult := spanIDFrom(validHexParentID)
+
+	// What the new approach produces (parsing hex)
+	event := LibhoneyEvent{
+		Data: map[string]any{
+			"trace.parent_id": validHexParentID,
+		},
+	}
+	newApproachResult, err := event.GetParentID("trace.parent_id")
+	require.NoError(t, err)
+
+	assert.NotEqual(t, oldApproachResult, newApproachResult,
+		"Old and new approaches should produce different results for valid hex parent ID")
+
+	expectedBytes := []byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef}
+	assert.Equal(t, trc.SpanID(expectedBytes), newApproachResult,
+		"New approach should correctly decode hex parent ID")
+
+	// For invalid hex, both approaches should produce the same result (hash)
+	invalidParentID := "invalid-hex-string"
+	oldInvalidResult := spanIDFrom(invalidParentID)
+
+	eventInvalid := LibhoneyEvent{
+		Data: map[string]any{
+			"trace.parent_id": invalidParentID,
+		},
+	}
+	_, err = eventInvalid.GetParentID("trace.parent_id")
+	assert.Error(t, err, "GetParentID should return error for invalid hex")
+
+	// The ToPTraceSpan function should fall back to hash for invalid hex
+	span := ptrace.NewSpan()
+	cfg := FieldMapConfig{
+		Attributes: AttributesConfig{
+			ParentID: "trace.parent_id",
+		},
+	}
+
+	eventInvalid.MsgPackTimestamp = &time.Time{}
+	err = eventInvalid.ToPTraceSpan(&span, &[]string{}, cfg, *zap.NewNop())
+	require.NoError(t, err)
+
+	// Should fall back to hash for invalid hex
+	assert.Equal(t, pcommon.SpanID(oldInvalidResult), span.ParentSpanID(),
+		"Invalid hex should fall back to hash in new approach")
+}
+
+func TestGetParentID(t *testing.T) {
+	tests := []struct {
+		name      string
+		event     LibhoneyEvent
+		fieldName string
+		want      trc.SpanID
+		wantErr   bool
+	}{
+		{
+			name: "valid 16-character hex string",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"trace.parent_id": "1234567890abcdef",
+				},
+			},
+			fieldName: "trace.parent_id",
+			want:      trc.SpanID{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef},
+		},
+		{
+			name: "valid 32-character hex string (trace ID format)",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"trace.parent_id": "1234567890abcdef1234567890abcdef",
+				},
+			},
+			fieldName: "trace.parent_id",
+			want:      trc.SpanID{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef},
+		},
+		{
+			name: "hex string with hyphens",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"trace.parent_id": "12-34-56-78-90-ab-cd-ef",
+				},
+			},
+			fieldName: "trace.parent_id",
+			want:      trc.SpanID{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef},
+		},
+		{
+			name: "invalid hex string",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"trace.parent_id": "invalid-hex",
+				},
+			},
+			fieldName: "trace.parent_id",
+			wantErr:   true,
+		},
+		{
+			name: "field not found",
+			event: LibhoneyEvent{
+				Data: map[string]any{},
+			},
+			fieldName: "trace.parent_id",
+			wantErr:   true,
+		},
+		{
+			name: "odd length hex string",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"trace.parent_id": "1234567890abcde", // 15 characters
+				},
+			},
+			fieldName: "trace.parent_id",
+			wantErr:   true,
+		},
+		{
+			name: "empty string",
+			event: LibhoneyEvent{
+				Data: map[string]any{
+					"trace.parent_id": "",
+				},
+			},
+			fieldName: "",
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.event.GetParentID(tt.fieldName)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestToPLogRecord_IntegerTypeHandling(t *testing.T) {
+	logger := zap.NewNop()
+	now := time.Now()
+
+	tests := []struct {
+		name              string
+		event             LibhoneyEvent
+		alreadyUsedFields []string
+		checkFunc         func(t *testing.T, lr plog.LogRecord)
+	}{
+		{
+			name: "severity_code as int64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"severity_code": int64(5),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, plog.SeverityNumber(5), lr.SeverityNumber())
+			},
+		},
+		{
+			name: "severity_code as uint64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"severity_code": uint64(5),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, plog.SeverityNumber(5), lr.SeverityNumber())
+			},
+		},
+		{
+			name: "flags as int64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"flags": int64(1),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, plog.LogRecordFlags(1), lr.Flags())
+			},
+		},
+		{
+			name: "flags as uint64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"flags": uint64(1),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, plog.LogRecordFlags(1), lr.Flags())
+			},
+		},
+		{
+			name: "attribute as int64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"my_int_attr": int64(42),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				val, ok := lr.Attributes().Get("my_int_attr")
+				assert.True(t, ok)
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+		{
+			name: "attribute as uint64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"my_uint_attr": uint64(42),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				val, ok := lr.Attributes().Get("my_uint_attr")
+				assert.True(t, ok)
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+		{
+			name: "large uint64 attribute",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"large_uint": uint64(18446744073709551615), // max uint64
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				val, ok := lr.Attributes().Get("large_uint")
+				assert.True(t, ok)
+				// When converted to int64, this will overflow but should not panic
+				assert.Equal(t, int64(-1), val.Int())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			newLog := plog.NewLogRecord()
+			err := tt.event.ToPLogRecord(&newLog, &tt.alreadyUsedFields, *logger)
+			require.NoError(t, err)
+			tt.checkFunc(t, newLog)
+		})
+	}
+}
+
+func TestToPTraceSpan_IntegerTypeHandling(t *testing.T) {
+	now := time.Now()
+	alreadyUsedFields := []string{"name", "trace.span_id", "trace.trace_id", "duration_ms"}
+	testCfg := FieldMapConfig{
+		Attributes: AttributesConfig{
+			Name:           "name",
+			TraceID:        "trace.trace_id",
+			SpanID:         "trace.span_id",
+			ParentID:       "trace.parent_id",
+			Error:          "error",
+			SpanKind:       "kind",
+			DurationFields: []string{"duration_ms"},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		event     LibhoneyEvent
+		checkFunc func(t *testing.T, span ptrace.Span)
+	}{
+		{
+			name: "attribute as int64",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Samplerate:       1,
+				Data: map[string]any{
+					"name":           "test-span",
+					"trace.span_id":  "1234567890abcdef",
+					"trace.trace_id": "1234567890abcdef1234567890abcdef",
+					"duration_ms":    100.0,
+					"my_int_attr":    int64(42),
+				},
+			},
+			checkFunc: func(t *testing.T, span ptrace.Span) {
+				val, ok := span.Attributes().Get("my_int_attr")
+				assert.True(t, ok)
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+		{
+			name: "attribute as uint64",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Samplerate:       1,
+				Data: map[string]any{
+					"name":           "test-span",
+					"trace.span_id":  "1234567890abcdef",
+					"trace.trace_id": "1234567890abcdef1234567890abcdef",
+					"duration_ms":    100.0,
+					"my_uint_attr":   uint64(42),
+				},
+			},
+			checkFunc: func(t *testing.T, span ptrace.Span) {
+				val, ok := span.Attributes().Get("my_uint_attr")
+				assert.True(t, ok)
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			err := tt.event.ToPTraceSpan(&span, &alreadyUsedFields, testCfg, *zap.NewNop())
+			require.NoError(t, err)
+			tt.checkFunc(t, span)
+		})
+	}
+}
+
+func TestLibhoneyEvent_UnmarshalMsgpack(t *testing.T) {
+	tests := []struct {
+		name                  string
+		msgpackData           map[string]any
+		expectNonNilTimestamp bool
+		wantErr               bool
+	}{
+		{
+			name: "msgpack with nil timestamp",
+			msgpackData: map[string]any{
+				"data": map[string]any{
+					"key": "value",
+				},
+				"samplerate": 1,
+				// time field is not set (nil)
+			},
+			expectNonNilTimestamp: true,
+		},
+		{
+			name: "msgpack with time string in data",
+			msgpackData: map[string]any{
+				"data": map[string]any{
+					"key":  "value",
+					"time": "2024-01-01T00:00:00Z",
+				},
+				"samplerate": 2,
+			},
+			expectNonNilTimestamp: true,
+		},
+		{
+			name: "msgpack with timestamp field",
+			msgpackData: map[string]any{
+				"time": time.Now(),
+				"data": map[string]any{
+					"key": "value",
+				},
+				"samplerate": 3,
+			},
+			expectNonNilTimestamp: true,
+		},
+		{
+			name: "msgpack with zero timestamp",
+			msgpackData: map[string]any{
+				"time": time.Time{},
+				"data": map[string]any{
+					"key": "value",
+				},
+				"samplerate": 4,
+			},
+			expectNonNilTimestamp: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Marshal the test data to msgpack
+			msgpackBytes, err := msgpack.Marshal(tt.msgpackData)
+			require.NoError(t, err)
+
+			// Unmarshal using our custom unmarshaller
+			var event LibhoneyEvent
+			err = event.UnmarshalMsgpack(msgpackBytes)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			// The key assertion: MsgPackTimestamp should never be nil after unmarshalling
+			if tt.expectNonNilTimestamp {
+				assert.NotNil(t, event.MsgPackTimestamp, "MsgPackTimestamp should never be nil after UnmarshalMsgpack")
+
+				// Additional checks
+				if event.MsgPackTimestamp != nil && !event.MsgPackTimestamp.IsZero() {
+					// If we have a valid timestamp, Time string should also be set
+					assert.NotEmpty(t, event.Time, "Time string should be set when MsgPackTimestamp is valid")
+				}
+			}
+
+			// Check that data was preserved
+			assert.Equal(t, tt.msgpackData["samplerate"], event.Samplerate)
+			if data, ok := tt.msgpackData["data"].(map[string]any); ok {
+				// Remove "time" from data if it was extracted
+				delete(data, "time")
+				if len(data) > 0 {
+					for k, v := range data {
+						assert.Equal(t, v, event.Data[k])
+					}
+				}
 			}
 		})
 	}

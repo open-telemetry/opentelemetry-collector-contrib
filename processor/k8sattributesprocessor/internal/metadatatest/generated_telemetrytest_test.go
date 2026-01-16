@@ -7,12 +7,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
-
-	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestSetupTelemetry(t *testing.T) {
@@ -20,7 +19,16 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.OtelsvcK8sDaemonsetAdded.Add(context.Background(), 1)
+	tb.OtelsvcK8sDaemonsetDeleted.Add(context.Background(), 1)
+	tb.OtelsvcK8sDaemonsetUpdated.Add(context.Background(), 1)
+	tb.OtelsvcK8sDeploymentAdded.Add(context.Background(), 1)
+	tb.OtelsvcK8sDeploymentDeleted.Add(context.Background(), 1)
+	tb.OtelsvcK8sDeploymentUpdated.Add(context.Background(), 1)
 	tb.OtelsvcK8sIPLookupMiss.Add(context.Background(), 1)
+	tb.OtelsvcK8sJobAdded.Add(context.Background(), 1)
+	tb.OtelsvcK8sJobDeleted.Add(context.Background(), 1)
+	tb.OtelsvcK8sJobUpdated.Add(context.Background(), 1)
 	tb.OtelsvcK8sNamespaceAdded.Add(context.Background(), 1)
 	tb.OtelsvcK8sNamespaceDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sNamespaceUpdated.Add(context.Background(), 1)
@@ -34,7 +42,37 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.OtelsvcK8sReplicasetAdded.Add(context.Background(), 1)
 	tb.OtelsvcK8sReplicasetDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sReplicasetUpdated.Add(context.Background(), 1)
+	tb.OtelsvcK8sStatefulsetAdded.Add(context.Background(), 1)
+	tb.OtelsvcK8sStatefulsetDeleted.Add(context.Background(), 1)
+	tb.OtelsvcK8sStatefulsetUpdated.Add(context.Background(), 1)
+	AssertEqualOtelsvcK8sDaemonsetAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sDaemonsetDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sDaemonsetUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sDeploymentAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sDeploymentDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sDeploymentUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualOtelsvcK8sIPLookupMiss(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sJobAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sJobDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sJobUpdated(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualOtelsvcK8sNamespaceAdded(t, testTel,
@@ -74,6 +112,15 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualOtelsvcK8sReplicasetUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sStatefulsetAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sStatefulsetDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualOtelsvcK8sStatefulsetUpdated(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

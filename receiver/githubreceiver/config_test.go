@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
@@ -44,7 +45,10 @@ func TestLoadConfig(t *testing.T) {
 
 	defaultConfigGitHubReceiver.(*Config).WebHook = WebHook{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint:     "localhost:8080",
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:8080",
+			},
 			ReadTimeout:  500 * time.Millisecond,
 			WriteTimeout: 500 * time.Millisecond,
 		},
@@ -79,7 +83,10 @@ func TestLoadConfig(t *testing.T) {
 		},
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint:     "localhost:8080",
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  "localhost:8080",
+				},
 				ReadTimeout:  500 * time.Millisecond,
 				WriteTimeout: 500 * time.Millisecond,
 			},
@@ -124,7 +131,7 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	factories.Receivers[metadata.Type] = factory
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidscraperkey.yaml"), factories)
 
-	require.ErrorContains(t, err, "error reading configuration for \"github\": invalid scraper key: \"invalidscraperkey\"")
+	require.ErrorContains(t, err, "invalid scraper key: \"invalidscraperkey\"")
 }
 
 func TestConfig_Unmarshal(t *testing.T) {
@@ -161,6 +168,35 @@ func TestConfig_Unmarshal(t *testing.T) {
 			if err := cfg.Unmarshal(test.args.componentParser); (err != nil) != test.wantErr {
 				t.Errorf("Config.Unmarshal() error = %v, wantErr %v", err, test.wantErr)
 			}
+		})
+	}
+}
+
+func TestIncludeSpanEventsConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *Config
+		expected bool
+	}{
+		{
+			name:     "default config has span events disabled",
+			config:   createDefaultConfig().(*Config),
+			expected: false,
+		},
+		{
+			name: "span events can be enabled",
+			config: &Config{
+				WebHook: WebHook{
+					IncludeSpanEvents: true,
+				},
+			},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.config.WebHook.IncludeSpanEvents)
 		})
 	}
 }

@@ -5,7 +5,6 @@ package ecsinfo
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -18,7 +17,7 @@ import (
 )
 
 func TestECSTaskInfoSuccess(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	taskReadyC := make(chan bool)
 	hostIPProvider := &MockHostInfo{}
@@ -50,7 +49,7 @@ func TestECSTaskInfoSuccess(t *testing.T) {
 }
 
 func TestECSTaskInfoFail(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	err := errors.New("")
 	taskReadyC := make(chan bool)
 

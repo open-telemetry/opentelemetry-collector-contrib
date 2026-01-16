@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -40,15 +41,17 @@ type Config struct {
 	// - span.kind
 	// - span.kind
 	// - status.code
+	// - collector.instance.id This dimensions never added unless enable feature-gate connector.spanmetrics.includeCollectorInstanceID
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions        []Dimension `mapstructure:"dimensions"`
+	CallsDimensions   []Dimension `mapstructure:"calls_dimensions"`
 	ExcludeDimensions []string    `mapstructure:"exclude_dimensions"`
 
 	// DimensionsCacheSize defines the size of cache for storing Dimensions, which helps to avoid cache memory growing
 	// indefinitely over the lifetime of the collector.
 	// Optional. See defaultDimensionsCacheSize in connector.go for the default value.
-	// Deprecated:  Please use AggregationCardinalityLimit instead
+	// Deprecated [v0.130.0]:  Please use AggregationCardinalityLimit instead
 	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
 
 	// ResourceMetricsCacheSize defines the size of the cache holding metrics for a service. This is mostly relevant for
@@ -91,29 +94,41 @@ type Config struct {
 	IncludeInstrumentationScope []string `mapstructure:"include_instrumentation_scope"`
 
 	AggregationCardinalityLimit int `mapstructure:"aggregation_cardinality_limit"`
+
+	// Add the resource attributes to the resulting metrics (disabled by default)
+	// This option enables the old behavior
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103
+	AddResourceAttributes bool `mapstructure:"add_resource_attributes"`
 }
 
 type HistogramConfig struct {
-	Disable     bool                        `mapstructure:"disable"`
-	Unit        metrics.Unit                `mapstructure:"unit"`
-	Exponential *ExponentialHistogramConfig `mapstructure:"exponential"`
-	Explicit    *ExplicitHistogramConfig    `mapstructure:"explicit"`
+	Disable     bool                                                `mapstructure:"disable"`
+	Unit        metrics.Unit                                        `mapstructure:"unit"`
+	Exponential configoptional.Optional[ExponentialHistogramConfig] `mapstructure:"exponential"`
+	Explicit    configoptional.Optional[ExplicitHistogramConfig]    `mapstructure:"explicit"`
+	Dimensions  []Dimension                                         `mapstructure:"dimensions"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 type ExemplarsConfig struct {
 	Enabled         bool `mapstructure:"enabled"`
-	MaxPerDataPoint *int `mapstructure:"max_per_data_point"`
+	MaxPerDataPoint int  `mapstructure:"max_per_data_point"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ExponentialHistogramConfig struct {
 	MaxSize int32 `mapstructure:"max_size"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ExplicitHistogramConfig struct {
 	// Buckets is the list of durations representing explicit histogram buckets.
 	Buckets []time.Duration `mapstructure:"buckets"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type EventsConfig struct {
@@ -121,6 +136,8 @@ type EventsConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 	// Dimensions defines the list of dimensions to add to the events metric.
 	Dimensions []Dimension `mapstructure:"dimensions"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ xconfmap.Validator = (*Config)(nil)
@@ -134,7 +151,7 @@ func (c Config) Validate() error {
 		return fmt.Errorf("failed validating event dimensions: %w", err)
 	}
 
-	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {
+	if c.Histogram.Explicit.HasValue() && c.Histogram.Exponential.HasValue() {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
 	}
 
@@ -155,6 +172,10 @@ func (c Config) Validate() error {
 
 	if c.AggregationCardinalityLimit < 0 {
 		return fmt.Errorf("invalid aggregation_cardinality_limit: %v, the limit should be positive", c.AggregationCardinalityLimit)
+	}
+
+	if c.Exemplars.Enabled && c.Exemplars.MaxPerDataPoint < 0 {
+		return fmt.Errorf("invalid max_per_data_point: %v, the value should be positive", c.Exemplars.MaxPerDataPoint)
 	}
 
 	return nil
@@ -179,7 +200,12 @@ func (c Config) GetDeltaTimestampCacheSize() int {
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions.
 func validateDimensions(dimensions []Dimension) error {
 	labelNames := make(map[string]struct{})
-	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey} {
+	intervalLabels := []string{serviceNameKey, spanKindKey, statusCodeKey, spanNameKey}
+	if includeCollectorInstanceID.IsEnabled() {
+		intervalLabels = append(intervalLabels, collectorInstanceKey)
+	}
+
+	for _, key := range intervalLabels {
 		labelNames[key] = struct{}{}
 	}
 

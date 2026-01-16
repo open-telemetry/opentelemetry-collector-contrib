@@ -6,7 +6,8 @@
 | Stability     | [beta]: traces   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftailsampling%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftailsampling) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftailsampling%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftailsampling) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech) \| Seeking more code owners! |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_tail_sampling)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_tail_sampling&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@Logiraptor](https://www.github.com/Logiraptor) \| Seeking more code owners! |
 | Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -27,17 +28,19 @@ The following configuration options are required:
 Multiple policies exist today and it is straight forward to add more. These include:
 - `always_sample`: Sample all traces
 - `latency`: Sample based on the duration of the trace. The duration is determined by looking at the earliest start time and latest end time, without taking into consideration what happened in between. Supplying no upper bound will result in a policy sampling anything greater than `threshold_ms`.
-- `numeric_attribute`: Sample based on number attributes (resource and record)
+- `numeric_attribute`: Sample based on number attributes (resource and record) by `min_value` and/or `max_value`
 - `probabilistic`: Sample a percentage of traces. Read [a comparison with the Probabilistic Sampling Processor](#probabilistic-sampling-processor-compared-to-the-tail-sampling-processor-with-the-probabilistic-policy).
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
 - `string_attribute`: Sample based on string attributes (resource and record) value matches, both exact and regex value matches are supported
 - `trace_state`: Sample based on [TraceState](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracestate) value matches
 - `rate_limiting`: Sample based on the rate of spans per second.
+- `bytes_limiting`: Sample based on the rate of bytes per second using a token bucket algorithm implemented by golang.org/x/time/rate. This allows for burst traffic up to a configurable capacity while maintaining the average rate over time. The bucket is refilled continuously at the specified rate and has a maximum capacity for burst handling.
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
 - `boolean_attribute`: Sample based on boolean attribute (resource and record).
 - `ottl_condition`: Sample based on given boolean OTTL condition (span and span event).
-- `and`: Sample based on multiple policies, creates an AND policy 
-- `composite`: Sample based on a combination of above samplers, with ordering and rate allocation per sampler. Rate allocation allocates certain percentages of spans per policy order. 
+- `and`: Sample based on multiple policies, creates an AND policy
+- `drop`: Drop (not sample) based on multiple policies, creates a DROP policy
+- `composite`: Sample based on a combination of above samplers, with ordering and rate allocation per sampler. Rate allocation allocates certain percentages of spans per policy order.
   For example if we have set max_total_spans_per_second as 100 then we can set rate_allocation as follows
   1. test-composite-policy-1 = 50 % of max_total_spans_per_second = 50 spans_per_second
   2. test-composite-policy-2 = 25 % of max_total_spans_per_second = 25 spans_per_second
@@ -45,6 +48,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
+- `decision_wait_after_root_received` (default = 0s): Wait time after the root span of a trace is received before making a sampling decision. 0s means disabled (only use `decision_wait`).
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 - `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches
@@ -53,21 +57,25 @@ The following configuration options can also be modified:
   Additionally, if using, configure this as much greater than `num_traces` so decisions for trace IDs are kept
   longer than the span data for the trace.
   - `sampled_cache_size` (default = 0): Configures amount of trace IDs to be kept in an LRU cache,
-  persisting the "keep" decisions for traces that may have already been released from memory. 
+  persisting the "keep" decisions for traces that may have already been released from memory.
   By default, the size is 0 and the cache is inactive.
   - `non_sampled_cache_size` (default = 0) Configures amount of trace IDs to be kept in an LRU cache,
     persisting the "drop" decisions for traces that may have already been released from memory.
     By default, the size is 0 and the cache is inactive.
+- `sample_on_first_match`: Make decision as soon as a policy matches
+- `drop_pending_traces_on_shutdown`: Drop pending traces on shutdown instead of making a decision with the partial data
+  already ingested.
 
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
 
-- When there's an "inverted not sample" decision, the trace is not sampled;
+- When there's a "drop" decision, the trace is not sampled;
+- When there's an "inverted not sample" decision, the trace is not sampled; ***Deprecated***
 - When there's a "sample" decision, the trace is sampled;
-- When there's a "inverted sample" decision and no "not sample" decisions, the trace is sampled;
+- When there's a "inverted sample" decision and no "not sample" decisions, the trace is sampled; ***Deprecated***
 - In all other cases, the trace is NOT sampled
 
-An "inverted" decision is the one made based on the "invert_match" attribute, such as the one from the string, numeric or boolean tag policy.
+An "inverted" decision is the one made based on the "invert_match" attribute, such as the one from the string, numeric or boolean tag policy. There is an exception to this if the policy is within an and or composite policy, the resulting decision will be either sampled or not sampled. The "inverted" decisions have been deprecated, please make use of drop policy to explicitly not sample select traces.
 
 Examples:
 
@@ -123,8 +131,8 @@ processors:
          },
          {
             name: test-policy-9,
-            type: string_attribute,
-            string_attribute: {key: url.path, values: [\/health, \/metrics], enabled_regex_matching: true, invert_match: true}
+            type: bytes_limiting,
+            bytes_limiting: {bytes_per_second: 1024000, burst_capacity: 2048000}
          },
          {
             name: test-policy-10,
@@ -160,7 +168,7 @@ processors:
             name: and-policy-1,
             type: and,
             and: {
-              and_sub_policy: 
+              and_sub_policy:
               [
                 {
                   name: test-and-policy-1,
@@ -172,6 +180,20 @@ processors:
                     type: string_attribute,
                     string_attribute: { key: key2, values: [ value1, value2 ] }
                 },
+              ]
+            }
+         },
+         {
+            name: drop-policy-1,
+            type: drop,
+            drop: {
+              drop_sub_policy:
+              [
+                {
+                    name: test-drop-policy-1,
+                    type: string_attribute,
+                    string_attribute: {key: url.path, values: [\/health, \/metrics], enabled_regex_matching: true}
+                }
               ]
             }
          },
@@ -216,6 +238,49 @@ processors:
 ```
 
 Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for detailed examples on using the processor.
+
+## Bytes Limiting Policy
+
+The `bytes_limiting` policy uses a token bucket algorithm implemented by [golang.org/x/time/rate](https://pkg.go.dev/golang.org/x/time/rate) to control the rate of data throughput based on the accurate protobuf marshaled size of traces calculated using the OpenTelemetry Collector's built-in `ProtoMarshaler.TracesSize()` method. This policy is particularly useful for:
+
+- **Volume control**: Limiting the total amount of trace data processed per unit time
+- **Burst handling**: Allowing short-term spikes in data volume while maintaining long-term rate limits
+- **Memory protection**: Preventing downstream systems from being overwhelmed by large traces
+
+### Configuration
+
+The `bytes_limiting` policy supports the following configuration parameters:
+
+- `bytes_per_second`: The sustained rate at which bytes are allowed through (required)
+- `burst_capacity`: The maximum number of bytes that can be processed in a burst (optional, defaults to 2x `bytes_per_second`)
+
+### Token Bucket Algorithm
+
+The policy implements a token bucket algorithm where:
+
+1. **Tokens represent bytes**: Each token in the bucket represents one byte of trace data
+2. **Continuous refill**: Tokens are added to the bucket at the configured `bytes_per_second` rate
+3. **Burst capacity**: The bucket can hold up to `burst_capacity` tokens for handling traffic bursts
+4. **Consumption**: When a trace arrives, tokens equal to the trace size are consumed from the bucket
+5. **Rejection**: If insufficient tokens are available, the trace is not sampled
+
+### Example Configuration
+
+```yaml
+processors:
+  tail_sampling:
+    policies:
+      - name: volume-control
+        type: bytes_limiting
+        bytes_limiting:
+          bytes_per_second: 1048576    # 1 MB/second sustained rate
+          burst_capacity: 5242880      # 5 MB burst capacity
+```
+
+This configuration allows:
+- A sustained throughput of 1 MB/second (1,048,576 bytes/s)
+- Burst traffic up to 5 MB (5,242,880 bytes) before rate limiting kicks in
+- Smooth handling of variable trace sizes and timing
 
 ## A Practical Example
 
@@ -419,13 +484,22 @@ tail_sampling:
         type: boolean_attribute,
         boolean_attribute: { key: app.force_sample, value: true },
       },
-    {
-      # Rule 7:
-      # never sample if the do_not_sample attribute is set to true
-      name: team_a-do-not-sample,
-      type: boolean_attribute,
-      boolean_attribute: { key: app.do_not_sample, value: true, invert_match: true },
-    },
+      {
+        # Rule 7:
+        # never sample if the do_not_sample attribute is set to true
+        name: do-not-sample,
+        type: drop,
+        drop: {
+          drop_sub_policy:
+            [
+              {
+                name: team_a-do-not-sample,
+                type: boolean_attribute,
+                string_attribute: { key: app.do_not_sample, value: true }
+              }
+            ]
+        }
+      },
       # END: policies for team_a
     ]
 ```
@@ -442,7 +516,7 @@ The [probabilistic sampling processor][probabilistic_sampling_processor] and the
 
 As a rule of thumb, if you want to add probabilistic sampling and...
 
-...you are not using the tail sampling processor already: use the [probabilistic sampling processor][probabilistic_sampling_processor]. Running the probabilistic sampling processor is more efficient than the tail sampling processor. The probabilistic sampling policy makes decision based upon the trace ID, so waiting until more spans have arrived will not influence its decision. 
+...you are not using the tail sampling processor already: use the [probabilistic sampling processor][probabilistic_sampling_processor]. Running the probabilistic sampling processor is more efficient than the tail sampling processor. The probabilistic sampling policy makes decision based upon the trace ID, so waiting until more spans have arrived will not influence its decision.
 
 ...you are already using the tail sampling processor: add the probabilistic sampling policy. You are already incurring the cost of running the tail sampling processor, adding the probabilistic policy will be negligible. Additionally, using the policy within the tail sampling processor will ensure traces that are sampled by other policies will not be dropped.
 
@@ -457,7 +531,7 @@ As a rule of thumb, if you want to add probabilistic sampling and...
 option allows, some will have to be dropped before they can be sampled. Increasing the value of `num_traces` can
 help resolve this error, at the expense of increased memory usage.
 
-## Monitoring and Tuning 
+## Monitoring and Tuning
 
 See [documentation.md][documentation_md] for the full list metrics available for this component and their descriptions.
 
@@ -494,7 +568,7 @@ It's therefore recommended to consume this component's output with components th
 A span's arrival is considered "late" if it arrives after its trace's sampling decision is made. Late spans can cause different sampling decisions for different parts of the trace.
 
 There are two scenarios for late arriving spans:
-- Scenario 1: While the sampling decision of the trace remains in the circular buffer of `num_traces` length, the late spans inherit that decision. That means late spans do not influence the trace's sampling decision. 
+- Scenario 1: While the sampling decision of the trace remains in the circular buffer of `num_traces` length, the late spans inherit that decision. That means late spans do not influence the trace's sampling decision.
 - Scenario 2: (Default, no decision cache configured) After the sampling decision is removed from the buffer, it's as if this component has never seen the trace before: The late spans are buffered for `decision_wait` seconds and then a new sampling decision is made.
 - Scenario 3: (Decision cache is configured) When a "keep" decision is made on a trace, the trace ID is cached. The component will remember which trace IDs it sampled even after it releases the span data from memory. Unless it has been evicted from the cache after some time, it will remember the same "keep trace" decision.
 
@@ -511,10 +585,10 @@ It may also be useful to:
 
 **Sampled Frequency**
 
-To track the percentage of traces that were actually sampled, use: 
+To track the percentage of traces that were actually sampled, use:
 
 ```
-otelcol_processor_tail_sampling_global_count_traces_sampled{sampled="true"} / 
+otelcol_processor_tail_sampling_global_count_traces_sampled{sampled="true"} /
 otelcol_processor_tail_sampling_global_count_traces_sampled
 ```
 
@@ -523,21 +597,37 @@ otelcol_processor_tail_sampling_global_count_traces_sampled
 To see how often each policy votes to sample a trace, use:
 
 ```
-sum (otelcol_processor_tail_sampling_count_traces_sampled{sampled="true"}) by (policy) / 
-sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy) 
+sum (otelcol_processor_tail_sampling_count_traces_sampled{decision="sampled"}) by (policy) /
+sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
 ```
 
-As a reminder, a policy voting to sample the trace does not guarantee sampling; an "inverted not" decision from another policy would still discard the trace.
+As a reminder, a policy voting to sample the trace does not guarantee sampling; an "inverted not" or "drop" decision from another policy would still discard the trace.
+
+**Drop Policy Decision Frequency**
+
+To track how often a drop policy votes to drop a trace, use:
+
+```
+sum (otelcol_processor_tail_sampling_count_traces_sampled{decision="dropped"}) by (policy) /
+sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
+```
 
 ### Tracking sampling policy
 To better understand _which_ sampling policy made the decision to include a trace, you can enable tracking the policy responsible for sampling a trace via the `processor.tailsamplingprocessor.recordpolicy` feature gate.
 
 When this feature gate is set, this will add additional attributes on each sampled span:
 
-| Attribute                       | Description                                                               | Present?                   |
-|---------------------------------|---------------------------------------------------------------------------|----------------------------|
-| `tailsampling.policy`           | Records the configured name of the policy that sampled a trace            | Always                     |
-| `tailsampling.composite_policy` | Records the configured name of a composite subpolicy that sampled a trace | When composite policy used |
+| Attribute                       | Description                                                               | Present?                                               |
+|---------------------------------|---------------------------------------------------------------------------|--------------------------------------------------------|
+| `tailsampling.policy`           | Records the configured name of the policy that sampled a trace            | Always, unless trace was sampled by the decision cache |
+| `tailsampling.composite_policy` | Records the configured name of a composite subpolicy that sampled a trace | When composite policy used                             |
+| `tailsampling.cached_decision`  | Records whether a trace was sampled by the decision cache                 | When decision cache used                               |
+
+### Disable invert decisions
+
+The invert sampling decisions (`InvertSampled` and `InvertNotSampled`) have been deprecated, however, they are still available. To disable them before their complete removal, you can use the `processor.tailsamplingprocessor.disableinvertdecisions` feature gate. When this feature gate is set, sampling policy `invert_match` will result in a `Sampled` or `NotSampled` decision instead of `InvertSampled` or `InvertNotSampled`. This applies to the string, numeric, and boolean tag policy.
+
+If you disable invert decisions, you can make use of drop policy to explicitly not sample select traces.
 
 ### Policy Evaluation Errors
 

@@ -55,3 +55,6 @@ prometheusremotewrite/disabled_queue:
 prometheusremotewrite/non_snappy_compression_type:
   endpoint: "localhost:8888"
   compression: "gzip"
+
+prometheusremotewrite/unknown_protobuf_message:
+  protobuf_message: "io.prometheus.write.v4.Request"

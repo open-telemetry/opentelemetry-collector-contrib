@@ -19,26 +19,26 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
-type MockClusterAdmin struct {
+type mockClusterAdmin struct {
 	sarama.ClusterAdmin
 	mock.Mock
 }
 
-func (m *MockClusterAdmin) ListTopics() (map[string]sarama.TopicDetail, error) {
+func (m *mockClusterAdmin) ListTopics() (map[string]sarama.TopicDetail, error) {
 	args := m.Called()
 	return args.Get(0).(map[string]sarama.TopicDetail), args.Error(1)
 }
 
-func (m *MockClusterAdmin) Close() error {
+func (m *mockClusterAdmin) Close() error {
 	return m.Called().Error(0)
 }
 
 func TestCollectEndpointsDefaultConfig(t *testing.T) {
 	factory := NewFactory()
-	mockAdmin := &MockClusterAdmin{}
+	mockAdmin := &mockClusterAdmin{}
 	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{"abc": {}, "def": {}}, nil)
 	mockAdmin.On("Close").Return(nil).Once()
 
@@ -52,15 +52,15 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
-	err = ext.Start(context.Background(), componenttest.NewNopHost())
+	err = ext.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
-	err = ext.Shutdown(context.Background())
+	err = ext.Shutdown(t.Context())
 	assert.NoError(t, err)
 }
 
 func TestCollectEndpointsAllConfigSettings(t *testing.T) {
-	mockAdmin := &MockClusterAdmin{}
+	mockAdmin := &mockClusterAdmin{}
 
 	// During first check new topics matching the regex are detected
 	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
@@ -93,10 +93,10 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
-	err = ext.Start(context.Background(), componenttest.NewNopHost())
+	err = ext.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	defer func() {
-		err := ext.Shutdown(context.Background())
+		err := ext.Shutdown(t.Context())
 		assert.NoError(t, err)
 	}()
 
@@ -128,7 +128,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 
 type channelNotifier chan notifyOp
 
-func (ch channelNotifier) ID() observer.NotifyID {
+func (channelNotifier) ID() observer.NotifyID {
 	return "channel-notifier"
 }
 

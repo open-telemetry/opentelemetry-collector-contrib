@@ -4,7 +4,6 @@
 package tcplogreceiver
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -34,15 +33,15 @@ func testTCP(t *testing.T, cfg *TCPLogConfig) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 
 	var conn net.Conn
 	conn, err = net.Dial("tcp", "127.0.0.1:29018")
 	require.NoError(t, err)
 
-	for i := 0; i < numLogs; i++ {
+	for i := range numLogs {
 		msg := fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d\n", i, i)
 		_, err = conn.Write([]byte(msg))
 		require.NoError(t, err)
@@ -50,13 +49,13 @@ func testTCP(t *testing.T, cfg *TCPLogConfig) {
 	require.NoError(t, conn.Close())
 
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, time.Millisecond)
-	require.NoError(t, rcvr.Shutdown(context.Background()))
+	require.NoError(t, rcvr.Shutdown(t.Context()))
 	require.Len(t, sink.AllLogs(), 1)
 
 	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
 	logs := resourceLogs.ScopeLogs().At(0).LogRecords()
 
-	for i := 0; i < numLogs; i++ {
+	for i := range numLogs {
 		log := logs.At(i)
 
 		msg := log.Body()
@@ -103,7 +102,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			return *c
 		}(),
 	}
-	receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), badCfg, consumertest.NewNop())
+	receiver, err := factory.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), badCfg, consumertest.NewNop())
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }

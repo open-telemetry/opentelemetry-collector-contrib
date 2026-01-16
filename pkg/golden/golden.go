@@ -25,7 +25,8 @@ func ReadMetrics(filePath string) (pmetric.Metrics, error) {
 	}
 	if strings.HasSuffix(filePath, ".yaml") || strings.HasSuffix(filePath, ".yml") {
 		var m map[string]any
-		if err = yaml.Unmarshal(b, &m); err != nil {
+		err = yaml.Unmarshal(b, &m)
+		if err != nil {
 			return pmetric.Metrics{}, err
 		}
 		b, err = json.Marshal(m)
@@ -56,7 +57,7 @@ func MarshalMetricsYAML(metrics pmetric.Metrics) ([]byte, error) {
 		return nil, err
 	}
 	var jsonVal map[string]any
-	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
+	if err := json.Unmarshal(fileBytes, &jsonVal); err != nil {
 		return nil, err
 	}
 	b := &bytes.Buffer{}
@@ -99,7 +100,8 @@ func ReadLogs(filePath string) (plog.Logs, error) {
 	}
 	if strings.HasSuffix(filePath, ".yaml") || strings.HasSuffix(filePath, ".yml") {
 		var m map[string]any
-		if err = yaml.Unmarshal(b, &m); err != nil {
+		err = yaml.Unmarshal(b, &m)
+		if err != nil {
 			return plog.Logs{}, err
 		}
 		b, err = json.Marshal(m)
@@ -131,7 +133,7 @@ func WriteLogsToFile(filePath string, logs plog.Logs) error {
 		return err
 	}
 	var jsonVal map[string]any
-	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
+	if err := json.Unmarshal(fileBytes, &jsonVal); err != nil {
 		return err
 	}
 	b := &bytes.Buffer{}
@@ -151,7 +153,8 @@ func ReadTraces(filePath string) (ptrace.Traces, error) {
 	}
 	if strings.HasSuffix(filePath, ".yaml") || strings.HasSuffix(filePath, ".yml") {
 		var m map[string]any
-		if err = yaml.Unmarshal(b, &m); err != nil {
+		err = yaml.Unmarshal(b, &m)
+		if err != nil {
 			return ptrace.Traces{}, err
 		}
 		b, err = json.Marshal(m)
@@ -183,7 +186,7 @@ func WriteTracesToFile(filePath string, traces ptrace.Traces) error {
 		return err
 	}
 	var jsonVal map[string]any
-	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
+	if err := json.Unmarshal(fileBytes, &jsonVal); err != nil {
 		return err
 	}
 	b := &bytes.Buffer{}
@@ -203,7 +206,8 @@ func ReadProfiles(filePath string) (pprofile.Profiles, error) {
 	}
 	if strings.HasSuffix(filePath, ".yaml") || strings.HasSuffix(filePath, ".yml") {
 		var m map[string]any
-		if err = yaml.Unmarshal(b, &m); err != nil {
+		err = yaml.Unmarshal(b, &m)
+		if err != nil {
 			return pprofile.Profiles{}, err
 		}
 		b, err = json.Marshal(m)
@@ -235,7 +239,7 @@ func WriteProfilesToFile(filePath string, profiles pprofile.Profiles) error {
 		return err
 	}
 	var jsonVal map[string]any
-	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
+	if err := json.Unmarshal(fileBytes, &jsonVal); err != nil {
 		return err
 	}
 	b := &bytes.Buffer{}

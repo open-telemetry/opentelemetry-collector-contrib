@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -21,6 +22,9 @@ import (
 // This involves setting the start time using the following strategy:
 //   - The initial point in a series has its start time set to that point's end time.
 //   - All subsequent points in the series have their start time set to the initial point's end time.
+//
+// Note that when a reset is detected (eg: value of a counter is decreasing) - the strategy will set the
+// start time of the reset point as point timestamp - 1ms.
 const Type = "true_reset_point"
 
 // Adjuster takes a map from a metric instance to the initial point in the metrics instance
@@ -70,9 +74,6 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 				case pmetric.MetricTypeExponentialHistogram:
 					a.adjustMetricExponentialHistogram(tsm, metric)
 
-				case pmetric.MetricTypeEmpty:
-					fallthrough
-
 				default:
 					// this shouldn't happen
 					a.set.Logger.Info("Adjust - skipping unexpected point", zap.String("type", dataType.String()))
@@ -84,7 +85,7 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 	return metrics, nil
 }
 
-func (a *Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
+func (*Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
 	histogram := current.Histogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
@@ -94,34 +95,46 @@ func (a *Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, cu
 	currentPoints := histogram.DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
+		if st := currentDist.StartTimestamp(); st != 0 && st != currentDist.Timestamp() {
+			// Report point as is if the start timestamp is already set.
+			continue
+		}
 
-		tsi, found := tsm.Get(current, currentDist.Attributes())
+		refTsi, found := tsm.Get(current, currentDist.Attributes())
 		if !found {
 			// initialize everything.
-			tsi.Histogram = pmetric.NewHistogramDataPoint()
-			currentDist.CopyTo(tsi.Histogram)
+			refTsi.Histogram = datapointstorage.HistogramInfo{
+				PreviousCount: currentDist.Count(), PreviousSum: currentDist.Sum(),
+				StartTime:            currentDist.Timestamp(),
+				PreviousBucketCounts: currentDist.BucketCounts().AsRaw(),
+				ExplicitBounds:       currentDist.ExplicitBounds().AsRaw(),
+			}
+
+			// For the first point, set the start time as the point timestamp.
+			currentDist.SetStartTimestamp(currentDist.Timestamp())
 			continue
 		}
 
 		if currentDist.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
-			currentDist.SetStartTimestamp(tsi.Histogram.StartTimestamp())
+			currentDist.SetStartTimestamp(refTsi.Histogram.StartTime)
 			continue
 		}
 
-		if tsi.IsResetHistogram(currentDist) {
+		if refTsi.IsResetHistogram(currentDist) {
 			// reset re-initialize everything.
-			currentDist.CopyTo(tsi.Histogram)
-			continue
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.Timestamp().AsTime().Add(-1 * time.Millisecond))
+			refTsi.Histogram.StartTime = resetStartTimeStamp
 		}
 
 		// Update only previous values.
-		currentDist.SetStartTimestamp(tsi.Histogram.StartTimestamp())
-		currentDist.CopyTo(tsi.Histogram)
+		refTsi.Histogram.PreviousCount, refTsi.Histogram.PreviousSum = currentDist.Count(), currentDist.Sum()
+		refTsi.Histogram.PreviousBucketCounts = currentDist.BucketCounts().AsRaw()
+		currentDist.SetStartTimestamp(refTsi.Histogram.StartTime)
 	}
 }
 
-func (a *Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
+func (*Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
 	histogram := current.ExponentialHistogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
@@ -131,92 +144,127 @@ func (a *Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.Timese
 	currentPoints := histogram.DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
+		if st := currentDist.StartTimestamp(); st != 0 && st != currentDist.Timestamp() {
+			// Report point as is if the start timestamp is already set.
+			continue
+		}
 
-		tsi, found := tsm.Get(current, currentDist.Attributes())
+		refTsi, found := tsm.Get(current, currentDist.Attributes())
 		if !found {
 			// initialize everything.
-			tsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
-			currentDist.CopyTo(tsi.ExponentialHistogram)
+			refTsi.ExponentialHistogram = datapointstorage.ExponentialHistogramInfo{
+				PreviousCount: currentDist.Count(), PreviousSum: currentDist.Sum(), PreviousZeroCount: currentDist.ZeroCount(),
+				Scale:            currentDist.Scale(),
+				StartTime:        currentDist.Timestamp(),
+				PreviousPositive: datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Positive()),
+				PreviousNegative: datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Negative()),
+			}
+
+			// For the first point, set the start time as the point timestamp.
+			currentDist.SetStartTimestamp(currentDist.Timestamp())
 			continue
 		}
 
 		if currentDist.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
-			currentDist.SetStartTimestamp(tsi.ExponentialHistogram.StartTimestamp())
+			currentDist.SetStartTimestamp(refTsi.ExponentialHistogram.StartTime)
 			continue
 		}
 
-		if tsi.IsResetExponentialHistogram(currentDist) {
+		if refTsi.IsResetExponentialHistogram(currentDist) {
 			// reset re-initialize everything.
-			currentDist.CopyTo(tsi.ExponentialHistogram)
-			continue
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.Timestamp().AsTime().Add(-1 * time.Millisecond))
+			refTsi.ExponentialHistogram.StartTime = resetStartTimeStamp
+			refTsi.ExponentialHistogram.Scale = currentDist.Scale()
 		}
 
 		// Update only previous values.
-		currentDist.SetStartTimestamp(tsi.ExponentialHistogram.StartTimestamp())
-		currentDist.CopyTo(tsi.ExponentialHistogram)
+		refTsi.ExponentialHistogram.PreviousPositive = datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Positive())
+		refTsi.ExponentialHistogram.PreviousNegative = datapointstorage.NewExponentialHistogramBucketInfo(currentDist.Negative())
+		refTsi.ExponentialHistogram.PreviousCount, refTsi.ExponentialHistogram.PreviousSum, refTsi.ExponentialHistogram.PreviousZeroCount = currentDist.Count(), currentDist.Sum(), currentDist.ZeroCount()
+		currentDist.SetStartTimestamp(refTsi.ExponentialHistogram.StartTime)
 	}
 }
 
-func (a *Adjuster) adjustMetricSum(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
+func (*Adjuster) adjustMetricSum(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
 	currentPoints := current.Sum().DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSum := currentPoints.At(i)
+		if st := currentSum.StartTimestamp(); st != 0 && st != currentSum.Timestamp() {
+			// Report point as is if the start timestamp is already set.
+			continue
+		}
 
-		tsi, found := tsm.Get(current, currentSum.Attributes())
+		refTsi, found := tsm.Get(current, currentSum.Attributes())
 		if !found {
 			// initialize everything.
-			tsi.Number = pmetric.NewNumberDataPoint()
-			currentSum.CopyTo(tsi.Number)
+			refTsi.Number = datapointstorage.NumberInfo{
+				PreviousDoubleValue: currentSum.DoubleValue(),
+				PreviousIntValue:    currentSum.IntValue(),
+				StartTime:           currentSum.Timestamp(),
+			}
+
+			// For the first point, set the start time as the point timestamp.
+			currentSum.SetStartTimestamp(currentSum.Timestamp())
 			continue
 		}
 
 		if currentSum.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
-			currentSum.SetStartTimestamp(tsi.Number.StartTimestamp())
+			currentSum.SetStartTimestamp(refTsi.Number.StartTime)
 			continue
 		}
 
-		if tsi.IsResetSum(currentSum) {
+		if refTsi.IsResetSum(currentSum) {
 			// reset re-initialize everything.
-			currentSum.CopyTo(tsi.Number)
-			continue
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentSum.Timestamp().AsTime().Add(-1 * time.Millisecond))
+			refTsi.Number.StartTime = resetStartTimeStamp
 		}
 
 		// Update only previous values.
-		currentSum.SetStartTimestamp(tsi.Number.StartTimestamp())
-		currentSum.CopyTo(tsi.Number)
+		refTsi.Number.PreviousDoubleValue = currentSum.DoubleValue()
+		refTsi.Number.PreviousIntValue = currentSum.IntValue()
+		currentSum.SetStartTimestamp(refTsi.Number.StartTime)
 	}
 }
 
-func (a *Adjuster) adjustMetricSummary(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
+func (*Adjuster) adjustMetricSummary(tsm *datapointstorage.TimeseriesMap, current pmetric.Metric) {
 	currentPoints := current.Summary().DataPoints()
 
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSummary := currentPoints.At(i)
+		if st := currentSummary.StartTimestamp(); st != 0 && st != currentSummary.Timestamp() {
+			// Report point as is if the start timestamp is already set.
+			continue
+		}
 
-		tsi, found := tsm.Get(current, currentSummary.Attributes())
+		refTsi, found := tsm.Get(current, currentSummary.Attributes())
 		if !found {
 			// initialize everything.
-			tsi.Summary = pmetric.NewSummaryDataPoint()
-			currentSummary.CopyTo(tsi.Summary)
+			refTsi.Summary = datapointstorage.SummaryInfo{
+				PreviousCount: currentSummary.Count(), PreviousSum: currentSummary.Sum(),
+				StartTime: currentSummary.Timestamp(),
+			}
+
+			// For the first point, set the start time as the point timestamp.
+			currentSummary.SetStartTimestamp(currentSummary.Timestamp())
 			continue
 		}
 
 		if currentSummary.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
-			currentSummary.SetStartTimestamp(tsi.Summary.StartTimestamp())
+			currentSummary.SetStartTimestamp(refTsi.Summary.StartTime)
 			continue
 		}
 
-		if tsi.IsResetSummary(currentSummary) {
+		if refTsi.IsResetSummary(currentSummary) {
 			// reset re-initialize everything.
-			currentSummary.CopyTo(tsi.Summary)
-			continue
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentSummary.Timestamp().AsTime().Add(-1 * time.Millisecond))
+			refTsi.Summary.StartTime = resetStartTimeStamp
 		}
 
 		// Update only previous values.
-		currentSummary.SetStartTimestamp(tsi.Summary.StartTimestamp())
-		currentSummary.CopyTo(tsi.Summary)
+		refTsi.Summary.PreviousCount, refTsi.Summary.PreviousSum = currentSummary.Count(), currentSummary.Sum()
+		currentSummary.SetStartTimestamp(refTsi.Summary.StartTime)
 	}
 }

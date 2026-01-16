@@ -8,7 +8,7 @@ import (
 	"errors"
 	"time"
 
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -117,14 +117,14 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		dialOpts = append(dialOpts, configgrpc.WithGrpcDialOption(opt))
 	}
 
-	if e.clientConn, err = e.config.ToClientConn(ctx, host, e.settings.TelemetrySettings, dialOpts...); err != nil {
+	if e.clientConn, err = e.config.ToClientConn(ctx, host.GetExtensions(), e.settings.TelemetrySettings, dialOpts...); err != nil {
 		return err
 	}
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	headers := map[string]string{}
-	for k, v := range e.config.Headers {
+	for k, v := range e.config.Headers.Iter {
 		headers[k] = string(v)
 	}
 	headerMetadata := metadata.New(headers)
@@ -138,9 +138,9 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		ctx := e.enhanceContext(context.Background())
 
 		var perRPCCreds credentials.PerRPCCredentials
-		if e.config.Auth != nil {
+		if e.config.Auth.HasValue() {
 			// Get the auth extension, we'll use it to enrich the request context.
-			authClient, err := e.config.Auth.GetGRPCClientAuthenticator(ctx, host.GetExtensions())
+			authClient, err := e.config.Auth.Get().GetGRPCClientAuthenticator(ctx, host.GetExtensions())
 			if err != nil {
 				return err
 			}

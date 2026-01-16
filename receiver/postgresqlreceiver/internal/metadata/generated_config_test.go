@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -40,6 +41,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlDatabaseLocks:            MetricConfig{Enabled: true},
 					PostgresqlDbSize:                   MetricConfig{Enabled: true},
 					PostgresqlDeadlocks:                MetricConfig{Enabled: true},
+					PostgresqlFunctionCalls:            MetricConfig{Enabled: true},
 					PostgresqlIndexScans:               MetricConfig{Enabled: true},
 					PostgresqlIndexSize:                MetricConfig{Enabled: true},
 					PostgresqlOperations:               MetricConfig{Enabled: true},
@@ -50,6 +52,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableCount:               MetricConfig{Enabled: true},
 					PostgresqlTableSize:                MetricConfig{Enabled: true},
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: true},
+					PostgresqlTempIo:                   MetricConfig{Enabled: true},
 					PostgresqlTempFiles:                MetricConfig{Enabled: true},
 					PostgresqlTupDeleted:               MetricConfig{Enabled: true},
 					PostgresqlTupFetched:               MetricConfig{Enabled: true},
@@ -65,6 +68,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlIndexName:    ResourceAttributeConfig{Enabled: true},
 					PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: true},
 					PostgresqlTableName:    ResourceAttributeConfig{Enabled: true},
+					ServiceInstanceID:      ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -87,6 +91,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlDatabaseLocks:            MetricConfig{Enabled: false},
 					PostgresqlDbSize:                   MetricConfig{Enabled: false},
 					PostgresqlDeadlocks:                MetricConfig{Enabled: false},
+					PostgresqlFunctionCalls:            MetricConfig{Enabled: false},
 					PostgresqlIndexScans:               MetricConfig{Enabled: false},
 					PostgresqlIndexSize:                MetricConfig{Enabled: false},
 					PostgresqlOperations:               MetricConfig{Enabled: false},
@@ -97,6 +102,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableCount:               MetricConfig{Enabled: false},
 					PostgresqlTableSize:                MetricConfig{Enabled: false},
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: false},
+					PostgresqlTempIo:                   MetricConfig{Enabled: false},
 					PostgresqlTempFiles:                MetricConfig{Enabled: false},
 					PostgresqlTupDeleted:               MetricConfig{Enabled: false},
 					PostgresqlTupFetched:               MetricConfig{Enabled: false},
@@ -112,6 +118,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlIndexName:    ResourceAttributeConfig{Enabled: false},
 					PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: false},
 					PostgresqlTableName:    ResourceAttributeConfig{Enabled: false},
+					ServiceInstanceID:      ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -131,7 +138,17 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
+	return cfg
+}
+
+func loadLogsBuilderConfig(t *testing.T, name string) LogsBuilderConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultLogsBuilderConfig()
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 
@@ -151,6 +168,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				PostgresqlIndexName:    ResourceAttributeConfig{Enabled: true},
 				PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: true},
 				PostgresqlTableName:    ResourceAttributeConfig{Enabled: true},
+				ServiceInstanceID:      ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -160,6 +178,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				PostgresqlIndexName:    ResourceAttributeConfig{Enabled: false},
 				PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: false},
 				PostgresqlTableName:    ResourceAttributeConfig{Enabled: false},
+				ServiceInstanceID:      ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

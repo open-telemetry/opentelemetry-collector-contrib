@@ -49,7 +49,7 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) erro
 	}
 
 	indicesByAttr := make(map[string][]int)
-	for i := 0; i < lenRss; i++ {
+	for i := range lenRss {
 		rs := rss.At(i)
 		var attrVal string
 
@@ -112,7 +112,7 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) 
 	}
 
 	indicesByAttr := make(map[string][]int)
-	for i := 0; i < lenRms; i++ {
+	for i := range lenRms {
 		rm := rms.At(i)
 		var attrVal string
 		for _, k := range bt.attrKeys {
@@ -173,7 +173,7 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 	}
 
 	indicesByAttr := make(map[string][]int)
-	for i := 0; i < lenRls; i++ {
+	for i := range lenRls {
 		rl := rls.At(i)
 		var attrVal string
 		for _, k := range bt.attrKeys {

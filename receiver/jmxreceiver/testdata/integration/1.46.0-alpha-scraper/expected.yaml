@@ -1,0 +1,161 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: myattr
+          value:
+            stringValue: myvalue
+        - key: myotherattr
+          value:
+            stringValue: myothervalue
+        - key: service.name
+          value:
+            stringValue: unknown_service:java
+        - key: telemetry.sdk.language
+          value:
+            stringValue: java
+        - key: telemetry.sdk.name
+          value:
+            stringValue: opentelemetry
+        - key: telemetry.sdk.version
+          value:
+            stringValue: 1.49.0
+    scopeMetrics:
+      - metrics:
+          - description: The number of items queued
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: processorType
+                      value:
+                        stringValue: BatchSpanProcessor
+                  startTimeUnixNano: "1751134881791000000"
+                  timeUnixNano: "1751134938797000000"
+            name: queueSize
+            unit: "1"
+        scope:
+          name: io.opentelemetry.sdk.trace
+      - metrics:
+          - description: The number of items queued
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: processorType
+                      value:
+                        stringValue: BatchLogRecordProcessor
+                  startTimeUnixNano: "1751134881791000000"
+                  timeUnixNano: "1751134938797000000"
+            name: queueSize
+            unit: "1"
+        scope:
+          name: io.opentelemetry.sdk.logs
+      - metrics:
+          - description: The number of errors encountered
+            name: tomcat.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
+                  startTimeUnixNano: "1751134881791000000"
+                  timeUnixNano: "1751134938797000000"
+              isMonotonic: true
+            unit: '{error}'
+          - description: The total processing time
+            name: tomcat.processing_time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
+                  startTimeUnixNano: "1751134881791000000"
+                  timeUnixNano: "1751134938797000000"
+              isMonotonic: true
+            unit: ms
+          - description: The number of bytes transmitted and received
+            name: tomcat.traffic
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: sent
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
+                  startTimeUnixNano: "1751134881791000000"
+                  timeUnixNano: "1751134938797000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
+                  startTimeUnixNano: "1751134881791000000"
+                  timeUnixNano: "1751134938797000000"
+              isMonotonic: true
+            unit: By
+          - description: The number of threads
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: busy
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
+                  startTimeUnixNano: "1751134881791000000"
+                  timeUnixNano: "1751134938797000000"
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: idle
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
+                  startTimeUnixNano: "1751134881791000000"
+                  timeUnixNano: "1751134938797000000"
+            name: tomcat.threads
+            unit: '{thread}'
+          - description: Maximum time to process a request
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
+                  startTimeUnixNano: "1751134881791000000"
+                  timeUnixNano: "1751134938797000000"
+            name: tomcat.max_time
+            unit: ms
+          - description: The total requests
+            name: tomcat.request_count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
+                  startTimeUnixNano: "1751134881791000000"
+                  timeUnixNano: "1751134938797000000"
+              isMonotonic: true
+            unit: '{request}'
+        scope:
+          name: io.opentelemetry.jmx

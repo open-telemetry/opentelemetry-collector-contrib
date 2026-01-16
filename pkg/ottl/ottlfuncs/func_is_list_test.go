@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -170,8 +171,8 @@ func Test_IsList(t *testing.T) {
 					return tt.value, nil
 				},
 			})
-			result, err := exprFunc(context.Background(), nil)
-			assert.NoError(t, err)
+			result, err := exprFunc(t.Context(), nil)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -183,7 +184,8 @@ func Test_IsList_Error(t *testing.T) {
 			return nil, ottl.TypeError("")
 		},
 	})
-	result, err := exprFunc(context.Background(), nil)
+	result, err := exprFunc(t.Context(), nil)
 	assert.Equal(t, false, result)
-	assert.IsType(t, ottl.TypeError(""), err)
+	var typeErr ottl.TypeError
+	assert.ErrorAs(t, err, &typeErr)
 }

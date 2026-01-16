@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
@@ -26,7 +27,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	expectedConfig := &Config{
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint:     defaultEndpoint,
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  defaultEndpoint,
+				},
 				ReadTimeout:  defaultReadTimeout,
 				WriteTimeout: defaultWriteTimeout,
 			},
@@ -35,15 +39,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 			GitlabHeaders: GitlabHeaders{
 				Customizable: map[string]string{
 					defaultUserAgentHeader:      "",
-					defaultGitlabInstanceHeader: "https://gitlab.com",
+					defaultGitLabInstanceHeader: "https://gitlab.com",
 				},
 				Fixed: map[string]string{
-					defaultGitlabWebhookUUIDHeader: "",
-					defaultGitlabEventHeader:       "Pipeline Hook",
-					defaultGitlabEventUUIDHeader:   "",
+					defaultGitLabWebhookUUIDHeader: "",
+					defaultGitLabEventHeader:       "Pipeline Hook",
+					defaultGitLabEventUUIDHeader:   "",
 					defaultIdempotencyKeyHeader:    "",
 				},
 			},
+			IncludeUserAttributes: false,
 		},
 	}
 
@@ -68,7 +73,10 @@ func TestLoadConfig(t *testing.T) {
 	expectedConfig := &Config{
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint:     "localhost:8080",
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  "localhost:8080",
+				},
 				ReadTimeout:  500 * time.Millisecond,
 				WriteTimeout: 500 * time.Millisecond,
 			},
@@ -80,12 +88,12 @@ func TestLoadConfig(t *testing.T) {
 			GitlabHeaders: GitlabHeaders{
 				Customizable: map[string]string{
 					defaultUserAgentHeader:      "",
-					defaultGitlabInstanceHeader: "https://gitlab.com",
+					defaultGitLabInstanceHeader: "https://gitlab.com",
 				},
 				Fixed: map[string]string{
-					defaultGitlabWebhookUUIDHeader: "",
-					defaultGitlabEventHeader:       "Pipeline Hook",
-					defaultGitlabEventUUIDHeader:   "",
+					defaultGitLabWebhookUUIDHeader: "",
+					defaultGitLabEventHeader:       "Pipeline Hook",
+					defaultGitLabEventUUIDHeader:   "",
 					defaultIdempotencyKeyHeader:    "",
 				},
 			},
@@ -107,12 +115,12 @@ func TestLoadConfig(t *testing.T) {
 	expectedConfig.WebHook.GitlabHeaders = GitlabHeaders{
 		Customizable: map[string]string{
 			defaultUserAgentHeader:      "GitLab/1.2.3-custom-version",
-			defaultGitlabInstanceHeader: "https://gitlab.self-hosted.xyz",
+			defaultGitLabInstanceHeader: "https://gitlab.self-hosted.xyz",
 		},
 		Fixed: map[string]string{
-			defaultGitlabWebhookUUIDHeader: "",
-			defaultGitlabEventHeader:       "Pipeline Hook",
-			defaultGitlabEventUUIDHeader:   "",
+			defaultGitLabWebhookUUIDHeader: "",
+			defaultGitLabEventHeader:       "Pipeline Hook",
+			defaultGitLabEventUUIDHeader:   "",
 			defaultIdempotencyKeyHeader:    "",
 		},
 	}

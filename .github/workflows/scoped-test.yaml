@@ -1,8 +1,6 @@
 name: scoped-test
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -18,77 +16,77 @@ jobs:
       go_sources: ${{ steps.changes.outputs.go_sources }}
       go_tests: ${{ steps.changes.outputs.go_tests }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           fetch-depth: 0
 
       - name: Get changes
         shell: bash
         id: changes
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        # Skip scoped tests if too many files are changed
         run: |
-          changed_files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD)
+          changed_files="$(git diff --name-only --diff-filter=ACMRTUXB "$(git merge-base origin/main "$PR_HEAD")" "$PR_HEAD")"
           echo changed_files
-          echo $changed_files
+          echo "$changed_files"
+          LIMIT=50
 
           go_sources=$(echo "$changed_files" | tr ' ' '\n' | grep -E '\.go$' | grep -v -E '.*_test\.go$' || true)
           echo go_sources
-          echo $go_sources
+          echo "$go_sources"
           if [[ -n "$go_sources" ]]; then
-            {
-              echo 'go_sources<<EOF'
-              echo $go_sources
-              echo EOF
-            } >> $GITHUB_OUTPUT
+            count=$(echo "$go_sources" | wc -l)
+            if [ "$count" -gt "$LIMIT" ]; then
+              echo "Skipping scoped go_sources: This PR modified $count .go files which is over the $LIMIT files threshold."
+            else
+              {
+                echo 'go_sources<<EOF'
+                echo "$go_sources"
+                echo EOF
+              } >> "$GITHUB_OUTPUT"
+            fi
           fi
 
           go_tests=$(echo "$changed_files" | tr ' ' '\n' | grep -E '.*_test\.go$' || true)
           echo go_tests
-          echo $go_tests
+          echo "$go_tests"
           if [[ -n "$go_tests" ]]; then
-            {
-              echo 'go_tests<<EOF'
-              echo $go_tests
-              echo EOF
-            } >> $GITHUB_OUTPUT
+            count=$(echo "$go_tests" | wc -l)
+            if [ "$count" -gt "$LIMIT" ]; then
+              echo "Skipping scoped go_tests: This PR modified $count test files which is over the $LIMIT files threshold."
+            else
+              {
+                echo 'go_tests<<EOF'
+                echo "$go_tests"
+                echo EOF
+              } >> "$GITHUB_OUTPUT"
+            fi
           fi
 
-  scoped-tests:
+  scoped-tests-matrix:
     needs: changedfiles
     if: needs.changedfiles.outputs.go_sources != '' || needs.changedfiles.outputs.go_tests != ''
     strategy:
-      fail-fast: false
       matrix:
-        os: [ windows-latest ]
-    runs-on: ${{ matrix.os }}
+        runner: [windows-2022, windows-2025, windows-11-arm, ubuntu-latest]
+    runs-on: ${{ matrix.runner }}
+    env:
+      # The gcc installed on the Windows arm64 runner doesn't ship native ARM libraries so we need to disable CGO.
+      CGO_ENABLED: ${{ matrix.runner == 'windows-11-arm' && '0' || '' }}
     steps:
       - name: Echo changed files
         shell: bash
         run: |
           echo "go_sources: ${{ needs.changedfiles.outputs.go_sources }}"
           echo "go_tests: ${{ needs.changedfiles.outputs.go_tests }}"
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: ./.github/actions/setup-go-tools
         with:
-          go-version: "1.23.8"
-          cache: false
-
-      - name: Try to restore go-cache
-        id: go-cache
-        timeout-minutes: 25
-        uses: actions/cache/restore@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ./.tools
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-
-      - name: Build gotestsum on Windows
-        if: runner.os == 'Windows'
-        run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
+          go-version: oldstable
 
       - name: Build gotestsum
-        if: runner.os != 'Windows'
+        shell: bash
         run: make "$PWD/.tools/gotestsum"
 
       - name: Run changed tests
@@ -102,5 +100,31 @@ jobs:
         if: needs.changedfiles.outputs.go_sources
         env:
           CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
+        shell: bash
+        # Only run linter on windows-2025 to avoid redundant runs
         run: |
-          make for-affected-components CMD="make"
+          if [[ "${{ matrix.runner }}" == "windows-2025" ]]; then
+            make for-affected-components CMD="make lint test-twice"
+          else
+            make for-affected-components CMD="make test-twice"
+          fi
+
+      - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  scoped-tests:
+    # Keeps the name of the job required for merging in the GH configuration, make it
+    # wait for all runners completion
+    runs-on: ubuntu-24.04
+    needs: [scoped-tests-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.scoped-tests-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.scoped-tests-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi

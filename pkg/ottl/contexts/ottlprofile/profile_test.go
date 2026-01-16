@@ -4,12 +4,12 @@
 package ottlprofile
 
 import (
-	"context"
 	"slices"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
@@ -116,18 +116,18 @@ func Test_newPathGetSetter(t *testing.T) {
 				return testCache
 			}
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			profile := createProfileTelemetry()
 
-			tCtx := NewTransformContext(profile, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
-			got, err := accessor.Get(context.Background(), tCtx)
-			assert.NoError(t, err)
+			tCtx := NewTransformContext(profile, pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+			got, err := accessor.Get(t.Context(), tCtx)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			tCtx = NewTransformContext(profile, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
-			err = accessor.Set(context.Background(), tCtx, tt.newVal)
-			assert.NoError(t, err)
+			tCtx = NewTransformContext(profile, pprofile.NewProfilesDictionary(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+			err = accessor.Set(t.Context(), tCtx, tt.newVal)
+			require.NoError(t, err)
 
 			exProfile := createProfileTelemetry()
 			exCache := pcommon.NewMap()
@@ -146,7 +146,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	instrumentationScope := pcommon.NewInstrumentationScope()
 	instrumentationScope.SetName("instrumentation_scope")
 
-	ctx := NewTransformContext(pprofile.NewProfile(), instrumentationScope, resource, pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
+	ctx := NewTransformContext(pprofile.NewProfile(), pprofile.NewProfilesDictionary(), instrumentationScope, resource, pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles())
 
 	tests := []struct {
 		name     string
@@ -184,6 +184,16 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			path:     &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
 			expected: instrumentationScope.Name(),
 		},
+		{
+			name:     "scope",
+			path:     &pathtest.Path[TransformContext]{N: "scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
+			expected: instrumentationScope.Name(),
+		},
+		{
+			name:     "scope with context",
+			path:     &pathtest.Path[TransformContext]{C: "scope", N: "name"},
+			expected: instrumentationScope.Name(),
+		},
 	}
 
 	testCache := pcommon.NewMap()
@@ -193,10 +203,10 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
-			got, err := accessor.Get(context.Background(), ctx)
-			assert.NoError(t, err)
+			got, err := accessor.Get(t.Context(), ctx)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
 	}

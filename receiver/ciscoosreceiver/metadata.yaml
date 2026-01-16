@@ -1,0 +1,9 @@
+type: ciscoos
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: []
+  codeowners:
+    active: [dmitryax]

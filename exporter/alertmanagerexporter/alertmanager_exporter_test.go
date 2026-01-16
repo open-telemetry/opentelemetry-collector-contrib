@@ -4,7 +4,6 @@
 package alertmanagerexporter
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -37,7 +35,7 @@ func createTracesAndSpan() (ptrace.Traces, ptrace.Span) {
 	attrs := resource.Attributes()
 	attrs.Clear()
 	attrs.EnsureCapacity(4) // service name + 3 attributes
-	attrs.PutStr(conventions.AttributeServiceName, "unittest-resource")
+	attrs.PutStr("service.name", "unittest-resource")
 	attrs.PutStr("attr1", "unittest-foo")
 	attrs.PutInt("attr2", 40)
 	attrs.PutDouble("attr3", 3.14)
@@ -273,7 +271,7 @@ func TestAlertManagerExporterAlertPayload(t *testing.T) {
 func TestAlertManagerTracesExporterNoErrors(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	lte, err := newTracesExporter(context.Background(), cfg, exportertest.NewNopSettings(metadata.Type))
+	lte, err := newTracesExporter(t.Context(), cfg, exportertest.NewNopSettings(metadata.Type))
 	fmt.Println(lte)
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
@@ -364,16 +362,16 @@ func TestAlertManagerPostAlert(t *testing.T) {
 	cfg.Endpoint = mock.mockserver.URL
 	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
-	err := am.start(context.Background(), componenttest.NewNopHost())
+	err := am.start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
-	err = am.postAlert(context.Background(), alerts)
+	err = am.postAlert(t.Context(), alerts)
 	assert.Contains(t, err.Error(), "failed - \"404 Not Found\"")
 
 	cfg.APIVersion = "v1"
 	am = newAlertManagerExporter(cfg, set.TelemetrySettings)
-	err = am.start(context.Background(), componenttest.NewNopHost())
+	err = am.start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
-	err = am.postAlert(context.Background(), alerts)
+	err = am.postAlert(t.Context(), alerts)
 	assert.NoError(t, err)
 
 	assert.True(t, mock.fooCalledSuccessfully, "mock server wasn't called")
@@ -393,7 +391,7 @@ func TestClientConfig(t *testing.T) {
 			config: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},
@@ -404,9 +402,9 @@ func TestClientConfig(t *testing.T) {
 			config: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
-					Headers: map[string]configopaque.String{
-						"hdr1": "val1",
-						"hdr2": "val2",
+					Headers: configopaque.MapList{
+						{Name: "hdr1", Value: "val1"},
+						{Name: "hdr2", Value: "val2"},
 					},
 				},
 			},
@@ -416,7 +414,7 @@ func TestClientConfig(t *testing.T) {
 			config: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "testdata/test_cert.pem",
 						},
@@ -429,7 +427,7 @@ func TestClientConfig(t *testing.T) {
 			config: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "nosuchfile",
 						},
@@ -446,7 +444,7 @@ func TestClientConfig(t *testing.T) {
 			set := exportertest.NewNopSettings(metadata.Type)
 			am := newAlertManagerExporter(tt.config, set.TelemetrySettings)
 
-			exp, err := newTracesExporter(context.Background(), tt.config, set)
+			exp, err := newTracesExporter(t.Context(), tt.config, set)
 			if tt.mustFailOnCreate {
 				assert.Error(t, err)
 				return
@@ -454,13 +452,13 @@ func TestClientConfig(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, exp)
 
-			err = am.start(context.Background(), componenttest.NewNopHost())
+			err = am.start(t.Context(), componenttest.NewNopHost())
 			if tt.mustFailOnStart {
 				assert.Error(t, err)
 			}
 
 			t.Cleanup(func() {
-				require.NoError(t, am.shutdown(context.Background()))
+				require.NoError(t, am.shutdown(t.Context()))
 			})
 		})
 	}

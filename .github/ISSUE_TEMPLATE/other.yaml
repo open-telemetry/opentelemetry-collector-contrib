@@ -17,8 +17,10 @@ body:
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
+      - cmd/schemagen
       - cmd/telemetrygen
       - confmap/provider/aesprovider
+      - confmap/provider/googlesecretmanagerprovider
       - confmap/provider/s3provider
       - confmap/provider/secretsmanagerprovider
       - connector/count
@@ -26,11 +28,13 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/metricsaslogs
       - connector/otlpjson
       - connector/roundrobin
       - connector/routing
       - connector/servicegraph
       - connector/signaltometrics
+      - connector/slowsql
       - connector/spanmetrics
       - connector/sum
       - exporter/alertmanager
@@ -44,7 +48,6 @@ body:
       - exporter/azuredataexplorer
       - exporter/azuremonitor
       - exporter/bmchelix
-      - exporter/carbon
       - exporter/cassandra
       - exporter/clickhouse
       - exporter/coralogix
@@ -56,17 +59,15 @@ body:
       - exporter/file
       - exporter/googlecloud
       - exporter/googlecloudpubsub
+      - exporter/googlecloudstorage
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/kafka
-      - exporter/kinetica
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
-      - exporter/loki
       - exporter/mezmo
-      - exporter/opencensus
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
@@ -82,6 +83,7 @@ body:
       - exporter/sumologic
       - exporter/syslog
       - exporter/tencentcloudlogservice
+      - exporter/tinybird
       - exporter/zipkin
       - extension/ack
       - extension/asapauth
@@ -95,6 +97,7 @@ body:
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
       - extension/encoding/awslogsencoding
+      - extension/encoding/azureencoding
       - extension/encoding/googlecloudlogentryencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
@@ -114,7 +117,6 @@ body:
       - extension/observer/cfgardenobserver
       - extension/observer/dockerobserver
       - extension/observer/ecsobserver
-      - extension/observer/ecstaskobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
       - extension/observer/kafkatopicsobserver
@@ -130,17 +132,20 @@ body:
       - extension/storage/filestorage
       - extension/storage/redisstorage
       - extension/sumologic
-      - extension/tpm
       - internal/aws
       - internal/collectd
       - internal/common
       - internal/core
       - internal/datadog
+      - internal/datadog/e2e
       - internal/docker
       - internal/exp/metrics
       - internal/filter
       - internal/grpcutil
+      - internal/healthcheck
       - internal/k8sconfig
+      - internal/k8sinventory
+      - internal/k8sleaderelectortest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
@@ -157,6 +162,7 @@ body:
       - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
+      - pkg/kafka/configkafka
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/pdatatest
@@ -165,17 +171,19 @@ body:
       - pkg/sampling
       - pkg/stanza
       - pkg/stanza/fileconsumer
+      - pkg/stanza/operator/input/journald
       - pkg/status
       - pkg/translator/azure
       - pkg/translator/azurelogs
       - pkg/translator/faro
       - pkg/translator/jaeger
       - pkg/translator/loki
-      - pkg/translator/opencensus
+      - pkg/translator/pprof
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
       - pkg/translator/skywalking
+      - pkg/translator/splunk
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - pkg/xk8stest
@@ -191,9 +199,11 @@ body:
       - processor/groupbyattrs
       - processor/groupbytrace
       - processor/interval
+      - processor/isolationforest
       - processor/k8sattributes
       - processor/logdedup
       - processor/logstransform
+      - processor/lookup
       - processor/metricsgeneration
       - processor/metricstarttime
       - processor/metricstransform
@@ -202,22 +212,31 @@ body:
       - processor/remotetap
       - processor/resource
       - processor/resourcedetection
+      - processor/resourcedetection/internal/akamai
+      - processor/resourcedetection/internal/azure
+      - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
-      - processor/routing
+      - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/openstack/nova
+      - processor/resourcedetection/internal/oraclecloud
+      - processor/resourcedetection/internal/scaleway
+      - processor/resourcedetection/internal/upcloud
+      - processor/resourcedetection/internal/vultr
       - processor/schema
       - processor/span
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
+      - processor/unroll
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
       - receiver/apachespark
       - receiver/awscloudwatch
-      - receiver/awscloudwatchmetrics
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
+      - receiver/awslambda
       - receiver/awss3
       - receiver/awsxray
       - receiver/azureblob
@@ -226,6 +245,9 @@ body:
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
+      - receiver/ciscoos
+      - receiver/ciscoos/internal/scraper/interfacesscraper
+      - receiver/ciscoos/internal/scraper/systemscraper
       - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
@@ -244,6 +266,7 @@ body:
       - receiver/gitlab
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
+      - receiver/googlecloudpubsubpush
       - receiver/googlecloudspanner
       - receiver/haproxy
       - receiver/hostmetrics
@@ -253,12 +276,14 @@ body:
       - receiver/hostmetrics/internal/scraper/loadscraper
       - receiver/hostmetrics/internal/scraper/memoryscraper
       - receiver/hostmetrics/internal/scraper/networkscraper
+      - receiver/hostmetrics/internal/scraper/nfsscraper
       - receiver/hostmetrics/internal/scraper/pagingscraper
       - receiver/hostmetrics/internal/scraper/processesscraper
       - receiver/hostmetrics/internal/scraper/processscraper
       - receiver/hostmetrics/internal/scraper/systemscraper
       - receiver/httpcheck
       - receiver/huaweicloudces
+      - receiver/icmpcheck
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
@@ -273,6 +298,7 @@ body:
       - receiver/kubeletstats
       - receiver/libhoney
       - receiver/loki
+      - receiver/macosunifiedlogging
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas
@@ -282,7 +308,6 @@ body:
       - receiver/nginx
       - receiver/nsxt
       - receiver/ntp
-      - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
       - receiver/otelarrow
@@ -297,10 +322,10 @@ body:
       - receiver/purefb
       - receiver/rabbitmq
       - receiver/receivercreator
+      - receiver/redfish
       - receiver/redis
       - receiver/riak
       - receiver/saphana
-      - receiver/sapm
       - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking
@@ -326,6 +351,7 @@ body:
       - receiver/windowseventlog
       - receiver/windowsperfcounters
       - receiver/windowsservice
+      - receiver/yanggrpc
       - receiver/zipkin
       - receiver/zookeeper
       - scraper/zookeeperscraper
@@ -338,3 +364,10 @@ body:
       description: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
     validations:
       required: true
+  - type: dropdown
+    attributes:
+      label: Tip
+      description: This element is static, used to render a helpful sub-heading for end-users and community members to help prioritize issues. Please leave as is.
+      options:
+        - <sub>[React](https://github.blog/news-insights/product-news/add-reactions-to-pull-requests-issues-and-comments/) with 👍 to help prioritize this issue. Please use comments to provide useful context, avoiding `+1` or `me too`, to help us triage it. Learn more [here](https://opentelemetry.io/community/end-user/issue-participation/).</sub>
+      default: 0

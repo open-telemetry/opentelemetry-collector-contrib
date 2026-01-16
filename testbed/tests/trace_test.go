@@ -10,14 +10,12 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
@@ -38,15 +36,6 @@ func TestTrace10kSPS(t *testing.T) {
 		receiver     testbed.DataReceiver
 		resourceSpec testbed.ResourceSpec
 	}{
-		{
-			"OpenCensus",
-			datasenders.NewOCTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-			datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 39,
-				ExpectedMaxRAM: 100,
-			},
-		},
 		{
 			"OTLP-gRPC",
 			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
@@ -90,33 +79,6 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 22,
 				ExpectedMaxRAM: 220,
-			},
-		},
-		{
-			"SAPM",
-			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), ""),
-			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), ""),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 32,
-				ExpectedMaxRAM: 100,
-			},
-		},
-		{
-			"SAPM-gzip",
-			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), "gzip"),
-			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), "gzip"),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 35,
-				ExpectedMaxRAM: 110,
-			},
-		},
-		{
-			"SAPM-zstd",
-			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), "zstd"),
-			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), "zstd"),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 32,
-				ExpectedMaxRAM: 300,
 			},
 		},
 		{
@@ -284,14 +246,14 @@ func verifySingleSpan(
 	// Send one span.
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName)
+	rs.Resource().Attributes().PutStr("service.name", serviceName)
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(idutils.UInt64ToTraceID(0, 1))
 	span.SetSpanID(idutils.UInt64ToSpanID(1))
 	span.SetName(spanName)
 
 	sender := tc.LoadGenerator.(*testbed.ProviderSender).Sender.(testbed.TraceDataSender)
-	require.NoError(t, sender.ConsumeTraces(context.Background(), td))
+	require.NoError(t, sender.ConsumeTraces(t.Context(), td))
 
 	// We bypass the load generator in this test, but make sure to increment the
 	// counter since it is used in final reports.

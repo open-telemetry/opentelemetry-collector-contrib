@@ -47,7 +47,7 @@ var metricTypeMap = map[string]pmetric.MetricType{
 	"sketch":        pmetric.MetricTypeExponentialHistogram,
 }
 
-func parseSeriesProperties(name string, metricType string, tags []string, host string, version string, stringPool *StringPool) dimensions {
+func parseSeriesProperties(name, metricType string, tags []string, host, version string, stringPool *StringPool) dimensions {
 	attrs := tagsToAttributes(tags, host, stringPool)
 	return dimensions{
 		name:          name,

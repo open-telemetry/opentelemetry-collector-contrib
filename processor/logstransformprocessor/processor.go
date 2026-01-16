@@ -59,7 +59,7 @@ func newProcessor(config *Config, nextConsumer consumer.Logs, set component.Tele
 	return p, nil
 }
 
-func (ltp *logsTransformProcessor) Capabilities() consumer.Capabilities {
+func (*logsTransformProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 

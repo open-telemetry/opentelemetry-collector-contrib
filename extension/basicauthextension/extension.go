@@ -63,8 +63,7 @@ func (ba *basicAuthServer) Start(_ context.Context, _ component.Host) error {
 		}
 		defer f.Close()
 
-		rs = append(rs, f)
-		rs = append(rs, strings.NewReader("\n"))
+		rs = append(rs, f, strings.NewReader("\n"))
 	}
 
 	// Ensure that the inline content is read the last.
@@ -144,14 +143,14 @@ func parseBasicAuth(auth string) (*authData, error) {
 	}
 	decoded := string(decodedBytes)
 
-	si := strings.IndexByte(decoded, ':')
-	if si < 0 {
+	before, after, ok := strings.Cut(decoded, ":")
+	if !ok {
 		return nil, errInvalidFormat
 	}
 
 	return &authData{
-		username: decoded[:si],
-		password: decoded[si+1:],
+		username: before,
+		password: after,
 		raw:      encoded,
 	}, nil
 }
@@ -190,7 +189,7 @@ func (p *perRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]
 }
 
 // RequireTransportSecurity always returns true for this implementation.
-func (p *perRPCAuth) RequireTransportSecurity() bool {
+func (*perRPCAuth) RequireTransportSecurity() bool {
 	return true
 }
 

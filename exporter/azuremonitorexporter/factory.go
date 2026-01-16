@@ -13,6 +13,7 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -49,7 +50,7 @@ func createDefaultConfig() component.Config {
 		MaxBatchSize:        1024,
 		MaxBatchInterval:    10 * time.Second,
 		SpanEventsEnabled:   false,
-		QueueSettings:       exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:       configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		ShutdownTimeout:     1 * time.Second,
 		CustomEventsEnabled: false,
 	}
@@ -128,9 +129,10 @@ func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings
 	conf := cfg.(*Config)
 	ame := exporters.GetOrAdd(set.ID, func() component.Component {
 		return &azureMonitorExporter{
-			config: conf,
-			logger: set.Logger,
-			packer: newMetricPacker(set.Logger),
+			config:   conf,
+			logger:   set.Logger,
+			packer:   newMetricPacker(set.Logger),
+			settings: set.TelemetrySettings,
 		}
 	})
 

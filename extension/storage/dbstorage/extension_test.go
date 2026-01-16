@@ -45,7 +45,7 @@ func TestExtensionIntegrityWithPostgres(t *testing.T) {
 	se, ctr, err := newPostgresTestExtension()
 	t.Cleanup(func() {
 		if ctr != nil {
-			require.NoError(t, ctr.Terminate(context.Background()))
+			require.NoError(t, ctr.Terminate(context.Background())) //nolint:usetesting
 		}
 	})
 	require.NoError(t, err)
@@ -54,18 +54,18 @@ func TestExtensionIntegrityWithPostgres(t *testing.T) {
 }
 
 func testExtensionIntegrity(t *testing.T, se storage.Extension) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37079
 	// DB instantiation fails if we instantly try to connect to it, give it some time to start
 	var err error
 	require.Eventuallyf(t, func() bool {
-		err = se.Start(context.Background(), componenttest.NewNopHost())
+		err = se.Start(t.Context(), componenttest.NewNopHost())
 		return err == nil
 	}, 30*time.Second, 100*time.Millisecond, "timeout waiting for db: %v", err)
 
 	defer func() {
-		err = se.Shutdown(context.Background())
+		err = se.Shutdown(t.Context())
 		assert.NoError(t, err)
 	}()
 
@@ -103,7 +103,7 @@ func testExtensionIntegrity(t *testing.T, se storage.Extension) {
 		opsSet := make([]*storage.Operation, 0, len(keys))
 		opsGet := make([]*storage.Operation, 0, len(keys))
 		opsDelete := make([]*storage.Operation, 0, len(keys))
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			opsSet = append(opsSet, &storage.Operation{
 				Type:  storage.Set,
 				Key:   keys[i],
@@ -155,20 +155,20 @@ func testExtensionIntegrity(t *testing.T, se storage.Extension) {
 
 		// Single-operation interfaces
 		// Reset my values
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			err := c.Set(ctx, keys[i], append(myBytes, []byte("_"+keys[i])...))
 			require.NoError(t, err)
 		}
 
 		// Make sure my values are still mine
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			v, err := c.Get(ctx, keys[i])
 			require.NoError(t, err)
 			require.Equal(t, append(myBytes, []byte("_"+keys[i])...), v)
 		}
 
 		// Delete my values
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			err := c.Delete(ctx, keys[i])
 			require.NoError(t, err)
 		}

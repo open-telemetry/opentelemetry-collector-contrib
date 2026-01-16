@@ -6,6 +6,7 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fgooglemanagedprometheus%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fgooglemanagedprometheus) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fgooglemanagedprometheus%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fgooglemanagedprometheus) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_googlemanagedprometheus)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_googlemanagedprometheus&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@aabmass](https://www.github.com/aabmass), [@dashpole](https://www.github.com/dashpole), [@braydonk](https://www.github.com/braydonk), [@jsuereth](https://www.github.com/jsuereth), [@psx95](https://www.github.com/psx95), [@ridwanmsharif](https://www.github.com/ridwanmsharif) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -75,11 +76,6 @@ receivers:
                 - action: labelmap
                 regex: __meta_kubernetes_pod_label_(.+)
 processors:
-    batch:
-        # batch metrics before sending to reduce API usage
-        send_batch_max_size: 200
-        send_batch_size: 200
-        timeout: 5s
     memory_limiter:
         # drop metrics if memory usage gets too high
         check_interval: 1s
@@ -110,12 +106,15 @@ processors:
 
 exporters:
     googlemanagedprometheus:
+      sending_queue:
+        # batch metrics before sending to reduce API usage
+        batch:
 
 service:
   pipelines:
     metrics:
       receivers: [prometheus]
-      processors: [memory_limiter, batch, transform, resourcedetection]
+      processors: [memory_limiter, transform, resourcedetection]
       exporters: [googlemanagedprometheus]
 ```
 

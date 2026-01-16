@@ -103,7 +103,7 @@ func (n *opampNotifier) SendStatus(_ context.Context, message statusNotification
 	if err != nil {
 		return
 	}
-	for attempt := 0; attempt < maxNotificationAttempts; attempt++ {
+	for attempt := range maxNotificationAttempts {
 		sendingChan, sendingErr := n.handler.SendMessage("TimeBasedIngestStatus", bytes)
 		switch {
 		case sendingErr == nil:

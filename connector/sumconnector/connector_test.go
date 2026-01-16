@@ -4,7 +4,6 @@
 package sumconnector
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -241,20 +240,20 @@ func TestTracesToMetrics(t *testing.T) {
 			require.NoError(t, tc.cfg.Validate())
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
-			conn, err := factory.CreateTracesToMetrics(context.Background(),
+			conn, err := factory.CreateTracesToMetrics(t.Context(),
 				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
 
-			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				assert.NoError(t, conn.Shutdown(context.Background()))
+				assert.NoError(t, conn.Shutdown(t.Context()))
 			}()
 
 			testSpans, err := golden.ReadTraces(filepath.Join("testdata", "traces", "input.yaml"))
 			assert.NoError(t, err)
-			assert.NoError(t, conn.ConsumeTraces(context.Background(), testSpans))
+			assert.NoError(t, conn.ConsumeTraces(t.Context(), testSpans))
 
 			allMetrics := sink.AllMetrics()
 			assert.Len(t, allMetrics, 1)
@@ -421,20 +420,20 @@ func TestMetricsToMetrics(t *testing.T) {
 			require.NoError(t, tc.cfg.Validate())
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
-			conn, err := factory.CreateMetricsToMetrics(context.Background(),
+			conn, err := factory.CreateMetricsToMetrics(t.Context(),
 				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
 
-			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				assert.NoError(t, conn.Shutdown(context.Background()))
+				assert.NoError(t, conn.Shutdown(t.Context()))
 			}()
 
 			testMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "input.yaml"))
 			assert.NoError(t, err)
-			assert.NoError(t, conn.ConsumeMetrics(context.Background(), testMetrics))
+			assert.NoError(t, conn.ConsumeMetrics(t.Context(), testMetrics))
 
 			allMetrics := sink.AllMetrics()
 			assert.Len(t, allMetrics, 1)
@@ -597,20 +596,20 @@ func TestLogsToMetrics(t *testing.T) {
 			require.NoError(t, tc.cfg.Validate())
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
-			conn, err := factory.CreateLogsToMetrics(context.Background(),
+			conn, err := factory.CreateLogsToMetrics(t.Context(),
 				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
 
-			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 			defer func() {
-				assert.NoError(t, conn.Shutdown(context.Background()))
+				assert.NoError(t, conn.Shutdown(t.Context()))
 			}()
 
 			testLogs, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
 			assert.NoError(t, err)
-			assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs))
+			assert.NoError(t, conn.ConsumeLogs(t.Context(), testLogs))
 
 			allMetrics := sink.AllMetrics()
 			assert.Len(t, allMetrics, 1)

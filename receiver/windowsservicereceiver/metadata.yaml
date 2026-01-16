@@ -21,6 +21,8 @@ attributes:
 metrics:
   windows.service.status:
     enabled: true
+    stability:
+      level: development
     description: Gauge value containing service status as an integer value.
     extended_documentation: >
       Gauge values map to service status as follows:

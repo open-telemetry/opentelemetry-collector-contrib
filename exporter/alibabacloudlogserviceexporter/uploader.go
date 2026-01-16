@@ -79,7 +79,7 @@ func (c *logServiceClientImpl) sendLogs(logs []*sls.Log) error {
 }
 
 // Success is impl of producer.CallBack
-func (c *logServiceClientImpl) Success(*producer.Result) {}
+func (*logServiceClientImpl) Success(*producer.Result) {}
 
 // Fail is impl of producer.CallBack
 func (c *logServiceClientImpl) Fail(result *producer.Result) {

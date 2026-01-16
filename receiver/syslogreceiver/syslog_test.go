@@ -4,7 +4,6 @@
 package syslogreceiver
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -42,9 +41,9 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 
 	var conn net.Conn
 	if cfg.InputConfig.TCP != nil {
@@ -55,7 +54,7 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 		require.NoError(t, err)
 	}
 
-	for i := 0; i < numLogs; i++ {
+	for i := range numLogs {
 		msg := fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z 192.168.1.1 SecureAuth0 23108 ID52020 [SecureAuth@27389] test msg %d\n", i, i)
 		_, err = conn.Write([]byte(msg))
 		require.NoError(t, err)
@@ -63,13 +62,13 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	require.NoError(t, conn.Close())
 
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, time.Millisecond)
-	require.NoError(t, rcvr.Shutdown(context.Background()))
+	require.NoError(t, rcvr.Shutdown(t.Context()))
 	require.Len(t, sink.AllLogs(), 1)
 
 	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
 	logs := resourceLogs.ScopeLogs().At(0).LogRecords()
 
-	for i := 0; i < numLogs; i++ {
+	for i := range numLogs {
 		log := logs.At(i)
 
 		require.Equal(t, log.Timestamp(), pcommon.Timestamp(1614470402003000000+i*60*1000*1000*1000))
@@ -138,7 +137,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			return *c
 		}(),
 	}
-	receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), badCfg, sink)
+	receiver, err := factory.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), badCfg, sink)
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }

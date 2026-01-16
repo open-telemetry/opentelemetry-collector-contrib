@@ -7,7 +7,6 @@
 package tests
 
 import (
-	"context"
 	"path"
 	"path/filepath"
 	"sync/atomic"
@@ -221,7 +220,7 @@ func TestLogOtlpSendingQueue(t *testing.T) {
     retry_on_failure:
       enabled: true
 `)
-	otlpreceiver10.WithQueue(`
+	otlpreceiver100.WithQueue(`
     sending_queue:
       enabled: true
       queue_size: 100
@@ -344,7 +343,7 @@ func TestLargeFileOnce(t *testing.T) {
 	dataProvider.SetLoadGeneratorCounters(&dataItemsGenerated)
 	ld, _ := dataProvider.GenerateLogs()
 
-	require.NoError(t, sender.ConsumeLogs(context.Background(), ld))
+	require.NoError(t, sender.ConsumeLogs(t.Context(), ld))
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)

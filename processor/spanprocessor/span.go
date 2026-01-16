@@ -21,7 +21,7 @@ import (
 type spanProcessor struct {
 	config           Config
 	toAttributeRules []toAttributeRule
-	skipExpr         expr.BoolExpr[ottlspan.TransformContext]
+	skipExpr         expr.BoolExpr[*ottlspan.TransformContext]
 }
 
 // toAttributeRule is the compiled equivalent of config.ToAttributes field.
@@ -71,15 +71,15 @@ func (sp *spanProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
 		ilss := rs.ScopeSpans()
-		resource := rs.Resource()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			spans := ils.Spans()
-			scope := ils.Scope()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if sp.skipExpr != nil {
-					skip, err := sp.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ils, rs))
+					tCtx := ottlspan.NewTransformContextPtr(rs, ils, span)
+					skip, err := sp.skipExpr.Eval(ctx, tCtx)
+					tCtx.Close()
 					if err != nil {
 						return td, err
 					}
@@ -142,14 +142,6 @@ func (sp *spanProcessor) processFromAttributes(span ptrace.Span) {
 			sb.WriteString(strconv.FormatFloat(attr.Double(), 'f', -1, 64))
 		case pcommon.ValueTypeInt:
 			sb.WriteString(strconv.FormatInt(attr.Int(), 10))
-		case pcommon.ValueTypeEmpty:
-			fallthrough
-		case pcommon.ValueTypeSlice:
-			fallthrough
-		case pcommon.ValueTypeBytes:
-			fallthrough
-		case pcommon.ValueTypeMap:
-			fallthrough
 		default:
 			sb.WriteString("<unknown-attribute-type>")
 		}

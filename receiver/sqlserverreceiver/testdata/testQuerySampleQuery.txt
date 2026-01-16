@@ -39,7 +39,12 @@ SELECT TOP(@top)
   ISNULL(r.query_hash, CONVERT(VARBINARY, '')) AS query_hash,
   ISNULL(r.query_plan_hash, CONVERT(VARBINARY, '')) AS query_plan_hash,
   ISNULL(r.context_info, CONVERT(VARBINARY, '')) AS context_info,
-  s.login_name AS username
+  s.login_name AS username,
+  ISNULL(CASE WHEN o.objectid > 0 THEN o.objectid END, '') AS procedure_id,
+  ISNULL(CASE WHEN o.objectid > 0
+           THEN QUOTENAME(OBJECT_SCHEMA_NAME(o.objectid, o.dbid))
+          + N'.' + QUOTENAME(OBJECT_NAME(o.objectid, o.dbid))
+      END, '') AS procedure_name
 FROM sys.dm_exec_requests r
 INNER JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
 INNER JOIN sys.dm_exec_connections c ON s.session_id = c.session_id

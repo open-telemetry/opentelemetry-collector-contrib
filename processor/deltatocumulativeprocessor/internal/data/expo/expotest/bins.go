@@ -24,7 +24,7 @@ type Bins [8]uint64
 
 func (bins Bins) Into() expo.Buckets {
 	start := 0
-	for i := 0; i < len(bins); i++ {
+	for i := range len(bins) {
 		if bins[i] != ø {
 			start = i
 			break

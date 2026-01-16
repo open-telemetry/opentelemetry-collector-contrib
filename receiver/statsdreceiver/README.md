@@ -6,6 +6,7 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fstatsd%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fstatsd) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fstatsd%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fstatsd) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_statsd)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_statsd&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jmacd](https://www.github.com/jmacd), [@dmitryax](https://www.github.com/dmitryax) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -45,7 +46,7 @@ The Following settings are optional:
 `"statsd_type"` specifies received Statsd data type. Possible values for this setting are `"timing"`, `"timer"`, `"histogram"` and `"distribution"`.
 
 `"observer_type"` specifies OTLP data type to convert to. We support `"gauge"`, `"summary"`, and `"histogram"`. For `"gauge"`, it does not perform any aggregation.
-For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description (the same metric name with the same tags). By default, it will send percentile 0, 10, 50, 90, 95, 100 to the downstream.  The `"histogram"` setting selects an [auto-scaling exponential histogram configured with only a maximum size](https://github.com/lightstep/go-expohisto#readme), as shown in the example below.
+For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description (the same metric name with the same tags). By default, it will send percentile 0, 10, 50, 90, 95, 100 to the downstream.  The `"histogram"` setting selects an [auto-scaling exponential histogram configured with only a maximum size](https://github.com/lightstep/go-expohisto#readme), as shown in the example below unless it matches the configured explicit_buckets matcher pattern.
 TODO: Add a new option to use a smoothed summary like Prometheus: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3261 
 
 Example:
@@ -65,6 +66,11 @@ receivers:
         observer_type: "histogram"
         histogram: 
           max_size: 100
+          explicit_buckets:
+            - matcher_pattern: "foo.*"
+              buckets: [1, 10, 100]
+            - matcher_pattern: "bar.*"
+              buckets: [0.1, 0.5, 1]
       - statsd_type: "distribution"
         observer_type: "summary"
         summary: 
@@ -89,7 +95,7 @@ statsdTestMetric1:20|c|@0.25|#mykey:myvalue
 
 When the receiver receives valid sample rate (greater than 0 and less than 1), we covert the count value to float, divide by the sample rate and then covert back to integer.
 
-The official [doc](https://github.com/statsd/statsd/blob/master/docs/metric_types.md#counting) does not support negative counter, we follow this pattern at this time. There are some requests for negative counters, we need to ake a look if we want to support later. For example:
+The official [doc](https://github.com/statsd/statsd/blob/master/docs/metric_types.md#counting) does not support negative counter, we follow this pattern at this time. There are some requests for negative counters, we need to take a look if we want to support later. For example:
 https://github.com/influxdata/telegraf/issues/1898
 https://thenewstack.io/collecting-metrics-using-statsd-a-standard-for-real-time-monitoring/
 https://docs.datadoghq.com/developers/metrics/dogstatsd_metrics_submission/#count
@@ -113,8 +119,9 @@ General format is:
 
 `<name>:<value>|c|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
-It supports sample rate.
-TODO: Need to change the implementation part for sample rate after OTLP supports sample rate as a parameter later.
+It supports sample rate. When a sample rate is provided (between 0 and 1), the receiver divides the counter value by the sample rate during aggregation to estimate the actual count. For example, a counter value of `20` with sample rate `0.25` results in an estimated count of `80` (20 ÷ 0.25).
+
+**Note**: Currently, the sample rate is applied during aggregation and the adjusted value is exported. If OTLP adds native support for sample rate as a metric parameter in the future, the implementation may be updated to preserve the original sample rate information.
 
 
 ### Gauge
@@ -146,6 +153,11 @@ receivers:
         observer_type: "histogram"
         histogram:
           max_size: 50
+          explicit_buckets:
+            - matcher_pattern: "foo.*"
+              buckets: [1, 10, 100]
+            - matcher_pattern: "bar.*"
+              buckets: [0.1, 0.5, 1]
       - statsd_type: "distribution"
         observer_type: "histogram"
         histogram: 

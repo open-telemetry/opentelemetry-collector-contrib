@@ -4,7 +4,6 @@
 package jaegerreceiver
 
 import (
-	"context"
 	"net"
 	"testing"
 	"time"
@@ -17,10 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
@@ -34,36 +33,36 @@ var jaegerAgent = component.NewIDWithName(metadata.Type, "agent_test")
 func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	testJaegerAgent(t, addr, Protocols{
-		ThriftCompactUDP: &ProtocolUDP{
+		ThriftCompactUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        addr,
 			ServerConfigUDP: defaultServerConfigUDP(),
-		},
+		}),
 	})
 }
 
 func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	config := Protocols{
-		ThriftCompactUDP: &ProtocolUDP{
+		ThriftCompactUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        "0.0.0.0:999999",
 			ServerConfigUDP: defaultServerConfigUDP(),
-		},
+		}),
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
-	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
+	assert.Error(t, jr.Start(t.Context(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
-	require.NoError(t, jr.Shutdown(context.Background()))
+	require.NoError(t, jr.Shutdown(t.Context()))
 }
 
 func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	testJaegerAgent(t, addr, Protocols{
-		ThriftBinaryUDP: &ProtocolUDP{
+		ThriftBinaryUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        addr,
 			ServerConfigUDP: defaultServerConfigUDP(),
-		},
+		}),
 	})
 }
 
@@ -72,17 +71,17 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	config := Protocols{
-		ThriftBinaryUDP: &ProtocolUDP{
+		ThriftBinaryUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        addr,
 			ServerConfigUDP: defaultServerConfigUDP(),
-		},
+		}),
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
 	assert.NoError(t, jr.startAgent(), "Start failed")
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
 	l, err := net.Listen("udp", addr)
 	assert.Error(t, err, "should not have been able to listen to the port")
@@ -94,18 +93,18 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 
 func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	config := Protocols{
-		ThriftBinaryUDP: &ProtocolUDP{
+		ThriftBinaryUDP: configoptional.Some(ProtocolUDP{
 			Endpoint:        "0.0.0.0:999999",
 			ServerConfigUDP: defaultServerConfigUDP(),
-		},
+		}),
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
-	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
+	assert.Error(t, jr.Start(t.Context(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
-	require.NoError(t, jr.Shutdown(context.Background()))
+	require.NoError(t, jr.Shutdown(t.Context()))
 }
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocols) {
@@ -114,10 +113,10 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocol
 	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, receiverConfig, sink, set)
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, jr.Shutdown(t.Context())) })
 
-	for i := 0; i < 3; i++ {
-		err = jr.Start(context.Background(), componenttest.NewNopHost())
+	for range 3 {
+		err = jr.Start(t.Context(), componenttest.NewNopHost())
 		if err == nil {
 			break
 		}
@@ -127,14 +126,14 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocol
 	require.NoError(t, err, "Start failed")
 
 	// 2. Then send spans to the Jaeger receiver.
-	jexp, err := newClientUDP(agentEndpoint, jr.config.ThriftBinaryUDP != nil)
+	jexp, err := newClientUDP(agentEndpoint, jr.config.ThriftBinaryUDP.HasValue())
 	require.NoError(t, err, "Failed to create the Jaeger OpenTelemetry exporter for the live application")
 
 	// 3. Now finally send some spans
 	td := generateTraceData()
 	batches := jaeger.ProtoFromTraces(td)
 	for _, batch := range batches {
-		require.NoError(t, jexp.EmitBatch(context.Background(), modelToThrift(batch)))
+		require.NoError(t, jexp.EmitBatch(t.Context(), modelToThrift(batch)))
 	}
 
 	require.Eventually(t, func() bool {
@@ -164,7 +163,7 @@ func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
 func generateTraceData() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test")
+	rs.Resource().Attributes().PutStr("service.name", "test")
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 	span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0})

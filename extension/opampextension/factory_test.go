@@ -4,7 +4,6 @@
 package opampextension
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,17 +18,17 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, createDefaultConfig().(*Config), cfg)
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
+	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
-	require.NoError(t, ext.Shutdown(context.Background()))
+	require.NoError(t, ext.Shutdown(t.Context()))
 }
 
 func TestFactory_Create(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig()
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
+	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
-	require.NoError(t, ext.Shutdown(context.Background()))
+	require.NoError(t, ext.Shutdown(t.Context()))
 }

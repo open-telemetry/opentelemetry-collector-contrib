@@ -4,12 +4,12 @@
 package deltatorateprocessor
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -120,7 +120,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			}
 			factory := NewFactory()
 			mgp, err := factory.CreateMetrics(
-				context.Background(),
+				t.Context(),
 				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				next,
@@ -130,10 +130,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 
 			caps := mgp.Capabilities()
 			assert.True(t, caps.MutatesData)
-			ctx := context.Background()
-			require.NoError(t, mgp.Start(ctx, nil))
+			ctx := t.Context()
+			require.NoError(t, mgp.Start(ctx, componenttest.NewNopHost()))
 
-			cErr := mgp.ConsumeMetrics(context.Background(), test.inMetrics)
+			cErr := mgp.ConsumeMetrics(t.Context(), test.inMetrics)
 			assert.NoError(t, cErr)
 			got := next.AllMetrics()
 

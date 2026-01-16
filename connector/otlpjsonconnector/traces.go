@@ -36,7 +36,7 @@ func newTracesConnector(set connector.Settings, config component.Config, tracesC
 }
 
 // Capabilities implements the consumer interface.
-func (c *connectorTraces) Capabilities() consumer.Capabilities {
+func (*connectorTraces) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

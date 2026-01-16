@@ -35,7 +35,7 @@ func NewMultiConditionalAttributeSet[Match ValueMatch](mappings map[string]strin
 	}
 }
 
-func (ca MultiConditionalAttributeSet) IsMigrator() {}
+func (MultiConditionalAttributeSet) IsMigrator() {}
 
 // Do function applies the attribute changes if the passed in values match the expected values provided in the constructor.  Uses the Do method of the embedded AttributeChangeSet
 func (ca *MultiConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, keyToCheckVals map[string]string) (errs error) {

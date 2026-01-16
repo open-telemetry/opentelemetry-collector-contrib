@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -83,6 +82,45 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 				assert.Len(t, spans, len(test.zs))
 				assert.Equal(t, test.zs, spans)
 			}
+		})
+	}
+}
+
+func TestExtractScopeTags(t *testing.T) {
+	tests := []struct {
+		name     string
+		scopeCfg func(pcommon.InstrumentationScope)
+		res      map[string]string
+	}{
+		{
+			name:     "empty scope",
+			scopeCfg: func(_ pcommon.InstrumentationScope) {},
+			res:      map[string]string{},
+		},
+		{
+			name: "with attributes and name/version",
+			scopeCfg: func(il pcommon.InstrumentationScope) {
+				il.SetName("otel-lib")
+				il.SetVersion("v1.2.3")
+				il.Attributes().PutStr("custom.key", "custom.val")
+			},
+			res: map[string]string{
+				"custom.key":           "custom.val",
+				"otel.library.name":    "otel-lib",
+				"otel.library.version": "v1.2.3",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			il := pcommon.NewInstrumentationScope()
+			tt.scopeCfg(il)
+
+			zTags := map[string]string{}
+			extractScopeTags(il, zTags)
+
+			assert.Equal(t, tt.res, zTags)
 		})
 	}
 }
@@ -168,10 +206,10 @@ func zipkinOneSpan(status ptrace.StatusCode) *zipkinmodel.SpanModel {
 
 	switch status {
 	case ptrace.StatusCodeOk:
-		spanTags[conventions.OtelStatusCode] = "STATUS_CODE_OK"
+		spanTags["otel.status_code"] = "STATUS_CODE_OK"
 	case ptrace.StatusCodeError:
-		spanTags[conventions.OtelStatusCode] = "STATUS_CODE_ERROR"
-		spanTags[conventions.OtelStatusDescription] = "error message"
+		spanTags["otel.status_code"] = "STATUS_CODE_ERROR"
+		spanTags["otel.status_description"] = "error message"
 		spanTags[tracetranslator.TagError] = "true"
 		spanErr = errors.New("error message")
 	}

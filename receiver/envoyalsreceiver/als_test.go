@@ -4,7 +4,6 @@
 package envoyalsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver"
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -44,8 +43,8 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	lr, err := newALSReceiver(config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, lr.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, lr.Shutdown(context.Background())) })
+	require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
 
 	conn, err := grpc.NewClient(config.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -59,7 +58,7 @@ func TestLogs(t *testing.T) {
 		_ = conn.Close()
 	}()
 
-	client, err := alsv3.NewAccessLogServiceClient(conn).StreamAccessLogs(context.Background())
+	client, err := alsv3.NewAccessLogServiceClient(conn).StreamAccessLogs(t.Context())
 	require.NoError(t, err)
 
 	tm, err := time.Parse(time.RFC3339Nano, "2020-07-30T01:01:01.123456789Z")
@@ -119,7 +118,7 @@ func TestLogs(t *testing.T) {
 			expected: generateLogs(map[string]string{
 				"node":     nodeID.String(),
 				"log_name": "test-log-name",
-			}, []Log{
+			}, []log{
 				{
 					Timestamp: ts,
 					Attributes: map[string]any{
@@ -145,7 +144,7 @@ func TestLogs(t *testing.T) {
 			expected: generateLogs(map[string]string{
 				"node":     nodeID.String(),
 				"log_name": "test-log-name",
-			}, []Log{
+			}, []log{
 				{
 					Timestamp: ts,
 					Attributes: map[string]any{
@@ -165,7 +164,9 @@ func TestLogs(t *testing.T) {
 
 			require.Eventually(t, func() bool {
 				gotLogs := sink.AllLogs()
-
+				if len(gotLogs) <= i {
+					return false
+				}
 				err := plogtest.CompareLogs(tt.expected, gotLogs[i], plogtest.IgnoreObservedTimestamp())
 				if err == nil {
 					return true
@@ -177,13 +178,13 @@ func TestLogs(t *testing.T) {
 	}
 }
 
-type Log struct {
+type log struct {
 	Timestamp  int64
 	Body       string
 	Attributes map[string]any
 }
 
-func generateLogs(resourceAttrs map[string]string, logs []Log) plog.Logs {
+func generateLogs(resourceAttrs map[string]string, logs []log) plog.Logs {
 	ld := plog.NewLogs()
 	rls := ld.ResourceLogs().AppendEmpty()
 	for k, v := range resourceAttrs {

@@ -7,12 +7,6 @@ resourceMetrics:
         - key: signaltometrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
-        - key: signaltometrics.service.name
-          value:
-            stringValue: signaltometrics
-        - key: signaltometrics.service.namespace
-          value:
-            stringValue: test
     scopeMetrics:
       - metrics:
           - description: Spans with resource attribute including resource.foo as a exponential histogram metric
@@ -147,12 +141,6 @@ resourceMetrics:
         - key: signaltometrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
-        - key: signaltometrics.service.name
-          value:
-            stringValue: signaltometrics
-        - key: signaltometrics.service.namespace
-          value:
-            stringValue: test
     scopeMetrics:
       - metrics:
           - description: Spans with resource attribute including resource.bar as a exponential histogram metric
@@ -290,12 +278,6 @@ resourceMetrics:
         - key: signaltometrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
-        - key: signaltometrics.service.name
-          value:
-            stringValue: signaltometrics
-        - key: signaltometrics.service.namespace
-          value:
-            stringValue: test
     scopeMetrics:
       - metrics:
           - description: Spans with custom count OTTL expression as a exponential histogram metric

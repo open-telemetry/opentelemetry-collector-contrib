@@ -4,7 +4,6 @@
 package keyvalue
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -729,7 +728,7 @@ key=value`,
 			tc.input.ObservedTimestamp = ots
 			tc.expect.ObservedTimestamp = ots
 
-			err = op.Process(context.Background(), tc.input)
+			err = op.Process(t.Context(), tc.input)
 			if tc.expectError {
 				require.Error(t, err)
 				return

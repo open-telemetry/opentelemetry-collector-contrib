@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowpbMock "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1/mock"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowpbMock "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1/mock"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -306,18 +307,18 @@ func TestSendTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: map[string]configopaque.String{
-			"header": configopaque.String(expectedHeader[0]),
+		Headers: configopaque.MapList{
+			{Name: "header", Value: configopaque.String(expectedHeader[0])},
 		},
-		Auth: &configauth.Authentication{
+		Auth: configoptional.Some(configauth.Config{
 			AuthenticatorID: authID,
-		},
+		}),
 	}
 	// This test fails w/ Arrow enabled because the function
 	// passed to newTestAuthExtension() below requires it the
@@ -327,12 +328,12 @@ func TestSendTraces(t *testing.T) {
 	set := exportertest.NewNopSettings(factory.Type())
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
-	exp, err := factory.CreateTraces(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := newHostWithExtensions(
@@ -344,13 +345,13 @@ func TestSendTraces(t *testing.T) {
 			}),
 		},
 	)
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	newCallerContext := func(value string) context.Context {
-		return client.NewContext(context.Background(),
+		return client.NewContext(t.Context(),
 			client.Info{
 				Metadata: client.NewMetadata(map[string][]string{
 					"in_callerid": {value},
@@ -441,7 +442,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			useTLS: false,
 			scheme: "http://",
 			gRPCClientSettings: configgrpc.ClientConfig{
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
 			},
@@ -466,34 +467,34 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			cfg.Endpoint = test.scheme + ln.Addr().String()
 			cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 			if test.useTLS {
-				cfg.TLSSetting.InsecureSkipVerify = true
+				cfg.TLS.InsecureSkipVerify = true
 			}
 			set := exportertest.NewNopSettings(factory.Type())
-			exp, err := factory.CreateTraces(context.Background(), set, cfg)
+			exp, err := factory.CreateTraces(t.Context(), set, cfg)
 			require.NoError(t, err)
 			require.NotNil(t, exp)
 
 			defer func() {
-				assert.NoError(t, exp.Shutdown(context.Background()))
+				assert.NoError(t, exp.Shutdown(t.Context()))
 			}()
 
 			host := componenttest.NewNopHost()
-			assert.NoError(t, exp.Start(context.Background(), host))
+			assert.NoError(t, exp.Start(t.Context(), host))
 
 			// Ensure that initially there is no data in the receiver.
 			assert.EqualValues(t, 0, rcv.requestCount.Load())
 
-			// Send empty trace.
-			td := ptrace.NewTraces()
-			assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+			// Send 2 spans.
+			td := testdata.GenerateTraces(2)
+			assert.NoError(t, exp.ConsumeTraces(t.Context(), td))
 
-			// Wait until it is received.
+			// Wait until received.
 			assert.Eventually(t, func() bool {
 				return rcv.requestCount.Load() > 0
 			}, 10*time.Second, 5*time.Millisecond)
 
-			// Ensure it was received empty.
-			assert.EqualValues(t, 0, rcv.totalItems.Load())
+			// Ensure all were received.
+			assert.EqualValues(t, 2, rcv.totalItems.Load())
 		})
 	}
 }
@@ -511,38 +512,38 @@ func TestSendMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeMetrics
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	cfg.RetryConfig.Enabled = false
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Headers: map[string]configopaque.String{
-			"header": "header-value",
+		Headers: configopaque.MapList{
+			{Name: "header", Value: "header-value"},
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 	set := exportertest.NewNopSettings(factory.Type())
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
-	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	// Send empty metric.
 	md := pmetric.NewMetrics()
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), md))
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
@@ -555,7 +556,7 @@ func TestSendMetrics(t *testing.T) {
 	// Send two metrics.
 	md = testdata.GenerateMetrics(2)
 
-	err = exp.ConsumeMetrics(context.Background(), md)
+	err = exp.ConsumeMetrics(t.Context(), md)
 	assert.NoError(t, err)
 
 	// Wait until it is received.
@@ -581,7 +582,7 @@ func TestSendMetrics(t *testing.T) {
 	// Send two metrics..
 	md = testdata.GenerateMetrics(2)
 
-	err = exp.ConsumeMetrics(context.Background(), md)
+	err = exp.ConsumeMetrics(t.Context(), md)
 	assert.Error(t, err)
 
 	rcv.setExportError(nil)
@@ -598,7 +599,7 @@ func TestSendMetrics(t *testing.T) {
 
 	// Send two metrics.
 	md = testdata.GenerateMetrics(2)
-	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+	assert.NoError(t, exp.ConsumeMetrics(t.Context(), md))
 }
 
 func TestSendTraceDataServerDownAndUp(t *testing.T) {
@@ -611,10 +612,10 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 		// Need to wait for every request blocking until either request timeouts or succeed.
@@ -623,32 +624,32 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 	set := exportertest.NewNopSettings(factory.Type())
-	exp, err := factory.CreateTraces(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	// A trace with 2 spans.
 	td := testdata.GenerateTraces(2)
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 	assert.Error(t, exp.ConsumeTraces(ctx, td))
 	assert.Equal(t, context.DeadlineExceeded, ctx.Err())
 	cancel()
 
-	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel = context.WithTimeout(t.Context(), 1*time.Second)
 	assert.Error(t, exp.ConsumeTraces(ctx, td))
 	assert.Equal(t, context.DeadlineExceeded, ctx.Err())
 	cancel()
 
 	startServerAndMakeRequest(t, exp, td, ln)
 
-	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel = context.WithTimeout(t.Context(), 1*time.Second)
 	assert.Error(t, exp.ConsumeTraces(ctx, td))
 	assert.Equal(t, context.DeadlineExceeded, ctx.Err())
 	cancel()
@@ -659,7 +660,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 	startServerAndMakeRequest(t, exp, td, ln)
 
-	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel = context.WithTimeout(t.Context(), 1*time.Second)
 	assert.Error(t, exp.ConsumeTraces(ctx, td))
 	assert.Equal(t, context.DeadlineExceeded, ctx.Err())
 	cancel()
@@ -675,28 +676,28 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 	set := exportertest.NewNopSettings(factory.Type())
-	exp, err := factory.CreateTraces(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	// A trace with 2 spans.
 	td := testdata.GenerateTraces(2)
 	done := make(chan bool, 1)
 	defer close(done)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	go func() {
 		assert.NoError(t, exp.ConsumeTraces(ctx, td))
 		done <- true
@@ -729,27 +730,28 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	cfg.RetryConfig.InitialInterval = 0
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 	set := exportertest.NewNopSettings(factory.Type())
-	exp, err := factory.CreateTraces(context.Background(), set, cfg)
+	set.Logger = zaptest.NewLogger(t)
+	exp, err := factory.CreateTraces(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
-	td := ptrace.NewTraces()
-	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+	td := testdata.GenerateTraces(2)
+	assert.NoError(t, exp.ConsumeTraces(t.Context(), td))
 
 	assert.Never(t, func() bool {
 		return rcv.requestCount.Load() > 1
@@ -763,7 +765,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	})
 	rcv.setExportError(st.Err())
 
-	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
+	assert.NoError(t, exp.ConsumeTraces(t.Context(), td))
 
 	assert.Eventually(t, func() bool {
 		return rcv.requestCount.Load() > 1
@@ -782,7 +784,7 @@ func startServerAndMakeRequest(t *testing.T, exp exporter.Traces, td ptrace.Trac
 	td.CopyTo(expectedData)
 
 	// Resend the request, this should succeed.
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	assert.NoError(t, exp.ConsumeTraces(ctx, td))
 	cancel()
 
@@ -809,10 +811,10 @@ func TestSendLogData(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeLogs
 	// otherwise we will not see any errors.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -820,23 +822,23 @@ func TestSendLogData(t *testing.T) {
 	set := exportertest.NewNopSettings(factory.Type())
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
-	exp, err := factory.CreateLogs(context.Background(), set, cfg)
+	exp, err := factory.CreateLogs(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
 
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
 	// Send empty request.
 	ld := plog.NewLogs()
-	assert.NoError(t, exp.ConsumeLogs(context.Background(), ld))
+	assert.NoError(t, exp.ConsumeLogs(t.Context(), ld))
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
@@ -849,7 +851,7 @@ func TestSendLogData(t *testing.T) {
 	// A request with 2 log entries.
 	ld = testdata.GenerateLogs(2)
 
-	err = exp.ConsumeLogs(context.Background(), ld)
+	err = exp.ConsumeLogs(t.Context(), ld)
 	assert.NoError(t, err)
 
 	// Wait until it is received.
@@ -872,7 +874,7 @@ func TestSendLogData(t *testing.T) {
 	// A request with 2 log entries.
 	ld = testdata.GenerateLogs(2)
 
-	err = exp.ConsumeLogs(context.Background(), ld)
+	err = exp.ConsumeLogs(t.Context(), ld)
 	assert.Error(t, err)
 
 	rcv.setExportError(nil)
@@ -890,7 +892,7 @@ func TestSendLogData(t *testing.T) {
 	// A request with 2 log entries.
 	ld = testdata.GenerateLogs(2)
 
-	err = exp.ConsumeLogs(context.Background(), ld)
+	err = exp.ConsumeLogs(t.Context(), ld)
 	assert.NoError(t, err)
 }
 
@@ -917,25 +919,24 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 		WaitForReady: clientWaitForReady,
-		Headers: map[string]configopaque.String{
-			"header": configopaque.String(expectedHeader[0]),
+		Headers: configopaque.MapList{
+			{Name: "header", Value: configopaque.String(expectedHeader[0])},
 		},
-		Auth: &configauth.Authentication{
+		Auth: configoptional.Some(configauth.Config{
 			AuthenticatorID: authID,
-		},
+		}),
 	}
 	// Arrow client is enabled, but the server doesn't support it.
 	cfg.Arrow.NumStreams = 1
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 
 	set := exportertest.NewNopSettings(factory.Type())
-	set.Logger = zaptest.NewLogger(t)
-	exp, err := factory.CreateTraces(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -953,7 +954,7 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 			}),
 		},
 	)
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	rcv, _ := otelArrowTracesReceiverOnGRPCServer(ln, false)
 
@@ -961,7 +962,7 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 		// Shutdown before GracefulStop, because otherwise we
 		// wait for a full stream lifetime instead of closing
 		// after requests are served.
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 		rcv.srv.GracefulStop()
 	}()
 
@@ -980,7 +981,7 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 
 	// Set the context key indicating this is per-request state,
 	// so the auth extension returns data.
-	err = exp.ConsumeTraces(context.WithValue(context.Background(), isUserCall{}, true), td)
+	err = exp.ConsumeTraces(context.WithValue(t.Context(), isUserCall{}, true), td)
 	assert.NoError(t, err)
 
 	// Wait until it is received.
@@ -1057,7 +1058,7 @@ func (r *mockTracesReceiver) startStreamMockArrowTraces(t *testing.T, statusFor 
 			// Place the metadata into the context, where
 			// the test framework (independent of Arrow)
 			// receives it.
-			ctx := metadata.NewIncomingContext(context.Background(), md)
+			ctx := metadata.NewIncomingContext(t.Context(), md)
 
 			for _, traces := range got {
 				_, err := r.Export(ctx, ptraceotlp.NewExportRequestFromTraces(traces))
@@ -1090,7 +1091,7 @@ func TestSendArrowFailedTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 		WaitForReady: true,
@@ -1100,22 +1101,22 @@ func TestSendArrowFailedTraces(t *testing.T) {
 		NumStreams:        1,
 		MaxStreamLifetime: 100 * time.Second,
 	}
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 
 	set := exportertest.NewNopSettings(factory.Type())
 	set.Logger = zaptest.NewLogger(t)
-	exp, err := factory.CreateTraces(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
 	host := componenttest.NewNopHost()
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	rcv, _ := otelArrowTracesReceiverOnGRPCServer(ln, false)
 	rcv.startStreamMockArrowTraces(t, failedStatusFor)
 
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 		rcv.srv.GracefulStop()
 	}()
 
@@ -1127,7 +1128,7 @@ func TestSendArrowFailedTraces(t *testing.T) {
 
 	// Send two trace items.
 	td := testdata.GenerateTraces(2)
-	err = exp.ConsumeTraces(context.Background(), td)
+	err = exp.ConsumeTraces(t.Context(), td)
 	assert.ErrorContains(t, err, "test failed")
 
 	// Wait until it is received.
@@ -1151,13 +1152,13 @@ func TestUserDialOptions(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 		WaitForReady: true,
 	}
 	cfg.Arrow.Disabled = true
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueSettings = configoptional.Default(*cfg.QueueSettings.Get())
 
 	const testAgent = "test-user-agent (release=:+1:)"
 
@@ -1168,16 +1169,16 @@ func TestUserDialOptions(t *testing.T) {
 
 	set := exportertest.NewNopSettings(factory.Type())
 	set.Logger = zaptest.NewLogger(t)
-	exp, err := factory.CreateTraces(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(t.Context(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
 	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
+		assert.NoError(t, exp.Shutdown(t.Context()))
 	}()
 
 	host := componenttest.NewNopHost()
-	assert.NoError(t, exp.Start(context.Background(), host))
+	assert.NoError(t, exp.Start(t.Context(), host))
 
 	td := testdata.GenerateTraces(2)
 
@@ -1185,7 +1186,7 @@ func TestUserDialOptions(t *testing.T) {
 	rcv.start()
 	defer rcv.srv.GracefulStop()
 
-	err = exp.ConsumeTraces(context.Background(), td)
+	err = exp.ConsumeTraces(t.Context(), td)
 	assert.NoError(t, err)
 
 	require.Len(t, rcv.getMetadata().Get("User-Agent"), 1)

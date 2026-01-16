@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -36,21 +35,21 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 type mockObserver struct{}
 
-func (m *mockObserver) Start(_ context.Context, _ component.Host) error {
+func (*mockObserver) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (m *mockObserver) Shutdown(_ context.Context) error {
+func (*mockObserver) Shutdown(context.Context) error {
 	return nil
 }
 
 var _ extension.Extension = (*mockObserver)(nil)
 
-func (m *mockObserver) ListAndWatch(notify observer.Notify) {
+func (*mockObserver) ListAndWatch(notify observer.Notify) {
 	notify.OnAdd([]observer.Endpoint{portEndpoint})
 }
 
-func (m *mockObserver) Unsubscribe(_ observer.Notify) {}
+func (*mockObserver) Unsubscribe(observer.Notify) {}
 
 var _ observer.Observable = (*mockObserver)(nil)
 
@@ -77,16 +76,16 @@ func TestMockedEndToEnd(t *testing.T) {
 	params := receivertest.NewNopSettings(metadata.Type)
 	mockConsumer := new(consumertest.MetricsSink)
 
-	rcvr, err := factory.CreateMetrics(context.Background(), params, cfg, mockConsumer)
+	rcvr, err := factory.CreateMetrics(t.Context(), params, cfg, mockConsumer)
 	require.NoError(t, err)
 	sc := rcvr.(*sharedcomponent.SharedComponent)
 	dyn := sc.Component.(*receiverCreator)
-	require.NoError(t, rcvr.Start(context.Background(), host))
+	require.NoError(t, rcvr.Start(t.Context(), host))
 
 	var shutdownOnce sync.Once
 	shutdown := func() {
 		shutdownOnce.Do(func() {
-			assert.NoError(t, rcvr.Shutdown(context.Background()))
+			assert.NoError(t, rcvr.Shutdown(t.Context()))
 		})
 	}
 
@@ -103,12 +102,12 @@ func TestMockedEndToEnd(t *testing.T) {
 		md := pmetric.NewMetrics()
 		rm := md.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("attr", "1")
-		rm.Resource().Attributes().PutStr(semconv.AttributeServiceName, "dynamictest")
+		rm.Resource().Attributes().PutStr("service.name", "dynamictest")
 		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		m.SetName("my-metric")
 		m.SetDescription("My metric")
 		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(123)
-		assert.NoError(t, example.ConsumeMetrics(context.Background(), md))
+		assert.NoError(t, example.ConsumeMetrics(t.Context(), md))
 	}
 
 	// TODO: Will have to rework once receivers are started asynchronously to Start().

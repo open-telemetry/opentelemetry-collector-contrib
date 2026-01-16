@@ -25,8 +25,8 @@ import (
 )
 
 var (
-	defaultDockerAPIVersion         = "1.25"
-	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion(defaultDockerAPIVersion)
+	defaultDockerAPIVersion         = docker.MustNewAPIVersion("1.44")
+	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion("1.25")
 )
 
 type resultV2 struct {
@@ -66,7 +66,8 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	if err = r.client.LoadContainerList(ctx); err != nil {
+	err = r.client.LoadContainerList(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -129,7 +130,7 @@ func (r *metricsReceiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error)
 
 func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerStats *ctypes.StatsResponse, container *docker.Container) error {
 	var errs error
-	r.recordCPUMetrics(now, &containerStats.CPUStats, &containerStats.PreCPUStats)
+	r.recordCPUMetrics(now, containerStats)
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
@@ -224,7 +225,7 @@ func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats
 	}
 }
 
-type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj string, devMin string, operation string)
+type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj, devMin, operation string)
 
 func (r *metricsReceiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *ctypes.BlkioStats) {
 	recordSingleBlkioStat(now, blkioStats.IoMergedRecursive, r.mb.RecordContainerBlockioIoMergedRecursiveDataPoint)
@@ -265,7 +266,8 @@ func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *
 	}
 }
 
-func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *ctypes.CPUStats, prevStats *ctypes.CPUStats) {
+func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, v *ctypes.StatsResponse) {
+	cpuStats := v.CPUStats
 	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
 	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
 	r.mb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))
@@ -273,7 +275,7 @@ func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *ctyp
 	r.mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledPeriods))
 	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
 	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
-	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
+	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(v))
 	r.mb.RecordContainerCPULogicalCountDataPoint(now, int64(cpuStats.OnlineCPUs))
 
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {

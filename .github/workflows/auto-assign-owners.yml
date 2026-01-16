@@ -1,7 +1,12 @@
 name: 'Auto Assign'
 on:
   pull_request_target:
-    types: [opened, ready_for_review]
+    types:
+      - opened
+      - ready_for_review
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -9,8 +14,10 @@ concurrency:
 
 jobs:
   add-owner:
+    permissions:
+      pull-requests: write # required for assigning reviewers to PRs
     runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.draft == false }}
     steps:
       - name: run
         uses: kentaro-m/auto-assign-action@f4648c0a9fdb753479e9e75fc251f507ce17bb7e # v2.0.0

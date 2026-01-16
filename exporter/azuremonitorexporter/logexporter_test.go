@@ -8,7 +8,6 @@ Contains tests for logexporter.go and log_to_envelope.go
 */
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -16,10 +15,12 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
 )
 
 const (
@@ -118,7 +119,7 @@ func TestExporterLogDataCallback(t *testing.T) {
 
 	logs := getTestLogs()
 
-	assert.NoError(t, exporter.consumeLogs(context.Background(), logs))
+	assert.NoError(t, exporter.consumeLogs(t.Context(), logs))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 4)
 }
@@ -175,16 +176,49 @@ func TestLogRecordToEnvelopeCloudTags(t *testing.T) {
 	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
 
 	resourceAttributes := resource.Attributes().AsRaw()
-	expectedCloudRole := resourceAttributes[conventions.AttributeServiceNamespace].(string) + "." + resourceAttributes[conventions.AttributeServiceName].(string)
+	expectedCloudRole := resourceAttributes["service.namespace"].(string) + "." + resourceAttributes["service.name"].(string)
 	require.Equal(t, expectedCloudRole, envelope.Tags[aiCloudRoleConvention])
-	expectedCloudRoleInstance := resourceAttributes[conventions.AttributeServiceInstanceID]
+	expectedCloudRoleInstance := resourceAttributes["service.instance.id"]
 	require.Equal(t, expectedCloudRoleInstance, envelope.Tags[aiCloudRoleInstanceConvention])
+}
+
+func TestLogRecordToEnvelopeApplicationTags(t *testing.T) {
+	const aiAppVersionConvention = "ai.application.ver"
+
+	resource, scope, logRecord := getTestLogRecord(1)
+	logPacker := getLogPacker()
+
+	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
+
+	resourceAttributes := resource.Attributes().AsRaw()
+	expectedAppVer := resourceAttributes["service.version"].(string)
+	require.Equal(t, expectedAppVer, envelope.Tags[aiAppVersionConvention])
+}
+
+func TestLogRecordToEnvelopeDeviceTags(t *testing.T) {
+	const aiDeviceModelConvention = "ai.device.model"
+	const aiDeviceTypeConvention = "ai.device.type"
+	const aiDeviceOSConvention = "ai.device.osVersion"
+
+	resource, scope, logRecord := getTestLogRecord(1)
+	logPacker := getLogPacker()
+
+	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
+
+	resourceAttributes := resource.Attributes().AsRaw()
+	expectedDeviceModel := resourceAttributes["device.manufacturer"].(string)
+	require.Equal(t, expectedDeviceModel, envelope.Tags[aiDeviceModelConvention])
+	expectedDeviceType := resourceAttributes["device.model.identifier"].(string)
+	require.Equal(t, expectedDeviceType, envelope.Tags[aiDeviceTypeConvention])
+	expectedOSVersion := resourceAttributes["os.name"].(string) + " " + resourceAttributes["os.version"].(string)
+	require.Equal(t, expectedOSVersion, envelope.Tags[aiDeviceOSConvention])
 }
 
 func getLogsExporter(config *Config, transportChannel appinsights.TelemetryChannel) *azureMonitorExporter {
 	return &azureMonitorExporter{
 		config,
 		transportChannel,
+		exportertest.NewNopSettings(metadata.Type).TelemetrySettings,
 		zap.NewNop(),
 		newMetricPacker(zap.NewNop()),
 	}
@@ -200,9 +234,14 @@ func getTestLogs() plog.Logs {
 	// add the resource
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	resource := resourceLogs.Resource()
-	resource.Attributes().PutStr(conventions.AttributeServiceName, defaultServiceName)
-	resource.Attributes().PutStr(conventions.AttributeServiceNamespace, defaultServiceNamespace)
-	resource.Attributes().PutStr(conventions.AttributeServiceInstanceID, defaultServiceInstance)
+	resource.Attributes().PutStr("service.name", defaultServiceName)
+	resource.Attributes().PutStr("service.namespace", defaultServiceNamespace)
+	resource.Attributes().PutStr("service.instance.id", defaultServiceInstance)
+	resource.Attributes().PutStr("service.version", defaultServiceVersion)
+	resource.Attributes().PutStr("os.name", defaultOSName)
+	resource.Attributes().PutStr("os.version", defaultOSVersion)
+	resource.Attributes().PutStr("device.manufacturer", defaultDeviceManufacturer)
+	resource.Attributes().PutStr("device.model.identifier", defaultDeviceModelIdentifier)
 
 	// add the scope
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
@@ -346,4 +385,92 @@ func TestSetAttributesAsProperties(t *testing.T) {
 	assert.Equal(t, "123", properties["int_key"])
 	assert.Equal(t, "4.56", properties["double_key"])
 	assert.Equal(t, "true", properties["bool_key"])
+}
+
+func TestHandleExceptionDataWithDetails(t *testing.T) {
+	logger := zap.NewNop()
+	config := &Config{}
+	packer := newLogPacker(logger, config)
+
+	tests := []struct {
+		name             string
+		severityNum      plog.SeverityNumber
+		severityText     string
+		exceptionType    string
+		exceptionMessage string
+		stackTrace       string
+		resourceAttrs    map[string]any
+	}{
+		{
+			name:             "Full exception details",
+			severityNum:      plog.SeverityNumberError,
+			severityText:     "RuntimeError",
+			exceptionType:    "TypeError",
+			exceptionMessage: "Cannot read property 'undefined'",
+			stackTrace:       "at Object.method (/path/file.js:10)\nat Object.method2 (/path/file2.js:20)",
+			resourceAttrs: map[string]any{
+				"service.name": "testService",
+				"custom.attr":  "value",
+			},
+		},
+		{
+			name:             "Minimal exception details",
+			severityNum:      plog.SeverityNumberFatal,
+			severityText:     "FatalError",
+			exceptionType:    "SystemError",
+			exceptionMessage: "System crash",
+			resourceAttrs:    map[string]any{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			envelope := contracts.NewEnvelope()
+			envelope.Tags = make(map[string]string)
+			data := contracts.NewData()
+
+			logRecord := plog.NewLogRecord()
+			logRecord.SetSeverityNumber(tt.severityNum)
+			logRecord.SetSeverityText(tt.severityText)
+
+			attrs := logRecord.Attributes()
+			attrs.PutStr("exception.type", tt.exceptionType)
+			attrs.PutStr("exception.message", tt.exceptionMessage)
+			if tt.stackTrace != "" {
+				attrs.PutStr("exception.stacktrace", tt.stackTrace)
+			}
+
+			resource := pcommon.NewResource()
+			for k, v := range tt.resourceAttrs {
+				if str, ok := v.(string); ok {
+					resource.Attributes().PutStr(k, str)
+				}
+			}
+
+			scope := pcommon.NewInstrumentationScope()
+
+			packer.handleExceptionData(envelope, data, logRecord, resource, scope)
+
+			exceptionData := data.BaseData.(*contracts.ExceptionData)
+			assert.Equal(t, tt.severityText, exceptionData.ProblemId)
+			assert.NotEmpty(t, exceptionData.Properties)
+
+			require.Len(t, exceptionData.Exceptions, 1)
+			exception := exceptionData.Exceptions[0]
+			assert.Equal(t, tt.exceptionType, exception.TypeName)
+			assert.Equal(t, tt.exceptionMessage, exception.Message)
+
+			if tt.stackTrace != "" {
+				assert.Equal(t, tt.stackTrace, exception.Stack)
+				assert.True(t, exception.HasFullStack)
+			}
+
+			// Resource attributes should be copied to properties
+			for k, v := range tt.resourceAttrs {
+				if str, ok := v.(string); ok {
+					assert.Equal(t, str, exceptionData.Properties[k])
+				}
+			}
+		})
+	}
 }

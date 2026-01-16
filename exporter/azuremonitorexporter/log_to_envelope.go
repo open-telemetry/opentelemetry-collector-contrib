@@ -9,6 +9,7 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -19,7 +20,7 @@ type logPacker struct {
 	config *Config
 }
 
-func (packer *logPacker) initEnvelope(logRecord plog.LogRecord) (*contracts.Envelope, *contracts.Data) {
+func (*logPacker) initEnvelope(logRecord plog.LogRecord) (*contracts.Envelope, *contracts.Data) {
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
 	envelope.Time = toTime(timestampFromLogRecord(logRecord)).Format(time.RFC3339Nano)
@@ -64,6 +65,8 @@ func (packer *logPacker) handleMessageData(envelope *contracts.Envelope, data *c
 	applyResourcesToDataProperties(messageData.Properties, resourceAttributes)
 	applyInstrumentationScopeValueToDataProperties(messageData.Properties, instrumentationScope)
 	applyCloudTagsToEnvelope(envelope, resourceAttributes)
+	applyApplicationTagsToEnvelope(envelope, resourceAttributes)
+	applyDeviceTagsToEnvelope(envelope, resourceAttributes)
 	applyInternalSdkVersionTagToEnvelope(envelope)
 
 	setAttributesAsProperties(logRecord.Attributes(), messageData.Properties)
@@ -83,13 +86,48 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource 
 	envelope, data := packer.initEnvelope(logRecord)
 	attributes := logRecord.Attributes()
 
-	if packer.config.CustomEventsEnabled && isEventData(attributes) {
+	switch {
+	case packer.config.CustomEventsEnabled && isEventData(attributes):
 		packer.handleEventData(envelope, data, logRecord)
-	} else {
+	case packer.config.ExceptionEventsEnabled && isExceptionData(attributes):
+		packer.handleExceptionData(envelope, data, logRecord, resource, instrumentationScope)
+	default:
 		packer.handleMessageData(envelope, data, logRecord, resource, instrumentationScope)
 	}
 
 	return envelope
+}
+
+func (packer *logPacker) handleExceptionData(envelope *contracts.Envelope, data *contracts.Data, logRecord plog.LogRecord, resource pcommon.Resource, instrumentationScope pcommon.InstrumentationScope) {
+	logAttributeMap := logRecord.Attributes()
+	exceptionData := contracts.NewExceptionData()
+	exceptionData.Properties = make(map[string]string)
+	exceptionData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityNumber())
+	exceptionData.ProblemId = logRecord.SeverityText()
+
+	exceptionDetails := mapIncomingAttributeMapExceptionDetail(logAttributeMap)
+	exceptionData.Exceptions = append(exceptionData.Exceptions, exceptionDetails)
+
+	envelope.Name = exceptionData.EnvelopeName("")
+
+	data.BaseData = exceptionData
+	data.BaseType = exceptionData.BaseType()
+	envelope.Data = data
+
+	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID())
+	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID())
+
+	resourceAttributes := resource.Attributes()
+	applyResourcesToDataProperties(exceptionData.Properties, resourceAttributes)
+	applyInstrumentationScopeValueToDataProperties(exceptionData.Properties, instrumentationScope)
+	applyCloudTagsToEnvelope(envelope, resourceAttributes)
+	applyApplicationTagsToEnvelope(envelope, resourceAttributes)
+	applyDeviceTagsToEnvelope(envelope, resourceAttributes)
+	applyInternalSdkVersionTagToEnvelope(envelope)
+
+	setAttributesAsProperties(logAttributeMap, exceptionData.Properties)
+
+	packer.sanitizeAll(envelope, exceptionData)
 }
 
 func (packer *logPacker) sanitize(sanitizeFunc func() []string) {
@@ -98,7 +136,7 @@ func (packer *logPacker) sanitize(sanitizeFunc func() []string) {
 	}
 }
 
-func (packer *logPacker) toAiSeverityLevel(sn plog.SeverityNumber) contracts.SeverityLevel {
+func (*logPacker) toAiSeverityLevel(sn plog.SeverityNumber) contracts.SeverityLevel {
 	switch {
 	case sn >= plog.SeverityNumberTrace && sn <= plog.SeverityNumberDebug4:
 		return contracts.Verbose
@@ -147,4 +185,23 @@ func hasOneOfKeys(attrMap pcommon.Map, keys ...string) bool {
 
 func isEventData(attrMap pcommon.Map) bool {
 	return hasOneOfKeys(attrMap, attributeMicrosoftCustomEventName, attributeApplicationInsightsEventMarkerAttribute)
+}
+
+func isExceptionData(attributes pcommon.Map) bool {
+	return hasOneOfKeys(attributes, string(conventions.ExceptionTypeKey), string(conventions.ExceptionMessageKey))
+}
+
+func mapIncomingAttributeMapExceptionDetail(attributemap pcommon.Map) *contracts.ExceptionDetails {
+	exceptionDetails := contracts.NewExceptionDetails()
+	if message, exists := attributemap.Get(string(conventions.ExceptionMessageKey)); exists {
+		exceptionDetails.Message = message.Str()
+	}
+	if typeName, exists := attributemap.Get(string(conventions.ExceptionTypeKey)); exists {
+		exceptionDetails.TypeName = typeName.Str()
+	}
+	if stackTrace, exists := attributemap.Get(string(conventions.ExceptionStacktraceKey)); exists {
+		exceptionDetails.HasFullStack = true
+		exceptionDetails.Stack = stackTrace.Str()
+	}
+	return exceptionDetails
 }

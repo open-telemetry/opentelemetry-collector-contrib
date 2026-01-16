@@ -4,7 +4,6 @@
 package mezmoexporter
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -37,13 +35,13 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 	rl.ScopeLogs().AppendEmpty() // Add an empty ScopeLogs
 	sl := rl.ScopeLogs().AppendEmpty()
 
-	for i := 0; i < numberOfLogs; i++ {
+	for i := range numberOfLogs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("10byteslog")
-		logRecord.Attributes().PutStr(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().PutStr("service.name", "myapp")
 		logRecord.Attributes().PutStr("my-label", "myapp-type")
-		logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().PutStr("host.name", "myhost")
 		logRecord.Attributes().PutStr("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
@@ -58,7 +56,7 @@ func createMinimalAttributesLogData(numberOfLogs int) plog.Logs {
 	rl.ScopeLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 
-	for i := 0; i < numberOfLogs; i++ {
+	for range numberOfLogs {
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("minimal attribute log")
 	}
@@ -77,7 +75,7 @@ func createMaxLogData() plog.Logs {
 	lineLen := maxMessageSize
 	lineCnt := (maxBodySize / lineLen) * 2
 
-	for i := 0; i < lineCnt; i++ {
+	for i := range lineCnt {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr(randString(maxMessageSize))
@@ -132,7 +130,7 @@ func createHTTPServer(params *testServerParams) testServer {
 		statusCode, responseBody := params.assertionsCallback(r, logBody)
 
 		w.WriteHeader(statusCode)
-		if len(responseBody) > 0 {
+		if responseBody != "" {
 			_, err = w.Write([]byte(responseBody))
 			assert.NoError(params.t, err)
 		}
@@ -153,7 +151,7 @@ func createExporter(t *testing.T, config *Config, logger *zap.Logger) *mezmoExpo
 	exporter := newLogsExporter(config, componenttest.NewNopTelemetrySettings(), buildInfo, logger)
 	require.NotNil(t, exporter)
 
-	err := exporter.start(context.Background(), componenttest.NewNopHost())
+	err := exporter.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	return exporter
@@ -186,19 +184,19 @@ func TestLogsExporter(t *testing.T) {
 
 	t.Run("Test simple log data", func(t *testing.T) {
 		logs := createSimpleLogData(3)
-		err := exporter.pushLogData(context.Background(), logs)
+		err := exporter.pushLogData(t.Context(), logs)
 		require.NoError(t, err)
 	})
 
 	t.Run("Test max message size", func(t *testing.T) {
 		logs := createSizedPayloadLogData(maxMessageSize)
-		err := exporter.pushLogData(context.Background(), logs)
+		err := exporter.pushLogData(t.Context(), logs)
 		require.NoError(t, err)
 	})
 
 	t.Run("Test max body size", func(t *testing.T) {
 		logs := createMaxLogData()
-		err := exporter.pushLogData(context.Background(), logs)
+		err := exporter.pushLogData(t.Context(), logs)
 		require.NoError(t, err)
 	})
 }
@@ -231,7 +229,7 @@ func TestAddsRequiredAttributes(t *testing.T) {
 	exporter := createExporter(t, config, log)
 
 	logs := createMinimalAttributesLogData(4)
-	err := exporter.pushLogData(context.Background(), logs)
+	err := exporter.pushLogData(t.Context(), logs)
 	require.NoError(t, err)
 }
 
@@ -253,7 +251,7 @@ func Test404IngestError(t *testing.T) {
 	exporter := createExporter(t, config, log)
 
 	logs := createSizedPayloadLogData(1)
-	err := exporter.pushLogData(context.Background(), logs)
+	err := exporter.pushLogData(t.Context(), logs)
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, logObserver.Len())

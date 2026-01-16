@@ -17,7 +17,7 @@ func TestUDPHeartbeat(t *testing.T) {
 	udpSock, err := net.ListenPacket("udp", "127.0.0.1:0")
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	go respondToHeartbeats(ctx, udpSock, zap.NewNop())

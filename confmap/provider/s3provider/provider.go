@@ -17,7 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"go.opentelemetry.io/collector/confmap"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -52,7 +52,7 @@ func NewFactory() confmap.ProviderFactory {
 	return confmap.NewProviderFactory(newWithSettings)
 }
 
-func newWithSettings(_ confmap.ProviderSettings) confmap.Provider {
+func newWithSettings(confmap.ProviderSettings) confmap.Provider {
 	return &provider{client: nil}
 }
 

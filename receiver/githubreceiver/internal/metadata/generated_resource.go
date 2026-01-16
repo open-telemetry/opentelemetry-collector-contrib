@@ -21,17 +21,17 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetOrganizationName sets provided value as "organization.name" attribute.
-func (rb *ResourceBuilder) SetOrganizationName(val string) {
-	if rb.config.OrganizationName.Enabled {
-		rb.res.Attributes().PutStr("organization.name", val)
+// SetVcsOwnerName sets provided value as "vcs.owner.name" attribute.
+func (rb *ResourceBuilder) SetVcsOwnerName(val string) {
+	if rb.config.VcsOwnerName.Enabled {
+		rb.res.Attributes().PutStr("vcs.owner.name", val)
 	}
 }
 
-// SetVcsVendorName sets provided value as "vcs.vendor.name" attribute.
-func (rb *ResourceBuilder) SetVcsVendorName(val string) {
-	if rb.config.VcsVendorName.Enabled {
-		rb.res.Attributes().PutStr("vcs.vendor.name", val)
+// SetVcsProviderName sets provided value as "vcs.provider.name" attribute.
+func (rb *ResourceBuilder) SetVcsProviderName(val string) {
+	if rb.config.VcsProviderName.Enabled {
+		rb.res.Attributes().PutStr("vcs.provider.name", val)
 	}
 }
 

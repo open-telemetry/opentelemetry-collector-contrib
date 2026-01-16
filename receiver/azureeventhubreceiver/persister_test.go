@@ -17,7 +17,10 @@ import (
 
 func TestStorageOffsetPersisterUnknownCheckpoint(t *testing.T) {
 	client := newMockClient()
-	s := storageCheckpointPersister{storageClient: client}
+	s := storageCheckpointPersister[persist.Checkpoint]{
+		storageClient: client,
+		defaultValue:  persist.NewCheckpointFromStartOfStream(),
+	}
 	// check we have no match
 	checkpoint, err := s.Read("foo", "bar", "foobar", "foobarfoo")
 	assert.NoError(t, err)
@@ -27,7 +30,10 @@ func TestStorageOffsetPersisterUnknownCheckpoint(t *testing.T) {
 
 func TestStorageOffsetPersisterWithKnownCheckpoint(t *testing.T) {
 	client := newMockClient()
-	s := storageCheckpointPersister{storageClient: client}
+	s := storageCheckpointPersister[persist.Checkpoint]{
+		storageClient: client,
+		defaultValue:  persist.NewCheckpointFromStartOfStream(),
+	}
 	checkpoint := persist.Checkpoint{
 		Offset:         "foo",
 		SequenceNumber: 2,

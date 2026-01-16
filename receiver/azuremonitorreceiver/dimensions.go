@@ -38,7 +38,7 @@ func filterDimensions(dimensions []*armmonitor.LocalizableString, cfg Dimensions
 func serializeDimensions(dimensions []string) string {
 	var dimensionsSlice []string
 	for _, dimension := range dimensions {
-		if trimmedDimension := strings.TrimSpace(dimension); len(trimmedDimension) > 0 {
+		if trimmedDimension := strings.TrimSpace(dimension); trimmedDimension != "" {
 			dimensionsSlice = append(dimensionsSlice, trimmedDimension)
 		}
 	}
@@ -49,7 +49,7 @@ func serializeDimensions(dimensions []string) string {
 // buildDimensionsFilter takes a serialized dimensions input to build an Azure Request filter that will allow us to
 // receive metrics values split by these dimensions.
 func buildDimensionsFilter(dimensionsStr string) *string {
-	if len(dimensionsStr) == 0 {
+	if dimensionsStr == "" {
 		return nil
 	}
 	var dimensionsFilter bytes.Buffer

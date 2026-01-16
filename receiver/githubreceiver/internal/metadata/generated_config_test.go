@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -37,8 +38,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcsRepositoryCount:      MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					OrganizationName: ResourceAttributeConfig{Enabled: true},
-					VcsVendorName:    ResourceAttributeConfig{Enabled: true},
+					VcsOwnerName:    ResourceAttributeConfig{Enabled: true},
+					VcsProviderName: ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -58,8 +59,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcsRepositoryCount:      MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					OrganizationName: ResourceAttributeConfig{Enabled: false},
-					VcsVendorName:    ResourceAttributeConfig{Enabled: false},
+					VcsOwnerName:    ResourceAttributeConfig{Enabled: false},
+					VcsProviderName: ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -79,7 +80,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 
@@ -95,15 +96,15 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				OrganizationName: ResourceAttributeConfig{Enabled: true},
-				VcsVendorName:    ResourceAttributeConfig{Enabled: true},
+				VcsOwnerName:    ResourceAttributeConfig{Enabled: true},
+				VcsProviderName: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				OrganizationName: ResourceAttributeConfig{Enabled: false},
-				VcsVendorName:    ResourceAttributeConfig{Enabled: false},
+				VcsOwnerName:    ResourceAttributeConfig{Enabled: false},
+				VcsProviderName: ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

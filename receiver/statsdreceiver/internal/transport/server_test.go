@@ -25,7 +25,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 		transport         Transport
 		buildServerFn     func(transport Transport, addr string) (Server, error)
 		getFreeEndpointFn func(tb testing.TB, transport string) string
-		buildClientFn     func(transport string, address string) (*client.StatsD, error)
+		buildClientFn     func(transport, address string) (*client.StatsD, error)
 	}{
 		{
 			name:              "udp",
@@ -45,15 +45,16 @@ func Test_Server_ListenAndServe(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			r := require.New(t)
 			addr := tt.getFreeEndpointFn(t, tt.name)
 			testFreeEndpoint(t, tt.name, addr)
 
 			srv, err := tt.buildServerFn(tt.transport, addr)
-			require.NoError(t, err)
-			require.NotNil(t, srv)
+			r.NoError(err)
+			r.NotNil(srv)
 
 			mc := new(consumertest.MetricsSink)
-			require.NoError(t, err)
+			r.NoError(err)
 			mr := NewMockReporter(1)
 			transferChan := make(chan Metric, 10)
 
@@ -67,8 +68,12 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			runtime.Gosched()
 
 			gc, err := tt.buildClientFn(tt.transport.String(), addr)
-			require.NoError(t, err)
-			require.NotNil(t, gc)
+			r.NoError(err)
+			r.NotNil(gc)
+			clientAddr, err := gc.ConnectionLocalAddress()
+			r.NoError(err)
+			r.NotNil(clientAddr)
+
 			err = gc.SendMetric(client.Metric{
 				Name:  "test.metric",
 				Value: "42",
@@ -89,12 +94,16 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			assert.NoError(t, err)
 
 			wgListenAndServe.Wait()
-			assert.Len(t, transferChan, 1)
+			r.Len(transferChan, 1)
+			metric := <-transferChan
+			// Make sure incoming metric's address is not the server local address
+			r.NotEqual(metric.Addr, addr)
+			r.Equal(metric.Addr, clientAddr)
 		})
 	}
 }
 
-func testFreeEndpoint(t *testing.T, transport string, address string) {
+func testFreeEndpoint(t *testing.T, transport, address string) {
 	t.Helper()
 
 	var ln0, ln1 io.Closer

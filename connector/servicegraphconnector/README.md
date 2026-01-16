@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fservicegraph%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fservicegraph) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fservicegraph%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fservicegraph) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_servicegraph)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_servicegraph&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mapno](https://www.github.com/mapno), [@JaredTan95](https://www.github.com/JaredTan95) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -119,8 +120,9 @@ datasources:
 
 The following settings are required:
 
-- `latency_histogram_buckets`: the list of durations defining the latency histogram buckets.
+- `latency_histogram_buckets`: the list of durations defining the latency histogram buckets. Make sure use either `latency_histogram_buckets` or `exponential_histogram_max_size`.
     - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
+- `exponential_histogram_max_size`: (no default) the maximum number of buckets per positive or negative number range. 
 - `dimensions`: the list of dimensions to add together with the default dimensions defined above.
 
 The following settings can be optionally configured:
@@ -140,8 +142,8 @@ The following settings can be optionally configured:
   - Default: `false`
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
   - Default: `60s`
-- `database_name_attribute`(DEPRECATED): the attribute name used to identify the database name from span attributes.
-  - Default: `db.name`
+- `metrics_timestamp_offset`: the offset to subtract from metric timestamps. If set to a positive duration, metric timestamps will be set to (current time - offset), effectively shifting metrics to appear as if they were generated in the past.
+  - Default: `0`
 - `database_name_attributes`: the list of attribute names used to identify the database name from span attributes. The attributes are tried in order, selecting the first match.
   - Default: `[db.name]`
 

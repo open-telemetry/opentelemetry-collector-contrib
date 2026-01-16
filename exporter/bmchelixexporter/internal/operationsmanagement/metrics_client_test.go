@@ -4,7 +4,6 @@
 package operationsmanagement
 
 import (
-	"context"
 	"encoding/json"
 	"net"
 	"net/http"
@@ -30,7 +29,7 @@ func TestNewMetricsClient(t *testing.T) {
 	cfg.Endpoint = endpoint
 	cfg.Timeout = 10 * time.Second
 
-	ctx := context.Background()
+	ctx := t.Context()
 	host := componenttest.NewNopHost()
 	settings := componenttest.NewNopTelemetrySettings()
 
@@ -96,7 +95,7 @@ func TestSendHelixPayload200(t *testing.T) {
 	cfg.Endpoint = mockServer.URL
 	cfg.Timeout = 10 * time.Second
 
-	ctx := context.Background()
+	ctx := t.Context()
 	host := componenttest.NewNopHost()
 	settings := componenttest.NewNopTelemetrySettings()
 
@@ -116,7 +115,7 @@ func TestSendHelixPayloadEmpty(t *testing.T) {
 	cfg.Endpoint = "https://helix1:8080"
 	cfg.Timeout = 10 * time.Second
 
-	ctx := context.Background()
+	ctx := t.Context()
 	host := componenttest.NewNopHost()
 	settings := componenttest.NewNopTelemetrySettings()
 
@@ -148,7 +147,7 @@ func TestSendHelixPayload400(t *testing.T) {
 	cfg.Endpoint = mockServer.URL
 	cfg.Timeout = 10 * time.Second
 
-	ctx := context.Background()
+	ctx := t.Context()
 	host := componenttest.NewNopHost()
 	settings := componenttest.NewNopTelemetrySettings()
 
@@ -176,7 +175,7 @@ func TestSendHelixPayloadConnectionRefused(t *testing.T) {
 	cfg.Endpoint = "https://localhost:" + strconv.Itoa(randomPort)
 	cfg.Timeout = 500 * time.Millisecond
 
-	ctx := context.Background()
+	ctx := t.Context()
 	host := componenttest.NewNopHost()
 	settings := componenttest.NewNopTelemetrySettings()
 

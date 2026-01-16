@@ -4,10 +4,9 @@
 package azure
 
 import (
-	"context"
 	"testing"
 
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -27,12 +26,12 @@ func TestProvider(t *testing.T) {
 	}, nil)
 
 	provider := &Provider{detector: mp}
-	src, err := provider.Source(context.Background())
+	src, err := provider.Source(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, source.HostnameKind, src.Kind)
 	assert.Equal(t, "vmID", src.Identifier)
 
-	clusterName, err := provider.ClusterName(context.Background())
+	clusterName, err := provider.ClusterName(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "aks-kenafeh-eu", clusterName)
 }

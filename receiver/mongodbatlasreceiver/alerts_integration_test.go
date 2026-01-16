@@ -7,7 +7,6 @@ package mongodbatlasreceiver
 
 import (
 	"bytes"
-	"context"
 	"crypto/hmac"
 	"crypto/sha1" // #nosec G505 -- SHA1 is the algorithm mongodbatlas uses, it must be used to calculate the HMAC signature
 	"crypto/tls"
@@ -57,7 +56,7 @@ func TestAlertsReceiver(t *testing.T) {
 			require.NoError(t, err)
 
 			recv, err := fact.CreateLogs(
-				context.Background(),
+				t.Context(),
 				receivertest.NewNopSettings(metadata.Type),
 				&Config{
 					Alerts: AlertConfig{
@@ -71,11 +70,11 @@ func TestAlertsReceiver(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			err = recv.Start(context.Background(), componenttest.NewNopHost())
+			err = recv.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			defer func() {
-				require.NoError(t, recv.Shutdown(context.Background()))
+				require.NoError(t, recv.Shutdown(t.Context()))
 			}()
 
 			payload, err := os.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", payloadName+".json"))
@@ -122,7 +121,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			require.NoError(t, err)
 
 			recv, err := fact.CreateLogs(
-				context.Background(),
+				t.Context(),
 				receivertest.NewNopSettings(metadata.Type),
 				&Config{
 					Alerts: AlertConfig{
@@ -142,11 +141,11 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			err = recv.Start(context.Background(), componenttest.NewNopHost())
+			err = recv.Start(t.Context(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
 			defer func() {
-				require.NoError(t, recv.Shutdown(context.Background()))
+				require.NoError(t, recv.Shutdown(t.Context()))
 			}()
 
 			payload, err := os.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", payloadName+".json"))
@@ -210,7 +209,7 @@ func TestAtlasPoll(t *testing.T) {
 	fact := NewFactory()
 
 	recv, err := fact.CreateLogs(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			Alerts: AlertConfig{
@@ -234,14 +233,14 @@ func TestAtlasPoll(t *testing.T) {
 	require.True(t, ok)
 	rcvr.alerts.client = &mockClient
 
-	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	err = recv.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 5*time.Second, 10*time.Millisecond)
 
-	err = recv.Shutdown(context.Background())
+	err = recv.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]

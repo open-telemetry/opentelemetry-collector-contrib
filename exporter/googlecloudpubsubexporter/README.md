@@ -6,6 +6,7 @@
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fgooglecloudpubsub%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fgooglecloudpubsub) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fgooglecloudpubsub%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fgooglecloudpubsub) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_googlecloudpubsub)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_googlecloudpubsub&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@alexvanboxel](https://www.github.com/alexvanboxel) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -29,7 +30,7 @@ The following configuration options are supported:
   drift is set to 0, the maximum drift from the clock is allowed (only applicable to `earliest`).
 * `endpoint` (Optional): Override the default Pubsub Endpoint, useful when connecting to the PubSub emulator instance
   or switching between [global and regional service endpoints](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints).
-* `insecure` (Optional): allows performing “insecure” SSL connections and transfers, useful when connecting to a local
+* `insecure` (Optional): Allows performing “insecure” SSL connections and transfers, useful when connecting to a local
   emulator instance. Only has effect if Endpoint is not ""
 * `ordering`: Configures the [PubSub ordering](https://cloud.google.com/pubsub/docs/ordering) feature, see 
   [ordering](#ordering) section for more info.
@@ -39,6 +40,11 @@ The following configuration options are supported:
     ordered for this resource.
   * `remove_resource_attribute` (default = `false`): if the ordering key resource attribute specified 
     `from_resource_attribute` should be removed from the resource attributes.
+* `traces`, `metrics` and `logs` (Optional): Allows overriding the standard OTLP Protobuf 
+  [encoding and the message attributes](#encoding-and-message-attributes). 
+  attributes.
+  * `encoding` (Optional): An encoding extension, if not specified it uses the default Protobuf marshaller.
+  * `attributes` (Optional): Attributes that will be added to the Pub/Sub message. 
 
 ```yaml
 exporters:
@@ -159,3 +165,34 @@ for more details.
 
 PubSub requires one publish request per ordering key value, so this exporter groups the signals per ordering key before 
 publishing.
+
+## Encoding and message attributes
+
+The `traces`, `metrics` and `logs` section allows you to specify Encoding Extensions for marshalling the messages on
+the topic and the attributes on the Pub/Sub message. All the signals have the same config options.
+
+It's important to note that when you use an extension all the CloudEvent attributes are removed as you use your own
+encoder as the exporter can't know what valute to set. You have the opportunity to manually set them.
+
+```yaml
+extensions:
+  otlp_encoding:
+    protocol: otlp_json
+
+exporters:
+  googlecloudpubsub:
+    project: my-project
+    topic: projects/my-project/topics/otlp-traces
+    traces:
+      encoding: otlp_encoding
+      attributes:
+        "ce-type": "org.opentelemetry.otlp.traces.v1"
+        "content-type": "application/json"
+```
+
+The `encoding` option allows you to specify Encoding Extensions for marshalling the messages on the topic. An
+extension need to be configured in the `extensions` section, and added to pipeline in the collectors configuration file.
+
+The `attributes` option allows you to set any attributes, the values are key/value pairs. You can avoid the removal of
+CloudEvent attributes if you manually specify the `ce-type` and `content-type` to an appropriate value for the chosen
+encoding.

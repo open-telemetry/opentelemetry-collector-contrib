@@ -20,13 +20,15 @@ func (s *diskScraper) recordSystemSpecificDataPoints(now pcommon.Timestamp, ioCo
 }
 
 func (s *diskScraper) recordDiskWeightedIOTimeMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
-	for device, ioCounter := range ioCounters {
+	for device := range ioCounters {
+		ioCounter := ioCounters[device]
 		s.mb.RecordSystemDiskWeightedIoTimeDataPoint(now, float64(ioCounter.WeightedIO)/1e3, device)
 	}
 }
 
 func (s *diskScraper) recordDiskMergedMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
-	for device, ioCounter := range ioCounters {
+	for device := range ioCounters {
+		ioCounter := ioCounters[device]
 		s.mb.RecordSystemDiskMergedDataPoint(now, int64(ioCounter.MergedReadCount), device, metadata.AttributeDirectionRead)
 		s.mb.RecordSystemDiskMergedDataPoint(now, int64(ioCounter.MergedWriteCount), device, metadata.AttributeDirectionWrite)
 	}

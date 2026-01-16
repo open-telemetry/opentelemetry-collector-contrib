@@ -58,7 +58,7 @@ func (f *metricsRouter) consumeByHealthyPipeline(ctx context.Context, md pmetric
 // sampleRetryConsumers iterates through all unhealthy consumers to re-establish a healthy connection
 func (f *metricsRouter) sampleRetryConsumers(ctx context.Context, md pmetric.Metrics) bool {
 	stableIndex := f.pS.CurrentPipeline()
-	for i := 0; i < stableIndex; i++ {
+	for i := range stableIndex {
 		consumer := f.getConsumerAtIndex(i)
 		err := consumer.ConsumeMetrics(ctx, md)
 		if err == nil {
@@ -78,7 +78,7 @@ type metricsFailover struct {
 	logger   *zap.Logger
 }
 
-func (f *metricsFailover) Capabilities() consumer.Capabilities {
+func (*metricsFailover) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -87,7 +87,7 @@ func (f *metricsFailover) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 	return f.failover.Consume(ctx, md)
 }
 
-func (f *metricsFailover) Shutdown(_ context.Context) error {
+func (f *metricsFailover) Shutdown(context.Context) error {
 	if f.failover != nil {
 		f.failover.Shutdown()
 	}

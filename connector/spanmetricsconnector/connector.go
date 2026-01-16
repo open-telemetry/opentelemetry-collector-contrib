@@ -6,6 +6,7 @@ package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-
 import (
 	"bytes"
 	"context"
+	"slices"
 	"sync"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
@@ -28,10 +29,12 @@ import (
 )
 
 const (
-	serviceNameKey                 = conventions.AttributeServiceName
+	serviceNameKey                 = string(conventions.ServiceNameKey)
 	spanNameKey                    = "span.name"                          // OpenTelemetry non-standard constant.
 	spanKindKey                    = "span.kind"                          // OpenTelemetry non-standard constant.
 	statusCodeKey                  = "status.code"                        // OpenTelemetry non-standard constant.
+	collectorInstanceKey           = "collector.instance.id"              // OpenTelemetry non-standard constant.
+	otelStatusCodeKey              = "otel.status_code"                   // OpenTelemetry non-standard constant.
 	instrumentationScopeNameKey    = "span.instrumentation.scope.name"    // OpenTelemetry non-standard constant.
 	instrumentationScopeVersionKey = "span.instrumentation.scope.version" // OpenTelemetry non-standard constant.
 	metricKeySeparator             = string(byte(0))
@@ -42,10 +45,12 @@ const (
 	metricNameCalls    = "calls"
 	metricNameEvents   = "events"
 
-	defaultUnit = metrics.Milliseconds
+	defaultUnit = metrics.Seconds
 
 	// https://github.com/open-telemetry/opentelemetry-go/blob/3ae002c3caf3e44387f0554dfcbbde2c5aab7909/sdk/metric/internal/aggregate/limit.go#L11C36-L11C50
 	overflowKey = "otel.metric.overflow"
+
+	defaultMaxPerDatapoint = 5
 )
 
 type connectorImp struct {
@@ -74,10 +79,17 @@ type connectorImp struct {
 	// Event dimensions to add to the events metric.
 	eDimensions []utilattri.Dimension
 
+	// Calls dimensions to add to the events metric.
+	callsDimensions []utilattri.Dimension
+
+	// duration dimensions to add to the events metric.
+	durationDimensions []utilattri.Dimension
+
 	events EventsConfig
 
 	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
 	lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
+	instanceID          string
 }
 
 type resourceMetrics struct {
@@ -104,7 +116,7 @@ func newDimensions(cfgDims []Dimension) []utilattri.Dimension {
 	return dims
 }
 
-func newConnector(logger *zap.Logger, config component.Config, clock clockwork.Clock) (*connectorImp, error) {
+func newConnector(logger *zap.Logger, config component.Config, clock clockwork.Clock, instanceID string) (*connectorImp, error) {
 	logger.Info("Building spanmetrics connector")
 	cfg := config.(*Config)
 	if cfg.DimensionsCacheSize != 0 {
@@ -144,7 +156,10 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 		ticker:                       clock.NewTicker(cfg.MetricsFlushInterval),
 		done:                         make(chan struct{}),
 		eDimensions:                  newDimensions(cfg.Events.Dimensions),
+		callsDimensions:              newDimensions(cfg.CallsDimensions),
+		durationDimensions:           newDimensions(cfg.Histogram.Dimensions),
 		events:                       cfg.Events,
+		instanceID:                   instanceID,
 	}, nil
 }
 
@@ -152,17 +167,19 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 	if cfg.Histogram.Disable {
 		return nil
 	}
-	if cfg.Histogram.Exponential != nil {
+	if cfg.Histogram.Exponential.HasValue() {
 		maxSize := structure.DefaultMaxSize
-		if cfg.Histogram.Exponential.MaxSize != 0 {
-			maxSize = cfg.Histogram.Exponential.MaxSize
+		if expConfig := cfg.Histogram.Exponential.Get(); expConfig != nil && expConfig.MaxSize != 0 {
+			maxSize = expConfig.MaxSize
 		}
 		return metrics.NewExponentialHistogramMetrics(maxSize, cfg.Exemplars.MaxPerDataPoint, cfg.AggregationCardinalityLimit)
 	}
 
 	var bounds []float64
-	if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
-		bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider(cfg.Histogram.Unit))
+	if cfg.Histogram.Explicit.HasValue() {
+		if expConfig := cfg.Histogram.Explicit.Get(); expConfig != nil && expConfig.Buckets != nil {
+			bounds = durationsToUnits(expConfig.Buckets, unitDivider(cfg.Histogram.Unit))
+		}
 	} else {
 		switch cfg.Histogram.Unit {
 		case metrics.Milliseconds:
@@ -228,7 +245,7 @@ func (p *connectorImp) Shutdown(context.Context) error {
 }
 
 // Capabilities implements the consumer interface.
-func (p *connectorImp) Capabilities() consumer.Capabilities {
+func (*connectorImp) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -263,7 +280,9 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 
 	p.resourceMetrics.ForEach(func(_ resourceKey, rawMetrics *resourceMetrics) {
 		rm := m.ResourceMetrics().AppendEmpty()
-		rawMetrics.attributes.CopyTo(rm.Resource().Attributes())
+		if !excludeResourceMetrics.IsEnabled() || p.config.AddResourceAttributes {
+			rawMetrics.attributes.CopyTo(rm.Resource().Attributes())
+		}
 
 		sm := rm.ScopeMetrics().AppendEmpty()
 		sm.Scope().SetName("spanmetricsconnector")
@@ -364,7 +383,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
-		serviceAttr, ok := resourceAttr.Get(conventions.AttributeServiceName)
+		serviceAttr, ok := resourceAttr.Get(string(conventions.ServiceNameKey))
 		if !ok {
 			continue
 		}
@@ -390,9 +409,11 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					duration = float64(endTime-startTime) / float64(unitDivider)
 				}
 
-				key := p.buildKey(serviceName, span, p.dimensions, resourceAttr)
+				callsDimensions := p.dimensions
+				callsDimensions = append(callsDimensions, p.callsDimensions...)
+				key := p.buildKey(serviceName, span, callsDimensions, resourceAttr)
 				attributesFun := func() pcommon.Map {
-					return p.buildAttributes(serviceName, span, resourceAttr, p.dimensions, ils.Scope())
+					return p.buildAttributes(serviceName, span, resourceAttr, callsDimensions, ils.Scope())
 				}
 
 				// aggregate sums metrics
@@ -404,7 +425,13 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 				// aggregate histogram metrics
 				if !p.config.Histogram.Disable {
-					h, durationLimitReached := histograms.GetOrCreate(key, attributesFun, startTimestamp)
+					durationDimensions := p.dimensions
+					durationDimensions = append(durationDimensions, p.durationDimensions...)
+					durationKey := p.buildKey(serviceName, span, durationDimensions, resourceAttr)
+					attributesFun = func() pcommon.Map {
+						return p.buildAttributes(serviceName, span, resourceAttr, durationDimensions, ils.Scope())
+					}
+					h, durationLimitReached := histograms.GetOrCreate(durationKey, attributesFun, startTimestamp)
 					if !durationLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 						p.addExemplar(span, duration, h)
 					}
@@ -422,9 +449,9 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 						rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
 						resourceAttr.CopyTo(rscAndEventAttrs)
-						// We cannot use CopyTo because it overrides the existing keys.
+						// We cannot use event.Attributes().CopyTo(rscAdnEventAttrs) because it overrides the existing keys.
 						event.Attributes().Range(func(k string, v pcommon.Value) bool {
-							rscAndEventAttrs.PutStr(k, v.Str())
+							v.CopyTo(rscAndEventAttrs.PutEmpty(k))
 							return true
 						})
 
@@ -491,16 +518,6 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 	return v
 }
 
-// contains checks if string slice contains a string value
-func contains(elements []string, value string) bool {
-	for _, element := range elements {
-		if value == element {
-			return true
-		}
-	}
-	return false
-}
-
 func (p *connectorImp) buildAttributes(
 	serviceName string,
 	span ptrace.Span,
@@ -509,21 +526,36 @@ func (p *connectorImp) buildAttributes(
 	instrumentationScope pcommon.InstrumentationScope,
 ) pcommon.Map {
 	attr := pcommon.NewMap()
-	attr.EnsureCapacity(4 + len(dimensions))
-	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
+	attr.EnsureCapacity(5 + len(dimensions))
+	if !slices.Contains(p.config.ExcludeDimensions, serviceNameKey) {
 		attr.PutStr(serviceNameKey, serviceName)
 	}
-	if !contains(p.config.ExcludeDimensions, spanNameKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, spanNameKey) {
 		attr.PutStr(spanNameKey, span.Name())
 	}
-	if !contains(p.config.ExcludeDimensions, spanKindKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, spanKindKey) {
 		attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
 	}
-	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
-		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
+	if useOtelStatusCodeAttribute.IsEnabled() {
+		if !slices.Contains(p.config.ExcludeDimensions, otelStatusCodeKey) {
+			if span.Status().Code() == ptrace.StatusCodeError {
+				attr.PutStr(otelStatusCodeKey, "ERROR")
+			} else if span.Status().Code() == ptrace.StatusCodeOk {
+				attr.PutStr(otelStatusCodeKey, "OK")
+			}
+		}
+	} else {
+		if !slices.Contains(p.config.ExcludeDimensions, statusCodeKey) {
+			attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
+		}
+	}
+	if includeCollectorInstanceID.IsEnabled() {
+		if !slices.Contains(p.config.ExcludeDimensions, collectorInstanceKey) {
+			attr.PutStr(collectorInstanceKey, p.instanceID)
+		}
 	}
 
-	if contains(p.config.IncludeInstrumentationScope, instrumentationScope.Name()) && instrumentationScope.Name() != "" {
+	if slices.Contains(p.config.IncludeInstrumentationScope, instrumentationScope.Name()) && instrumentationScope.Name() != "" {
 		attr.PutStr(instrumentationScopeNameKey, instrumentationScope.Name())
 		if instrumentationScope.Version() != "" {
 			attr.PutStr(instrumentationScopeVersionKey, instrumentationScope.Version())
@@ -558,17 +590,23 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []utilattri.Dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
 	p.keyBuf.Reset()
 
-	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, serviceNameKey) {
 		concatDimensionValue(p.keyBuf, serviceName, false)
 	}
-	if !contains(p.config.ExcludeDimensions, spanNameKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, spanNameKey) {
 		concatDimensionValue(p.keyBuf, span.Name(), true)
 	}
-	if !contains(p.config.ExcludeDimensions, spanKindKey) {
+	if !slices.Contains(p.config.ExcludeDimensions, spanKindKey) {
 		concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
 	}
-	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
-		concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
+	if useOtelStatusCodeAttribute.IsEnabled() {
+		if !slices.Contains(p.config.ExcludeDimensions, otelStatusCodeKey) {
+			concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
+		}
+	} else {
+		if !slices.Contains(p.config.ExcludeDimensions, statusCodeKey) {
+			concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
+		}
 	}
 
 	for _, d := range optionalDims {
@@ -581,7 +619,7 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 }
 
 // buildMetricName builds the namespace prefix for the metric name.
-func buildMetricName(namespace string, name string) string {
+func buildMetricName(namespace, name string) string {
 	if namespace != "" {
 		return namespace + "." + name
 	}

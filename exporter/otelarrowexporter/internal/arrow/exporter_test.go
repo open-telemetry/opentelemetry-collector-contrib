@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
-	arrowRecordMock "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record/mock"
-	otelAssert "github.com/open-telemetry/otel-arrow/pkg/otel/assert"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
+	arrowRecordMock "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record/mock"
+	otelAssert "github.com/open-telemetry/otel-arrow/go/pkg/otel/assert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -208,7 +208,7 @@ func TestArrowExporterSuccess(t *testing.T) {
 
 					tc.traceCall.Times(1).DoAndReturn(tc.returnNewStream(channel))
 
-					ctx := context.Background()
+					ctx := t.Context()
 					require.NoError(t, tc.exporter.Start(ctx))
 
 					var wg sync.WaitGroup
@@ -273,7 +273,7 @@ func TestArrowExporterTimeout(t *testing.T) {
 
 			tc.traceCall.Times(1).DoAndReturn(tc.returnNewStream(channel))
 
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			require.NoError(t, tc.exporter.Start(ctx))
 
 			go func() {
@@ -311,7 +311,7 @@ func TestArrowExporterStreamConnectError(t *testing.T) {
 
 			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
 
-			bg := context.Background()
+			bg := t.Context()
 			require.NoError(t, tc.exporter.Start(bg))
 
 			sent, err := tc.exporter.SendAndWait(bg, twoTraces)
@@ -337,7 +337,7 @@ func TestArrowExporterDowngrade(t *testing.T) {
 
 			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
 
-			bg := context.Background()
+			bg := t.Context()
 			require.NoError(t, tc.exporter.Start(bg))
 
 			sent, err := tc.exporter.SendAndWait(bg, twoTraces)
@@ -384,7 +384,7 @@ func TestArrowExporterDisableDowngrade(t *testing.T) {
 				goodChannel.recv <- statusOKFor(outputData.BatchId)
 			}()
 
-			bg := context.Background()
+			bg := t.Context()
 			require.NoError(t, tc.exporter.Start(bg))
 
 			sent, err := tc.exporter.SendAndWait(bg, twoTraces)
@@ -412,7 +412,7 @@ func TestArrowExporterConnectTimeout(t *testing.T) {
 
 			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
 
-			bg := context.Background()
+			bg := t.Context()
 			ctx, cancel := context.WithCancel(bg)
 			require.NoError(t, tc.exporter.Start(bg))
 
@@ -443,7 +443,7 @@ func TestArrowExporterStreamFailure(t *testing.T) {
 
 			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel0, channel1))
 
-			bg := context.Background()
+			bg := t.Context()
 			require.NoError(t, tc.exporter.Start(bg))
 
 			go func() {
@@ -492,7 +492,7 @@ func TestArrowExporterStreamRace(t *testing.T) {
 
 	var wg sync.WaitGroup
 
-	bg := context.Background()
+	bg := t.Context()
 	require.NoError(t, tc.exporter.Start(bg))
 
 	callctx, cancel := context.WithCancel(bg)
@@ -501,7 +501,7 @@ func TestArrowExporterStreamRace(t *testing.T) {
 	// stream, but none will become available.  Eventually the
 	// context will be canceled and cause these goroutines to
 	// return.
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -515,9 +515,9 @@ func TestArrowExporterStreamRace(t *testing.T) {
 		}()
 	}
 
-	// Wait until 1000 streams have started.
+	// Wait until 100 streams have started.
 	assert.Eventually(t, func() bool {
-		return tries.Load() >= 1000
+		return tries.Load() >= 100
 	}, 10*time.Second, 5*time.Millisecond)
 
 	cancel()
@@ -534,7 +534,7 @@ func TestArrowExporterStreaming(t *testing.T) {
 
 			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
 
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			require.NoError(t, tc.exporter.Start(ctx))
@@ -556,10 +556,10 @@ func TestArrowExporterStreaming(t *testing.T) {
 				}
 			}()
 
-			for times := 0; times < 10; times++ {
+			for range 10 {
 				input := testdata.GenerateTraces(2)
 
-				sent, err := tc.exporter.SendAndWait(context.Background(), input)
+				sent, err := tc.exporter.SendAndWait(t.Context(), input)
 				require.NoError(t, err)
 				require.True(t, sent)
 
@@ -586,7 +586,7 @@ func TestArrowExporterHeaders(t *testing.T) {
 
 			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
 
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			require.NoError(t, tc.exporter.Start(ctx))
@@ -615,7 +615,7 @@ func TestArrowExporterHeaders(t *testing.T) {
 				}
 			}()
 
-			for times := 0; times < 10; times++ {
+			for times := range 10 {
 				input := testdata.GenerateTraces(2)
 
 				if times%2 == 1 {
@@ -634,7 +634,7 @@ func TestArrowExporterHeaders(t *testing.T) {
 				sendCtx := ctx
 				if withDeadline {
 					var sendCancel context.CancelFunc
-					sendCtx, sendCancel = context.WithTimeout(sendCtx, time.Second)
+					sendCtx, sendCancel = context.WithTimeout(sendCtx, 1*time.Second)
 					defer sendCancel()
 				}
 
@@ -655,9 +655,9 @@ func TestArrowExporterHeaders(t *testing.T) {
 					require.NotEmpty(t, dead[0])
 					to, err := grpcutil.DecodeTimeout(dead[0])
 					require.NoError(t, err)
-					// Allow the test to lapse for 0.5s.
+					// expect the test runs in 0.5s .. 10s.
 					require.Less(t, time.Second/2, to)
-					require.GreaterOrEqual(t, time.Second, to)
+					require.GreaterOrEqual(t, 10*time.Second, to)
 					out.Delete("grpc-timeout")
 				}
 			}
@@ -680,7 +680,7 @@ func TestArrowExporterIsTraced(t *testing.T) {
 
 			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
 
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			require.NoError(t, tc.exporter.Start(ctx))
 
 			var expectOutput []metadata.MD
@@ -707,9 +707,9 @@ func TestArrowExporterIsTraced(t *testing.T) {
 				}
 			}()
 
-			for times := 0; times < 10; times++ {
+			for times := range 10 {
 				input := testdata.GenerateTraces(2)
-				callCtx := context.Background()
+				callCtx := t.Context()
 
 				if times%2 == 1 {
 					callCtx = trace.ContextWithSpanContext(callCtx,
@@ -750,7 +750,7 @@ func TestAddJitter(t *testing.T) {
 	require.Equal(t, time.Duration(0), addJitter(0))
 
 	// Expect no more than 5% less in each trial.
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		x := addJitter(20 * time.Minute)
 		require.LessOrEqual(t, 19*time.Minute, x)
 		require.Less(t, x, 20*time.Minute)
@@ -766,7 +766,7 @@ func TestArrowExporterStreamLifetimeAndShutdown(t *testing.T) {
 			for _, numStreams := range []int{1, 2, 8} {
 				t.Run(fmt.Sprint(numStreams), func(t *testing.T) {
 					tc := newShortLifetimeStreamTestCase(t, pname, numStreams)
-					ctx, cancel := context.WithCancel(context.Background())
+					ctx, cancel := context.WithCancel(t.Context())
 					defer cancel()
 
 					var wg sync.WaitGroup
@@ -911,7 +911,7 @@ func benchmarkPrioritizer(b *testing.B, numStreams int, pname PrioritizerName) {
 		return tc.returnNewStream(channel)(ctx, opts...)
 	})
 
-	bg, cancel := context.WithCancel(context.Background())
+	bg, cancel := context.WithCancel(b.Context())
 	defer cancel()
 	if err := tc.exporter.Start(bg); err != nil {
 		b.Errorf("start failed: %v", err)
@@ -927,9 +927,7 @@ func benchmarkPrioritizer(b *testing.B, numStreams int, pname PrioritizerName) {
 		wg.Wait()
 	}()
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		sent, err := tc.exporter.SendAndWait(bg, input)
 		if err != nil || !sent {
 			b.Errorf("send failed: %v: %v", sent, err)

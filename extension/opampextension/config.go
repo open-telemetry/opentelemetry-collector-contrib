@@ -85,10 +85,10 @@ func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
 }
 
 type commonFields struct {
-	Endpoint   string                         `mapstructure:"endpoint"`
-	TLSSetting configtls.ClientConfig         `mapstructure:"tls,omitempty"`
-	Headers    map[string]configopaque.String `mapstructure:"headers,omitempty"`
-	Auth       component.ID                   `mapstructure:"auth,omitempty"`
+	Endpoint string                         `mapstructure:"endpoint"`
+	TLS      configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	Headers  map[string]configopaque.String `mapstructure:"headers,omitempty"`
+	Auth     component.ID                   `mapstructure:"auth,omitempty"`
 }
 
 func (c *commonFields) Scheme() string {
@@ -160,14 +160,14 @@ func (s OpAMPServer) GetTLSConfig(ctx context.Context) (*tls.Config, error) {
 		return nil, nil
 	}
 
-	return s.getTLSSetting().LoadTLSConfig(ctx)
+	return s.getTLS().LoadTLSConfig(ctx)
 }
 
-func (s OpAMPServer) getTLSSetting() configtls.ClientConfig {
+func (s OpAMPServer) getTLS() configtls.ClientConfig {
 	if s.WS != nil {
-		return s.WS.TLSSetting
+		return s.WS.TLS
 	} else if s.HTTP != nil {
-		return s.HTTP.TLSSetting
+		return s.HTTP.TLS
 	}
 	return configtls.ClientConfig{}
 }

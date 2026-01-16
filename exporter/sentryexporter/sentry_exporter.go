@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"strconv"
 	"strings"
@@ -19,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -68,15 +69,15 @@ var canonicalCodesGrpcMap = map[string]sentry.SpanStatus{
 	"16": sentry.SpanStatusUnauthenticated,
 }
 
-// SentryExporter defines the Sentry Exporter.
-type SentryExporter struct {
+// sentryExporter defines the Sentry Exporter.
+type sentryExporter struct {
 	transport   transport
 	environment string
 }
 
 // pushTraceData takes an incoming OpenTelemetry trace, converts them into Sentry spans and transactions
 // and sends them using Sentry's transport.
-func (s *SentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) error {
+func (s *sentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) error {
 	var exceptionEvents []*sentry.Event
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
@@ -169,9 +170,9 @@ func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events ptrace.S
 		var exceptionMessage, exceptionType string
 		for k, v := range event.Attributes().All() {
 			switch k {
-			case conventions.AttributeExceptionMessage:
+			case string(conventions.ExceptionMessageKey):
 				exceptionMessage = v.Str()
-			case conventions.AttributeExceptionType:
+			case string(conventions.ExceptionTypeKey):
 				exceptionType = v.Str()
 			}
 		}
@@ -253,9 +254,7 @@ func convertToSentrySpan(span ptrace.Span, library pcommon.InstrumentationScope,
 	op, description := generateSpanDescriptors(name, attributes, spanKind)
 	tags := generateTagsFromAttributes(attributes)
 
-	for k, v := range resourceTags {
-		tags[k] = v
-	}
+	maps.Copy(tags, resourceTags)
 
 	status, message := statusFromSpanStatus(span.Status(), tags)
 
@@ -294,7 +293,7 @@ func convertToSentrySpan(span ptrace.Span, library pcommon.InstrumentationScope,
 //
 // See https://github.com/open-telemetry/opentelemetry-specification/tree/5b78ee1/specification/trace/semantic_conventions
 // for more details about the semantic conventions.
-func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.SpanKind) (op string, description string) {
+func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.SpanKind) (op, description string) {
 	var opBuilder strings.Builder
 	var dBuilder strings.Builder
 
@@ -303,7 +302,7 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 	// on what is most likely and what is most useful (ex. http is prioritized over FaaS)
 
 	// If http.method exists, this is an http request span.
-	if httpMethod, ok := attrs.Get(conventions.AttributeHTTPMethod); ok {
+	if httpMethod, ok := attrs.Get(string(conventions.HTTPMethodKey)); ok {
 		opBuilder.WriteString("http")
 
 		switch spanKind {
@@ -327,11 +326,11 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 	}
 
 	// If db.type exists then this is a database call span.
-	if _, ok := attrs.Get(conventions.AttributeDBSystem); ok {
+	if _, ok := attrs.Get(string(conventions.DBSystemKey)); ok {
 		opBuilder.WriteString("db")
 
 		// Use DB statement (Ex "SELECT * FROM table") if possible as description.
-		if statement, okInst := attrs.Get(conventions.AttributeDBStatement); okInst {
+		if statement, okInst := attrs.Get(string(conventions.DBStatementKey)); okInst {
 			dBuilder.WriteString(statement.Str())
 		} else {
 			dBuilder.WriteString(name)
@@ -341,7 +340,7 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 	}
 
 	// If rpc.service exists then this is a rpc call span.
-	if _, ok := attrs.Get(conventions.AttributeRPCService); ok {
+	if _, ok := attrs.Get(string(conventions.RPCServiceKey)); ok {
 		opBuilder.WriteString("rpc")
 
 		return opBuilder.String(), name
@@ -492,7 +491,7 @@ func createSentryExporter(config *Config, set exporter.Settings) (exporter.Trace
 
 	transport.Configure(clientOptions)
 
-	s := &SentryExporter{
+	s := &sentryExporter{
 		transport:   transport,
 		environment: config.Environment,
 	}

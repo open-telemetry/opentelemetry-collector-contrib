@@ -6,7 +6,6 @@
 package sqlqueryreceiver
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"path/filepath"
@@ -15,11 +14,19 @@ import (
 	"testing"
 	"time"
 
+	_ "github.com/SAP/go-hdb/driver" // register Db driver
 	"github.com/docker/go-connections/nat"
+	_ "github.com/go-sql-driver/mysql"                      // register Db driver
+	_ "github.com/lib/pq"                                   // register Db driver
+	_ "github.com/microsoft/go-mssqldb"                     // register Db driver
+	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5" // register Db driver
+	_ "github.com/sijms/go-ora/v2"                          // register Db driver
+	_ "github.com/snowflakedb/gosnowflake"                  // register Db driver
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	_ "github.com/thda/tds" // register Db driver
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -43,7 +50,7 @@ const (
 	sapAsePort     = "5000"
 )
 
-type DbEngineUnderTest struct {
+type dbEngineUnderTest struct {
 	Port               string
 	SQLParameter       func(position int) string
 	CheckCompatibility func(t *testing.T)
@@ -54,12 +61,12 @@ type DbEngineUnderTest struct {
 }
 
 var (
-	Postgres = DbEngineUnderTest{
+	Postgres = dbEngineUnderTest{
 		Port: postgresqlPort,
 		SQLParameter: func(position int) string {
 			return fmt.Sprintf("$%d", position)
 		},
-		CheckCompatibility: func(_ *testing.T) {
+		CheckCompatibility: func(*testing.T) {
 			// No compatibility checks needed for Postgres
 		},
 		ConnectionString: func(host string, externalPort nat.Port) string {
@@ -84,12 +91,12 @@ var (
 				WithStartupTimeout(2 * time.Minute),
 		},
 	}
-	MySQL = DbEngineUnderTest{
+	MySQL = dbEngineUnderTest{
 		Port: mysqlPort,
-		SQLParameter: func(_ int) string {
+		SQLParameter: func(int) string {
 			return "?"
 		},
-		CheckCompatibility: func(_ *testing.T) {
+		CheckCompatibility: func(*testing.T) {
 			// No compatibility checks needed for MySQL
 		},
 		ConnectionString: func(host string, externalPort nat.Port) string {
@@ -114,7 +121,7 @@ var (
 			WaitingFor:   wait.ForListeningPort(mysqlPort).WithStartupTimeout(2 * time.Minute),
 		},
 	}
-	Oracle = DbEngineUnderTest{
+	Oracle = dbEngineUnderTest{
 		Port: oraclePort,
 		SQLParameter: func(position int) string {
 			return fmt.Sprintf(":%d", position)
@@ -146,7 +153,7 @@ var (
 			).WithDeadline(5 * time.Minute),
 		},
 	}
-	SQLServer = DbEngineUnderTest{
+	SQLServer = dbEngineUnderTest{
 		Port: sqlServerPort,
 		SQLParameter: func(position int) string {
 			return fmt.Sprintf("@p%d", position)
@@ -174,9 +181,9 @@ var (
 			).WithDeadline(5 * time.Minute),
 		},
 	}
-	SapASE = DbEngineUnderTest{
+	SapASE = dbEngineUnderTest{
 		Port: sapAsePort,
-		SQLParameter: func(_ int) string {
+		SQLParameter: func(int) string {
 			return "?"
 		},
 		CheckCompatibility: func(t *testing.T) {
@@ -211,57 +218,57 @@ var (
 func TestIntegrationLogsTracking(t *testing.T) {
 	testGroupedByDbEngine := map[string][]struct {
 		name    string
-		runTest func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container)
+		runTest func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container)
 	}{
 		Postgres.Driver: {
-			{name: "PostgresWithStorage", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "PostgresWithStorage", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithStorage(t, engine, container, "select * from simple_logs where id > $1 order by id asc")
 			}},
-			{name: "PostgresById", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "PostgresById", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithoutStorage(t, engine, container, "id", "0", "select * from simple_logs where id > $1 order by id asc")
 			}},
-			{name: "PostgresByTimestamp", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "PostgresByTimestamp", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithoutStorage(t, engine, container, "insert_time", "2022-06-03 21:00:00+00", "select * from simple_logs where insert_time > $1 order by insert_time asc")
 			}},
 		},
 		MySQL.Driver: {
-			{name: "MySQLWithStorage", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "MySQLWithStorage", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithStorage(t, engine, container, "select * from simple_logs where id > ? order by id asc")
 			}},
-			{name: "MySQLById", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "MySQLById", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithoutStorage(t, engine, container, "id", "0", "select * from simple_logs where id > ? order by id asc")
 			}},
-			{name: "MySQLByTimestamp", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "MySQLByTimestamp", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithoutStorage(t, engine, container, "insert_time", "2022-06-03 21:00:00", "select * from simple_logs where insert_time > ? order by insert_time asc")
 			}},
 		},
 		SQLServer.Driver: {
-			{name: "SQLServerWithStorage", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "SQLServerWithStorage", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithStorage(t, engine, container, "select * from simple_logs where id > @p1 order by id asc")
 			}},
-			{name: "SQLServerById", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "SQLServerById", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithoutStorage(t, engine, container, "id", "0", "select * from simple_logs where id > @p1 order by id asc")
 			}},
-			{name: "SQLServerByTimestamp", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "SQLServerByTimestamp", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithoutStorage(t, engine, container, "insert_time", "2022-06-03 21:00:00", "select * from simple_logs where insert_time > @p1 order by insert_time asc")
 			}},
 		},
 		Oracle.Driver: {
-			{name: "OracleWithStorage", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "OracleWithStorage", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithStorage(t, engine, container, "select * from simple_logs where ID > :1 order by ID asc")
 			}},
-			{name: "OracleById", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "OracleById", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithoutStorage(t, engine, container, "ID", "0", "select * from simple_logs where ID > :1 order by ID asc")
 			}},
-			{name: "OracleByTimestamp", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "OracleByTimestamp", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithoutStorage(t, engine, container, "INSERT_TIME", "2022-06-03T21:00:00.000Z", "select * from simple_logs where INSERT_TIME > TO_TIMESTAMP_TZ(:1, 'YYYY-MM-DD\"T\"HH24:MI:SS.FF6TZH:TZM') order by INSERT_TIME asc")
 			}},
 		},
 		SapASE.Driver: {
-			{name: "SapASEWithStorage", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "SapASEWithStorage", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithStorage(t, engine, container, "select * from simple_logs where convert(varchar,id)  > ? order by id asc")
 			}},
-			{name: "SapASEById", runTest: func(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) {
+			{name: "SapASEById", runTest: func(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) {
 				runTestForLogTrackingWithoutStorage(t, engine, container, "id", "0", "select * from simple_logs where convert(varchar,id)  > ? order by id asc")
 			}},
 		},
@@ -272,7 +279,7 @@ func TestIntegrationLogsTracking(t *testing.T) {
 			engine := getDbEngine(driver)
 			engine.CheckCompatibility(t)
 			dbContainer, err := testcontainers.GenericContainer(
-				context.Background(),
+				t.Context(),
 				testcontainers.GenericContainerRequest{
 					ContainerRequest: engine.ContainerRequest,
 					Started:          true,
@@ -280,7 +287,7 @@ func TestIntegrationLogsTracking(t *testing.T) {
 			)
 			require.NoError(t, err)
 			defer func() {
-				require.NoError(t, dbContainer.Terminate(context.Background()))
+				require.NoError(t, dbContainer.Terminate(t.Context()))
 			}()
 
 			for _, test := range dbEngineTests {
@@ -292,7 +299,7 @@ func TestIntegrationLogsTracking(t *testing.T) {
 	}
 }
 
-func getDbEngine(driver string) DbEngineUnderTest {
+func getDbEngine(driver string) dbEngineUnderTest {
 	switch driver {
 	case Postgres.Driver:
 		return Postgres
@@ -309,7 +316,7 @@ func getDbEngine(driver string) DbEngineUnderTest {
 	}
 }
 
-func runTestForLogTrackingWithStorage(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container, querySQL string) {
+func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container, querySQL string) {
 	dbHost, dbPort := getContainerHostAndPort(t, container, engine.Port)
 	storageDir := t.TempDir()
 	storageExtension := storagetest.NewFileBackedStorageExtension("test", storageDir)
@@ -337,7 +344,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine DbEngineUnderTest, co
 	}
 
 	host := storagetest.NewStorageHost().WithExtension(storageExtension.ID, storageExtension)
-	err := receiver.Start(context.Background(), host)
+	err := receiver.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	require.Eventuallyf(
@@ -350,7 +357,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine DbEngineUnderTest, co
 		"failed to receive more than 0 logs",
 	)
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	initialLogCount := 5
@@ -374,12 +381,12 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine DbEngineUnderTest, co
 			TrackingStartValue: trackingStartValue,
 		},
 	}
-	err = receiver.Start(context.Background(), host)
+	err = receiver.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	time.Sleep(5 * time.Second)
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	require.Equal(t, 0, consumer.LogRecordCount())
@@ -405,7 +412,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine DbEngineUnderTest, co
 			TrackingStartValue: trackingStartValue,
 		},
 	}
-	err = receiver.Start(context.Background(), host)
+	err = receiver.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	require.Eventuallyf(
@@ -418,13 +425,13 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine DbEngineUnderTest, co
 		"failed to receive more than 0 logs",
 	)
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	require.Equal(t, newLogCount, consumer.LogRecordCount())
 }
 
-func runTestForLogTrackingWithoutStorage(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container, trackingColumn, trackingStartValue, sqlQuery string) {
+func runTestForLogTrackingWithoutStorage(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container, trackingColumn, trackingStartValue, sqlQuery string) {
 	receiverCreateSettings := receivertest.NewNopSettings(metadata.Type)
 	dbHost, dbPort := getContainerHostAndPort(t, container, engine.Port)
 	receiver, config, consumer := createTestLogsReceiver(t, engine.Driver, engine.ConnectionString(dbHost, dbPort), receiverCreateSettings)
@@ -447,7 +454,7 @@ func runTestForLogTrackingWithoutStorage(t *testing.T, engine DbEngineUnderTest,
 		},
 	}
 	host := componenttest.NewNopHost()
-	err := receiver.Start(context.Background(), host)
+	err := receiver.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	require.Eventuallyf(
@@ -462,19 +469,19 @@ func runTestForLogTrackingWithoutStorage(t *testing.T, engine DbEngineUnderTest,
 	require.Equal(t, 5, consumer.LogRecordCount())
 	testAllSimpleLogs(t, consumer.AllLogs(), engine.ConvertColumnName("attribute"))
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
 func getContainerHostAndPort(t *testing.T, container testcontainers.Container, port string) (string, nat.Port) {
-	dbPort, err := container.MappedPort(context.Background(), nat.Port(port))
+	dbPort, err := container.MappedPort(t.Context(), nat.Port(port))
 	require.NoError(t, err)
-	dbHost, err := container.Host(context.Background())
+	dbHost, err := container.Host(t.Context())
 	require.NoError(t, err)
 	return dbHost, dbPort
 }
 
-func insertSimpleLogs(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container, existingLogID, newLogCount int) {
+func insertSimpleLogs(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container, existingLogID, newLogCount int) {
 	db := openDatabase(t, engine, container)
 	defer db.Close()
 
@@ -487,7 +494,7 @@ func insertSimpleLogs(t *testing.T, engine DbEngineUnderTest, container testcont
 	}
 }
 
-func cleanupSimpleLogs(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container, existingLogID int) {
+func cleanupSimpleLogs(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container, existingLogID int) {
 	db := openDatabase(t, engine, container)
 	defer db.Close()
 
@@ -499,11 +506,11 @@ func cleanupSimpleLogs(t *testing.T, engine DbEngineUnderTest, container testcon
 	require.NoError(t, err)
 }
 
-func openDatabase(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container) *sql.DB {
-	externalPort, err := container.MappedPort(context.Background(), nat.Port(engine.Port))
+func openDatabase(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container) *sql.DB {
+	externalPort, err := container.MappedPort(t.Context(), nat.Port(engine.Port))
 	require.NoError(t, err)
 
-	host, err := container.Host(context.Background())
+	host, err := container.Host(t.Context())
 	require.NoError(t, err)
 
 	db, err := sql.Open(engine.Driver, engine.ConnectionString(host, externalPort))
@@ -526,7 +533,7 @@ func createTestLogsReceiver(t *testing.T, driver, dataSource string, receiverCre
 	consumer := &consumertest.LogsSink{}
 	receiverCreateSettings.Logger = zap.NewExample()
 	receiver, err := factory.CreateLogs(
-		context.Background(),
+		t.Context(),
 		receiverCreateSettings,
 		config,
 		consumer,
@@ -871,6 +878,109 @@ func TestSapASEIntegrationMetrics(t *testing.T) {
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreTimestamp(),
 			pmetrictest.IgnoreMetricsOrder(),
+		),
+	).Run(t)
+}
+
+func TestPostgresqlDataSourceFieldsIntegrationMetrics(t *testing.T) {
+	Postgres.CheckCompatibility(t)
+	scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithContainerRequest(
+			Postgres.ContainerRequest),
+		scraperinttest.WithCustomConfig(
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.Driver = Postgres.Driver
+				rCfg.Host = ci.Host(t)
+				rCfg.Port = nat.Port(ci.MappedPort(t, Postgres.Port)).Int()
+				rCfg.Database = "otel"
+				rCfg.Username = "otel"
+				rCfg.Password = "otel"
+				rCfg.AdditionalParams = map[string]any{
+					"sslmode": "disable",
+				}
+				rCfg.Queries = []sqlquery.Query{
+					{
+						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
+						Metrics: []sqlquery.MetricCfg{
+							{
+								MetricName:       "genre.count",
+								ValueColumn:      "count",
+								AttributeColumns: []string{"genre"},
+								ValueType:        sqlquery.MetricValueTypeInt,
+								DataType:         sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:       "genre.imdb",
+								ValueColumn:      "avg",
+								AttributeColumns: []string{"genre"},
+								ValueType:        sqlquery.MetricValueTypeDouble,
+								DataType:         sqlquery.MetricTypeGauge,
+							},
+						},
+					},
+					{
+						SQL: "select 1::smallint as a, 2::integer as b, 3::bigint as c, 4.1::decimal as d," +
+							" 4.2::numeric as e, 4.3::real as f, 4.4::double precision as g, null as h",
+						Metrics: []sqlquery.MetricCfg{
+							{
+								MetricName:  "a",
+								ValueColumn: "a",
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "b",
+								ValueColumn: "b",
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "c",
+								ValueColumn: "c",
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "d",
+								ValueColumn: "d",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "e",
+								ValueColumn: "e",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "f",
+								ValueColumn: "f",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "g",
+								ValueColumn: "g",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "h",
+								ValueColumn: "h",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+						},
+					},
+				}
+			}),
+		scraperinttest.WithExpectedFile(
+			filepath.Join("testdata", "integration", "postgresql", "expected.yaml"),
+		),
+		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run(t)
 }

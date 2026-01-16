@@ -8,16 +8,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func Test_Append(t *testing.T) {
-	setter := func(_ context.Context, res any, val any) error {
+	setter := func(_ context.Context, res, val any) error {
 		rSlice := res.(pcommon.Slice)
 		vSlice := val.(pcommon.Slice)
-		assert.NoError(t, rSlice.FromRaw(vSlice.AsRaw()))
+		require.NoError(t, rSlice.FromRaw(vSlice.AsRaw()))
 
 		return nil
 	}
@@ -26,13 +27,13 @@ func Test_Append(t *testing.T) {
 	var nilSliceOptional ottl.Optional[[]ottl.Getter[any]]
 
 	singleGetter := ottl.NewTestingOptional[ottl.Getter[any]](ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return "a", nil
 		},
 	})
 
 	singleIntGetter := ottl.NewTestingOptional[ottl.Getter[any]](ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return 66, nil
 		},
 	})
@@ -40,12 +41,12 @@ func Test_Append(t *testing.T) {
 	multiGetter := ottl.NewTestingOptional[[]ottl.Getter[any]](
 		[]ottl.Getter[any]{
 			ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "a", nil
 				},
 			},
 			ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "b", nil
 				},
 			},
@@ -62,7 +63,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Single: non existing target",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return nil, nil
 				},
 				Setter: setter,
@@ -76,7 +77,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Single: non existing target - non string value",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return nil, nil
 				},
 				Setter: setter,
@@ -90,7 +91,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Single: standard []string target - empty",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return []string{}, nil
 				},
 				Setter: setter,
@@ -104,7 +105,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Slice: standard []string target - empty",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return []string{}, nil
 				},
 				Setter: setter,
@@ -120,7 +121,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Single: standard []string target",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return []any{"5", "6"}, nil
 				},
 				Setter: setter,
@@ -136,7 +137,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Slice: standard []string target",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return []string{"5", "6"}, nil
 				},
 				Setter: setter,
@@ -154,7 +155,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Single: Slice target",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					ps := pcommon.NewSlice()
 					if err := ps.FromRaw([]any{"5", "6"}); err != nil {
 						return nil, err
@@ -174,7 +175,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Slice: Slice target",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					ps := pcommon.NewSlice()
 					if err := ps.FromRaw([]any{"5", "6"}); err != nil {
 						return nil, err
@@ -196,7 +197,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Single: Slice target of string values in pcommon.value",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					ps := pcommon.NewSlice()
 					ps.AppendEmpty().SetStr("5")
 					ps.AppendEmpty().SetStr("6")
@@ -215,7 +216,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Slice: Slice target of string values in pcommon.value",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					ps := pcommon.NewSlice()
 					ps.AppendEmpty().SetStr("5")
 					ps.AppendEmpty().SetStr("6")
@@ -236,7 +237,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Single: []any target",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return []any{5, 6}, nil
 				},
 				Setter: setter,
@@ -252,7 +253,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Slice: []any target",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return []any{5, 6}, nil
 				},
 				Setter: setter,
@@ -270,7 +271,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Single: pcommon.Value - string",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					v := "5"
 					return v, nil
 				},
@@ -286,7 +287,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Slice: pcommon.Value - string",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					v := "5"
 					return v, nil
 				},
@@ -304,7 +305,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Single: pcommon.Value - slice",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					v := pcommon.NewValueSlice()
 					if err := v.FromRaw([]any{"5", "6"}); err != nil {
 						return nil, err
@@ -324,7 +325,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Slice: pcommon.Value - slice",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					v := pcommon.NewValueSlice()
 					if err := v.FromRaw([]any{"5", "6"}); err != nil {
 						return nil, err
@@ -346,7 +347,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Single: scalar target string",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "5", nil
 				},
 				Setter: setter,
@@ -361,7 +362,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Slice: scalar target string",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "5", nil
 				},
 				Setter: setter,
@@ -378,7 +379,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Single: scalar target any",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 5, nil
 				},
 				Setter: setter,
@@ -393,7 +394,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Slice: scalar target any",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 5, nil
 				},
 				Setter: setter,
@@ -410,7 +411,7 @@ func Test_Append(t *testing.T) {
 		{
 			"Single: scalar target any append int",
 			&ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return 5, nil
 				},
 				Setter: setter,
@@ -426,11 +427,11 @@ func Test_Append(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			exprFunc, err := appendTo[any](tc.Target, tc.Value, tc.Values)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			res := pcommon.NewSlice()
-			result, err := exprFunc(context.Background(), res)
-			assert.NoError(t, err)
+			result, err := exprFunc(t.Context(), res)
+			require.NoError(t, err)
 			assert.Nil(t, result)
 			assert.NotNil(t, res)
 
@@ -444,9 +445,9 @@ func Test_Append(t *testing.T) {
 func TestTargetType(t *testing.T) {
 	expectedInt := 5
 	expectedSlice := pcommon.NewValueSlice()
-	assert.NoError(t, expectedSlice.Slice().FromRaw([]any{"a"}))
+	require.NoError(t, expectedSlice.Slice().FromRaw([]any{"a"}))
 	singleIntGetter := ottl.NewTestingOptional[ottl.Getter[any]](ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return expectedInt, nil
 		},
 	})
@@ -619,13 +620,13 @@ func TestTargetType(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			target := &ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return tc.TargetValue, nil
 				},
-				Setter: func(_ context.Context, res any, val any) error {
+				Setter: func(_ context.Context, res, val any) error {
 					rSlice := res.(pcommon.Slice)
 					vSlice := val.(pcommon.Slice)
-					assert.NoError(t, rSlice.FromRaw(vSlice.AsRaw()))
+					require.NoError(t, rSlice.FromRaw(vSlice.AsRaw()))
 
 					return nil
 				},
@@ -633,15 +634,15 @@ func TestTargetType(t *testing.T) {
 
 			var nilSlice ottl.Optional[[]ottl.Getter[any]]
 			exprFunc, err := appendTo[any](target, singleIntGetter, nilSlice)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			res := pcommon.NewSlice()
-			result, err := exprFunc(context.Background(), res)
+			result, err := exprFunc(t.Context(), res)
 
 			if tc.expectedError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Nil(t, result)
 				assert.NotNil(t, res)
 
@@ -657,7 +658,7 @@ func Test_ArgumentsArePresent(t *testing.T) {
 	var nilOptional ottl.Optional[ottl.Getter[any]]
 	var nilSliceOptional ottl.Optional[[]ottl.Getter[any]]
 	singleGetter := ottl.NewTestingOptional[ottl.Getter[any]](ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return "val", nil
 		},
 	})
@@ -665,12 +666,12 @@ func Test_ArgumentsArePresent(t *testing.T) {
 	multiGetter := ottl.NewTestingOptional[[]ottl.Getter[any]](
 		[]ottl.Getter[any]{
 			ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "val1", nil
 				},
 			},
 			ottl.StandardGetSetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "val2", nil
 				},
 			},

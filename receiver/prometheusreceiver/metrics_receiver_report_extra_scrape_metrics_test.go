@@ -4,7 +4,6 @@
 package prometheusreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
@@ -49,25 +49,25 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
 func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetrics bool) {
-	ctx := context.Background()
+	defer testutil.SetFeatureGateForTest(t, enableReportExtraScrapeMetricsGate, reportExtraScrapeMetrics)()
+
+	ctx := t.Context()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
-		PrometheusConfig:         cfg,
-		UseStartTimeMetric:       false,
-		StartTimeMetricRegex:     "",
-		ReportExtraScrapeMetrics: reportExtraScrapeMetrics,
+	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
+		PrometheusConfig: cfg,
 	}, cms)
+	require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	// verify state after shutdown is called
 	t.Cleanup(func() {
 		// verify state after shutdown is called
 		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-		require.NoError(t, receiver.Shutdown(context.Background()))
+		require.NoError(t, receiver.Shutdown(t.Context()))
 		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()), "expected scrape manager to have no targets")
 	})
 

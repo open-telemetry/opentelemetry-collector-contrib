@@ -150,6 +150,14 @@ func TestCompareLogs(t *testing.T) {
 			withoutOptions: errors.New(`resource "map[]": scope "": missing expected log record: map[Key1:Val2]; resource "map[]": scope "": unexpected log record: map[Key1:Val1]`),
 			withOptions:    nil,
 		},
+		{
+			name: "ignore-scope-version",
+			compareOptions: []CompareLogsOption{
+				IgnoreScopeLogsVersion(),
+			},
+			withoutOptions: errors.New(`resource "map[]": scope "collector": version doesn't match expected: v0.1.0, actual: v0.2.0`),
+			withOptions:    nil,
+		},
 	}
 
 	for _, tc := range tcs {

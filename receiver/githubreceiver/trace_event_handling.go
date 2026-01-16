@@ -9,16 +9,17 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v81/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
-func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent) (ptrace.Traces, error) {
+func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent, rawPayload []byte) (ptrace.Traces, error) {
 	t := ptrace.NewTraces()
 	r := t.ResourceSpans().AppendEmpty()
 
@@ -34,7 +35,7 @@ func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent) (
 		gtr.logger.Sugar().Error("failed to generate trace ID", zap.Error(err))
 	}
 
-	err = gtr.createRootSpan(r, e, traceID)
+	err = gtr.createRootSpan(r, e, traceID, rawPayload)
 	if err != nil {
 		gtr.logger.Sugar().Error("failed to create root span", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create root span")
@@ -45,7 +46,7 @@ func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent) (
 // handleWorkflowJob handles the creation of spans for a GitHub Workflow Job
 // events, including the underlying steps within each job. A `job` maps to the
 // semantic conventions for a `cicd.pipeline.task`.
-func (gtr *githubTracesReceiver) handleWorkflowJob(e *github.WorkflowJobEvent) (ptrace.Traces, error) {
+func (gtr *githubTracesReceiver) handleWorkflowJob(e *github.WorkflowJobEvent, rawPayload []byte) (ptrace.Traces, error) {
 	t := ptrace.NewTraces()
 	r := t.ResourceSpans().AppendEmpty()
 
@@ -61,7 +62,7 @@ func (gtr *githubTracesReceiver) handleWorkflowJob(e *github.WorkflowJobEvent) (
 		gtr.logger.Sugar().Error("failed to generate trace ID", zap.Error(err))
 	}
 
-	parentID, err := gtr.createParentSpan(r, e, traceID)
+	parentID, err := gtr.createParentSpan(r, e, traceID, rawPayload)
 	if err != nil {
 		gtr.logger.Sugar().Error("failed to create parent span", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create parent span")
@@ -120,12 +121,29 @@ func newParentSpanID(runID int64, runAttempt int) (pcommon.SpanID, error) {
 	return spanID, nil
 }
 
+// correctActionTimestamps ensures span timestamps are valid by checking that
+// the end time is not before the start time. When GitHub reports timestamps
+// in reverse order (which can occur with skipped jobs and steps), this function
+// returns corrected timestamps where both start and end are set to the later
+// timestamp, resulting in a zero-duration span.
+//
+// This prevents negative durations that would otherwise appear as excessively
+// long spans in telemetry systems.
+func correctActionTimestamps(start, end time.Time) (time.Time, time.Time) {
+	if end.Before(start) {
+		// Use the later timestamp (start) for both, creating zero-duration span
+		return start, start
+	}
+	return start, end
+}
+
 // createRootSpan creates a root span based on the provided event, associated
 // with the deterministic traceID.
 func (gtr *githubTracesReceiver) createRootSpan(
 	resourceSpans ptrace.ResourceSpans,
 	event *github.WorkflowRunEvent,
 	traceID pcommon.TraceID,
+	rawPayload []byte,
 ) error {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
@@ -139,8 +157,9 @@ func (gtr *githubTracesReceiver) createRootSpan(
 	span.SetSpanID(rootSpanID)
 	span.SetName(event.GetWorkflowRun().GetName())
 	span.SetKind(ptrace.SpanKindServer)
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowRun().GetRunStartedAt().Time))
-	span.SetEndTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowRun().GetUpdatedAt().Time))
+	startTime, endTime := correctActionTimestamps(event.GetWorkflowRun().GetRunStartedAt().Time, event.GetWorkflowRun().GetUpdatedAt().Time)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
 	switch strings.ToLower(event.WorkflowRun.GetConclusion()) {
 	case "success":
@@ -152,6 +171,14 @@ func (gtr *githubTracesReceiver) createRootSpan(
 	}
 
 	span.Status().SetMessage(event.GetWorkflowRun().GetConclusion())
+
+	// Attach raw event as span event if configured
+	if gtr.cfg.WebHook.IncludeSpanEvents {
+		spanEvent := span.Events().AppendEmpty()
+		spanEvent.SetName("github.workflow_run.event")
+		spanEvent.SetTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowRun().GetRunStartedAt().Time))
+		spanEvent.Attributes().PutStr("event.payload", string(rawPayload))
+	}
 
 	// Attempt to link to previous trace ID if applicable
 	if event.GetWorkflowRun().GetPreviousAttemptURL() != "" && event.GetWorkflowRun().GetRunAttempt() > 1 {
@@ -176,6 +203,7 @@ func (gtr *githubTracesReceiver) createParentSpan(
 	resourceSpans ptrace.ResourceSpans,
 	event *github.WorkflowJobEvent,
 	traceID pcommon.TraceID,
+	rawPayload []byte,
 ) (pcommon.SpanID, error) {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
@@ -194,10 +222,11 @@ func (gtr *githubTracesReceiver) createParentSpan(
 	span.SetParentSpanID(parentSpanID)
 	span.SetSpanID(jobSpanID)
 	span.SetName(event.GetWorkflowJob().GetName())
-	span.SetKind(ptrace.SpanKindServer)
+	span.SetKind(ptrace.SpanKindInternal)
 
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCreatedAt().Time))
-	span.SetEndTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCompletedAt().Time))
+	startTime, endTime := correctActionTimestamps(event.GetWorkflowJob().GetCreatedAt().Time, event.GetWorkflowJob().GetCompletedAt().Time)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
 	switch strings.ToLower(event.WorkflowJob.GetConclusion()) {
 	case "success":
@@ -209,6 +238,14 @@ func (gtr *githubTracesReceiver) createParentSpan(
 	}
 
 	span.Status().SetMessage(event.GetWorkflowJob().GetConclusion())
+
+	// Attach raw event as span event if configured
+	if gtr.cfg.WebHook.IncludeSpanEvents {
+		spanEvent := span.Events().AppendEmpty()
+		spanEvent.SetName("github.workflow_job.event")
+		spanEvent.SetTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCreatedAt().Time))
+		spanEvent.Attributes().PutStr("event.payload", string(rawPayload))
+	}
 
 	return jobSpanID, nil
 }
@@ -287,7 +324,7 @@ func newUniqueSteps(steps []*github.TaskStep) []string {
 
 // createStepSpan creates a span with a deterministic spandID for the provided
 // step.
-func (gtr *githubTracesReceiver) createStepSpan(
+func (*githubTracesReceiver) createStepSpan(
 	resourceSpans ptrace.ResourceSpans,
 	traceID pcommon.TraceID,
 	parentSpanID pcommon.SpanID,
@@ -298,7 +335,7 @@ func (gtr *githubTracesReceiver) createStepSpan(
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 	span.SetName(name)
-	span.SetKind(ptrace.SpanKindServer)
+	span.SetKind(ptrace.SpanKindInternal)
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
 
@@ -315,10 +352,11 @@ func (gtr *githubTracesReceiver) createStepSpan(
 	span.SetSpanID(spanID)
 
 	attrs := span.Attributes()
-	attrs.PutStr(semconv.AttributeCicdPipelineTaskName, name)
+	attrs.PutStr(string(conventions.CICDPipelineTaskNameKey), name)
 	attrs.PutStr(AttributeCICDPipelineTaskRunStatus, step.GetStatus())
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(step.GetStartedAt().Time))
-	span.SetEndTimestamp(pcommon.NewTimestampFromTime(step.GetCompletedAt().Time))
+	startTime, endTime := correctActionTimestamps(step.GetStartedAt().Time, step.GetCompletedAt().Time)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
 	switch strings.ToLower(step.GetConclusion()) {
 	case "success":
@@ -344,7 +382,7 @@ func (gtr *githubTracesReceiver) createStepSpan(
 
 // newStepSpanID creates a deterministic Step Span ID based on the provided
 // inputs.
-func newStepSpanID(runID int64, runAttempt int, jobName string, stepName string, number int) (pcommon.SpanID, error) {
+func newStepSpanID(runID int64, runAttempt int, jobName, stepName string, number int) (pcommon.SpanID, error) {
 	input := fmt.Sprintf("%d%d%s%s%d", runID, runAttempt, jobName, stepName, number)
 	hash := sha256.Sum256([]byte(input))
 	spanIDHex := hex.EncodeToString(hash[:])
@@ -360,7 +398,7 @@ func newStepSpanID(runID int64, runAttempt int, jobName string, stepName string,
 
 // createJobQueueSpan creates a span for the job queue based on the provided
 // event by using the delta between the job created and completed times.
-func (gtr *githubTracesReceiver) createJobQueueSpan(
+func (*githubTracesReceiver) createJobQueueSpan(
 	resourceSpans ptrace.ResourceSpans,
 	event *github.WorkflowJobEvent,
 	traceID pcommon.TraceID,
@@ -372,7 +410,7 @@ func (gtr *githubTracesReceiver) createJobQueueSpan(
 	spanName := fmt.Sprintf("queue-%s", jobName)
 
 	span.SetName(spanName)
-	span.SetKind(ptrace.SpanKindServer)
+	span.SetKind(ptrace.SpanKindInternal)
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
 
@@ -385,13 +423,14 @@ func (gtr *githubTracesReceiver) createJobQueueSpan(
 
 	span.SetSpanID(spanID)
 
-	time := event.GetWorkflowJob().GetStartedAt().Sub(event.GetWorkflowJob().GetCreatedAt().Time)
+	createdTime, startedTime := correctActionTimestamps(event.GetWorkflowJob().GetCreatedAt().Time, event.GetWorkflowJob().GetStartedAt().Time)
+	duration := startedTime.Sub(createdTime)
+
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(createdTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(startedTime))
 
 	attrs := span.Attributes()
-	attrs.PutDouble(AttributeCICDPipelineRunQueueDuration, float64(time.Nanoseconds()))
-
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCreatedAt().Time))
-	span.SetEndTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetStartedAt().Time))
+	attrs.PutDouble(AttributeCICDPipelineRunQueueDuration, float64(duration.Nanoseconds()))
 
 	return spanID, nil
 }

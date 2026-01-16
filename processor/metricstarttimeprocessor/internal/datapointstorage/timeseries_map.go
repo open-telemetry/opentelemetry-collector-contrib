@@ -19,10 +19,80 @@ type AttributeHash [16]byte
 type TimeseriesInfo struct {
 	Mark bool
 
-	Number               pmetric.NumberDataPoint
-	Histogram            pmetric.HistogramDataPoint
-	ExponentialHistogram pmetric.ExponentialHistogramDataPoint
-	Summary              pmetric.SummaryDataPoint
+	Number               NumberInfo
+	Histogram            HistogramInfo
+	ExponentialHistogram ExponentialHistogramInfo
+	Summary              SummaryInfo
+}
+
+type NumberInfo struct {
+	StartTime           pcommon.Timestamp
+	PreviousDoubleValue float64
+	PreviousIntValue    int64
+
+	// These are the optional reference values for strategies that need to cache
+	// additional data from the initial points.
+	// For example - storing the initial point for the subtract_initial_point strategy.
+	RefDoubleValue float64
+	RefIntValue    int64
+}
+
+type HistogramInfo struct {
+	StartTime            pcommon.Timestamp
+	PreviousCount        uint64
+	PreviousSum          float64
+	PreviousBucketCounts []uint64
+	ExplicitBounds       []float64
+
+	// These are the optional reference values for strategies that need to cache
+	// additional data from the initial points.
+	// For example - storing the initial point for the subtract_initial_point strategy.
+	RefCount        uint64
+	RefSum          float64
+	RefBucketCounts []uint64
+}
+
+type ExponentialHistogramInfo struct {
+	StartTime         pcommon.Timestamp
+	PreviousCount     uint64
+	PreviousSum       float64
+	PreviousZeroCount uint64
+	Scale             int32
+	PreviousPositive  ExponentialHistogramBucketInfo
+	PreviousNegative  ExponentialHistogramBucketInfo
+
+	// These are the optional reference values for strategies that need to cache
+	// additional data from the initial points.
+	// For example - storing the initial point for the subtract_initial_point strategy.
+	RefCount     uint64
+	RefSum       float64
+	RefZeroCount uint64
+	RefPositive  ExponentialHistogramBucketInfo
+	RefNegative  ExponentialHistogramBucketInfo
+}
+
+type ExponentialHistogramBucketInfo struct {
+	Offset       int32
+	BucketCounts []uint64
+}
+
+func NewExponentialHistogramBucketInfo(ehdpb pmetric.ExponentialHistogramDataPointBuckets) ExponentialHistogramBucketInfo {
+	return ExponentialHistogramBucketInfo{
+		Offset:       ehdpb.Offset(),
+		BucketCounts: ehdpb.BucketCounts().AsRaw(),
+	}
+}
+
+type SummaryInfo struct {
+	StartTime     pcommon.Timestamp
+	PreviousCount uint64
+	PreviousSum   float64
+
+	// These are the optional reference values for strategies that need to cache
+	// additional data from the initial points.
+	// For example - storing the initial point for the subtract_initial_point strategy.
+	RefCount uint64
+	RefSum   float64
 }
 
 type TimeseriesKey struct {
@@ -49,7 +119,7 @@ func (tsm *TimeseriesMap) Get(metric pmetric.Metric, kv pcommon.Map) (*Timeserie
 	name := metric.Name()
 	key := TimeseriesKey{
 		Name:       name,
-		Attributes: getAttributesSignature(kv),
+		Attributes: pdatautil.MapHash(kv),
 	}
 	switch metric.Type() {
 	case pmetric.MetricTypeHistogram:
@@ -74,19 +144,6 @@ func (tsm *TimeseriesMap) Get(metric pmetric.Metric, kv pcommon.Map) (*Timeserie
 	return tsi, ok
 }
 
-// Create a unique string signature for attributes values sorted by attribute keys.
-func getAttributesSignature(m pcommon.Map) AttributeHash {
-	// TODO(#38621): Investigate whether we should treat empty labels differently.
-	clearedMap := pcommon.NewMap()
-	for k, attrValue := range m.All() {
-		value := attrValue.Str()
-		if value != "" {
-			clearedMap.PutStr(k, value)
-		}
-	}
-	return pdatautil.MapHash(clearedMap)
-}
-
 // Remove timeseries that have aged out.
 func (tsm *TimeseriesMap) GC() {
 	tsm.Lock()
@@ -101,20 +158,20 @@ func (tsm *TimeseriesMap) GC() {
 	tsm.Mark = false
 }
 
-// IsResetHistogram compares the given histogram datapoint h, to tsi.Histogram
+// IsResetHistogram compares the given histogram datapoint h, to ref
 // and determines whether the metric has been reset based on the values.  It is
 // a reset if any of the bucket boundaries have changed, if any of the bucket
 // counts have decreased or if the total sum or count have decreased.
-func (tsi *TimeseriesInfo) IsResetHistogram(h pmetric.HistogramDataPoint) bool {
-	if h.Count() < tsi.Histogram.Count() {
+func (ref *TimeseriesInfo) IsResetHistogram(h pmetric.HistogramDataPoint) bool {
+	if h.Count() < ref.Histogram.PreviousCount {
 		return true
 	}
-	if h.Sum() < tsi.Histogram.Sum() {
+	if h.Sum() < ref.Histogram.PreviousSum {
 		return true
 	}
 
 	// Guard against bucket boundaries changes.
-	refBounds := tsi.Histogram.ExplicitBounds().AsRaw()
+	refBounds := ref.Histogram.ExplicitBounds
 	hBounds := h.ExplicitBounds().AsRaw()
 	if len(refBounds) != len(hBounds) {
 		return true
@@ -126,11 +183,11 @@ func (tsi *TimeseriesInfo) IsResetHistogram(h pmetric.HistogramDataPoint) bool {
 	}
 
 	// We need to check individual buckets to make sure the counts are all increasing.
-	if tsi.Histogram.BucketCounts().Len() != h.BucketCounts().Len() {
+	if len(ref.Histogram.PreviousBucketCounts) != h.BucketCounts().Len() {
 		return true
 	}
-	for i := range tsi.Histogram.BucketCounts().Len() {
-		if h.BucketCounts().At(i) < tsi.Histogram.BucketCounts().At(i) {
+	for i := range len(ref.Histogram.PreviousBucketCounts) {
+		if h.BucketCounts().At(i) < ref.Histogram.PreviousBucketCounts[i] {
 			return true
 		}
 	}
@@ -138,38 +195,41 @@ func (tsi *TimeseriesInfo) IsResetHistogram(h pmetric.HistogramDataPoint) bool {
 }
 
 // IsResetExponentialHistogram compares the given exponential histogram
-// datapoint eh, to tsi.ExponentialHistogram and determines whether the metric
+// datapoint eh, to ref and determines whether the metric
 // has been reset based on the values.  It is a reset if any of the bucket
 // boundaries have changed, if any of the bucket counts have decreased or if the
 // total sum or count have decreased.
-func (tsi *TimeseriesInfo) IsResetExponentialHistogram(eh pmetric.ExponentialHistogramDataPoint) bool {
+func (ref *TimeseriesInfo) IsResetExponentialHistogram(eh pmetric.ExponentialHistogramDataPoint) bool {
 	// Same as the histogram implementation
-	if eh.Count() < tsi.ExponentialHistogram.Count() {
+	if eh.Count() < ref.ExponentialHistogram.PreviousCount {
 		return true
 	}
-	if eh.Sum() < tsi.ExponentialHistogram.Sum() {
+	if eh.Sum() < ref.ExponentialHistogram.PreviousSum {
+		return true
+	}
+	if eh.ZeroCount() < ref.ExponentialHistogram.PreviousZeroCount {
 		return true
 	}
 
 	// Guard against bucket boundaries changes.
-	if tsi.ExponentialHistogram.Scale() != eh.Scale() {
+	if ref.ExponentialHistogram.Scale != eh.Scale() {
 		return true
 	}
 
 	// We need to check individual buckets to make sure the counts are all increasing.
-	if tsi.ExponentialHistogram.Positive().BucketCounts().Len() != eh.Positive().BucketCounts().Len() {
+	if len(ref.ExponentialHistogram.PreviousPositive.BucketCounts) != eh.Positive().BucketCounts().Len() {
 		return true
 	}
-	for i := range tsi.ExponentialHistogram.Positive().BucketCounts().Len() {
-		if eh.Positive().BucketCounts().At(i) < tsi.ExponentialHistogram.Positive().BucketCounts().At(i) {
+	for i := range len(ref.ExponentialHistogram.PreviousPositive.BucketCounts) {
+		if eh.Positive().BucketCounts().At(i) < ref.ExponentialHistogram.PreviousPositive.BucketCounts[i] {
 			return true
 		}
 	}
-	if tsi.ExponentialHistogram.Negative().BucketCounts().Len() != eh.Negative().BucketCounts().Len() {
+	if len(ref.ExponentialHistogram.PreviousNegative.BucketCounts) != eh.Negative().BucketCounts().Len() {
 		return true
 	}
-	for i := range tsi.ExponentialHistogram.Negative().BucketCounts().Len() {
-		if eh.Negative().BucketCounts().At(i) < tsi.ExponentialHistogram.Negative().BucketCounts().At(i) {
+	for i := range len(ref.ExponentialHistogram.PreviousNegative.BucketCounts) {
+		if eh.Negative().BucketCounts().At(i) < ref.ExponentialHistogram.PreviousNegative.BucketCounts[i] {
 			return true
 		}
 	}
@@ -177,18 +237,18 @@ func (tsi *TimeseriesInfo) IsResetExponentialHistogram(eh pmetric.ExponentialHis
 	return false
 }
 
-// IsResetSummary compares the given summary datapoint s to tsi.Summary and
+// IsResetSummary compares the given summary datapoint s to ref and
 // determines whether the metric has been reset based on the values.  It is a
 // reset if the count or sum has decreased.
-func (tsi *TimeseriesInfo) IsResetSummary(s pmetric.SummaryDataPoint) bool {
-	return s.Count() < tsi.Summary.Count() || s.Sum() < tsi.Summary.Sum()
+func (ref *TimeseriesInfo) IsResetSummary(s pmetric.SummaryDataPoint) bool {
+	return s.Count() < ref.Summary.PreviousCount || s.Sum() < ref.Summary.PreviousSum
 }
 
-// IsResetSum compares the given number datapoint s to tsi.Number and determines
+// IsResetSum compares the given number datapoint s to ref and determines
 // whether the metric has been reset based on the values.  It is a reset if the
 // value has decreased.
-func (tsi *TimeseriesInfo) IsResetSum(s pmetric.NumberDataPoint) bool {
-	return s.DoubleValue() < tsi.Number.DoubleValue()
+func (ref *TimeseriesInfo) IsResetSum(s pmetric.NumberDataPoint) bool {
+	return s.DoubleValue() < ref.Number.PreviousDoubleValue || s.IntValue() < ref.Number.PreviousIntValue
 }
 
 func newTimeseriesMap() *TimeseriesMap {

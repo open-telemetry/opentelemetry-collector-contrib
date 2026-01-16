@@ -37,7 +37,7 @@ func (s *cpuScraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization 
 	s.mb.RecordSystemCPUUtilizationDataPoint(now, cpuUtilization.Iowait, cpuUtilization.CPU, metadata.AttributeStateWait)
 }
 
-func (s *cpuScraper) getCPUInfo() ([]cpuInfo, error) {
+func (*cpuScraper) getCPUInfo() ([]cpuInfo, error) {
 	var cpuInfos []cpuInfo
 	fs, err := procfs.NewDefaultFS()
 	if err != nil {
@@ -47,7 +47,8 @@ func (s *cpuScraper) getCPUInfo() ([]cpuInfo, error) {
 	if err != nil {
 		return nil, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
-	for _, cInfo := range cInf {
+	for i := range cInf {
+		cInfo := &cInf[i]
 		c := cpuInfo{
 			frequency: cInfo.CPUMHz,
 			processor: cInfo.Processor,

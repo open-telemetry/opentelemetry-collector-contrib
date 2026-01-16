@@ -56,6 +56,13 @@ func (rb *ResourceBuilder) SetCloudAccountID(val string) {
 	}
 }
 
+// SetCloudAvailabilityZone sets provided value as "cloud.availability_zone" attribute.
+func (rb *ResourceBuilder) SetCloudAvailabilityZone(val string) {
+	if rb.config.CloudAvailabilityZone.Enabled {
+		rb.res.Attributes().PutStr("cloud.availability_zone", val)
+	}
+}
+
 // SetCloudPlatform sets provided value as "cloud.platform" attribute.
 func (rb *ResourceBuilder) SetCloudPlatform(val string) {
 	if rb.config.CloudPlatform.Enabled {

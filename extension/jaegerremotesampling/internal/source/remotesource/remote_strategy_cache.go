@@ -120,14 +120,14 @@ func (c *serviceStrategyTTLCache) staleItem(ctx context.Context, item serviceStr
 
 type noopStrategyCache struct{}
 
-func (n *noopStrategyCache) get(_ context.Context, _ string) (*api_v2.SamplingStrategyResponse, bool) {
+func (*noopStrategyCache) get(context.Context, string) (*api_v2.SamplingStrategyResponse, bool) {
 	return nil, false
 }
 
-func (n *noopStrategyCache) put(_ context.Context, _ string, _ *api_v2.SamplingStrategyResponse) {
+func (*noopStrategyCache) put(context.Context, string, *api_v2.SamplingStrategyResponse) {
 }
 
-func (n *noopStrategyCache) Close() error {
+func (*noopStrategyCache) Close() error {
 	return nil
 }
 

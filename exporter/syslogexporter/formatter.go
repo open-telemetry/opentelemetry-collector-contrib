@@ -20,7 +20,7 @@ type formatter interface {
 
 // getAttributeValueOrDefault returns the value of the requested log record's attribute as a string.
 // If the attribute was not found, it returns the provided default value.
-func getAttributeValueOrDefault(logRecord plog.LogRecord, attributeName string, defaultValue string) string {
+func getAttributeValueOrDefault(logRecord plog.LogRecord, attributeName, defaultValue string) string {
 	value := defaultValue
 	if attributeValue, found := logRecord.Attributes().Get(attributeName); found {
 		value = attributeValue.AsString()

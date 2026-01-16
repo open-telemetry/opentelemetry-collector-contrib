@@ -26,7 +26,6 @@ components:
         - azuredataexplorer
         - azuremonitor
         - bmchelix
-        - carbon
         - cassandra
         - clickhouse
         - coralogix
@@ -34,9 +33,11 @@ components:
         - dataset
         - doris
         - elasticsearch
+        - faro
         - file
         - googlecloud
         - googlecloudpubsub
+        - googlecloudstorage
         - googlemanagedprometheus
         - honeycombmarker
         - influxdb
@@ -44,9 +45,7 @@ components:
         - loadbalancing
         - logicmonitor
         - logzio
-        - loki
         - mezmo
-        - opencensus
         - opensearch
         - otelarrow
         - prometheus
@@ -61,34 +60,45 @@ components:
         - sumologic
         - syslog
         - tencentcloud_logservice
+        - tinybird
         - zipkin
     extension:
         - ack
         - asapclient
         - awscloudwatchmetricstreams_encoding
+        - awslogs_encoding
         - awsproxy
         - azureauth
         - basicauth
         - bearertokenauth
         - cgroupruntime
+        - datadog
         - db_storage
         - docker_observer
         - ecs_observer
-        - ecs_task_observer
         - file_storage
+        - googleclientauth
+        - googlecloudlogentry_encoding
         - headers_setter
         - health_check
         - host_observer
         - http_forwarder
+        - jaeger_encoding
         - jaegerremotesampling
+        - json_log_encoding
+        - k8s_leader_elector
         - k8s_observer
         - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp
+        - otlp_encoding
         - pprof
         - redis_storage
         - sigv4auth
+        - skywalking_encoding
+        - text_encoding
+        - zipkin_encoding
     processor:
         - attributes
         - cumulativetodelta
@@ -100,22 +110,25 @@ components:
         - groupbyattrs
         - groupbytrace
         - interval
+        - isolationforest
         - k8sattributes
         - logdedup
         - metricsgeneration
+        - metricstarttime
         - metricstransform
         - probabilistic_sampler
         - redaction
         - remotetap
         - resource
         - resourcedetection
-        - routing
         - span
         - sumologic
         - tail_sampling
         - transform
+        - unroll
     provider:
         - aes
+        - googlesecretmanager
         - s3
         - secretsmanager
     receiver:
@@ -144,11 +157,13 @@ components:
         - elasticsearch
         - envoyals
         - expvar
+        - faro
         - filelog
         - filestats
         - flinkmetrics
         - fluentforward
         - github
+        - gitlab
         - googlecloudmonitoring
         - googlecloudpubsub
         - googlecloudspanner
@@ -168,6 +183,7 @@ components:
         - kubeletstats
         - libhoney
         - loki
+        - macosunifiedlogging
         - memcached
         - mongodb
         - mongodbatlas
@@ -177,7 +193,6 @@ components:
         - nginx
         - nsxt
         - ntp
-        - opencensus
         - oracledb
         - otelarrow
         - otlpjsonfile
@@ -185,6 +200,7 @@ components:
         - postgresql
         - prometheus
         - prometheus_simple
+        - prometheusremotewrite
         - pulsar
         - purefa
         - purefb
@@ -192,7 +208,7 @@ components:
         - receiver_creator
         - redis
         - riak
-        - sapm
+        - saphana
         - signalfx
         - skywalking
         - snmp
@@ -204,7 +220,9 @@ components:
         - sqlserver
         - sshcheck
         - statsd
+        - stef
         - syslog
+        - systemd
         - tcpcheck
         - tcplog
         - tlscheck
@@ -224,6 +242,7 @@ components:
         - load
         - memory
         - network
+        - nfs
         - paging
         - process
         - processes

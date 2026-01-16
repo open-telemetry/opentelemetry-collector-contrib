@@ -51,7 +51,7 @@ type ebsVolume struct {
 
 type ebsVolumeOption func(*ebsVolume)
 
-func newEBSVolume(ctx context.Context, cfg aws.Config, instanceID string, region string,
+func newEBSVolume(ctx context.Context, cfg aws.Config, instanceID, region string,
 	refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption,
 ) ebsVolumeProvider {
 	cfg.Region = region
@@ -102,7 +102,8 @@ func (e *ebsVolume) refresh(ctx context.Context) {
 			e.logger.Warn("Fail to call ec2 DescribeVolumes", zap.Error(err))
 			break
 		}
-		for _, volume := range result.Volumes {
+		for i := range result.Volumes {
+			volume := result.Volumes[i]
 			for _, attachment := range volume.Attachments {
 				devPath := e.addEBSVolumeMapping(volume.AvailabilityZone, attachment)
 				devPathSet[devPath] = true

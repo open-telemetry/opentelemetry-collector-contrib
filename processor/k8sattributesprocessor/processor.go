@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -48,7 +48,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil, kp.waitForMetadata, kp.waitForMetadataTimeout)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout)
 		if err != nil {
 			return err
 		}
@@ -144,7 +144,9 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
-			setResourceAttribute(resource.Attributes(), kube.K8sIPLabelName, podIdentifierValue[i].Value)
+			if kp.passthroughMode || kp.rules.PodIP {
+				setResourceAttribute(resource.Attributes(), kube.K8sIPLabelName, podIdentifierValue[i].Value)
+			}
 			break
 		}
 	}
@@ -162,6 +164,8 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 				setResourceAttribute(resource.Attributes(), key, val)
 			}
 			kp.addContainerAttributes(resource.Attributes(), pod)
+		} else {
+			kp.logger.Debug("unable to find pod based on identifier", zap.Any("value", podIdentifierValue))
 		}
 	}
 
@@ -170,6 +174,10 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		attrsToAdd := kp.getAttributesForPodsNamespace(namespace)
 		for key, val := range attrsToAdd {
 			setResourceAttribute(resource.Attributes(), key, val)
+		}
+
+		if kp.rules.ServiceNamespace {
+			setResourceAttribute(resource.Attributes(), string(conventions.ServiceNamespaceKey), namespace)
 		}
 	}
 
@@ -181,12 +189,44 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 		nodeUID := kp.getUIDForPodsNode(nodeName)
 		if nodeUID != "" {
-			setResourceAttribute(resource.Attributes(), conventions.AttributeK8SNodeUID, nodeUID)
+			setResourceAttribute(resource.Attributes(), string(conventions.K8SNodeUIDKey), nodeUID)
+		}
+	}
+
+	deployment := getDeploymentUID(pod, resource.Attributes())
+	if deployment != "" {
+		attrsToAdd := kp.getAttributesForPodsDeployment(deployment)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
+
+	statefulset := getStatefulSetUID(pod, resource.Attributes())
+	if statefulset != "" {
+		attrsToAdd := kp.getAttributesForPodsStatefulSet(statefulset)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
+
+	daemonset := getDaemonSetUID(pod, resource.Attributes())
+	if daemonset != "" {
+		attrsToAdd := kp.getAttributesForPodsDaemonSet(daemonset)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
+
+	job := getJobUID(pod, resource.Attributes())
+	if job != "" {
+		attrsToAdd := kp.getAttributesForPodsJob(job)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
 		}
 	}
 }
 
-func setResourceAttribute(attributes pcommon.Map, key string, val string) {
+func setResourceAttribute(attributes pcommon.Map, key, val string) {
 	attr, found := attributes.Get(key)
 	if !found || attr.AsString() == "" {
 		attributes.PutStr(key, val)
@@ -197,20 +237,48 @@ func getNamespace(pod *kube.Pod, resAttrs pcommon.Map) string {
 	if pod != nil && pod.Namespace != "" {
 		return pod.Namespace
 	}
-	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SNamespaceName)
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SNamespaceNameKey))
 }
 
 func getNodeName(pod *kube.Pod, resAttrs pcommon.Map) string {
 	if pod != nil && pod.NodeName != "" {
 		return pod.NodeName
 	}
-	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SNodeName)
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SNodeNameKey))
+}
+
+func getDeploymentUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.DeploymentUID != "" {
+		return pod.DeploymentUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SDeploymentUIDKey))
+}
+
+func getStatefulSetUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.StatefulSetUID != "" {
+		return pod.StatefulSetUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SStatefulSetUIDKey))
+}
+
+func getDaemonSetUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.DaemonSetUID != "" {
+		return pod.DaemonSetUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SDaemonSetUIDKey))
+}
+
+func getJobUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.JobUID != "" {
+		return pod.JobUID
+	}
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SJobUIDKey))
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
 func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *kube.Pod) {
-	containerName := stringAttributeFromMap(attrs, conventions.AttributeK8SContainerName)
-	containerID := stringAttributeFromMap(attrs, conventions.AttributeContainerID)
+	containerName := stringAttributeFromMap(attrs, string(conventions.K8SContainerNameKey))
+	containerID := stringAttributeFromMap(attrs, string(conventions.ContainerIDKey))
 	var (
 		containerSpec *kube.Container
 		ok            bool
@@ -239,17 +307,23 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		return
 	}
 	if containerSpec.Name != "" {
-		setResourceAttribute(attrs, conventions.AttributeK8SContainerName, containerSpec.Name)
+		setResourceAttribute(attrs, string(conventions.K8SContainerNameKey), containerSpec.Name)
 	}
 	if containerSpec.ImageName != "" {
-		setResourceAttribute(attrs, conventions.AttributeContainerImageName, containerSpec.ImageName)
+		setResourceAttribute(attrs, string(conventions.ContainerImageNameKey), containerSpec.ImageName)
 	}
 	if containerSpec.ImageTag != "" {
-		setResourceAttribute(attrs, conventions.AttributeContainerImageTag, containerSpec.ImageTag)
+		setResourceAttribute(attrs, containerImageTag, containerSpec.ImageTag)
+	}
+	if containerSpec.ServiceInstanceID != "" {
+		setResourceAttribute(attrs, string(conventions.ServiceInstanceIDKey), containerSpec.ServiceInstanceID)
+	}
+	if containerSpec.ServiceVersion != "" {
+		setResourceAttribute(attrs, string(conventions.ServiceVersionKey), containerSpec.ServiceVersion)
 	}
 	// attempt to get container ID from restart count
 	runID := -1
-	runIDAttr, ok := attrs.Get(conventions.AttributeK8SContainerRestartCount)
+	runIDAttr, ok := attrs.Get(string(conventions.K8SContainerRestartCountKey))
 	if ok {
 		containerRunID, err := intFromAttribute(runIDAttr)
 		if err != nil {
@@ -267,11 +341,11 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 	}
 	if runID != -1 {
 		if containerStatus, ok := containerSpec.Statuses[runID]; ok {
-			if _, found := attrs.Get(conventions.AttributeContainerID); !found && containerStatus.ContainerID != "" {
-				attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
+			if _, found := attrs.Get(string(conventions.ContainerIDKey)); !found && containerStatus.ContainerID != "" {
+				attrs.PutStr(string(conventions.ContainerIDKey), containerStatus.ContainerID)
 			}
-			if _, found := attrs.Get(containerImageRepoDigests); !found && containerStatus.ImageRepoDigest != "" {
-				attrs.PutEmptySlice(containerImageRepoDigests).AppendEmpty().SetStr(containerStatus.ImageRepoDigest)
+			if _, found := attrs.Get(string(conventions.ContainerImageRepoDigestsKey)); !found && containerStatus.ImageRepoDigest != "" {
+				attrs.PutEmptySlice(string(conventions.ContainerImageRepoDigestsKey)).AppendEmpty().SetStr(containerStatus.ImageRepoDigest)
 			}
 		}
 	}
@@ -293,6 +367,38 @@ func (kp *kubernetesprocessor) getAttributesForPodsNode(nodeName string) map[str
 	return node.Attributes
 }
 
+func (kp *kubernetesprocessor) getAttributesForPodsDeployment(deploymentUID string) map[string]string {
+	d, ok := kp.kc.GetDeployment(deploymentUID)
+	if !ok {
+		return nil
+	}
+	return d.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsStatefulSet(statefulsetUID string) map[string]string {
+	d, ok := kp.kc.GetStatefulSet(statefulsetUID)
+	if !ok {
+		return nil
+	}
+	return d.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsDaemonSet(daemonsetUID string) map[string]string {
+	d, ok := kp.kc.GetDaemonSet(daemonsetUID)
+	if !ok {
+		return nil
+	}
+	return d.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsJob(jobUID string) map[string]string {
+	j, ok := kp.kc.GetJob(jobUID)
+	if !ok {
+		return nil
+	}
+	return j.Attributes
+}
+
 func (kp *kubernetesprocessor) getUIDForPodsNode(nodeName string) string {
 	node, ok := kp.kc.GetNode(nodeName)
 	if !ok {
@@ -312,8 +418,6 @@ func intFromAttribute(val pcommon.Value) (int, error) {
 			return 0, err
 		}
 		return i, nil
-	case pcommon.ValueTypeEmpty, pcommon.ValueTypeDouble, pcommon.ValueTypeBool, pcommon.ValueTypeMap, pcommon.ValueTypeSlice, pcommon.ValueTypeBytes:
-		fallthrough
 	default:
 		return 0, fmt.Errorf("wrong attribute type %v, expected int", val.Type())
 	}

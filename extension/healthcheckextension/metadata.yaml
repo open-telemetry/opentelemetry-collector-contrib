@@ -3,10 +3,11 @@ type: health_check
 status:
   class: extension
   stability:
-    beta: [extension]
+    alpha: [extension]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: []
+    active: [evan-bradley]
+    seeking_new: true
 
 tests:
   config:

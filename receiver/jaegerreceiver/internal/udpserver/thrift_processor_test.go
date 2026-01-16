@@ -51,7 +51,7 @@ func createProcessor(t *testing.T, tFactory thrift.TProtocolFactory, handler Age
 	require.NoError(t, err)
 
 	go processor.Serve()
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		if processor.IsServing() {
 			break
 		}
@@ -89,7 +89,7 @@ func TestProcessor_HandlerError(t *testing.T) {
 	require.NoError(t, err)
 	defer clientCloser.Close()
 
-	err = client.EmitBatch(context.Background(), &jaeger.Batch{
+	err = client.EmitBatch(t.Context(), &jaeger.Batch{
 		Process: jaeger.NewProcess(),
 		Spans:   []*jaeger.Span{{OperationName: testSpanName}},
 	})
@@ -150,7 +150,7 @@ func TestJaegerProcessor(t *testing.T) {
 			require.NoError(t, err)
 			defer clientCloser.Close()
 
-			require.NoError(t, client.EmitBatch(context.Background(), batch))
+			require.NoError(t, client.EmitBatch(t.Context(), batch))
 			require.Eventually(t,
 				func() bool { return len(h.GetJaegerBatches()) == 1 },
 				5*time.Second,

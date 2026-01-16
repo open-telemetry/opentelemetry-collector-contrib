@@ -5,6 +5,7 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"io"
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -39,7 +40,7 @@ func newS3Client(ctx context.Context, cfg S3DownloaderConfig) (ListObjectsAPI, G
 	}
 	awsCfg, err := config.LoadDefaultConfig(ctx, optionsFuncs...)
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
+		log.Printf("unable to load SDK config: %v", err)
 		return nil, nil, err
 	}
 	s3OptionFuncs := make([]func(options *s3.Options), 0)
@@ -60,4 +61,22 @@ func newS3Client(ctx context.Context, cfg S3DownloaderConfig) (ListObjectsAPI, G
 
 func (api *s3ListObjectsAPIImpl) NewListObjectsV2Paginator(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
 	return s3.NewListObjectsV2Paginator(api.client, params)
+}
+
+// retrieveS3Object retrieves S3 object content for a given bucket and key
+func retrieveS3Object(ctx context.Context, client GetObjectAPI, bucket, key string) ([]byte, error) {
+	params := s3.GetObjectInput{
+		Bucket: &bucket,
+		Key:    &key,
+	}
+	output, err := client.GetObject(ctx, &params)
+	if err != nil {
+		return nil, err
+	}
+	defer output.Body.Close()
+	contents, err := io.ReadAll(output.Body)
+	if err != nil {
+		return nil, err
+	}
+	return contents, nil
 }

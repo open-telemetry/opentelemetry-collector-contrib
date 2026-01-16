@@ -10,8 +10,92 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 )
+
+// AttributeK8sContainerStatusReason specifies the value k8s.container.status.reason attribute.
+type AttributeK8sContainerStatusReason int
+
+const (
+	_ AttributeK8sContainerStatusReason = iota
+	AttributeK8sContainerStatusReasonContainerCreating
+	AttributeK8sContainerStatusReasonCrashLoopBackOff
+	AttributeK8sContainerStatusReasonCreateContainerConfigError
+	AttributeK8sContainerStatusReasonErrImagePull
+	AttributeK8sContainerStatusReasonImagePullBackOff
+	AttributeK8sContainerStatusReasonOOMKilled
+	AttributeK8sContainerStatusReasonCompleted
+	AttributeK8sContainerStatusReasonError
+	AttributeK8sContainerStatusReasonContainerCannotRun
+)
+
+// String returns the string representation of the AttributeK8sContainerStatusReason.
+func (av AttributeK8sContainerStatusReason) String() string {
+	switch av {
+	case AttributeK8sContainerStatusReasonContainerCreating:
+		return "ContainerCreating"
+	case AttributeK8sContainerStatusReasonCrashLoopBackOff:
+		return "CrashLoopBackOff"
+	case AttributeK8sContainerStatusReasonCreateContainerConfigError:
+		return "CreateContainerConfigError"
+	case AttributeK8sContainerStatusReasonErrImagePull:
+		return "ErrImagePull"
+	case AttributeK8sContainerStatusReasonImagePullBackOff:
+		return "ImagePullBackOff"
+	case AttributeK8sContainerStatusReasonOOMKilled:
+		return "OOMKilled"
+	case AttributeK8sContainerStatusReasonCompleted:
+		return "Completed"
+	case AttributeK8sContainerStatusReasonError:
+		return "Error"
+	case AttributeK8sContainerStatusReasonContainerCannotRun:
+		return "ContainerCannotRun"
+	}
+	return ""
+}
+
+// MapAttributeK8sContainerStatusReason is a helper map of string to AttributeK8sContainerStatusReason attribute value.
+var MapAttributeK8sContainerStatusReason = map[string]AttributeK8sContainerStatusReason{
+	"ContainerCreating":          AttributeK8sContainerStatusReasonContainerCreating,
+	"CrashLoopBackOff":           AttributeK8sContainerStatusReasonCrashLoopBackOff,
+	"CreateContainerConfigError": AttributeK8sContainerStatusReasonCreateContainerConfigError,
+	"ErrImagePull":               AttributeK8sContainerStatusReasonErrImagePull,
+	"ImagePullBackOff":           AttributeK8sContainerStatusReasonImagePullBackOff,
+	"OOMKilled":                  AttributeK8sContainerStatusReasonOOMKilled,
+	"Completed":                  AttributeK8sContainerStatusReasonCompleted,
+	"Error":                      AttributeK8sContainerStatusReasonError,
+	"ContainerCannotRun":         AttributeK8sContainerStatusReasonContainerCannotRun,
+}
+
+// AttributeK8sContainerStatusState specifies the value k8s.container.status.state attribute.
+type AttributeK8sContainerStatusState int
+
+const (
+	_ AttributeK8sContainerStatusState = iota
+	AttributeK8sContainerStatusStateTerminated
+	AttributeK8sContainerStatusStateRunning
+	AttributeK8sContainerStatusStateWaiting
+)
+
+// String returns the string representation of the AttributeK8sContainerStatusState.
+func (av AttributeK8sContainerStatusState) String() string {
+	switch av {
+	case AttributeK8sContainerStatusStateTerminated:
+		return "terminated"
+	case AttributeK8sContainerStatusStateRunning:
+		return "running"
+	case AttributeK8sContainerStatusStateWaiting:
+		return "waiting"
+	}
+	return ""
+}
+
+// MapAttributeK8sContainerStatusState is a helper map of string to AttributeK8sContainerStatusState attribute value.
+var MapAttributeK8sContainerStatusState = map[string]AttributeK8sContainerStatusState{
+	"terminated": AttributeK8sContainerStatusStateTerminated,
+	"running":    AttributeK8sContainerStatusStateRunning,
+	"waiting":    AttributeK8sContainerStatusStateWaiting,
+}
 
 var MetricsInfo = metricsInfo{
 	K8sContainerCPULimit: metricInfo{
@@ -37,6 +121,12 @@ var MetricsInfo = metricsInfo{
 	},
 	K8sContainerRestarts: metricInfo{
 		Name: "k8s.container.restarts",
+	},
+	K8sContainerStatusReason: metricInfo{
+		Name: "k8s.container.status.reason",
+	},
+	K8sContainerStatusState: metricInfo{
+		Name: "k8s.container.status.state",
 	},
 	K8sContainerStorageLimit: metricInfo{
 		Name: "k8s.container.storage_limit",
@@ -157,6 +247,8 @@ type metricsInfo struct {
 	K8sContainerMemoryRequest           metricInfo
 	K8sContainerReady                   metricInfo
 	K8sContainerRestarts                metricInfo
+	K8sContainerStatusReason            metricInfo
+	K8sContainerStatusState             metricInfo
 	K8sContainerStorageLimit            metricInfo
 	K8sContainerStorageRequest          metricInfo
 	K8sCronjobActiveJobs                metricInfo
@@ -241,6 +333,7 @@ func (m *metricK8sContainerCPULimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerCPULimit(cfg MetricConfig) metricK8sContainerCPULimit {
 	m := metricK8sContainerCPULimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -290,6 +383,7 @@ func (m *metricK8sContainerCPURequest) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerCPURequest(cfg MetricConfig) metricK8sContainerCPURequest {
 	m := metricK8sContainerCPURequest{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -339,6 +433,7 @@ func (m *metricK8sContainerEphemeralstorageLimit) emit(metrics pmetric.MetricSli
 
 func newMetricK8sContainerEphemeralstorageLimit(cfg MetricConfig) metricK8sContainerEphemeralstorageLimit {
 	m := metricK8sContainerEphemeralstorageLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -388,6 +483,7 @@ func (m *metricK8sContainerEphemeralstorageRequest) emit(metrics pmetric.MetricS
 
 func newMetricK8sContainerEphemeralstorageRequest(cfg MetricConfig) metricK8sContainerEphemeralstorageRequest {
 	m := metricK8sContainerEphemeralstorageRequest{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -437,6 +533,7 @@ func (m *metricK8sContainerMemoryLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerMemoryLimit(cfg MetricConfig) metricK8sContainerMemoryLimit {
 	m := metricK8sContainerMemoryLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -486,6 +583,7 @@ func (m *metricK8sContainerMemoryRequest) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerMemoryRequest(cfg MetricConfig) metricK8sContainerMemoryRequest {
 	m := metricK8sContainerMemoryRequest{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -535,6 +633,7 @@ func (m *metricK8sContainerReady) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerReady(cfg MetricConfig) metricK8sContainerReady {
 	m := metricK8sContainerReady{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -584,6 +683,115 @@ func (m *metricK8sContainerRestarts) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerRestarts(cfg MetricConfig) metricK8sContainerRestarts {
 	m := metricK8sContainerRestarts{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sContainerStatusReason struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.container.status.reason metric with initial data.
+func (m *metricK8sContainerStatusReason) init() {
+	m.data.SetName("k8s.container.status.reason")
+	m.data.SetDescription("Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a state for a given reason. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.")
+	m.data.SetUnit("{container}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sContainerStatusReason) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, k8sContainerStatusReasonAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("k8s.container.status.reason", k8sContainerStatusReasonAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sContainerStatusReason) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sContainerStatusReason) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sContainerStatusReason(cfg MetricConfig) metricK8sContainerStatusReason {
+	m := metricK8sContainerStatusReason{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sContainerStatusState struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.container.status.state metric with initial data.
+func (m *metricK8sContainerStatusState) init() {
+	m.data.SetName("k8s.container.status.state")
+	m.data.SetDescription("Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.")
+	m.data.SetUnit("{container}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sContainerStatusState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, k8sContainerStatusStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("k8s.container.status.state", k8sContainerStatusStateAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sContainerStatusState) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sContainerStatusState) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sContainerStatusState(cfg MetricConfig) metricK8sContainerStatusState {
+	m := metricK8sContainerStatusState{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -633,6 +841,7 @@ func (m *metricK8sContainerStorageLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerStorageLimit(cfg MetricConfig) metricK8sContainerStorageLimit {
 	m := metricK8sContainerStorageLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -682,6 +891,7 @@ func (m *metricK8sContainerStorageRequest) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sContainerStorageRequest(cfg MetricConfig) metricK8sContainerStorageRequest {
 	m := metricK8sContainerStorageRequest{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -731,6 +941,7 @@ func (m *metricK8sCronjobActiveJobs) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sCronjobActiveJobs(cfg MetricConfig) metricK8sCronjobActiveJobs {
 	m := metricK8sCronjobActiveJobs{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -780,6 +991,7 @@ func (m *metricK8sDaemonsetCurrentScheduledNodes) emit(metrics pmetric.MetricSli
 
 func newMetricK8sDaemonsetCurrentScheduledNodes(cfg MetricConfig) metricK8sDaemonsetCurrentScheduledNodes {
 	m := metricK8sDaemonsetCurrentScheduledNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -829,6 +1041,7 @@ func (m *metricK8sDaemonsetDesiredScheduledNodes) emit(metrics pmetric.MetricSli
 
 func newMetricK8sDaemonsetDesiredScheduledNodes(cfg MetricConfig) metricK8sDaemonsetDesiredScheduledNodes {
 	m := metricK8sDaemonsetDesiredScheduledNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -878,6 +1091,7 @@ func (m *metricK8sDaemonsetMisscheduledNodes) emit(metrics pmetric.MetricSlice) 
 
 func newMetricK8sDaemonsetMisscheduledNodes(cfg MetricConfig) metricK8sDaemonsetMisscheduledNodes {
 	m := metricK8sDaemonsetMisscheduledNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -927,6 +1141,7 @@ func (m *metricK8sDaemonsetReadyNodes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sDaemonsetReadyNodes(cfg MetricConfig) metricK8sDaemonsetReadyNodes {
 	m := metricK8sDaemonsetReadyNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -976,6 +1191,7 @@ func (m *metricK8sDeploymentAvailable) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sDeploymentAvailable(cfg MetricConfig) metricK8sDeploymentAvailable {
 	m := metricK8sDeploymentAvailable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1025,6 +1241,7 @@ func (m *metricK8sDeploymentDesired) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sDeploymentDesired(cfg MetricConfig) metricK8sDeploymentDesired {
 	m := metricK8sDeploymentDesired{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1074,6 +1291,7 @@ func (m *metricK8sHpaCurrentReplicas) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sHpaCurrentReplicas(cfg MetricConfig) metricK8sHpaCurrentReplicas {
 	m := metricK8sHpaCurrentReplicas{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1123,6 +1341,7 @@ func (m *metricK8sHpaDesiredReplicas) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sHpaDesiredReplicas(cfg MetricConfig) metricK8sHpaDesiredReplicas {
 	m := metricK8sHpaDesiredReplicas{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1172,6 +1391,7 @@ func (m *metricK8sHpaMaxReplicas) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sHpaMaxReplicas(cfg MetricConfig) metricK8sHpaMaxReplicas {
 	m := metricK8sHpaMaxReplicas{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1221,6 +1441,7 @@ func (m *metricK8sHpaMinReplicas) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sHpaMinReplicas(cfg MetricConfig) metricK8sHpaMinReplicas {
 	m := metricK8sHpaMinReplicas{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1270,6 +1491,7 @@ func (m *metricK8sJobActivePods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sJobActivePods(cfg MetricConfig) metricK8sJobActivePods {
 	m := metricK8sJobActivePods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1319,6 +1541,7 @@ func (m *metricK8sJobDesiredSuccessfulPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sJobDesiredSuccessfulPods(cfg MetricConfig) metricK8sJobDesiredSuccessfulPods {
 	m := metricK8sJobDesiredSuccessfulPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1368,6 +1591,7 @@ func (m *metricK8sJobFailedPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sJobFailedPods(cfg MetricConfig) metricK8sJobFailedPods {
 	m := metricK8sJobFailedPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1417,6 +1641,7 @@ func (m *metricK8sJobMaxParallelPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sJobMaxParallelPods(cfg MetricConfig) metricK8sJobMaxParallelPods {
 	m := metricK8sJobMaxParallelPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1466,6 +1691,7 @@ func (m *metricK8sJobSuccessfulPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sJobSuccessfulPods(cfg MetricConfig) metricK8sJobSuccessfulPods {
 	m := metricK8sJobSuccessfulPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1515,6 +1741,7 @@ func (m *metricK8sNamespacePhase) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNamespacePhase(cfg MetricConfig) metricK8sNamespacePhase {
 	m := metricK8sNamespacePhase{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1566,6 +1793,7 @@ func (m *metricK8sNodeCondition) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeCondition(cfg MetricConfig) metricK8sNodeCondition {
 	m := metricK8sNodeCondition{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1615,6 +1843,7 @@ func (m *metricK8sPodPhase) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sPodPhase(cfg MetricConfig) metricK8sPodPhase {
 	m := metricK8sPodPhase{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1664,6 +1893,7 @@ func (m *metricK8sPodStatusReason) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sPodStatusReason(cfg MetricConfig) metricK8sPodStatusReason {
 	m := metricK8sPodStatusReason{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1713,6 +1943,7 @@ func (m *metricK8sReplicasetAvailable) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sReplicasetAvailable(cfg MetricConfig) metricK8sReplicasetAvailable {
 	m := metricK8sReplicasetAvailable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1762,6 +1993,7 @@ func (m *metricK8sReplicasetDesired) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sReplicasetDesired(cfg MetricConfig) metricK8sReplicasetDesired {
 	m := metricK8sReplicasetDesired{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1811,6 +2043,7 @@ func (m *metricK8sReplicationControllerAvailable) emit(metrics pmetric.MetricSli
 
 func newMetricK8sReplicationControllerAvailable(cfg MetricConfig) metricK8sReplicationControllerAvailable {
 	m := metricK8sReplicationControllerAvailable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1860,6 +2093,7 @@ func (m *metricK8sReplicationControllerDesired) emit(metrics pmetric.MetricSlice
 
 func newMetricK8sReplicationControllerDesired(cfg MetricConfig) metricK8sReplicationControllerDesired {
 	m := metricK8sReplicationControllerDesired{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1911,6 +2145,7 @@ func (m *metricK8sResourceQuotaHardLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sResourceQuotaHardLimit(cfg MetricConfig) metricK8sResourceQuotaHardLimit {
 	m := metricK8sResourceQuotaHardLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1962,6 +2197,7 @@ func (m *metricK8sResourceQuotaUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sResourceQuotaUsed(cfg MetricConfig) metricK8sResourceQuotaUsed {
 	m := metricK8sResourceQuotaUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2011,6 +2247,7 @@ func (m *metricK8sStatefulsetCurrentPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sStatefulsetCurrentPods(cfg MetricConfig) metricK8sStatefulsetCurrentPods {
 	m := metricK8sStatefulsetCurrentPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2060,6 +2297,7 @@ func (m *metricK8sStatefulsetDesiredPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sStatefulsetDesiredPods(cfg MetricConfig) metricK8sStatefulsetDesiredPods {
 	m := metricK8sStatefulsetDesiredPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2109,6 +2347,7 @@ func (m *metricK8sStatefulsetReadyPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sStatefulsetReadyPods(cfg MetricConfig) metricK8sStatefulsetReadyPods {
 	m := metricK8sStatefulsetReadyPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2158,6 +2397,7 @@ func (m *metricK8sStatefulsetUpdatedPods) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sStatefulsetUpdatedPods(cfg MetricConfig) metricK8sStatefulsetUpdatedPods {
 	m := metricK8sStatefulsetUpdatedPods{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2210,6 +2450,7 @@ func (m *metricOpenshiftAppliedclusterquotaLimit) emit(metrics pmetric.MetricSli
 
 func newMetricOpenshiftAppliedclusterquotaLimit(cfg MetricConfig) metricOpenshiftAppliedclusterquotaLimit {
 	m := metricOpenshiftAppliedclusterquotaLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2262,6 +2503,7 @@ func (m *metricOpenshiftAppliedclusterquotaUsed) emit(metrics pmetric.MetricSlic
 
 func newMetricOpenshiftAppliedclusterquotaUsed(cfg MetricConfig) metricOpenshiftAppliedclusterquotaUsed {
 	m := metricOpenshiftAppliedclusterquotaUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2313,6 +2555,7 @@ func (m *metricOpenshiftClusterquotaLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOpenshiftClusterquotaLimit(cfg MetricConfig) metricOpenshiftClusterquotaLimit {
 	m := metricOpenshiftClusterquotaLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2364,6 +2607,7 @@ func (m *metricOpenshiftClusterquotaUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOpenshiftClusterquotaUsed(cfg MetricConfig) metricOpenshiftClusterquotaUsed {
 	m := metricOpenshiftClusterquotaUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2389,6 +2633,8 @@ type MetricsBuilder struct {
 	metricK8sContainerMemoryRequest           metricK8sContainerMemoryRequest
 	metricK8sContainerReady                   metricK8sContainerReady
 	metricK8sContainerRestarts                metricK8sContainerRestarts
+	metricK8sContainerStatusReason            metricK8sContainerStatusReason
+	metricK8sContainerStatusState             metricK8sContainerStatusState
 	metricK8sContainerStorageLimit            metricK8sContainerStorageLimit
 	metricK8sContainerStorageRequest          metricK8sContainerStorageRequest
 	metricK8sCronjobActiveJobs                metricK8sCronjobActiveJobs
@@ -2458,6 +2704,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sContainerMemoryRequest:           newMetricK8sContainerMemoryRequest(mbc.Metrics.K8sContainerMemoryRequest),
 		metricK8sContainerReady:                   newMetricK8sContainerReady(mbc.Metrics.K8sContainerReady),
 		metricK8sContainerRestarts:                newMetricK8sContainerRestarts(mbc.Metrics.K8sContainerRestarts),
+		metricK8sContainerStatusReason:            newMetricK8sContainerStatusReason(mbc.Metrics.K8sContainerStatusReason),
+		metricK8sContainerStatusState:             newMetricK8sContainerStatusState(mbc.Metrics.K8sContainerStatusState),
 		metricK8sContainerStorageLimit:            newMetricK8sContainerStorageLimit(mbc.Metrics.K8sContainerStorageLimit),
 		metricK8sContainerStorageRequest:          newMetricK8sContainerStorageRequest(mbc.Metrics.K8sContainerStorageRequest),
 		metricK8sCronjobActiveJobs:                newMetricK8sCronjobActiveJobs(mbc.Metrics.K8sCronjobActiveJobs),
@@ -2580,6 +2828,24 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.K8sHpaName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.hpa.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefApiversion.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.hpa.scaletargetref.apiversion"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefApiversion.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefApiversion.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.hpa.scaletargetref.apiversion"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefApiversion.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefKind.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.hpa.scaletargetref.kind"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefKind.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefKind.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.hpa.scaletargetref.kind"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefKind.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.hpa.scaletargetref.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sHpaScaletargetrefName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.hpa.scaletargetref.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaScaletargetrefName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sHpaUID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.hpa.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaUID.MetricsInclude)
@@ -2797,6 +3063,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sContainerMemoryRequest.emit(ils.Metrics())
 	mb.metricK8sContainerReady.emit(ils.Metrics())
 	mb.metricK8sContainerRestarts.emit(ils.Metrics())
+	mb.metricK8sContainerStatusReason.emit(ils.Metrics())
+	mb.metricK8sContainerStatusState.emit(ils.Metrics())
 	mb.metricK8sContainerStorageLimit.emit(ils.Metrics())
 	mb.metricK8sContainerStorageRequest.emit(ils.Metrics())
 	mb.metricK8sCronjobActiveJobs.emit(ils.Metrics())
@@ -2902,6 +3170,16 @@ func (mb *MetricsBuilder) RecordK8sContainerReadyDataPoint(ts pcommon.Timestamp,
 // RecordK8sContainerRestartsDataPoint adds a data point to k8s.container.restarts metric.
 func (mb *MetricsBuilder) RecordK8sContainerRestartsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerRestarts.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sContainerStatusReasonDataPoint adds a data point to k8s.container.status.reason metric.
+func (mb *MetricsBuilder) RecordK8sContainerStatusReasonDataPoint(ts pcommon.Timestamp, val int64, k8sContainerStatusReasonAttributeValue AttributeK8sContainerStatusReason) {
+	mb.metricK8sContainerStatusReason.recordDataPoint(mb.startTime, ts, val, k8sContainerStatusReasonAttributeValue.String())
+}
+
+// RecordK8sContainerStatusStateDataPoint adds a data point to k8s.container.status.state metric.
+func (mb *MetricsBuilder) RecordK8sContainerStatusStateDataPoint(ts pcommon.Timestamp, val int64, k8sContainerStatusStateAttributeValue AttributeK8sContainerStatusState) {
+	mb.metricK8sContainerStatusState.recordDataPoint(mb.startTime, ts, val, k8sContainerStatusStateAttributeValue.String())
 }
 
 // RecordK8sContainerStorageLimitDataPoint adds a data point to k8s.container.storage_limit metric.

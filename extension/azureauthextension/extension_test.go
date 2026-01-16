@@ -6,6 +6,7 @@ package azureauthextension
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -28,7 +29,7 @@ func TestGetToken(t *testing.T) {
 	auth := authenticator{
 		credential: &m,
 	}
-	_, err := auth.GetToken(context.Background(), policy.TokenRequestOptions{})
+	_, err := auth.GetToken(t.Context(), policy.TokenRequestOptions{})
 	require.NoError(t, err)
 }
 
@@ -131,7 +132,7 @@ func TestAuthenticate(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := auth.Authenticate(context.Background(), test.headers)
+			_, err := auth.Authenticate(t.Context(), test.headers)
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
 			} else {
@@ -148,18 +149,35 @@ func TestRoundTrip(t *testing.T) {
 		request     http.Request
 		expectedErr string
 	}{
-		"empty_headers": {
-			request:     http.Request{Header: nil},
-			expectedErr: "request headers are empty",
+		"empty_host_nil_url": {
+			request: http.Request{
+				Header: make(http.Header),
+			},
+			expectedErr: "unexpected nil request URL",
 		},
-		"missing_host_header": {
-			request:     http.Request{Header: map[string][]string{}},
-			expectedErr: `missing "host" header`,
+		"empty_host_empty_url_host": {
+			request: http.Request{
+				Header: make(http.Header),
+				URL:    &url.URL{},
+			},
+			expectedErr: "unexpected empty Host in request URL",
 		},
-		"valid_authorize": {
-			request: http.Request{Header: map[string][]string{
-				"Host": {"Test"},
-			}},
+		"valid_authorize_1": {
+			request: http.Request{
+				Header: make(http.Header),
+				URL: &url.URL{
+					Host: "test",
+				},
+			},
+		},
+		"valid_authorize_2": {
+			request: http.Request{
+				Header: make(http.Header),
+				Host:   "override",
+				URL: &url.URL{
+					Host: "test",
+				},
+			},
 		},
 	}
 
@@ -191,7 +209,7 @@ type mockTokenCredential struct {
 
 var _ azcore.TokenCredential = (*mockTokenCredential)(nil)
 
-func (m *mockTokenCredential) GetToken(_ context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
+func (m *mockTokenCredential) GetToken(context.Context, policy.TokenRequestOptions) (azcore.AccessToken, error) {
 	args := m.Called()
 	return args.Get(0).(azcore.AccessToken), args.Error(1)
 }

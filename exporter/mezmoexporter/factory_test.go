@@ -4,7 +4,6 @@
 package mezmoexporter
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -12,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -47,10 +46,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 			MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 			MaxConnsPerHost:     defaultMaxConnsPerHost,
 			IdleConnTimeout:     defaultIdleConnTimeout,
-			Headers:             map[string]configopaque.String{},
+			ForceAttemptHTTP2:   true,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
@@ -69,12 +68,12 @@ func TestCreateLogs(t *testing.T) {
 	cfg.IngestKey = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
-	_, err := createLogsExporter(context.Background(), params, cfg)
+	_, err := createLogsExporter(t.Context(), params, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateLogsNoConfig(t *testing.T) {
 	params := exportertest.NewNopSettings(metadata.Type)
-	_, err := createLogsExporter(context.Background(), params, nil)
+	_, err := createLogsExporter(t.Context(), params, nil)
 	assert.Error(t, err)
 }

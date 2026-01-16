@@ -4,7 +4,6 @@
 package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"regexp"
@@ -33,7 +32,7 @@ func Test_newClient(t *testing.T) {
 		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testTableName)))
 		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testTableName)))
 
-		_, err = newClient(context.Background(), zap.L(), db, driverPostgreSQL, testTableName)
+		_, err = newClient(t.Context(), zap.L(), db, driverPostgreSQL, testTableName)
 		assert.NoError(t, err)
 	})
 	t.Run("Should return client with Sqlite query(s)", func(t *testing.T) {
@@ -48,7 +47,7 @@ func Test_newClient(t *testing.T) {
 		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QuerySetRow, testTableName)))
 		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testTableName)))
 
-		_, err = newClient(context.Background(), zap.L(), db, driverSQLite, testTableName)
+		_, err = newClient(t.Context(), zap.L(), db, driverSQLite, testTableName)
 		assert.NoError(t, err)
 	})
 }
@@ -64,7 +63,7 @@ func Test_dbStorageClient_Get(t *testing.T) {
 			WithArgs("test").
 			WillReturnRows(sqlmock.NewRows([]string{"value"}).AddRow([]byte("value")))
 
-		got, err := client.Get(context.Background(), "test")
+		got, err := client.Get(t.Context(), "test")
 		assert.NoError(t, err)
 		assert.Equal(t, []byte("value"), got)
 	})
@@ -78,10 +77,10 @@ func Test_dbStorageClient_Get(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows([]string{"value"}).AddRow([]byte("value")))
 		mock.ExpectCommit()
 
-		tx, err := client.db.BeginTx(context.Background(), nil)
+		tx, err := client.db.BeginTx(t.Context(), nil)
 		require.NoError(t, err)
 
-		got, err := client.get(context.Background(), "test", tx)
+		got, err := client.get(t.Context(), "test", tx)
 		assert.NoError(t, err)
 		assert.Equal(t, []byte("value"), got)
 		assert.NoError(t, tx.Commit())
@@ -94,7 +93,7 @@ func Test_dbStorageClient_Get(t *testing.T) {
 			WithArgs("test").
 			WillReturnRows(sqlmock.NewRows([]string{"value"}).AddRow([]byte("first")).AddRow([]byte("second")))
 
-		got, err := client.Get(context.Background(), "test")
+		got, err := client.Get(t.Context(), "test")
 		assert.NoError(t, err)
 		assert.Equal(t, []byte("first"), got)
 	})
@@ -106,7 +105,7 @@ func Test_dbStorageClient_Get(t *testing.T) {
 			WithArgs("test").
 			WillReturnRows(sqlmock.NewRows([]string{"value"}))
 
-		got, err := client.Get(context.Background(), "test")
+		got, err := client.Get(t.Context(), "test")
 		assert.NoError(t, err)
 		assert.Nil(t, got)
 	})
@@ -123,7 +122,7 @@ func Test_dbStorageClient_Set(t *testing.T) {
 			WithArgs("test", []byte("value")).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
-		assert.NoError(t, client.Set(context.Background(), "test", []byte("value")))
+		assert.NoError(t, client.Set(t.Context(), "test", []byte("value")))
 	})
 	t.Run("Should delete a row within transaction", func(t *testing.T) {
 		client, mock := newTestClient(t, driverSQLite)
@@ -135,10 +134,10 @@ func Test_dbStorageClient_Set(t *testing.T) {
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
-		tx, err := client.db.BeginTx(context.Background(), nil)
+		tx, err := client.db.BeginTx(t.Context(), nil)
 		require.NoError(t, err)
 
-		assert.NoError(t, client.set(context.Background(), "test", []byte("value"), tx))
+		assert.NoError(t, client.set(t.Context(), "test", []byte("value"), tx))
 		assert.NoError(t, tx.Commit())
 	})
 	t.Run("Shouldn't return error if no record exists", func(t *testing.T) {
@@ -149,7 +148,7 @@ func Test_dbStorageClient_Set(t *testing.T) {
 			WithArgs("test", []byte("value")).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		assert.NoError(t, client.Set(context.Background(), "test", []byte("value")))
+		assert.NoError(t, client.Set(t.Context(), "test", []byte("value")))
 	})
 }
 
@@ -164,7 +163,7 @@ func Test_dbStorageClient_Delete(t *testing.T) {
 			WithArgs("test").
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
-		assert.NoError(t, client.Delete(context.Background(), "test"))
+		assert.NoError(t, client.Delete(t.Context(), "test"))
 	})
 	t.Run("Should delete a row within transaction", func(t *testing.T) {
 		client, mock := newTestClient(t, driverSQLite)
@@ -176,10 +175,10 @@ func Test_dbStorageClient_Delete(t *testing.T) {
 			WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 
-		tx, err := client.db.BeginTx(context.Background(), nil)
+		tx, err := client.db.BeginTx(t.Context(), nil)
 		require.NoError(t, err)
 
-		assert.NoError(t, client.delete(context.Background(), "test", tx))
+		assert.NoError(t, client.delete(t.Context(), "test", tx))
 		assert.NoError(t, tx.Commit())
 	})
 	t.Run("Shouldn't return error if no record exists", func(t *testing.T) {
@@ -190,7 +189,7 @@ func Test_dbStorageClient_Delete(t *testing.T) {
 			WithArgs("test").
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		assert.NoError(t, client.Delete(context.Background(), "test"))
+		assert.NoError(t, client.Delete(t.Context(), "test"))
 	})
 }
 
@@ -220,8 +219,8 @@ func Test_dbStorageClient_Batch(t *testing.T) {
 			storage.SetOperation("test", []byte("value")),
 			storage.DeleteOperation("test"),
 		}
-		assert.NoError(t, client.Batch(context.Background(), ops...))
-		assert.NoError(t, client.Batch(context.Background(), ops[1]))
+		assert.NoError(t, client.Batch(t.Context(), ops...))
+		assert.NoError(t, client.Batch(t.Context(), ops[1]))
 	})
 	t.Run("Should return error if any operation failed, with transaction rollback", func(t *testing.T) {
 		client, mock := newTestClient(t, driverSQLite)
@@ -244,7 +243,7 @@ func Test_dbStorageClient_Batch(t *testing.T) {
 			storage.DeleteOperation("test"),
 			storage.GetOperation("test"),
 		}
-		assert.ErrorIs(t, client.Batch(context.Background(), ops...), sql.ErrConnDone)
+		assert.ErrorIs(t, client.Batch(t.Context(), ops...), sql.ErrConnDone)
 	})
 	t.Run("Should squash multiple identical Get Operations", func(t *testing.T) {
 		client, mock := newTestClient(t, driverSQLite)
@@ -276,7 +275,7 @@ func Test_dbStorageClient_Batch(t *testing.T) {
 			)
 		mock.ExpectCommit()
 
-		assert.NoError(t, client.Batch(context.Background(), ops...))
+		assert.NoError(t, client.Batch(t.Context(), ops...))
 		assert.Equal(t, []byte("first"), ops[0].Value)
 		assert.Equal(t, []byte("second"), ops[1].Value)
 		assert.Equal(t, []byte("third"), ops[2].Value)
@@ -300,7 +299,7 @@ func Test_dbStorageClient_Batch(t *testing.T) {
 			WillReturnResult(sqlmock.NewResult(3, 3))
 		mock.ExpectCommit()
 
-		assert.NoError(t, client.Batch(context.Background(), ops...))
+		assert.NoError(t, client.Batch(t.Context(), ops...))
 		assert.NoError(t, mock.ExpectationsWereMet())
 	})
 	t.Run("Should squash multiple identical Delete Operations", func(t *testing.T) {
@@ -321,7 +320,7 @@ func Test_dbStorageClient_Batch(t *testing.T) {
 			WillReturnResult(sqlmock.NewResult(3, 3))
 		mock.ExpectCommit()
 
-		assert.NoError(t, client.Batch(context.Background(), ops...))
+		assert.NoError(t, client.Batch(t.Context(), ops...))
 		assert.NoError(t, mock.ExpectationsWereMet())
 	})
 }
@@ -333,7 +332,7 @@ func Test_dbStorageClient_Close(t *testing.T) {
 		mock.ExpectClose()
 
 		assert.NoError(t, client.db.Close())
-		assert.NoError(t, client.Close(context.Background()))
+		assert.NoError(t, client.Close(t.Context()))
 	})
 }
 
@@ -345,7 +344,7 @@ func Test_wrapTx(t *testing.T) {
 		mock.ExpectBegin()
 		mock.ExpectRollback()
 
-		tx, err := client.db.BeginTx(context.Background(), nil)
+		tx, err := client.db.BeginTx(t.Context(), nil)
 		require.NoError(t, err)
 		//nolint:errcheck
 		defer tx.Rollback()
@@ -432,7 +431,7 @@ func newTestClient(t *testing.T, driverName string) (*dbStorageClient, sqlmock.S
 	mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(queries.QueryDeleteRow, testTableName)))
 
 	dialect := newDBDialect(driverName, testTableName)
-	err = dialect.Prepare(context.Background(), db)
+	err = dialect.Prepare(t.Context(), db)
 	require.NoError(t, err)
 
 	return &dbStorageClient{

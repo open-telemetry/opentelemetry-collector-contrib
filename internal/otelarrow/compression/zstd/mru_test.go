@@ -24,7 +24,7 @@ func TestMRUGet(t *testing.T) {
 	v, g := m.Get()
 	require.Nil(t, v)
 
-	for i := 0; i < cnt; i++ {
+	for i := range cnt {
 		p := &gint{
 			value: i + 1,
 			Gen:   g,
@@ -32,7 +32,7 @@ func TestMRUGet(t *testing.T) {
 		m.Put(p)
 	}
 
-	for i := 0; i < cnt; i++ {
+	for i := range cnt {
 		v, _ = m.Get()
 		require.Equal(t, 5-i, v.value)
 	}
@@ -52,7 +52,7 @@ func TestMRUPut(t *testing.T) {
 
 	g := m.Reset()
 
-	for i := 0; i < cnt; i++ {
+	for i := range cnt {
 		p := &gint{
 			value: i + 1,
 			Gen:   g,

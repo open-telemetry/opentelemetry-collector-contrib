@@ -11,13 +11,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -43,12 +44,12 @@ func TestLoadConfig(t *testing.T) {
 					config.MaxElapsedTime = 10 * time.Minute
 					return config
 				}(),
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 2,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				},
+				QueueBatchConfig: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.NumConsumers = 2
+					queue.QueueSize = 10
+					return queue
+				}()),
 				ClientConfig: func() configkafka.ClientConfig {
 					config := configkafka.NewDefaultClientConfig()
 					config.Brokers = []string{"foo:123", "bar:456"}
@@ -72,23 +73,29 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "spans",
 					Encoding: "otlp_proto",
 				},
+				Profiles: SignalConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
+				},
 				Topic:                                "spans",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
 				PartitionLogsByResourceAttributes:    true,
+				PartitionLogsByTraceID:               false,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "legacy_topic"),
 			expected: &Config{
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
-				ClientConfig:    configkafka.NewDefaultClientConfig(),
-				Producer:        configkafka.NewDefaultProducerConfig(),
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
-					Topic:    "legacy_topic",
-					Encoding: "otlp_proto",
+					Topic:                "legacy_topic",
+					Encoding:             "otlp_proto",
+					TopicFromMetadataKey: "metadata_key",
 				},
 				Metrics: SignalConfig{
 					Topic:    "metrics_topic",
@@ -98,17 +105,21 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "legacy_topic",
 					Encoding: "otlp_proto",
 				},
+				Profiles: SignalConfig{
+					Topic:    "legacy_topic",
+					Encoding: "otlp_proto",
+				},
 				Topic: "legacy_topic",
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "legacy_encoding"),
 			expected: &Config{
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
-				ClientConfig:    configkafka.NewDefaultClientConfig(),
-				Producer:        configkafka.NewDefaultProducerConfig(),
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
 					Topic:    "otlp_logs",
 					Encoding: "legacy_encoding",
@@ -119,6 +130,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Traces: SignalConfig{
 					Topic:    "otlp_spans",
+					Encoding: "legacy_encoding",
+				},
+				Profiles: SignalConfig{
+					Topic:    "otlp_profiles",
 					Encoding: "legacy_encoding",
 				},
 				Encoding: "legacy_encoding",
@@ -136,6 +151,37 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestLoadConfigFailed(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		id            component.ID
+		expectedError error
+		configFile    string
+	}{
+		{
+			id:            component.NewIDWithName(metadata.Type, ""),
+			expectedError: errLogsPartitionExclusive,
+			configFile:    "config-partitioning-failed.yaml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.configFile))
+			require.NoError(t, err)
+
+			cfg := createDefaultConfig().(*Config)
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			assert.ErrorIs(t, xconfmap.Validate(cfg), tt.expectedError)
 		})
 	}
 }

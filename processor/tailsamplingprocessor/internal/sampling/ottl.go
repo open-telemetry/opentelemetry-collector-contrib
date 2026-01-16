@@ -15,19 +15,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 type ottlConditionFilter struct {
-	sampleSpanExpr      *ottl.ConditionSequence[ottlspan.TransformContext]
-	sampleSpanEventExpr *ottl.ConditionSequence[ottlspanevent.TransformContext]
+	sampleSpanExpr      *ottl.ConditionSequence[*ottlspan.TransformContext]
+	sampleSpanEventExpr *ottl.ConditionSequence[*ottlspanevent.TransformContext]
 	errorMode           ottl.ErrorMode
 	logger              *zap.Logger
 }
 
-var _ PolicyEvaluator = (*ottlConditionFilter)(nil)
+var _ samplingpolicy.Evaluator = (*ottlConditionFilter)(nil)
 
 // NewOTTLConditionFilter looks at the trace data and returns a corresponding SamplingDecision.
-func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions, spanEventConditions []string, errMode ottl.ErrorMode) (PolicyEvaluator, error) {
+func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions, spanEventConditions []string, errMode ottl.ErrorMode) (samplingpolicy.Evaluator, error) {
 	filter := &ottlConditionFilter{
 		errorMode: errMode,
 		logger:    settings.Logger,
@@ -54,23 +55,21 @@ func NewOTTLConditionFilter(settings component.TelemetrySettings, spanConditions
 	return filter, nil
 }
 
-func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
-	ocf.logger.Debug("Evaluating with OTTL conditions filter", zap.String("traceID", traceID.String()))
-
-	if ocf.sampleSpanExpr == nil && ocf.sampleSpanEventExpr == nil {
-		return NotSampled, nil
+func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	if ocf.logger.Core().Enabled(zap.DebugLevel) {
+		ocf.logger.Debug("Evaluating with OTTL conditions filter", zap.String("traceID", traceID.String()))
 	}
 
-	trace.Lock()
-	defer trace.Unlock()
+	if ocf.sampleSpanExpr == nil && ocf.sampleSpanEventExpr == nil {
+		return samplingpolicy.NotSampled, nil
+	}
+
 	batches := trace.ReceivedBatches
 
 	for i := 0; i < batches.ResourceSpans().Len(); i++ {
 		rs := batches.ResourceSpans().At(i)
-		resource := rs.Resource()
 		for j := 0; j < rs.ScopeSpans().Len(); j++ {
 			ss := rs.ScopeSpans().At(j)
-			scope := ss.Scope()
 			for k := 0; k < ss.Spans().Len(); k++ {
 				span := ss.Spans().At(k)
 
@@ -87,12 +86,14 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 
 				// Span evaluation
 				if ocf.sampleSpanExpr != nil {
-					ok, err = ocf.sampleSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ss, rs))
+					tCtx := ottlspan.NewTransformContextPtr(rs, ss, span)
+					ok, err = ocf.sampleSpanExpr.Eval(ctx, tCtx)
+					tCtx.Close()
 					if err != nil {
-						return Error, err
+						return samplingpolicy.Error, err
 					}
 					if ok {
-						return Sampled, nil
+						return samplingpolicy.Sampled, nil
 					}
 				}
 
@@ -100,17 +101,19 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 				if ocf.sampleSpanEventExpr != nil {
 					spanEvents := span.Events()
 					for l := 0; l < spanEvents.Len(); l++ {
-						ok, err = ocf.sampleSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvents.At(l), span, scope, resource, ss, rs))
+						tCtx := ottlspanevent.NewTransformContextPtr(rs, ss, span, spanEvents.At(l))
+						ok, err = ocf.sampleSpanEventExpr.Eval(ctx, tCtx)
+						tCtx.Close()
 						if err != nil {
-							return Error, err
+							return samplingpolicy.Error, err
 						}
 						if ok {
-							return Sampled, nil
+							return samplingpolicy.Sampled, nil
 						}
 					}
 				}
 			}
 		}
 	}
-	return NotSampled, nil
+	return samplingpolicy.NotSampled, nil
 }

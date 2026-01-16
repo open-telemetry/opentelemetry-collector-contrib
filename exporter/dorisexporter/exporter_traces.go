@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -109,7 +109,7 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 			e.logger.Warn("failed to create materialized view", zap.Error(err))
 		}
 
-		ddl = fmt.Sprintf(tracesGraphDDL, e.cfg.Traces, e.cfg.propertiesStr())
+		ddl = fmt.Sprintf(tracesGraphDDL, e.cfg.Traces, e.cfg.propertiesStrForUniqueKey())
 		_, err = conn.ExecContext(ctx, ddl)
 		if err != nil {
 			return err
@@ -148,12 +148,12 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		resource := resourceSpan.Resource()
 		resourceAttributes := resource.Attributes()
 		serviceName := ""
-		v, ok := resourceAttributes.Get(semconv.AttributeServiceName)
+		v, ok := resourceAttributes.Get(string(conventions.ServiceNameKey))
 		if ok {
 			serviceName = v.AsString()
 		}
 		serviceInstance := ""
-		v, ok = resourceAttributes.Get(semconv.AttributeServiceInstanceID)
+		v, ok = resourceAttributes.Get(string(conventions.ServiceInstanceIDKey))
 		if ok {
 			serviceInstance = v.AsString()
 		}

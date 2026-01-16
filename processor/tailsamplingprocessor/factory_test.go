@@ -4,7 +4,6 @@
 package tailsamplingprocessor
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -37,12 +36,12 @@ func TestCreateProcessor(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := processortest.NewNopSettings(metadata.Type)
-	tp, err := factory.CreateTraces(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(t.Context(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 
 	// this will cause the processor to properly initialize, so that we can later shutdown and
 	// have all the go routines cleanly shut down
-	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, tp.Shutdown(context.Background()))
+	assert.NoError(t, tp.Start(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, tp.Shutdown(t.Context()))
 }

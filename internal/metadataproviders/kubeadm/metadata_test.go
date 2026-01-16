@@ -26,7 +26,7 @@ func TestNewProvider(t *testing.T) {
 }
 
 func TestClusterName(t *testing.T) {
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	err := setupConfigMap(client)
 	assert.NoError(t, err)
 
@@ -59,7 +59,7 @@ func TestClusterName(t *testing.T) {
 				configMapName:       tt.CMname,
 				kubeSystemNamespace: tt.CMnamespace,
 			}
-			clusterName, err := kubeadmP.ClusterName(context.Background())
+			clusterName, err := kubeadmP.ClusterName(t.Context())
 			if tt.errMsg != "" {
 				assert.EqualError(t, err, tt.errMsg)
 			} else {
@@ -71,7 +71,7 @@ func TestClusterName(t *testing.T) {
 }
 
 func TestClusterUID(t *testing.T) {
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	err := setupNamespace(client)
 	assert.NoError(t, err)
 
@@ -100,7 +100,7 @@ func TestClusterUID(t *testing.T) {
 				kubeadmClient:       client,
 				kubeSystemNamespace: tt.CMnamespace,
 			}
-			clusterName, err := kubeadmP.ClusterUID(context.Background())
+			clusterName, err := kubeadmP.ClusterUID(t.Context())
 			if tt.errMsg != "" {
 				assert.EqualError(t, err, tt.errMsg)
 			} else {

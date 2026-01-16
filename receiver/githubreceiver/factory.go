@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
@@ -24,11 +25,12 @@ import (
 // This file implements a factory for the github receiver
 
 const (
-	defaultReadTimeout  = 500 * time.Millisecond
-	defaultWriteTimeout = 500 * time.Millisecond
-	defaultPath         = "/events"
-	defaultHealthPath   = "/health"
-	defaultEndpoint     = "localhost:8080"
+	defaultReadTimeout       = 500 * time.Millisecond
+	defaultWriteTimeout      = 500 * time.Millisecond
+	defaultPath              = "/events"
+	defaultHealthPath        = "/health"
+	defaultEndpoint          = "localhost:8080"
+	defaultIncludeSpanEvents = false
 )
 
 var (
@@ -60,11 +62,14 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // Create the default config based on the const(s) defined above.
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = defaultEndpoint
 	return &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint:     defaultEndpoint,
+				NetAddr:      netAddr,
 				ReadTimeout:  defaultReadTimeout,
 				WriteTimeout: defaultWriteTimeout,
 			},
@@ -79,8 +84,9 @@ func createDefaultConfig() component.Config {
 					defaultGitHubSignature256Header: "",
 				},
 			},
-			Path:       defaultPath,
-			HealthPath: defaultHealthPath,
+			Path:              defaultPath,
+			HealthPath:        defaultHealthPath,
+			IncludeSpanEvents: defaultIncludeSpanEvents,
 		},
 	}
 }
@@ -164,5 +170,5 @@ func createGitHubScraper(
 		return nil, err
 	}
 
-	return
+	return s, err
 }

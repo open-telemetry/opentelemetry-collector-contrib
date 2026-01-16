@@ -4,7 +4,6 @@
 package tlscheckreceiver
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -126,7 +125,7 @@ func TestScrape_ExpiredEndpointCertificate(t *testing.T) {
 	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateExpired)
 
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, metrics.DataPointCount())
@@ -163,7 +162,7 @@ func TestScrape_NotYetValidEndpointCertificate(t *testing.T) {
 	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateNotYetValid)
 
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, metrics.DataPointCount())
@@ -210,7 +209,7 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateValid)
 
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 
 	// Verify we have metrics for all endpoints
@@ -282,7 +281,7 @@ func TestScrape_ExpiredFilepathCertificate(t *testing.T) {
 	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateValid)
 
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 
@@ -313,7 +312,7 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateValid)
 
-	metrics, err := s.scrape(context.Background())
+	metrics, err := s.scrape(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 
@@ -335,4 +334,94 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 	// Verify positive time left on cert
 	timeLeft := dp.IntValue()
 	assert.Positive(t, timeLeft, "Time left should be positive for a valid cert")
+}
+
+func TestValidateEndpoint(t *testing.T) {
+	testCases := []struct {
+		desc        string
+		endpoint    string
+		expectedErr string
+	}{
+		{
+			desc:        "valid endpoint",
+			endpoint:    "example.com:443",
+			expectedErr: "",
+		},
+		{
+			desc:        "invalid endpoint - bad port",
+			endpoint:    "bad-endpoint:12efg",
+			expectedErr: "provided port is not a number: 12efg",
+		},
+		{
+			desc:        "endpoint with scheme",
+			endpoint:    "https://example.com:443",
+			expectedErr: "endpoint contains a scheme, which is not allowed",
+		},
+		{
+			desc:        "port out of range",
+			endpoint:    "example.com:67000",
+			expectedErr: "provided port is out of valid range [1, 65535]: 67000",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			err := validateEndpoint(tc.endpoint)
+			if tc.expectedErr != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateFilepath(t *testing.T) {
+	// Create a temporary certificate file for testing
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-cert-*.pem")
+	require.NoError(t, err)
+	tmpFile.Close()
+
+	// Create a temporary directory for testing
+	tmpDir := t.TempDir()
+
+	testCases := []struct {
+		desc        string
+		filePath    string
+		expectedErr string
+	}{
+		{
+			desc:        "valid file path",
+			filePath:    tmpFile.Name(),
+			expectedErr: "",
+		},
+		{
+			desc:        "relative file path",
+			filePath:    "cert.pem",
+			expectedErr: "error accessing certificate file",
+		},
+		{
+			desc:        "nonexistent file",
+			filePath:    "D:/nonexistent/path/cert.pem",
+			expectedErr: "error accessing certificate file",
+		},
+		{
+			desc:        "directory instead of file",
+			filePath:    tmpDir,
+			expectedErr: "path is a directory, not a file",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			err := validateFilepath(tc.filePath)
+			if tc.expectedErr != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

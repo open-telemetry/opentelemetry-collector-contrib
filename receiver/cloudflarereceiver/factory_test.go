@@ -4,7 +4,6 @@
 package cloudflarereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver"
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,7 +22,7 @@ func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	_, err := NewFactory().CreateLogs(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		nil,

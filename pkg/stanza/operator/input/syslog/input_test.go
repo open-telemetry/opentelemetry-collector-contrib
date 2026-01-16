@@ -5,6 +5,7 @@ package syslog
 
 import (
 	"fmt"
+	"maps"
 	"net"
 	"testing"
 	"time"
@@ -148,7 +149,7 @@ func TestInput(t *testing.T) {
 	})
 }
 
-func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc map[string]any, attr map[string]any) {
+func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc, attr map[string]any) {
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
 	require.NoError(t, err)
@@ -195,18 +196,14 @@ func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc map[string]an
 			if expect.Resource == nil {
 				expect.Resource = rsrc
 			} else {
-				for k, v := range rsrc {
-					expect.Resource[k] = v
-				}
+				maps.Copy(expect.Resource, rsrc)
 			}
 		}
 		if attr != nil {
 			if expect.Attributes == nil {
 				expect.Attributes = attr
 			} else {
-				for k, v := range attr {
-					expect.Attributes[k] = v
-				}
+				maps.Copy(expect.Attributes, attr)
 			}
 		}
 		require.Equal(t, expect, e)

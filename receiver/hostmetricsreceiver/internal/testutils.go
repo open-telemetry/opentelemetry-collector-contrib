@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func AssertDescriptorEqual(t *testing.T, expected pmetric.Metric, actual pmetric.Metric) {
+func AssertDescriptorEqual(t *testing.T, expected, actual pmetric.Metric) {
 	assert.Equal(t, expected.Name(), actual.Name())
 	assert.Equal(t, expected.Description(), actual.Description())
 	assert.Equal(t, expected.Unit(), actual.Unit())

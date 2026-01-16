@@ -4,7 +4,6 @@
 package logstransformprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,7 +51,7 @@ func TestCreateProcessor(t *testing.T) {
 		},
 	}
 
-	tp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 }
@@ -70,6 +69,6 @@ func TestInvalidOperators(t *testing.T) {
 		},
 	}
 
-	_, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
+	_, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	assert.Error(t, err)
 }

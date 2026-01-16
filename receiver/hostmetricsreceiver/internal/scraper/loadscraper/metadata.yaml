@@ -11,10 +11,21 @@ status:
 sem_conv_version: 1.9.0
 
 metrics:
+  system.cpu.load_average.15m:
+    enabled: true
+    description: Average CPU Load over 15 minutes.
+    unit: "{thread}"
+    stability:
+      level: development
+    gauge:
+      value_type: double
+
   system.cpu.load_average.1m:
     enabled: true
     description: Average CPU Load over 1 minute.
     unit: "{thread}"
+    stability:
+      level: development
     gauge:
       value_type: double
 
@@ -22,12 +33,7 @@ metrics:
     enabled: true
     description: Average CPU Load over 5 minutes.
     unit: "{thread}"
-    gauge:
-      value_type: double
-
-  system.cpu.load_average.15m:
-    enabled: true
-    description: Average CPU Load over 15 minutes.
-    unit: "{thread}"
+    stability:
+      level: development
     gauge:
       value_type: double

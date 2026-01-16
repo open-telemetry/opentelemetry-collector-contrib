@@ -4,7 +4,6 @@
 package dorisexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter"
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -16,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.uber.org/zap"
 )
 
@@ -27,16 +25,14 @@ func TestPushLogData(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = fmt.Sprintf("http://127.0.0.1:%d", port)
 	config.CreateSchema = false
-
-	err = config.Validate()
-	require.NoError(t, err)
+	require.NoError(t, config.Validate())
 
 	logger := zap.NewNop()
 	exporter := newLogsExporter(logger, config, componenttest.NewNopTelemetrySettings())
 
-	ctx := context.Background()
+	ctx := t.Context()
 
-	client, err := createDorisHTTPClient(ctx, config, nil, componenttest.NewNopTelemetrySettings())
+	client, err := createDorisHTTPClient(ctx, config, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client)
 
@@ -46,13 +42,15 @@ func TestPushLogData(t *testing.T) {
 		_ = exporter.shutdown(ctx)
 	}()
 
+	srvMux := http.NewServeMux()
 	server := &http.Server{
 		ReadTimeout: 3 * time.Second,
 		Addr:        fmt.Sprintf(":%d", port),
+		Handler:     srvMux,
 	}
 
 	go func() {
-		http.HandleFunc("/api/otel/otel_logs/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
+		srvMux.HandleFunc("/api/otel/otel_logs/_stream_load", func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"Status":"Success"}`))
 		})
@@ -79,14 +77,14 @@ func simpleLogs(count int) plog.Logs {
 	sl.Scope().SetVersion("1.0.0")
 	sl.Scope().Attributes().PutStr("lib", "doris")
 	timestamp := time.Now()
-	for i := 0; i < count; i++ {
+	for i := range count {
 		r := sl.LogRecords().AppendEmpty()
 		r.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))
 		r.SetSeverityNumber(plog.SeverityNumberError2)
 		r.SetSeverityText("error")
 		r.Body().SetStr("error message")
-		r.Attributes().PutStr(semconv.AttributeServiceNamespace, "default")
+		r.Attributes().PutStr("service.namespace", "default")
 		r.SetFlags(plog.DefaultLogRecordFlags)
 		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
 		r.SetSpanID([8]byte{1, 2, 3, byte(i)})

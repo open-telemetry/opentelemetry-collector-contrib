@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
@@ -125,7 +126,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		sendOTLPHistograms:     se.config.SendOTLPHistograms,
 	}
 
-	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfig(ctx)
+	apiTLSCfg, err := se.config.APITLSs.LoadTLSConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("could not load API TLS config: %w", err)
 	}
@@ -146,18 +147,21 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			SendDelay:           se.config.DimensionClient.SendDelay,
 			MaxBuffered:         se.config.DimensionClient.MaxBuffered,
 			MetricsConverter:    *se.converter,
+			DefaultProperties:   se.config.DefaultProperties,
 			ExcludeProperties:   se.config.ExcludeProperties,
 			MaxConnsPerHost:     se.config.DimensionClient.MaxConnsPerHost,
 			MaxIdleConns:        se.config.DimensionClient.MaxIdleConns,
 			MaxIdleConnsPerHost: se.config.DimensionClient.MaxIdleConnsPerHost,
 			IdleConnTimeout:     se.config.DimensionClient.IdleConnTimeout,
 			Timeout:             se.config.DimensionClient.Timeout,
+			DropTags:            se.config.DimensionClient.DropTags,
 		})
 	dimClient.Start()
 
 	var hms *hostmetadata.Syncer
 	if se.config.SyncHostMetadata {
-		hms = hostmetadata.NewSyncer(se.logger, dimClient)
+		envMap := gopsutilenv.SetGoPsutilEnvVars(se.config.RootPath)
+		hms = hostmetadata.NewSyncer(se.logger, dimClient, envMap)
 	}
 	se.dimClient = dimClient
 	se.pushMetricsData = dpClient.pushMetricsData
@@ -212,9 +216,9 @@ func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) 
 }
 
 func (se *signalfxExporter) createClient(ctx context.Context, host component.Host) (*http.Client, error) {
-	se.config.TLSSetting = se.config.IngestTLSSettings
+	se.config.TLS = se.config.IngestTLSs
 
-	return se.config.ToClient(ctx, host, se.telemetrySettings)
+	return se.config.ToClient(ctx, host.GetExtensions(), se.telemetrySettings)
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
@@ -262,7 +266,7 @@ func buildHeaders(config *Config, version string) map[string]string {
 	// Add any custom headers from the config. They will override the pre-defined
 	// ones above in case of conflict, but, not the content encoding one since
 	// the latter one is defined according to the payload.
-	for k, v := range config.Headers {
+	for k, v := range config.Headers.Iter {
 		headers[k] = string(v)
 	}
 	// we want to control how headers are set, overriding user headers with our passthrough.

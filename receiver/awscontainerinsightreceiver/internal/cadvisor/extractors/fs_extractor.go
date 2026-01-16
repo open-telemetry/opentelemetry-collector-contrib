@@ -12,14 +12,14 @@ import (
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
-var allowedPaths = regexp.MustCompile(`^(tmpfs|\/dev\/.*|overlay)$`)
+var allowedPaths = regexp.MustCompile(`^(tmpfs|/dev/.*|overlay)$`)
 
 type FileSystemMetricExtractor struct {
 	allowListRegexP *regexp.Regexp
 	logger          *zap.Logger
 }
 
-func (f *FileSystemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
+func (*FileSystemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 	return info.Spec.HasFilesystem
 }
 
@@ -32,7 +32,8 @@ func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMem
 	stats := GetStats(info)
 	metrics := make([]*CAdvisorMetric, 0, len(stats.Filesystem))
 
-	for _, v := range stats.Filesystem {
+	for i := range stats.Filesystem {
+		v := stats.Filesystem[i]
 		metric := newCadvisorMetric(containerType, f.logger)
 		if v.Device == "" {
 			continue
@@ -63,7 +64,7 @@ func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMem
 	return metrics
 }
 
-func (f *FileSystemMetricExtractor) Shutdown() error {
+func (*FileSystemMetricExtractor) Shutdown() error {
 	return nil
 }
 

@@ -176,9 +176,14 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
-	file, err := os.Open(path) // #nosec - operator must read in files defined by user
+	// Normalize the path to handle Windows UNC paths correctly
+	normalizedPath, wasCorrupted := normalizePath(path)
+	if wasCorrupted {
+		m.set.Logger.Debug("Detected and repaired corrupted UNC path", zap.String("original_path", path), zap.String("normalized_path", normalizedPath))
+	}
+	file, err := os.Open(normalizedPath) // #nosec - operator must read in files defined by user
 	if err != nil {
-		m.set.Logger.Error("Failed to open file", zap.Error(err))
+		m.set.Logger.Error("Failed to open file", zap.Error(err), zap.String("original_path", path), zap.String("normalized_path", normalizedPath))
 		return nil, nil
 	}
 
@@ -228,7 +233,48 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 			continue
 		}
 
-		m.tracker.Add(r)
+		if r != nil {
+			m.tracker.Add(r)
+			continue
+		}
+		m.tracker.AddUnmatched(file, fp)
+	}
+	m.handleUnmatchedFiles(ctx)
+}
+
+func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
+	// Notes:
+	// 1. fp[i] is the fingerprint of file[i], and matchedMetadata[i] (if present) is the corresponding metadata retrieved from the archive.
+	// 2. If matchedMetadata[i] is not nil, a match for file[i] was found in the archive — use this metadata to create the reader.
+	//    If matchedMetadata[i] is nil, no match was found — create a new reader from scratch.
+	files, fps, matchedMetadata := m.tracker.LookupArchive(ctx)
+
+	for i, md := range matchedMetadata {
+		file := files[i]
+		fp := fps[i]
+
+		var reader *reader.Reader
+		var err error
+
+		if md != nil {
+			reader, err = m.readerFactory.NewReaderFromMetadata(file, md)
+			if m.tracker.Name() != tracker.NoStateTracker {
+				m.set.Logger.Info("File found in archive. Started watching file again", zap.String("path", file.Name()))
+			}
+		} else {
+			if m.tracker.Name() != tracker.NoStateTracker {
+				m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
+			}
+			reader, err = m.readerFactory.NewReader(file, fp)
+		}
+
+		if err != nil {
+			m.set.Logger.Error("Failed to create reader", zap.Error(err))
+			continue
+		}
+
+		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
+		m.tracker.Add(reader)
 	}
 }
 
@@ -261,14 +307,8 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 		return r, nil
 	}
 
-	// If we don't match any previously known files, create a new reader from scratch
-	m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
-	r, err := m.readerFactory.NewReader(file, fp)
-	if err != nil {
-		return nil, err
-	}
-	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
-	return r, nil
+	// If no previously known files are matched, readers will be created after matching against the archive.
+	return nil, nil
 }
 
 func (m *Manager) instantiateTracker(ctx context.Context, persister operator.Persister) {

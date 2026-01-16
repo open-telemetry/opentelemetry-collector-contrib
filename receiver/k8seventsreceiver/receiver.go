@@ -5,17 +5,21 @@ package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
@@ -28,6 +32,7 @@ type k8seventsReceiver struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
 	obsrecv         *receiverhelper.ObsReport
+	mu              sync.Mutex
 }
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
@@ -56,7 +61,7 @@ func newReceiver(
 	}, nil
 }
 
-func (kr *k8seventsReceiver) Start(ctx context.Context, _ component.Host) error {
+func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) error {
 	kr.ctx, kr.cancel = context.WithCancel(ctx)
 
 	k8sInterface, err := kr.config.getK8sClient()
@@ -64,6 +69,48 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, _ component.Host) error 
 		return err
 	}
 
+	if kr.config.K8sLeaderElector != nil {
+		k8sLeaderElector := host.GetExtensions()[*kr.config.K8sLeaderElector]
+		if k8sLeaderElector == nil {
+			return fmt.Errorf("unknown k8s leader elector %q", kr.config.K8sLeaderElector)
+		}
+
+		elector, ok := k8sLeaderElector.(k8sleaderelector.LeaderElection)
+		if !ok {
+			return fmt.Errorf("the extension %T does not implement k8sleaderelector.LeaderElection", k8sLeaderElector)
+		}
+
+		kr.settings.Logger.Info("registering the receiver in leader election")
+
+		// Register callbacks with the leader elector extension. These callbacks remain active
+		// for the lifetime of the receiver, allowing it to restart when leadership is regained.
+		elector.SetCallBackFuncs(
+			func(ctx context.Context) {
+				cctx, cancel := context.WithCancel(ctx)
+				kr.cancel = cancel
+				kr.ctx = cctx
+				kr.settings.Logger.Info("Events Receiver started as leader")
+				if len(kr.config.Namespaces) == 0 {
+					kr.startWatch(corev1.NamespaceAll, k8sInterface)
+				} else {
+					for _, ns := range kr.config.Namespaces {
+						kr.startWatch(ns, k8sInterface)
+					}
+				}
+			},
+			func() {
+				// Shutdown on leader loss. The receiver will restart if leadership is regained
+				// since the callbacks remain registered with the leader elector extension.
+				kr.settings.Logger.Info("no longer leader, stopping")
+				err := kr.Shutdown(context.Background())
+				if err != nil {
+					kr.settings.Logger.Error("shutdown receiver error:", zap.Error(err))
+				}
+			})
+		return nil
+	}
+
+	// No leader election: start immediately.
 	kr.settings.Logger.Info("starting to watch namespaces for the events.")
 	if len(kr.config.Namespaces) == 0 {
 		kr.startWatch(corev1.NamespaceAll, k8sInterface)
@@ -72,19 +119,20 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, _ component.Host) error 
 			kr.startWatch(ns, k8sInterface)
 		}
 	}
-
 	return nil
 }
 
 func (kr *k8seventsReceiver) Shutdown(context.Context) error {
-	if kr.cancel == nil {
-		return nil
+	if kr.cancel != nil {
+		kr.cancel()
 	}
-	// Stop watching all the namespaces by closing all the stopper channels.
+
+	kr.mu.Lock()
 	for _, stopperChan := range kr.stopperChanList {
 		close(stopperChan)
 	}
-	kr.cancel()
+	kr.stopperChanList = nil
+	kr.mu.Unlock()
 	return nil
 }
 
@@ -93,22 +141,26 @@ func (kr *k8seventsReceiver) Shutdown(context.Context) error {
 // https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/client-go/tools/record/events_cache.go#L327
 func (kr *k8seventsReceiver) startWatch(ns string, client k8s.Interface) {
 	stopperChan := make(chan struct{})
+	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
+	kr.mu.Unlock()
 	kr.startWatchingNamespace(client, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
-			ev := obj.(*corev1.Event)
-			kr.handleEvent(ev)
+			if ev, ok := obj.(*corev1.Event); ok {
+				kr.handleEvent(ev)
+			}
 		},
 		UpdateFunc: func(_, obj any) {
-			ev := obj.(*corev1.Event)
-			kr.handleEvent(ev)
+			if ev, ok := obj.(*corev1.Event); ok {
+				kr.handleEvent(ev)
+			}
 		},
 	}, ns, stopperChan)
 }
 
 func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 	if kr.allowEvent(ev) {
-		ld := k8sEventToLogData(kr.settings.Logger, ev)
+		ld := k8sEventToLogData(kr.settings.Logger, ev, kr.settings.BuildInfo.Version)
 
 		ctx := kr.obsrecv.StartLogsOp(kr.ctx)
 		consumerErr := kr.logsConsumer.ConsumeLogs(ctx, ld)
@@ -118,7 +170,7 @@ func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 
 // startWatchingNamespace creates an informer and starts
 // watching a specific namespace for the events.
-func (kr *k8seventsReceiver) startWatchingNamespace(
+func (*k8seventsReceiver) startWatchingNamespace(
 	clientset k8s.Interface,
 	handlers cache.ResourceEventHandlerFuncs,
 	ns string,

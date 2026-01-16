@@ -4,7 +4,6 @@
 package githubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver"
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -39,7 +39,10 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 			config: Config{
 				WebHook: WebHook{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:0",
+						NetAddr: confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:0",
+						},
 					},
 					Path:       "/events",
 					HealthPath: "/health_check",
@@ -64,19 +67,19 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 
 func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.Endpoint = "localhost:0"
+	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
 
 	r := receiver
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "failed to start receiver")
+	require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()), "failed to start receiver")
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()), "failed to shutdown receiver")
+		require.NoError(t, r.Shutdown(t.Context()), "failed to shutdown receiver")
 	}()
 
 	w := httptest.NewRecorder()
-	r.handleHealthCheck(w, httptest.NewRequest(http.MethodGet, "http://localhost/health", nil))
+	r.handleHealthCheck(w, httptest.NewRequest(http.MethodGet, "http://localhost/health", http.NoBody))
 
 	response := w.Result()
 	require.Equal(t, http.StatusOK, response.StatusCode)

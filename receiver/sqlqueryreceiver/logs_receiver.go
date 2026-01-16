@@ -56,11 +56,21 @@ func newLogsReceiver(
 		return nil, err
 	}
 
+	var dataSource string
+	if config.DataSource != "" {
+		dataSource = config.DataSource
+	} else {
+		dataSource, err = sqlquery.BuildDataSourceString(config.Config)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	receiver := &logsReceiver{
 		config:   config,
 		settings: settings,
 		createConnection: func() (*sql.DB, error) {
-			return sqlOpenerFunc(config.Driver, config.DataSource)
+			return sqlOpenerFunc(config.Driver, dataSource)
 		},
 		createClient:      createClient,
 		nextConsumer:      nextConsumer,
@@ -281,7 +291,10 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 		rows, err = queryReceiver.client.QueryRows(ctx)
 	}
 	if err != nil {
-		return logs, fmt.Errorf("error getting rows: %w", err)
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return logs, fmt.Errorf("scraper: %w", err)
+		}
+		queryReceiver.logger.Warn("problems encountered getting log rows", zap.Error(err))
 	}
 
 	var errs []error
@@ -335,7 +348,7 @@ func rowToLog(row sqlquery.StringMap, config sqlquery.LogsCfg, logRecord plog.Lo
 	return errors.Join(errs...)
 }
 
-func (queryReceiver *logsQueryReceiver) shutdown(_ context.Context) error {
+func (queryReceiver *logsQueryReceiver) shutdown(context.Context) error {
 	if queryReceiver.db == nil {
 		return nil
 	}

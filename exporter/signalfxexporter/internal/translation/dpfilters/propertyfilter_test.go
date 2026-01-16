@@ -57,12 +57,12 @@ property_value: '!/property.value/'`,
 		{
 			name:          "invalid regex",
 			yaml:          "dimension_name: '/(?=not.in.re2)/'",
-			expectedError: "'dimension_name': error parsing regexp: invalid or unsupported Perl syntax: `(?=`",
+			expectedError: "'dimension_name' error parsing regexp: invalid or unsupported Perl syntax: `(?=`",
 		},
 		{
 			name:          "invalid glob",
 			yaml:          "dimension_value: '*[c-a]'",
-			expectedError: "'dimension_value': hi character 'a' should be greater than lo 'c'",
+			expectedError: "'dimension_value' hi character 'a' should be greater than lo 'c'",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

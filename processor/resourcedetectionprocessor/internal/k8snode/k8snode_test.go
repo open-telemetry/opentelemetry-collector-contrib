@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/k8snode"
@@ -47,14 +46,14 @@ func TestDetect(t *testing.T) {
 	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
-	res, schemaURL, err := k8sDetector.Detect(context.Background())
+	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		conventions.AttributeK8SNodeName: "mainNode",
-		conventions.AttributeK8SNodeUID:  "4b15c589-1a33-42cc-927a-b78ba9947095",
+		"k8s.node.name": "mainNode",
+		"k8s.node.uid":  "4b15c589-1a33-42cc-927a-b78ba9947095",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -74,9 +73,9 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
-	res, schemaURL, err := k8sDetector.Detect(context.Background())
+	res, schemaURL, err := k8sDetector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
 
 	expected := map[string]any{}

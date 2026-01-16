@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -30,124 +29,124 @@ func TestURLParser(t *testing.T) {
 			"complete example",
 			"http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment",
 			map[string]any{
-				semconv.AttributeURLPath:      "/foo.gif",
-				semconv.AttributeURLFragment:  "fragment",
-				semconv.AttributeURLExtension: "gif",
-				AttributeURLPassword:          "mypassword",
-				semconv.AttributeURLOriginal:  "http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment",
-				semconv.AttributeURLScheme:    "http",
-				semconv.AttributeURLPort:      80,
-				AttributeURLUserInfo:          "myusername:mypassword",
-				semconv.AttributeURLDomain:    "www.example.com",
-				semconv.AttributeURLQuery:     "key1=val1&key2=val2",
-				AttributeURLUsername:          "myusername",
+				"url.path":           "/foo.gif",
+				"url.fragment":       "fragment",
+				"url.extension":      "gif",
+				AttributeURLPassword: "mypassword",
+				"url.original":       "http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment",
+				"url.scheme":         "http",
+				"url.port":           80,
+				AttributeURLUserInfo: "myusername:mypassword",
+				"url.domain":         "www.example.com",
+				"url.query":          "key1=val1&key2=val2",
+				AttributeURLUsername: "myusername",
 			},
 		},
 		{
 			"simple example",
 			"http://www.example.com",
 			map[string]any{
-				semconv.AttributeURLOriginal: "http://www.example.com",
-				semconv.AttributeURLScheme:   "http",
-				semconv.AttributeURLDomain:   "www.example.com",
-				semconv.AttributeURLPath:     "",
+				"url.original": "http://www.example.com",
+				"url.scheme":   "http",
+				"url.domain":   "www.example.com",
+				"url.path":     "",
 			},
 		},
 		{
 			"custom port",
 			"http://www.example.com:77",
 			map[string]any{
-				semconv.AttributeURLOriginal: "http://www.example.com:77",
-				semconv.AttributeURLScheme:   "http",
-				semconv.AttributeURLDomain:   "www.example.com",
-				semconv.AttributeURLPath:     "",
-				semconv.AttributeURLPort:     77,
+				"url.original": "http://www.example.com:77",
+				"url.scheme":   "http",
+				"url.domain":   "www.example.com",
+				"url.path":     "",
+				"url.port":     77,
 			},
 		},
 		{
 			"file",
 			"http://www.example.com:77/file.png",
 			map[string]any{
-				semconv.AttributeURLOriginal:  "http://www.example.com:77/file.png",
-				semconv.AttributeURLScheme:    "http",
-				semconv.AttributeURLDomain:    "www.example.com",
-				semconv.AttributeURLPath:      "/file.png",
-				semconv.AttributeURLPort:      77,
-				semconv.AttributeURLExtension: "png",
+				"url.original":  "http://www.example.com:77/file.png",
+				"url.scheme":    "http",
+				"url.domain":    "www.example.com",
+				"url.path":      "/file.png",
+				"url.port":      77,
+				"url.extension": "png",
 			},
 		},
 		{
 			"fragment",
 			"http://www.example.com:77/foo#bar",
 			map[string]any{
-				semconv.AttributeURLOriginal: "http://www.example.com:77/foo#bar",
-				semconv.AttributeURLScheme:   "http",
-				semconv.AttributeURLDomain:   "www.example.com",
-				semconv.AttributeURLPath:     "/foo",
-				semconv.AttributeURLPort:     77,
-				semconv.AttributeURLFragment: "bar",
+				"url.original": "http://www.example.com:77/foo#bar",
+				"url.scheme":   "http",
+				"url.domain":   "www.example.com",
+				"url.path":     "/foo",
+				"url.port":     77,
+				"url.fragment": "bar",
 			},
 		},
 		{
 			"query example",
 			"https://www.example.com:77/foo?key=val",
 			map[string]any{
-				semconv.AttributeURLOriginal: "https://www.example.com:77/foo?key=val",
-				semconv.AttributeURLScheme:   "https",
-				semconv.AttributeURLDomain:   "www.example.com",
-				semconv.AttributeURLPath:     "/foo",
-				semconv.AttributeURLPort:     77,
-				semconv.AttributeURLQuery:    "key=val",
+				"url.original": "https://www.example.com:77/foo?key=val",
+				"url.scheme":   "https",
+				"url.domain":   "www.example.com",
+				"url.path":     "/foo",
+				"url.port":     77,
+				"url.query":    "key=val",
 			},
 		},
 		{
 			"user info",
 			"https://user:pw@www.example.com:77/foo",
 			map[string]any{
-				semconv.AttributeURLOriginal: "https://user:pw@www.example.com:77/foo",
-				semconv.AttributeURLScheme:   "https",
-				semconv.AttributeURLDomain:   "www.example.com",
-				semconv.AttributeURLPath:     "/foo",
-				semconv.AttributeURLPort:     77,
-				AttributeURLUserInfo:         "user:pw",
-				AttributeURLUsername:         "user",
-				AttributeURLPassword:         "pw",
+				"url.original":       "https://user:pw@www.example.com:77/foo",
+				"url.scheme":         "https",
+				"url.domain":         "www.example.com",
+				"url.path":           "/foo",
+				"url.port":           77,
+				AttributeURLUserInfo: "user:pw",
+				AttributeURLUsername: "user",
+				AttributeURLPassword: "pw",
 			},
 		},
 		{
 			"user info - no password",
 			"https://user:@www.example.com:77/foo",
 			map[string]any{
-				semconv.AttributeURLOriginal: "https://user:@www.example.com:77/foo",
-				semconv.AttributeURLScheme:   "https",
-				semconv.AttributeURLDomain:   "www.example.com",
-				semconv.AttributeURLPath:     "/foo",
-				semconv.AttributeURLPort:     77,
-				AttributeURLUserInfo:         "user:",
-				AttributeURLUsername:         "user",
-				AttributeURLPassword:         "",
+				"url.original":       "https://user:@www.example.com:77/foo",
+				"url.scheme":         "https",
+				"url.domain":         "www.example.com",
+				"url.path":           "/foo",
+				"url.port":           77,
+				AttributeURLUserInfo: "user:",
+				AttributeURLUsername: "user",
+				AttributeURLPassword: "",
 			},
 		},
 		{
 			"non-http scheme: ftp",
 			"ftp://ftp.is.co.za/rfc/rfc1808.txt",
 			map[string]any{
-				semconv.AttributeURLOriginal:  "ftp://ftp.is.co.za/rfc/rfc1808.txt",
-				semconv.AttributeURLScheme:    "ftp",
-				semconv.AttributeURLPath:      "/rfc/rfc1808.txt",
-				semconv.AttributeURLExtension: "txt",
-				semconv.AttributeURLDomain:    "ftp.is.co.za",
+				"url.original":  "ftp://ftp.is.co.za/rfc/rfc1808.txt",
+				"url.scheme":    "ftp",
+				"url.path":      "/rfc/rfc1808.txt",
+				"url.extension": "txt",
+				"url.domain":    "ftp.is.co.za",
 			},
 		},
 		{
 			"non-http scheme: telnet",
 			"telnet://192.0.2.16:80/",
 			map[string]any{
-				semconv.AttributeURLOriginal: "telnet://192.0.2.16:80/",
-				semconv.AttributeURLScheme:   "telnet",
-				semconv.AttributeURLPath:     "/",
-				semconv.AttributeURLPort:     80,
-				semconv.AttributeURLDomain:   "192.0.2.16",
+				"url.original": "telnet://192.0.2.16:80/",
+				"url.scheme":   "telnet",
+				"url.path":     "/",
+				"url.port":     80,
+				"url.domain":   "192.0.2.16",
 			},
 		},
 	}
@@ -155,13 +154,13 @@ func TestURLParser(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			source := &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return tc.Original, nil
 				},
 			}
 
 			exprFunc := url(source) //revive:disable-line:var-naming
-			res, err := exprFunc(context.Background(), nil)
+			res, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 
 			resMap, ok := res.(map[string]any)

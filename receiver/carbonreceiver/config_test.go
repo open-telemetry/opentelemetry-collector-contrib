@@ -69,6 +69,12 @@ func TestLoadConfig(t *testing.T) {
 								MetricType: "cumulative",
 							},
 							{
+								Regexp: `(optional_prefix\.)?(?P<key_just>test)\.(?P<key_match>.*)`,
+							},
+							{
+								Regexp: `(experiment(?P<key_experiment>[0-9]+)\.)?(?P<key_just>test)\.(?P<key_match>.*)`,
+							},
+							{
 								Regexp: `(?P<key_just>test)\.(?P<key_match>.*)`,
 							},
 						},

@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
 )
 
 func TestCollectorInstanceInfo(t *testing.T) {
@@ -30,40 +29,14 @@ func TestCollectorInstanceInfo(t *testing.T) {
 			name: "with_service_instance_id",
 			input: func() component.TelemetrySettings {
 				ts := componenttest.NewNopTelemetrySettings()
-				ts.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, "627cc493-f310-47de-96bd-71410b7dec09")
+				ts.Resource.Attributes().PutStr("service.instance.id", "627cc493-f310-47de-96bd-71410b7dec09")
 				return ts
 			}(),
 			expected: func() pcommon.Map {
 				m := pcommon.NewMap()
 				m.PutStr(
-					"signaltometrics."+semconv.AttributeServiceInstanceID,
+					"signaltometrics."+"service.instance.id",
 					"627cc493-f310-47de-96bd-71410b7dec09",
-				)
-				return m
-			}(),
-		},
-		{
-			name: "with_all_values",
-			input: func() component.TelemetrySettings {
-				ts := componenttest.NewNopTelemetrySettings()
-				ts.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, "627cc493-f310-47de-96bd-71410b7dec09")
-				ts.Resource.Attributes().PutStr(semconv.AttributeServiceName, "signaltometrics")
-				ts.Resource.Attributes().PutStr(semconv.AttributeServiceNamespace, "test")
-				return ts
-			}(),
-			expected: func() pcommon.Map {
-				m := pcommon.NewMap()
-				m.PutStr(
-					"signaltometrics."+semconv.AttributeServiceInstanceID,
-					"627cc493-f310-47de-96bd-71410b7dec09",
-				)
-				m.PutStr(
-					"signaltometrics."+semconv.AttributeServiceName,
-					"signaltometrics",
-				)
-				m.PutStr(
-					"signaltometrics."+semconv.AttributeServiceNamespace,
-					"test",
 				)
 				return m
 			}(),

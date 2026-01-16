@@ -5,7 +5,6 @@ package sapmexporter
 
 import (
 	"compress/gzip"
-	"context"
 	"crypto/rand"
 	"fmt"
 	"io"
@@ -44,7 +43,7 @@ func TestCreateTraces(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	assert.NoError(t, te.Shutdown(context.Background()), "trace exporter shutdown failed")
+	assert.NoError(t, te.Shutdown(t.Context()), "trace exporter shutdown failed")
 }
 
 func buildTestTraces(setTokenLabel bool) (traces ptrace.Traces) {
@@ -52,7 +51,7 @@ func buildTestTraces(setTokenLabel bool) (traces ptrace.Traces) {
 	rss := traces.ResourceSpans()
 	rss.EnsureCapacity(20)
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		rs := rss.AppendEmpty()
 		resource := rs.Resource()
 		resource.Attributes().PutStr("key1", "value1")
@@ -119,7 +118,7 @@ func hasToken(batches []*model.Batch) bool {
 func buildTestTrace() (ptrace.Traces, error) {
 	trace := ptrace.NewTraces()
 	trace.ResourceSpans().EnsureCapacity(2)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		rs := trace.ResourceSpans().AppendEmpty()
 		resource := rs.Resource()
 		resource.Attributes().PutStr("com.splunk.signalfx.access_token", fmt.Sprintf("TraceAccessToken%v", i))
@@ -205,7 +204,7 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 
 			trace, testTraceErr := buildTestTrace()
 			require.NoError(t, testTraceErr)
-			err = se.pushTraceData(context.Background(), trace)
+			err = se.pushTraceData(t.Context(), trace)
 
 			if tt.sendError {
 				require.Error(t, err)
@@ -274,7 +273,7 @@ func TestSAPMClientTokenAccess(t *testing.T) {
 			trace, testTraceErr := buildTestTrace()
 			require.NoError(t, testTraceErr)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			if tt.inContext {
 				ctx = client.NewContext(
 					ctx,
@@ -393,7 +392,7 @@ func TestCompression(t *testing.T) {
 
 				trace, testTraceErr := buildTestTrace()
 				require.NoError(t, testTraceErr)
-				err = se.pushTraceData(context.Background(), trace)
+				err = se.pushTraceData(t.Context(), trace)
 				require.NoError(t, err)
 			},
 		)

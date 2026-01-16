@@ -4,7 +4,6 @@
 package alibabacloudlogserviceexporter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,9 +29,9 @@ func TestNewTracesExporter(t *testing.T) {
 	ss.Spans().AppendEmpty()
 
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeTraces(context.Background(), traces)
+	err = got.ConsumeTraces(t.Context(), traces)
 	assert.NoError(t, err)
-	assert.NoError(t, got.Shutdown(context.Background()))
+	assert.NoError(t, got.Shutdown(t.Context()))
 }
 
 func TestNewFailsWithEmptyTracesExporterName(t *testing.T) {

@@ -6,9 +6,11 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -58,8 +60,11 @@ type K8sObjectsConfig struct {
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
-	Objects   []*K8sObjectsConfig `mapstructure:"objects"`
-	ErrorMode ErrorMode           `mapstructure:"error_mode"`
+	Objects             []*K8sObjectsConfig `mapstructure:"objects"`
+	ErrorMode           ErrorMode           `mapstructure:"error_mode"`
+	IncludeInitialState bool                `mapstructure:"include_initial_state"`
+
+	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
 	// For mocking purposes only.
 	makeDiscoveryClient func() (discovery.ServerResourcesInterface, error)
@@ -86,6 +91,10 @@ func (c *Config) Validate() error {
 
 		if object.Mode == PullMode && len(object.ExcludeWatchType) != 0 {
 			return errors.New("the Exclude config can only be used with watch mode")
+		}
+
+		if object.Mode == PullMode && c.IncludeInitialState {
+			return errors.New("include_initial_state can only be used with watch mode")
 		}
 	}
 	return nil
@@ -134,7 +143,8 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 		if len(split) == 1 && group.GroupVersion == "v1" {
 			split = []string{"", "v1"}
 		}
-		for _, resource := range group.APIResources {
+		for i := range group.APIResources {
+			resource := &group.APIResources[i]
 			validObjects[resource.Name] = append(validObjects[resource.Name], &schema.GroupVersionResource{
 				Group:    split[0],
 				Version:  split[1],
@@ -143,4 +153,39 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 		}
 	}
 	return validObjects, nil
+}
+
+func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
+	copied := &K8sObjectsConfig{
+		Name:            k.Name,
+		Group:           k.Group,
+		Mode:            k.Mode,
+		LabelSelector:   k.LabelSelector,
+		FieldSelector:   k.FieldSelector,
+		Interval:        k.Interval,
+		ResourceVersion: k.ResourceVersion,
+	}
+
+	copied.Namespaces = make([]string, len(k.Namespaces))
+	if k.Namespaces != nil {
+		copy(copied.Namespaces, k.Namespaces)
+	}
+
+	copied.ExcludeWatchType = make([]apiWatch.EventType, len(k.ExcludeWatchType))
+	if k.ExcludeWatchType != nil {
+		copy(copied.ExcludeWatchType, k.ExcludeWatchType)
+	}
+
+	copied.exclude = make(map[apiWatch.EventType]bool)
+	maps.Copy(copied.exclude, k.exclude)
+
+	if k.gvr != nil {
+		copied.gvr = &schema.GroupVersionResource{
+			Group:    k.gvr.Group,
+			Version:  k.gvr.Version,
+			Resource: k.gvr.Resource,
+		}
+	}
+
+	return copied
 }

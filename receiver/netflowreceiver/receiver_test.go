@@ -4,7 +4,6 @@
 package netflowreceiver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,7 +17,7 @@ func TestCreateValidDefaultReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	set := receivertest.NewNopSettings(metadata.Type)
-	receiver, err := factory.CreateLogs(context.Background(), set, cfg, consumertest.NewNop())
+	receiver, err := factory.CreateLogs(t.Context(), set, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, receiver, "receiver creation failed")
 	assert.NotNil(t, receiver.(*netflowReceiver).udpReceiver)

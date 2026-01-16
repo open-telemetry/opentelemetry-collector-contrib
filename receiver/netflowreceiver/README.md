@@ -5,6 +5,7 @@
 | Stability     | [alpha]: logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fnetflow%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fnetflow) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fnetflow%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fnetflow) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_netflow)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_netflow&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@evan-bradley](https://www.github.com/evan-bradley), [@dlopes7](https://www.github.com/dlopes7) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -29,20 +30,21 @@ Example configuration:
 ```yaml
 receivers:
   netflow:
-    - scheme: netflow
-      port: 2055
-      sockets: 16
-      workers: 32
+    scheme: netflow
+    port: 2055
+    sockets: 16
+    workers: 32
   netflow/sflow:
-    - scheme: sflow
-      port: 6343
-      sockets: 16
-      workers: 32
-
-processors:
-  batch:
-    send_batch_size: 2000
-    timeout: 30s
+    scheme: sflow
+    port: 6343
+    sockets: 16
+    workers: 32
+  netflow/raw:
+    scheme: netflow
+    port: 2055
+    sockets: 16
+    workers: 32
+    send_raw: true
 
 exporters:
   debug:
@@ -52,14 +54,13 @@ service:
   pipelines:
     logs:
       receivers: [netflow, netflow/sflow]
-      processors: [batch]
       exporters: [debug]
   telemetry:
     logs:
       level: debug
 ```
 
-We recommend using the batch processor to reduce the number of log requests being sent to the exporter. The batch processor will batch log records together and send them in a single request to the exporter.
+We recommend using `sending_queue::batch` option to reduce the number of log requests being sent by the exporter. The batch option will batch log records together and send them in a single request to the exporter.
 
 You would then configure your network devices to send netflow, sflow, or ipfix data to the Collector on the specified ports.
 
@@ -73,6 +74,12 @@ You would then configure your network devices to send netflow, sflow, or ipfix d
 | sockets | The number of sockets to use | 1 | 1 |
 | workers | The number of workers used to decode incoming flow messages | 2 | 2 |
 | queue_size | The size of the incoming netflow packets queue, it will always be at least 1000. | 5000 | 1000 |
+| send_raw   | Whether to send raw flow messages instead of parsing them                        | `true`, `false`    | `false`   |
+
+When `send_raw` is set to `true`, the receiver will:
+
+- Skip parsing the netflow/sflow messages
+- Send the raw message as the log body
 
 ## Data format
 
@@ -95,6 +102,7 @@ The log record will have the following attributes (with examples):
 * **flow.end**: Int(1736309689871846400)
 * **flow.sampling_rate**: Int(0)
 * **flow.sampler_address**: Str(172.28.176.1)
+* **flow.tcp_flags**: Int(0)
 
 The log record timestamps will be:
 

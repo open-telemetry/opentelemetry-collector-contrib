@@ -21,7 +21,7 @@ func TestMapHash(t *testing.T) {
 			name: "different_maps",
 			maps: func() []pcommon.Map {
 				m := make([]pcommon.Map, 29)
-				for i := 0; i < len(m); i++ {
+				for i := range m {
 					m[i] = pcommon.NewMap()
 				}
 				m[1].PutStr("k", "")
@@ -160,7 +160,7 @@ func TestValueHash(t *testing.T) {
 			name: "different_values",
 			values: func() []pcommon.Value {
 				m := make([]pcommon.Value, 21)
-				for i := 0; i < len(m); i++ {
+				for i := range m {
 					m[i] = pcommon.NewValueEmpty()
 				}
 				m[1].SetStr("")
@@ -341,8 +341,8 @@ func BenchmarkMapHashFourItems(b *testing.B) {
 	m.PutBool("test-bool-key", true)
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		MapHash(m)
 	}
 }
@@ -359,8 +359,8 @@ func BenchmarkMapHashEightItems(b *testing.B) {
 	m.PutEmptyBytes("test-bytes-key").FromRaw([]byte("abc"))
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		MapHash(m)
 	}
 }
@@ -385,8 +385,8 @@ func BenchmarkMapHashWithEmbeddedSliceAndMap(b *testing.B) {
 	sl.AppendEmpty().SetStr("test-slice-string-3")
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		MapHash(m)
 	}
 }

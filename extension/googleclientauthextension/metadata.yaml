@@ -3,7 +3,8 @@ type: googleclientauth
 status:
   class: extension
   stability:
-    alpha: [extension]
+    beta: [extension]
+  distributions: [contrib]
   codeowners:
     active: [dashpole, aabmass, braydonk, jsuereth, psx95, ridwanmsharif]
 

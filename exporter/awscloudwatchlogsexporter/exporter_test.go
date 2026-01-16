@@ -263,7 +263,7 @@ func BenchmarkLogToCWLog(b *testing.B) {
 	resource := testResource()
 	log := testLogRecord()
 	scope := testScope()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := logToCWLog(attrsValue(resource.Attributes()), scope, log, &Config{})
 		if err != nil {
 			b.Errorf("logToCWLog() failed %v", err)
@@ -335,7 +335,7 @@ func (mf *mockFactory) CreateMultiStreamPusher() cwlogs.Pusher {
 }
 
 func TestConsumeLogs(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
@@ -343,7 +343,7 @@ func TestConsumeLogs(t *testing.T) {
 	expCfg.LogGroupName = "testGroup"
 	expCfg.LogStreamName = "testStream"
 	expCfg.MaxRetries = 0
-	exp, err := newCwLogsPusher(expCfg, exportertest.NewNopSettings(metadata.Type))
+	exp, err := newCwLogsPusher(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
 
 	testcases := []struct {
 		id                 string
@@ -418,7 +418,9 @@ func TestNewExporterWithoutRegionErr(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.MaxRetries = 0
-	exp, err := newCwLogsExporter(expCfg, exportertest.NewNopSettings(metadata.Type))
+
+	ctx := t.Context()
+	exp, err := newCwLogsExporter(ctx, expCfg, exportertest.NewNopSettings(metadata.Type))
 	assert.Nil(t, exp)
 	assert.Error(t, err)
 }

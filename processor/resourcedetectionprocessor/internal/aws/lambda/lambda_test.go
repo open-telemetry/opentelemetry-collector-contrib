@@ -4,18 +4,16 @@
 package lambda
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 // Tests Lambda resource detector running in Lambda environment
 func TestLambda(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	const functionName = "TestFunctionName"
 	t.Setenv(awsLambdaFunctionNameEnvVar, functionName)
@@ -28,15 +26,15 @@ func TestLambda(t *testing.T) {
 	require.NotNil(t, res)
 
 	assert.Equal(t, map[string]any{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
-		conventions.AttributeCloudPlatform: conventions.AttributeCloudPlatformAWSLambda,
-		conventions.AttributeFaaSName:      functionName,
+		"cloud.provider": "aws",
+		"cloud.platform": "aws_lambda",
+		"faas.name":      functionName,
 	}, res.Attributes().AsRaw(), "Resource object returned is incorrect")
 }
 
 // Tests Lambda resource detector not running in Lambda environment
 func TestNotLambda(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	lambdaDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, _, err := lambdaDetector.Detect(ctx)

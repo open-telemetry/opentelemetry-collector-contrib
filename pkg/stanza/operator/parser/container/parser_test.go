@@ -4,7 +4,6 @@
 package container
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -89,95 +88,132 @@ func TestInternalRecombineCfg(t *testing.T) {
 }
 
 func TestProcess(t *testing.T) {
-	cases := []struct {
-		name   string
-		op     func() (operator.Operator, error)
-		input  *entry.Entry
-		expect *entry.Entry
-	}{
-		{
-			"docker",
-			func() (operator.Operator, error) {
-				cfg := NewConfigWithID("test_id")
-				cfg.AddMetadataFromFilePath = false
-				cfg.Format = "docker"
-				set := componenttest.NewNopTelemetrySettings()
-				return cfg.Build(set)
-			},
-			&entry.Entry{
-				Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
-			},
-			&entry.Entry{
-				Attributes: map[string]any{
-					"log.iostream": "stdout",
+	t.Run("Success", func(t *testing.T) {
+		cases := []struct {
+			name   string
+			op     func() (operator.Operator, error)
+			input  *entry.Entry
+			expect *entry.Entry
+		}{
+			{
+				"docker",
+				func() (operator.Operator, error) {
+					cfg := NewConfigWithID("test_id")
+					cfg.AddMetadataFromFilePath = false
+					cfg.Format = "docker"
+					set := componenttest.NewNopTelemetrySettings()
+					return cfg.Build(set)
 				},
-				Body:      "INFO: log line here",
-				Timestamp: time.Date(2029, time.March, 30, 8, 31, 20, 545192187, time.UTC),
-			},
-		},
-		{
-			"docker_with_auto_detection",
-			func() (operator.Operator, error) {
-				cfg := NewConfigWithID("test_id")
-				cfg.AddMetadataFromFilePath = false
-				set := componenttest.NewNopTelemetrySettings()
-				return cfg.Build(set)
-			},
-			&entry.Entry{
-				Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
-			},
-			&entry.Entry{
-				Attributes: map[string]any{
-					"log.iostream": "stdout",
+				&entry.Entry{
+					Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
 				},
-				Body:      "INFO: log line here",
-				Timestamp: time.Date(2029, time.March, 30, 8, 31, 20, 545192187, time.UTC),
-			},
-		},
-		{
-			"docker_with_auto_detection_and_metadata_from_file_path",
-			func() (operator.Operator, error) {
-				cfg := NewConfigWithID("test_id")
-				cfg.AddMetadataFromFilePath = true
-				set := componenttest.NewNopTelemetrySettings()
-				return cfg.Build(set)
-			},
-			&entry.Entry{
-				Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
-				Attributes: map[string]any{
-					attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+				&entry.Entry{
+					Attributes: map[string]any{
+						"log.iostream": "stdout",
+					},
+					Body:      "INFO: log line here",
+					Timestamp: time.Date(2029, time.March, 30, 8, 31, 20, 545192187, time.UTC),
 				},
 			},
-			&entry.Entry{
-				Attributes: map[string]any{
-					"log.iostream":    "stdout",
-					attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+			{
+				"docker_with_auto_detection",
+				func() (operator.Operator, error) {
+					cfg := NewConfigWithID("test_id")
+					cfg.AddMetadataFromFilePath = false
+					set := componenttest.NewNopTelemetrySettings()
+					return cfg.Build(set)
 				},
-				Body: "INFO: log line here",
-				Resource: map[string]any{
-					"k8s.pod.name":                "kube-scheduler-kind-control-plane",
-					"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
-					"k8s.container.name":          "kube-scheduler44",
-					"k8s.container.restart_count": "1",
-					"k8s.namespace.name":          "some",
+				&entry.Entry{
+					Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
 				},
-				Timestamp: time.Date(2029, time.March, 30, 8, 31, 20, 545192187, time.UTC),
+				&entry.Entry{
+					Attributes: map[string]any{
+						"log.iostream": "stdout",
+					},
+					Body:      "INFO: log line here",
+					Timestamp: time.Date(2029, time.March, 30, 8, 31, 20, 545192187, time.UTC),
+				},
 			},
-		},
-	}
+			{
+				"docker_with_auto_detection_and_metadata_from_file_path",
+				func() (operator.Operator, error) {
+					cfg := NewConfigWithID("test_id")
+					cfg.AddMetadataFromFilePath = true
+					set := componenttest.NewNopTelemetrySettings()
+					return cfg.Build(set)
+				},
+				&entry.Entry{
+					Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+				&entry.Entry{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Body: "INFO: log line here",
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Timestamp: time.Date(2029, time.March, 30, 8, 31, 20, 545192187, time.UTC),
+				},
+			},
+		}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			op, err := tc.op()
-			require.NoError(t, err, "did not expect operator function to return an error, this is a bug with the test case")
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				op, err := tc.op()
+				require.NoError(t, err, "did not expect operator function to return an error, this is a bug with the test case")
 
-			err = op.Process(context.Background(), tc.input)
-			require.NoError(t, err)
-			require.Equal(t, tc.expect, tc.input)
-			// Stop the operator
-			require.NoError(t, op.Stop())
-		})
-	}
+				err = op.Process(t.Context(), tc.input)
+				require.NoError(t, err)
+				require.Equal(t, tc.expect, tc.input)
+				// Stop the operator
+				require.NoError(t, op.Stop())
+			})
+		}
+	})
+
+	t.Run("Failure", func(t *testing.T) {
+		cases := []struct {
+			name           string
+			op             func() (operator.Operator, error)
+			input          *entry.Entry
+			expectedErrMsg string
+		}{
+			{
+				"docker_with_add_metadata_from_filepath_but_not_included",
+				func() (operator.Operator, error) {
+					cfg := NewConfigWithID("test_id")
+					cfg.AddMetadataFromFilePath = true
+					cfg.Format = "docker"
+					set := componenttest.NewNopTelemetrySettings()
+					return cfg.Build(set)
+				},
+				&entry.Entry{
+					Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
+				},
+				"operator 'test_id' has 'add_metadata_from_filepath' enabled, but the log record attribute 'log.file.path' is missing. Perhaps enable the 'include_file_path' option?",
+			},
+		}
+
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				op, err := tc.op()
+				require.NoError(t, err)
+
+				err = op.Process(t.Context(), tc.input)
+				require.ErrorContains(t, err, tc.expectedErrMsg)
+				require.NoError(t, op.Stop())
+			})
+		}
+	})
 }
 
 func TestRecombineProcess(t *testing.T) {
@@ -454,7 +490,7 @@ func TestRecombineProcess(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			op, err := tc.op()
 			require.NoError(t, err)
 			defer func() { require.NoError(t, op.Stop()) }()
@@ -519,7 +555,7 @@ func TestProcessWithDockerTime(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			op, err := tc.op()
 			require.NoError(t, err)
 			defer func() { require.NoError(t, op.Stop()) }()
@@ -539,6 +575,152 @@ func TestProcessWithDockerTime(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProcessWithIfCondition(t *testing.T) {
+	cases := []struct {
+		name           string
+		op             func() (operator.Operator, error)
+		input          *entry.Entry
+		expectedOutput *entry.Entry
+	}{
+		{
+			"if_condition_false_skips_non_container_log",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = false
+				cfg.IfExpr = `attributes["log.file.name"] == "k8s.log"`
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			&entry.Entry{
+				Body: `a random non-k8s log`,
+				Attributes: map[string]any{
+					"log.file.name": "non-k8s.log",
+				},
+			},
+			&entry.Entry{
+				Body: `a random non-k8s log`,
+				Attributes: map[string]any{
+					"log.file.name": "non-k8s.log",
+				},
+			},
+		},
+		{
+			"if_condition_true_processes_container_log",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = false
+				cfg.IfExpr = `attributes["log.file.name"] == "k8s.log"`
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			&entry.Entry{
+				Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
+				Attributes: map[string]any{
+					"log.file.name": "k8s.log",
+				},
+			},
+			&entry.Entry{
+				Body: "INFO: log line here",
+				Attributes: map[string]any{
+					"log.file.name": "k8s.log",
+					"log.iostream":  "stdout",
+				},
+				Timestamp: time.Date(2029, time.March, 30, 8, 31, 20, 545192187, time.UTC),
+			},
+		},
+		{
+			"if_condition_false_skips_docker_format_detection",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = false
+				cfg.Format = "docker"
+				cfg.IfExpr = `attributes["process"] == "true"`
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			&entry.Entry{
+				Body: `invalid docker log that would fail parsing`,
+				Attributes: map[string]any{
+					"process": "false",
+				},
+			},
+			&entry.Entry{
+				Body: `invalid docker log that would fail parsing`,
+				Attributes: map[string]any{
+					"process": "false",
+				},
+			},
+		},
+		{
+			"if_condition_false_skips_crio_format_detection",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = false
+				cfg.IfExpr = `attributes["process"] == "true"`
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			&entry.Entry{
+				Body: `invalid crio log that would fail parsing`,
+				Attributes: map[string]any{
+					"process": "false",
+				},
+			},
+			&entry.Entry{
+				Body: `invalid crio log that would fail parsing`,
+				Attributes: map[string]any{
+					"process": "false",
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			op, err := tc.op()
+			require.NoError(t, err)
+			defer func() { require.NoError(t, op.Stop()) }()
+
+			err = op.Process(t.Context(), tc.input)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedOutput, tc.input)
+		})
+	}
+}
+
+func TestProcessWithOnErrorSendQuiet(t *testing.T) {
+	t.Run("on_error_send_quiet_respects_if_condition", func(t *testing.T) {
+		// This test verifies that when an 'if' condition filters out an entry,
+		// it doesn't attempt format detection (which would fail for non-container logs)
+		// and just passes the entry through unchanged
+		cfg := NewConfigWithID("test_id")
+		cfg.AddMetadataFromFilePath = false
+		cfg.OnError = "send_quiet"
+		cfg.IfExpr = `attributes["is_container"] == "true"`
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, op.Stop()) }()
+
+		input := &entry.Entry{
+			Body: `a random non-container log`,
+			Attributes: map[string]any{
+				"is_container": "false",
+			},
+		}
+
+		err = op.Process(t.Context(), input)
+		require.NoError(t, err)
+		// Entry passes through unchanged because if condition filtered it
+		require.Equal(t, &entry.Entry{
+			Body: `a random non-container log`,
+			Attributes: map[string]any{
+				"is_container": "false",
+			},
+		}, input)
+	})
 }
 
 func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
@@ -678,7 +860,7 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			op, err := tc.op()
 			require.NoError(t, err)
 			defer func() { require.NoError(t, op.Stop()) }()

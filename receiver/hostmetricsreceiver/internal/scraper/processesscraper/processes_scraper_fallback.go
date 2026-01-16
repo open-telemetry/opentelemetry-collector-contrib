@@ -14,6 +14,6 @@ const (
 	enableProcessesCreated = false
 )
 
-func (s *processesScraper) getProcessesMetadata(context.Context) (processesMetadata, error) {
+func (*processesScraper) getProcessesMetadata(context.Context) (processesMetadata, error) {
 	return processesMetadata{}, nil
 }

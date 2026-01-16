@@ -1,0 +1,45 @@
+tinybird:
+  endpoint: "https://api.tinybird.co"
+  token: "test-token"
+
+tinybird/full:
+  endpoint: "https://api.tinybird.co"
+  compression: "zstd"
+  retry_on_failure:
+    enabled: false
+  sending_queue:
+    enabled: false
+  token: "test-token"
+  metrics:
+    gauge:
+      datasource: "gauge"
+    sum:
+      datasource: "sum"
+    histogram:
+      datasource: "histogram"
+    exponential_histogram:
+      datasource: "exponential_histogram"
+  traces::datasource: "traces"
+  logs::datasource: "logs"
+  wait: true
+
+tinybird/invalid_datasource:
+  endpoint: "https://api.tinybird.co"
+  token: "test-token"
+  metrics:
+    gauge:
+      datasource: "metrics-with-dashes"
+    sum:
+      datasource: "metrics-with-dashes"
+    histogram:
+      datasource: "metrics-with-dashes"
+    exponential_histogram:
+      datasource: "metrics-with-dashes"
+  traces::datasource: "traces-with-dashes"
+  logs::datasource: "logs-with-dashes"
+
+tinybird/missing_token:
+  endpoint: "https://api.tinybird.co"
+
+tinybird/missing_endpoint:
+  token: "test-token"

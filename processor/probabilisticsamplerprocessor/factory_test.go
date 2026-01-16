@@ -4,7 +4,6 @@
 package probabilisticsamplerprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateProcessor(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := processortest.NewNopSettings(metadata.Type)
-	tp, err := createTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	tp, err := createTracesProcessor(t.Context(), set, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "cannot create trace processor")
 	assert.NotNil(t, tp)
 }
@@ -32,7 +31,7 @@ func TestCreateProcessor(t *testing.T) {
 func TestCreateProcessorLogs(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := processortest.NewNopSettings(metadata.Type)
-	tp, err := createLogsProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	tp, err := createLogsProcessor(t.Context(), set, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "cannot create logs processor")
 	assert.NotNil(t, tp)
 }

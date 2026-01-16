@@ -1,0 +1,32 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: cloud.account.id
+                value:
+                  stringValue: "111122223333"
+              - key: aws.cloudtrail.digest.end_time
+                value:
+                  stringValue: "2015-08-20T18:01:31Z"
+              - key: aws.cloudtrail.digest.s3_bucket
+                value:
+                  stringValue: amzn-s3-demo-bucket
+              - key: aws.cloudtrail.digest.s3_object
+                value:
+                  stringValue: AWSLogs/111122223333/CloudTrail-Digest/us-east-2/2015/08/20/111122223333_CloudTrail-Digest_us-east-2_example-trail-name_us-east-2_20150820T180131Z.json.gz
+              - key: aws.cloudtrail.digest.previous_s3_bucket
+                value:
+                  stringValue: amzn-s3-demo-bucket
+              - key: aws.cloudtrail.digest.previous_s3_object
+                value:
+                  stringValue: AWSLogs/111122223333/CloudTrail-Digest/us-east-2/2015/08/20/111122223333_CloudTrail-Digest_us-east-2_example-trail-name_us-east-2_20150820T170131Z.json.gz
+            body: {}
+            timeUnixNano: "1440090091000000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.cloudtrail
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+          version: test-version

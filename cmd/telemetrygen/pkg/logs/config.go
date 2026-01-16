@@ -5,15 +5,18 @@ package logs
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/pflag"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/validate"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
 // Config describes the test scenario.
 type Config struct {
-	common.Config
+	config.Config
 	NumLogs        int
 	Body           string
 	SeverityText   string
@@ -48,7 +51,8 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 func (c *Config) SetDefaults() {
 	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/logs"
-	c.NumLogs = 1
+	c.Rate = 1
+	c.TotalDuration = types.DurationWithInf(0)
 	c.Body = "the message"
 	c.SeverityText = "Info"
 	c.SeverityNumber = 9
@@ -58,18 +62,22 @@ func (c *Config) SetDefaults() {
 
 // Validate validates the test scenario parameters.
 func (c *Config) Validate() error {
-	if c.TotalDuration <= 0 && c.NumLogs <= 0 {
+	if c.TotalDuration.Duration() <= 0 && c.NumLogs <= 0 && !c.TotalDuration.IsInf() {
 		return errors.New("either `logs` or `duration` must be greater than 0")
 	}
 
+	if c.LoadSize < 0 {
+		return fmt.Errorf("load size must be non-negative, found %d", c.LoadSize)
+	}
+
 	if c.TraceID != "" {
-		if err := common.ValidateTraceID(c.TraceID); err != nil {
+		if err := validate.TraceID(c.TraceID); err != nil {
 			return err
 		}
 	}
 
 	if c.SpanID != "" {
-		if err := common.ValidateSpanID(c.SpanID); err != nil {
+		if err := validate.SpanID(c.SpanID); err != nil {
 			return err
 		}
 	}

@@ -7,27 +7,27 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"time"
 
-	"github.com/opensearch-project/opensearch-go/v2"
-	"github.com/opensearch-project/opensearch-go/v2/opensearchutil"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	"github.com/opensearch-project/opensearch-go/v4/opensearchutil"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 type logBulkIndexer struct {
-	index       string
 	bulkAction  string
 	model       mappingModel
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newLogBulkIndexer(index, bulkAction string, model mappingModel) *logBulkIndexer {
-	return &logBulkIndexer{index, bulkAction, model, nil, nil}
+func newLogBulkIndexer(bulkAction string, model mappingModel) *logBulkIndexer {
+	return &logBulkIndexer{bulkAction, model, nil, nil}
 }
 
-func (lbi *logBulkIndexer) start(client *opensearch.Client) error {
+func (lbi *logBulkIndexer) start(client *opensearchapi.Client) error {
 	var startErr error
 	lbi.bulkIndexer, startErr = newLogOpenSearchBulkIndexer(client, lbi.onIndexerError)
 	return startErr
@@ -58,25 +58,48 @@ func (lbi *logBulkIndexer) appendRetryLogError(err error, log plog.Logs) {
 	lbi.errs = append(lbi.errs, consumererror.NewLogs(err, log))
 }
 
-func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs) {
-	forEachLog(ld, func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, log plog.LogRecord) {
-		payload, err := lbi.model.encodeLog(resource, scope, scopeSchemaURL, log)
-		if err != nil {
-			lbi.appendPermanentError(err)
-		} else {
-			ItemFailureHandler := func(_ context.Context, _ opensearchutil.BulkIndexerItem, resp opensearchutil.BulkIndexerResponseItem, itemErr error) {
-				// Setup error handler. The handler handles the per item response status based on the
-				// selective ACKing in the bulk response.
-				lbi.processItemFailure(resp, itemErr, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, log))
-			}
-			bi := lbi.newBulkIndexerItem(payload)
-			bi.OnFailure = ItemFailureHandler
-			err = lbi.bulkIndexer.Add(ctx, bi)
-			if err != nil {
-				lbi.appendRetryLogError(err, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, log))
+func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs, ir *indexResolver, cfg *Config, timestamp time.Time) {
+	keys := ir.extractPlaceholderKeys(cfg.LogsIndex)
+	timeSuffix := ir.calculateTimeSuffix(cfg.LogsIndexTimeFormat, timestamp)
+	resourceLogs := ld.ResourceLogs()
+
+	for i := 0; i < resourceLogs.Len(); i++ {
+		il := resourceLogs.At(i)
+		resource := il.Resource()
+		resourceAttrs := ir.collectResourceAttributes(resource, keys)
+		scopeLogs := il.ScopeLogs()
+
+		for j := 0; j < scopeLogs.Len(); j++ {
+			scopeSpan := scopeLogs.At(j)
+			scopeAttrs := ir.collectScopeAttributes(scopeSpan.Scope(), keys)
+			logs := scopeLogs.At(j).LogRecords()
+
+			for k := 0; k < logs.Len(); k++ {
+				log := logs.At(k)
+				indexName := ir.resolveIndexName(cfg.LogsIndex, cfg.LogsIndexFallback, log.Attributes(), keys, scopeAttrs, resourceAttrs, timeSuffix)
+				lbi.processItem(ctx, indexName, resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log)
 			}
 		}
-	})
+	}
+}
+
+func (lbi *logBulkIndexer) processItem(ctx context.Context, indexName string, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, logRecord plog.LogRecord) {
+	payload, err := lbi.model.encodeLog(resource, scope, scopeSchemaURL, logRecord)
+	if err != nil {
+		lbi.appendPermanentError(err)
+	} else {
+		ItemFailureHandler := func(_ context.Context, _ opensearchutil.BulkIndexerItem, resp opensearchapi.BulkRespItem, itemErr error) {
+			// Setup error handler. The handler handles the per item response status based on the
+			// selective ACKing in the bulk response.
+			lbi.processItemFailure(resp, itemErr, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, logRecord))
+		}
+		bi := lbi.newBulkIndexerItem(payload, indexName)
+		bi.OnFailure = ItemFailureHandler
+		err = lbi.bulkIndexer.Add(ctx, bi)
+		if err != nil {
+			lbi.appendRetryLogError(err, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, logRecord))
+		}
+	}
 }
 
 func makeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, log plog.LogRecord) plog.Logs {
@@ -95,7 +118,7 @@ func makeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.
 	return logs
 }
 
-func (lbi *logBulkIndexer) processItemFailure(resp opensearchutil.BulkIndexerResponseItem, itemErr error, logs plog.Logs) {
+func (lbi *logBulkIndexer) processItemFailure(resp opensearchapi.BulkRespItem, itemErr error, logs plog.Logs) {
 	switch {
 	case shouldRetryEvent(resp.Status):
 		// Recoverable OpenSearch error
@@ -109,34 +132,16 @@ func (lbi *logBulkIndexer) processItemFailure(resp opensearchutil.BulkIndexerRes
 	}
 }
 
-func (lbi *logBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.BulkIndexerItem {
+func (lbi *logBulkIndexer) newBulkIndexerItem(document []byte, indexName string) opensearchutil.BulkIndexerItem {
 	body := bytes.NewReader(document)
-	item := opensearchutil.BulkIndexerItem{Action: lbi.bulkAction, Index: lbi.index, Body: body}
+	item := opensearchutil.BulkIndexerItem{Action: lbi.bulkAction, Index: indexName, Body: body}
 	return item
 }
 
-func newLogOpenSearchBulkIndexer(client *opensearch.Client, onIndexerError func(context.Context, error)) (opensearchutil.BulkIndexer, error) {
+func newLogOpenSearchBulkIndexer(client *opensearchapi.Client, onIndexerError func(context.Context, error)) (opensearchutil.BulkIndexer, error) {
 	return opensearchutil.NewBulkIndexer(opensearchutil.BulkIndexerConfig{
 		NumWorkers: 1,
 		Client:     client,
 		OnError:    onIndexerError,
 	})
-}
-
-func forEachLog(ld plog.Logs, visitor func(pcommon.Resource, string, pcommon.InstrumentationScope, string, plog.LogRecord)) {
-	resourceLogs := ld.ResourceLogs()
-	for i := 0; i < resourceLogs.Len(); i++ {
-		il := resourceLogs.At(i)
-		resource := il.Resource()
-		scopeLogs := il.ScopeLogs()
-		for j := 0; j < scopeLogs.Len(); j++ {
-			scopeSpan := scopeLogs.At(j)
-			logs := scopeLogs.At(j).LogRecords()
-
-			for k := 0; k < logs.Len(); k++ {
-				log := logs.At(k)
-				visitor(resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), log)
-			}
-		}
-	}
 }

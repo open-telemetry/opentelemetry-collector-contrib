@@ -16,6 +16,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,7 +36,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 	n := 1000
 	ms := make([]pmetric.Metrics, n)
 	testIDKey := "test_id"
-	for i := 0; i < n; i++ {
+	for i := range n {
 		m := testdata.GenerateMetricsOneMetric()
 		dps := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints()
 		for j := 0; j < dps.Len(); j++ {
@@ -72,17 +73,18 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		ts := wr.Timeseries[0]
 		foundLabel := false
 		for _, label := range ts.Labels {
-			if label.Name == testIDKey {
-				id, err := strconv.Atoi(label.Value)
-				assert.NoError(t, err)
-				mu.Lock()
-				_, ok := received[id]
-				assert.False(t, ok) // fail if we already saw it
-				received[id] = ts
-				mu.Unlock()
-				foundLabel = true
-				break
+			if label.Name != testIDKey {
+				continue
 			}
+			id, err := strconv.Atoi(label.Value)
+			assert.NoError(t, err)
+			mu.Lock()
+			_, ok := received[id]
+			assert.False(t, ok) // fail if we already saw it
+			received[id] = ts
+			mu.Unlock()
+			foundLabel = true
+			break
 		}
 		assert.True(t, foundLabel)
 		w.WriteHeader(http.StatusOK)
@@ -106,10 +108,11 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		ClientConfig:      clientConfig,
 		MaxBatchSizeBytes: 3000000,
 		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
-		TargetInfo: &TargetInfo{
+		TargetInfo: TargetInfo{
 			Enabled: true,
 		},
-		BackOffConfig: retrySettings,
+		BackOffConfig:       retrySettings,
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
 	}
 
 	assert.NotNil(t, cfg)
@@ -117,7 +120,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 	prwe, nErr := newPRWExporter(cfg, set)
 
 	require.NoError(t, nErr)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	require.NoError(t, prwe.Start(ctx, componenttest.NewNopHost()))
 	defer func() {

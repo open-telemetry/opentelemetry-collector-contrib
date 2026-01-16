@@ -34,27 +34,31 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Auth: &Authentication{
+		Auth: Authentication{
 			Type: ConnectionString,
 		},
-		Container: &Container{
+		Container: TelemetryConfig{
 			Metrics: "metrics",
 			Logs:    "logs",
 			Traces:  "traces",
 		},
-		BlobNameFormat: &BlobNameFormat{
-			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
-			LogsFormat:     "2006/01/02/logs_15_04_05.json",
-			TracesFormat:   "2006/01/02/traces_15_04_05.json",
-			SerialNumRange: 10000,
-			Params:         map[string]string{},
+		BlobNameFormat: BlobNameFormat{
+			MetricsFormat:     "2006/01/02/metrics_15_04_05.json",
+			LogsFormat:        "2006/01/02/logs_15_04_05.json",
+			TracesFormat:      "2006/01/02/traces_15_04_05.json",
+			SerialNumEnabled:  true,
+			SerialNumRange:    10000,
+			Params:            map[string]string{},
+			TemplateEnabled:   false,
+			TimeParserEnabled: true,
+			TimeParserRanges:  nil,
 		},
 		FormatType: formatTypeJSON,
-		AppendBlob: &AppendBlob{
+		AppendBlob: AppendBlob{
 			Enabled:   false,
 			Separator: "\n",
 		},
-		Encodings:     &Encodings{},
+		Encodings:     Encodings{},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}
 }

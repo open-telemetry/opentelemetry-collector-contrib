@@ -5,23 +5,18 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -37,178 +32,11 @@ func TestNewScraper(t *testing.T) {
 	require.Empty(t, scraper.resources)
 }
 
-func azIDCredentialsFuncMock(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error) {
-	return &azidentity.ClientSecretCredential{}, nil
-}
-
-func azIDWorkloadFuncMock(*azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error) {
-	return &azidentity.WorkloadIdentityCredential{}, nil
-}
-
-func azManagedIdentityFuncMock(*azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error) {
-	return &azidentity.ManagedIdentityCredential{}, nil
-}
-
-func azDefaultCredentialsFuncMock(*azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error) {
-	return &azidentity.DefaultAzureCredential{}, nil
-}
-
 func createDefaultTestConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
 	cfg.TenantID = "fake-tenant-id"
 	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 	return cfg
-}
-
-func TestAzureScraperStart(t *testing.T) {
-	timeMock := getTimeMock()
-
-	tests := []struct {
-		name     string
-		testFunc func(*testing.T)
-	}{
-		// TODO: Add test cases.
-		{
-			name: "default",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				s := &azureScraper{
-					cfg:                 cfg,
-					time:                timeMock,
-					azIDCredentialsFunc: azIDCredentialsFuncMock,
-					azIDWorkloadFunc:    azIDWorkloadFuncMock,
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.ClientSecretCredential{}, s.cred)
-			},
-		},
-		{
-			name: "service_principal",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				cfg.Credentials = servicePrincipal
-				s := &azureScraper{
-					cfg:                 cfg,
-					time:                timeMock,
-					azIDCredentialsFunc: azIDCredentialsFuncMock,
-					azIDWorkloadFunc:    azIDWorkloadFuncMock,
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.ClientSecretCredential{}, s.cred)
-			},
-		},
-		{
-			name: "workload_identity",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				cfg.Credentials = workloadIdentity
-				s := &azureScraper{
-					cfg:                 cfg,
-					time:                timeMock,
-					azIDCredentialsFunc: azIDCredentialsFuncMock,
-					azIDWorkloadFunc:    azIDWorkloadFuncMock,
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.WorkloadIdentityCredential{}, s.cred)
-			},
-		},
-		{
-			name: "managed_identity",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				cfg.Credentials = managedIdentity
-				s := &azureScraper{
-					cfg:                   cfg,
-					time:                  timeMock,
-					azIDCredentialsFunc:   azIDCredentialsFuncMock,
-					azManagedIdentityFunc: azManagedIdentityFuncMock,
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.ManagedIdentityCredential{}, s.cred)
-			},
-		},
-		{
-			name: "default_credentials",
-			testFunc: func(t *testing.T) {
-				cfg := createDefaultTestConfig()
-				cfg.Credentials = defaultCredentials
-				s := &azureScraper{
-					cfg:                      cfg,
-					time:                     timeMock,
-					azIDCredentialsFunc:      azIDCredentialsFuncMock,
-					azDefaultCredentialsFunc: azDefaultCredentialsFuncMock,
-				}
-
-				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
-					t.Errorf("azureScraper.start() error = %v", err)
-				}
-				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.DefaultAzureCredential{}, s.cred)
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, tt.testFunc)
-	}
-}
-
-func newMockSubscriptionsListPager(subscriptionsPages []armsubscriptions.ClientListResponse) func(options *armsubscriptions.ClientListOptions) (resp azfake.PagerResponder[armsubscriptions.ClientListResponse]) {
-	return func(_ *armsubscriptions.ClientListOptions) (resp azfake.PagerResponder[armsubscriptions.ClientListResponse]) {
-		for _, page := range subscriptionsPages {
-			resp.AddPage(http.StatusOK, page, nil)
-		}
-		return
-	}
-}
-
-func newMockSubscriptionGet(subscriptionsByID map[string]armsubscriptions.ClientGetResponse) func(ctx context.Context, subscriptionID string, options *armsubscriptions.ClientGetOptions) (resp azfake.Responder[armsubscriptions.ClientGetResponse], errResp azfake.ErrorResponder) {
-	return func(_ context.Context, subscriptionID string, _ *armsubscriptions.ClientGetOptions) (resp azfake.Responder[armsubscriptions.ClientGetResponse], errResp azfake.ErrorResponder) {
-		resp.SetResponse(http.StatusOK, subscriptionsByID[subscriptionID], nil)
-		return
-	}
-}
-
-func newMockResourcesListPager(resourcesPages []armresources.ClientListResponse) func(options *armresources.ClientListOptions) (resp azfake.PagerResponder[armresources.ClientListResponse]) {
-	return func(_ *armresources.ClientListOptions) (resp azfake.PagerResponder[armresources.ClientListResponse]) {
-		for _, page := range resourcesPages {
-			resp.AddPage(http.StatusOK, page, nil)
-		}
-		return
-	}
-}
-
-func newMockMetricsDefinitionListPager(metricDefinitionsPagesByResourceURI map[string][]armmonitor.MetricDefinitionsClientListResponse) func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
-	return func(resourceURI string, _ *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
-		resourceURI = fmt.Sprintf("/%s", resourceURI) // Hack the fake API as it's not taking starting slash from called request
-		for _, page := range metricDefinitionsPagesByResourceURI[resourceURI] {
-			resp.AddPage(http.StatusOK, page, nil)
-		}
-		return
-	}
-}
-
-func newMockMetricList(metricsByResourceURIAndMetricName map[string]map[string]armmonitor.MetricsClientListResponse) func(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
-	return func(_ context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
-		resourceURI = fmt.Sprintf("/%s", resourceURI) // Hack the fake API as it's not taking starting slash from called request
-		resp.SetResponse(http.StatusOK, metricsByResourceURIAndMetricName[resourceURI][*options.Metricnames], nil)
-		return
-	}
 }
 
 func TestAzureScraperScrape(t *testing.T) {
@@ -220,16 +48,28 @@ func TestAzureScraperScrape(t *testing.T) {
 	}
 	cfg := createDefaultTestConfig()
 	cfg.MaximumNumberOfMetricsInACall = 2
+	cfg.AppendTagsAsAttributes = []string{}
 	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 
 	cfgTagsEnabled := createDefaultTestConfig()
-	cfgTagsEnabled.AppendTagsAsAttributes = true
+	cfgTagsEnabled.AppendTagsAsAttributes = []string{"*"}
 	cfgTagsEnabled.MaximumNumberOfMetricsInACall = 2
 	cfgTagsEnabled.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 
+	cfgTagsSelective := createDefaultTestConfig()
+	cfgTagsSelective.AppendTagsAsAttributes = []string{"tagName1"}
+	cfgTagsSelective.MaximumNumberOfMetricsInACall = 2
+	cfgTagsSelective.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+
 	cfgSubNameAttr := createDefaultTestConfig()
+	cfgSubNameAttr.AppendTagsAsAttributes = []string{}
 	cfgSubNameAttr.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 	cfgSubNameAttr.MetricsBuilderConfig.ResourceAttributes.AzuremonitorSubscription.Enabled = true
+
+	cfgTagsCaseInsensitive := createDefaultTestConfig()
+	cfgTagsCaseInsensitive.AppendTagsAsAttributes = []string{"TAGNAME1"}
+	cfgTagsCaseInsensitive.MaximumNumberOfMetricsInACall = 2
+	cfgTagsCaseInsensitive.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 
 	tests := []struct {
 		name    string
@@ -243,7 +83,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				cfg: cfg,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 			},
 		},
 		{
@@ -252,7 +92,16 @@ func TestAzureScraperScrape(t *testing.T) {
 				cfg: cfgTagsEnabled,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
+			},
+		},
+		{
+			name: "metrics_selective_tags",
+			fields: fields{
+				cfg: cfgTagsSelective,
+			},
+			args: args{
+				ctx: t.Context(),
 			},
 		},
 		{
@@ -261,7 +110,16 @@ func TestAzureScraperScrape(t *testing.T) {
 				cfg: cfgSubNameAttr,
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
+			},
+		},
+		{
+			name: "metrics_selective_tags",
+			fields: fields{
+				cfg: cfgTagsCaseInsensitive,
+			},
+			args: args{
+				ctx: t.Context(),
 			},
 		},
 	}
@@ -273,18 +131,19 @@ func TestAzureScraperScrape(t *testing.T) {
 			optionsResolver := newMockClientOptionsResolver(
 				getSubscriptionByIDMockData(),
 				getSubscriptionsMockData(),
-				getResourcesMockData(tt.fields.cfg.AppendTagsAsAttributes),
+				getResourcesMockData(),
 				getMetricsDefinitionsMockData(),
 				getMetricsValuesMockData(),
 				nil,
 			)
 
 			s := &azureScraper{
-				cfg:                   tt.fields.cfg,
-				mb:                    metadata.NewMetricsBuilder(tt.fields.cfg.MetricsBuilderConfig, settings),
-				mutex:                 &sync.Mutex{},
-				time:                  getTimeMock(),
-				clientOptionsResolver: optionsResolver,
+				cfg:                          tt.fields.cfg,
+				mb:                           metadata.NewMetricsBuilder(tt.fields.cfg.MetricsBuilderConfig, settings),
+				mutex:                        &sync.Mutex{},
+				time:                         getTimeMock(),
+				clientOptionsResolver:        optionsResolver,
+				storageAccountSpecificConfig: newStorageAccountSpecificConfig(tt.fields.cfg.Services),
 
 				// From there, initialize everything that is normally initialized in start() func
 				subscriptions: map[string]*azureSubscription{},
@@ -315,7 +174,7 @@ func TestAzureScraperScrape(t *testing.T) {
 func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 	fakeSubID := "azuremonitor-receiver"
 	metricNamespace1, metricNamespace2 := "Microsoft.ServiceA/namespace1", "Microsoft.ServiceB/namespace2"
-	metricName1, metricName2, metricName3 := "ConnectionsTotal", "IncommingMessages", "TransferedBytes"
+	metricName1, metricName2, metricName3 := "ConnectionsTotal", "IncomingMessages", "TransferredBytes"
 	metricAggregation1, metricAggregation2, metricAggregation3 := "Count", "Maximum", "Minimum"
 	cfgLimitedMertics := createDefaultTestConfig()
 	cfgLimitedMertics.SubscriptionIDs = []string{fakeSubID}
@@ -340,168 +199,53 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 		valueMaximum := 123.45
 		valueMinimum := 0.1
 
-		subscriptionsByIDMockData := map[string]armsubscriptions.ClientGetResponse{
+		subscriptionsByIDMockData := newSubscriptionsByIDMockData(map[string]string{
+			fakeSubID: "displayname",
+		})
+		resourceMockData := newResourcesMockData(map[string][][]*armresources.GenericResourceExpanded{
 			fakeSubID: {
-				Subscription: armsubscriptions.Subscription{
-					SubscriptionID: to.Ptr(fakeSubID), DisplayName: to.Ptr("displayname"),
-				},
+				{{ID: &id1, Location: &location, Name: &name, Type: &metricNamespace1}},
+				{{ID: &id2, Location: &location, Name: &name, Type: &metricNamespace2}},
 			},
-		}
-		resourceMockData := map[string][]armresources.ClientListResponse{
-			fakeSubID: {
-				{
-					ResourceListResult: armresources.ResourceListResult{
-						Value: []*armresources.GenericResourceExpanded{
-							{
-								ID:       &id1,
-								Location: &location,
-								Name:     &name,
-								Type:     &metricNamespace1,
-							},
-						},
-					},
-				},
-				{
-					ResourceListResult: armresources.ResourceListResult{
-						Value: []*armresources.GenericResourceExpanded{
-							{
-								ID:       &id2,
-								Location: &location,
-								Name:     &name,
-								Type:     &metricNamespace2,
-							},
-						},
-					},
-				},
-			},
-		}
+		})
 
-		metricsDefinitionMockData := map[string][]armmonitor.MetricDefinitionsClientListResponse{
+		metricsDefinitionMockData := newMetricsDefinitionMockData(map[string][]metricsDefinitionMockInput{
 			id1: {
-				{
-					MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
-						Value: []*armmonitor.MetricDefinition{
-							{
-								Namespace: &metricNamespace1,
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName1,
-								},
-								MetricAvailabilities: []*armmonitor.MetricAvailability{
-									{
-										TimeGrain: &timeGrain,
-									},
-								},
-							},
-						},
-					},
-				},
+				{namespace: metricNamespace1, name: metricName1, timeGrain: timeGrain},
 			},
 			id2: {
-				{
-					MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
-						Value: []*armmonitor.MetricDefinition{
-							{
-								Namespace: &metricNamespace2,
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName2,
-								},
-								MetricAvailabilities: []*armmonitor.MetricAvailability{
-									{
-										TimeGrain: &timeGrain,
-									},
-								},
-							},
-							{
-								Namespace: &metricNamespace2,
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName3,
-								},
-								MetricAvailabilities: []*armmonitor.MetricAvailability{
-									{
-										TimeGrain: &timeGrain,
-									},
-								},
-							},
-						},
-					},
-				},
+				{namespace: metricNamespace2, name: metricName2, timeGrain: timeGrain},
+				{namespace: metricNamespace2, name: metricName3, timeGrain: timeGrain},
 			},
-		}
+		})
 
-		metricsMockData := map[string]map[string]armmonitor.MetricsClientListResponse{
+		metricsMockData := newMetricsClientListResponseMockData(map[string]map[string][]metricsClientListResponseMockInput{
 			id1: {
-				metricName1: {
-					Response: armmonitor.Response{
-						Value: []*armmonitor.Metric{
-							{
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName1,
-								},
-								Unit: &unit,
-								Timeseries: []*armmonitor.TimeSeriesElement{
-									{
-										Data: []*armmonitor.MetricValue{
-											{
-												Count: &valueCount,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				metricName1: {{
+					Name: metricName1,
+					Unit: unit,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
+						{Count: &valueCount},
+					}}},
+				}},
 			},
 			id2: {
-				metricName2: {
-					Response: armmonitor.Response{
-						Value: []*armmonitor.Metric{
-							{
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName2,
-								},
-								Unit: &unit,
-								Timeseries: []*armmonitor.TimeSeriesElement{
-									{
-										Data: []*armmonitor.MetricValue{
-											{
-												Average: &valueMaximum,
-												Count:   &valueCount,
-												Maximum: &valueMaximum,
-												Minimum: &valueMinimum,
-												Total:   &valueCount,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				metricName3: {
-					Response: armmonitor.Response{
-						Value: []*armmonitor.Metric{
-							{
-								Name: &armmonitor.LocalizableString{
-									Value: &metricName3,
-								},
-								Unit: &unit,
-								Timeseries: []*armmonitor.TimeSeriesElement{
-									{
-										Data: []*armmonitor.MetricValue{
-											{
-												Maximum: &valueMaximum,
-												Minimum: &valueMinimum,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				metricName2: {{
+					Name: metricName2,
+					Unit: unit,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
+						{Average: &valueMaximum, Count: &valueCount, Maximum: &valueMaximum, Minimum: &valueMinimum, Total: &valueCount},
+					}}},
+				}},
+				metricName3: {{
+					Name: metricName3,
+					Unit: unit,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
+						{Maximum: &valueMaximum, Minimum: &valueMinimum},
+					}}},
+				}},
 			},
-		}
+		})
 
 		optionsResolver := newMockClientOptionsResolver(
 			subscriptionsByIDMockData,
@@ -514,18 +258,19 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 
 		settings := receivertest.NewNopSettings(metadata.Type)
 		s := &azureScraper{
-			cfg:                   cfgLimitedMertics,
-			mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-			mutex:                 &sync.Mutex{},
-			time:                  getTimeMock(),
-			clientOptionsResolver: optionsResolver,
+			cfg:                          cfgLimitedMertics,
+			mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+			mutex:                        &sync.Mutex{},
+			time:                         getTimeMock(),
+			clientOptionsResolver:        optionsResolver,
+			storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfgLimitedMertics.Services),
 
 			// From there, initialize everything that is normally initialized in start() func
 			subscriptions: map[string]*azureSubscription{},
 			resources:     map[string]map[string]*azureResource{},
 		}
 
-		metrics, err := s.scrape(context.Background())
+		metrics, err := s.scrape(t.Context())
 
 		require.NoError(t, err)
 		expectedFile := filepath.Join("testdata", "expected_metrics", "metrics_filtered.yaml")
@@ -543,64 +288,41 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 }
 
 func getSubscriptionByIDMockData() map[string]armsubscriptions.ClientGetResponse {
-	return map[string]armsubscriptions.ClientGetResponse{
-		"subscriptionId1": {
-			Subscription: armsubscriptions.Subscription{
-				SubscriptionID: to.Ptr("subscriptionId1"), DisplayName: to.Ptr("subscriptionDisplayName1"),
-			},
-		},
-		"subscriptionId2": {
-			Subscription: armsubscriptions.Subscription{
-				SubscriptionID: to.Ptr("subscriptionId2"), DisplayName: to.Ptr("subscriptionDisplayName2"),
-			},
-		},
-		"subscriptionId3": {
-			Subscription: armsubscriptions.Subscription{
-				SubscriptionID: to.Ptr("subscriptionId3"), DisplayName: to.Ptr("subscriptionDisplayName3"),
-			},
-		},
-	}
+	return newSubscriptionsByIDMockData(map[string]string{
+		"subscriptionId1": "subscriptionDisplayName1",
+		"subscriptionId2": "subscriptionDisplayName2",
+		"subscriptionId3": "subscriptionDisplayName3",
+	})
 }
 
 func getSubscriptionsMockData() []armsubscriptions.ClientListResponse {
-	return []armsubscriptions.ClientListResponse{
-		{
-			SubscriptionListResult: armsubscriptions.SubscriptionListResult{
-				Value: []*armsubscriptions.Subscription{
-					{SubscriptionID: to.Ptr("subscriptionId1")},
-					{SubscriptionID: to.Ptr("subscriptionId2")},
-				},
-			},
-		},
-		{
-			SubscriptionListResult: armsubscriptions.SubscriptionListResult{
-				Value: []*armsubscriptions.Subscription{
-					{SubscriptionID: to.Ptr("subscriptionId3")},
-				},
-			},
-		},
-	}
+	return newSubscriptionsListMockData([][]string{
+		{"subscriptionId1", "subscriptionId2"},
+		{"subscriptionId3"},
+	})
 }
 
 func getNominalTestScraper() *azureScraper {
 	optionsResolver := newMockClientOptionsResolver(
 		getSubscriptionByIDMockData(),
 		getSubscriptionsMockData(),
-		getResourcesMockData(false),
+		getResourcesMockData(),
 		getMetricsDefinitionsMockData(),
 		getMetricsValuesMockData(),
 		nil,
 	)
 
 	settings := receivertest.NewNopSettings(metadata.Type)
+	cfg := createDefaultTestConfig()
 
 	return &azureScraper{
-		cfg:                   createDefaultTestConfig(),
-		settings:              settings.TelemetrySettings,
-		mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-		mutex:                 &sync.Mutex{},
-		time:                  getTimeMock(),
-		clientOptionsResolver: optionsResolver,
+		cfg:                          cfg,
+		settings:                     settings.TelemetrySettings,
+		mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
 
 		// From there, initialize everything that is normally initialized in start() func
 		subscriptions: map[string]*azureSubscription{},
@@ -613,7 +335,7 @@ func TestAzureScraperGetResources(t *testing.T) {
 	s.resources["subscriptionId1"] = map[string]*azureResource{}
 	s.subscriptions["subscriptionId1"] = &azureSubscription{}
 	s.cfg.CacheResources = 0
-	s.getResources(context.Background(), "subscriptionId1")
+	s.getResources(t.Context(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
 	assert.Len(t, s.resources["subscriptionId1"], 3)
 
@@ -631,13 +353,158 @@ func TestAzureScraperGetResources(t *testing.T) {
 		getMetricsValuesMockData(),
 		nil,
 	)
-	s.getResources(context.Background(), "subscriptionId1")
+	s.getResources(t.Context(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
 	assert.Empty(t, s.resources["subscriptionId1"])
 }
 
+func TestAzureScraperProcessResources(t *testing.T) {
+	cfgWithSubTypes := createDefaultTestConfig()
+	cfgWithoutSubTypes := createDefaultTestConfig()
+	cfgWithoutSubTypes.Services = []string{}
+
+	tests := []struct {
+		name         string
+		cfg          *Config
+		resourcesArg []*armresources.GenericResourceExpanded
+		expected     []*armresources.GenericResourceExpanded
+	}{
+		{
+			name: "user selected sub types (blobServices etc)",
+			cfg:  cfgWithSubTypes,
+			resourcesArg: []*armresources.GenericResourceExpanded{
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
+					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
+					Tags: map[string]*string{
+						"tagB": to.Ptr("tagB value"),
+					},
+				},
+			},
+			expected: []*armresources.GenericResourceExpanded{
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/blobServices/default"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts/blobServices"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/fileServices/default"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts/fileServices"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/queueServices/default"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts/queueServices"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1/tableServices/default"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts/tableServices"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
+					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
+					Tags: map[string]*string{
+						"tagB": to.Ptr("tagB value"),
+					},
+				},
+			},
+		},
+		{
+			name: "user didn't select sub type (blobServices etc)",
+			cfg:  cfgWithoutSubTypes,
+			resourcesArg: []*armresources.GenericResourceExpanded{
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
+					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
+					Tags: map[string]*string{
+						"tagB": to.Ptr("tagB value"),
+					},
+				},
+			},
+			expected: []*armresources.GenericResourceExpanded{
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Storage/storageAccounts/name1"),
+					Type: to.Ptr("Microsoft.Storage/storageAccounts"),
+					Tags: map[string]*string{
+						"tagA": to.Ptr("tagA value"),
+					},
+				},
+				{
+					ID:   to.Ptr("/subscriptions/sub1/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/name1"),
+					Type: to.Ptr("Microsoft.Compute/virtualMachines"),
+					Tags: map[string]*string{
+						"tagB": to.Ptr("tagB value"),
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			optionsResolver := newMockClientOptionsResolver(
+				getSubscriptionByIDMockData(),
+				getSubscriptionsMockData(),
+				getResourcesMockData(),
+				getMetricsDefinitionsMockData(),
+				getMetricsValuesMockData(),
+				nil,
+			)
+
+			settings := receivertest.NewNopSettings(metadata.Type)
+
+			s := &azureScraper{
+				cfg:                          tt.cfg,
+				settings:                     settings.TelemetrySettings,
+				mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				mutex:                        &sync.Mutex{},
+				time:                         getTimeMock(),
+				clientOptionsResolver:        optionsResolver,
+				storageAccountSpecificConfig: newStorageAccountSpecificConfig(tt.cfg.Services),
+
+				// From there, initialize everything that is normally initialized in start() func
+				subscriptions: map[string]*azureSubscription{},
+				resources:     map[string]map[string]*azureResource{},
+			}
+
+			assert.Equal(t, tt.expected, s.processResources(tt.resourcesArg))
+		})
+	}
+}
+
 func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("do_not_fetch_in_same_interval", func(t *testing.T) {
 		s := getNominalTestScraper()
@@ -684,19 +551,11 @@ func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
 	})
 }
 
-type timeMock struct {
-	time time.Time
-}
-
-func (t *timeMock) Now() time.Time {
-	return t.time
-}
-
 func getTimeMock() timeNowIface {
 	return &timeMock{time: time.Now()}
 }
 
-func getResourcesMockData(tags bool) map[string][]armresources.ClientListResponse {
+func getResourcesMockData() map[string][]armresources.ClientListResponse {
 	id1, id2, id3, id4,
 		location1, name1, type1 := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2",
@@ -704,208 +563,61 @@ func getResourcesMockData(tags bool) map[string][]armresources.ClientListRespons
 		"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1",
 		"location1", "name1", "type1"
 
-	resourceID1 := armresources.GenericResourceExpanded{
-		ID:       &id1,
-		Location: &location1,
-		Name:     &name1,
-		Type:     &type1,
-	}
-	if tags {
-		tagName1, tagValue1 := "tagName1", "tagValue1"
-		resourceID1.Tags = map[string]*string{tagName1: &tagValue1}
-	}
-	return map[string][]armresources.ClientListResponse{
+	tagName1, tagValue1 := "tagName1", "tagValue1"
+	tagName2, tagValue2 := "tagName2", "tagValue2"
+
+	return newResourcesMockData(map[string][][]*armresources.GenericResourceExpanded{
 		"subscriptionId1": {
 			{
-				ResourceListResult: armresources.ResourceListResult{
-					Value: []*armresources.GenericResourceExpanded{
-						&resourceID1,
-						{
-							ID:       &id2,
-							Location: &location1,
-							Name:     &name1,
-							Type:     &type1,
-						},
+				{
+					ID: &id1, Location: &location1, Name: &name1, Type: &type1,
+					Tags: map[string]*string{
+						tagName1: &tagValue1,
+						tagName2: &tagValue2,
 					},
+				},
+				{
+					ID: &id2, Location: &location1, Name: &name1, Type: &type1,
 				},
 			},
 			{
-				ResourceListResult: armresources.ResourceListResult{
-					Value: []*armresources.GenericResourceExpanded{
-						{
-							ID:       &id3,
-							Location: &location1,
-							Name:     &name1,
-							Type:     &type1,
-						},
-					},
+				{
+					ID: &id3, Location: &location1, Name: &name1, Type: &type1,
 				},
 			},
 		},
-		"subscriptionId3": {{
-			ResourceListResult: armresources.ResourceListResult{
-				Value: []*armresources.GenericResourceExpanded{
-					{
-						ID:       &id4,
-						Location: &location1,
-						Name:     &name1,
-						Type:     &type1,
-					},
+		"subscriptionId3": {
+			{
+				{
+					ID: &id4, Location: &location1, Name: &name1, Type: &type1,
 				},
 			},
-		}},
-	}
+		},
+	})
 }
 
 func getMetricsDefinitionsMockData() map[string][]armmonitor.MetricDefinitionsClientListResponse {
 	namespace1, namespace2, name1, name2, name3, name4, name5, name6, name7, timeGrain1, timeGrain2, dimension1, dimension2 := "namespace1",
 		"namespace2", "metric1", "metric2", "metric3", "metric4", "metric5", "metric6", "metric7", "PT1M", "PT1H", "dimension1", "dimension2"
 
-	return map[string][]armmonitor.MetricDefinitionsClientListResponse{
+	return newMetricsDefinitionMockData(map[string][]metricsDefinitionMockInput{
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1": {
-			{
-				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
-					Value: []*armmonitor.MetricDefinition{
-						{
-							Namespace: &namespace1,
-							Name: &armmonitor.LocalizableString{
-								Value: &name1,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain1,
-								},
-							},
-						},
-						{
-							Namespace: &namespace1,
-							Name: &armmonitor.LocalizableString{
-								Value: &name2,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain1,
-								},
-							},
-						},
-						{
-							Namespace: &namespace1,
-							Name: &armmonitor.LocalizableString{
-								Value: &name3,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain1,
-								},
-							},
-						},
-					},
-				},
-			},
+			{namespace: namespace1, name: name1, timeGrain: timeGrain1},
+			{namespace: namespace1, name: name2, timeGrain: timeGrain1},
+			{namespace: namespace1, name: name3, timeGrain: timeGrain1},
 		},
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2": {
-			{
-				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
-					Value: []*armmonitor.MetricDefinition{
-						{
-							Namespace: &namespace1,
-							Name: &armmonitor.LocalizableString{
-								Value: &name4,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain1,
-								},
-							},
-						},
-						{
-							Namespace: &namespace1,
-							Name: &armmonitor.LocalizableString{
-								Value: &name5,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain2,
-								},
-							},
-							Dimensions: []*armmonitor.LocalizableString{
-								{
-									Value: &dimension1,
-								},
-								{
-									Value: &dimension2,
-								},
-							},
-						},
-						{
-							Namespace: &namespace1,
-							Name: &armmonitor.LocalizableString{
-								Value: &name6,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain2,
-								},
-							},
-							Dimensions: []*armmonitor.LocalizableString{
-								{
-									Value: &dimension1,
-								},
-							},
-						},
-					},
-				},
-			},
+			{namespace: namespace1, name: name4, timeGrain: timeGrain1},
+			{namespace: namespace1, name: name5, timeGrain: timeGrain2, dimensions: []string{dimension1, dimension2}},
+			{namespace: namespace1, name: name6, timeGrain: timeGrain2, dimensions: []string{dimension1}},
 		},
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3": {
-			{
-				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
-					Value: []*armmonitor.MetricDefinition{
-						{
-							Namespace: &namespace2,
-							Name: &armmonitor.LocalizableString{
-								Value: &name7,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain1,
-								},
-							},
-							Dimensions: []*armmonitor.LocalizableString{
-								{
-									Value: &dimension1,
-								},
-							},
-						},
-					},
-				},
-			},
+			{namespace: namespace2, name: name7, timeGrain: timeGrain1},
 		},
 		"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1": {
-			{
-				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
-					Value: []*armmonitor.MetricDefinition{
-						{
-							Namespace: &namespace2,
-							Name: &armmonitor.LocalizableString{
-								Value: &name7,
-							},
-							MetricAvailabilities: []*armmonitor.MetricAvailability{
-								{
-									TimeGrain: &timeGrain1,
-								},
-							},
-							Dimensions: []*armmonitor.LocalizableString{
-								{
-									Value: &dimension1,
-								},
-							},
-						},
-					},
-				},
-			},
+			{namespace: namespace2, name: name7, timeGrain: timeGrain1},
 		},
-	}
+	})
 }
 
 func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
@@ -914,261 +626,131 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 	var unit1 armmonitor.Unit = "unit1"
 	var value1 float64 = 1
 
-	return map[string]map[string]armmonitor.MetricsClientListResponse{
+	return newMetricsClientListResponseMockData(map[string]map[string][]metricsClientListResponseMockInput{
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1": {
-			strings.Join([]string{name1, name2}, ","): {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name1,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-								},
-							},
+			name1 + "," + name2: {
+				{
+					Name: name1, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
 						},
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name2,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-								},
-							},
+					}},
+				},
+				{
+					Name: name2, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
 						},
-					},
+					}},
 				},
 			},
 			name3: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name3,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-								},
-							},
+				{
+					Name: name3, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
 						},
-					},
+					}},
 				},
 			},
 		},
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2": {
 			name4: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name4,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-								},
-							},
+				{
+					Name: name4, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
 						},
-					},
+					}},
 				},
 			},
 			name5: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name5,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
-											},
-											Value: &dimensionValue,
-										},
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension2,
-											},
-											Value: &dimensionValue,
-										},
-									},
-								},
-							},
+				{
+					Name: name5, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
 						},
-					},
+						Metadatavalues: []*armmonitor.MetadataValue{
+							{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
+							{Name: &armmonitor.LocalizableString{Value: &dimension2}, Value: &dimensionValue},
+						},
+					}},
 				},
 			},
 			name6: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name6,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
-											},
-											Value: &dimensionValue,
-										},
-									},
-								},
-							},
+				{
+					Name: name6, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Average: &value1, Count: &value1, Maximum: &value1, Minimum: &value1, Total: &value1},
 						},
-					},
+						Metadatavalues: []*armmonitor.MetadataValue{
+							{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
+						},
+					}},
 				},
 			},
 		},
 		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3": {
 			name7: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name7,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Count: &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
-											},
-											Value: &dimensionValue,
-										},
-									},
-								},
-							},
+				{
+					Name: name7, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Count: &value1},
 						},
-					},
+						Metadatavalues: []*armmonitor.MetadataValue{
+							{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
+						},
+					}},
 				},
 			},
 		},
 		"/subscriptions/subscriptionId3/resourceGroups/group1/resourceId1": {
 			name7: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name7,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Count: &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
-											},
-											Value: &dimensionValue,
-										},
-									},
-								},
-							},
+				{
+					Name: name7, Unit: unit1,
+					TimeSeries: []*armmonitor.TimeSeriesElement{{
+						Data: []*armmonitor.MetricValue{
+							{Count: &value1},
 						},
-					},
+						Metadatavalues: []*armmonitor.MetadataValue{
+							{Name: &armmonitor.LocalizableString{Value: &dimension1}, Value: &dimensionValue},
+						},
+					}},
 				},
 			},
 		},
-	}
+	})
 }
 
 func TestGetMetricAggregations(t *testing.T) {
 	testNamespaceName := "Microsoft.AAD/DomainServices"
 	testMetricName := "MetricName"
 	tests := []struct {
-		name    string
-		filters NestedListAlias
-		want    []string
+		name                  string
+		filters               NestedListAlias
+		supportedAggregations []string
+		want                  []string
 	}{
 		{
-			name:    "should return all aggregations when metrics filter empty",
-			filters: NestedListAlias{},
-			want:    aggregations,
+			name:                  "should return supported aggregations when metrics filter empty",
+			filters:               NestedListAlias{},
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should return all aggregations when namespace not in filters",
 			filters: NestedListAlias{
 				"another.namespace": nil,
 			},
-			want: aggregations,
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should return all aggregations when metric in filters",
@@ -1177,7 +759,8 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {},
 				},
 			},
-			want: aggregations,
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should return all aggregations ignoring metric name case",
@@ -1186,7 +769,8 @@ func TestGetMetricAggregations(t *testing.T) {
 					strings.ToLower(testMetricName): {},
 				},
 			},
-			want: aggregations,
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should return all aggregations when asterisk in filters",
@@ -1195,7 +779,8 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {filterAllAggregations},
 				},
 			},
-			want: aggregations,
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should be empty when metric not in filters",
@@ -1204,7 +789,8 @@ func TestGetMetricAggregations(t *testing.T) {
 					"not_this_metric": {},
 				},
 			},
-			want: []string{},
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{},
 		},
 		{
 			name: "should return one aggregations",
@@ -1213,7 +799,8 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {aggregations[0]},
 				},
 			},
-			want: []string{aggregations[0]},
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should return one aggregations ignoring aggregation case",
@@ -1222,7 +809,18 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {strings.ToLower(aggregations[0])},
 				},
 			},
-			want: []string{aggregations[0]},
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0]},
+		},
+		{
+			name: "should return one aggregations even if not supported",
+			filters: NestedListAlias{
+				testNamespaceName: {
+					testMetricName: {aggregations[0]},
+				},
+			},
+			supportedAggregations: []string{aggregations[2]},
+			want:                  []string{aggregations[0]},
 		},
 		{
 			name: "should return many aggregations",
@@ -1231,13 +829,14 @@ func TestGetMetricAggregations(t *testing.T) {
 					testMetricName: {aggregations[0], aggregations[2]},
 				},
 			},
-			want: []string{aggregations[0], aggregations[2]},
+			supportedAggregations: []string{aggregations[0]},
+			want:                  []string{aggregations[0], aggregations[2]},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getMetricAggregations(testNamespaceName, testMetricName, tt.filters)
+			got := getMetricAggregations(testNamespaceName, testMetricName, tt.filters, tt.supportedAggregations)
 			require.Equal(t, tt.want, got)
 		})
 	}
@@ -1280,4 +879,29 @@ func TestMapFindInsensitive(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildSubTypeResource_PointersAreDistinct(t *testing.T) {
+	orig := armresources.GenericResourceExpanded{
+		ID:       to.Ptr("/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/myResource"),
+		Type:     to.Ptr("Microsoft.Storage/storageAccounts"),
+		Name:     to.Ptr("myResource"),
+		Location: to.Ptr("westeurope"),
+		Tags: map[string]*string{
+			"env": to.Ptr("prod"),
+		},
+	}
+
+	newType := "Microsoft.Storage/storageAccounts/blobServices"
+	newID := "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.Storage/storageAccounts/myResource/blobServices/default"
+	cloned := buildSubTypeResource(orig, newType, newID)
+
+	require.NotNil(t, cloned)
+	require.NotEqual(t, orig.ID, cloned.ID)
+	require.NotEqual(t, orig.Type, cloned.Type)
+	require.Equal(t, newID, *cloned.ID)
+	require.Equal(t, newType, *cloned.Type)
+	require.Equal(t, *orig.Name, *cloned.Name)
+	require.Equal(t, *orig.Location, *cloned.Location)
+	require.NotSame(t, orig.Location, cloned.Location)
 }

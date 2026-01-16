@@ -8,6 +8,10 @@ import (
 	"context"
 )
 
+const (
+	conntrackMetricsLen = 0
+)
+
 var allTCPStates = []string{
 	"CLOSE_WAIT",
 	"CLOSED",
@@ -23,6 +27,6 @@ var allTCPStates = []string{
 	"TIME_WAIT",
 }
 
-func (s *networkScraper) recordNetworkConntrackMetrics(context.Context) error {
+func (*networkScraper) recordNetworkConntrackMetrics(context.Context) error {
 	return nil
 }

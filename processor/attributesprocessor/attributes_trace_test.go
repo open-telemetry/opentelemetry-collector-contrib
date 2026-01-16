@@ -4,7 +4,6 @@
 package attributesprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -35,7 +33,7 @@ type testCase struct {
 func runIndividualTestCase(t *testing.T, tt testCase, tp processor.Traces) {
 	t.Run(tt.name, func(t *testing.T) {
 		td := generateTraceData(tt.serviceName, tt.name, tt.inputAttributes)
-		assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
+		assert.NoError(t, tp.ConsumeTraces(t.Context(), td))
 		require.NoError(t, ptracetest.CompareTraces(generateTraceData(tt.serviceName, tt.name, tt.expectedAttributes), td))
 	})
 }
@@ -44,7 +42,7 @@ func generateTraceData(serviceName, spanName string, attrs map[string]any) ptrac
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
-		rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName)
+		rs.Resource().Attributes().PutStr("service.name", serviceName)
 	}
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(spanName)
@@ -91,12 +89,12 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 		{Key: "attribute1", Action: attraction.DELETE},
 	}
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.NoError(t, tp.ConsumeTraces(context.Background(), tt.input))
+			assert.NoError(t, tp.ConsumeTraces(t.Context(), tt.input))
 			assert.Equal(t, tt.output, tt.input)
 		})
 	}
@@ -157,7 +155,7 @@ func TestAttributes_FilterSpans(t *testing.T) {
 		},
 		Config: *createConfig(filterset.Strict),
 	}
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -225,7 +223,7 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 		SpanNames: []string{"dont_apply"},
 		Config:    *createConfig(filterset.Strict),
 	}
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -293,7 +291,7 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 		SpanNames: []string{".*dont_apply$"},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -352,7 +350,7 @@ func TestAttributes_Hash(t *testing.T) {
 		{Key: "user.authenticated", Action: attraction.HASH},
 	}
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -455,7 +453,7 @@ func TestAttributes_Convert(t *testing.T) {
 		{Key: "to.string", Action: attraction.CONVERT, ConvertedType: "string"},
 	}
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -499,7 +497,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 	oCfg.Include = &filterconfig.MatchProperties{
 		SpanNames: []string{"^apply.*"},
 	}
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(b.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(b, err)
 	require.NotNil(b, tp)
 
@@ -507,8 +505,8 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 		td := generateTraceData(tt.serviceName, tt.name, tt.inputAttributes)
 
 		b.Run(tt.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				assert.NoError(b, tp.ConsumeTraces(context.Background(), td))
+			for b.Loop() {
+				assert.NoError(b, tp.ConsumeTraces(b.Context(), td))
 			}
 		})
 

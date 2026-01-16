@@ -585,7 +585,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			}
 			factory := NewFactory()
 			flp, err := factory.CreateLogs(
-				context.Background(),
+				t.Context(),
 				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				next,
@@ -595,10 +595,10 @@ func TestFilterLogProcessor(t *testing.T) {
 
 			caps := flp.Capabilities()
 			assert.True(t, caps.MutatesData)
-			ctx := context.Background()
-			assert.NoError(t, flp.Start(ctx, nil))
+			ctx := t.Context()
+			assert.NoError(t, flp.Start(ctx, componenttest.NewNopHost()))
 
-			cErr := flp.ConsumeLogs(context.Background(), test.inLogs)
+			cErr := flp.ConsumeLogs(t.Context(), test.inLogs)
 			assert.NoError(t, cErr)
 			got := next.AllLogs()
 
@@ -679,7 +679,7 @@ func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 	pcfg.Logs = LogFilters{
 		Exclude: nil,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	proc, _ := factory.CreateLogs(
 		ctx,
 		processortest.NewNopSettings(metadata.Type),
@@ -705,15 +705,27 @@ var (
 func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	tests := []struct {
 		name             string
-		conditions       []string
+		conditions       LogFilters
 		filterEverything bool
 		want             func(ld plog.Logs)
 		errorMode        ottl.ErrorMode
 	}{
 		{
+			name: "drop resource",
+			conditions: LogFilters{
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
 			name: "drop logs",
-			conditions: []string{
-				`body == "operationA"`,
+			conditions: LogFilters{
+				LogConditions: []string{
+					`body == "operationA"`,
+				},
 			},
 			want: func(ld plog.Logs) {
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(log plog.LogRecord) bool {
@@ -727,25 +739,31 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 		},
 		{
 			name: "drop everything by dropping all logs",
-			conditions: []string{
-				`IsMatch(body, "operation.*")`,
+			conditions: LogFilters{
+				LogConditions: []string{
+					`IsMatch(body, "operation.*")`,
+				},
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "multiple conditions",
-			conditions: []string{
-				`IsMatch(body, "wrong name")`,
-				`IsMatch(body, "operation.*")`,
+			conditions: LogFilters{
+				LogConditions: []string{
+					`IsMatch(body, "wrong name")`,
+					`IsMatch(body, "operation.*")`,
+				},
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "with error conditions",
-			conditions: []string{
-				`Substring("", 0, 100) == "test"`,
+			conditions: LogFilters{
+				LogConditions: []string{
+					`Substring("", 0, 100) == "test"`,
+				},
 			},
 			want:      func(_ plog.Logs) {},
 			errorMode: ottl.IgnoreError,
@@ -753,10 +771,11 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterLogsProcessor(processortest.NewNopSettings(metadata.Type), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
+			cfg := &Config{Logs: tt.conditions, logFunctions: defaultLogFunctionsMap()}
+			processor, err := newFilterLogsProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 
-			got, err := processor.processLogs(context.Background(), constructLogs())
+			got, err := processor.processLogs(t.Context(), constructLogs())
 
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
@@ -771,13 +790,14 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 
 func TestFilterLogProcessorTelemetry(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 	processor, err := newFilterLogsProcessor(metadatatest.NewSettings(tel), &Config{
-		Logs: LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
+		Logs:         LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
+		logFunctions: defaultLogFunctionsMap(),
 	})
 	assert.NoError(t, err)
 
-	_, err = processor.processLogs(context.Background(), constructLogs())
+	_, err = processor.processLogs(t.Context(), constructLogs())
 	assert.NoError(t, err)
 
 	metadatatest.AssertEqualProcessorFilterLogsFiltered(t, tel, []metricdata.DataPoint[int64]{

@@ -162,8 +162,150 @@ func Test_regexParser_parsePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ParsedPath{}
-			err := rp.ParsePath(tt.path, &got)
+			got := parsedPath{}
+			err := rp.parsePath(tt.path, &got)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.Equal(t, tt.wantName, got.MetricName)
+			assert.Equal(t, tt.wantAttributes, got.Attributes)
+			assert.Equal(t, tt.wantMetricType, got.MetricType)
+		})
+	}
+}
+
+func Test_regexParser_parsePath_simple_unnamed_group(t *testing.T) {
+	config := RegexParserConfig{
+		Rules: []*RegexRule{
+			{
+				Regexp:     `(prefix\.)?(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds`,
+				NamePrefix: "cpu_seconds",
+			},
+		},
+	}
+
+	require.NoError(t, compileRegexRules(config.Rules))
+	rp := &regexPathParser{
+		rules: config.Rules,
+	}
+
+	tests := []struct {
+		name           string
+		path           string
+		wantName       string
+		wantAttributes pcommon.Map
+		wantMetricType TargetMetricType
+		wantErr        bool
+	}{
+		{
+			name:           "no_rule_match",
+			path:           "service_name.host01.rpc.duration.seconds",
+			wantName:       "service_name.host01.rpc.duration.seconds",
+			wantAttributes: pcommon.NewMap(),
+		},
+		{
+			name:     "match_no_prefix",
+			path:     "service_name.host00.cpu.seconds",
+			wantName: "cpu_seconds",
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("svc", "service_name")
+				m.PutStr("host", "host00")
+				return m
+			}(),
+		},
+		{
+			name:     "match_optional_prefix",
+			path:     "prefix.service_name.host00.cpu.seconds",
+			wantName: "cpu_seconds",
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("svc", "service_name")
+				m.PutStr("host", "host00")
+				return m
+			}(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parsedPath{}
+			err := rp.parsePath(tt.path, &got)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.Equal(t, tt.wantName, got.MetricName)
+			assert.Equal(t, tt.wantAttributes, got.Attributes)
+			assert.Equal(t, tt.wantMetricType, got.MetricType)
+		})
+	}
+}
+
+func Test_regexParser_parsePath_key_inside_unnamed_group(t *testing.T) {
+	config := RegexParserConfig{
+		Rules: []*RegexRule{
+			{
+				Regexp:     `(job=(?P<key_job>[^.]+).)?(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds`,
+				NamePrefix: "cpu_seconds",
+				MetricType: string(GaugeMetricType),
+			},
+		},
+	}
+
+	require.NoError(t, compileRegexRules(config.Rules))
+	rp := &regexPathParser{
+		rules: config.Rules,
+	}
+
+	tests := []struct {
+		name           string
+		path           string
+		wantName       string
+		wantAttributes pcommon.Map
+		wantMetricType TargetMetricType
+		wantErr        bool
+	}{
+		{
+			name:           "no_rule_match",
+			path:           "service_name.host01.rpc.duration.seconds",
+			wantName:       "service_name.host01.rpc.duration.seconds",
+			wantAttributes: pcommon.NewMap(),
+		},
+		{
+			name:     "match_missing_optional_key",
+			path:     "service_name.host00.cpu.seconds",
+			wantName: "cpu_seconds",
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("svc", "service_name")
+				m.PutStr("host", "host00")
+				return m
+			}(),
+			wantMetricType: GaugeMetricType,
+		},
+		{
+			name:     "match_present_optional_key",
+			path:     "job=71972c09-de94-4a4e-a8a7-ad3de050a141.service_name.host00.cpu.seconds",
+			wantName: "cpu_seconds",
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("job", "71972c09-de94-4a4e-a8a7-ad3de050a141")
+				m.PutStr("svc", "service_name")
+				m.PutStr("host", "host00")
+				return m
+			}(),
+			wantMetricType: GaugeMetricType,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parsedPath{}
+			err := rp.parsePath(tt.path, &got)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -183,7 +325,7 @@ var res struct {
 	err        error
 }
 
-func Benchmark_regexPathParser_ParsePath(b *testing.B) {
+func Benchmark_regexPathParser_parsePath(b *testing.B) {
 	config := RegexParserConfig{
 		Rules: []*RegexRule{
 			{
@@ -214,16 +356,16 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 		"svc_02.host02.avg.duration",
 	}
 
-	got := ParsedPath{}
-	err := rp.ParsePath(tests[0], &got)
+	got := parsedPath{}
+	err := rp.parsePath(tests[0], &got)
 	res.name = got.MetricName
 	res.attributes = got.Attributes
 	res.metricType = got.MetricType
 	res.err = err
 
-	for n := 0; n < b.N; n++ {
-		for i := 0; i < len(tests); i++ {
-			err = rp.ParsePath(tests[i], &got)
+	for b.Loop() {
+		for i := range tests {
+			err = rp.parsePath(tests[i], &got)
 		}
 	}
 

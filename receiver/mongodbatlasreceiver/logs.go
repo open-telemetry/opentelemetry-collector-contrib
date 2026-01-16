@@ -6,6 +6,7 @@ package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -43,8 +44,11 @@ type projectContext struct {
 // MongoDB Atlas Documentation recommends a polling interval of 5 minutes: https://www.mongodb.com/docs/atlas/reference/api/logs/#logs
 const collectionInterval = time.Minute * 5
 
-func newMongoDBAtlasLogsReceiver(settings rcvr.Settings, cfg *Config, consumer consumer.Logs) *logsReceiver {
-	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
+func newMongoDBAtlasLogsReceiver(settings rcvr.Settings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
+	client, err := internal.NewMongoDBAtlasClient(cfg.BaseURL, cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MongoDB Atlas client for logs receiver: %w", err)
+	}
 
 	for _, p := range cfg.Logs.Projects {
 		p.populateIncludesAndExcludes()
@@ -56,7 +60,7 @@ func newMongoDBAtlasLogsReceiver(settings rcvr.Settings, cfg *Config, consumer c
 		client:      client,
 		stopperChan: make(chan struct{}),
 		consumer:    consumer,
-	}
+	}, nil
 }
 
 // Log receiver logic
@@ -97,7 +101,7 @@ func parseHostNames(s string, logger *zap.Logger) []string {
 		return []string{}
 	}
 
-	for _, t := range strings.Split(s, ",") {
+	for t := range strings.SplitSeq(s, ",") {
 		// separate hostname from scheme and port
 		host, _, err := net.SplitHostPort(strings.TrimPrefix(t, "mongodb://"))
 		if err != nil {
@@ -156,7 +160,8 @@ type clusterInfo struct {
 }
 
 func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, projectCfg LogsProjectConfig, pc projectContext) {
-	for _, cluster := range clusters {
+	for i := range clusters {
+		cluster := &clusters[i]
 		c := clusterInfo{
 			ClusterName:         cluster.Name,
 			RegionName:          cluster.ProviderSettings.RegionName,
@@ -206,7 +211,8 @@ func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) (
 	}
 
 	var filtered []mongodbatlas.Cluster
-	for _, cluster := range clusters {
+	for i := range clusters {
+		cluster := clusters[i]
 		if _, ok := clusterNameSet[cluster.Name]; (!ok && !allowed) || (ok && allowed) {
 			filtered = append(filtered, cluster)
 		}
@@ -214,7 +220,7 @@ func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) (
 	return filtered, nil
 }
 
-func (s *logsReceiver) getHostLogs(groupID, hostname, logName string, clusterMajorVersion string) ([]model.LogEntry, error) {
+func (s *logsReceiver) getHostLogs(groupID, hostname, logName, clusterMajorVersion string) ([]model.LogEntry, error) {
 	// Get gzip bytes buffer from API
 	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, s.start, s.end)
 	if err != nil {

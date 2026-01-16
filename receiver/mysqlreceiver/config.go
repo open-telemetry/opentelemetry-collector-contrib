@@ -30,14 +30,26 @@ type Config struct {
 	confignet.AddrConfig           `mapstructure:",squash"`
 	TLS                            configtls.ClientConfig        `mapstructure:"tls,omitempty"`
 	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	LogsBuilderConfig              metadata.LogsBuilderConfig    `mapstructure:",squash"`
 	StatementEvents                StatementEventsConfig         `mapstructure:"statement_events"`
 	TopQueryCollection             TopQueryCollection            `mapstructure:"top_query_collection"`
+	QuerySampleCollection          QuerySampleCollection         `mapstructure:"query_sample_collection"`
 }
 
 type TopQueryCollection struct {
-	Enabled             bool   `mapstructure:"enabled"`
-	TopQueryCount       int    `mapstructure:"top_query_count"`
-	MaxQuerySampleCount uint64 `mapstructure:"max_query_sample_count"`
+	LookbackTime        uint64        `mapstructure:"lookback_time"`
+	MaxQuerySampleCount uint64        `mapstructure:"max_query_sample_count"`
+	TopQueryCount       uint64        `mapstructure:"top_query_count"`
+	CollectionInterval  time.Duration `mapstructure:"collection_interval"`
+	QueryPlanCacheSize  int           `mapstructure:"query_plan_cache_size"`
+	QueryPlanCacheTTL   time.Duration `mapstructure:"query_plan_cache_ttl"`
+
+	_ struct{}
+}
+type QuerySampleCollection struct {
+	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
+
+	_ struct{}
 }
 
 type StatementEventsConfig struct {

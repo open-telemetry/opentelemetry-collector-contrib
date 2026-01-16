@@ -4,7 +4,6 @@
 package filestorage
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -51,7 +50,7 @@ func TestFactory(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			e, err := f.Create(
-				context.Background(),
+				t.Context(),
 				extensiontest.NewNopSettings(f.Type()),
 				test.config,
 			)
@@ -64,7 +63,7 @@ func TestFactory(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, e)
-				ctx := context.Background()
+				ctx := t.Context()
 				require.NoError(t, e.Start(ctx, componenttest.NewNopHost()))
 				require.NoError(t, e.Shutdown(ctx))
 			}

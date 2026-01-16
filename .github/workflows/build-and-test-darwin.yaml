@@ -23,7 +23,21 @@ concurrency:
 permissions: read-all
 
 jobs:
+  setup-environment:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ macos-14, macos-15 ]
+    runs-on: ${{ matrix.os }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: ./.github/actions/setup-go-tools
+        with:
+          go-version: oldstable
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   darwin-build-unittest-binary:
+    needs: [setup-environment]
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     strategy:
       fail-fast: false
@@ -32,63 +46,47 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: ./.github/actions/setup-go-tools
         with:
-          go-version: "~1.23.8"
-          cache: false
-      - name: Cache Go
-        id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-build-cache-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
+          go-version: oldstable
+          install-tools: "false"
       - name: Build test binaries
         env:
           GOTESTARCH: amd64
         run: make gobuildtest GROUP=cgo
       - name: Zip test binaries
         run: zip -r testbinaries.zip  . --include \*builtunitetest.test
-      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: ${{ matrix.os == 'macos-14' }}
         with:
           name: testbinaries
           path: ./testbinaries.zip
           retention-days: 1
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   darwin-unittest-matrix:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     needs: [darwin-build-unittest-binary]
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-13]
+        os: [macos-14]
     timeout-minutes: 30
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: ./.github/actions/setup-go-tools
         with:
-          go-version: "~1.23.8"
-          cache: false
-      - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
-      - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+          go-version: oldstable
+          install-tools: "false"
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: testbinaries
       - name: Unzip binaries to each module
         run: unzip testbinaries.zip
       - name: Run Unit Tests
         run: make -j2 gorunbuilttest GROUP=cgo
+      - run: ./.github/workflows/scripts/check-disk-space.sh
   darwin-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: macos-latest

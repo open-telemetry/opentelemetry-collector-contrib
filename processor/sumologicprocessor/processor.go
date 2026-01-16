@@ -36,11 +36,11 @@ func newsumologicProcessor(set processor.Settings, config *Config) *sumologicPro
 
 	translateTelegrafMetricsProcessor := newTranslateTelegrafMetricsProcessor(config.TranslateTelegrafAttributes)
 
-	nestingProcessor := newNestingProcessor(config.NestAttributes)
+	nestingProcessor := newNestingProcessor(&config.NestAttributes)
 
 	aggregateAttributesProcessor := newAggregateAttributesProcessor(config.AggregateAttributes)
 
-	logFieldsConversionProcessor := newLogFieldConversionProcessor(config.LogFieldsAttributes)
+	logFieldsConversionProcessor := newLogFieldConversionProcessor(&config.LogFieldsAttributes)
 
 	translateDockerMetricsProcessor := newTranslateDockerMetricsProcessor(config.TranslateDockerMetrics)
 

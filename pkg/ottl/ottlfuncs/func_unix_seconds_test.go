@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -22,7 +23,7 @@ func Test_TimeUnixSeconds(t *testing.T) {
 		{
 			name: "January 1, 2023",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local), nil
 				},
 			},
@@ -31,7 +32,7 @@ func Test_TimeUnixSeconds(t *testing.T) {
 		{
 			name: "March 31, 2000, 4pm",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(2000, 3, 31, 16, 0, 0, 0, time.Local), nil
 				},
 			},
@@ -40,7 +41,7 @@ func Test_TimeUnixSeconds(t *testing.T) {
 		{
 			name: "December 12, 1980, 4:35:01am",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(1980, 12, 12, 4, 35, 1, 0, time.Local), nil
 				},
 			},
@@ -49,7 +50,7 @@ func Test_TimeUnixSeconds(t *testing.T) {
 		{
 			name: "October 4, 2020, 5:05 5 microseconds 5 nanosecs",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.Date(2020, 10, 4, 5, 5, 5, 5, time.Local), nil
 				},
 			},
@@ -59,9 +60,9 @@ func Test_TimeUnixSeconds(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := UnixSeconds(tt.time)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			want := tt.expected.Unix()
 			assert.Equal(t, want, result)
 		})

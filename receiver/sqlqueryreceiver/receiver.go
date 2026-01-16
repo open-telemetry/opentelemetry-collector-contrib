@@ -22,10 +22,10 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvider
 	return func(
 		_ context.Context,
 		settings receiver.Settings,
-		config component.Config,
+		cfg component.Config,
 		consumer consumer.Logs,
 	) (receiver.Logs, error) {
-		sqlQueryConfig := config.(*Config)
+		sqlQueryConfig := cfg.(*Config)
 		return newLogsReceiver(sqlQueryConfig, settings, sqlOpenerFunc, clientProviderFunc, consumer)
 	}
 }
@@ -38,8 +38,19 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 		consumer consumer.Metrics,
 	) (receiver.Metrics, error) {
 		sqlCfg := cfg.(*Config)
+		var dataSource string
+		var err error
+
+		if sqlCfg.DataSource != "" {
+			dataSource = sqlCfg.DataSource
+		} else {
+			dataSource, err = sqlquery.BuildDataSourceString(sqlCfg.Config)
+			if err != nil {
+				return nil, err
+			}
+		}
 		var opts []scraperhelper.ControllerOption
-		pool := internal.NewPool(sqlOpenerFunc, sqlCfg.Driver, sqlCfg.DataSource, sqlCfg.MaxOpenConn)
+		pool := internal.NewPool(sqlOpenerFunc, sqlCfg.Driver, dataSource, sqlCfg.MaxOpenConn)
 
 		for i, query := range sqlCfg.Queries {
 			if len(query.Metrics) == 0 {

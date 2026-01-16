@@ -27,10 +27,16 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/eks resource attributes.
 type ResourceAttributesConfig struct {
-	CloudAccountID ResourceAttributeConfig `mapstructure:"cloud.account.id"`
-	CloudPlatform  ResourceAttributeConfig `mapstructure:"cloud.platform"`
-	CloudProvider  ResourceAttributeConfig `mapstructure:"cloud.provider"`
-	K8sClusterName ResourceAttributeConfig `mapstructure:"k8s.cluster.name"`
+	CloudAccountID        ResourceAttributeConfig `mapstructure:"cloud.account.id"`
+	CloudAvailabilityZone ResourceAttributeConfig `mapstructure:"cloud.availability_zone"`
+	CloudPlatform         ResourceAttributeConfig `mapstructure:"cloud.platform"`
+	CloudProvider         ResourceAttributeConfig `mapstructure:"cloud.provider"`
+	CloudRegion           ResourceAttributeConfig `mapstructure:"cloud.region"`
+	HostID                ResourceAttributeConfig `mapstructure:"host.id"`
+	HostImageID           ResourceAttributeConfig `mapstructure:"host.image.id"`
+	HostName              ResourceAttributeConfig `mapstructure:"host.name"`
+	HostType              ResourceAttributeConfig `mapstructure:"host.type"`
+	K8sClusterName        ResourceAttributeConfig `mapstructure:"k8s.cluster.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -38,11 +44,29 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		CloudAccountID: ResourceAttributeConfig{
 			Enabled: false,
 		},
+		CloudAvailabilityZone: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		CloudPlatform: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		CloudProvider: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		CloudRegion: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostImageID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostName: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostType: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sClusterName: ResourceAttributeConfig{
 			Enabled: false,

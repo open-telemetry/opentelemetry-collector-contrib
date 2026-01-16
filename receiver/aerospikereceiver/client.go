@@ -278,8 +278,8 @@ func allNamespaceInfo(n cluster.Node, policy *as.InfoPolicy) (metricsMap, error)
 
 func parseStats(defaultKey, s, sep string) metricsMap {
 	stats := make(metricsMap, strings.Count(s, sep)+1)
-	s2 := strings.Split(s, sep)
-	for _, s := range s2 {
+	s2 := strings.SplitSeq(s, sep)
+	for s := range s2 {
 		list := strings.SplitN(s, "=", 2)
 		switch len(list) {
 		case 0:

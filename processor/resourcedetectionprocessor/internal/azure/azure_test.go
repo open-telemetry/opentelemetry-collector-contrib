@@ -4,7 +4,6 @@
 package azure
 
 import (
-	"context"
 	"errors"
 	"regexp"
 	"testing"
@@ -12,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
@@ -37,6 +35,10 @@ func TestDetectAzureAvailable(t *testing.T) {
 		SubscriptionID:    "subscriptionID",
 		ResourceGroupName: "resourceGroup",
 		VMScaleSetName:    "myScaleset",
+		AvailabilityZone:  "availabilityZone",
+		OSProfile: azure.OSProfile{
+			ComputerName: "computerName",
+		},
 		TagsList: []azure.ComputeTagsListMetadata{
 			{
 				Name:  "tag1key",
@@ -56,23 +58,23 @@ func TestDetectAzureAvailable(t *testing.T) {
 		},
 		rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
-	res, schemaURL, err := detector.Detect(context.Background())
+	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	mp.AssertExpectations(t)
 
 	expected := map[string]any{
-		conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
-		conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformAzureVM,
-		conventions.AttributeHostName:       "name",
-		conventions.AttributeCloudRegion:    "location",
-		conventions.AttributeHostID:         "vmID",
-		conventions.AttributeCloudAccountID: "subscriptionID",
-		"azure.vm.name":                     "name",
-		"azure.vm.size":                     "vmSize",
-		"azure.resourcegroup.name":          "resourceGroup",
-		"azure.vm.scaleset.name":            "myScaleset",
-		"azure.tag.tag1key":                 "value1",
+		"cloud.provider":           "azure",
+		"cloud.platform":           "azure_vm",
+		"host.name":                "computerName",
+		"cloud.region":             "location",
+		"host.id":                  "vmID",
+		"cloud.account.id":         "subscriptionID",
+		"azure.vm.name":            "name",
+		"azure.vm.size":            "vmSize",
+		"azure.resourcegroup.name": "resourceGroup",
+		"azure.vm.scaleset.name":   "myScaleset",
+		"azure.tag.tag1key":        "value1",
 	}
 
 	notExpected := map[string]any{
@@ -91,7 +93,7 @@ func TestDetectError(t *testing.T) {
 		logger:   zap.NewNop(),
 		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
-	res, _, err := detector.Detect(context.Background())
+	res, _, err := detector.Detect(t.Context())
 	assert.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 }

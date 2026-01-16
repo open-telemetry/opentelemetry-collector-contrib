@@ -4,6 +4,7 @@ package solacereceiver
 
 import (
 	"context"
+	"maps"
 	"strconv"
 	"testing"
 
@@ -337,9 +338,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 			"messaging.solace.send.outcome":     "accepted",
 			"messaging.solace.partition_number": 123,
 		}
-		for key, val := range attributes {
-			base[key] = val
-		}
+		maps.Copy(base, attributes)
 		span := ptrace.NewSpan()
 		err := span.Attributes().FromRaw(base)
 		assert.NoError(t, err)
@@ -477,9 +476,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			"messaging.operation.type":          "delete",
 			"messaging.solace.partition_number": 123,
 		}
-		for key, val := range attributes {
-			base[key] = val
-		}
+		maps.Copy(base, attributes)
 		span := ptrace.NewSpan()
 		err := span.Attributes().FromRaw(base)
 		assert.NoError(t, err)
@@ -912,7 +909,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 
 func newTestEgressV1Unmarshaller(t *testing.T) (*brokerTraceEgressUnmarshallerV1, *componenttest.Telemetry) {
 	tt := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) }) //nolint:usetesting
 	builder, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
 	require.NoError(t, err)
 	metricAttr := attribute.NewSet(attribute.String("receiver_name", ""))

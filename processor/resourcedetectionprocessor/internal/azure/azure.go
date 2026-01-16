@@ -9,7 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventionsv134 "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
@@ -59,12 +60,13 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", nil
 	}
 
-	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAzure)
-	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAzureVM)
-	d.rb.SetHostName(compute.Name)
+	d.rb.SetCloudProvider(conventions.CloudProviderAzure.Value.AsString())
+	d.rb.SetCloudPlatform(conventionsv134.CloudPlatformAzureVM.Value.AsString())
+	d.rb.SetHostName(compute.OSProfile.ComputerName)
 	d.rb.SetCloudRegion(compute.Location)
 	d.rb.SetHostID(compute.VMID)
 	d.rb.SetCloudAccountID(compute.SubscriptionID)
+	d.rb.SetCloudAvailabilityZone(compute.AvailabilityZone)
 
 	// Also save compute.Name in "azure.vm.name" as host.id (AttributeHostName) is
 	// used by system detector.

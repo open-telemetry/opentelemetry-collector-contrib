@@ -13,7 +13,7 @@ type fakeDbClient struct {
 	RequestCounter int
 }
 
-func (c *fakeDbClient) metricRows(context.Context) ([]metricRow, error) {
+func (c *fakeDbClient) metricRows(context.Context, ...any) ([]metricRow, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}

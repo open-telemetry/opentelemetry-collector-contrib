@@ -4,7 +4,6 @@
 package datasource
 
 import (
-	"context"
 	"testing"
 
 	"cloud.google.com/go/spanner"
@@ -12,7 +11,7 @@ import (
 )
 
 func TestNewDatabaseFromClient(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	client, _ := spanner.NewClient(ctx, "")
 	databaseID := databaseID()
 
@@ -23,7 +22,7 @@ func TestNewDatabaseFromClient(t *testing.T) {
 }
 
 func TestNewDatabase(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	databaseID := databaseID()
 
 	database, err := NewDatabase(ctx, databaseID, "../../testdata/serviceAccount.json")
@@ -34,7 +33,7 @@ func TestNewDatabase(t *testing.T) {
 }
 
 func TestNewDatabaseWithError(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	databaseID := databaseID()
 
 	database, err := NewDatabase(ctx, databaseID, "does not exist")
@@ -44,7 +43,7 @@ func TestNewDatabaseWithError(t *testing.T) {
 }
 
 func TestNewDatabaseWithNoCredentialsFilePath(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	databaseID := databaseID()
 
 	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "../../testdata/serviceAccount.json")

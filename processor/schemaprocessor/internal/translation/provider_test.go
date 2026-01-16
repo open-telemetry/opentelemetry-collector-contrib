@@ -48,7 +48,7 @@ func TestInvalidHTTPProviderTests(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
 			p := NewHTTPProvider(s.Client())
-			content, err := p.Retrieve(context.Background(), tc.url)
+			content, err := p.Retrieve(t.Context(), tc.url)
 			assert.Empty(t, content, "Expected to be empty")
 			assert.Error(t, err, "Must have errored processing request")
 		})

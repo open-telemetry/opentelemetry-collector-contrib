@@ -7,13 +7,17 @@ package journald // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
+	"syscall"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -27,50 +31,69 @@ func init() {
 
 // Build will build a journald input operator from the supplied configuration
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+
 	inputOperator, err := c.InputConfig.Build(set)
 	if err != nil {
 		return nil, err
 	}
 
-	args, err := c.buildArgs()
+	newCmdFunc, err := c.buildNewCmdFunc()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Input{
-		InputOperator: inputOperator,
-		newCmd: func(ctx context.Context, cursor []byte) cmd {
-			// Copy args and if needed, add the cursor flag
-			journalArgs := append([]string{}, args...)
-			if cursor != nil {
-				journalArgs = append(journalArgs, "--after-cursor", string(cursor))
-			}
-			return exec.CommandContext(ctx, "journalctl", journalArgs...) // #nosec - ...
-			// journalctl is an executable that is required for this operator to function
-		},
+		InputOperator:       inputOperator,
+		newCmd:              newCmdFunc,
 		convertMessageBytes: c.ConvertMessageBytes,
-		json:                jsoniter.ConfigFastest,
 	}, nil
+}
+
+func (c Config) validate() error {
+	if c.StartAt != "end" && c.StartAt != "beginning" {
+		return fmt.Errorf("invalid value '%s' for parameter 'start_at'", c.StartAt)
+	}
+
+	if c.RootPath != "" {
+		if !filepath.IsAbs(c.JournalctlPath) {
+			return errors.New("'journalctl_path' must be an absolute path when 'root_path' is set")
+		}
+
+		if !filepath.IsAbs(c.RootPath) {
+			return errors.New("'root_path' must be an absolute path")
+		}
+
+		info, err := os.Stat(c.RootPath)
+		if err != nil {
+			return fmt.Errorf("cannot access root_path %q: %w", c.RootPath, err)
+		}
+
+		if !info.IsDir() {
+			return fmt.Errorf("root_path %q is not a directory", c.RootPath)
+		}
+	}
+
+	if strings.TrimSpace(c.JournalctlPath) == "" {
+		return errors.New("'journalctl_path' must be non-whitespace")
+	}
+
+	return nil
 }
 
 func (c Config) buildArgs() ([]string, error) {
 	args := make([]string, 0, 10)
 
-	// Export logs in UTC time
-	args = append(args, "--utc")
+	args = append(args,
+		"--utc",         // Export logs in UTC time
+		"--output=json", // Export logs as JSON
+		"--follow",      // Continue watching logs until cancelled
+	)
 
-	// Export logs as JSON
-	args = append(args, "--output=json")
-
-	// Continue watching logs until cancelled
-	args = append(args, "--follow")
-
-	switch c.StartAt {
-	case "end":
-	case "beginning":
+	if c.StartAt == "beginning" {
 		args = append(args, "--no-tail")
-	default:
-		return nil, fmt.Errorf("invalid value '%s' for parameter 'start_at'", c.StartAt)
 	}
 
 	for _, unit := range c.Units {
@@ -83,7 +106,7 @@ func (c Config) buildArgs() ([]string, error) {
 
 	args = append(args, "--priority", c.Priority)
 
-	if len(c.Grep) > 0 {
+	if c.Grep != "" {
 		args = append(args, "--grep", c.Grep)
 	}
 
@@ -91,7 +114,7 @@ func (c Config) buildArgs() ([]string, error) {
 		args = append(args, "--dmesg")
 	}
 
-	if len(c.Namespace) > 0 {
+	if c.Namespace != "" {
 		args = append(args, "--namespace", c.Namespace)
 	}
 
@@ -114,6 +137,10 @@ func (c Config) buildArgs() ([]string, error) {
 
 	if c.All {
 		args = append(args, "--all")
+	}
+
+	if c.Merge {
+		args = append(args, "--merge")
 	}
 
 	return args, nil
@@ -156,4 +183,27 @@ func (c Config) buildMatchesConfig() ([]string, error) {
 	}
 
 	return matches, nil
+}
+
+func (c Config) buildNewCmdFunc() (func(ctx context.Context, cursor []byte) cmd, error) {
+	args, err := c.buildArgs()
+	if err != nil {
+		return nil, err
+	}
+
+	return func(ctx context.Context, cursor []byte) cmd {
+		// Copy args and if needed, add the cursor flag
+		journalArgs := append([]string{}, args...)
+		if cursor != nil {
+			journalArgs = append(journalArgs, "--after-cursor", string(cursor))
+		}
+		cmd := exec.CommandContext(ctx, c.JournalctlPath, journalArgs...) // #nosec - ...
+		// journalctl is an executable that is required for this operator to function
+		if c.RootPath != "" {
+			cmd.SysProcAttr = &syscall.SysProcAttr{
+				Chroot: c.RootPath,
+			}
+		}
+		return cmd
+	}, nil
 }

@@ -34,10 +34,10 @@ func TestNewType(t *testing.T) {
 	value := 2.0
 	tags := []string{"tag:value"}
 
-	gauge := NewGauge(name, ts, value, tags)
+	gauge := NewGauge(name, ts, 10, value, tags)
 	assert.Equal(t, datadogV2.METRICINTAKETYPE_GAUGE, gauge.GetType())
 
-	count := NewCount(name, ts, value, tags)
+	count := NewCount(name, ts, 10, value, tags)
 	assert.Equal(t, datadogV2.METRICINTAKETYPE_COUNT, count.GetType())
 }
 

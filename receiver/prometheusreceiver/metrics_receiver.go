@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"os"
 	"reflect"
-	"regexp"
 	"runtime"
 	"runtime/debug"
 	"strings"
@@ -46,7 +45,7 @@ import (
 	"golang.org/x/net/netutil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/targetallocator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/targetallocator"
 )
 
 const (
@@ -78,7 +77,10 @@ type pReceiver struct {
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) *pReceiver {
+func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) (*pReceiver, error) {
+	if err := cfg.PrometheusConfig.Reload(); err != nil {
+		return nil, fmt.Errorf("failed to reload Prometheus config: %w", err)
+	}
 	baseCfg := promconfig.Config(*cfg.PrometheusConfig)
 	registry := prometheus.NewRegistry()
 	registerer := prometheus.WrapRegistererWith(
@@ -93,12 +95,11 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 		registry:     registry,
 		targetAllocatorManager: targetallocator.NewManager(
 			set,
-			cfg.TargetAllocator,
+			cfg.TargetAllocator.Get(),
 			&baseCfg,
-			enableNativeHistogramsGate.IsEnabled(),
 		),
 	}
-	return pr
+	return pr, nil
 }
 
 // Start is the method that starts Prometheus scraping. It
@@ -120,7 +121,7 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	if r.cfg.APIServer != nil && r.cfg.APIServer.Enabled {
+	if r.cfg.APIServer.Enabled {
 		err = r.initAPIServer(discoveryCtx, host)
 		if err != nil {
 			r.settings.Logger.Error("Failed to initAPIServer", zap.Error(err))
@@ -158,22 +159,10 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		}
 	}()
 
-	var startTimeMetricRegex *regexp.Regexp
-	if r.cfg.StartTimeMetricRegex != "" {
-		startTimeMetricRegex, err = regexp.Compile(r.cfg.StartTimeMetricRegex)
-		if err != nil {
-			return err
-		}
-	}
-
 	store, err := internal.NewAppendable(
 		r.consumer,
 		r.settings,
-		gcInterval(r.cfg.PrometheusConfig),
-		r.cfg.UseStartTimeMetric,
-		startTimeMetricRegex,
-		useCreatedMetricGate.IsEnabled(),
-		enableNativeHistogramsGate.IsEnabled(),
+		!r.cfg.ignoreMetadata,
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
 	)
@@ -181,18 +170,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		return err
 	}
 
-	opts := &scrape.Options{
-		PassMetadataInContext: true,
-		ExtraMetrics:          r.cfg.ReportExtraScrapeMetrics,
-		HTTPClientOptions: []commonconfig.HTTPClientOption{
-			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
-		},
-		EnableCreatedTimestampZeroIngestion: true,
-	}
-
-	if enableNativeHistogramsGate.IsEnabled() {
-		opts.EnableNativeHistogramsIngestion = true
-	}
+	opts := r.initScrapeOptions()
 
 	// for testing only
 	if r.skipOffsetting {
@@ -231,15 +209,29 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 	return nil
 }
 
+func (r *pReceiver) initScrapeOptions() *scrape.Options {
+	opts := &scrape.Options{
+		PassMetadataInContext: true,
+		// We're slowly switching to the feature gate, so we need to check both the feature gate and the config option for a few releases.
+		ExtraMetrics: enableReportExtraScrapeMetricsGate.IsEnabled() || (r.cfg.ReportExtraScrapeMetrics && !removeReportExtraScrapeMetricsConfigGate.IsEnabled()),
+		HTTPClientOptions: []commonconfig.HTTPClientOption{
+			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
+		},
+		EnableCreatedTimestampZeroIngestion: enableCreatedTimestampZeroIngestionGate.IsEnabled(),
+	}
+
+	return opts
+}
+
 func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) error {
 	r.settings.Logger.Info("Starting Prometheus API server")
 
 	// If allowed CORS origins are provided in the receiver config, combine them into a single regex since the Prometheus API server requires this format.
 	var corsOriginRegexp *grafanaRegexp.Regexp
-	if r.cfg.APIServer.ServerConfig.CORS != nil && len(r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins) > 0 {
+	if r.cfg.APIServer.ServerConfig.CORS.HasValue() && len(r.cfg.APIServer.ServerConfig.CORS.Get().AllowedOrigins) > 0 {
 		var combinedOriginsBuilder strings.Builder
-		combinedOriginsBuilder.WriteString(r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins[0])
-		for _, origin := range r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins[1:] {
+		combinedOriginsBuilder.WriteString(r.cfg.APIServer.ServerConfig.CORS.Get().AllowedOrigins[0])
+		for _, origin := range r.cfg.APIServer.ServerConfig.CORS.Get().AllowedOrigins[1:] {
 			combinedOriginsBuilder.WriteString("|")
 			combinedOriginsBuilder.WriteString(origin)
 		}
@@ -259,10 +251,10 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	o := &web.Options{
 		ScrapeManager:   r.scrapeManager,
 		Context:         ctx,
-		ListenAddresses: []string{r.cfg.APIServer.ServerConfig.Endpoint},
+		ListenAddresses: []string{r.cfg.APIServer.ServerConfig.NetAddr.Endpoint},
 		ExternalURL: &url.URL{
 			Scheme: "http",
-			Host:   r.cfg.APIServer.ServerConfig.Endpoint,
+			Host:   r.cfg.APIServer.ServerConfig.NetAddr.Endpoint,
 			Path:   "",
 		},
 		RoutePrefix:    "/",
@@ -335,10 +327,17 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		o.NotificationsSub,
 		o.Gatherer,
 		o.Registerer,
-		nil,
+		nil, // StatsRenderer
 		o.EnableRemoteWriteReceiver,
 		o.AcceptRemoteWriteProtoMsgs,
 		o.EnableOTLPWriteReceiver,
+		o.ConvertOTLPDelta,
+		o.NativeOTLPDeltaIngestion,
+		o.CTZeroIngestionEnabled,
+		5*time.Minute, // LookbackDelta - Using the default value of 5 minutes
+		o.EnableTypeAndUnitLabels,
+		false, // appendMetadata from remote write
+		nil,   // OverrideErrorCode
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579
@@ -370,7 +369,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	spanNameFormatter := otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 		return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 	})
-	r.apiServer, err = r.cfg.APIServer.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, otelhttp.NewHandler(mux, "", spanNameFormatter))
+	r.apiServer, err = r.cfg.APIServer.ServerConfig.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, otelhttp.NewHandler(mux, "", spanNameFormatter))
 	if err != nil {
 		return err
 	}
@@ -398,10 +397,7 @@ func setPathWithPrefix(prefix string) func(handlerName string, handler http.Hand
 // plus a delta to prevent race conditions.
 // This ensures jobs are not garbage collected between scrapes.
 func gcInterval(cfg *PromConfig) time.Duration {
-	gcInterval := defaultGCInterval
-	if time.Duration(cfg.GlobalConfig.ScrapeInterval)+gcIntervalDelta > gcInterval {
-		gcInterval = time.Duration(cfg.GlobalConfig.ScrapeInterval) + gcIntervalDelta
-	}
+	gcInterval := max(time.Duration(cfg.GlobalConfig.ScrapeInterval)+gcIntervalDelta, defaultGCInterval)
 	for _, scrapeConfig := range cfg.ScrapeConfigs {
 		if time.Duration(scrapeConfig.ScrapeInterval)+gcIntervalDelta > gcInterval {
 			gcInterval = time.Duration(scrapeConfig.ScrapeInterval) + gcIntervalDelta

@@ -71,6 +71,7 @@ type alertsReceiver struct {
 	// only relevant in `poll` mode
 	projects          []*ProjectConfig
 	client            alertsClient
+	baseURL           string
 	privateKey        string
 	publicKey         string
 	backoffConfig     configretry.BackOffConfig
@@ -108,6 +109,7 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 		mode:              cfg.Mode,
 		projects:          cfg.Projects,
 		backoffConfig:     baseConfig.BackOffConfig,
+		baseURL:           baseConfig.BaseURL,
 		publicKey:         baseConfig.PublicKey,
 		privateKey:        string(baseConfig.PrivateKey),
 		wg:                &sync.WaitGroup{},
@@ -119,7 +121,12 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 	}
 
 	if recv.mode == alertModePoll {
-		recv.client = internal.NewMongoDBAtlasClient(recv.publicKey, recv.privateKey, recv.backoffConfig, recv.telemetrySettings.Logger)
+		client, err := internal.NewMongoDBAtlasClient(recv.baseURL, recv.publicKey, recv.privateKey, recv.backoffConfig, recv.telemetrySettings.Logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create MongoDB Atlas client for alerts receiver: %w", err)
+		}
+
+		recv.client = client
 		return recv, nil
 	}
 	s := &http.Server{
@@ -337,7 +344,7 @@ func (a *alertsReceiver) shutdownPoller(ctx context.Context) error {
 	return a.writeCheckpoint(ctx)
 }
 
-func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbatlas.Alert, project *mongodbatlas.Project) (plog.Logs, error) {
+func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []*mongodbatlas.Alert, project *mongodbatlas.Project) (plog.Logs, error) {
 	logs := plog.NewLogs()
 	var errs error
 	for i := range alerts {
@@ -546,8 +553,8 @@ func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 	return a.storageClient.Set(ctx, alertCacheKey, marshalBytes)
 }
 
-func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatlas.Alert) []mongodbatlas.Alert {
-	filtered := []mongodbatlas.Alert{}
+func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatlas.Alert) []*mongodbatlas.Alert {
+	filtered := []*mongodbatlas.Alert{}
 
 	lastRecordedTime := pcommon.Timestamp(0).AsTime()
 	if a.record.LastRecordedTime != nil {
@@ -556,7 +563,8 @@ func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatla
 	// we need to maintain two timestamps in order to not conflict while iterating
 	latestInPayload := pcommon.Timestamp(0).AsTime()
 
-	for _, alert := range alerts {
+	for i := range alerts {
+		alert := &alerts[i]
 		updatedTime, err := time.Parse(time.RFC3339, alert.Updated)
 		if err != nil {
 			a.telemetrySettings.Logger.Warn("unable to interpret updated time for alert, expecting a RFC3339 timestamp", zap.String("timestamp", alert.Updated))
