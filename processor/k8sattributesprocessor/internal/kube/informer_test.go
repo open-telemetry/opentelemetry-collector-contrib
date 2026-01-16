@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	api_v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	clientmeta "k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
@@ -169,28 +170,36 @@ func Test_fakeNamespaceInformer(t *testing.T) {
 	assert.NoError(t, store.Add(api_v1.Namespace{}))
 }
 
-//func Test_replicasetListFuncWithSelectors(t *testing.T) {
-//	c, err := newFakeAPIClientset()
-//	assert.NoError(t, err)
-//
-//	listFunc := replicaSetListFuncWithSelectors(c, "test-ns")
-//	opts := metav1.ListOptions{}
-//	obj, err := listFunc(t.Context(), opts)
-//	assert.NoError(t, err)
-//	assert.NotNil(t, obj)
-//}
-//
-//func Test_replicasetWatchFuncWithSelectors(t *testing.T) {
-//	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-//	assert.NoError(t, err)
-//	watchFunc := replicaSetWatchFuncWithSelectors(c, "test-ns")
-//	opts := metav1.ListOptions{}
-//	obj, err := watchFunc(t.Context(), opts)
-//	assert.NoError(t, err)
-//	assert.NotNil(t, obj)
-//}
+func Test_replicasetListFuncWithSelectors(t *testing.T) {
+	mc := newTestMetadataClient(t)
+	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
+	listFunc := replicaSetListFuncWithSelectors(mc, gvr, "test-ns")
+	opts := metav1.ListOptions{}
+	obj, err := listFunc(t.Context(), opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
+
+func Test_replicasetWatchFuncWithSelectors(t *testing.T) {
+	mc := newTestMetadataClient(t)
+	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
+	watchFunc := replicaSetWatchFuncWithSelectors(mc, gvr, "test-ns")
+	opts := metav1.ListOptions{}
+	obj, err := watchFunc(t.Context(), opts)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+}
 
 func Test_newReplicaSetsharedInformer(t *testing.T) {
+	mc := newTestMetadataClient(t)
+	informer := newReplicaSetSharedInformer(mc, "test-ns")
+	if informer == nil {
+		t.Fatalf("Expected informer to be non-nil, but got nil. Check logs for details.")
+	}
+	assert.NotNil(t, informer)
+}
+
+func newTestMetadataClient(t *testing.T) clientmeta.Interface {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
@@ -205,12 +214,7 @@ func Test_newReplicaSetsharedInformer(t *testing.T) {
 	// Create metadata client from rest.Config
 	mc, err := clientmeta.NewForConfig(restCfg)
 	require.NoError(t, err)
-
-	informer := newReplicaSetSharedInformer(mc, "test-ns")
-	if informer == nil {
-		t.Fatalf("Expected informer to be non-nil, but got nil. Check logs for details.")
-	}
-	assert.NotNil(t, informer)
+	return mc
 }
 
 func Test_deploymentWatchFuncWithSelectors(t *testing.T) {
