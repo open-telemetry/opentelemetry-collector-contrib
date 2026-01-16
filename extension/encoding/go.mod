@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	go.opentelemetry.io/collector/extension v1.49.1-0.20260115162016-5e41fb551263
 	go.opentelemetry.io/collector/pdata v1.49.1-0.20260115162016-5e41fb551263
-	go.opentelemetry.io/collector/pdata/pprofile v0.143.1-0.20260114115623-0755152e21d3
+	go.opentelemetry.io/collector/pdata/pprofile v0.143.1-0.20260115162016-5e41fb551263
 )
 
 require (
@@ -18,7 +18,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/collector/component v1.49.1-0.20260115162016-5e41fb551263 // indirect
 	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260115162016-5e41fb551263 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260115162016-5e41fb551263 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
@@ -27,4 +27,4 @@ require (
 )
 
 // Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260114115623-0755152e21d3
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260115162016-5e41fb551263
