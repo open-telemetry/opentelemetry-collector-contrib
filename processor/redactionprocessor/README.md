@@ -135,6 +135,25 @@ part of the value is not masked even if it matches the regular expression for a 
 If the value matches the regular expression for a blocked value only, the matching
 part of the value is masked with a fixed length of asterisks.
 
+### Precedence between `allowed_values` and `blocked_values`
+
+When both `allowed_values` and `blocked_values` are configured, `allowed_values` takes precedence.
+
+This means that if a value matches an entry in `allowed_values`, it will not be masked even if it also matches `blocked_values`. This behavior is intentional and allows operators to explicitly whitelist known-safe values while still blocking broader patterns.
+
+#### Example
+
+```yaml
+processors:
+  redaction:
+    blocked_values:
+      - "mycompany.com"
+    allowed_values:
+      - "support.mycompany.com"
+
+```
+
+
 `blocked_key_patterns` applies to the values of the keys matching one of the patterns.
 The value is then masked according to the configuration.
 
