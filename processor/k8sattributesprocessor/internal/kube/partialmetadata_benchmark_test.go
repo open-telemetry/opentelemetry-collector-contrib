@@ -86,7 +86,7 @@ func Benchmark_RS_ResourceSweep_InProcess(b *testing.B) {
 				factory := InformersFactoryList{
 					newInformer:           NewFakeInformer,
 					newNamespaceInformer:  NewNoOpInformer,
-					newReplicaSetInformer: newReplicaSetSharedInformer(k8sconfig.APIConfig{}), // typed path
+					newReplicaSetInformer: newReplicaSetSharedInformer,
 				}
 				newClientSet := func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) { return fc, nil }
 
