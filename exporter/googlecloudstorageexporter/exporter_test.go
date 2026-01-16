@@ -343,26 +343,43 @@ func TestConsumeLogs(t *testing.T) {
 
 	encodingSucceedsID := "id_success"
 	encodingFailsID := "id_fail"
+	encodingLogsOnlyID := "id_logs_only"
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
 			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
 			component.MustNewID(encodingFailsID):    &mockLogMarshaler{shouldFail: true},
+			component.MustNewID(encodingLogsOnlyID): &mockLogMarshaler{},
 		},
 	}
 
 	tests := []struct {
-		name       string
-		id         string
-		expectsErr string
+		name                string
+		id                  string
+		signal              signalType
+		expectsConsumeErr   string
+		expectedMarshaler   any
 	}{
 		{
-			name:       "encoding fails",
-			id:         encodingFailsID,
-			expectsErr: "failed to marshal logs",
+			name:              "logs encoding fails",
+			id:                encodingFailsID,
+			signal:            signalTypeLogs,
+			expectsConsumeErr: "failed to marshal logs",
 		},
 		{
-			name: "encoding succeeds",
-			id:   encodingSucceedsID,
+			name:   "logs encoding succeeds",
+			id:     encodingSucceedsID,
+			signal: signalTypeLogs,
+		},
+		{
+			name:              "traces with logs-only encoding falls back to JSON",
+			id:                encodingLogsOnlyID,
+			signal:            signalTypeTraces,
+			expectedMarshaler: &ptrace.JSONMarshaler{},
+		},
+		{
+			name:   "traces encoding succeeds",
+			id:     encodingSucceedsID,
+			signal: signalTypeTraces,
 		},
 	}
 
@@ -375,14 +392,28 @@ func TestConsumeLogs(t *testing.T) {
 					Name: uploadBucketName,
 				},
 				Encoding: &compID,
-			})
+			}, tt.signal)
 
 			errStart := gcsExporter.Start(t.Context(), mHost)
 			require.NoError(t, errStart)
 
-			err := gcsExporter.ConsumeLogs(t.Context(), plog.NewLogs())
-			if tt.expectsErr != "" {
-				require.ErrorContains(t, err, tt.expectsErr)
+			if tt.expectedMarshaler != nil {
+				if tt.signal == signalTypeTraces {
+					require.IsType(t, tt.expectedMarshaler, gcsExporter.tracesMarshaler)
+				} else {
+					require.IsType(t, tt.expectedMarshaler, gcsExporter.logsMarshaler)
+				}
+			}
+
+			var err error
+			if tt.signal == signalTypeTraces {
+				err = gcsExporter.ConsumeTraces(t.Context(), ptrace.NewTraces())
+			} else {
+				err = gcsExporter.ConsumeLogs(t.Context(), plog.NewLogs())
+			}
+
+			if tt.expectsConsumeErr != "" {
+				require.ErrorContains(t, err, tt.expectsConsumeErr)
 			} else {
 				require.NoError(t, err)
 			}
@@ -390,59 +421,7 @@ func TestConsumeLogs(t *testing.T) {
 	}
 }
 
-func TestConsumeTraces(t *testing.T) {
-	uploadBucketName := "upload-bucket"
-	newTestStorageEmulator(t, "", uploadBucketName)
 
-	encodingSucceedsID := "id_success"
-	mHost := &mockHost{
-		extensions: map[component.ID]component.Component{
-			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
-		},
-	}
-	id := component.MustNewID(encodingSucceedsID)
-	gcsExporter := newTestGCSExporter(t, &Config{
-		Bucket: bucketConfig{
-			Name: uploadBucketName,
-		},
-		Encoding: &id,
-	})
-
-	errStart := gcsExporter.Start(t.Context(), mHost)
-	require.NoError(t, errStart)
-
-	err := gcsExporter.ConsumeTraces(t.Context(), ptrace.NewTraces())
-	require.NoError(t, err)
-}
-
-func TestConsumeTracesWithLogsOnlyEncoding(t *testing.T) {
-	uploadBucketName := "upload-bucket"
-	newTestStorageEmulator(t, "", uploadBucketName)
-
-	encodingLogsOnlyID := "id_logs_only"
-	mHost := &mockHost{
-		extensions: map[component.ID]component.Component{
-			component.MustNewID(encodingLogsOnlyID): &mockLogMarshaler{},
-		},
-	}
-	id := component.MustNewID(encodingLogsOnlyID)
-	// Create a traces exporter with logs-only encoding
-	gcsExporter := newTestGCSExporter(t, &Config{
-		Bucket: bucketConfig{
-			Name: uploadBucketName,
-		},
-		Encoding: &id,
-	}, signalTypeTraces)
-
-	errStart := gcsExporter.Start(t.Context(), mHost)
-	require.NoError(t, errStart)
-	// Verify it falls back to JSON marshaler
-	require.IsType(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
-
-	// Verify it can consume traces successfully
-	err := gcsExporter.ConsumeTraces(t.Context(), ptrace.NewTraces())
-	require.NoError(t, err)
-}
 
 func newTestGCSExporter(t *testing.T, cfg *Config, signal ...signalType) *storageExporter {
 	sig := signalTypeLogs
