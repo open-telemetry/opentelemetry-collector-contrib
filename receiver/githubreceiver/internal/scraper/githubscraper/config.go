@@ -29,6 +29,36 @@ type Config struct {
 	MergedPRLookbackDays int `mapstructure:"merged_pr_lookback_days"`
 	// SearchQuery is the query to use when defining a custom search for repository data
 	SearchQuery string `mapstructure:"search_query"`
+
+	// RetryOnFailure configures reactive retry behavior when API calls fail.
+	// Retries occur on: HTTP 403 (rate limit), 429 (secondary limit), 5xx errors.
+	// Uses exponential backoff from github.com/cenkalti/backoff/v5.
+	RetryOnFailure RetryConfig `mapstructure:"retry_on_failure"`
+
+	// ProactiveRetry configures proactive rate limit management.
+	// When enabled, monitors GitHub API rate limit metadata and waits
+	// before hitting primary rate limits.
+	ProactiveRetry ProactiveRetryConfig `mapstructure:"proactive_retry"`
+}
+
+// RetryConfig controls reactive retry behavior on API failures.
+type RetryConfig struct {
+	// Enabled enables exponential backoff retries on API errors.
+	// Default: true
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ProactiveRetryConfig controls proactive rate limit management.
+type ProactiveRetryConfig struct {
+	// Enabled enables proactive waiting based on rate limit metadata.
+	// When remaining points drop below threshold, waits until rate limit resets.
+	// Default: true
+	Enabled bool `mapstructure:"enabled"`
+
+	// Threshold is the minimum remaining points before proactive waiting triggers.
+	// When remaining < threshold, the scraper waits until resetAt time.
+	// Default: 100 (enough for ~25 repositories at 4 points each)
+	Threshold int `mapstructure:"threshold"`
 }
 
 // Validate validates the configuration
@@ -38,6 +68,9 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.MergedPRLookbackDays < 0 {
 		return errors.New("merged_pr_lookback_days must be non-negative")
+	}
+	if cfg.ProactiveRetry.Threshold < 0 {
+		return errors.New("proactive_retry.threshold must be non-negative")
 	}
 	return nil
 }
