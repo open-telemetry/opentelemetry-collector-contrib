@@ -186,7 +186,7 @@ func Test_newReplicaSetMetaInformer(t *testing.T) {
 		AuthType: "none",
 	}
 
-	replicaSetInformerFactory := newReplicaSetMetaInformer(apiCfg)
+	replicaSetInformerFactory := newReplicaSetSharedInformer(apiCfg)
 	client, err := newFakeAPIClientset(apiCfg)
 	require.NoError(t, err)
 
