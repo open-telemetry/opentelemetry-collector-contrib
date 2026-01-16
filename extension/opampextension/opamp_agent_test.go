@@ -869,12 +869,11 @@ func setupSignalHandler(ctx context.Context, tb testing.TB, signalCallback func(
 	sigChan := make(chan os.Signal, 1)
 	// Notify sigChan when SIGHUP is received
 	signal.Notify(sigChan, syscall.SIGHUP)
+	tb.Cleanup(func() {
+		signal.Stop(sigChan)
+	})
 
 	go func() {
-		tb.Cleanup(func() {
-			signal.Stop(sigChan)
-		})
-
 		for {
 			select {
 			case sig := <-sigChan:
