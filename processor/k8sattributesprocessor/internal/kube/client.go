@@ -1745,11 +1745,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetAdded.Add(context.Background(), 1)
-	if replicaset, ok := obj.(*apps_v1.ReplicaSet); ok {
-		c.addOrUpdateReplicaSet(replicaset)
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
-	}
+	c.addOrUpdateReplicaSet(obj)
 }
 
 func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
@@ -1760,39 +1756,72 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
 		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", newRS))
 	}
 }
-
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetDeleted.Add(context.Background(), 1)
-	if replicaset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.ReplicaSet); ok {
-		c.m.Lock()
-		key := string(replicaset.UID)
-		delete(c.ReplicaSets, key)
-		c.m.Unlock()
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
+
+	// Unwrap DeletedFinalStateUnknown if present
+	o := ignoreDeletedFinalStateUnknown(obj)
+
+	var uid string
+	switch rs := o.(type) {
+	case *apps_v1.ReplicaSet:
+		uid = string(rs.GetUID())
+	case *meta_v1.PartialObjectMetadata:
+		uid = string(rs.GetUID())
+	default:
+		c.logger.Error("object received was not a ReplicaSet (apps_v1 or PartialObjectMetadata)", zap.Any("received", obj))
+		return
 	}
+
+	if uid == "" {
+		c.logger.Warn("received ReplicaSet delete without UID")
+		return
+	}
+
+	c.m.Lock()
+	delete(c.ReplicaSets, uid)
+	c.m.Unlock()
 }
 
-func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
-	newReplicaSet := &ReplicaSet{
-		Name:      replicaset.Name,
-		Namespace: replicaset.Namespace,
-		UID:       string(replicaset.UID),
+func (c *WatchClient) addOrUpdateReplicaSet(obj any) {
+	var name, namespace, uid string
+	var owners []meta_v1.OwnerReference
+
+	switch rs := obj.(type) {
+	case *apps_v1.ReplicaSet:
+		name = rs.GetName()
+		namespace = rs.GetNamespace()
+		uid = string(rs.GetUID())
+		owners = rs.GetOwnerReferences()
+	case *meta_v1.PartialObjectMetadata:
+		name = rs.GetName()
+		namespace = rs.GetNamespace()
+		uid = string(rs.GetUID())
+		owners = rs.GetOwnerReferences()
+	default:
+		c.logger.Error("unexpected ReplicaSet object type", zap.Any("received", obj))
+		return
 	}
 
-	for _, ownerReference := range replicaset.OwnerReferences {
-		if ownerReference.Kind == "Deployment" && ownerReference.Controller != nil && *ownerReference.Controller {
+	newReplicaSet := &ReplicaSet{
+		Name:      name,
+		Namespace: namespace,
+		UID:       uid,
+	}
+
+	for _, owner := range owners {
+		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
 			newReplicaSet.Deployment = Deployment{
-				Name: ownerReference.Name,
-				UID:  string(ownerReference.UID),
+				Name: owner.Name,
+				UID:  string(owner.UID),
 			}
 			break
 		}
 	}
 
 	c.m.Lock()
-	if replicaset.UID != "" {
-		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
+	if uid != "" {
+		c.ReplicaSets[uid] = newReplicaSet
 	}
 	c.m.Unlock()
 }
