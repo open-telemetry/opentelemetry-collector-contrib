@@ -212,7 +212,8 @@ func telemetrygenPodsStatus(t *testing.T, client *K8sClient, podNamespace string
 
 func podWaitMessage(pod *v1.Pod) string {
 	var messages []string
-	for _, cs := range pod.Status.ContainerStatuses {
+	for i := range pod.Status.ContainerStatuses {
+		cs := &pod.Status.ContainerStatuses[i]
 		switch {
 		case cs.State.Waiting != nil:
 			msg := cs.State.Waiting.Reason
