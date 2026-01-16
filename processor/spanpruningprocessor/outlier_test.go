@@ -64,8 +64,13 @@ func TestAnalyzeOutliers(t *testing.T) {
 				5 * ms, 6 * ms, 6 * ms, 7 * ms, 8 * ms, 9 * ms, 10 * ms,
 			},
 			attrs: []map[string]string{
-				{"key": "a"}, {"key": "b"}, {"key": "c"}, {"key": "d"},
-				{"key": "e"}, {"key": "f"}, {"key": "g"},
+				{"key": "a"},
+				{"key": "b"},
+				{"key": "c"},
+				{"key": "d"},
+				{"key": "e"},
+				{"key": "f"},
+				{"key": "g"},
 			},
 			cfg:              defaultCfg,
 			wantMedian:       7 * ms,
@@ -84,8 +89,13 @@ func TestAnalyzeOutliers(t *testing.T) {
 				10 * ms, 10 * ms, 10 * ms, 10 * ms, 10 * ms, 10 * ms, 10 * ms,
 			},
 			attrs: []map[string]string{
-				{"a": "1"}, {"a": "2"}, {"a": "3"}, {"a": "4"},
-				{"a": "5"}, {"a": "6"}, {"a": "7"},
+				{"a": "1"},
+				{"a": "2"},
+				{"a": "3"},
+				{"a": "4"},
+				{"a": "5"},
+				{"a": "6"},
+				{"a": "7"},
 			},
 			cfg:              defaultCfg,
 			wantMedian:       10 * ms,
@@ -98,8 +108,13 @@ func TestAnalyzeOutliers(t *testing.T) {
 				150 * ms, 200 * ms,
 			},
 			attrs: []map[string]string{
-				{"shard": "1"}, {"shard": "2"}, {"shard": "3"}, {"shard": "1"}, {"shard": "2"},
-				{"shard": "1"}, {"shard": "2"}, // outliers have same distribution as normals
+				{"shard": "1"},
+				{"shard": "2"},
+				{"shard": "3"},
+				{"shard": "1"},
+				{"shard": "2"},
+				{"shard": "1"},
+				{"shard": "2"}, // outliers have same distribution as normals
 			},
 			cfg:              defaultCfg,
 			wantMedian:       7 * ms,
@@ -267,9 +282,18 @@ func TestFilterOutlierNodes(t *testing.T) {
 				500 * ms, 600 * ms, // outliers (2 spans) - ~17% of data, well outside normal range
 			},
 			attrs: []map[string]string{
-				{"key": "a"}, {"key": "b"}, {"key": "c"}, {"key": "d"}, {"key": "e"},
-				{"key": "f"}, {"key": "g"}, {"key": "h"}, {"key": "i"}, {"key": "j"},
-				{"key": "k"}, {"key": "l"},
+				{"key": "a"},
+				{"key": "b"},
+				{"key": "c"},
+				{"key": "d"},
+				{"key": "e"},
+				{"key": "f"},
+				{"key": "g"},
+				{"key": "h"},
+				{"key": "i"},
+				{"key": "j"},
+				{"key": "k"},
+				{"key": "l"},
 			},
 			cfg: OutlierAnalysisConfig{
 				PreserveOutliers:               true,
@@ -290,8 +314,16 @@ func TestFilterOutlierNodes(t *testing.T) {
 				5 * ms, 6 * ms, 7 * ms, 8 * ms, 9 * ms, 10 * ms, 11 * ms, 12 * ms, 13 * ms, 14 * ms, 500 * ms,
 			},
 			attrs: []map[string]string{
-				{"key": "a"}, {"key": "b"}, {"key": "c"}, {"key": "d"}, {"key": "e"},
-				{"key": "f"}, {"key": "g"}, {"key": "h"}, {"key": "i"}, {"key": "j"},
+				{"key": "a"},
+				{"key": "b"},
+				{"key": "c"},
+				{"key": "d"},
+				{"key": "e"},
+				{"key": "f"},
+				{"key": "g"},
+				{"key": "h"},
+				{"key": "i"},
+				{"key": "j"},
 				{"key": "k"},
 			},
 			cfg: OutlierAnalysisConfig{
@@ -312,9 +344,18 @@ func TestFilterOutlierNodes(t *testing.T) {
 				500 * ms, 600 * ms,
 			},
 			attrs: []map[string]string{
-				{"key": "a"}, {"key": "b"}, {"key": "c"}, {"key": "d"}, {"key": "e"},
-				{"key": "f"}, {"key": "g"}, {"key": "h"}, {"key": "i"}, {"key": "j"},
-				{"key": "k"}, {"key": "l"},
+				{"key": "a"},
+				{"key": "b"},
+				{"key": "c"},
+				{"key": "d"},
+				{"key": "e"},
+				{"key": "f"},
+				{"key": "g"},
+				{"key": "h"},
+				{"key": "i"},
+				{"key": "j"},
+				{"key": "k"},
+				{"key": "l"},
 			},
 			cfg: OutlierAnalysisConfig{
 				PreserveOutliers:               true,
@@ -337,10 +378,18 @@ func TestFilterOutlierNodes(t *testing.T) {
 			},
 			attrs: []map[string]string{
 				// No distinguishing attributes - varied values
-				{"shard": "1"}, {"shard": "2"}, {"shard": "3"}, {"shard": "1"},
-				{"shard": "2"}, {"shard": "3"}, {"shard": "1"}, {"shard": "2"},
-				{"shard": "3"}, {"shard": "1"},
-				{"shard": "2"}, {"shard": "3"},
+				{"shard": "1"},
+				{"shard": "2"},
+				{"shard": "3"},
+				{"shard": "1"},
+				{"shard": "2"},
+				{"shard": "3"},
+				{"shard": "1"},
+				{"shard": "2"},
+				{"shard": "3"},
+				{"shard": "1"},
+				{"shard": "2"},
+				{"shard": "3"},
 			},
 			cfg: OutlierAnalysisConfig{
 				PreserveOutliers:               true,
@@ -362,9 +411,18 @@ func TestFilterOutlierNodes(t *testing.T) {
 				500 * ms, 600 * ms,
 			},
 			attrs: []map[string]string{
-				{"cache": "hit"}, {"cache": "hit"}, {"cache": "hit"}, {"cache": "hit"}, {"cache": "hit"},
-				{"cache": "hit"}, {"cache": "hit"}, {"cache": "hit"}, {"cache": "hit"}, {"cache": "hit"},
-				{"cache": "miss"}, {"cache": "miss"}, // outliers
+				{"cache": "hit"},
+				{"cache": "hit"},
+				{"cache": "hit"},
+				{"cache": "hit"},
+				{"cache": "hit"},
+				{"cache": "hit"},
+				{"cache": "hit"},
+				{"cache": "hit"},
+				{"cache": "hit"},
+				{"cache": "hit"},
+				{"cache": "miss"},
+				{"cache": "miss"}, // outliers
 			},
 			cfg: OutlierAnalysisConfig{
 				PreserveOutliers:               true,
@@ -419,9 +477,16 @@ func TestDetectOutliersMAD_Basic(t *testing.T) {
 
 	// Create sorted durations with clear outliers
 	durations := []indexedDuration{
-		{0, 5 * ms}, {1, 6 * ms}, {2, 7 * ms}, {3, 8 * ms},
-		{4, 9 * ms}, {5, 10 * ms}, {6, 11 * ms}, {7, 12 * ms},
-		{8, 500 * ms}, {9, 600 * ms}, // outliers
+		{0, 5 * ms},
+		{1, 6 * ms},
+		{2, 7 * ms},
+		{3, 8 * ms},
+		{4, 9 * ms},
+		{5, 10 * ms},
+		{6, 11 * ms},
+		{7, 12 * ms},
+		{8, 500 * ms},
+		{9, 600 * ms}, // outliers
 	}
 
 	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0)
@@ -439,8 +504,13 @@ func TestDetectOutliersMAD_ZeroMAD(t *testing.T) {
 
 	// All same value except one spike
 	durations := []indexedDuration{
-		{0, 10 * ms}, {1, 10 * ms}, {2, 10 * ms}, {3, 10 * ms},
-		{4, 10 * ms}, {5, 10 * ms}, {6, 1000 * ms}, // spike
+		{0, 10 * ms},
+		{1, 10 * ms},
+		{2, 10 * ms},
+		{3, 10 * ms},
+		{4, 10 * ms},
+		{5, 10 * ms},
+		{6, 1000 * ms}, // spike
 	}
 
 	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0)
@@ -459,9 +529,15 @@ func TestDetectOutliersMAD_BimodalDistribution(t *testing.T) {
 	// Fast (cache hits): 5-15ms
 	// Slow (cache misses): 100-120ms
 	durations := []indexedDuration{
-		{0, 5 * ms}, {1, 7 * ms}, {2, 8 * ms}, {3, 10 * ms},
-		{4, 12 * ms}, {5, 15 * ms}, // cache hits
-		{6, 100 * ms}, {7, 110 * ms}, {8, 120 * ms}, // cache misses
+		{0, 5 * ms},
+		{1, 7 * ms},
+		{2, 8 * ms},
+		{3, 10 * ms},
+		{4, 12 * ms},
+		{5, 15 * ms}, // cache hits
+		{6, 100 * ms},
+		{7, 110 * ms},
+		{8, 120 * ms}, // cache misses
 	}
 
 	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0)
@@ -478,8 +554,13 @@ func TestDetectOutliersMAD_SmallGroup(t *testing.T) {
 
 	// 7 spans (minimum valid group size)
 	durations := []indexedDuration{
-		{0, 5 * ms}, {1, 6 * ms}, {2, 7 * ms}, {3, 8 * ms},
-		{4, 9 * ms}, {5, 10 * ms}, {6, 500 * ms}, // outlier
+		{0, 5 * ms},
+		{1, 6 * ms},
+		{2, 7 * ms},
+		{3, 8 * ms},
+		{4, 9 * ms},
+		{5, 10 * ms},
+		{6, 500 * ms}, // outlier
 	}
 
 	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0)
@@ -498,9 +579,16 @@ func TestAnalyzeOutliers_MethodSelection(t *testing.T) {
 		500 * ms, 600 * ms, // outliers
 	}
 	attrs := []map[string]string{
-		{"key": "a"}, {"key": "b"}, {"key": "c"}, {"key": "d"},
-		{"key": "e"}, {"key": "f"}, {"key": "g"}, {"key": "h"},
-		{"key": "i"}, {"key": "j"},
+		{"key": "a"},
+		{"key": "b"},
+		{"key": "c"},
+		{"key": "d"},
+		{"key": "e"},
+		{"key": "f"},
+		{"key": "g"},
+		{"key": "h"},
+		{"key": "i"},
+		{"key": "j"},
 	}
 
 	tests := []struct {

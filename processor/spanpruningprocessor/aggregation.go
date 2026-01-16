@@ -60,11 +60,11 @@ func generateSpanID() pcommon.SpanID {
 
 // buildAggregationPlan sorts aggregation groups by depth (parents before
 // children) and preassigns summary SpanIDs to avoid conflicts during writes.
-func (p *spanPruningProcessor) buildAggregationPlan(groups map[string]aggregationGroup) aggregationPlan {
+func (*spanPruningProcessor) buildAggregationPlan(groups map[string]aggregationGroup) aggregationPlan {
 	// Convert map to slice with pre-allocation
 	groupSlice := make([]aggregationGroup, 0, len(groups))
-	for _, group := range groups {
-		groupSlice = append(groupSlice, group)
+	for key := range groups {
+		groupSlice = append(groupSlice, groups[key])
 	}
 
 	// Sort by depth descending (highest depth first = top-down)
@@ -92,7 +92,8 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 
 	prefix := p.config.AggregationAttributePrefix
 
-	for _, group := range plan.groups {
+	for i := range plan.groups {
+		group := &plan.groups[i]
 		// Calculate statistics and time range in single pass
 		data := p.calculateAggregationData(group.nodes)
 
@@ -107,7 +108,7 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 		}
 
 		// Create summary span with correct parent
-		p.createSummarySpanWithParent(group, data, summaryParentID)
+		p.createSummarySpanWithParent(*group, data, summaryParentID)
 
 		// Mark preserved outliers with reference to summary span
 		if len(group.preservedOutliers) > 0 {

@@ -4,7 +4,9 @@
 package spanpruningprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -180,9 +182,7 @@ func detectOutliersMAD(durations []indexedDuration, multiplier float64) ([]int, 
 	}
 
 	// Sort deviations to find MAD (median of absolute deviations)
-	sort.Slice(deviations, func(i, j int) bool {
-		return deviations[i] < deviations[j]
-	})
+	slices.SortFunc(deviations, cmp.Compare)
 
 	var mad time.Duration
 	if n%2 == 1 {

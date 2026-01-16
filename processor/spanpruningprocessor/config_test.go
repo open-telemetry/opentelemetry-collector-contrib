@@ -413,8 +413,6 @@ func TestEnableAttributeLossAnalysis(t *testing.T) {
 
 	t.Run("can be enabled", func(t *testing.T) {
 		c := &Config{
-			MinSpansToAggregate:         2,
-			AggregationAttributePrefix:  "aggregation.",
 			EnableAttributeLossAnalysis: true,
 		}
 		assert.True(t, c.EnableAttributeLossAnalysis)
@@ -422,8 +420,6 @@ func TestEnableAttributeLossAnalysis(t *testing.T) {
 
 	t.Run("can be disabled explicitly", func(t *testing.T) {
 		c := &Config{
-			MinSpansToAggregate:         2,
-			AggregationAttributePrefix:  "aggregation.",
 			EnableAttributeLossAnalysis: false,
 		}
 		assert.False(t, c.EnableAttributeLossAnalysis)

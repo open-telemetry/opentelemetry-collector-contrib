@@ -96,7 +96,7 @@ func generateSparseTrace(numSpans, minSpans int) ptrace.Traces {
 	// Handler spans (unique names, won't aggregate)
 	numHandlers := numSpans / 10
 	handlerIDs := make([]pcommon.SpanID, 0, numHandlers)
-	for i := 0; i < numHandlers; i++ {
+	for i := range numHandlers {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(testTraceID)
 		id := makeSpanID(spanID)

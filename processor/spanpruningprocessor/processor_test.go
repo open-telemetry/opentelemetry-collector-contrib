@@ -4,7 +4,6 @@
 package spanpruningprocessor
 
 import (
-	"context"
 	"strings"
 	"testing"
 	"time"
@@ -266,7 +265,7 @@ func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName strin
 	parentSpan.SetName("parent")
 
 	// Create leaf spans
-	for i := 0; i < numLeafSpans; i++ {
+	for i := range numLeafSpans {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -306,7 +305,7 @@ func createTestTraceWithIntermediateSpan(t *testing.T) ptrace.Traces {
 	intermediateSpan.SetName("intermediate")
 
 	// 3 leaf spans (children of intermediate)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -335,7 +334,7 @@ func createTestTraceWithMixedOperations(t *testing.T) ptrace.Traces {
 	parentSpan.SetName("parent")
 
 	// 3 SELECT spans
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -347,7 +346,7 @@ func createTestTraceWithMixedOperations(t *testing.T) ptrace.Traces {
 	}
 
 	// 2 INSERT spans
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -510,7 +509,7 @@ func createTestTraceWithMixedStatusSpans(t *testing.T) ptrace.Traces {
 	parentSpan.SetName("parent")
 
 	// 4 leaf spans with OK status
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -522,7 +521,7 @@ func createTestTraceWithMixedStatusSpans(t *testing.T) ptrace.Traces {
 	}
 
 	// 2 leaf spans with Error status
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -602,7 +601,7 @@ func TestLeafSpanPruning_GlobPatternMultiplePatterns(t *testing.T) {
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
-	td := createTestTraceWithDbAndHttpAttrs(t)
+	td := createTestTraceWithDbAndHTTPAttrs(t)
 	originalSpanCount := countSpans(td)
 	assert.Equal(t, 4, originalSpanCount) // 1 parent + 3 leaf spans
 
@@ -663,7 +662,7 @@ func createTestTraceWithMultipleDbAttrs(t *testing.T) ptrace.Traces {
 	parentSpan.SetName("parent")
 
 	// 3 leaf spans with identical db.* attributes
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -695,7 +694,7 @@ func createTestTraceWithDifferentDbOperations(t *testing.T) ptrace.Traces {
 	parentSpan.SetName("parent")
 
 	// 2 SELECT spans
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -708,7 +707,7 @@ func createTestTraceWithDifferentDbOperations(t *testing.T) ptrace.Traces {
 	}
 
 	// 2 INSERT spans
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -723,7 +722,7 @@ func createTestTraceWithDifferentDbOperations(t *testing.T) ptrace.Traces {
 	return td
 }
 
-func createTestTraceWithDbAndHttpAttrs(t *testing.T) ptrace.Traces {
+func createTestTraceWithDbAndHTTPAttrs(t *testing.T) ptrace.Traces {
 	t.Helper()
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
@@ -739,7 +738,7 @@ func createTestTraceWithDbAndHttpAttrs(t *testing.T) ptrace.Traces {
 	parentSpan.SetName("parent")
 
 	// 3 leaf spans with both db.* and http.* attributes
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -837,7 +836,7 @@ func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
 				AggregationHistogramBuckets: tt.buckets,
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 			set := processortest.NewNopSettings(metadata.Type)
 
 			telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -961,10 +960,10 @@ func TestLeafSpanPruning_RecursiveParentAggregation(t *testing.T) {
 	assert.Equal(t, handlerErrorAgg.SpanID(), selectErrorAgg.ParentSpanID())
 
 	// Verify non-aggregated spans still exist
-	_, foundInsert := findSpanByExactName(td, "INSERT")
+	foundInsert := findSpanByExactName(td, "INSERT")
 	require.True(t, foundInsert, "INSERT span should still exist")
 
-	_, foundWorker := findSpanByExactName(td, "worker")
+	foundWorker := findSpanByExactName(td, "worker")
 	require.True(t, foundWorker, "worker span should still exist")
 }
 
@@ -1005,7 +1004,7 @@ func TestLeafSpanPruning_ParentNotAggregatedIfChildrenMixed(t *testing.T) {
 
 	// Verify original handler spans still exist
 	handlers := findAllSpansByExactName(td, "handler")
-	assert.Equal(t, 2, len(handlers), "both handler spans should still exist")
+	assert.Len(t, handlers, 2, "both handler spans should still exist")
 }
 
 // TestLeafSpanPruning_RootSpansNotAggregated tests that root spans (with no parent)
@@ -1034,7 +1033,7 @@ func TestLeafSpanPruning_RootSpansNotAggregated(t *testing.T) {
 
 	// Verify all root spans still exist
 	roots := findAllSpansByExactName(td, "root")
-	assert.Equal(t, 3, len(roots), "all root spans should still exist")
+	assert.Len(t, roots, 3, "all root spans should still exist")
 
 	// Verify SELECT_aggregated exists
 	selectAgg, found := findSummarySpanByName(td, "SELECT")
@@ -1114,7 +1113,7 @@ func createTestTraceWithRecursiveAggregation(t *testing.T) ptrace.Traces {
 	root.Status().SetCode(ptrace.StatusCodeOk)
 
 	// 3x handler (OK) -> SELECT (OK, db.op=select)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		handlerID := pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0})
 		handler := ss.Spans().AppendEmpty()
 		handler.SetTraceID(traceID)
@@ -1135,7 +1134,7 @@ func createTestTraceWithRecursiveAggregation(t *testing.T) ptrace.Traces {
 	}
 
 	// 2x handler (Error) -> SELECT (Error, db.op=select)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		handlerID := pcommon.SpanID([8]byte{4, byte(i), 0, 0, 0, 0, 0, 0})
 		handler := ss.Spans().AppendEmpty()
 		handler.SetTraceID(traceID)
@@ -1220,7 +1219,7 @@ func createTestTraceWithMixedChildren(t *testing.T) ptrace.Traces {
 	handler1.SetName("handler")
 	handler1.Status().SetCode(ptrace.StatusCodeOk)
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		selectSpan := ss.Spans().AppendEmpty()
 		selectSpan.SetTraceID(traceID)
 		selectSpan.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -1261,7 +1260,7 @@ func createTestTraceWithMultipleRoots(t *testing.T) ptrace.Traces {
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	// 3 root spans, each with 2 SELECT children
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		rootID := pcommon.SpanID([8]byte{byte(i + 1), 0, 0, 0, 0, 0, 0, 0})
 		root := ss.Spans().AppendEmpty()
 		root.SetTraceID(traceID)
@@ -1269,7 +1268,7 @@ func createTestTraceWithMultipleRoots(t *testing.T) ptrace.Traces {
 		root.SetName("root")
 		root.Status().SetCode(ptrace.StatusCodeOk)
 
-		for j := 0; j < 2; j++ {
+		for j := range 2 {
 			selectSpan := ss.Spans().AppendEmpty()
 			selectSpan.SetTraceID(traceID)
 			selectSpan.SetSpanID(pcommon.SpanID([8]byte{byte(i + 4), byte(j), 0, 0, 0, 0, 0, 0}))
@@ -1302,7 +1301,7 @@ func createTestTraceWithThreeLevels(t *testing.T) ptrace.Traces {
 	spanIDCounter := byte(2)
 
 	// 2 middleware spans
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		middlewareID := pcommon.SpanID([8]byte{spanIDCounter, 0, 0, 0, 0, 0, 0, 0})
 		spanIDCounter++
 
@@ -1314,7 +1313,7 @@ func createTestTraceWithThreeLevels(t *testing.T) ptrace.Traces {
 		middleware.Status().SetCode(ptrace.StatusCodeOk)
 
 		// Each middleware has 2 handler spans
-		for j := 0; j < 2; j++ {
+		for range 2 {
 			handlerID := pcommon.SpanID([8]byte{spanIDCounter, 0, 0, 0, 0, 0, 0, 0})
 			spanIDCounter++
 
@@ -1326,7 +1325,7 @@ func createTestTraceWithThreeLevels(t *testing.T) ptrace.Traces {
 			handler.Status().SetCode(ptrace.StatusCodeOk)
 
 			// Each handler has 2 SELECT spans
-			for k := 0; k < 2; k++ {
+			for range 2 {
 				selectSpan := ss.Spans().AppendEmpty()
 				selectSpan.SetTraceID(traceID)
 				selectSpan.SetSpanID(pcommon.SpanID([8]byte{spanIDCounter, 0, 0, 0, 0, 0, 0, 0}))
@@ -1343,7 +1342,7 @@ func createTestTraceWithThreeLevels(t *testing.T) ptrace.Traces {
 	return td
 }
 
-func findSpanByName(td ptrace.Traces, nameSubstring string, statusCode string) (ptrace.Span, bool) {
+func findSpanByName(td ptrace.Traces, nameSubstring, statusCode string) (ptrace.Span, bool) {
 	// findSpanByName finds a summary span by name substring and status code string
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
@@ -1364,7 +1363,7 @@ func findSpanByName(td ptrace.Traces, nameSubstring string, statusCode string) (
 	return ptrace.Span{}, false
 }
 
-func findSpanByExactName(td ptrace.Traces, name string) (ptrace.Span, bool) {
+func findSpanByExactName(td ptrace.Traces, name string) bool {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -1375,12 +1374,12 @@ func findSpanByExactName(td ptrace.Traces, name string) (ptrace.Span, bool) {
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if span.Name() == name {
-					return span, true
+					return true
 				}
 			}
 		}
 	}
-	return ptrace.Span{}, false
+	return false
 }
 
 // findSummarySpanByName finds a summary span (with is_summary attribute) by exact name
@@ -1533,7 +1532,7 @@ func createTestTraceWithOrphanSpans(t *testing.T) ptrace.Traces {
 	rootSpan.SetEndTimestamp(pcommon.Timestamp(1000000500))
 
 	// 3 orphan leaf spans (parent not in trace)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -1573,7 +1572,7 @@ func createTestTraceWithMultipleRootsTree(t *testing.T) ptrace.Traces {
 	root2.SetEndTimestamp(pcommon.Timestamp(1000000600))
 
 	// 3 leaf spans under first root
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -1596,7 +1595,7 @@ func createTestTraceWithNoRoot(t *testing.T) ptrace.Traces {
 	missingParentID := pcommon.SpanID([8]byte{99, 0, 0, 0, 0, 0, 0, 0}) // Not in trace
 
 	// 3 orphan leaf spans all pointing to missing parent
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))

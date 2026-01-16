@@ -146,7 +146,7 @@ func collectParentCandidates(markedNodes []*spanNode) []*spanNode {
 
 // isEligibleForParentAggregation verifies that a node meets the criteria for
 // parent aggregation (not root, all children marked or preserved, not already marked).
-func (p *spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool {
+func (*spanPruningProcessor) isEligibleForParentAggregation(node *spanNode) bool {
 	// Must have children (not a leaf)
 	if node.isLeaf {
 		return false

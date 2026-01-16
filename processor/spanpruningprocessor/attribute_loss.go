@@ -129,13 +129,13 @@ func formatAttributeCardinality(attrs []attributeCardinality) string {
 	}
 
 	var sb strings.Builder
-	for i := 0; i < count; i++ {
+	for i, attr := range attrs[:count] {
 		if i > 0 {
 			sb.WriteByte(',')
 		}
-		sb.WriteString(attrs[i].key)
+		sb.WriteString(attr.key)
 		sb.WriteByte('(')
-		sb.WriteString(strconv.Itoa(attrs[i].uniqueValues))
+		sb.WriteString(strconv.Itoa(attr.uniqueValues))
 		sb.WriteByte(')')
 	}
 

@@ -4,7 +4,6 @@
 package spanpruningprocessor
 
 import (
-	"context"
 	"testing"
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -54,7 +53,7 @@ func BenchmarkBuildTraceTree(b *testing.B) {
 	spans := generateTestSpans(1000, 50)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = proc.buildTraceTree(spans)
 	}
 }
@@ -67,7 +66,7 @@ func BenchmarkGroupLeafNodes(b *testing.B) {
 	leaves := tree.getLeaves()
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for _, leaf := range leaves {
 			leaf.groupKey = ""
 		}
@@ -88,7 +87,7 @@ func BenchmarkFindEligibleParents(b *testing.B) {
 	candidates := collectParentCandidates(leaves)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		for _, c := range candidates {
 			c.markedForRemoval = false
 		}
@@ -103,7 +102,7 @@ func BenchmarkBuildGroupKey(b *testing.B) {
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(2)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = proc.buildGroupKey(span)
 	}
 }
@@ -114,7 +113,7 @@ func BenchmarkExecuteAggregations(b *testing.B) {
 	base := generateTestTrace(500, 5)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N { //nolint:modernize // Manual timer control required, b.Loop() doesn't work with StopTimer/StartTimer
 		td := ptrace.NewTraces()
 		base.CopyTo(td)
 
@@ -200,10 +199,10 @@ func benchmarkProcessTrace(b *testing.B, numSpans, minSpans int) {
 	td := generateTestTrace(numSpans, minSpans)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		cloned := ptrace.NewTraces()
 		td.CopyTo(cloned)
-		_, err := proc.processTraces(context.Background(), cloned)
+		_, err := proc.processTraces(b.Context(), cloned)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -230,10 +229,10 @@ func benchmarkProcessTraceSparse(b *testing.B, numSpans, minSpans int) {
 	td := generateSparseTrace(numSpans, minSpans)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		cloned := ptrace.NewTraces()
 		td.CopyTo(cloned)
-		_, err := proc.processTraces(context.Background(), cloned)
+		_, err := proc.processTraces(b.Context(), cloned)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -261,10 +260,10 @@ func benchmarkDeepTrace(b *testing.B, depth, branchingFactor, leafsPerBranch, ma
 	b.ReportMetric(float64(td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len()), "spans")
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		cloned := ptrace.NewTraces()
 		td.CopyTo(cloned)
-		_, err := proc.processTraces(context.Background(), cloned)
+		_, err := proc.processTraces(b.Context(), cloned)
 		if err != nil {
 			b.Fatal(err)
 		}
