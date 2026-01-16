@@ -11,6 +11,7 @@ type DBSanitizerConfig struct {
 	MongoConfig      MongoConfig      `mapstructure:"mongo"`
 	OpenSearchConfig OpenSearchConfig `mapstructure:"opensearch"`
 	ESConfig         ESConfig         `mapstructure:"es"`
+	SanitizeSpanName *bool            `mapstructure:"sanitize_span_name"`
 }
 
 type SQLConfig struct {
