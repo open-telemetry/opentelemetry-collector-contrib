@@ -1,5 +1,15 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: mysql.instance.endpoint
+          value:
+            stringValue: localhost:3306
+        - key: service.name
+          value:
+            stringValue: mysql
+        - key: service.instance.id
+          value:
+            stringValue: 2b0d1f0c-857b-5a7c-9f20-6e0ecae7598f
     scopeLogs:
       - logRecords:
           - attributes:
@@ -24,7 +34,7 @@ resourceLogs:
                   doubleValue: 0.001021918999
             body: {}
             eventName: db.server.top_query
-            timeUnixNano: "1754297675177556000"
+            timeUnixNano: "1768549062171984000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
           version: latest

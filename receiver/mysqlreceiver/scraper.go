@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"go.opentelemetry.io/collector/component"
@@ -25,6 +26,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
+
+// otelNamespaceUUID is the official OTel namespace UUID for deterministic UUID v5 generation,
+// as recommended by the semantic conventions for service.instance.id.
+// See: https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/
+var otelNamespaceUUID = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
 
 type mySQLScraper struct {
 	sqlclient              client
@@ -126,6 +132,8 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	rb := m.mb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	rb.SetServiceName("mysql")
+	rb.SetServiceInstanceID(uuid.NewSHA1(otelNamespaceUUID, []byte(m.config.Endpoint)).String())
 	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
@@ -145,7 +153,12 @@ func (m *mySQLScraper) scrapeTopQueryFunc(ctx context.Context) (plog.Logs, error
 	} else {
 		m.scrapeTopQueries(ctx, now, errs)
 	}
-	return m.lb.Emit(), errs.Combine()
+
+	rb := m.lb.NewResourceBuilder()
+	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	rb.SetServiceName("mysql")
+	rb.SetServiceInstanceID(uuid.NewSHA1(otelNamespaceUUID, []byte(m.config.Endpoint)).String())
+	return m.lb.Emit(metadata.WithLogsResource(rb.Emit())), errs.Combine()
 }
 
 func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, error) {
@@ -159,7 +172,11 @@ func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, er
 
 	m.scrapeQuerySamples(ctx, now, errs)
 
-	return m.lb.Emit(), errs.Combine()
+	rb := m.lb.NewResourceBuilder()
+	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	rb.SetServiceName("mysql")
+	rb.SetServiceInstanceID(uuid.NewSHA1(otelNamespaceUUID, []byte(m.config.Endpoint)).String())
+	return m.lb.Emit(metadata.WithLogsResource(rb.Emit())), errs.Combine()
 }
 
 func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {

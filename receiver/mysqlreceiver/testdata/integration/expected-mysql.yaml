@@ -4,6 +4,12 @@ resourceMetrics:
         - key: mysql.instance.endpoint
           value:
             stringValue: localhost:3306
+        - key: service.instance.id
+          value:
+            stringValue: ""
+        - key: service.name
+          value:
+            stringValue: mysql
     scopeMetrics:
       - metrics:
           - description: The number of data pages in the InnoDB buffer pool.
