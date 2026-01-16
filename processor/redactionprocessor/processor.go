@@ -86,7 +86,7 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 			return nil, fmt.Errorf("failed to create URL sanitizer: %w", err)
 		}
 	}
-	dbObfuscator := db.NewObfuscator(config.DBSanitizer)
+	dbObfuscator := db.NewObfuscator(config.DBSanitizer, logger)
 
 	return &redaction{
 		allowList:          allowList,
@@ -151,20 +151,7 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 			// Attributes can also be part of span events
 			s.processSpanEvents(ctx, span.Events())
 
-			if s.shouldRedactSpanName(&span) {
-				name := span.Name()
-				if s.shouldSanitizeSpanNameForURL() {
-					name = s.urlSanitizer.SanitizeURL(name)
-				}
-				if s.shouldSanitizeSpanNameForDB() {
-					var err error
-					name, err = s.dbObfuscator.Obfuscate(name)
-					if err != nil {
-						s.logger.Error(err.Error())
-					}
-				}
-				span.SetName(name)
-			}
+			s.sanitizeSpanName(span)
 		}
 	}
 }
@@ -337,6 +324,10 @@ func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.Resour
 func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// TODO: Use the context for recording metrics
 	var redactedKeys, maskedKeys, allowedKeys, ignoredKeys []string
+
+	if s.dbObfuscator != nil {
+		s.dbObfuscator.DBSystem = db.GetDBSystem(attributes)
+	}
 
 	// Identify attributes to redact and mask in the following sequence
 	// 1. Make a list of attribute keys to redact
@@ -522,22 +513,36 @@ func (s *redaction) shouldRedactKey(k string) bool {
 	return false
 }
 
-func (s *redaction) shouldRedactSpanName(span *ptrace.Span) bool {
-	shouldSanitizeDB := s.shouldSanitizeSpanNameForDB()
+func (s *redaction) sanitizeSpanName(span ptrace.Span) {
+	name := span.Name()
 
-	if !s.shouldSanitizeSpanNameForURL() && !shouldSanitizeDB {
-		return false
-	}
-	spanKind := span.Kind()
-	if spanKind != ptrace.SpanKindClient && spanKind != ptrace.SpanKindServer {
-		return false
+	if s.shouldAllowValue(name) {
+		return
 	}
 
-	spanName := span.Name()
-	if !strings.Contains(spanName, "/") && !shouldSanitizeDB {
-		return false
+	if s.shouldSanitizeSpanNameForURL() {
+		if sanitized, ok := url.SanitizeSpanName(span, s.urlSanitizer); ok {
+			applySpanName(span, name, sanitized)
+			return
+		}
 	}
-	return !s.shouldAllowValue(spanName)
+
+	if s.shouldSanitizeSpanNameForDB() {
+		if sanitized, ok, err := db.SanitizeSpanName(span, s.dbObfuscator); err != nil {
+			s.logger.Error("failed to obfuscate span name", zap.Error(err))
+		} else if ok {
+			applySpanName(span, name, sanitized)
+		}
+	}
+}
+
+func applySpanName(span ptrace.Span, original, candidate string) {
+	if candidate == "" || candidate == "..." {
+		return
+	}
+	if candidate != original {
+		span.SetName(candidate)
+	}
 }
 
 func (s *redaction) shouldSanitizeSpanNameForURL() bool {
