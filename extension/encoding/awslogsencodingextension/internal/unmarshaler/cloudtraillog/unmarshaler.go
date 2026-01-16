@@ -363,29 +363,29 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 		}
 
 		if record.UserIdentity.AccessKeyID != "" {
-			attrs.PutStr("aws.access_key.id", record.UserIdentity.AccessKeyID)
+			attrs.PutStr("aws.user_identity.access_key.id", record.UserIdentity.AccessKeyID)
 		}
 
 		// Store the Identity Store ARN and others as custom attributes
 		// since there are no standard conventions for them
 		if record.UserIdentity.IdentityStoreARN != "" {
-			attrs.PutStr("aws.identity_store.arn", record.UserIdentity.IdentityStoreARN)
+			attrs.PutStr("aws.user_identity.identity_store.arn", record.UserIdentity.IdentityStoreARN)
 		}
 
 		if record.UserIdentity.InvokedBy != "" {
-			attrs.PutStr("aws.user_identity.invoked_by", record.UserIdentity.InvokedBy)
+			attrs.PutStr("aws.user_identity.user_identity.invoked_by", record.UserIdentity.InvokedBy)
 		}
 
 		if record.UserIdentity.PrincipalID != "" {
-			attrs.PutStr("aws.principal.id", record.UserIdentity.PrincipalID)
+			attrs.PutStr("aws.user_identity.principal.id", record.UserIdentity.PrincipalID)
 		}
 
 		if record.UserIdentity.ARN != "" {
-			attrs.PutStr("aws.principal.arn", record.UserIdentity.ARN)
+			attrs.PutStr("aws.user_identity.principal.arn", record.UserIdentity.ARN)
 		}
 
 		if record.UserIdentity.Type != "" {
-			attrs.PutStr("aws.principal.type", record.UserIdentity.Type)
+			attrs.PutStr("aws.user_identity.principal.type", record.UserIdentity.Type)
 		}
 
 		// Add session context details if available
