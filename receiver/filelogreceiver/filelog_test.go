@@ -366,10 +366,17 @@ func (g *fileLogGenerator) Stop() {
 }
 
 func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
-	id := receivertest.UniqueIDAttrVal(strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10))
+	seq := atomic.AddInt64(&g.sequenceNum, 1)
+	id := receivertest.UniqueIDAttrVal(strconv.FormatInt(seq, 10))
 	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id, //nolint:gocritic //sprintfQuotedString for JSON
 		receivertest.UniqueIDAttrName, id)
 	_, err := g.tmpFile.WriteString(logLine + "\n")
 	require.NoError(g.t, err)
+	// Sync periodically to ensure data is flushed to disk for the file reader.
+	// This is especially important on Windows where writes may not be visible
+	// to other file handles until flushed.
+	if seq%100 == 0 {
+		require.NoError(g.t, g.tmpFile.Sync())
+	}
 	return []receivertest.UniqueIDAttrVal{id}
 }
