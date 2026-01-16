@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.308.1
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/pdata v1.49.1-0.20260109195331-fbd5d3f9faae
+	go.opentelemetry.io/collector/pdata v1.49.1-0.20260115162016-5e41fb551263
 	go.opentelemetry.io/otel v1.39.0
 	go.uber.org/goleak v1.3.0
 )
@@ -33,7 +33,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260109195331-fbd5d3f9faae // indirect
+	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260115162016-5e41fb551263 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
@@ -62,4 +62,4 @@ retract (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../golden
 
 // Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260109195331-fbd5d3f9faae
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260115162016-5e41fb551263
