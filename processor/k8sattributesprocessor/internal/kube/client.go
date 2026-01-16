@@ -1785,39 +1785,6 @@ func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
 	c.m.Unlock()
 }
 
-// resolveReplicaSetDeploymentLinkage ensures rsView has DeploymentName/UID set
-// only when required by rules and when a controller Deployment owner can be confirmed.
-// It reuses cached linkage if present and performs at most one typed GET per RS UID.
-// If no controller Deployment is found, rsView.Deployment* remain empty.
-func (c *WatchClient) resolveReplicaSetDeploymentLinkage(rsView *ReplicaSet) {
-	// Only needed if deployment attrs are requested (and not name-from-RS)
-	needsDeployment := c.Rules.DeploymentUID ||
-		(c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet)
-	if !needsDeployment {
-		return
-	}
-	if rsView.Deployment.UID != "" {
-		return
-	}
-
-	rsFull, err := c.kc.AppsV1().ReplicaSets(rsView.Namespace).Get(context.Background(), rsView.Name, meta_v1.GetOptions{})
-	if err != nil {
-		c.logger.Debug("failed to fetch full RS for ownerRefs",
-			zap.String("name", rsView.Name), zap.String("ns", rsView.Namespace), zap.Error(err))
-		return
-	}
-	for _, owner := range rsFull.GetOwnerReferences() {
-		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
-			rsView.Deployment = Deployment{
-				Name: owner.Name,
-				UID:  string(owner.UID),
-			}
-			break
-		}
-	}
-	// If no controller owner is found, leave Deployment* empty
-}
-
 // This function removes all data from the ReplicaSet except what is required by extraction rules
 func removeUnnecessaryReplicaSetData(obj any) any {
 	switch old := obj.(type) {
@@ -1845,29 +1812,6 @@ func removeUnnecessaryReplicaSetData(obj any) any {
 		// means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
 		return obj
 	}
-}
-
-// normalizeRS returns a unified view of RS from various object types, without recursion.
-type replicasetView struct {
-	UID            string
-	Name           string
-	Namespace      string
-	DeploymentName string
-	DeploymentUID  string
-}
-
-func (c *WatchClient) upsertReplicaSet(rv ReplicaSet) {
-	newRS := &ReplicaSet{
-		Name:      rv.Name,
-		Namespace: rv.Namespace,
-		UID:       rv.UID,
-	}
-	if rv.Deployment.Name != "" {
-		newRS.Deployment = rv.Deployment
-	}
-	c.m.Lock()
-	c.ReplicaSets[rv.UID] = newRS
-	c.m.Unlock()
 }
 
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete
