@@ -131,6 +131,29 @@ func namespaceInformerWatchFunc(client kubernetes.Interface) cache.WatchFuncWith
 	}
 }
 
+func newReplicaSetSharedInformer(client metadata.Interface, namespace string) cache.SharedInformer {
+	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
+	return cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListWithContextFunc:  replicaSetListFuncWithSelectors(client, gvr, namespace),
+			WatchFuncWithContext: replicaSetWatchFuncWithSelectors(client, gvr, namespace),
+		},
+		&metav1.PartialObjectMetadata{},
+		watchSyncPeriod,
+	)
+}
+
+func replicaSetListFuncWithSelectors(mc metadata.Interface, gvr schema.GroupVersionResource, namespace string) cache.ListWithContextFunc {
+	return func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
+		return mc.Resource(gvr).Namespace(namespace).List(ctx, opts)
+	}
+}
+
+func replicaSetWatchFuncWithSelectors(mc metadata.Interface, gvr schema.GroupVersionResource, namespace string) cache.WatchFuncWithContext {
+	return func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+		return mc.Resource(gvr).Namespace(namespace).Watch(ctx, opts)
+	}
+}
 func newDeploymentSharedInformer(
 	client kubernetes.Interface,
 	namespace string,
@@ -183,30 +206,6 @@ func statefulsetWatchFuncWithSelectors(client kubernetes.Interface, namespace st
 	return func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 		return client.AppsV1().StatefulSets(namespace).Watch(ctx, opts)
 	}
-}
-
-func replicaSetListFuncWithSelectors(mc metadata.Interface, gvr schema.GroupVersionResource, namespace string) cache.ListWithContextFunc {
-	return func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
-		return mc.Resource(gvr).Namespace(namespace).List(ctx, opts)
-	}
-}
-
-func replicaSetWatchFuncWithSelectors(mc metadata.Interface, gvr schema.GroupVersionResource, namespace string) cache.WatchFuncWithContext {
-	return func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-		return mc.Resource(gvr).Namespace(namespace).Watch(ctx, opts)
-	}
-}
-
-func newReplicaSetSharedInformer(client metadata.Interface, namespace string) cache.SharedInformer {
-	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
-	return cache.NewSharedInformer(
-		&cache.ListWatch{
-			ListWithContextFunc:  replicaSetListFuncWithSelectors(client, gvr, namespace),
-			WatchFuncWithContext: replicaSetWatchFuncWithSelectors(client, gvr, namespace),
-		},
-		&metav1.PartialObjectMetadata{},
-		watchSyncPeriod,
-	)
 }
 
 func newDaemonSetSharedInformer(
