@@ -5,6 +5,7 @@ package textencodingextension // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"regexp"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -36,8 +37,22 @@ func (e *textExtension) Start(_ context.Context, _ component.Host) error {
 	if err != nil {
 		return err
 	}
+
+	var unmarshallingSeparator *regexp.Regexp
+
+	if e.config.UnmarshalingSeparator != "" {
+		unmarshallingSeparator, err = regexp.Compile(e.config.UnmarshalingSeparator)
+		if err != nil {
+			return err
+		}
+	} else {
+		unmarshallingSeparator = nil
+	}
+
 	e.textEncoder = &textLogCodec{
-		decoder: enc.NewDecoder(),
+		decoder:               enc.NewDecoder(),
+		marshalingSeparator:   e.config.MarshalingSeparator,
+		unmarshalingSeparator: unmarshallingSeparator,
 	}
 
 	return err
