@@ -7,10 +7,10 @@ change_type: bug_fix
 component: extension/datadog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Datadog extension no longer throws an error for missing extensions when getting a list of active components.
+note: Datadog extension no longer throws an error for missing extensions when getting a list of active components, and now populates active components even when missing go mod/version info.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [45358]
+issues: [45358, 45460]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
