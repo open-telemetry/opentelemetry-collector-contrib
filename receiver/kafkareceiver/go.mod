@@ -119,6 +119,7 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260115162016-5e41fb551263 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.143.1-0.20260115162016-5e41fb551263 // indirect
 	go.opentelemetry.io/collector/pipeline v1.49.1-0.20260115162016-5e41fb551263 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.143.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
