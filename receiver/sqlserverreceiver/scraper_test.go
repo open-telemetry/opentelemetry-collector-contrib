@@ -232,19 +232,19 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
-	cached, val := scraper.cacheAndDiff("query_hash", "query_plan_hash", "column", -1)
+	cached, val := scraper.cacheAndDiff("query_hash", "query_plan_hash", "procedure_id", "column", -1)
 	assert.False(t, cached)
 	assert.Equal(t, int64(0), val)
 
-	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "column", 1)
+	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "procedure_id", "column", 1)
 	assert.False(t, cached)
 	assert.Equal(t, int64(1), val)
 
-	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "column", 1)
+	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "procedure_id", "column", 1)
 	assert.True(t, cached)
 	assert.Equal(t, int64(0), val)
 
-	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "column", 3)
+	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "procedure_id", "column", 3)
 	assert.True(t, cached)
 	assert.Equal(t, int64(2), val)
 }
@@ -476,14 +476,15 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 
 	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
 	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalElapsedTime, 846)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, rowsReturned, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalReads, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalWrites, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, physicalReads, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, executionCount, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalWorkerTime, 845)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalGrant, 1)
+	procedureID := "0"
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalElapsedTime, 846)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, rowsReturned, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalWrites, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, physicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 845)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
 
 	scraper.client = mockClient{
 		instanceName:        scraper.config.InstanceName,
@@ -535,14 +536,15 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 
 	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
 	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalElapsedTime, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, rowsReturned, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalReads, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalWrites, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, physicalReads, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, executionCount, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalWorkerTime, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalGrant, 1)
+	procedureID := "0"
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalElapsedTime, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, rowsReturned, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, logicalWrites, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, physicalReads, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, executionCount, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalWorkerTime, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, procedureID, totalGrant, 1)
 
 	scraper.client = mockInvalidClient{
 		mockClient: mockClient{
