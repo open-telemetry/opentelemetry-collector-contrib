@@ -153,10 +153,10 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 
 			if s.shouldRedactSpanName(&span) {
 				name := span.Name()
-				if s.urlSanitizer != nil {
+				if s.shouldSanitizeSpanNameForURL() {
 					name = s.urlSanitizer.SanitizeURL(name)
 				}
-				if s.dbObfuscator.HasObfuscators() {
+				if s.shouldSanitizeSpanNameForDB() {
 					var err error
 					name, err = s.dbObfuscator.Obfuscate(name)
 					if err != nil {
@@ -523,7 +523,9 @@ func (s *redaction) shouldRedactKey(k string) bool {
 }
 
 func (s *redaction) shouldRedactSpanName(span *ptrace.Span) bool {
-	if s.urlSanitizer == nil && !s.dbObfuscator.HasObfuscators() {
+	shouldSanitizeDB := s.shouldSanitizeSpanNameForDB()
+
+	if !s.shouldSanitizeSpanNameForURL() && !shouldSanitizeDB {
 		return false
 	}
 	spanKind := span.Kind()
@@ -532,10 +534,31 @@ func (s *redaction) shouldRedactSpanName(span *ptrace.Span) bool {
 	}
 
 	spanName := span.Name()
-	if !strings.Contains(spanName, "/") && !s.dbObfuscator.HasObfuscators() {
+	if !strings.Contains(spanName, "/") && !shouldSanitizeDB {
 		return false
 	}
 	return !s.shouldAllowValue(spanName)
+}
+
+func (s *redaction) shouldSanitizeSpanNameForURL() bool {
+	if s.urlSanitizer == nil {
+		return false
+	}
+
+	if s.config.URLSanitization.SanitizeSpanName == nil {
+		return true
+	}
+	return *s.config.URLSanitization.SanitizeSpanName
+}
+
+func (s *redaction) shouldSanitizeSpanNameForDB() bool {
+	if !s.dbObfuscator.HasObfuscators() {
+		return false
+	}
+	if s.config.DBSanitizer.SanitizeSpanName == nil {
+		return true
+	}
+	return *s.config.DBSanitizer.SanitizeSpanName
 }
 
 const (
