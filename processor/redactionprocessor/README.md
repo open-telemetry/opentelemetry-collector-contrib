@@ -73,6 +73,12 @@ processors:
     # Any keys in this list are allowed so they don't need to be in both lists.
     ignored_keys:
       - safe_attribute
+    # ignored_key_patterns is a list of regular expressions for ignoring keys.
+    # Keys matching any of these patterns are allowed to pass through without
+    # their values being checked or modified.
+    ignored_key_patterns:
+      - "^safe_.*"
+      - ".*_trusted$"
     # redact_all_types will check incoming fields for sensitive data based on their AsString() representation. This allows the processor to redact sensitive data from ints. This is useful for redacting credit card numbers
     redact_all_types: true
     # blocked_key_patterns is a list of blocked span attribute key patterns. Span attributes
@@ -115,7 +121,8 @@ into an OpenTelemetry Collector pipeline definition.
 
 Ignored attributes are processed first so they're always allowed and never
 blocked. This field should only be used where you know the data is always
-safe to send to the telemetry system.
+safe to send to the telemetry system. You can use either `ignored_keys` for
+exact key matches or `ignored_key_patterns` for regex-based pattern matching.
 
 Only span/log/datapoint attributes included on the list of allowed keys list are retained.
 If `allowed_keys` is empty, then no attributes are allowed. All
@@ -127,6 +134,25 @@ If the value of an allowed key matches the regular expression for an allowed val
 part of the value is not masked even if it matches the regular expression for a blocked value.
 If the value matches the regular expression for a blocked value only, the matching
 part of the value is masked with a fixed length of asterisks.
+
+### Precedence between `allowed_values` and `blocked_values`
+
+When both `allowed_values` and `blocked_values` are configured, `allowed_values` takes precedence.
+
+This means that if a value matches an entry in `allowed_values`, it will not be masked even if it also matches `blocked_values`. This behavior is intentional and allows operators to explicitly whitelist known-safe values while still blocking broader patterns.
+
+#### Example
+
+```yaml
+processors:
+  redaction:
+    blocked_values:
+      - "mycompany.com"
+    allowed_values:
+      - "support.mycompany.com"
+
+```
+
 
 `blocked_key_patterns` applies to the values of the keys matching one of the patterns.
 The value is then masked according to the configuration.

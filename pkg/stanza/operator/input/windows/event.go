@@ -63,7 +63,7 @@ func utf16PtrToString(s *uint16) string {
 	utf16Len := 0
 	curPtr := unsafe.Pointer(s)
 	for *(*uint16)(curPtr) != 0 {
-		curPtr = unsafe.Pointer(uintptr(curPtr) + unsafe.Sizeof(*s))
+		curPtr = unsafe.Add(unsafe.Pointer(uintptr(curPtr)), unsafe.Sizeof(*s))
 		utf16Len++
 	}
 
