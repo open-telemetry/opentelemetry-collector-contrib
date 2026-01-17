@@ -17,3 +17,35 @@ tests:
       top:
         # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
         - "go.opencensus.io/stats/view.(*worker).start"
+telemetry:
+  metrics:
+    prometheus_receiver_translation_metric_points_attempted:
+      enabled: true
+      description: Number of OTLP metric data points attempted during translation.
+      extended_documentation: |
+        Counts the number of OTLP data points the receiver attempted to create from 
+        Prometheus data. Each unique label combination within a metric family becomes 
+        one OTLP data point. For example, a histogram with labels {method="GET"} and 
+        {method="POST"} counts as 2 metric points, regardless of how many Prometheus 
+        series (buckets, sum, count) comprise each histogram.
+      stability:
+        level: development
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+    prometheus_receiver_translation_metric_points_dropped:
+      enabled: true
+      description: Number of OTLP metric data points dropped during translation.
+      extended_documentation: |
+        Counts OTLP data points that could not be created due to translation failures.
+        Common causes include incomplete histogram data (missing _count metric) or 
+        malformed metric families. Compare with prometheus_receiver_translation_metric_points_attempted
+        to calculate the success rate.
+      stability:
+        level: development
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+

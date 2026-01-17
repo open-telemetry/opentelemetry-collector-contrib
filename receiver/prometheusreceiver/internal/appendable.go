@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
@@ -20,8 +22,9 @@ type appendable struct {
 	trimSuffixes   bool
 	externalLabels labels.Labels
 
-	settings receiver.Settings
-	obsrecv  *receiverhelper.ObsReport
+	settings         receiver.Settings
+	obsrecv          *receiverhelper.ObsReport
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // NewAppendable returns a storage.Appendable instance that emits metrics to the sink.
@@ -31,6 +34,7 @@ func NewAppendable(
 	useMetadata bool,
 	externalLabels labels.Labels,
 	trimSuffixes bool,
+	telemetryBuilder *metadata.TelemetryBuilder,
 ) (storage.Appendable, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverID: set.ID, Transport: transport, ReceiverCreateSettings: set})
 	if err != nil {
@@ -38,15 +42,16 @@ func NewAppendable(
 	}
 
 	return &appendable{
-		sink:           sink,
-		settings:       set,
-		useMetadata:    useMetadata,
-		externalLabels: externalLabels,
-		obsrecv:        obsrecv,
-		trimSuffixes:   trimSuffixes,
+		sink:             sink,
+		settings:         set,
+		useMetadata:      useMetadata,
+		externalLabels:   externalLabels,
+		obsrecv:          obsrecv,
+		trimSuffixes:     trimSuffixes,
+		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.useMetadata)
+	return newTransaction(ctx, o.sink, o.externalLabels, o.settings, o.obsrecv, o.telemetryBuilder, o.trimSuffixes, o.useMetadata)
 }

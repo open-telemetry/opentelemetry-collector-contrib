@@ -69,6 +69,7 @@ type transaction struct {
 	logger                *zap.Logger
 	buildInfo             component.BuildInfo
 	obsrecv               *receiverhelper.ObsReport
+	telemetryBuilder      *mdata.TelemetryBuilder
 	// Used as buffer to calculate series ref hash.
 	bufBytes []byte
 }
@@ -87,23 +88,25 @@ func newTransaction(
 	externalLabels labels.Labels,
 	settings receiver.Settings,
 	obsrecv *receiverhelper.ObsReport,
+	telemetryBuilder *mdata.TelemetryBuilder,
 	trimSuffixes bool,
 	useMetadata bool,
 ) *transaction {
 	return &transaction{
-		ctx:             ctx,
-		families:        make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
-		isNew:           true,
-		trimSuffixes:    trimSuffixes,
-		useMetadata:     useMetadata,
-		sink:            sink,
-		externalLabels:  externalLabels,
-		logger:          settings.Logger,
-		buildInfo:       settings.BuildInfo,
-		obsrecv:         obsrecv,
-		bufBytes:        make([]byte, 0, 1024),
-		scopeAttributes: make(map[resourceKey]map[scopeID]pcommon.Map),
-		nodeResources:   map[resourceKey]pcommon.Resource{},
+		ctx:              ctx,
+		families:         make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
+		isNew:            true,
+		trimSuffixes:     trimSuffixes,
+		useMetadata:      useMetadata,
+		sink:             sink,
+		externalLabels:   externalLabels,
+		logger:           settings.Logger,
+		buildInfo:        settings.BuildInfo,
+		obsrecv:          obsrecv,
+		telemetryBuilder: telemetryBuilder,
+		bufBytes:         make([]byte, 0, 1024),
+		scopeAttributes:  make(map[resourceKey]map[scopeID]pcommon.Map),
+		nodeResources:    map[resourceKey]pcommon.Resource{},
 	}
 }
 
@@ -432,12 +435,12 @@ func (t *transaction) getSeriesRef(ls labels.Labels, mtype pmetric.MetricType) u
 
 // getMetrics returns all metrics to the given slice.
 // The only error returned by this function is errNoDataToBuild.
-func (t *transaction) getMetrics() (pmetric.Metrics, error) {
+func (t *transaction) getMetrics() (md pmetric.Metrics, attempted, dropped int64, err error) {
 	if len(t.families) == 0 {
-		return pmetric.Metrics{}, errNoDataToBuild
+		return pmetric.Metrics{}, 0, 0, errNoDataToBuild
 	}
 
-	md := pmetric.NewMetrics()
+	md = pmetric.NewMetrics()
 
 	for rKey, families := range t.families {
 		if len(families) == 0 {
@@ -474,7 +477,10 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 			}
 			metrics := ils.Metrics()
 			for _, mf := range mfs {
-				mf.appendMetric(metrics, t.trimSuffixes)
+				groupCount := int64(len(mf.groupOrders))
+				attempted += groupCount
+				translated := int64(mf.appendMetric(metrics, t.trimSuffixes))
+				dropped += groupCount - translated
 			}
 		}
 	}
@@ -493,7 +499,7 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 		return remove
 	})
 
-	return md, nil
+	return md, attempted, dropped, nil
 }
 
 func getScopeID(ls labels.Labels) scopeID {
@@ -576,10 +582,16 @@ func (t *transaction) Commit() error {
 	}
 
 	ctx := t.obsrecv.StartMetricsOp(t.ctx)
-	md, err := t.getMetrics()
+
+	md, metricPointsAttempted, metricPointsDropped, err := t.getMetrics()
 	if err != nil {
 		t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
 		return err
+	}
+
+	if t.telemetryBuilder != nil {
+		t.telemetryBuilder.PrometheusReceiverTranslationMetricPointsAttempted.Add(ctx, metricPointsAttempted)
+		t.telemetryBuilder.PrometheusReceiverTranslationMetricPointsDropped.Add(ctx, metricPointsDropped)
 	}
 
 	numPoints := md.DataPointCount()

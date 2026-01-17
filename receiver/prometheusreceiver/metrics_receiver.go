@@ -45,6 +45,7 @@ import (
 	"golang.org/x/net/netutil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/targetallocator"
 )
 
@@ -72,6 +73,7 @@ type pReceiver struct {
 	apiServer              *http.Server
 	registry               *prometheus.Registry
 	registerer             prometheus.Registerer
+	telemetryBuilder       *metadata.TelemetryBuilder
 	unregisterMetrics      func()
 	skipOffsetting         bool // for testing only
 }
@@ -86,13 +88,20 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 	registerer := prometheus.WrapRegistererWith(
 		prometheus.Labels{"receiver": set.ID.String()},
 		registry)
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create telemetry builder: %w", err)
+	}
+
 	pr := &pReceiver{
-		cfg:          cfg,
-		consumer:     next,
-		settings:     set,
-		configLoaded: make(chan struct{}),
-		registerer:   registerer,
-		registry:     registry,
+		cfg:              cfg,
+		consumer:         next,
+		settings:         set,
+		configLoaded:     make(chan struct{}),
+		registerer:       registerer,
+		registry:         registry,
+		telemetryBuilder: telemetryBuilder,
 		targetAllocatorManager: targetallocator.NewManager(
 			set,
 			cfg.TargetAllocator.Get(),
@@ -165,6 +174,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		!r.cfg.ignoreMetadata,
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
+		r.telemetryBuilder,
 	)
 	if err != nil {
 		return err
@@ -419,6 +429,9 @@ func (r *pReceiver) Shutdown(ctx context.Context) error {
 	}
 	if r.unregisterMetrics != nil {
 		r.unregisterMetrics()
+	}
+	if r.telemetryBuilder != nil {
+		r.telemetryBuilder.Shutdown()
 	}
 	if r.apiServer != nil {
 		err := r.apiServer.Shutdown(ctx)
