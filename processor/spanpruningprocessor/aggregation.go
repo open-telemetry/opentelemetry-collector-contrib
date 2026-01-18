@@ -113,11 +113,8 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 		// Mark preserved outliers with reference to summary span
 		if len(group.preservedOutliers) > 0 {
 			for _, outlier := range group.preservedOutliers {
-				// Update parent if it was replaced by a summary span
-				outlierParentID := outlier.span.ParentSpanID()
-				if replacementID, exists := parentReplacements[outlierParentID]; exists {
-					outlier.span.SetParentSpanID(replacementID)
-				}
+				// Outliers become siblings of the summary span
+				outlier.span.SetParentSpanID(summaryParentID)
 				outlier.span.Attributes().PutBool(prefix+"is_preserved_outlier", true)
 				outlier.span.Attributes().PutStr(prefix+"summary_span_id",
 					group.summarySpanID.String())
