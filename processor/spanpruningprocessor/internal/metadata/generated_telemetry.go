@@ -30,6 +30,9 @@ type TelemetryBuilder struct {
 	ProcessorSpanpruningAggregationsCreated          metric.Int64Counter
 	ProcessorSpanpruningLeafAttributeDiversityLoss   metric.Int64Histogram
 	ProcessorSpanpruningLeafAttributeLoss            metric.Int64Histogram
+	ProcessorSpanpruningOutliersCorrelationsDetected metric.Int64Counter
+	ProcessorSpanpruningOutliersDetected             metric.Int64Counter
+	ProcessorSpanpruningOutliersPreserved            metric.Int64Counter
 	ProcessorSpanpruningParentAttributeDiversityLoss metric.Int64Histogram
 	ProcessorSpanpruningParentAttributeLoss          metric.Int64Histogram
 	ProcessorSpanpruningProcessingDuration           metric.Float64Histogram
@@ -69,65 +72,83 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ProcessorSpanpruningAggregationGroupSize, err = builder.meter.Int64Histogram(
 		"otelcol_processor_spanpruning_aggregation_group_size",
-		metric.WithDescription("Distribution of spans per aggregation group [development]"),
+		metric.WithDescription("Distribution of spans per aggregation group [Development]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningAggregationsCreated, err = builder.meter.Int64Counter(
 		"otelcol_processor_spanpruning_aggregations_created",
-		metric.WithDescription("Total aggregation summary spans created [development]"),
+		metric.WithDescription("Total aggregation summary spans created [Development]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningLeafAttributeDiversityLoss, err = builder.meter.Int64Histogram(
 		"otelcol_processor_spanpruning_leaf_attribute_diversity_loss",
-		metric.WithDescription("Attribute values lost due to diversity per leaf aggregation [development]"),
+		metric.WithDescription("Attribute values lost due to diversity per leaf aggregation [Development]"),
 		metric.WithUnit("{values}"),
-		metric.WithExplicitBucketBoundaries(0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20),
+		metric.WithExplicitBucketBoundaries([]float64{0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningLeafAttributeLoss, err = builder.meter.Int64Histogram(
 		"otelcol_processor_spanpruning_leaf_attribute_loss",
-		metric.WithDescription("Attribute keys lost due to absence per leaf aggregation [development]"),
+		metric.WithDescription("Attribute keys lost due to absence per leaf aggregation [Development]"),
 		metric.WithUnit("{keys}"),
-		metric.WithExplicitBucketBoundaries(0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20),
+		metric.WithExplicitBucketBoundaries([]float64{0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20}...),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningOutliersCorrelationsDetected, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_outliers_correlations_detected",
+		metric.WithDescription("Groups where outliers had correlated attributes [Development]"),
+		metric.WithUnit("{groups}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningOutliersDetected, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_outliers_detected",
+		metric.WithDescription("Spans identified as outliers by analysis [Development]"),
+		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorSpanpruningOutliersPreserved, err = builder.meter.Int64Counter(
+		"otelcol_processor_spanpruning_outliers_preserved",
+		metric.WithDescription("Outlier spans kept (excluded from aggregation) [Development]"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningParentAttributeDiversityLoss, err = builder.meter.Int64Histogram(
 		"otelcol_processor_spanpruning_parent_attribute_diversity_loss",
-		metric.WithDescription("Attribute values lost due to diversity per parent aggregation [development]"),
+		metric.WithDescription("Attribute values lost due to diversity per parent aggregation [Development]"),
 		metric.WithUnit("{values}"),
-		metric.WithExplicitBucketBoundaries(0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20),
+		metric.WithExplicitBucketBoundaries([]float64{0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningParentAttributeLoss, err = builder.meter.Int64Histogram(
 		"otelcol_processor_spanpruning_parent_attribute_loss",
-		metric.WithDescription("Attribute keys lost due to absence per parent aggregation [development]"),
+		metric.WithDescription("Attribute keys lost due to absence per parent aggregation [Development]"),
 		metric.WithUnit("{keys}"),
-		metric.WithExplicitBucketBoundaries(0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20),
+		metric.WithExplicitBucketBoundaries([]float64{0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningProcessingDuration, err = builder.meter.Float64Histogram(
 		"otelcol_processor_spanpruning_processing_duration",
-		metric.WithDescription("Time to process each batch of traces [development]"),
+		metric.WithDescription("Time to process each batch of traces [Development]"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningSpansPruned, err = builder.meter.Int64Counter(
 		"otelcol_processor_spanpruning_spans_pruned",
-		metric.WithDescription("Total spans pruned/removed by aggregation [development]"),
+		metric.WithDescription("Total spans pruned/removed by aggregation [Development]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningSpansReceived, err = builder.meter.Int64Counter(
 		"otelcol_processor_spanpruning_spans_received",
-		metric.WithDescription("Total spans received by the processor [development]"),
+		metric.WithDescription("Total spans received by the processor [Development]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSpanpruningTracesProcessed, err = builder.meter.Int64Counter(
 		"otelcol_processor_spanpruning_traces_processed",
-		metric.WithDescription("Total traces processed [development]"),
+		metric.WithDescription("Total traces processed [Development]"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)

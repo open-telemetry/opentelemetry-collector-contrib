@@ -8,48 +8,72 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_spanpruning_aggregation_group_size
 
-Distribution of spans per aggregation group [development]
+Distribution of spans per aggregation group [Development]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {spans} | Histogram | Int | development |
+| {spans} | Histogram | Int | Development |
 
 ### otelcol_processor_spanpruning_aggregations_created
 
-Total aggregation summary spans created [development]
+Total aggregation summary spans created [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | development |
+| {spans} | Sum | Int | true | Development |
+
+### otelcol_processor_spanpruning_outliers_correlations_detected
+
+Groups where outliers had correlated attributes [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {groups} | Sum | Int | true | Development |
+
+### otelcol_processor_spanpruning_outliers_detected
+
+Spans identified as outliers by analysis [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | Development |
+
+### otelcol_processor_spanpruning_outliers_preserved
+
+Outlier spans kept (excluded from aggregation) [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | Development |
 
 ### otelcol_processor_spanpruning_processing_duration
 
-Time to process each batch of traces [development]
+Time to process each batch of traces [Development]
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Histogram | Double | development |
+| s | Histogram | Double | Development |
 
 ### otelcol_processor_spanpruning_spans_pruned
 
-Total spans pruned/removed by aggregation [development]
+Total spans pruned/removed by aggregation [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | development |
+| {spans} | Sum | Int | true | Development |
 
 ### otelcol_processor_spanpruning_spans_received
 
-Total spans received by the processor [development]
+Total spans received by the processor [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {spans} | Sum | Int | true | development |
+| {spans} | Sum | Int | true | Development |
 
 ### otelcol_processor_spanpruning_traces_processed
 
-Total traces processed [development]
+Total traces processed [Development]
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {traces} | Sum | Int | true | development |
+| {traces} | Sum | Int | true | Development |

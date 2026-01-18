@@ -213,6 +213,14 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 		if p.config.EnableOutlierAnalysis {
 			outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
 
+			// Record outlier metrics
+			if outlierResult != nil && outlierResult.hasOutliers {
+				p.telemetryBuilder.ProcessorSpanpruningOutliersDetected.Add(ctx, int64(len(outlierResult.outlierIndices)))
+				if len(outlierResult.correlations) > 0 {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersCorrelationsDetected.Add(ctx, 1)
+				}
+			}
+
 			// Filter out outliers to preserve them
 			if p.config.OutlierAnalysis.PreserveOutliers && outlierResult != nil {
 				aggregateNodes, preservedOutliers = filterOutlierNodes(
@@ -220,6 +228,11 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 					outlierResult,
 					p.config.OutlierAnalysis,
 				)
+
+				// Record preserved outliers
+				if len(preservedOutliers) > 0 {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersPreserved.Add(ctx, int64(len(preservedOutliers)))
+				}
 
 				// Skip aggregation if too few normal spans remain
 				if len(aggregateNodes) < p.config.MinSpansToAggregate {
@@ -319,6 +332,14 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 			var outlierResult *outlierAnalysisResult
 			if p.config.EnableOutlierAnalysis {
 				outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
+
+				// Record outlier metrics for parent groups
+				if outlierResult != nil && outlierResult.hasOutliers {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersDetected.Add(ctx, int64(len(outlierResult.outlierIndices)))
+					if len(outlierResult.correlations) > 0 {
+						p.telemetryBuilder.ProcessorSpanpruningOutliersCorrelationsDetected.Add(ctx, 1)
+					}
+				}
 			}
 
 			// Find the template node (longest duration) for this group

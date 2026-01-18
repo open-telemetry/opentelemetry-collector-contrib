@@ -4,18 +4,23 @@
 package spanpruningprocessor
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadatatest"
 )
 
 func TestNewTraces(t *testing.T) {
@@ -279,6 +284,142 @@ func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName strin
 	}
 
 	return td
+}
+
+// TestOutlierMetrics_IQR tests that outlier metrics are recorded correctly with IQR method
+func TestOutlierMetrics_IQR(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(context.Background())) }()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis = OutlierAnalysisConfig{
+		Method:                         OutlierMethodIQR,
+		PreserveOutliers:               true,
+		MaxPreservedOutliers:           2,
+		IQRMultiplier:                  1.5,
+		MinGroupSize:                   7,
+		CorrelationMinOccurrence:       0.75,
+		CorrelationMaxNormalOccurrence: 0.25,
+		MaxCorrelatedAttributes:        5,
+	}
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// Create trace with outliers (using existing helper)
+	td := createTestTraceWithOutliers(t)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// Verify outliers_detected metric (2 outliers from the trace)
+	metadatatest.AssertEqualProcessorSpanpruningOutliersDetected(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+
+	// Verify outliers_preserved metric (2 outliers preserved due to MaxPreservedOutliers=2)
+	metadatatest.AssertEqualProcessorSpanpruningOutliersPreserved(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+
+	// Verify outliers_correlations_detected metric (1 group with correlation: cache_hit=false)
+	metadatatest.AssertEqualProcessorSpanpruningOutliersCorrelationsDetected(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+// TestOutlierMetrics_MAD tests that outlier metrics are recorded correctly with MAD method
+func TestOutlierMetrics_MAD(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(context.Background())) }()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis = OutlierAnalysisConfig{
+		Method:                         OutlierMethodMAD,
+		PreserveOutliers:               true,
+		MaxPreservedOutliers:           2,
+		MADMultiplier:                  3.0,
+		MinGroupSize:                   7,
+		CorrelationMinOccurrence:       0.75,
+		CorrelationMaxNormalOccurrence: 0.25,
+		MaxCorrelatedAttributes:        5,
+	}
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// Create trace with outliers
+	td := createTestTraceWithOutliers(t)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// Verify outliers_detected metric (2 outliers from the trace)
+	metadatatest.AssertEqualProcessorSpanpruningOutliersDetected(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+
+	// Verify outliers_preserved metric
+	metadatatest.AssertEqualProcessorSpanpruningOutliersPreserved(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+
+	// Verify correlations detected
+	metadatatest.AssertEqualProcessorSpanpruningOutliersCorrelationsDetected(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+// TestOutlierMetrics_NoPreservation tests metrics when outliers are detected but not preserved
+func TestOutlierMetrics_NoPreservation(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(context.Background())) }()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 5
+	cfg.GroupByAttributes = []string{"db.operation"}
+	cfg.EnableOutlierAnalysis = true
+	cfg.OutlierAnalysis = OutlierAnalysisConfig{
+		Method:                         OutlierMethodIQR,
+		PreserveOutliers:               false, // Outliers detected but NOT preserved
+		IQRMultiplier:                  1.5,
+		MinGroupSize:                   7,
+		CorrelationMinOccurrence:       0.75,
+		CorrelationMaxNormalOccurrence: 0.25,
+		MaxCorrelatedAttributes:        5,
+	}
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// Create trace with outliers
+	td := createTestTraceWithOutliers(t)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// Verify outliers_detected metric (outliers still detected)
+	metadatatest.AssertEqualProcessorSpanpruningOutliersDetected(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 2}},
+		metricdatatest.IgnoreTimestamp())
+
+	// Verify correlations detected (analysis still runs)
+	metadatatest.AssertEqualProcessorSpanpruningOutliersCorrelationsDetected(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+
+	// outliers_preserved should NOT be recorded when PreserveOutliers=false
+	_, err = testTel.GetMetric("otelcol_processor_spanpruning_outliers_preserved")
+	assert.Error(t, err, "outliers_preserved should not be recorded when PreserveOutliers=false")
 }
 
 func createTestTraceWithIntermediateSpan(t *testing.T) ptrace.Traces {
