@@ -402,7 +402,8 @@ func withRetryResult[T any](
 		attempt++
 		resp, err := apiCall()
 
-		// Update rate limit state from successful response
+		// Always update rate limit state if we have a response (even with errors).
+		// This handles GraphQL's partial success pattern where we get both data and errors.
 		if resp != nil && getRateLimit != nil {
 			rl := getRateLimit(resp)
 			rateLimit.update(rl.GetCost(), rl.GetLimit(), rl.GetRemaining(), rl.GetUsed(), rl.GetResetAt())
@@ -422,8 +423,18 @@ func withRetryResult[T any](
 					return nil, &backoff.RetryAfterError{Duration: waitDuration}
 				}
 			}
+
+			// If we have a valid response, return it along with any error.
+			// The caller is responsible for handling partial success cases
+			// (e.g., GraphQL queries that return both data and errors).
+			// We wrap the error as Permanent to stop retrying since we have usable data.
+			if err != nil {
+				return resp, backoff.Permanent(err)
+			}
+			return resp, nil
 		}
 
+		// No response - handle as pure error case
 		if err == nil {
 			return resp, nil
 		}
