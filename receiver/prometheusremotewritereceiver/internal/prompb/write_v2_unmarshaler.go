@@ -40,11 +40,10 @@ type WriteV2Request struct {
 
 // WriteV2TimeSeries represents a single series in write v2.
 type WriteV2TimeSeries struct {
-	LabelsRefs       []uint32
-	Samples          []WriteV2Sample
-	Histograms       []WriteV2Histogram
-	Exemplars        []WriteV2Exemplar
-	CreatedTimestamp int64
+	LabelsRefs []uint32
+	Samples    []WriteV2Sample
+	Histograms []WriteV2Histogram
+	Exemplars  []WriteV2Exemplar
 	// Metadata and other fields are available but optional for now.
 	Metadata *WriteV2Metadata
 }
@@ -286,12 +285,6 @@ func unmarshalWriteV2TimeSeries(src []byte, tsPool []WriteV2TimeSeries, samplesP
 				return tsPool, samplesPool, histPool, exemplarPool, fmt.Errorf("cannot unmarshal metadata: %w", err)
 			}
 			out.Metadata = &mm
-		case 6: // created_timestamp
-			v, ok := fc.Int64()
-			if !ok {
-				return tsPool, samplesPool, histPool, exemplarPool, fmt.Errorf("cannot read created_timestamp")
-			}
-			out.CreatedTimestamp = v
 		default:
 			// ignore unsupported fields (histograms, exemplars, etc.)
 		}
@@ -595,7 +588,6 @@ func ResetWriteV2TimeSeries(s []WriteV2TimeSeries) []WriteV2TimeSeries {
 		s[i].Histograms = ResetWriteV2Histograms(s[i].Histograms)
 		s[i].Exemplars = ResetWriteV2Exemplars(s[i].Exemplars)
 		s[i].Metadata = nil
-		s[i].CreatedTimestamp = 0
 	}
 	return s[:0]
 }

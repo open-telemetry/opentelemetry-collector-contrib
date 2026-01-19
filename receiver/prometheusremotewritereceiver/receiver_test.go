@@ -19,6 +19,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/prompb"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -39,6 +40,110 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
 )
+
+// convertWriteV2Request converts an upstream writev2.Request (used in tests) into the internal prompb.WriteV2Request
+// so tests can keep constructing upstream types while the receiver operates on the internal representation.
+func convertWriteV2Request(r *writev2.Request) *prompb.WriteV2Request {
+	if r == nil {
+		return nil
+	}
+	out := &prompb.WriteV2Request{}
+	if len(r.Symbols) > 0 {
+		out.Symbols = append([]string(nil), r.Symbols...)
+	}
+	if len(r.Timeseries) == 0 {
+		return out
+	}
+	out.Timeseries = make([]prompb.WriteV2TimeSeries, len(r.Timeseries))
+	for i := range r.Timeseries {
+		ts := &r.Timeseries[i]
+		ots := &out.Timeseries[i]
+		if len(ts.LabelsRefs) > 0 {
+			ots.LabelsRefs = append([]uint32(nil), ts.LabelsRefs...)
+		}
+		// Always set metadata to avoid nil pointer dereferences in translateV2
+		ots.Metadata = &prompb.WriteV2Metadata{Type: ts.Metadata.Type, HelpRef: ts.Metadata.HelpRef, UnitRef: ts.Metadata.UnitRef}
+		if len(ts.Samples) > 0 {
+			ots.Samples = make([]prompb.WriteV2Sample, len(ts.Samples))
+			for j := range ts.Samples {
+				s := &ts.Samples[j]
+				ots.Samples[j] = prompb.WriteV2Sample{Value: s.Value, Timestamp: s.Timestamp, StartTimestamp: s.StartTimestamp}
+			}
+		}
+		if len(ts.Histograms) > 0 {
+			ots.Histograms = make([]prompb.WriteV2Histogram, len(ts.Histograms))
+			for j := range ts.Histograms {
+				h := &ts.Histograms[j]
+				oh := &ots.Histograms[j]
+				// Count (oneof)
+				if h.Count != nil {
+					switch v := h.Count.(type) {
+					case *writev2.Histogram_CountInt:
+						oh.CountInt = v.CountInt
+					case *writev2.Histogram_CountFloat:
+						oh.CountFloat = v.CountFloat
+						oh.HasCountFloat = true
+					}
+				}
+				oh.Sum = h.Sum
+				oh.Schema = h.Schema
+				oh.ZeroThreshold = h.ZeroThreshold
+				if h.ZeroCount != nil {
+					switch v := h.ZeroCount.(type) {
+					case *writev2.Histogram_ZeroCountInt:
+						oh.ZeroCountInt = v.ZeroCountInt
+					case *writev2.Histogram_ZeroCountFloat:
+						oh.ZeroCountFloat = v.ZeroCountFloat
+						oh.HasZeroCountFloat = true
+					}
+				}
+				// Spans
+				if len(h.PositiveSpans) > 0 {
+					oh.PositiveSpans = make([]prompb.BucketSpan, len(h.PositiveSpans))
+					for k := range h.PositiveSpans {
+						oh.PositiveSpans[k] = prompb.BucketSpan{Offset: h.PositiveSpans[k].Offset, Length: h.PositiveSpans[k].Length}
+					}
+				}
+				if len(h.NegativeSpans) > 0 {
+					oh.NegativeSpans = make([]prompb.BucketSpan, len(h.NegativeSpans))
+					for k := range h.NegativeSpans {
+						oh.NegativeSpans[k] = prompb.BucketSpan{Offset: h.NegativeSpans[k].Offset, Length: h.NegativeSpans[k].Length}
+					}
+				}
+				// Deltas and counts
+				if len(h.PositiveDeltas) > 0 {
+					oh.PositiveDeltas = append([]int64(nil), h.PositiveDeltas...)
+				}
+				if len(h.NegativeDeltas) > 0 {
+					oh.NegativeDeltas = append([]int64(nil), h.NegativeDeltas...)
+				}
+				if len(h.PositiveCounts) > 0 {
+					oh.PositiveCounts = append([]float64(nil), h.PositiveCounts...)
+				}
+				if len(h.NegativeCounts) > 0 {
+					oh.NegativeCounts = append([]float64(nil), h.NegativeCounts...)
+				}
+				oh.ResetHint = h.ResetHint
+				oh.Timestamp = h.Timestamp
+				oh.CustomValues = append([]float64(nil), h.CustomValues...)
+				oh.StartTimestamp = h.StartTimestamp
+			}
+		}
+		if len(ts.Exemplars) > 0 {
+			ots.Exemplars = make([]prompb.WriteV2Exemplar, len(ts.Exemplars))
+			for j := range ts.Exemplars {
+				e := &ts.Exemplars[j]
+				o := &ots.Exemplars[j]
+				if len(e.LabelsRefs) > 0 {
+					o.LabelsRefs = append([]uint32(nil), e.LabelsRefs...)
+				}
+				o.Value = e.Value
+				o.Timestamp = e.Timestamp
+			}
+		}
+	}
+	return out
+}
 
 var writeV2RequestFixture = &writev2.Request{
 	Symbols: []string{"", "__name__", "test_metric1", "job", "service-x/test", "instance", "107cn001", "d", "e", "foo", "bar", "f", "g", "h", "i", "Test gauge for test purposes", "Maybe op/sec who knows (:", "Test counter for test purposes"},
@@ -1567,7 +1672,8 @@ func TestTranslateV2(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
 			prwReceiver.rmCache.Purge()
-			metrics, stats, err := prwReceiver.translateV2(ctx, tc.request)
+			req := convertWriteV2Request(tc.request)
+			metrics, stats, err := prwReceiver.translateV2(ctx, req)
 			if tc.expectError != "" {
 				assert.ErrorContains(t, err, tc.expectError)
 				return
