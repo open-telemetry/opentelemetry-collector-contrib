@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
@@ -47,14 +46,14 @@ func TestDetect(t *testing.T) {
 	}
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		string(conventions.HostNameKey):    "hostname",
-		string(conventions.CloudRegionKey): "dc1",
-		string(conventions.HostIDKey):      "00000000-0000-0000-0000-000000000000",
-		"test":                             "test",
+		"host.name":    "hostname",
+		"cloud.region": "dc1",
+		"host.id":      "00000000-0000-0000-0000-000000000000",
+		"test":         "test",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())

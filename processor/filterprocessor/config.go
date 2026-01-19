@@ -46,12 +46,12 @@ type Config struct {
 
 	Profiles ProfileFilters `mapstructure:"profiles"`
 
-	resourceFunctions  map[string]ottl.Factory[ottlresource.TransformContext]
-	dataPointFunctions map[string]ottl.Factory[ottldatapoint.TransformContext]
-	logFunctions       map[string]ottl.Factory[ottllog.TransformContext]
-	metricFunctions    map[string]ottl.Factory[ottlmetric.TransformContext]
-	spanEventFunctions map[string]ottl.Factory[ottlspanevent.TransformContext]
-	spanFunctions      map[string]ottl.Factory[ottlspan.TransformContext]
+	resourceFunctions  map[string]ottl.Factory[*ottlresource.TransformContext]
+	dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
+	logFunctions       map[string]ottl.Factory[*ottllog.TransformContext]
+	metricFunctions    map[string]ottl.Factory[*ottlmetric.TransformContext]
+	spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]
+	spanFunctions      map[string]ottl.Factory[*ottlspan.TransformContext]
 	profileFunctions   map[string]ottl.Factory[ottlprofile.TransformContext]
 }
 

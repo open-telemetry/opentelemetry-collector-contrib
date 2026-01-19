@@ -1,0 +1,10 @@
+target_allocator:
+  endpoint: http://localhost:8080
+  interval: 30s
+  collector_id: collector-1
+  http_sd_config:
+    refresh_interval: 60s
+  http_scrape_config:
+    basic_auth:
+      username: testuser
+      password: "%password-with-percent"
