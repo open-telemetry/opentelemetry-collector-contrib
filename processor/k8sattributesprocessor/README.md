@@ -772,6 +772,7 @@ k8sattributes:
     
     # Extract deployment name from replicaset name (disables replicaset watching)
     # Reduces memory usage and RBAC requirements
+    # See [Configuring recommended resource attributes](#configuring-recommended-resource-attributes) section for more details
     # Default: false
     deployment_name_from_replicaset: false
   
