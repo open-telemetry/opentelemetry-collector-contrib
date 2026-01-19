@@ -6,12 +6,13 @@ package internal
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestParser(t *testing.T) {
+func TestComponentParser(t *testing.T) {
 	type testCase struct {
 		title              string
 		inputFile          string
@@ -22,69 +23,75 @@ func TestParser(t *testing.T) {
 	testCases := []testCase{
 		{
 			title:              "Test Simple Config Parsing",
-			inputFile:          "testdata/SimpleConfig.go",
-			expectedSchemaFile: "testdata/simple_config.schema.yaml",
+			inputFile:          "testdata/test00/SimpleConfig.go",
+			expectedSchemaFile: "testdata/test00/simple_config.schema.yaml",
 			rootType:           "SimpleConfig",
 		},
 		{
 			title:              "Test Array field Config Parsing",
-			inputFile:          "testdata/ArrayFieldConfig.go",
-			expectedSchemaFile: "testdata/array_field_config.schema.yaml",
-			rootType:           "ArrayFieldConfig",
+			inputFile:          "testdata/test01/ArrayFieldConfig.go",
+			expectedSchemaFile: "testdata/test01/array_field_config.schema.yaml",
+			rootType:           "SimpleArrayConfig",
 		},
 		{
 			title:              "Test Nested Struct Config Parsing",
-			inputFile:          "testdata/NestedStructConfig.go",
-			expectedSchemaFile: "testdata/nested_struct_config.schema.yaml",
-			rootType:           "NestedStructConfig",
+			inputFile:          "testdata/test02/NestedStructConfig.go",
+			expectedSchemaFile: "testdata/test02/nested_struct_config.schema.yaml",
+			rootType:           "Config",
 		},
 		{
 			title:              "Test Map field Config Parsing",
-			inputFile:          "testdata/MapFieldConfig.go",
-			expectedSchemaFile: "testdata/map_field_config.schema.yaml",
-			rootType:           "MapFieldConfig",
+			inputFile:          "testdata/test03/MapFieldConfig.go",
+			expectedSchemaFile: "testdata/test03/map_field_config.schema.yaml",
+			rootType:           "MapConfig",
 		},
 		{
 			title:              "Test Ref field Config Parsing",
-			inputFile:          "testdata/RefFieldConfig.go",
-			expectedSchemaFile: "testdata/ref_field_config.schema.yaml",
+			inputFile:          "testdata/test04/RefFieldConfig.go",
+			expectedSchemaFile: "testdata/test04/ref_field_config.schema.yaml",
 			rootType:           "RefFieldConfig",
 		},
 		{
 			title:              "Test Embedded Struct Config Parsing",
-			inputFile:          "testdata/EmbeddedStructConfig.go",
-			expectedSchemaFile: "testdata/embedded_struct_config.schema.yaml",
+			inputFile:          "testdata/test05/EmbeddedStructConfig.go",
+			expectedSchemaFile: "testdata/test05/embedded_struct_config.schema.yaml",
 			rootType:           "EmbeddedStructConfig",
 		},
 		{
 			title:              "Test Pointer field Config Parsing",
-			inputFile:          "testdata/PointerFieldConfig.go",
-			expectedSchemaFile: "testdata/pointer_field_config.schema.yaml",
+			inputFile:          "testdata/test06/PointerFieldConfig.go",
+			expectedSchemaFile: "testdata/test06/pointer_field_config.schema.yaml",
 			rootType:           "PointerFieldConfig",
 		},
 		{
 			title:              "Test complex type field Config Parsing",
-			inputFile:          "testdata/ComplexTypeFieldConfig.go",
-			expectedSchemaFile: "testdata/complex_type_field_config.schema.yaml",
+			inputFile:          "testdata/test07/ComplexTypeFieldConfig.go",
+			expectedSchemaFile: "testdata/test07/complex_type_field_config.schema.yaml",
 			rootType:           "ComplexTypeFieldConfig",
 		},
 		{
 			title:              "Test time type fields Config Parsing",
-			inputFile:          "testdata/TimeTypeFieldConfig.go",
-			expectedSchemaFile: "testdata/time_type_field_config.schema.yaml",
+			inputFile:          "testdata/test08/TimeTypeFieldConfig.go",
+			expectedSchemaFile: "testdata/test08/time_type_field_config.schema.yaml",
 			rootType:           "TimeTypeFieldConfig",
 		},
 		{
 			title:              "Test Mixed Tags Config Parsing",
-			inputFile:          "testdata/MixedTagsConfig.go",
-			expectedSchemaFile: "testdata/mixed_tags_config.schema.yaml",
+			inputFile:          "testdata/test09/MixedTagsConfig.go",
+			expectedSchemaFile: "testdata/test09/mixed_tags_config.schema.yaml",
 			rootType:           "MixedTagsConfig",
 		},
 		{
 			title:              "Test Simple Type Aliases Parsing",
-			inputFile:          "testdata/AliasSimpleTypeConfig.go",
-			expectedSchemaFile: "testdata/alias_simple_type_config.schema.yaml",
+			inputFile:          "testdata/test10/AliasSimpleTypeConfig.go",
+			expectedSchemaFile: "testdata/test10/alias_simple_type_config.schema.yaml",
 			rootType:           "AliasSimpleTypeConfig",
+		},
+		{
+			title:              "Test External Refs Parsing",
+			inputFile:          "testdata/test11/ExternalRefsConfig.go",
+			expectedSchemaFile: "testdata/test11/external_refs_config.schema.yaml",
+			rootType:           "ExternalRefsConfig",
 		},
 	}
 
@@ -96,10 +103,11 @@ func TestParser(t *testing.T) {
 			}
 			expectedSchema := string(expectedBytes)
 
+			dir, _ := filepath.Abs(filepath.Dir(tc.inputFile))
 			cfg := &Config{
-				FilePath:       tc.inputFile,
-				SchemaIDPrefix: "http://example.com/schema",
-				SchemaPath:     "config.schema.yaml",
+				Mode:     Component,
+				DirPath:  dir,
+				Mappings: testMappings(),
 			}
 			if tc.rootType != "" {
 				cfg.RootTypeName = tc.rootType
@@ -115,5 +123,46 @@ func TestParser(t *testing.T) {
 			givenYaml := string(rawYaml)
 			require.YAMLEq(t, expectedSchema, givenYaml)
 		})
+	}
+}
+
+func TestPackageParser(t *testing.T) {
+	dir, _ := filepath.Abs("testdata/external/")
+	cfg := &Config{
+		Mode:     Package,
+		DirPath:  dir,
+		Mappings: testMappings(),
+	}
+
+	parser := NewParser(cfg)
+
+	schema, err := parser.Parse()
+	require.NoError(t, err)
+
+	rawYaml, err := schema.ToYAML()
+	require.NoError(t, err)
+
+	expectedBytes, err := os.ReadFile("testdata/external/config.schema.yaml")
+	if err != nil {
+		t.Fatalf("Failed to read expected schema file: %v", err)
+	}
+	expectedSchema := string(expectedBytes)
+
+	givenYaml := string(rawYaml)
+	require.YAMLEq(t, expectedSchema, givenYaml)
+}
+
+func testMappings() Mappings {
+	return Mappings{
+		"time": PackagesMapping{
+			"Time": TypeDesc{
+				SchemaType: SchemaTypeString,
+				Format:     "date-time",
+			},
+			"Duration": TypeDesc{
+				SchemaType: SchemaTypeString,
+				Format:     "duration",
+			},
+		},
 	}
 }

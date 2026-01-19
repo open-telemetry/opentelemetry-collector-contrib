@@ -30,11 +30,13 @@ const (
 )
 
 type mockExporter struct {
-	logs []sdklog.Record
+	logs        []sdklog.Record
+	exportCalls [][]sdklog.Record // tracks each export call separately
 }
 
 func (m *mockExporter) Export(_ context.Context, records []sdklog.Record) error {
 	m.logs = append(m.logs, records...)
+	m.exportCalls = append(m.exportCalls, records)
 	return nil
 }
 
@@ -263,6 +265,62 @@ func TestLogsWithTraceIDAndSpanID(t *testing.T) {
 	for _, l := range m.logs {
 		assert.Equal(t, "ae87dadd90e9935a4bc9660628efd569", l.TraceID().String())
 		assert.Equal(t, "5828fa4960140870", l.SpanID().String())
+	}
+}
+
+func TestBatching(t *testing.T) {
+	cfg := &Config{
+		NumLogs:        5,
+		SeverityText:   "Info",
+		SeverityNumber: 9,
+	}
+	cfg.WorkerCount = 1
+	cfg.Batch = true
+	cfg.BatchSize = 3
+	m := &mockExporter{}
+	expFunc := func() (sdklog.Exporter, error) {
+		return m, nil
+	}
+
+	// test
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	// verify that logs were batched correctly
+	assert.Len(t, m.logs, 5, "should have received all 5 logs")
+
+	// verify batching behavior: should have 2 export calls
+	// First call: 3 logs (batch size reached)
+	// Second call: 2 logs (remaining logs flushed at end)
+	assert.Len(t, m.exportCalls, 2, "should have made 2 export calls")
+	assert.Len(t, m.exportCalls[0], 3, "first batch should have 3 logs")
+	assert.Len(t, m.exportCalls[1], 2, "second batch should have 2 logs")
+}
+
+func TestNoBatching(t *testing.T) {
+	cfg := &Config{
+		NumLogs:        5,
+		SeverityText:   "Info",
+		SeverityNumber: 9,
+	}
+	cfg.WorkerCount = 1
+	cfg.Batch = false // batching disabled
+	m := &mockExporter{}
+	expFunc := func() (sdklog.Exporter, error) {
+		return m, nil
+	}
+
+	// test
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	// verify that logs were sent immediately (no batching)
+	assert.Len(t, m.logs, 5, "should have received all 5 logs")
+
+	// verify no batching behavior: should have 5 export calls, each with 1 log
+	assert.Len(t, m.exportCalls, 5, "should have made 5 export calls (one per log)")
+	for i, call := range m.exportCalls {
+		assert.Len(t, call, 1, "export call %d should have exactly 1 log", i)
 	}
 }
 

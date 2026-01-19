@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.uber.org/zap"
@@ -60,7 +61,7 @@ func TestPopulateActiveComponentsIntegration(t *testing.T) {
 	moduleInfoJSON := createModuleInfoFromSampleConfig()
 
 	// Test PopulateActiveComponents with the loaded configuration
-	activeComponents, err := componentchecker.PopulateActiveComponents(confMap, moduleInfoJSON)
+	activeComponents, err := componentchecker.PopulateActiveComponents(zap.NewNop(), confMap, moduleInfoJSON)
 	require.NoError(t, err, "PopulateActiveComponents should not return error")
 	require.NotNil(t, activeComponents, "activeComponents should not be nil")
 
@@ -331,7 +332,7 @@ func createTestOtelCollectorPayload() *payload.OtelCollectorPayload {
 
 	// Create module info and populate active components
 	moduleInfoJSON := createModuleInfoFromSampleConfig()
-	activeComponents, _ := componentchecker.PopulateActiveComponents(confMap, moduleInfoJSON)
+	activeComponents, _ := componentchecker.PopulateActiveComponents(zap.NewNop(), confMap, moduleInfoJSON)
 
 	// Create build info
 	buildInfo := payload.CustomBuildInfo{
@@ -548,7 +549,7 @@ func TestHTTPServerIntegration(t *testing.T) {
 
 	// Create module info and populate active components for realistic test data
 	moduleInfoJSON := createModuleInfoFromSampleConfig()
-	activeComponents, err := componentchecker.PopulateActiveComponents(confMap, moduleInfoJSON)
+	activeComponents, err := componentchecker.PopulateActiveComponents(zap.NewNop(), confMap, moduleInfoJSON)
 	require.NoError(t, err)
 
 	// Create OtelCollector metadata
@@ -606,7 +607,10 @@ func TestHTTPServerIntegration(t *testing.T) {
 	// Step 3: Create HTTP server configuration
 	serverConfig := &httpserver.Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0", // Use any available port for testing
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:0",
+			},
 		},
 		Path: "/otel/metadata",
 	}
@@ -739,7 +743,10 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 			name: "default_config",
 			config: &httpserver.Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: httpserver.DefaultServerEndpoint,
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  httpserver.DefaultServerEndpoint,
+					},
 				},
 				Path: "/metadata",
 			},
@@ -748,7 +755,10 @@ func TestHTTPServerConfigIntegration(t *testing.T) {
 			name: "custom_endpoint_and_path",
 			config: &httpserver.Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:9999",
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:9999",
+					},
 				},
 				Path: "/custom/otel/metadata",
 			},
@@ -823,7 +833,10 @@ func TestHTTPServerConcurrentAccess(t *testing.T) {
 	// Create server
 	serverConfig := &httpserver.Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:0",
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:0",
+			},
 		},
 		Path: "/concurrent/metadata",
 	}

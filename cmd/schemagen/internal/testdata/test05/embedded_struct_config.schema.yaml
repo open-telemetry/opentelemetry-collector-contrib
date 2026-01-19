@@ -1,0 +1,24 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/test05
+title: test05 component
+type: object
+$defs:
+  DbConfig:
+    properties:
+      host:
+        type: string
+      password:
+        type: string
+      port:
+        type: integer
+      username:
+        type: string
+    type: object
+allOf:
+  - $ref: '#/$defs/DbConfig'
+properties:
+  app_name:
+    type: string
+  version:
+    type: string
+

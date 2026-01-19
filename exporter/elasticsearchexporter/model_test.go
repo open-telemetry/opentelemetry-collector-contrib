@@ -482,12 +482,10 @@ func TestEncodeSpanECSMode(t *testing.T) {
 
 	span := scopeSpans.Spans().AppendEmpty()
 	err = span.Attributes().FromRaw(map[string]any{
-		"messaging.destination.name": "users_queue",
-		"messaging.operation.name":   "receive",
-		"db.system":                  "sql",
-		"db.namespace":               "users",
-		"db.query.text":              "SELECT * FROM users WHERE user_id=?",
-		"http.response.body.size":    "http.response.encoded_body_size",
+		"db.system":               "sql",
+		"db.namespace":            "users",
+		"db.query.text":           "SELECT * FROM users WHERE user_id=?",
+		"http.response.body.size": "http.response.encoded_body_size",
 	})
 	require.NoError(t, err)
 
@@ -530,15 +528,11 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	  "span": {
 		"id": "1920212223242526",
 		"name": "client span",
-		"action": "receive",
 		"kind": "CLIENT",
 		"db": {
 		  "instance": "users",
 		  "statement": "SELECT * FROM users WHERE user_id=?",
 		  "type": "sql"
-		},
-		"message": {
-		  "queue": { "name": "users_queue" }
 		},
 		"links": [
 		  {
@@ -592,67 +586,6 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		}
 	  }
 	}`, buf.String())
-}
-
-func TestEncodeSpanECSModeMessageQueueName(t *testing.T) {
-	tests := map[string]struct {
-		processorEvent             string
-		expectedMessageQueuePrefix string
-	}{
-		"processor event: span": {
-			processorEvent:             "span",
-			expectedMessageQueuePrefix: "span",
-		},
-		"processor event: other": {
-			processorEvent:             "other",
-			expectedMessageQueuePrefix: "span",
-		},
-		"processor event missing": {
-			processorEvent:             "",
-			expectedMessageQueuePrefix: "span",
-		},
-		"processor event: transaction": {
-			processorEvent:             "transaction",
-			expectedMessageQueuePrefix: "transaction",
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			traces := ptrace.NewTraces()
-			resourceSpans := traces.ResourceSpans().AppendEmpty()
-			scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
-			span := scopeSpans.Spans().AppendEmpty()
-			err := span.Attributes().FromRaw(map[string]any{
-				"processor.event":            test.processorEvent,
-				"messaging.destination.name": "orders_queue",
-			})
-			require.NoError(t, err)
-
-			timestamp := pcommon.Timestamp(1710373859123456789)
-			span.SetStartTimestamp(timestamp)
-
-			var buf bytes.Buffer
-			encoder, _ := newEncoder(MappingECS)
-			err = encoder.encodeSpan(
-				encodingContext{resource: resourceSpans.Resource(), scope: scopeSpans.Scope()},
-				span, elasticsearch.Index{}, &buf,
-			)
-			require.NoError(t, err)
-
-			require.JSONEq(t, fmt.Sprintf(`{
-			  "@timestamp": "2024-03-13T23:50:59.123456789Z",
-              "processor": { "event": %q },
-			  %q: { 
-				"message": { 
-					"queue": { 
-						"name": "orders_queue" 
-						} 
-					} 
-				}
-			}`, test.processorEvent, test.expectedMessageQueuePrefix), buf.String())
-		})
-	}
 }
 
 func TestEncodeLogECSMode(t *testing.T) {
