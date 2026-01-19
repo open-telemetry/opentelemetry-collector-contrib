@@ -12,7 +12,7 @@ require (
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/xdg-go/scram v1.2.0
 	go.opentelemetry.io/collector/component v1.49.1-0.20260115162016-5e41fb551263
-	go.opentelemetry.io/collector/component/componenttest v0.143.0
+	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260115162016-5e41fb551263
 	go.opentelemetry.io/collector/config/configcompression v1.49.1-0.20260115162016-5e41fb551263
 	go.opentelemetry.io/collector/config/configopaque v1.49.1-0.20260115162016-5e41fb551263
 	go.opentelemetry.io/collector/config/configtls v1.49.1-0.20260115162016-5e41fb551263
