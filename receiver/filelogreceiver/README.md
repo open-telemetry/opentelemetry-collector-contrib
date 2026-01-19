@@ -67,6 +67,7 @@ Tails and parses logs from files.
 | `ordering_criteria.sort_by.ascending` |                                      | Sort direction                                                                                                                                                                                                                                                  |
 | `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are  ``, `gzip`, or `auto`. `auto` auto-detects file compression type. Currently, gzip files are the only compressed files auto-detected, based on its headers [See RFC 1952](https://www.rfc-editor.org/rfc/rfc1952#section-2.3). `auto` option is useful when ingesting a mix of compressed and uncompressed files with the same filelogreceiver.              |
 | `polls_to_archive`                    |  `0`                                    | This settings controls the number of poll cycles to store on disk, rather than being discarded. By default, the receiver will purge the record of readers that have existed for 3 generations. Refer [archiving](#archiving) and [polling](../../pkg/stanza/fileconsumer/design.md#polling) for more details. **Note: This feature is experimental.** |
+| `on_truncate`                         | `ignore`                             | Behavior when a file with the same fingerprint is detected but with a smaller size (indicating a copytruncate rotation). Options are `ignore`, `read_whole_file`, or `read_new`. See [handling copytruncate rotation](#handling-copytruncate-rotation) for more details.                                                                              |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
@@ -126,7 +127,32 @@ All time parameters must have the unit of time specified. e.g.: `200ms`, `1s`, `
 
 ### Log Rotation
 
-File Log Receiver can read files that are being rotated. 
+File Log Receiver can read files that are being rotated.
+
+### Handling Copytruncate Rotation
+
+When log files are rotated using the `copytruncate` strategy (where the file is copied and then truncated in place), the receiver can detect when a file has been truncated by comparing the stored offset with the current file size. The `on_truncate` setting controls how the receiver behaves when truncation is detected:
+
+- `ignore` (default): The receiver keeps the original offset and will not read any data until the file grows past the original offset. This prevents duplicate log ingestion when a file is rotated.
+- `read_whole_file`: The receiver resets the offset to 0 and reads the entire file from the beginning. Use this mode when you want to ensure no data loss, even if it means potentially re-reading some logs.
+- `read_new`: The receiver updates the offset to the current file size (the position after truncation). This allows reading new data that is written after the truncation without re-reading existing content.
+
+**Example configuration:**
+
+```yaml
+receivers:
+  filelog:
+    include: [ /var/log/myapp/*.log ]
+    on_truncate: read_whole_file  # Read entire file after copytruncate rotation
+    operators:
+      - type: json_parser
+```
+
+**When to use each mode:**
+
+- Use `ignore` when you want to avoid duplicate logs and your log rotation strategy ensures that rotated files are properly renamed or moved.
+- Use `read_whole_file` when data completeness is critical and you can tolerate duplicate logs, or when you have deduplication logic downstream.
+- Use `read_new` when files are expected to be deleted after rotation and you want to read only new data written after the truncation point. 
 
 ## Example - Tailing a simple json file
 

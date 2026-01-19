@@ -38,6 +38,21 @@ const (
 	defaultPollInterval       = 200 * time.Millisecond
 )
 
+// OnTruncate defines the behavior when a file with the same fingerprint
+// is detected but with a smaller size (indicating a copytruncate rotation).
+const (
+	// OnTruncateIgnore keeps the current behavior: do not read any data until
+	// the file grows past the original offset, then read only the new data.
+	OnTruncateIgnore = "ignore"
+	// OnTruncateReadWholeFile reads the whole file from the beginning when truncation is detected.
+	OnTruncateReadWholeFile = "read_whole_file"
+	// OnTruncateReadNew stores the new (lower) offset, so that the next time the file grows,
+	// any new data past the new offset is read.
+	OnTruncateReadNew = "read_new"
+)
+
+const defaultOnTruncate = OnTruncateIgnore
+
 var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
 	"filelog.allowFileDeletion",
 	featuregate.StageAlpha,
@@ -63,6 +78,7 @@ func NewConfig() *Config {
 		MaxLogSize:         reader.DefaultMaxLogSize,
 		Encoding:           defaultEncoding,
 		FlushPeriod:        reader.DefaultFlushPeriod,
+		OnTruncate:         defaultOnTruncate,
 		Resolver: attrs.Resolver{
 			IncludeFileName: true,
 		},
@@ -91,6 +107,7 @@ type Config struct {
 	Compression             string          `mapstructure:"compression,omitempty"`
 	PollsToArchive          int             `mapstructure:"polls_to_archive,omitempty"`
 	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
+	OnTruncate              string          `mapstructure:"on_truncate,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -192,6 +209,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		telemetryBuilder: telemetryBuilder,
 		noTracking:       o.noTracking,
 		pollsToArchive:   c.PollsToArchive,
+		onTruncate:       c.OnTruncate,
 	}, nil
 }
 
@@ -245,6 +263,13 @@ func (c Config) validate() error {
 
 	if runtime.GOOS == "windows" && (c.IncludeFileOwnerName || c.IncludeFileOwnerGroupName) {
 		return errors.New("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported on Windows")
+	}
+
+	switch c.OnTruncate {
+	case OnTruncateIgnore, OnTruncateReadWholeFile, OnTruncateReadNew:
+		// Valid values
+	default:
+		return fmt.Errorf("'on_truncate' must be one of: %s, %s, %s", OnTruncateIgnore, OnTruncateReadWholeFile, OnTruncateReadNew)
 	}
 
 	return nil
