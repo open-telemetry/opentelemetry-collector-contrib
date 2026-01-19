@@ -203,7 +203,7 @@ receivers:
 
 The `target_allocator` section embeds the full [confighttp client configuration][confighttp].
 
-[confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration
+[confighttp]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#client-configuration
 
 ## Exemplars
 This receiver accepts exemplars coming in Prometheus format and converts it to OTLP format.
@@ -544,5 +544,5 @@ Monitor the Prometheus receiver itself to ensure it's operating correctly:
 ### Additional Resources
 
 - [Prometheus Configuration Documentation](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
-- [OpenTelemetry Collector Best Practices](https://opentelemetry.io/docs/collector/best-practices/)
+- [OpenTelemetry Collector Documentation](https://opentelemetry.io/docs/collector/)
 - [Design Document](DESIGN.md) for implementation details
