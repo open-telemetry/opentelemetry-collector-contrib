@@ -28,9 +28,9 @@ foo_gauge_total{method="get",port="6380"} 13
 # EOF
 `
 
-// TestReportExtraScrapeMetrics validates 3 extra scrape metrics are reported when flag is set to true.
+// TestReportExtraScrapeMetrics validates extra scrape metrics enablement via config and feature gate.
 func TestReportExtraScrapeMetrics(t *testing.T) {
-	target := func(reportExtraScrapeMetrics bool) *testData {
+	target := func(expectExtraScrapeMetrics bool) *testData {
 		return &testData{
 			name: "target1",
 			pages: []mockPrometheusResponse{
@@ -38,29 +38,81 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 			},
 			normalizedName: false,
 			validateFunc: func(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
-				verifyMetrics(t, td, result, reportExtraScrapeMetrics)
+				verifyMetrics(t, td, result, expectExtraScrapeMetrics)
 			},
 		}
 	}
 
-	testScraperMetrics(t, []*testData{target(false)}, false) // extraScrapeMetrics flag is false
-	testScraperMetrics(t, []*testData{target(true)}, true)   // extraScrapeMetrics flag is true
+	testCases := []struct {
+		name        string
+		featureGate bool
+		globalExtra *bool
+		scrapeExtra *bool
+		expectExtra bool
+	}{
+		{
+			name:        "gate_off_global_true",
+			featureGate: false,
+			globalExtra: boolPtr(true),
+			scrapeExtra: nil,
+			expectExtra: true,
+		},
+		{
+			name:        "gate_off_scrape_true",
+			featureGate: false,
+			globalExtra: boolPtr(false),
+			scrapeExtra: boolPtr(true),
+			expectExtra: true,
+		},
+		{
+			name:        "gate_off_scrape_false_overrides_global",
+			featureGate: false,
+			globalExtra: boolPtr(true),
+			scrapeExtra: boolPtr(false),
+			expectExtra: false,
+		},
+		{
+			name:        "gate_off_global_false",
+			featureGate: false,
+			globalExtra: boolPtr(false),
+			scrapeExtra: nil,
+			expectExtra: false,
+		},
+		{
+			name:        "gate_on_forces_global_true",
+			featureGate: true,
+			globalExtra: boolPtr(false),
+			scrapeExtra: nil,
+			expectExtra: true,
+		},
+		{
+			name:        "gate_on_scrape_false_overrides_global",
+			featureGate: true,
+			globalExtra: boolPtr(false),
+			scrapeExtra: boolPtr(false),
+			expectExtra: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testScraperMetrics(t, []*testData{target(tc.expectExtra)}, tc.featureGate, tc.globalExtra, tc.scrapeExtra, tc.expectExtra)
+		})
+	}
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetrics bool) {
-	defer testutil.SetFeatureGateForTest(t, enableReportExtraScrapeMetricsGate, reportExtraScrapeMetrics)()
+func testScraperMetrics(t *testing.T, targets []*testData, featureGateEnabled bool, globalExtra, scrapeExtra *bool, expectExtraScrapeMetrics bool) {
+	defer testutil.SetFeatureGateForTest(t, enableReportExtraScrapeMetricsGate, featureGateEnabled)()
 
 	ctx := t.Context()
-	mp, cfg, err := setupMockPrometheus(targets...)
+	mp, cfg, err := setupMockPrometheusWithExtraScrapeMetrics(globalExtra, scrapeExtra, targets...)
 	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
 	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
-		PrometheusConfig:     cfg,
-		UseStartTimeMetric:   false,
-		StartTimeMetricRegex: "",
+		PrometheusConfig: cfg,
 	}, cms)
 	require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
 
@@ -100,7 +152,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 			if !target.validateScrapes {
 				scrapes = getValidScrapes(t, pResults[name], target)
 				assert.GreaterOrEqual(t, 1, len(scrapes))
-				if reportExtraScrapeMetrics {
+				if expectExtraScrapeMetrics {
 					// scrapes has 2 prom metrics + 5 internal scraper metrics + 3 internal extra scraper metrics = 10
 					// scrape_sample_limit, scrape_timeout_seconds, scrape_body_size_bytes
 					assert.Equal(t, 2+expectedExtraScrapeMetricCount, metricsCount(scrapes[0]))
@@ -196,4 +248,8 @@ func verifyMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	}
 
 	doCompare(t, "scrape-reportExtraScrapeMetrics-1", wantAttributes, m1, e1)
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }

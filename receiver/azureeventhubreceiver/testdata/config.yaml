@@ -1,27 +1,44 @@
-receivers:
-  azureeventhub:
-    connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+azureeventhub:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
 
-  azureeventhub/all:
-    connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
-    partition: foo
-    offset: "1234-5566"
-    format: "raw"
-    apply_semantic_conventions: true
+azureeventhub/feature_gate_exclusive_config:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  poll_rate: 10
+  max_poll_events: 100
 
-processors:
-  nop:
+azureeventhub/missing_connection:
 
-exporters:
-  nop:
+azureeventhub/invalid_connection_string:
+  connection: invalid
 
-service:
-  pipelines:
-    logs:
-      receivers: [azureeventhub, azureeventhub/all]
-      processors: [nop]
-      exporters: [nop]
-    metrics:
-      receivers: [azureeventhub, azureeventhub/all]
-      processors: [nop]
-      exporters: [nop]
+azureeventhub/invalid_connection_string_with_gate:
+  connection: invalid
+
+azureeventhub/invalid_format:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  format: invalid
+
+azureeventhub/offset_with_partition:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  offset: "1234-5566"
+
+azureeventhub/offset_without_partition:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  partition: foo
+  offset: "1234-5566"
+
+azureeventhub/auth:
+  event_hub:
+    name: hubName
+    namespace: namespace.servicebus.windows.net
+  auth: azureauth
+
+azureeventhub/auth_missing_event_hub_name:
+  auth: azureauth
+  event_hub:
+    namespace: ns
+
+azureeventhub/auth_missing_namespace:
+  auth: azureauth
+  event_hub:
+    name: hub

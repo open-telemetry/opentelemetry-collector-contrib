@@ -183,7 +183,6 @@ body:
       - pkg/translator/faro
       - pkg/translator/jaeger
       - pkg/translator/loki
-      - pkg/translator/opencensus
       - pkg/translator/pprof
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
@@ -209,6 +208,7 @@ body:
       - processor/k8sattributes
       - processor/logdedup
       - processor/logstransform
+      - processor/lookup
       - processor/metricsgeneration
       - processor/metricstarttime
       - processor/metricstransform
