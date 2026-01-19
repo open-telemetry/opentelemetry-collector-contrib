@@ -7,7 +7,7 @@ change_type: enhancement
 component: extension/awslogs_encoding
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Migrate AWS CloudTrail userIdentity attributes under aws.user_identity prefix. User name and User ID are not included in the migration."
+note: "Allow using aws.user_identity prefix for UserIdentity bound attributes. This is enabled with extension.awslogsencoding.cloudtrail.enable.user.identity.prefix feature gate ID."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43638]
