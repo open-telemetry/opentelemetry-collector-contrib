@@ -51,7 +51,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.0.0-20260119102301-ba2b601a7080 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.19.0 // indirect
