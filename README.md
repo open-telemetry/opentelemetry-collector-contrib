@@ -166,4 +166,7 @@ is a maintainer they are responsible for merging the PR as well.
 The facilitator is not required to perform a thorough review, but they are encouraged to
 enforce Collector best practices and consistency across the codebase and component
 behavior. The facilitators will typically rely on codeowner's detailed review of the code
-when making the final approval decision. 
+when making the final approval decision.
+
+Marking the PR with the `ready to merge` label should only happen (by triagers/approvers/maintainers)
+once there is at least one approval from an approver, as per the description above. 
