@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
@@ -182,7 +183,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -399,7 +403,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -821,7 +828,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -1045,7 +1055,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -1411,7 +1424,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -1632,7 +1648,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -1996,7 +2015,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2220,7 +2242,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2586,7 +2611,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2613,7 +2641,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2647,7 +2678,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2693,7 +2727,10 @@ func TestStatus(t *testing.T) {
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{Enabled: false},
 				Status: PathConfig{
@@ -2710,7 +2747,10 @@ func TestStatus(t *testing.T) {
 			name: "legacy - default response",
 			legacyConfig: LegacyConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Path: "/status",
 			},
@@ -2829,7 +2869,10 @@ func TestStatus(t *testing.T) {
 			name: "legacy - custom response",
 			legacyConfig: LegacyConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Path:         "/status",
 				ResponseBody: &ResponseBodyConfig{Healthy: "ALL OK", Unhealthy: "NOT OK"},
@@ -2995,22 +3038,29 @@ func TestStatus(t *testing.T) {
 
 				var err error
 				var resp *http.Response
+				var body []byte
 
 				if ts.eventually {
 					assert.EventuallyWithT(t, func(tt *assert.CollectT) {
-						resp, err = client.Get(stepURL)
-						require.NoError(tt, err)
-						assert.Equal(tt, ts.expectedStatusCode, resp.StatusCode)
+						localResp, localErr := client.Get(stepURL)
+						require.NoError(tt, localErr)
+						defer localResp.Body.Close()
+						assert.Equal(tt, ts.expectedStatusCode, localResp.StatusCode)
 					}, time.Second, 10*time.Millisecond)
+					// Make a final request to get the body for assertions
+					resp, err = client.Get(stepURL)
+					require.NoError(t, err)
+					body, err = io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					require.NoError(t, resp.Body.Close())
 				} else {
 					resp, err = client.Get(stepURL)
 					require.NoError(t, err)
+					body, err = io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					require.NoError(t, resp.Body.Close())
 					assert.Equal(t, ts.expectedStatusCode, resp.StatusCode)
 				}
-
-				body, err := io.ReadAll(resp.Body)
-				require.NoError(t, err)
-				defer resp.Body.Close()
 
 				assert.Contains(t, string(body), ts.expectedBody)
 
@@ -3101,7 +3151,10 @@ func TestConfig(t *testing.T) {
 			name: "config not notified",
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{
 					Enabled: true,
@@ -3118,7 +3171,10 @@ func TestConfig(t *testing.T) {
 			name: "config notified",
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{
 					Enabled: true,
@@ -3138,7 +3194,10 @@ func TestConfig(t *testing.T) {
 			name: "config disabled",
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  testutil.GetAvailableLocalAddress(t),
+					},
 				},
 				Config: PathConfig{
 					Enabled: false,
@@ -3215,7 +3274,10 @@ func TestStatusVerboseIncludesAttributes(t *testing.T) {
 
 	config := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
+			},
 		},
 		Config: PathConfig{Enabled: false},
 		Status: PathConfig{
@@ -3306,7 +3368,10 @@ func TestStatusNonVerboseExcludesAttributes(t *testing.T) {
 
 	config := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
+			},
 		},
 		Config: PathConfig{Enabled: false},
 		Status: PathConfig{
@@ -3379,7 +3444,10 @@ func TestStatusExcludesAttributesWhenConfigDisabled(t *testing.T) {
 
 	config := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  testutil.GetAvailableLocalAddress(t),
+			},
 		},
 		Config: PathConfig{Enabled: false},
 		Status: PathConfig{
