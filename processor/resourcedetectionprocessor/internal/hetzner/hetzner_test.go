@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
+	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -52,7 +53,7 @@ func TestHetznerDetector_Detect_OK(t *testing.T) {
 	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := map[string]any{
-		"cloud.provider":          TypeStr,
+		"cloud.provider":          conventions.CloudProviderHetzner.Value.AsString(),
 		"host.id":                 "987654321",
 		"host.name":               "srv-123",
 		"cloud.region":            "nbg1",
