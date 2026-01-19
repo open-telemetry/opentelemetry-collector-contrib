@@ -16,7 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 
@@ -88,7 +87,9 @@ func Benchmark_RS_ResourceSweep_InProcess(b *testing.B) {
 					newNamespaceInformer:  NewNoOpInformer,
 					newReplicaSetInformer: newReplicaSetSharedInformer,
 				}
-				newClientSet := func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) { return fc, nil }
+				newClientSet := func(_ k8sconfig.APIConfig) (k8sconfig.ClientBundle, error) {
+					return k8sconfig.ClientBundle{K8s: fc}, nil
+				}
 
 				c, err := New(set, k8sconfig.APIConfig{}, rules, filters, nil, Excludes{}, newClientSet, factory, false, 0)
 				if err != nil {
