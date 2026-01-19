@@ -135,7 +135,7 @@ func TestScrape(t *testing.T) {
 				if metrics.At(i).Name() == "system.memory.usage" {
 					memUsageIdx = i
 				}
-				if metrics.At(i).Name() == "system.memory.shared" {
+				if metrics.At(i).Name() == "system.memory.linux.shared" {
 					memSharedIdx = i
 				}
 			}
@@ -144,7 +144,7 @@ func TestScrape(t *testing.T) {
 
 			if runtime.GOOS == "linux" {
 				if memSharedIdx != -1 {
-					assertMemorySharedMetricValid(t, metrics.At(memSharedIdx), "system.memory.shared")
+					assertMemorySharedMetricValid(t, metrics.At(memSharedIdx), "system.memory.linux.shared")
 				}
 				assertMemoryUsageMetricHasLinuxSpecificStateLabels(t, metrics.At(memUsageIdx))
 			} else if runtime.GOOS != "windows" {
@@ -216,7 +216,7 @@ func assertMemorySharedMetricValid(t *testing.T, metric pmetric.Metric, expected
 	assert.Equal(t, expectedName, metric.Name())
 	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
 	assert.Equal(t, "By", metric.Unit())
-	assert.Equal(t, "Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.", metric.Description())
+	assert.Equal(t, "Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Only supported on Linux.", metric.Description())
 	assert.False(t, metric.Sum().IsMonotonic(), "shared memory is not monotonic")
 	assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
 	dataPoints := metric.Sum().DataPoints()
