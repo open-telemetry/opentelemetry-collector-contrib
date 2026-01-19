@@ -702,9 +702,9 @@ generate-gh-issue-templates:
 .PHONY: generate-schemas
 generate-schemas:
 	./cmd/schemagen/run_schemagen_dir.sh ./receiver
-	./cmd/schemagen/run_schemagen_dir.sh ./exporter
+	./cmd/schemagen/run_schemagen_dir.sh -i datadogexporter ./exporter
 	./cmd/schemagen/run_schemagen_dir.sh ./processor
-	./cmd/schemagen/run_schemagen_dir.sh ./extension
+	./cmd/schemagen/run_schemagen_dir.sh -i encoding,observer,opampcustommessages,storage ./extension
 	./cmd/schemagen/run_schemagen_dir.sh ./connector
 
 .PHONY: checks
