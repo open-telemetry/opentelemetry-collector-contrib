@@ -12,9 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 	"github.com/cespare/xxhash/v2"
-	"github.com/gogo/protobuf/proto"
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/prompb"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
@@ -36,10 +37,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
+const defaultMaxRequestBodySize = 10 * 1024 * 1024 // 10MiB
+
+var bodyBufferPool bytesutil.ByteBufferPool
+
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	cache, err := lru.New[uint64, pmetric.ResourceMetrics](1000)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
+	}
+	if cfg.MaxRequestBodySize <= 0 {
+		cfg.MaxRequestBodySize = defaultMaxRequestBodySize
 	}
 
 	return &prometheusRemoteWriteReceiver{
@@ -173,47 +181,37 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	// After parsing the content-type header, the next step would be to handle content-encoding.
 	// Luckly confighttp's Server has middleware that already decompress the request body for us.
 
-	body, err := io.ReadAll(req.Body)
+	err = prw.parse(req.Body, func(prw2Req *prompb.WriteV2Request) error {
+		m, stats, err := prw.translateV2(req.Context(), prw2Req)
+		stats.SetHeaders(w)
+		if err != nil {
+			return err
+		}
+
+		// Return early if metric count is 0.
+		if m.MetricCount() == 0 {
+			return nil
+		}
+
+		obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
+		err = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
+		prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.ResourceMetrics().Len(), err)
+		if err != nil {
+			prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+			return err
+		}
+		return nil
+	})
 	if err != nil {
-		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var prw2Req writev2.Request
-	if err = proto.Unmarshal(body, &prw2Req); err != nil {
-		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	m, stats, err := prw.translateV2(req.Context(), &prw2Req)
-	stats.SetHeaders(w)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
-		return
-	}
-
-	// Return early if metric count is 0.
-	if m.MetricCount() == 0 {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
-	err = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
-	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.ResourceMetrics().Len(), err)
-	if err != nil {
-		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		if consumererror.IsPermanent(err) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
+	} else {
+		w.WriteHeader(http.StatusNoContent)
 	}
-
-	w.WriteHeader(http.StatusNoContent)
 }
 
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
@@ -244,6 +242,31 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 
 	// No "proto=" parameter found, assume v1.
 	return remoteapi.WriteV1MessageType, nil
+}
+
+// parse reads and unmarshals the remote-write request body into a writev2.Request.
+func (prw *prometheusRemoteWriteReceiver) parse(r io.Reader, callback func(req *prompb.WriteV2Request) error) error {
+	logger := prw.settings.Logger
+	buf := bodyBufferPool.Get()
+	defer bodyBufferPool.Put(buf)
+	maxRequestBodySize := prw.config.MaxRequestBodySize
+	limitedReader := io.LimitReader(r, maxRequestBodySize)
+	if _, err := buf.ReadFrom(limitedReader); err != nil {
+		logger.Error("Error reading remote-write request body", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		return err
+	}
+	wru := prompb.GetWriteV2Unmarshaler()
+	defer prompb.PutWriteV2Unmarshaler(wru)
+	req, err := wru.UnmarshalProtobuf(buf.B)
+	if err != nil {
+		logger.Error("Error unmarshalling remote-write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		return err
+	}
+	if err := callback(req); err != nil {
+		logger.Error("Error processing remote-write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		return err
+	}
+	return nil
 }
 
 // getOrCreateRM returns or creates the ResourceMetrics for a job/instance pair within an HTTP request.
@@ -285,7 +308,7 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
-func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
+func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *prompb.WriteV2Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
 	var (
 		badRequestErrors error
 		// otelMetrics represents the final metrics, after all the processing, that will be returned by the receiver.
@@ -445,7 +468,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	otelMetrics pmetric.Metrics,
 	ls labels.Labels,
-	ts *writev2.TimeSeries,
+	ts *prompb.WriteV2TimeSeries,
 	scopeName, scopeVersion, metricName, unit, description string,
 	metricCache map[uint64]pmetric.Metric,
 	stats *promremote.WriteResponseStats,
@@ -581,7 +604,7 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 }
 
 // addNumberDatapoints adds the labels to the datapoints attributes.
-func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts *writev2.TimeSeries, stats *promremote.WriteResponseStats) {
+func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts *prompb.WriteV2TimeSeries, stats *promremote.WriteResponseStats) {
 	// Add samples from the timeseries
 	attrs := extractAttributes(ls)
 	for i := range ts.Samples {
@@ -598,7 +621,7 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 	stats.Samples += len(ts.Samples)
 }
 
-func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, ls labels.Labels, stats *promremote.WriteResponseStats) {
+func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datapoints pmetric.ExponentialHistogramDataPointSlice, histogram *prompb.WriteV2Histogram, attrs pcommon.Map, ls labels.Labels, stats *promremote.WriteResponseStats) {
 	// Drop Native Histogram with negative counts
 	if hasNegativeCounts(histogram) {
 		prw.settings.Logger.Info("Dropping Native Histogram series with negative counts",
@@ -650,7 +673,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 }
 
 // hasNegativeCounts checks if a histogram has any negative counts
-func hasNegativeCounts(histogram *writev2.Histogram) bool {
+func hasNegativeCounts(histogram *prompb.WriteV2Histogram) bool {
 	if histogram.IsFloatHistogram() {
 		// Check overall count
 		if histogram.GetCountFloat() < 0 {
@@ -699,7 +722,7 @@ func hasNegativeCounts(histogram *writev2.Histogram) bool {
 
 // convertDeltaBuckets converts Prometheus native histogram spans and deltas to OpenTelemetry bucket counts
 // For integer buckets, the values are deltas between the buckets. i.e a bucket list of 1,2,-2 would correspond to a bucket count of 1,3,1
-func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice) {
+func convertDeltaBuckets(spans []prompb.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice) {
 	// The total capacity is the sum of the deltas and the offsets of the spans.
 	totalCapacity := len(deltas)
 	for _, span := range spans {
@@ -725,7 +748,7 @@ func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pco
 
 // convertAbsoluteBuckets converts Prometheus native histogram spans and absolute counts to OpenTelemetry bucket counts
 // For float buckets, the values are absolute counts, and must be 0 or positive.
-func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, buckets pcommon.UInt64Slice) {
+func convertAbsoluteBuckets(spans []prompb.BucketSpan, counts []float64, buckets pcommon.UInt64Slice) {
 	// The total capacity is the sum of the counts and the offsets of the spans.
 	totalCapacity := len(counts)
 	for _, span := range spans {
@@ -779,7 +802,7 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) (st
 }
 
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints
-func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *writev2.Histogram, attrs pcommon.Map, stats *promremote.WriteResponseStats) {
+func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.HistogramDataPointSlice, histogram *prompb.WriteV2Histogram, attrs pcommon.Map, stats *promremote.WriteResponseStats) {
 	if len(histogram.CustomValues) == 0 {
 		return
 	}
@@ -803,7 +826,7 @@ func (*prometheusRemoteWriteReceiver) addNHCBDatapoint(datapoints pmetric.Histog
 }
 
 // convertNHCBBuckets converts NHCB bucket data to OpenTelemetry bucket counts
-func convertNHCBBuckets(histogram *writev2.Histogram) []uint64 {
+func convertNHCBBuckets(histogram *prompb.WriteV2Histogram) []uint64 {
 	// For NHCB, we need numExplicitBounds + 1 buckets (including the final +inf bucket)
 	bucketCounts := make([]uint64, len(histogram.CustomValues)+1)
 
@@ -859,7 +882,7 @@ type countSumSetter interface {
 	SetCount(uint64)
 }
 
-func setCountAndSum(histogram *writev2.Histogram, dp countSumSetter) {
+func setCountAndSum(histogram *prompb.WriteV2Histogram, dp countSumSetter) {
 	dp.SetSum(histogram.Sum)
 
 	if histogram.IsFloatHistogram() {
