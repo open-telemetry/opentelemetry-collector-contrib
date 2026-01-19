@@ -692,7 +692,8 @@ k8sattributes:
   extract:
     # Metadata fields to extract as resource attributes
     # Default: [k8s.namespace.name, k8s.pod.name, k8s.pod.uid, k8s.pod.start_time, k8s.deployment.name, k8s.node.name]
-    # Description of the attributes can be found in [SenComv](https://github.com/open-telemetry/semantic-conventions/tree/main/docs/resource/k8s)
+    # Full description of each metadata attribute can be found in the semantic conventions:
+    # https://github.com/open-telemetry/semantic-conventions/tree/main/docs/resource/k8s
     metadata:
       - k8s.namespace.name
       - k8s.pod.name
@@ -720,12 +721,14 @@ k8sattributes:
       - container.image.name
       - container.image.tag
       - container.image.repo_digests
+      # See [the configuration section](#configuration) for more details
       - service.namespace
       - service.name
       - service.version
       - service.instance.id
     
     # Extract pod annotations as resource attributes
+    # See [Extracting attributes from pod labels and annotations](#extracting-attributes-from-pod-labels-and-annotations) section for more details
     annotations:
       - tag_name: annotation_value  # Resource attribute name
         key: my-annotation           # Annotation key to extract
@@ -737,8 +740,13 @@ k8sattributes:
       - tag_name: $1                 # Use regex capture group
         key_regex: custom\.(.*)      # Extract all annotations matching pattern
         from: pod
+      # Extract all annotations (use with caution - may extract many attributes)
+      - tag_name: $$1
+        key_regex: (.*)
+        from: pod
     
     # Extract pod labels as resource attributes
+    # See [Extracting attributes from pod labels and annotations](#extracting-attributes-from-pod-labels-and-annotations) section for more details
     labels:
       - tag_name: label_value        # Resource attribute name
         key: my-label                # Label key to extract
@@ -750,8 +758,13 @@ k8sattributes:
       - tag_name: $1                 # Use regex capture group
         key_regex: app\.(.*)         # Extract all labels matching pattern
         from: pod
+      # Extract all labels (use with caution - may extract many attributes)
+      - tag_name: $$1
+        key_regex: (.*)
+        from: pod
     
     # Extract OpenTelemetry resource attributes from pod annotations
+    # See [Configuring recommended resource attributes](#configuring-recommended-resource-attributes) section for more details
     # Annotations with prefix "resource.opentelemetry.io/" become resource attributes
     # Example: "resource.opentelemetry.io/service.version" → "service.version"
     # Default: false
@@ -796,6 +809,8 @@ k8sattributes:
   
   # Pod association rules - define how to match telemetry data to pods
   # Rules are evaluated in order; first match wins
+  # Note: If a source attribute is found but doesn't match any pod, the association fails
+  # and subsequent rules will not be evaluated
   # Maximum 4 sources per rule
   pod_association:
     # Rule 1: Match by pod IP from resource attribute
