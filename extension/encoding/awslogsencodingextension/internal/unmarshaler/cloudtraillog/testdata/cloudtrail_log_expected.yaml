@@ -653,7 +653,7 @@ resourceLogs:
               - key: aws.user_identity.account_id
                 value:
                   stringValue: "111122223333"
-              - key: aws.user_identity.user_identity.invoked_by
+              - key: aws.user_identity.invoked_by
                 value:
                   stringValue: AWS Internal
               - key: aws.resources

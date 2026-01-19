@@ -373,7 +373,7 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 		}
 
 		if record.UserIdentity.InvokedBy != "" {
-			attrs.PutStr("aws.user_identity.user_identity.invoked_by", record.UserIdentity.InvokedBy)
+			attrs.PutStr("aws.user_identity.invoked_by", record.UserIdentity.InvokedBy)
 		}
 
 		if record.UserIdentity.PrincipalID != "" {
