@@ -37,6 +37,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/pipeline v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.0.0-20260119102301-ba2b601a7080 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect

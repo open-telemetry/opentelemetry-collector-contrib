@@ -209,6 +209,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/pipeline v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/processor v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
