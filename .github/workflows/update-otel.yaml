@@ -29,12 +29,12 @@ jobs:
           LAST_COMMIT="$(git -C ./opentelemetry-collector/ rev-parse HEAD)"
           cd opentelemetry-collector-contrib
           # Extract current collector version tag from go.mod
-          CURRENT_VERSION="$(grep 'go.opentelemetry.io/collector v' cmd/otelcontribcol/go.mod | sed -E 's/.*(v[0-9]+\.[0-9]+\.[0-9]+).*/\1/' | head -1)"
           git config user.name otelbot
           git config user.email 197425009+otelbot@users.noreply.github.com
           branch="otelbot/update-otel-$(date +%s)"
           git checkout -b "$branch"
           make genotelcontribcol
+          CURRENT_VERSION="$(grep 'go.opentelemetry.io/collector v' cmd/otelcontribcol/go.mod | sed -E 's/.*(v[0-9]+\.[0-9]+\.[0-9]+).*/\1/' | head -1)"
           {
             echo "CURRENT_VERSION=$CURRENT_VERSION"
             echo "LAST_COMMIT=$LAST_COMMIT"
