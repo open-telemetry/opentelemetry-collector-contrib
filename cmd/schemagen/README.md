@@ -22,17 +22,17 @@ and the generation process would be reversed – Go config files from schemas.
 
 ## Modes
 
-Script can run in one of two modes: `component` and `package`.
+Script can generate schemas for components and packages. There are two distinct modes of operation: 
+`component` and `package`. Schemagen automatically detects the mode based on metadata.yaml file content.
 
 ### Component mode
 
 The `component` mode is aimed at generating configurations for individual components like receivers, processors,
-exporters, and connectors. In this mode, you point the tool to a specific Go file that contains the configuration
-struct for that component.
+exporters, and connectors. 
 
 In component mode, schema is generated in file named `config.schema.<ext>` to the chosen output folder
 (by default it's input directory). You can optionally specify the root struct to use for schema generation
-using the `-r` flag; if not provided, the tool defaults to using the struct whose name matches the input file name.
+using the `-r` flag; if not provided, the tool defaults to using `Config`.
 
 ### Package mode
 
@@ -55,15 +55,12 @@ make install-tools
 After installing the tool you can execute it directly or through the helper Make target.
 
 ```bash
-schemagen [flags] path/to/your/config.go
 schemagen [flags] path/to/your/package/dir
 ```
 
 The repository also provides a convenient wrapper:
 
 ```bash
-make schemagen SRC=receiver/foo/somecomponent/config.go
-# or
 make schemagen SRC=receiver/foo/somecomponent/
 ```
 
@@ -93,21 +90,26 @@ the repository root. Although settings file is optional it extends significantly
 A practical example:
 
 ```yaml
-outputFolder: ./schemas
 mappings:
   time:
     Duration:
       schemaType: string
       format: duration
+componentOverrides:
+  receiver/namedpipe:
+    configName: 'NamedPipeConfig'
+  receiver/filelog:
+    configName: 'FileLogConfig'
 ```
 
-- `outputFolder` becomes the default `-o` value. Relative folders are resolved
-  against the directory that contains `.schemagen.yaml`.
 - `mappings` tell schemagen how to treat specific selector expressions as
   primitive schema fields. Each mapping converts the Go type into a scalar
   `schemaType` and can also set the JSON Schema `format`. The original
   Go type shows up under the `x-customType` extension so consumers can still
   see the source information.
+- `componentOverrides` allow per-component configuration of the root struct
+  name. This is useful when a component does not use the conventional
+  `Config` struct name.
 
 ## Generated schema highlights
 
