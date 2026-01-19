@@ -692,6 +692,7 @@ k8sattributes:
   extract:
     # Metadata fields to extract as resource attributes
     # Default: [k8s.namespace.name, k8s.pod.name, k8s.pod.uid, k8s.pod.start_time, k8s.deployment.name, k8s.node.name]
+    # Description of the attributes can be found in [SenComv](https://github.com/open-telemetry/semantic-conventions/tree/main/docs/resource/k8s)
     metadata:
       - k8s.namespace.name
       - k8s.pod.name
