@@ -21,7 +21,7 @@ func WriteSchemaToFile(schema *Schema, config *Config) (string, error) {
 	case "json":
 		raw, err = schema.ToJSON()
 	default:
-		err = errors.New("unknown outputFolder file type; use json or yaml: " + config.FilePath)
+		err = errors.New("unknown output file type; use json or yaml")
 	}
 	if err != nil {
 		return "", err
