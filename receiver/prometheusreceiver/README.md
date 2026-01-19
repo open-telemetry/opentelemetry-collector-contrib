@@ -253,7 +253,7 @@ See [documentation.md](./documentation.md) for the complete list of feature gate
 Feature gates can be enabled using the `--feature-gates` flag:
 
 ```shell
-"--feature-gates=receiver.prometheusreceiver.<feature-gate-name>"
+"--feature-gates=<feature-gate>"
 ```
 
 ## Troubleshooting and Best Practices
