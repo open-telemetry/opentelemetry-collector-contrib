@@ -134,7 +134,7 @@ func (s *redfishScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 				// only record Fans metrics if it exists in the scraperClient's resourceSet
 				if client.ResourceSet[FansResource] {
-					s.recordFans(compSys.HostName, chassis.ID, thermal.Fans)
+					s.recordFans(chassis.ID, thermal.Fans)
 				}
 
 				// only record Temperatures metrics if it exists in the scraperClient's resourceSet

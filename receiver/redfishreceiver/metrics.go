@@ -93,7 +93,7 @@ func (s *redfishScraper) recordChassis(chassis *redfish.Chassis) {
 	)
 }
 
-func (s *redfishScraper) recordFans(hostName, chassisID string, fans []redfish.Fan) {
+func (s *redfishScraper) recordFans(chassisID string, fans []redfish.Fan) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, fan := range fans {
 		if fan.Reading != nil {
