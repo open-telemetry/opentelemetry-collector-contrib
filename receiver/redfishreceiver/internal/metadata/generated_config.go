@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/filter"
 )
 
 // MetricConfig provides common config for a particular metric.
@@ -83,13 +84,58 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
+// ResourceAttributeConfig provides common config for a particular resource attribute.
+type ResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesConfig provides config for redfish resource attributes.
+type ResourceAttributesConfig struct {
+	BaseURL        ResourceAttributeConfig `mapstructure:"base_url"`
+	SystemHostName ResourceAttributeConfig `mapstructure:"system.host_name"`
+}
+
+func DefaultResourceAttributesConfig() ResourceAttributesConfig {
+	return ResourceAttributesConfig{
+		BaseURL: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		SystemHostName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+	}
+}
+
 // MetricsBuilderConfig is a configuration for redfish metrics builder.
 type MetricsBuilderConfig struct {
-	Metrics MetricsConfig `mapstructure:"metrics"`
+	Metrics            MetricsConfig            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		Metrics: DefaultMetricsConfig(),
+		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
