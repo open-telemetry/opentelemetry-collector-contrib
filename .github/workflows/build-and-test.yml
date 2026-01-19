@@ -183,6 +183,10 @@ jobs:
           make generate-gh-issue-templates
           git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
       - run: ./.github/workflows/scripts/check-disk-space.sh
+      - name: Check config schemas
+        run: |
+          make generate-schemas
+          git diff --exit-code '*.schema.yaml' || (echo 'Config schemas are out of date, please run "make generate-schemas" and commit the changes in this PR.' && exit 1)
   unittest-matrix:
     strategy:
       fail-fast: false
