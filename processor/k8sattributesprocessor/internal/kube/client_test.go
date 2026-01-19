@@ -161,8 +161,6 @@ func TestDefaultClientset(t *testing.T) {
 	assert.Nil(t, c)
 
 	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{}, false, 10*time.Second)
-	wc := c.(*WatchClient)
-	wc.mc = clientmetafake.NewSimpleMetadataClient(runtime.NewScheme())
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
@@ -3635,24 +3633,16 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 			expectRun: true,
 		},
 	}
-	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
-	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
-
-	apiCfg := k8sconfig.APIConfig{
-		AuthType: "none",
-	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := InformersFactoryList{
-				newInformer:          NewFakeInformer,
-				newNamespaceInformer: NewFakeNamespaceInformer,
-				newReplicaSetInformer: func(kc metadata.Interface, ns string) cache.SharedInformer {
-					return newTrackableInformer(kc, ns)
-				},
+				newInformer:           NewFakeInformer,
+				newNamespaceInformer:  NewFakeNamespaceInformer,
+				newReplicaSetInformer: newTrackableInformer,
 			}
 
-			c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, tt.rules, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second)
+			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, tt.rules, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, factory, false, 10*time.Second)
 			require.NoError(t, err)
 			wc := c.(*WatchClient)
 
