@@ -4,13 +4,13 @@ go 1.24.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.49.1-0.20260115162016-5e41fb551263
+	go.opentelemetry.io/collector/component v1.49.1-0.20260119125341-0550b08ddcc5
 	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260115162016-5e41fb551263
-	go.opentelemetry.io/collector/confmap v1.49.1-0.20260115162016-5e41fb551263
-	go.opentelemetry.io/collector/consumer v1.49.1-0.20260115162016-5e41fb551263
+	go.opentelemetry.io/collector/confmap v1.49.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/consumer v1.49.1-0.20260119125341-0550b08ddcc5
 	go.opentelemetry.io/collector/consumer/consumertest v0.143.1-0.20260115162016-5e41fb551263
-	go.opentelemetry.io/collector/pdata v1.49.1-0.20260115162016-5e41fb551263
-	go.opentelemetry.io/collector/processor v1.49.1-0.20260115162016-5e41fb551263
+	go.opentelemetry.io/collector/pdata v1.49.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/processor v1.49.1-0.20260119125341-0550b08ddcc5
 	go.opentelemetry.io/collector/processor/processortest v0.143.1-0.20260115162016-5e41fb551263
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
@@ -37,11 +37,11 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.143.1-0.20260115162016-5e41fb551263 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.143.1-0.20260115162016-5e41fb551263 // indirect
-	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260115162016-5e41fb551263 // indirect
+	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260115162016-5e41fb551263 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.143.1-0.20260115162016-5e41fb551263 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.143.1-0.20260115162016-5e41fb551263 // indirect
-	go.opentelemetry.io/collector/pipeline v1.49.1-0.20260115162016-5e41fb551263 // indirect
+	go.opentelemetry.io/collector/pipeline v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.143.1-0.20260115162016-5e41fb551263 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
