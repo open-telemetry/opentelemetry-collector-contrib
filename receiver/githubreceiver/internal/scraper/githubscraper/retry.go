@@ -24,6 +24,17 @@ const (
 	defaultRetryMaxElapsedTime  = 5 * time.Minute
 )
 
+// GraphQLRateLimitProvider is implemented by GraphQL response types that contain
+// rate limit information. All generated GraphQL response types include a RateLimit
+// field that satisfies this interface.
+type GraphQLRateLimitProvider interface {
+	GetCost() int
+	GetLimit() int
+	GetRemaining() int
+	GetUsed() int
+	GetResetAt() time.Time
+}
+
 // rateLimitState holds GitHub API rate limit information for a specific API type.
 // GitHub has separate rate limits for GraphQL and REST APIs.
 // Thread-safe via mutex for concurrent access from multiple goroutines.
@@ -105,6 +116,52 @@ func (r *rateLimitState) waitDuration() time.Duration {
 	return wait
 }
 
+// waitInfo holds atomic snapshot of rate limit state for proactive waiting decisions.
+type waitInfo struct {
+	needsWait bool
+	duration  time.Duration
+	limit     int
+	remaining int
+	used      int
+	resetAt   time.Time
+}
+
+// checkWaitRequired atomically determines if proactive waiting is needed and returns
+// all relevant info in a single lock acquisition. This prevents race conditions
+// between checking if wait is needed and getting wait parameters.
+func (r *rateLimitState) checkWaitRequired(threshold int) waitInfo {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	info := waitInfo{
+		limit:     r.limit,
+		remaining: r.remaining,
+		used:      r.used,
+		resetAt:   r.resetAt,
+	}
+
+	// No data yet - don't wait
+	if r.lastUpdated.IsZero() {
+		return info
+	}
+
+	// Above threshold - don't wait
+	if r.remaining >= threshold {
+		return info
+	}
+
+	// Calculate wait duration
+	duration := time.Until(r.resetAt)
+	if duration <= 0 {
+		// Reset time has passed - don't wait
+		return info
+	}
+
+	info.needsWait = true
+	info.duration = duration
+	return info
+}
+
 // checkAndWaitGraphQL performs proactive rate limit checking for the GraphQL API.
 func (ghs *githubScraper) checkAndWaitGraphQL(ctx context.Context) error {
 	return ghs.checkAndWait(ctx, ghs.graphQLRateLimit, "GraphQL")
@@ -123,36 +180,37 @@ func (ghs *githubScraper) checkAndWait(ctx context.Context, rateLimit *rateLimit
 		return nil
 	}
 
-	if !rateLimit.needsProactiveWait(ghs.cfg.ProactiveRetry.Threshold) {
+	// Atomically check if wait is required and get all wait parameters
+	info := rateLimit.checkWaitRequired(ghs.cfg.ProactiveRetry.Threshold)
+	if !info.needsWait {
 		return nil
 	}
-
-	limit, remaining, used, resetAt := rateLimit.get()
-	waitDuration := rateLimit.waitDuration()
 
 	ghs.logger.Warn(
 		"Proactive rate limit wait triggered",
 		zap.String("api", apiType),
-		zap.Int("remaining", remaining),
-		zap.Int("limit", limit),
-		zap.Int("used", used),
+		zap.Int("remaining", info.remaining),
+		zap.Int("limit", info.limit),
+		zap.Int("used", info.used),
 		zap.Int("threshold", ghs.cfg.ProactiveRetry.Threshold),
-		zap.Time("reset_at", resetAt),
-		zap.Duration("wait_duration", waitDuration),
+		zap.Time("reset_at", info.resetAt),
+		zap.Duration("wait_duration", info.duration),
 	)
 
+	startWait := time.Now()
 	select {
-	case <-time.After(waitDuration):
+	case <-time.After(info.duration):
 		ghs.logger.Info(
 			"Proactive rate limit wait completed",
 			zap.String("api", apiType),
-			zap.Duration("waited", waitDuration),
+			zap.Duration("waited", time.Since(startWait)),
 		)
 		return nil
 	case <-ctx.Done():
 		ghs.logger.Debug(
 			"Proactive wait interrupted by context cancellation",
 			zap.String("api", apiType),
+			zap.Duration("waited", time.Since(startWait)),
 		)
 		return ctx.Err()
 	}
@@ -204,7 +262,7 @@ func isRetryableError(err error, logger *zap.Logger) bool {
 
 	// Network errors, timeouts, DNS failures are retryable
 	var urlErr interface{ Timeout() bool }
-	if errors.As(err, &urlErr) {
+	if errors.As(err, &urlErr) && urlErr.Timeout() {
 		return true
 	}
 
@@ -306,4 +364,117 @@ func (ghs *githubScraper) withRetry(ctx context.Context, operation func() error)
 	}
 
 	return err
+}
+
+// withRetryResult wraps a function that returns a value with exponential backoff retry logic.
+// This generic version returns (*T, error) and handles rate limit metadata extraction.
+// Similar to the original graphqlCallWithRetry pattern but integrated with the scraper's
+// configuration and rate limit state management.
+func withRetryResult[T any](
+	ctx context.Context,
+	ghs *githubScraper,
+	rateLimit *rateLimitState,
+	apiType string,
+	apiCall func() (*T, error),
+	getRateLimit func(*T) GraphQLRateLimitProvider,
+) (*T, error) {
+	// Proactive rate limit check before making the call
+	if err := ghs.checkAndWait(ctx, rateLimit, apiType); err != nil {
+		return nil, err
+	}
+
+	// If retry is disabled, make direct call
+	if !ghs.cfg.RetryOnFailure.Enabled {
+		resp, err := apiCall()
+		if err == nil && resp != nil && getRateLimit != nil {
+			rl := getRateLimit(resp)
+			rateLimit.update(rl.GetCost(), rl.GetLimit(), rl.GetRemaining(), rl.GetUsed(), rl.GetResetAt())
+		}
+		return resp, err
+	}
+
+	expBackoff := backoff.NewExponentialBackOff()
+	expBackoff.InitialInterval = defaultRetryInitialInterval
+	expBackoff.MaxInterval = defaultRetryMaxInterval
+
+	attempt := 0
+	operation := func() (*T, error) {
+		attempt++
+		resp, err := apiCall()
+
+		// Update rate limit state from successful response
+		if resp != nil && getRateLimit != nil {
+			rl := getRateLimit(resp)
+			rateLimit.update(rl.GetCost(), rl.GetLimit(), rl.GetRemaining(), rl.GetUsed(), rl.GetResetAt())
+
+			// Check if we're approaching rate limit and should wait
+			// This mirrors the original backoff.go proactive detection
+			if ghs.cfg.ProactiveRetry.Enabled && rl.GetRemaining() < ghs.cfg.ProactiveRetry.Threshold {
+				waitDuration := time.Until(rl.GetResetAt())
+				if waitDuration > 0 {
+					ghs.logger.Warn(
+						"Approaching rate limit, signaling backoff to wait",
+						zap.String("api", apiType),
+						zap.Int("remaining", rl.GetRemaining()),
+						zap.Int("threshold", ghs.cfg.ProactiveRetry.Threshold),
+						zap.Duration("wait_duration", waitDuration),
+					)
+					return nil, &backoff.RetryAfterError{Duration: waitDuration}
+				}
+			}
+		}
+
+		if err == nil {
+			return resp, nil
+		}
+
+		// Context cancellation takes priority - stop immediately
+		if ctx.Err() != nil {
+			return nil, backoff.Permanent(ctx.Err())
+		}
+
+		if !isRetryableError(err, ghs.logger) {
+			ghs.logger.Debug(
+				"Non-retryable error encountered, stopping retry",
+				zap.Error(err),
+				zap.Int("attempt", attempt),
+			)
+			return nil, backoff.Permanent(err)
+		}
+
+		ghs.logger.Info(
+			"Retryable error encountered, will retry",
+			zap.Error(err),
+			zap.Int("attempt", attempt),
+		)
+
+		return nil, err
+	}
+
+	result, err := backoff.Retry(
+		ctx,
+		operation,
+		backoff.WithBackOff(expBackoff),
+		backoff.WithMaxElapsedTime(defaultRetryMaxElapsedTime),
+	)
+	if err != nil {
+		ghs.logger.Warn(
+			"Operation failed after retries",
+			zap.Error(err),
+			zap.Int("total_attempts", attempt),
+		)
+	}
+
+	return result, err
+}
+
+// withGraphQLRetry is a convenience wrapper for GraphQL API calls that handles
+// rate limit checking, retry logic, and rate limit state updates.
+func withGraphQLRetry[T any](
+	ctx context.Context,
+	ghs *githubScraper,
+	apiCall func() (*T, error),
+	getRateLimit func(*T) GraphQLRateLimitProvider,
+) (*T, error) {
+	return withRetryResult(ctx, ghs, ghs.graphQLRateLimit, "GraphQL", apiCall, getRateLimit)
 }

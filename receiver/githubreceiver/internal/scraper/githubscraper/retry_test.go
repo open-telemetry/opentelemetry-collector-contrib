@@ -155,6 +155,112 @@ func TestRateLimitState_Concurrency(_ *testing.T) {
 	<-done
 }
 
+func TestRateLimitState_CheckWaitRequired(t *testing.T) {
+	tests := []struct {
+		name      string
+		remaining int
+		threshold int
+		resetAt   time.Time
+		updated   bool
+		wantWait  bool
+	}{
+		{
+			name:      "no data yet - should not wait",
+			remaining: 50,
+			threshold: 100,
+			resetAt:   time.Now().Add(time.Hour),
+			updated:   false,
+			wantWait:  false,
+		},
+		{
+			name:      "remaining below threshold with future reset - should wait",
+			remaining: 50,
+			threshold: 100,
+			resetAt:   time.Now().Add(time.Hour),
+			updated:   true,
+			wantWait:  true,
+		},
+		{
+			name:      "remaining above threshold - should not wait",
+			remaining: 150,
+			threshold: 100,
+			resetAt:   time.Now().Add(time.Hour),
+			updated:   true,
+			wantWait:  false,
+		},
+		{
+			name:      "remaining equals threshold - should not wait",
+			remaining: 100,
+			threshold: 100,
+			resetAt:   time.Now().Add(time.Hour),
+			updated:   true,
+			wantWait:  false,
+		},
+		{
+			name:      "below threshold but reset already passed - should not wait",
+			remaining: 50,
+			threshold: 100,
+			resetAt:   time.Now().Add(-10 * time.Second),
+			updated:   true,
+			wantWait:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			state := &rateLimitState{}
+			if tt.updated {
+				state.update(1, 5000, tt.remaining, 5000-tt.remaining, tt.resetAt)
+			}
+			info := state.checkWaitRequired(tt.threshold)
+			assert.Equal(t, tt.wantWait, info.needsWait)
+			if tt.updated {
+				assert.Equal(t, 5000, info.limit)
+				assert.Equal(t, tt.remaining, info.remaining)
+			}
+			if tt.wantWait {
+				assert.Greater(t, info.duration, time.Duration(0))
+			}
+		})
+	}
+}
+
+// timeoutError is a test helper that implements the Timeout() interface
+type timeoutError struct {
+	isTimeout bool
+}
+
+func (*timeoutError) Error() string   { return "timeout error" }
+func (e *timeoutError) Timeout() bool { return e.isTimeout }
+
+func TestIsRetryableError_TimeoutBehavior(t *testing.T) {
+	logger := receivertest.NewNopSettings(metadata.Type).Logger
+
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "timeout error returning true - should retry",
+			err:  &timeoutError{isTimeout: true},
+			want: true,
+		},
+		{
+			name: "timeout error returning false - should not retry",
+			err:  &timeoutError{isTimeout: false},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isRetryableError(tt.err, logger)
+			assert.Equal(t, tt.want, got, "Timeout() method return value should be checked")
+		})
+	}
+}
+
 func TestIsRetryableError(t *testing.T) {
 	logger := receivertest.NewNopSettings(metadata.Type).Logger
 
