@@ -1749,6 +1749,7 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
 		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", newRS))
 	}
 }
+
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetDeleted.Add(context.Background(), 1)
 

@@ -3597,7 +3597,7 @@ func (i *trackableInformer) hasRun() bool {
 	return i.runCalled
 }
 
-func newTrackableInformer(client metadata.Interface, namespace string, labelSelector labels.Selector, fieldSelector fields.Selector) cache.SharedInformer {
+func newTrackableInformer(client metadata.Interface, namespace string) cache.SharedInformer {
 	return &trackableInformer{
 		SharedInformer: NewFakeReplicaSetInformer(client, namespace),
 	}
@@ -3648,7 +3648,7 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 				newInformer:          NewFakeInformer,
 				newNamespaceInformer: NewFakeNamespaceInformer,
 				newReplicaSetInformer: func(kc metadata.Interface, ns string) cache.SharedInformer {
-					return newTrackableInformer(kc, ns, labels.Everything(), fields.Everything())
+					return newTrackableInformer(kc, ns)
 				},
 			}
 

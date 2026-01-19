@@ -154,6 +154,7 @@ func replicaSetWatchFuncWithSelectors(mc metadata.Interface, gvr schema.GroupVer
 		return mc.Resource(gvr).Namespace(namespace).Watch(ctx, opts)
 	}
 }
+
 func newDeploymentSharedInformer(
 	client kubernetes.Interface,
 	namespace string,
