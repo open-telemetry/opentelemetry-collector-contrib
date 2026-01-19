@@ -207,6 +207,7 @@ body:
       - processor/metricsgeneration
       - processor/metricstarttime
       - processor/metricstransform
+      - processor/openapi
       - processor/probabilisticsampler
       - processor/redaction
       - processor/remotetap

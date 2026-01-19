@@ -1,0 +1,32 @@
+openapi: "3.0.3"
+info:
+  title: User Service API
+  version: "1.0.0"
+  description: API for managing users
+servers:
+  - url: http://user-service:8080
+    description: User service
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service is healthy
+  /users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get user by ID
+      operationId: getUser
+      description: Returns user details by ID
+      responses:
+        "200":
+          description: Successful response
+        "404":
+          description: User not found

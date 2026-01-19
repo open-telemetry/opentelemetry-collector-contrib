@@ -1,0 +1,152 @@
+# OpenTelemetry Collector configuration with OpenAPI Processor
+# This configuration demonstrates how to use the openapi processor to enrich
+# traces with url.template and peer.service attributes based on OpenAPI specs.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+connectors:
+  spanmetrics:
+    namespace: traces_span_metrics
+    histogram:
+      explicit:
+        buckets: [1ms, 2ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+    dimensions:
+      # OTel HTTP semantic conventions attributes
+      - name: http.response.status_code
+      - name: http.route
+      - name: peer.service
+      - name: server.address
+      - name: url.template
+      - name: http.request.method
+    exemplars:
+      enabled: true
+    dimensions_cache_size: 1000
+    aggregation_temporality: AGGREGATION_TEMPORALITY_CUMULATIVE
+    metrics_flush_interval: 1s
+processors:
+  batch:
+    timeout: 100ms
+    send_batch_size: 1024
+  
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  # Transform to copy http.status_code to http.response.status_code (new semantic convention)
+  transform/http_attributes:
+    trace_statements:
+      - context: span
+        statements:
+          - set(attributes["http.response.status_code"], attributes["http.status_code"]) where attributes["http.status_code"] != nil
+
+  # OpenAPI processor for Order Service
+  # Matches traces against the Order Service OpenAPI spec
+  openapi/order-service:
+    openapi_file: /etc/otel/openapi/order-service.yaml
+    url_attribute: http.url
+    url_template_attribute: url.template
+    peer_service_attribute: peer.service
+    use_server_url_matching: true
+
+  # OpenAPI processor for User Service
+  openapi/user-service:
+    openapi_file: /etc/otel/openapi/user-service.yaml
+    url_attribute: http.url
+    url_template_attribute: url.template
+    peer_service_attribute: peer.service
+    use_server_url_matching: true
+
+  # OpenAPI processor for Product Service
+  openapi/product-service:
+    openapi_file: /etc/otel/openapi/product-service.yaml
+    url_attribute: http.url
+    url_template_attribute: url.template
+    peer_service_attribute: peer.service
+    use_server_url_matching: true
+
+  # OpenAPI processor for Payment Service
+  openapi/payment-service:
+    openapi_file: /etc/otel/openapi/payment-service.yaml
+    url_attribute: http.url
+    url_template_attribute: url.template
+    peer_service_attribute: peer.service
+    use_server_url_matching: true
+
+
+  # Transform span metrics to OpenTelemetry HTTP Semantic Conventions
+  # See: https://opentelemetry.io/docs/specs/semconv/http/http-metrics/
+  # Using transform processor with datapoint context to separate server/client metrics
+  transform/spanmetrics:
+    metric_statements:
+      # Rename metrics based on span.kind
+      - context: metric
+        statements:
+          # Server metrics (span.kind = SPAN_KIND_SERVER)
+          - set(name, "http.server.request.count") where name == "traces_span_metrics.calls"
+          - set(name, "http.server.request.duration") where name == "traces_span_metrics.duration"
+
+  # Filter processor to create separate server metrics pipeline
+  filter/server_metrics:
+    metrics:
+      datapoint:
+        - 'attributes["span.kind"] != "SPAN_KIND_SERVER"'
+
+  # Filter processor to create separate client metrics pipeline  
+  filter/client_metrics:
+    metrics:
+      datapoint:
+        - 'attributes["span.kind"] != "SPAN_KIND_CLIENT"'
+
+  # Transform to rename client metrics
+  transform/client_metrics:
+    metric_statements:
+      - context: metric
+        statements:
+          - set(name, "http.client.request.count") where name == "http.server.request.count"
+          - set(name, "http.client.request.duration") where name == "http.server.request.duration"
+exporters:
+  # Debug exporter for troubleshooting
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+  # exporter to send to LGTM
+  otlp:
+    endpoint: lgtm:4317
+    tls:
+      insecure: true
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors:
+        - batch
+        - transform/http_attributes
+        # Chain all OpenAPI processors - each will only process spans
+        # that match its server URL, passing through others unchanged
+        - openapi/order-service
+        - openapi/user-service
+        - openapi/product-service
+        - openapi/payment-service
+      exporters: [otlp, spanmetrics]
+    # Server metrics pipeline
+    metrics/server:
+      receivers: [spanmetrics]
+      processors: [memory_limiter, transform/spanmetrics, filter/server_metrics, batch]
+      exporters: [otlp]
+    
+    # Client metrics pipeline
+    metrics/client:
+      receivers: [spanmetrics]
+      processors: [memory_limiter, transform/spanmetrics, filter/client_metrics, transform/client_metrics, batch]
+      exporters: [otlp]
+    
+  telemetry:
+    logs:
+      level: info
