@@ -17,6 +17,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner/internal/metadata"
 )
 
+const (
+	// TypeStr is type of detector.
+	TypeStr = "hetzner"
+)
+
 var _ internal.Detector = (*Detector)(nil)
 
 // newHcloudClient is overridden in tests to point the client at a fake server.
