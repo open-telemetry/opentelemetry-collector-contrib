@@ -211,7 +211,7 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Contr
 			return nil, err
 		}
 
-		opt := scraperhelper.AddScraper(metadata.Type, s)
+		opt := scraperhelper.AddMetricsScraper(metadata.Type, s)
 		opts = append(opts, opt)
 	}
 

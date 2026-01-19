@@ -42,7 +42,7 @@ func createMetricsReceiver(_ context.Context, params receiver.Settings, baseCfg 
 		return nil, err
 	}
 
-	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, s))
+	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, s))
 }
 
 // NewFactory creates a factory for redfish receiver.
