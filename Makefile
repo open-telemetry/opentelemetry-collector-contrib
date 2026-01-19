@@ -699,6 +699,14 @@ clean:
 generate-gh-issue-templates:
 	$(GITHUBGEN) issue-templates
 
+.PHONY: generate-schemas
+generate-schemas:
+	./cmd/schemagen/run_schemagen_dir.sh ./receiver
+	./cmd/schemagen/run_schemagen_dir.sh -i datadogexporter ./exporter
+	./cmd/schemagen/run_schemagen_dir.sh ./processor
+	./cmd/schemagen/run_schemagen_dir.sh -i encoding,observer,opampcustommessages,storage ./extension
+	./cmd/schemagen/run_schemagen_dir.sh ./connector
+
 .PHONY: checks
 checks:
 	$(MAKE) checkdoc
@@ -712,4 +720,5 @@ checks:
 	$(MAKE) gendistributions
 	$(MAKE) -j4 generate
 	$(MAKE) multimod-verify
+	# $(MAKE) generate-schemas Uncomment when schema generation is complete
 	git diff --exit-code || (echo 'Some files need committing' && git status && exit 1)

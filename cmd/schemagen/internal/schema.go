@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 
@@ -101,7 +102,16 @@ func (s *Schema) ToJSON() ([]byte, error) {
 }
 
 func (s *Schema) ToYAML() ([]byte, error) {
-	return yaml.Marshal(s)
+	var b bytes.Buffer
+	enc := yaml.NewEncoder(&b)
+
+	enc.SetIndent(2)
+
+	if err := enc.Encode(s); err != nil {
+		return nil, err
+	}
+
+	return b.Bytes(), nil
 }
 
 func CreateSchema(id, title string) *Schema {
