@@ -110,7 +110,7 @@ func TestConnectionStateTracker_OnConnectFailed_WhileWaiting(t *testing.T) {
 func TestConnectionStateTracker_OnConnectFailed_WhileConnected(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	tracker := NewConnectionStateTracker(ConnectionStateTrackerConfig{
-		Logger:         logger,
+		Logger: logger,
 	})
 
 	tracker.Start()
