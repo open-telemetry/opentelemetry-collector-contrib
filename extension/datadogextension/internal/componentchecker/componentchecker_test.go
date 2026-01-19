@@ -505,9 +505,48 @@ func TestPopulateActiveComponents(t *testing.T) {
 					"extensions": []any{"missing_extension"},
 				},
 			},
-			moduleInfoJSON:     payload.NewModuleInfoJSON(),
-			expectedComponents: []payload.ServiceComponent{},
-			expectedError:      "",
+			moduleInfoJSON: payload.NewModuleInfoJSON(),
+			expectedComponents: []payload.ServiceComponent{
+				{
+					ID:      "missing_extension",
+					Name:    "",
+					Type:    "missing_extension",
+					Kind:    "extension",
+					Gomod:   "",
+					Version: "",
+				},
+			},
+			expectedError: "",
+		},
+		{
+			name: "Exporter not found in module info",
+			collectorConfigStringMap: map[string]any{
+				"exporters": map[string]any{
+					"missing_exporter": map[string]any{},
+				},
+				"service": map[string]any{
+					"pipelines": map[string]any{
+						"traces": map[string]any{
+							"exporters": []any{
+								"missing_exporter",
+							},
+						},
+					},
+				},
+			},
+			moduleInfoJSON: payload.NewModuleInfoJSON(),
+			expectedComponents: []payload.ServiceComponent{
+				{
+					ID:       "missing_exporter",
+					Name:     "",
+					Type:     "missing_exporter",
+					Kind:     "exporter",
+					Pipeline: "traces",
+					Gomod:    "",
+					Version:  "",
+				},
+			},
+			expectedError: "",
 		},
 	}
 

@@ -114,7 +114,6 @@ func PopulateActiveComponents(logger *zap.Logger, c *confmap.Conf, moduleInfoJSO
 		} else {
 			// This extension may be a custom component from the datadog-agent repository (i.e. ddflareextension)
 			logger.Warn("extension not found in Module Info, something has gone wrong with status parsing for extension ID", zap.String("extensionID", extensionID.String()))
-			continue
 		}
 		// TODO: Add component status parsing, potentially via pkg/status
 		serviceComponents = append(serviceComponents, extension)
@@ -173,9 +172,6 @@ func PopulateActiveComponents(logger *zap.Logger, c *confmap.Conf, moduleInfoJSO
 				if module, ok := moduleInfoJSON.GetComponent(component.Type, component.Kind); ok {
 					component.Gomod = module.Gomod
 					component.Version = module.Version
-				} else {
-					// This component exists but is the wrong type (e.g. a connector in the exporters pipeline)
-					continue
 				}
 				// TODO: Add component status parsing, potentially via pkg/status
 				serviceComponents = append(serviceComponents, component)
