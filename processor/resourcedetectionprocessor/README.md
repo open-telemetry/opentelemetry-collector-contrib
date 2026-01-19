@@ -38,7 +38,7 @@ See [documentation.md](./documentation.md) for the complete list of feature gate
 Feature gates can be enabled using the `--feature-gates` flag:
 
 ```shell
-"--feature-gates=<feature-gate-id>"
+"--feature-gates=<feature-gate>"
 ```
 
 ## Supported detectors
