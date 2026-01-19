@@ -31,6 +31,11 @@ jobs:
         with:
           go-version: oldstable
       - run: ./.github/workflows/scripts/check-disk-space.sh
+
+  ci-scope:
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    uses: ./.github/workflows/ci-scope.yml
+
   check-collector-module-version:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
@@ -39,39 +44,25 @@ jobs:
       - run: make genotelcontribcol
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
+
   lint-matrix:
+    needs: [setup-environment, ci-scope]
+    if: ${{ needs.ci-scope.outputs.matrix != '[]' && needs.ci-scope.outputs.matrix != '' }}
     strategy:
       fail-fast: false
       matrix:
         goos:
           - windows
           - linux
-        group:
-          - receiver-0
-          - receiver-1
-          - receiver-2
-          - receiver-3
-          - processor-0
-          - processor-1
-          - exporter-0
-          - exporter-1
-          - exporter-2
-          - exporter-3
-          - extension
-          - connector
-          - internal
-          - pkg
-          - cmd-0
-          - other
+        group: ${{ fromJson(needs.ci-scope.outputs.matrix) }}
     runs-on: ubuntu-24.04
-    needs: [setup-environment]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
       - name: Lint
-        run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
+        run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP="${{ matrix.group }}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
@@ -82,36 +73,23 @@ jobs:
         run: echo ${{ needs.lint-matrix.result }}
       - name: Interpret result
         run: |
-          if [[ success == ${{ needs.lint-matrix.result }} ]]
+          if [[ success == ${{ needs.lint-matrix.result }} || skipped == ${{ needs.lint-matrix.result }} ]]
           then
             echo "All matrix jobs passed!"
           else
             echo "One or more matrix jobs failed."
             false
           fi
+
   govulncheck:
+    needs: [setup-environment, ci-scope]
+    if: ${{ needs.ci-scope.outputs.matrix != '[]' && needs.ci-scope.outputs.matrix != '' }}
     strategy:
       fail-fast: false
       matrix:
-        group:
-          - receiver-0
-          - receiver-1
-          - receiver-2
-          - receiver-3
-          - processor-0
-          - processor-1
-          - exporter-0
-          - exporter-1
-          - exporter-2
-          - exporter-3
-          - extension
-          - connector
-          - internal
-          - pkg
-          - cmd-0
+        group: ${{ fromJson(needs.ci-scope.outputs.matrix) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    needs: [setup-environment]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
@@ -119,8 +97,9 @@ jobs:
         with:
           go-version: oldstable
       - name: Run `govulncheck`
-        run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
+        run: make -j2 gogovulncheck GROUP="${{ matrix.group }}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
+
   checks:
     runs-on: ubuntu-24.04
     needs: [setup-environment]
@@ -183,31 +162,17 @@ jobs:
           make generate-gh-issue-templates
           git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
       - run: ./.github/workflows/scripts/check-disk-space.sh
+
   unittest-matrix:
+    needs: [setup-environment, ci-scope]
+    if: ${{ needs.ci-scope.outputs.matrix != '[]' && needs.ci-scope.outputs.matrix != '' }}
     strategy:
       fail-fast: false
       matrix:
         go-version: [stable, oldstable]
         runner: [ubuntu-24.04]
-        group:
-          - receiver-0
-          - receiver-1
-          - receiver-2
-          - receiver-3
-          - processor-0
-          - processor-1
-          - exporter-0
-          - exporter-1
-          - exporter-2
-          - exporter-3
-          - extension
-          - connector
-          - internal
-          - pkg
-          - cmd-0
-          - other
+        group: ${{ fromJson(needs.ci-scope.outputs.matrix) }}
     runs-on: ${{ matrix.runner }}
-    needs: [setup-environment]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - uses: ./.github/actions/setup-go-tools
@@ -228,7 +193,7 @@ jobs:
       - name: Run Unit Tests
         id: tests
         if: github.ref != 'refs/heads/main' || !startsWith( matrix.go-version, 'oldstable' )
-        run: make gotest GROUP=${{ matrix.group }}
+        run: make gotest GROUP="${{ matrix.group }}"
 
       # JUnit tests are super long, so we only run them for one go version.
       # This is used for automation that automatically creates issues for flaky tests that are
@@ -237,7 +202,7 @@ jobs:
         id: tests-with-junit
         if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         continue-on-error: true # Allow uploading artifacts even if the test fails
-        run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
+        run: make gotest-with-junit-and-cover GROUP="${{ matrix.group }}"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: startsWith( matrix.go-version, 'oldstable' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
@@ -268,7 +233,7 @@ jobs:
         run: echo ${{ needs.unittest-matrix.result }}
       - name: Interpret result
         run: |
-          if [[ success == ${{ needs.unittest-matrix.result }} ]]
+          if [[ success == ${{ needs.unittest-matrix.result }} || skipped == ${{ needs.unittest-matrix.result }} ]]
           then
             echo "All matrix jobs passed!"
           else
@@ -290,27 +255,13 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   integration-tests-matrix:
+    if: ${{ needs.ci-scope.outputs.matrix != '[]' && needs.ci-scope.outputs.matrix != '' }}
     strategy:
       fail-fast: false
       matrix:
-        group:
-          - receiver-0
-          - receiver-1
-          - receiver-2
-          - receiver-3
-          - processor-0
-          - processor-1
-          - exporter-0
-          - exporter-1
-          - exporter-2
-          - exporter-3
-          - extension
-          - connector
-          - internal
-          - pkg
-          - cmd-0
+        group: ${{ fromJson(needs.ci-scope.outputs.matrix) }}
     runs-on: ubuntu-24.04
-    needs: [setup-environment]
+    needs: [setup-environment, ci-scope]
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - uses: ./.github/actions/setup-go-tools
@@ -322,7 +273,7 @@ jobs:
         with:
           key: docker-${{ matrix.group }}
       - name: Run Integration Tests
-        run: make gointegration-test GROUP=${{ matrix.group }}
+        run: make gointegration-test GROUP="${{ matrix.group }}"
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   integration-sudo-tests-matrix:
@@ -360,7 +311,7 @@ jobs:
         run: echo ${{ needs.integration-tests-matrix.result }}
       - name: Interpret result
         run: |
-          if [[ success == ${{ needs.integration-tests-matrix.result }} ]]
+          if [[ success == ${{ needs.integration-tests-matrix.result }} || skipped == ${{ needs.integration-tests-matrix.result }} ]]
           then
             echo "All matrix jobs passed!"
           else
