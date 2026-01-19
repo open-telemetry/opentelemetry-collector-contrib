@@ -50,7 +50,7 @@ func TestSanitizeSpanNameNilSanitizer(t *testing.T) {
 
 	sanitized, ok := SanitizeSpanName(span, nil)
 	assert.False(t, ok)
-	assert.Equal(t, "", sanitized)
+	assert.Empty(t, sanitized)
 }
 
 func TestSanitizeSpanNameInternalSpan(t *testing.T) {
@@ -63,7 +63,7 @@ func TestSanitizeSpanNameInternalSpan(t *testing.T) {
 
 	sanitized, ok := SanitizeSpanName(span, sanitizer)
 	assert.False(t, ok)
-	assert.Equal(t, "", sanitized)
+	assert.Empty(t, sanitized)
 }
 
 func TestSanitizeSpanNameNoHTTPAttributesNoSlash(t *testing.T) {
@@ -76,7 +76,7 @@ func TestSanitizeSpanNameNoHTTPAttributesNoSlash(t *testing.T) {
 
 	sanitized, ok := SanitizeSpanName(span, sanitizer)
 	assert.False(t, ok)
-	assert.Equal(t, "", sanitized)
+	assert.Empty(t, sanitized)
 }
 
 func TestSanitizeSpanNameWithHTTPAttributesNoSlash(t *testing.T) {
@@ -104,7 +104,7 @@ func TestSanitizeSpanNameUnchanged(t *testing.T) {
 
 	sanitized, ok := SanitizeSpanName(span, sanitizer)
 	assert.False(t, ok)
-	assert.Equal(t, "", sanitized)
+	assert.Empty(t, sanitized)
 }
 
 func TestSanitizeSpanNameFullyRedacted(t *testing.T) {

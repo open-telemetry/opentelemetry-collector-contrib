@@ -52,7 +52,7 @@ func TestSanitizeSpanNameNilObfuscator(t *testing.T) {
 	result, ok, err := SanitizeSpanName(span, nil)
 	require.NoError(t, err)
 	assert.False(t, ok)
-	assert.Equal(t, "", result)
+	assert.Empty(t, result)
 }
 
 func TestSanitizeSpanNameUnsupportedSpanKinds(t *testing.T) {
@@ -79,7 +79,7 @@ func TestSanitizeSpanNameUnsupportedSpanKinds(t *testing.T) {
 			result, ok, err := SanitizeSpanName(span, obfuscator)
 			require.NoError(t, err)
 			assert.False(t, ok)
-			assert.Equal(t, "", result)
+			assert.Empty(t, result)
 		})
 	}
 }
@@ -98,7 +98,7 @@ func TestSanitizeSpanNameUnchanged(t *testing.T) {
 	result, ok, err := SanitizeSpanName(span, obfuscator)
 	require.NoError(t, err)
 	assert.False(t, ok)
-	assert.Equal(t, "", result)
+	assert.Empty(t, result)
 }
 
 func TestSanitizeSpanNameNoObfuscators(t *testing.T) {
@@ -112,7 +112,7 @@ func TestSanitizeSpanNameNoObfuscators(t *testing.T) {
 	result, ok, err := SanitizeSpanName(span, obfuscator)
 	require.NoError(t, err)
 	assert.False(t, ok)
-	assert.Equal(t, "", result)
+	assert.Empty(t, result)
 }
 
 func TestSanitizeSpanNameServerKind(t *testing.T) {
@@ -169,11 +169,11 @@ func TestGetDBSystemPreferNewAttribute(t *testing.T) {
 
 func TestGetDBSystemNoAttribute(t *testing.T) {
 	m := pcommon.NewMap()
-	assert.Equal(t, "", GetDBSystem(m))
+	assert.Empty(t, GetDBSystem(m))
 }
 
 func TestGetDBSystemNonStringValue(t *testing.T) {
 	m := pcommon.NewMap()
 	m.PutInt("db.system", 123)
-	assert.Equal(t, "", GetDBSystem(m))
+	assert.Empty(t, GetDBSystem(m))
 }
