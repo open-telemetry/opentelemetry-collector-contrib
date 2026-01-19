@@ -150,11 +150,23 @@ func MakeClient(apiConf APIConfig) (k8s.Interface, error) {
 	return client, nil
 }
 
+// ClientBundle groups the two Kubernetes clients:
+//
+//   - K8s (typed client): kubernetes.Interface for full resource objects
+//     (spec/status/metadata). Use when you need complete data or typed informers.
+//
+//   - Meta (metadata client): metadata.Interface for PartialObjectMetadata
+//     (name/namespace/UID/labels/annotations/ownerRefs). Use for lightweight
+//     list/watch when only metadata is needed (e.g., high-churn resources).
 type ClientBundle struct {
 	K8s  k8s.Interface
 	Meta metadata.Interface
 }
 
+// MakeClientBundle builds both clients from a single RestConfig,
+// ensuring shared auth/transport. In unit tests, inject a fake
+// metadata client (metadata/fake) to avoid network calls, while
+// typed resources can use kubernetes/fake.
 func MakeClientBundle(apiConf APIConfig) (ClientBundle, error) {
 	if err := apiConf.Validate(); err != nil {
 		return ClientBundle{}, err
