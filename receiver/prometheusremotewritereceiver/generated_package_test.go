@@ -9,5 +9,11 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"))
+	goleak.VerifyTestMain(m,
+		goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"),
+		// Ignore VictoriaMetrics background goroutines
+		goleak.IgnoreTopFunction("github.com/VictoriaMetrics/VictoriaMetrics/lib/fasttime.init.0.func1"),
+		goleak.IgnoreTopFunction("github.com/VictoriaMetrics/VictoriaMetrics/lib/timeutil.init.0.func1"),
+		goleak.IgnoreTopFunction("github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil.newInternStringMap.func1"),
+	)
 }
