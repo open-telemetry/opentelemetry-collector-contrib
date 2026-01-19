@@ -3,6 +3,7 @@
 package prometheusremotewritereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver"
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/bytesutil"
 	"github.com/cespare/xxhash/v2"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/prompb"
@@ -39,8 +39,6 @@ import (
 
 const defaultMaxRequestBodySize = 10 * 1024 * 1024 // 10MiB
 
-var bodyBufferPool bytesutil.ByteBufferPool
-
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	cache, err := lru.New[uint64, pmetric.ResourceMetrics](1000)
 	if err != nil {
@@ -57,6 +55,12 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 		server: &http.Server{
 			ReadTimeout: 60 * time.Second,
 		},
+		bodyBufferPool: &sync.Pool{
+			New: func() interface{} {
+				// Pre-allocate 4KiB
+				return bytes.NewBuffer(make([]byte, 0, 4*1024))
+			},
+		},
 		rmCache: cache,
 	}, nil
 }
@@ -71,6 +75,8 @@ type prometheusRemoteWriteReceiver struct {
 
 	rmCache *lru.Cache[uint64, pmetric.ResourceMetrics]
 	obsrecv *receiverhelper.ObsReport
+
+	bodyBufferPool *sync.Pool
 }
 
 // metricIdentity contains all the components that uniquely identify a metric
@@ -247,8 +253,9 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 // parse reads and unmarshals the remote-write request body into a writev2.Request.
 func (prw *prometheusRemoteWriteReceiver) parse(r io.Reader, callback func(req *prompb.WriteV2Request) error) error {
 	logger := prw.settings.Logger
-	buf := bodyBufferPool.Get()
-	defer bodyBufferPool.Put(buf)
+	buf := prw.bodyBufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer prw.bodyBufferPool.Put(buf)
 	maxRequestBodySize := prw.config.MaxRequestBodySize
 	limitedReader := io.LimitReader(r, maxRequestBodySize)
 	if _, err := buf.ReadFrom(limitedReader); err != nil {
@@ -257,7 +264,7 @@ func (prw *prometheusRemoteWriteReceiver) parse(r io.Reader, callback func(req *
 	}
 	wru := prompb.GetWriteV2Unmarshaler()
 	defer prompb.PutWriteV2Unmarshaler(wru)
-	req, err := wru.UnmarshalProtobuf(buf.B)
+	req, err := wru.UnmarshalProtobuf(buf.Bytes())
 	if err != nil {
 		logger.Error("Error unmarshalling remote-write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		return err
