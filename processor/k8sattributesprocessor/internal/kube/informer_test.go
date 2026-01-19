@@ -26,49 +26,49 @@ func Test_newSharedInformer(t *testing.T) {
 	require.NoError(t, err)
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newSharedInformer(client, "testns", labelSelector, fieldSelector)
+	informer := newSharedInformer(client.K8s, "testns", labelSelector, fieldSelector)
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedNamespaceInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newNamespaceSharedInformer(client)
+	informer := newNamespaceSharedInformer(client.K8s)
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedDeploymentInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newDeploymentSharedInformer(client, "ns")
+	informer := newDeploymentSharedInformer(client.K8s, "ns")
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedStatefulSetInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newStatefulSetSharedInformer(client, "ns")
+	informer := newStatefulSetSharedInformer(client.K8s, "ns")
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedDaemonSetInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newDaemonSetSharedInformer(client, "ns")
+	informer := newDaemonSetSharedInformer(client.K8s, "ns")
 	assert.NotNil(t, informer)
 }
 
 func Test_newSharedJobInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newJobSharedInformer(client, "ns")
+	informer := newJobSharedInformer(client.K8s, "ns")
 	assert.NotNil(t, informer)
 }
 
 func Test_newKubeSystemSharedInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)
-	informer := newKubeSystemSharedInformer(client)
+	informer := newKubeSystemSharedInformer(client.K8s)
 	assert.NotNil(t, informer)
 }
 
@@ -92,7 +92,7 @@ func Test_informerListFuncWithSelectors(t *testing.T) {
 	assert.NoError(t, err)
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	listFunc := informerListFuncWithSelectors(c, "test-ns", ls, fs)
+	listFunc := informerListFuncWithSelectors(c.K8s, "test-ns", ls, fs)
 	opts := metav1.ListOptions{}
 	obj, err := listFunc(t.Context(), opts)
 	assert.NoError(t, err)
@@ -102,7 +102,7 @@ func Test_informerListFuncWithSelectors(t *testing.T) {
 func Test_namespaceInformerListFunc(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	listFunc := namespaceInformerListFunc(c)
+	listFunc := namespaceInformerListFunc(c.K8s)
 	opts := metav1.ListOptions{}
 	obj, err := listFunc(t.Context(), opts)
 	assert.NoError(t, err)
@@ -129,7 +129,7 @@ func Test_informerWatchFuncWithSelectors(t *testing.T) {
 	assert.NoError(t, err)
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	watchFunc := informerWatchFuncWithSelectors(c, "test-ns", ls, fs)
+	watchFunc := informerWatchFuncWithSelectors(c.K8s, "test-ns", ls, fs)
 	opts := metav1.ListOptions{}
 	obj, err := watchFunc(t.Context(), opts)
 	assert.NoError(t, err)
@@ -139,7 +139,7 @@ func Test_informerWatchFuncWithSelectors(t *testing.T) {
 func Test_namespaceInformerWatchFunc(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	watchFunc := namespaceInformerWatchFunc(c)
+	watchFunc := namespaceInformerWatchFunc(c.K8s)
 	opts := metav1.ListOptions{}
 	obj, err := watchFunc(t.Context(), opts)
 	assert.NoError(t, err)
@@ -150,7 +150,7 @@ func Test_fakeInformer(t *testing.T) {
 	// nothing real to test here. just to make coverage happy
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	i := NewFakeInformer(c, "ns", nil, nil)
+	i := NewFakeInformer(c.K8s, "ns", nil, nil)
 	_, err = i.AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{}, time.Second)
 	assert.NoError(t, err)
 	i.HasSynced()
@@ -163,7 +163,7 @@ func Test_fakeNamespaceInformer(t *testing.T) {
 	// nothing real to test here. just to make coverage happy
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	i := NewFakeNamespaceInformer(c)
+	i := NewFakeNamespaceInformer(c.K8s)
 	_, err = i.AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{}, time.Second)
 	assert.NoError(t, err)
 	i.HasSynced()
@@ -209,7 +209,7 @@ func newTestMetadataClient() clientmeta.Interface {
 func Test_deploymentWatchFuncWithSelectors(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	watchFunc := deploymentWatchFuncWithSelectors(c, "test-ns")
+	watchFunc := deploymentWatchFuncWithSelectors(c.K8s, "test-ns")
 	opts := metav1.ListOptions{}
 	obj, err := watchFunc(t.Context(), opts)
 	assert.NoError(t, err)
@@ -219,7 +219,7 @@ func Test_deploymentWatchFuncWithSelectors(t *testing.T) {
 func Test_statefulsetListFuncWithSelectors(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	listFunc := statefulsetListFuncWithSelectors(c, "test-ns")
+	listFunc := statefulsetListFuncWithSelectors(c.K8s, "test-ns")
 	opts := metav1.ListOptions{}
 	obj, err := listFunc(t.Context(), opts)
 	assert.NoError(t, err)
@@ -229,7 +229,7 @@ func Test_statefulsetListFuncWithSelectors(t *testing.T) {
 func Test_statefulsetWatchFuncWithSelectors(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	watchFunc := statefulsetWatchFuncWithSelectors(c, "test-ns")
+	watchFunc := statefulsetWatchFuncWithSelectors(c.K8s, "test-ns")
 	opts := metav1.ListOptions{}
 	obj, err := watchFunc(t.Context(), opts)
 	assert.NoError(t, err)
@@ -239,7 +239,7 @@ func Test_statefulsetWatchFuncWithSelectors(t *testing.T) {
 func Test_daemonsetListFuncWithSelectors(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	listFunc := daemonsetListFuncWithSelectors(c, "test-ns")
+	listFunc := daemonsetListFuncWithSelectors(c.K8s, "test-ns")
 	opts := metav1.ListOptions{}
 	obj, err := listFunc(t.Context(), opts)
 	assert.NoError(t, err)
@@ -249,7 +249,7 @@ func Test_daemonsetListFuncWithSelectors(t *testing.T) {
 func Test_daemonsetWatchFuncWithSelectors(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	watchFunc := daemonsetWatchFuncWithSelectors(c, "test-ns")
+	watchFunc := daemonsetWatchFuncWithSelectors(c.K8s, "test-ns")
 	opts := metav1.ListOptions{}
 	obj, err := watchFunc(t.Context(), opts)
 	assert.NoError(t, err)
@@ -259,7 +259,7 @@ func Test_daemonsetWatchFuncWithSelectors(t *testing.T) {
 func Test_jobListFuncWithSelectors(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	listFunc := jobListFuncWithSelectors(c, "test-ns")
+	listFunc := jobListFuncWithSelectors(c.K8s, "test-ns")
 	opts := metav1.ListOptions{}
 	obj, err := listFunc(t.Context(), opts)
 	assert.NoError(t, err)
@@ -269,7 +269,7 @@ func Test_jobListFuncWithSelectors(t *testing.T) {
 func Test_jobWatchFuncWithSelectors(t *testing.T) {
 	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	assert.NoError(t, err)
-	watchFunc := jobWatchFuncWithSelectors(c, "test-ns")
+	watchFunc := jobWatchFuncWithSelectors(c.K8s, "test-ns")
 	opts := metav1.ListOptions{}
 	obj, err := watchFunc(t.Context(), opts)
 	assert.NoError(t, err)

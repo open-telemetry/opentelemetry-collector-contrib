@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
@@ -147,6 +148,34 @@ func MakeClient(apiConf APIConfig) (k8s.Interface, error) {
 	}
 
 	return client, nil
+}
+
+type ClientBundle struct {
+	K8s  k8s.Interface
+	Meta metadata.Interface
+}
+
+func MakeClientBundle(apiConf APIConfig) (ClientBundle, error) {
+	if err := apiConf.Validate(); err != nil {
+		return ClientBundle{}, err
+	}
+
+	rc, err := CreateRestConfig(apiConf)
+	if err != nil {
+		return ClientBundle{}, err
+	}
+
+	kc, err := k8s.NewForConfig(rc)
+	if err != nil {
+		return ClientBundle{}, err
+	}
+
+	mc, err := metadata.NewForConfig(rc)
+	if err != nil {
+		return ClientBundle{}, err
+	}
+
+	return ClientBundle{K8s: kc, Meta: mc}, nil
 }
 
 // MakeDynamicClient can take configuration if needed for other types of auth

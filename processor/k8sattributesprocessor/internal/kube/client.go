@@ -40,6 +40,7 @@ type WatchClient struct {
 	deleteMut              sync.Mutex
 	logger                 *zap.Logger
 	kc                     kubernetes.Interface
+	mc                     clientmeta.Interface
 	informer               cache.SharedInformer
 	namespaceInformer      cache.SharedInformer
 	nodeInformer           cache.SharedInformer
@@ -154,15 +155,16 @@ func New(
 	c.StatefulSets = map[string]*StatefulSet{}
 	c.DaemonSets = map[string]*DaemonSet{}
 	c.Jobs = map[string]*Job{}
-	if newClientSet == nil {
-		newClientSet = k8sconfig.MakeClient
-	}
 
-	kc, err := newClientSet(apiCfg)
+	if newClientSet == nil {
+		newClientSet = k8sconfig.MakeClientBundle
+	}
+	bundle, err := newClientSet(apiCfg)
 	if err != nil {
 		return nil, err
 	}
-	c.kc = kc
+	c.kc = bundle.K8s
+	c.mc = bundle.Meta
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
@@ -213,17 +215,8 @@ func New(
 		if informersFactory.newReplicaSetInformer == nil {
 			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
 		}
-		restConfig, err := k8sconfig.CreateRestConfig(apiCfg)
-		if err != nil {
-			return nil, err
-		}
 
-		mc, err := clientmeta.NewForConfig(restConfig)
-		if err != nil {
-			return nil, err
-		}
-
-		c.replicasetInformer = informersFactory.newReplicaSetInformer(mc, c.Filters.Namespace)
+		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.mc, c.Filters.Namespace)
 		if c.replicasetInformer == nil {
 			return nil, errors.New("failed to create ReplicaSet informer")
 		}

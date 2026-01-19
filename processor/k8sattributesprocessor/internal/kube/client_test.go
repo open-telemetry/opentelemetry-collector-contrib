@@ -24,19 +24,23 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/metadata"
+	clientmetafake "k8s.io/client-go/metadata/fake"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
-func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
-	return fake.NewClientset(), nil
+func newFakeAPIClientset(_ k8sconfig.APIConfig) (k8sconfig.ClientBundle, error) {
+	kc := fake.NewClientset()
+	mc := clientmetafake.NewSimpleMetadataClient(runtime.NewScheme())
+	return k8sconfig.ClientBundle{K8s: kc, Meta: mc}, nil
 }
 
 func newPodIdentifier(from, name, value string) PodIdentifier {
@@ -157,6 +161,8 @@ func TestDefaultClientset(t *testing.T) {
 	assert.Nil(t, c)
 
 	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, InformersFactoryList{}, false, 10*time.Second)
+	wc := c.(*WatchClient)
+	wc.mc = clientmetafake.NewSimpleMetadataClient(runtime.NewScheme())
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
@@ -199,9 +205,9 @@ func TestConstructorErrors(t *testing.T) {
 		apiCfg := k8sconfig.APIConfig{
 			AuthType: "test-auth-type",
 		}
-		clientProvider := func(c k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		clientProvider := func(c k8sconfig.APIConfig) (k8sconfig.ClientBundle, error) {
 			gotAPIConfig = c
-			return nil, errors.New("error creating k8s client")
+			return k8sconfig.ClientBundle{}, errors.New("error creating k8s client")
 		}
 		factory := InformersFactoryList{
 			newInformer:          NewFakeInformer,
@@ -3044,6 +3050,7 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 		newNamespaceInformer:  NewFakeNamespaceInformer,
 		newReplicaSetInformer: NewFakeReplicaSetInformer,
 	}
+
 	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, factory, false, 10*time.Second)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
@@ -3590,13 +3597,7 @@ func (i *trackableInformer) hasRun() bool {
 	return i.runCalled
 }
 
-func newTrackableInformer(client kubernetes.Interface, namespace string, labelSelector labels.Selector, fieldSelector fields.Selector) cache.SharedInformer {
-	return &trackableInformer{
-		SharedInformer: NewFakeInformer(client, namespace, labelSelector, fieldSelector),
-	}
-}
-
-func newTrackableInformerReplicaset(client metadata.Interface, namespace string) cache.SharedInformer {
+func newTrackableInformer(client metadata.Interface, namespace string, labelSelector labels.Selector, fieldSelector fields.Selector) cache.SharedInformer {
 	return &trackableInformer{
 		SharedInformer: NewFakeReplicaSetInformer(client, namespace),
 	}
@@ -3647,7 +3648,7 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 				newInformer:          NewFakeInformer,
 				newNamespaceInformer: NewFakeNamespaceInformer,
 				newReplicaSetInformer: func(kc metadata.Interface, ns string) cache.SharedInformer {
-					return newTrackableInformerReplicaset(kc, ns)
+					return newTrackableInformer(kc, ns, labels.Everything(), fields.Everything())
 				},
 			}
 
@@ -4104,15 +4105,15 @@ func TestCreateRestConfigFailure(t *testing.T) {
 	// Assert that the client is nil and an error is returned
 	assert.Nil(t, c)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unable to load k8s config")
+	assert.Contains(t, err.Error(), "failed to create ReplicaSet informer")
 }
 
 func TestMetadataNewForConfigFailure(t *testing.T) {
 	factory := InformersFactoryList{
 		newInformer: NewFakeInformer,
 	}
-	clientProvider := func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
-		return nil, errors.New("metadata.NewForConfig failed")
+	clientProvider := func(_ k8sconfig.APIConfig) (k8sconfig.ClientBundle, error) {
+		return k8sconfig.ClientBundle{}, errors.New("metadata.NewForConfig failed")
 	}
 
 	c, err := New(
