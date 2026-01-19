@@ -62,7 +62,7 @@ Total bytes of memory available.
 
 ### system.memory.linux.shared
 
-Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.
+Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Only supported on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |

@@ -52,7 +52,7 @@ metrics:
 
   system.memory.linux.shared:
     enabled: false
-    description: Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Currently only supported on Linux.
+    description: Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Only supported on Linux.
     unit: By
     stability:
       level: development
