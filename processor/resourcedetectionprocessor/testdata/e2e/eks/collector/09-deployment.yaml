@@ -27,18 +27,13 @@ spec:
               do
                 sleep 1;
               done
-        - name: wait-for-imds
-          image: curlimages/curl:8.6.0
-          imagePullPolicy: IfNotPresent
-          command:
-            - /bin/sh
-            - -c
-            - >
-              until curl -sf http://{{ .Name }}-imds.default.svc.cluster.local:8080/healthz;
-              do
-                sleep 1;
-              done
       containers:
+        - name: ec2-metadata-mock
+          image: public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.13.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 1338
+              name: metadata
         - name: otelcol
           image: otelcontribcol:latest
           imagePullPolicy: Never
@@ -58,13 +53,13 @@ spec:
             - name: KUBERNETES_PORT_443_TCP_PROTO
               value: "tcp"
             - name: AWS_REGION
-              value: us-west-2
+              value: us-east-1
             - name: AWS_ACCESS_KEY_ID
               value: fake
             - name: AWS_SECRET_ACCESS_KEY
               value: fake
             - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
-              value: "http://{{ .Name }}-imds.default.svc.cluster.local:8080"
+              value: "http://localhost:1338"
             - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
               value: IPv4
             - name: K8S_NODE_NAME

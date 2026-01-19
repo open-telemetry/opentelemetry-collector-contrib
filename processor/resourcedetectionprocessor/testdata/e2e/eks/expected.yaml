@@ -3,10 +3,10 @@ resourceMetrics:
       attributes:
         - key: cloud.account.id
           value:
-            stringValue: "123456789012"
+            stringValue: "0123456789"
         - key: cloud.availability_zone
           value:
-            stringValue: us-west-2a
+            stringValue: us-east-1f
         - key: cloud.platform
           value:
             stringValue: aws_eks
@@ -15,19 +15,19 @@ resourceMetrics:
             stringValue: aws
         - key: cloud.region
           value:
-            stringValue: us-west-2
+            stringValue: us-east-1
         - key: host.id
           value:
-            stringValue: i-0abc123456789
+            stringValue: i-1234567890abcdef0
         - key: host.image.id
           value:
-            stringValue: ami-0abc123456789
+            stringValue: ami-0b69ea66ff7391e80
         - key: host.name
           value:
-            stringValue: ip-10-0-0-10.us-west-2.compute.internal
+            stringValue: ip-172-16-34-43.ec2.internal
         - key: host.type
           value:
-            stringValue: m5.large
+            stringValue: m4.xlarge
     schemaUrl: https://opentelemetry.io/schemas/1.9.0
     scopeMetrics:
       - metrics:
