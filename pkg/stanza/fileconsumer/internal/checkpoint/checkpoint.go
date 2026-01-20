@@ -12,19 +12,11 @@ import (
 	"maps"
 
 	"go.opentelemetry.io/collector/extension/xextension/storage"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-)
-
-var ProtobufEncodingFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"filelog.protobufCheckpointEncoding",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Use protobuf encoding for checkpoint storage instead of JSON."),
-	featuregate.WithRegisterFromVersion("v0.144.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266"),
 )
 
 const knownFilesKey = "knownFiles"
@@ -37,7 +29,7 @@ func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Meta
 
 func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...*storage.Operation) error {
 	// Use protobuf if feature gate is enabled
-	if ProtobufEncodingFeatureGate.IsEnabled() {
+	if metadata.FilelogProtobufCheckpointEncodingFeatureGate.IsEnabled() {
 		return SaveKeyProto(ctx, persister, rmds, key, ops...)
 	}
 

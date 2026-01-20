@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -395,9 +396,9 @@ func saveDeprecated(t *testing.T, persister operator.Persister, dep *deprecatedM
 // It saves the current state and restores it after the test completes
 // This is exported so it can be used in parent package benchmarks
 func setProtobufEncoding(tb testing.TB, value bool) {
-	currentState := ProtobufEncodingFeatureGate.IsEnabled()
-	require.NoError(tb, featuregate.GlobalRegistry().Set(ProtobufEncodingFeatureGate.ID(), value))
+	currentState := metadata.FilelogProtobufCheckpointEncodingFeatureGate.IsEnabled()
+	require.NoError(tb, featuregate.GlobalRegistry().Set(metadata.FilelogProtobufCheckpointEncodingFeatureGate.ID(), value))
 	tb.Cleanup(func() {
-		require.NoError(tb, featuregate.GlobalRegistry().Set(ProtobufEncodingFeatureGate.ID(), currentState))
+		require.NoError(tb, featuregate.GlobalRegistry().Set(metadata.FilelogProtobufCheckpointEncodingFeatureGate.ID(), currentState))
 	})
 }
