@@ -5,8 +5,8 @@ go 1.24.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.143.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260114115623-0755152e21d3
-	go.opentelemetry.io/collector/pdata v1.49.1-0.20260114115623-0755152e21d3
+	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/pdata v1.49.1-0.20260119125341-0550b08ddcc5
 	go.uber.org/goleak v1.3.0
 )
 
@@ -31,4 +31,4 @@ retract (
 )
 
 // Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260114115623-0755152e21d3
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5

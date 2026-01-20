@@ -3,9 +3,35 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-# 1. Check if a directory argument was provided
+# 1. Parse CLI arguments
+usage() {
+    echo "Usage: $0 [-i dir1,dir2,...] <target_directory>"
+}
+
+IGNORED_DIRS=()
+while getopts ":i:h" opt; do
+    case $opt in
+        i)
+            if [ -n "$OPTARG" ]; then
+                IFS=',' read -r -a tmp <<< "$OPTARG"
+                IGNORED_DIRS+=("${tmp[@]}")
+            fi
+            ;;
+        h)
+            usage
+            exit 0
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG"
+            usage
+            exit 1
+            ;;
+    esac
+done
+shift $((OPTIND - 1))
+
 if [ -z "$1" ]; then
-    echo "Usage: $0 <target_directory>"
+    usage
     exit 1
 fi
 
@@ -30,15 +56,29 @@ for dir in "$TARGET_DIR"/*/; do
 
     # Remove the trailing slash for cleaner output
     dir=${dir%/}
+    dir_basename=$(basename "$dir")
 
-    echo "Run on: $(basename "$dir")"
+    skip_dir=false
+    for ignored in "${IGNORED_DIRS[@]}"; do
+        if [[ "$dir_basename" == "$ignored" ]]; then
+            skip_dir=true
+            break
+        fi
+    done
+    if [ "$skip_dir" = true ]; then
+        echo "Skipping $dir_basename (in ignore list)"
+        echo "------------------------------------------"
+        continue
+    fi
+
+    echo "Run on: $dir_basename"
 
     (cd "$dir" && make schemagen)
     if [ $? -ne 0 ]; then
-        FAILED_DIRS+=("$(basename "$dir")")
+        FAILED_DIRS+=("$dir_basename")
     fi
 
-    echo "Done with $(basename "$dir")"
+    echo "Done with $dir_basename"
     echo "------------------------------------------"
 done
 

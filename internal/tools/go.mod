@@ -20,8 +20,8 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.29.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.29.0
 	go.opentelemetry.io/build-tools/multimod v0.29.0
-	go.opentelemetry.io/collector/cmd/builder v0.143.1-0.20260114115623-0755152e21d3
-	go.opentelemetry.io/collector/cmd/mdatagen v0.143.1-0.20260114115623-0755152e21d3
+	go.opentelemetry.io/collector/cmd/builder v0.143.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/cmd/mdatagen v0.143.1-0.20260119125341-0550b08ddcc5
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.40.0
 	golang.org/x/vuln v1.1.4
@@ -264,12 +264,12 @@ require (
 	go.augendre.info/arangolint v0.3.1 // indirect
 	go.augendre.info/fatcontext v0.9.0 // indirect
 	go.opentelemetry.io/build-tools v0.29.0 // indirect
-	go.opentelemetry.io/collector/component v1.49.1-0.20260114115623-0755152e21d3 // indirect
-	go.opentelemetry.io/collector/confmap v1.49.1-0.20260114115623-0755152e21d3 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.49.1-0.20260114115623-0755152e21d3 // indirect
-	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260114115623-0755152e21d3 // indirect
-	go.opentelemetry.io/collector/filter v0.143.1-0.20260114115623-0755152e21d3 // indirect
-	go.opentelemetry.io/collector/pdata v1.49.1-0.20260114115623-0755152e21d3 // indirect
+	go.opentelemetry.io/collector/component v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
+	go.opentelemetry.io/collector/confmap v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
+	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
+	go.opentelemetry.io/collector/filter v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
+	go.opentelemetry.io/collector/pdata v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
@@ -309,4 +309,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen 
 replace github.com/tdakkota/asciicheck v0.4.1 => github.com/golangci/asciicheck v0.5.0
 
 // Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260114115623-0755152e21d3
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5

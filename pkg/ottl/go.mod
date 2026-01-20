@@ -17,11 +17,11 @@ require (
 	github.com/twmb/murmur3 v1.1.8
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6
 	github.com/zeebo/xxh3 v1.0.2
-	go.opentelemetry.io/collector/component v1.49.1-0.20260114115623-0755152e21d3
-	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260114115623-0755152e21d3
-	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260114115623-0755152e21d3
-	go.opentelemetry.io/collector/pdata v1.49.1-0.20260114115623-0755152e21d3
-	go.opentelemetry.io/collector/pdata/pprofile v0.143.1-0.20260114115623-0755152e21d3
+	go.opentelemetry.io/collector/component v1.49.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/pdata v1.49.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/pdata/pprofile v0.143.1-0.20260119125341-0550b08ddcc5
 	go.opentelemetry.io/otel v1.39.0
 	go.opentelemetry.io/otel/trace v1.39.0
 	go.uber.org/goleak v1.3.0
@@ -72,4 +72,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../golden
 
 // Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260114115623-0755152e21d3
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5
