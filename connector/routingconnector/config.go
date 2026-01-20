@@ -90,6 +90,12 @@ func (c *Config) Validate() error {
 			return errNoPipelines
 		}
 
+		switch item.Action {
+		case "", Copy, Move: // ok
+		default:
+			return errUnexpectedAction
+		}
+
 		switch item.Context {
 		case "", "resource", "span", "metric", "datapoint", "log": // ok
 		case "request":
