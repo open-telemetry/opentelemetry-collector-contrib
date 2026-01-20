@@ -8,7 +8,7 @@
 | Warnings      | [Memory consumption, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_k8sattributes)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_k8sattributes&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark), [@odubajDT](https://www.github.com/odubajDT) |
 | Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -24,7 +24,6 @@ to the relevant spans, metrics and logs as resource attributes. The processor us
 running in a cluster, keeps a record of their IP addresses, pod UIDs and interesting metadata.
 The rules for associating the data passing through the processor (spans, metrics and logs) with specific Pod Metadata are configured via "pod_association" key.
 It represents a list of associations that are executed in the specified order until the first one is able to do the match.
-
 
 ## Configuration
 
@@ -338,6 +337,152 @@ k8sattributes:
     - sources:
         # This rule will use the IP from the incoming connection from which the resource is received, and find the matching pod, based on the 'pod.status.podIP' of the observed pods
         - from: connection
+```
+
+## Common Use Cases
+
+### Example 1: Basic Agent Deployment (DaemonSet)
+
+Minimal configuration for an agent collecting telemetry from pods on the same node:
+
+```yaml
+processors:
+  k8sattributes:
+    # Use downward API to automatically filter by current node
+    filter:
+      node_from_env_var: KUBE_NODE_NAME
+    # Extract common metadata
+    extract:
+      metadata:
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+        - k8s.node.name
+    # Default connection-based pod association
+    pod_association:
+      - sources:
+          - from: connection
+```
+
+Required environment variable in your collector DaemonSet:
+```yaml
+env:
+  - name: KUBE_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+```
+
+### Example 2: Gateway Deployment with Resource Attribute Association
+
+Gateway configuration that receives telemetry from agents that have already added pod IP:
+
+```yaml
+processors:
+  k8sattributes:
+    # Extract comprehensive metadata
+    extract:
+      metadata:
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+        - k8s.statefulset.name
+        - k8s.daemonset.name
+        - k8s.node.name
+      # Extract custom labels
+      labels:
+        - tag_name: deployment_mode
+          key: deployment_mode
+          from: pod
+        - tag_name: owner_team
+          key: team
+          from: pod
+    # Associate by resource attributes set by agents
+    pod_association:
+      - sources:
+          - from: resource_attribute
+            name: k8s.pod.ip
+```
+
+### Example 3: Production Deployment with Namespace Filtering
+
+Configuration for monitoring a specific namespace with comprehensive metadata:
+
+```yaml
+processors:
+  k8sattributes:
+    filter:
+      namespace: production
+    extract:
+      metadata:
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+        - k8s.node.name
+        - service.name
+        - service.version
+      labels:
+        - tag_name: team
+          key: team
+          from: namespace
+        - tag_name: environment
+          key: environment
+          from: pod
+      annotations:
+        - tag_name: commit_sha
+          key: git-commit
+          from: pod
+      otel_annotations: true
+```
+
+### Example 4: Memory-Optimized Configuration
+
+Minimal memory footprint configuration for large clusters:
+
+```yaml
+processors:
+  k8sattributes:
+    filter:
+      node_from_env_var: KUBE_NODE_NAME
+    extract:
+      # Only extract essential fields
+      metadata:
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+      # Use deployment name extraction without watching replicasets
+      deployment_name_from_replicaset: true
+```
+
+### Example 5: Multi-Container Pod Support
+
+Configuration for extracting container-level metadata:
+
+```yaml
+processors:
+  k8sattributes:
+    filter:
+      node_from_env_var: KUBE_NODE_NAME
+    extract:
+      metadata:
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.container.name
+        - container.id
+        - container.image.name
+        - container.image.tag
+    # Associate by container ID for multi-container pods
+    pod_association:
+      - sources:
+          - from: resource_attribute
+            name: container.id
+      - sources:
+          - from: connection
 ```
 
 ## Role-based access control

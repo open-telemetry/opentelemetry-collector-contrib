@@ -327,7 +327,7 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 		cln, err := httpConfig.ToListener(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to bind to Collector address %q: %w",
-				httpConfig.Endpoint, err)
+				httpConfig.NetAddr.Endpoint, err)
 		}
 
 		nr := mux.NewRouter()
@@ -337,7 +337,10 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 			return err
 		}
 
-		jr.settings.Logger.Info("Starting HTTP server for Jaeger Thrift", zap.String("endpoint", httpConfig.Endpoint))
+		jr.settings.Logger.Info(
+			"Starting HTTP server for Jaeger Thrift",
+			zap.String("endpoint", httpConfig.NetAddr.Endpoint),
+		)
 
 		jr.goroutines.Add(1)
 		go func() {

@@ -23,6 +23,7 @@ body:
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
+      - cmd/schemagen
       - cmd/telemetrygen
       - confmap/provider/aesprovider
       - confmap/provider/googlesecretmanagerprovider
@@ -150,6 +151,7 @@ body:
       - internal/healthcheck
       - internal/k8sconfig
       - internal/k8sinventory
+      - internal/k8sleaderelectortest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
@@ -182,12 +184,12 @@ body:
       - pkg/translator/faro
       - pkg/translator/jaeger
       - pkg/translator/loki
-      - pkg/translator/opencensus
       - pkg/translator/pprof
       - pkg/translator/prometheus
       - pkg/translator/prometheusremotewrite
       - pkg/translator/signalfx
       - pkg/translator/skywalking
+      - pkg/translator/splunk
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - pkg/xk8stest
@@ -207,6 +209,7 @@ body:
       - processor/k8sattributes
       - processor/logdedup
       - processor/logstransform
+      - processor/lookup
       - processor/metricsgeneration
       - processor/metricstarttime
       - processor/metricstransform

@@ -22,249 +22,112 @@ resourceMetrics:
     schemaUrl: https://opentelemetry.io/schemas/1.19.0
     scopeMetrics:
       - metrics:
-          - description: Number of requests by operation
-            name: cassandra.client.request.count
+          - description: The number of errors encountered.
+            name: tomcat.errors
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: operation
+                    - key: proto_handler
                       value:
-                        stringValue: Read
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: Write
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: RangeSlice
+                        stringValue: '"http-nio-8080"'
                   startTimeUnixNano: "1684936740553000000"
                   timeUnixNano: "1684936747557000000"
               isMonotonic: true
-            unit: "1"
-          - description: Token range read request latency - 99th percentile
-            gauge:
-              dataPoints:
-                - asDouble: 0
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-            name: cassandra.client.request.range_slice.latency.99p
-            unit: us
-          - description: Number of hint messages written to this node since [re]start
-            name: cassandra.storage.total_hints.count
+            unit: errors
+          - description: The total processing time.
+            name: tomcat.processing_time
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
+                  attributes:
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
                   startTimeUnixNano: "1684936740553000000"
                   timeUnixNano: "1684936747557000000"
               isMonotonic: true
-            unit: "1"
-          - description: Size of the on disk data size this node manages
-            name: cassandra.storage.load.count
+            unit: ms
+          - description: The number of bytes transmitted and received.
+            name: tomcat.traffic
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "92521"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: sent
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
                   startTimeUnixNano: "1684936740553000000"
                   timeUnixNano: "1684936747557000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
+                  startTimeUnixNano: "1684936740553000000"
+                  timeUnixNano: "1684936747557000000"
+              isMonotonic: true
             unit: by
-          - description: Regular write request latency - 50th percentile
+          - description: The number of threads
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: busy
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
                   startTimeUnixNano: "1684936740553000000"
                   timeUnixNano: "1684936747557000000"
-            name: cassandra.client.request.write.latency.50p
-            unit: us
-          - description: Token range read request latency - 50th percentile
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: idle
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
+                  startTimeUnixNano: "1684936740553000000"
+                  timeUnixNano: "1684936747557000000"
+            name: tomcat.threads
+            unit: threads
+          - description: Maximum time to process a request.
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asInt: "0"
+                  attributes:
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
                   startTimeUnixNano: "1684936740553000000"
                   timeUnixNano: "1684936747557000000"
-            name: cassandra.client.request.range_slice.latency.50p
-            unit: us
-          - description: Number of completed compactions since server [re]start
-            name: cassandra.compaction.tasks.completed
+            name: tomcat.max_time
+            unit: ms
+          - description: The total requests.
+            name: tomcat.request_count
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "10"
+                - asInt: "0"
+                  attributes:
+                    - key: proto_handler
+                      value:
+                        stringValue: '"http-nio-8080"'
                   startTimeUnixNano: "1684936740553000000"
                   timeUnixNano: "1684936747557000000"
               isMonotonic: true
-            unit: "1"
-          - description: Regular write request latency - 99th percentile
-            gauge:
-              dataPoints:
-                - asDouble: 0
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-            name: cassandra.client.request.write.latency.99p
-            unit: us
-          - description: Maximum standard read request latency
-            gauge:
-              dataPoints:
-                - asDouble: 0
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-            name: cassandra.client.request.read.latency.max
-            unit: us
-          - description: Number of request errors by operation
-            name: cassandra.client.request.error.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: Read
-                    - key: status
-                      value:
-                        stringValue: Timeout
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: RangeSlice
-                    - key: status
-                      value:
-                        stringValue: Failure
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: Read
-                    - key: status
-                      value:
-                        stringValue: Failure
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: RangeSlice
-                    - key: status
-                      value:
-                        stringValue: Unavailable
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: Write
-                    - key: status
-                      value:
-                        stringValue: Failure
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: Read
-                    - key: status
-                      value:
-                        stringValue: Unavailable
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: Write
-                    - key: status
-                      value:
-                        stringValue: Timeout
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: RangeSlice
-                    - key: status
-                      value:
-                        stringValue: Timeout
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: Write
-                    - key: status
-                      value:
-                        stringValue: Unavailable
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-              isMonotonic: true
-            unit: "1"
-          - description: Estimated number of compactions remaining to perform
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-            name: cassandra.compaction.tasks.pending
-            unit: "1"
-          - description: Number of hints attempting to be sent currently
-            name: cassandra.storage.total_hints.in_progress.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-            unit: "1"
-          - description: Maximum regular write request latency
-            gauge:
-              dataPoints:
-                - asDouble: 0
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-            name: cassandra.client.request.write.latency.max
-            unit: us
-          - description: Standard read request latency - 99th percentile
-            gauge:
-              dataPoints:
-                - asDouble: 0
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-            name: cassandra.client.request.read.latency.99p
-            unit: us
-          - description: Standard read request latency - 50th percentile
-            gauge:
-              dataPoints:
-                - asDouble: 0
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-            name: cassandra.client.request.read.latency.50p
-            unit: us
-          - description: Maximum token range read request latency
-            gauge:
-              dataPoints:
-                - asDouble: 0
-                  startTimeUnixNano: "1684936740553000000"
-                  timeUnixNano: "1684936747557000000"
-            name: cassandra.client.request.range_slice.latency.max
-            unit: us
+            unit: requests
         scope:
           name: io.opentelemetry.contrib.jmxmetrics
           version: 1.26.0-alpha

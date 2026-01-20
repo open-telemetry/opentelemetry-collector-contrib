@@ -194,43 +194,48 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			mux.Unlock()
 
 			// Get change (pull request) data
-			prs, err := ghs.getPullRequests(ctx, genClient, name)
+			openPRs, mergedPRs, err := ghs.getPullRequests(ctx, genClient, name)
 			if err != nil {
 				ghs.logger.Sugar().Errorf("error getting pull requests: %v", zap.Error(err))
 			}
 
+			// Count variables for metrics
 			var merged int
 			var open int
 
-			for i := range prs {
-				pr := &prs[i]
-				if pr.Merged {
-					merged++
+			// Process open PRs
+			for i := range openPRs {
+				pr := &openPRs[i]
+				open++
 
-					age := getAge(pr.CreatedAt, pr.MergedAt)
+				age := getAge(pr.CreatedAt, now.AsTime())
+
+				mux.Lock()
+				ghs.mb.RecordVcsChangeDurationDataPoint(now, age, url, name, pr.HeadRefName, metadata.AttributeVcsChangeStateOpen)
+				mux.Unlock()
+
+				if pr.Reviews.TotalCount > 0 {
+					age := getAge(pr.CreatedAt, pr.Reviews.Nodes[0].CreatedAt)
 
 					mux.Lock()
-					ghs.mb.RecordVcsChangeTimeToMergeDataPoint(now, age, url, name, pr.HeadRefName)
+					ghs.mb.RecordVcsChangeTimeToApprovalDataPoint(now, age, url, name, pr.HeadRefName)
 					mux.Unlock()
-				} else {
-					open++
-
-					age := getAge(pr.CreatedAt, now.AsTime())
-
-					mux.Lock()
-					ghs.mb.RecordVcsChangeDurationDataPoint(now, age, url, name, pr.HeadRefName, metadata.AttributeVcsChangeStateOpen)
-					mux.Unlock()
-
-					if pr.Reviews.TotalCount > 0 {
-						age := getAge(pr.CreatedAt, pr.Reviews.Nodes[0].CreatedAt)
-
-						mux.Lock()
-						ghs.mb.RecordVcsChangeTimeToApprovalDataPoint(now, age, url, name, pr.HeadRefName)
-						mux.Unlock()
-					}
 				}
 			}
 
+			// Process merged PRs
+			for i := range mergedPRs {
+				pr := &mergedPRs[i]
+				merged++
+
+				age := getAge(pr.CreatedAt, pr.MergedAt)
+
+				mux.Lock()
+				ghs.mb.RecordVcsChangeTimeToMergeDataPoint(now, age, url, name, pr.HeadRefName)
+				mux.Unlock()
+			}
+
+			// Record aggregate metrics
 			mux.Lock()
 			ghs.mb.RecordVcsChangeCountDataPoint(now, int64(open), url, metadata.AttributeVcsChangeStateOpen, name)
 			ghs.mb.RecordVcsChangeCountDataPoint(now, int64(merged), url, metadata.AttributeVcsChangeStateMerged, name)
