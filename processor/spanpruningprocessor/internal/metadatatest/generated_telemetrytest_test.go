@@ -21,6 +21,8 @@ func TestSetupTelemetry(t *testing.T) {
 	defer tb.Shutdown()
 	tb.ProcessorSpanpruningAggregationGroupSize.Record(context.Background(), 1)
 	tb.ProcessorSpanpruningAggregationsCreated.Add(context.Background(), 1)
+	tb.ProcessorSpanpruningBytesEmitted.Add(context.Background(), 1)
+	tb.ProcessorSpanpruningBytesReceived.Add(context.Background(), 1)
 	tb.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(context.Background(), 1)
 	tb.ProcessorSpanpruningLeafAttributeLoss.Record(context.Background(), 1)
 	tb.ProcessorSpanpruningOutliersCorrelationsDetected.Add(context.Background(), 1)
@@ -36,6 +38,12 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSpanpruningAggregationsCreated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSpanpruningBytesEmitted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSpanpruningBytesReceived(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSpanpruningLeafAttributeDiversityLoss(t, testTel,

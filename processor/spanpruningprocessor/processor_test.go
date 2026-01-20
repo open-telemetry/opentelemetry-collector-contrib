@@ -286,6 +286,66 @@ func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName strin
 	return td
 }
 
+// TestBytesMetrics_Enabled tests that bytes metrics are recorded when enabled
+func TestBytesMetrics_Enabled(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(context.Background())) }()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.EnableBytesMetrics = true
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// Create trace with 3 leaf spans that will be aggregated
+	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// Verify bytes_received metric was recorded (value > 0)
+	metadatatest.AssertEqualProcessorSpanpruningBytesReceived(t, testTel,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreValue()) // Just verify metric exists
+
+	// Verify bytes_emitted metric was recorded (value > 0)
+	metadatatest.AssertEqualProcessorSpanpruningBytesEmitted(t, testTel,
+		[]metricdata.DataPoint[int64]{{}},
+		metricdatatest.IgnoreTimestamp(),
+		metricdatatest.IgnoreValue()) // Just verify metric exists
+}
+
+// TestBytesMetrics_Disabled tests that bytes metrics are NOT recorded when disabled (default)
+func TestBytesMetrics_Disabled(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, testTel.Shutdown(context.Background())) }()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	// EnableBytesMetrics defaults to false
+
+	tp, err := factory.CreateTraces(t.Context(), metadatatest.NewSettings(testTel), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	// Create trace with 3 leaf spans that will be aggregated
+	td := createTestTraceWithLeafSpans(t, 3, "SELECT", map[string]string{"db.operation": "select"})
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// Verify bytes_received metric was NOT recorded
+	_, err = testTel.GetMetric("otelcol_processor_spanpruning_bytes_received")
+	assert.Error(t, err, "bytes_received metric should not exist when disabled")
+
+	// Verify bytes_emitted metric was NOT recorded
+	_, err = testTel.GetMetric("otelcol_processor_spanpruning_bytes_emitted")
+	assert.Error(t, err, "bytes_emitted metric should not exist when disabled")
+}
+
 // TestOutlierMetrics_IQR tests that outlier metrics are recorded correctly with IQR method
 func TestOutlierMetrics_IQR(t *testing.T) {
 	testTel := componenttest.NewTelemetry()

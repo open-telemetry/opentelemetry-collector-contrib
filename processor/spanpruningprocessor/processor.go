@@ -38,6 +38,7 @@ type spanPruningProcessor struct {
 	attributePatterns           []attributePattern
 	telemetryBuilder            *metadata.TelemetryBuilder
 	enableAttributeLossAnalysis bool
+	enableBytesMetrics          bool
 }
 
 func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuilder *metadata.TelemetryBuilder) (*spanPruningProcessor, error) {
@@ -59,6 +60,7 @@ func newSpanPruningProcessor(set processor.Settings, cfg *Config, telemetryBuild
 		attributePatterns:           patterns,
 		telemetryBuilder:            telemetryBuilder,
 		enableAttributeLossAnalysis: cfg.EnableAttributeLossAnalysis,
+		enableBytesMetrics:          cfg.EnableBytesMetrics,
 	}, nil
 }
 
@@ -96,6 +98,12 @@ func createExemplarContext(ctx context.Context, traceID pcommon.TraceID, spanID 
 func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	start := time.Now()
 
+	// Measure bytes received before processing
+	if p.enableBytesMetrics {
+		var m ptrace.ProtoMarshaler
+		p.telemetryBuilder.ProcessorSpanpruningBytesReceived.Add(ctx, int64(m.TracesSize(td)))
+	}
+
 	// Count incoming spans
 	totalSpans := int64(0)
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -120,6 +128,12 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 		p.telemetryBuilder.ProcessorSpanpruningTracesProcessed.Add(ctx, tracesProcessed)
 		p.telemetryBuilder.ProcessorSpanpruningProcessingDuration.Record(ctx,
 			time.Since(start).Seconds())
+	}
+
+	// Measure bytes emitted after processing
+	if p.enableBytesMetrics {
+		var m ptrace.ProtoMarshaler
+		p.telemetryBuilder.ProcessorSpanpruningBytesEmitted.Add(ctx, int64(m.TracesSize(td)))
 	}
 
 	return td, nil

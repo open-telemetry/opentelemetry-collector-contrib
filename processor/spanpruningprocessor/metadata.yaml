@@ -24,6 +24,20 @@ telemetry:
       stability: { level: development }
       sum: { value_type: int, monotonic: true }
 
+    processor_spanpruning_bytes_emitted:
+      enabled: false
+      description: Total bytes of serialized traces emitted after pruning
+      unit: "By"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    processor_spanpruning_bytes_received:
+      enabled: false
+      description: Total bytes of serialized traces received before pruning
+      unit: "By"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
     processor_spanpruning_leaf_attribute_diversity_loss:
       enabled: false
       description: Attribute values lost due to diversity per leaf aggregation

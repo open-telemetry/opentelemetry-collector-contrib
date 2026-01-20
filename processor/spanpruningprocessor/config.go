@@ -139,6 +139,13 @@ type Config struct {
 	// Default: false
 	EnableOutlierAnalysis bool `mapstructure:"enable_outlier_analysis"`
 
+	// EnableBytesMetrics toggles measurement of serialized trace sizes before
+	// and after pruning. When enabled, records bytes_received and bytes_emitted
+	// metrics. This requires serializing the trace data which can be expensive
+	// for large batches.
+	// Default: false
+	EnableBytesMetrics bool `mapstructure:"enable_bytes_metrics"`
+
 	// OutlierAnalysis configures IQR-based outlier detection and
 	// attribute correlation for aggregation groups.
 	OutlierAnalysis OutlierAnalysisConfig `mapstructure:"outlier_analysis"`
