@@ -110,7 +110,7 @@ func TestComponentParser(t *testing.T) {
 				Mappings: testMappings(),
 			}
 			if tc.rootType != "" {
-				cfg.RootTypeName = tc.rootType
+				cfg.ConfigType = tc.rootType
 			}
 			parser := NewParser(cfg)
 

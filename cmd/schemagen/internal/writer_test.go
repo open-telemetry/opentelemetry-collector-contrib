@@ -23,7 +23,7 @@ func TestWriteSchemaToFile_YAML(t *testing.T) {
 	path, err := WriteSchemaToFile(schema, cfg)
 	require.NoError(t, err)
 
-	expectedPath := filepath.Join(dir, "config.schema.yaml")
+	expectedPath := filepath.Join(dir, "config.yaml")
 	require.Equal(t, expectedPath, path)
 	require.FileExists(t, path)
 
@@ -47,7 +47,7 @@ func TestWriteSchemaToFile_JSON(t *testing.T) {
 	path, err := WriteSchemaToFile(schema, cfg)
 	require.NoError(t, err)
 
-	expectedPath := filepath.Join(dir, "config.schema.json")
+	expectedPath := filepath.Join(dir, "config.json")
 	require.Equal(t, expectedPath, path)
 	require.FileExists(t, path)
 
@@ -72,7 +72,7 @@ func TestWriteSchemaToFile_Package(t *testing.T) {
 	path, err := WriteSchemaToFile(schema, cfg)
 	require.NoError(t, err)
 
-	expectedPath := filepath.Join(dir, filepath.Base(schema.ID)+".schema.json")
+	expectedPath := filepath.Join(dir, "config.json")
 	require.Equal(t, expectedPath, path)
 	require.FileExists(t, path)
 
@@ -104,7 +104,7 @@ func TestWriteSchemaToFile_WriteError(t *testing.T) {
 
 func testSchema(t *testing.T) *Schema {
 	t.Helper()
-	schema := CreateSchema("http://example.com/schema", "test")
+	schema := CreateSchema()
 	schema.AddProperty("name", CreateSimpleField(SchemaTypeString, "field"))
 	return schema
 }
