@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -420,6 +421,9 @@ func TestValidateConfig(t *testing.T) {
 		},
 	}
 
+	err := featuregate.GlobalRegistry().Set("connector.routing.useAction", true)
+	assert.NoError(t, err)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.error == "" {
@@ -429,6 +433,7 @@ func TestValidateConfig(t *testing.T) {
 			}
 		})
 	}
+	_ = featuregate.GlobalRegistry().Set("connector.routing.useAction", false)
 }
 
 type testConfigOption func(*Config)

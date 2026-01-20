@@ -96,6 +96,11 @@ func (c *Config) Validate() error {
 			return errUnexpectedAction
 		}
 
+		if item.Action == Copy && !routingUseActionFeatureGate.IsEnabled() {
+			// we allow copy action to be only used when feature gate is enabled else it uses default move.
+			return fmt.Errorf("'action: copy' requires feature gate %q to be enabled", routingUseActionFeatureGateId)
+		}
+
 		switch item.Context {
 		case "", "resource", "span", "metric", "datapoint", "log": // ok
 		case "request":
