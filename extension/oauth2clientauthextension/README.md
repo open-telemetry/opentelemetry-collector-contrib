@@ -52,7 +52,7 @@ receivers:
       grpc:
 
 exporters:
-  otlphttp/withauth:
+  otlp_http/withauth:
     endpoint: http://localhost:9000
     auth:
       authenticator: oauth2client
@@ -70,7 +70,7 @@ service:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [otlphttp/withauth, otlp/withauth]
+      exporters: [otlp_http/withauth, otlp/withauth]
 ```
 
 Following are the configuration fields
