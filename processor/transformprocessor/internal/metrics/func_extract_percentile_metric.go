@@ -51,9 +51,8 @@ func extractPercentileMetric(percentile float64, suffix ottl.Optional[string]) (
 		metric := tCtx.GetMetric()
 
 		if metric.Type() != pmetric.MetricTypeHistogram &&
-			metric.Type() != pmetric.MetricTypeExponentialHistogram &&
-			metric.Type() != pmetric.MetricTypeSummary {
-			return nil, invalidMetricTypeError(percentileFuncName, metric)
+			metric.Type() != pmetric.MetricTypeExponentialHistogram {
+			return nil, nil // Execute only for histogram types.
 		}
 
 		percentileMetric := pmetric.NewMetric()
@@ -70,10 +69,6 @@ func extractPercentileMetric(percentile float64, suffix ottl.Optional[string]) (
 			}
 		case pmetric.MetricTypeExponentialHistogram:
 			if err := extractPercentileFromDataPoints(metric.ExponentialHistogram().DataPoints(), percentile, gaugeDataPoints, calculateExponentialHistogramPercentile); err != nil {
-				return nil, err
-			}
-		case pmetric.MetricTypeSummary:
-			if err := extractPercentileFromDataPoints(metric.Summary().DataPoints(), percentile, gaugeDataPoints, extractSummaryQuantile); err != nil {
 				return nil, err
 			}
 		}
@@ -269,23 +264,4 @@ func calculateExponentialBucketBound(index int, scale int) float64 {
 		inverseFactor := math.Ldexp(math.Ln2, -scale)
 		return math.Exp(float64(index) * inverseFactor)
 	}
-}
-
-func extractSummaryQuantile(dp pmetric.SummaryDataPoint, percentile float64) (float64, error) {
-	quantileValues := dp.QuantileValues()
-	targetQuantile := percentile / 100.0
-
-	for i := range quantileValues.Len() {
-		qv := quantileValues.At(i)
-		if qv.Quantile() == targetQuantile {
-			return qv.Value(), nil
-		}
-	}
-
-	availableQuantiles := make([]float64, quantileValues.Len())
-	for i := range quantileValues.Len() {
-		availableQuantiles[i] = quantileValues.At(i).Quantile() * 100.0
-	}
-
-	return 0, fmt.Errorf("percentile p%g not found in summary metric, available quantiles: %v", percentile, availableQuantiles)
 }
