@@ -12,6 +12,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+type Action string
+
+const (
+	Copy Action = "copy"
+	Move Action = "move"
+)
+
 var (
 	errNoConditionOrStatement = errors.New("invalid route: no condition or statement provided")
 	errConditionAndStatement  = errors.New("invalid route: both condition and statement provided")
@@ -42,6 +49,25 @@ type Config struct {
 	Table []RoutingTableItem `mapstructure:"table"`
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+// UnmarshalText unmarshalls text to an Action.
+func (e *Action) UnmarshalText(text []byte) error {
+	if e == nil {
+		return errors.New("cannot unmarshal to a nil *Action")
+	}
+
+	str := string(text)
+	switch str {
+	case string(Copy):
+		*e = Copy
+	case string(Move):
+		*e = Move
+	default:
+		return fmt.Errorf("invalid encoding type: %s", str)
+	}
+
+	return nil
 }
 
 // Validate checks if the processor configuration is valid.
@@ -76,10 +102,6 @@ func (c *Config) Validate() error {
 		default:
 			return errors.New("invalid context: " + item.Context)
 		}
-
-		if item.Action != "" && item.Action != "move" && item.Action != "copy" {
-			return errUnexpectedAction
-		}
 	}
 	return nil
 }
@@ -103,7 +125,7 @@ type RoutingTableItem struct {
 
 	// Action indicates the type of operation we intend to do when the condition
 	// Matches for the corresponding context and data.
-	Action string `mapstructure:"action"`
+	Action Action `mapstructure:"action"`
 
 	// Pipelines contains the list of pipelines to use when the value from the FromAttribute field
 	// matches this table item. When no pipelines are specified, the ones specified under
