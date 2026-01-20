@@ -175,9 +175,9 @@ linters:
           list-mode: lax
           deny:
             - pkg: go.opentelemetry.io/otel/semconv
-              desc: Use go.opentelemetry.io/otel/semconv/v1.38.0 instead. If a newer semconv version has been released, update the depguard rule.
+              desc: Use go.opentelemetry.io/otel/semconv/v1.39.0 instead. If a newer semconv version has been released, update the depguard rule.
           allow:
-            # TODO: Remove older semconv versions after v1.38.0 migration is complete.
+            # TODO: Remove older semconv versions after v1.39.0 migration is complete.
             # If for any reason an individual package needs to use an older semconv version,
             # add a nolint directive on the import line.
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35325
@@ -188,22 +188,30 @@ linters:
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45077
             - go.opentelemetry.io/otel/semconv/v1.16.0
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45080
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293
             - go.opentelemetry.io/otel/semconv/v1.18.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45294
+            - go.opentelemetry.io/otel/semconv/v1.19.0
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45295
             - go.opentelemetry.io/otel/semconv/v1.20.0
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45079
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45087
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45296
             - go.opentelemetry.io/otel/semconv/v1.21.0
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45036
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45084
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44801
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45089
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45297
             - go.opentelemetry.io/otel/semconv/v1.25.0
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43806
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45074
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45298
             - go.opentelemetry.io/otel/semconv/v1.26.0
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45086
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45299
             - go.opentelemetry.io/otel/semconv/v1.28.0
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44994
             - go.opentelemetry.io/otel/semconv/v1.31.0
@@ -211,15 +219,16 @@ linters:
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45034
             - go.opentelemetry.io/otel/semconv/v1.34.0
             - go.opentelemetry.io/otel/semconv/v1.38.0
-        
+            - go.opentelemetry.io/otel/semconv/v1.39.0
+
         semconv-in-test:
           list-mode: lax
           deny:
             - pkg: go.opentelemetry.io/otel/semconv
               desc: Don't import semconv packages in test files, use strings directly instead.
-              
+
           files:
-            - '**/*_test.go'
+            - "**/*_test.go"
 
         # Add a different guard rule so that we can ignore tests.
         ignore-in-test:
@@ -229,7 +238,7 @@ linters:
 
           # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
           files:
-            - '!**/*_test.go'
+            - "!**/*_test.go"
 
     exhaustive:
       # Presence of "default" case in switch statements satisfies exhaustiveness,

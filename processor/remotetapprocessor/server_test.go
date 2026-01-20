@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -25,7 +26,10 @@ import (
 func TestSocketConnectionLogs(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:12001",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:12001",
+			},
 		},
 		Limit: 1,
 	}
@@ -61,7 +65,10 @@ func TestSocketConnectionLogs(t *testing.T) {
 func TestSocketConnectionMetrics(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:12002",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:12002",
+			},
 		},
 		Limit: 1,
 	}
@@ -97,7 +104,10 @@ func TestSocketConnectionMetrics(t *testing.T) {
 func TestSocketConnectionTraces(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:12003",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:12003",
+			},
 		},
 		Limit: 1,
 	}
