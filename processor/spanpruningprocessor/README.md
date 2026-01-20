@@ -189,12 +189,27 @@ When spans are aggregated, the summary span includes:
 - **TraceID**: Same as original spans
 - **SpanID**: Newly generated unique ID
 - **ParentSpanID**: Same as original spans (common parent)
+- **Kind**: Same as template span (inherited from slowest span)
 - **StartTimestamp**: Earliest start time of all spans in the group
 - **EndTimestamp**: Latest end time of all spans in the group
 - **Status**: Same as original spans (spans are grouped by status code)
 - **Attributes**: Inherited from the slowest span in the group
 
 > **Note**: The summary span's duration (`EndTimestamp - StartTimestamp`) represents the total time window covered by all aggregated spans, which may exceed `duration_max_ns`. For example, if spans overlap or are staggered, the time range can be larger than any individual span's duration. Use `duration_max_ns` to find the slowest individual operation.
+
+### What Gets Aggregated Away
+
+When spans are aggregated into a summary span, the following data from non-template spans is **lost**:
+
+| Data | Behavior |
+|------|----------|
+| **Span Events** | Only the template (slowest) span's events are preserved |
+| **Span Links** | Only the template span's links are preserved |
+| **Attributes** | Non-matching attribute values are lost (see [attribute loss analysis](#optional-attribute-loss-metrics)) |
+| **Individual Timestamps** | Original start/end times replaced by the group's time range |
+| **SpanIDs** | Original SpanIDs are replaced by a single summary SpanID |
+
+To understand attribute loss, enable `enable_attribute_loss_analysis: true` which adds `diverse_attributes` and `missing_attributes` to summary spans.
 
 ### Aggregation Attributes
 The following attributes are added to the summary span (shown with default `aggregation_attribute_prefix: "aggregation."`):
@@ -532,6 +547,9 @@ The processor emits the following metrics to help monitor its operation:
 | `otelcol_processor_spanpruning_spans_pruned` | Total number of spans removed by aggregation |
 | `otelcol_processor_spanpruning_aggregations_created` | Total number of aggregation summary spans created |
 | `otelcol_processor_spanpruning_traces_processed` | Total number of traces processed |
+| `otelcol_processor_spanpruning_outliers_detected` | Total spans identified as outliers by analysis (when `enable_outlier_analysis: true`) |
+| `otelcol_processor_spanpruning_outliers_preserved` | Total outlier spans kept as individual spans (when `preserve_outliers: true`) |
+| `otelcol_processor_spanpruning_outliers_correlations_detected` | Total aggregation groups where outliers had correlated attributes |
 
 ### Histograms
 
