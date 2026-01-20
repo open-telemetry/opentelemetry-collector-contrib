@@ -8,25 +8,25 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.0
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2 v2.0.1
 	github.com/goccy/go-json v0.10.5
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.143.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.143.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.143.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.144.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.144.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.144.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs v0.144.0
 	github.com/relvacode/iso8601 v1.7.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/confmap v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/confmap/xconfmap v0.143.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/consumer v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/consumer/consumertest v0.143.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/extension/xextension v0.143.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/pdata v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/pipeline v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/receiver v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.143.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/receiver/receivertest v0.143.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/component v1.50.0
+	go.opentelemetry.io/collector/component/componenttest v0.144.0
+	go.opentelemetry.io/collector/confmap v1.50.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.144.0
+	go.opentelemetry.io/collector/consumer v1.50.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.144.0
+	go.opentelemetry.io/collector/extension/xextension v0.144.0
+	go.opentelemetry.io/collector/featuregate v1.50.0
+	go.opentelemetry.io/collector/pdata v1.50.0
+	go.opentelemetry.io/collector/pipeline v1.50.0
+	go.opentelemetry.io/collector/receiver v1.50.0
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.144.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.144.0
 	go.opentelemetry.io/otel v1.39.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
@@ -70,17 +70,17 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.143.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.144.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/valyala/fastjson v1.6.7 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
-	go.opentelemetry.io/collector/extension v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.144.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.144.0 // indirect
+	go.opentelemetry.io/collector/extension v1.50.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.144.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.144.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.144.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.144.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
@@ -124,6 +124,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5

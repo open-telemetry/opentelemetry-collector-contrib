@@ -7,6 +7,22 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.144.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: add unix socket support to HTTP server components (#45308)
+  HTTP server components (namely receivers) now support listening
+  on Unix domain sockets in addition to TCP addresses, by configuring
+  `transport: unix` and setting `endpoint` to a Unix socket path.
+  
+  This is a breaking change to the config structs, but is not breaking
+  for end users. Existing YAML configuration options remain unchanged.
+  
+- `receiver/aerospike`: Move mock structs to internal package. (#43995)
+
+<!-- previous-version -->
+
 ## v0.143.0
 
 ### 🛑 Breaking changes 🛑
