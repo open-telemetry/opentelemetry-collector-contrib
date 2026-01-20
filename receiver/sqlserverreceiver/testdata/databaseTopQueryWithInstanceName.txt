@@ -28,4 +28,5 @@ SELECT qs.*,
 FROM qstats AS qs
 		INNER JOIN sys.dm_exec_query_stats AS stats on qs.query_plan_handle = stats.plan_handle
 		CROSS APPLY sys.dm_exec_query_plan(qs.query_plan_handle) AS qp
-		CROSS APPLY sys.dm_exec_sql_text(qs.query_plan_handle) AS st;
+		CROSS APPLY sys.dm_exec_sql_text(qs.query_plan_handle) AS st
+		WHERE st.text IS NOT NULL;
