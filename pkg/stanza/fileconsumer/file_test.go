@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
@@ -1072,7 +1073,7 @@ func TestDeleteAfterRead(t *testing.T) {
 		require.NoError(t, temp.Close())
 	}
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogAllowFileDeletionFeatureGate.ID(), true))
 
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
@@ -1207,9 +1208,9 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	shortFileLine := "short file line"
 	longFileLines := 100000
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogAllowFileDeletionFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogAllowFileDeletionFeatureGate.ID(), false))
 	}()
 
 	tempDir := t.TempDir()

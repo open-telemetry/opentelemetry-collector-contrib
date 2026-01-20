@@ -6,7 +6,7 @@ status:
     beta: [traces]
   distributions: [contrib, k8s]
   codeowners:
-    active: [portertech, Logiraptor]
+    active: [portertech, Logiraptor, jmacd]
     emeritus: [jpkrohling]
     seeking_new: true
 

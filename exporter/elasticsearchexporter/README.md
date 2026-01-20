@@ -167,26 +167,69 @@ The Elasticsearch exporter supports several document schemas and preprocessing
 behaviours, which may be configured through the following settings:
 
 - `mapping`:
-  - `mode` (default=otel): The default mapping mode. Valid modes are:
-    - `none`
-    - `ecs`
-    - `otel`
-    - `raw`
-    - `bodymap`
+  - `mode` (DEPRECATED) The mapping mode if supplied via config file is deprecated and will soon be ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. If not specified via these methods, the default mapping mode is `otel`.
+
   - `allowed_modes` (defaults to all mapping modes): A list of allowed mapping modes.
 
-The mapping mode can also be controlled via the client metadata key `X-Elastic-Mapping-Mode`,
-e.g. via HTTP headers, gRPC metadata. This will override the configured `mapping::mode`.
+The mapping mode can be controlled via the client metadata key `X-Elastic-Mapping-Mode`,
+e.g. via HTTP headers, gRPC metadata.
+
+
 It is possible to restrict which mapping modes may be requested by configuring
 `mapping::allowed_modes`, which defaults to all mapping modes. Keep in mind that not all
 processors or exporter configurations will maintain client metadata.
 
-Finally, the mapping mode can be controlled via the scope attribute `elastic.mapping.mode`.
+The mapping mode can also be controlled via the scope attribute `elastic.mapping.mode`.
 If specified, this takes precedence over the `X-Elastic-Mapping-Mode` client metadata.
 If any scope has an invalid mapping mode, the exporter will reject the entire batch.
 The attribute will be excluded from the final document.
 
+Valid mapping modes are:
+- `none`
+- `ecs`
+- `otel`
+- `raw`
+- `bodymap`
+
 See below for a description of each mapping mode.
+
+#### Migration: Setting mapping mode via scope attribute
+
+Since the `mapping::mode` config option is deprecated, use the following method to set the mapping mode:
+
+**Use scope attribute via transform processor**
+
+This approach sets the `elastic.mapping.mode` scope attribute on the telemetry data.
+
+```yaml
+processors:
+  transform:
+    log_statements:
+      - context: scope
+        statements:
+          - set(attributes["elastic.mapping.mode"], "otel")
+    trace_statements:
+      - context: scope
+        statements:
+          - set(attributes["elastic.mapping.mode"], "otel")
+    metric_statements:
+      - context: scope
+        statements:
+          - set(attributes["elastic.mapping.mode"], "otel")
+exporters:
+  elasticsearch:
+    endpoint: https://elasticsearch:9200
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [transform]
+      exporters: [elasticsearch]
+```
+
+> [!NOTE]
+> The scope attribute `elastic.mapping.mode` takes precedence over the `X-Elastic-Mapping-Mode` client metadata.
+> The attribute will be excluded from the final document sent to Elasticsearch.
 
 #### OTel mapping mode
 
@@ -428,6 +471,8 @@ When more than one SemConv attribute maps to the same ECS attribute, the convert
 This is mean to support backwards compatibility for SemConv attributes that have been renamed/deprecated. 
 The value of the last-mapped attribute will take precedence.
 
+It is recommended to enrich events using the [elasticapmprocessor](https://github.com/elastic/opentelemetry-collector-components/tree/main/processor/elasticapmprocessor) to ensure index documents contain all required Elastic fields to power the Kibana UI. 
+
 ### Resource attribute mapping
 
 | Semantic Convention Name    | ECS Name                    | Preserve | Skip if exists |
@@ -486,7 +531,6 @@ The value of the last-mapped attribute will take precedence.
 
 | Semantic Convention Name   | ECS Name                                                  | Preserve |
 |----------------------------|-----------------------------------------------------------|----------|
-| messaging.operation.name   | span.action                                               | false    |
 | db.system                  | span.db.type                                              | false    |
 | db.namespace               | span.db.instance                                          | false    |
 | db.query.text              | span.db.statement                                         | false    |
@@ -547,11 +591,6 @@ Otherwise, it is mapped to an empty string ("").
 #### `@timestamp`
 
 In case the record contains `timestamp`, this value is used. Otherwise, the `observed timestamp` is used.
-
-### `messaging.destination.name`
-
-Maps to `span.message.queue.name` for regular spans, but to `transaction.message.queue.name` when the `processor.event` attribute equals "transaction".
-This attribute is only applicable at the trace level. 
 
 ## Setting a document id dynamically
 
