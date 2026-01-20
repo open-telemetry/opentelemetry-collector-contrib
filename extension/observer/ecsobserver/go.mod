@@ -5,17 +5,17 @@ go 1.24.0
 require (
 	github.com/aws/aws-sdk-go-v2 v1.41.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.7
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.279.1
-	github.com/aws/aws-sdk-go-v2/service/ecs v1.70.1
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.279.2
+	github.com/aws/aws-sdk-go-v2/service/ecs v1.71.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/component/componentstatus v0.143.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/confmap v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/confmap/xconfmap v0.143.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/extension v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/extension/extensiontest v0.143.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/component v1.50.0
+	go.opentelemetry.io/collector/component/componentstatus v0.144.0
+	go.opentelemetry.io/collector/component/componenttest v0.144.0
+	go.opentelemetry.io/collector/confmap v1.50.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.144.0
+	go.opentelemetry.io/collector/extension v1.50.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.144.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
@@ -53,10 +53,10 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5 // indirect
-	go.opentelemetry.io/collector/pdata v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
-	go.opentelemetry.io/collector/pipeline v1.49.1-0.20260119125341-0550b08ddcc5 // indirect
+	go.opentelemetry.io/collector/featuregate v1.50.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.144.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.50.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.50.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
@@ -71,6 +71,3 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5
