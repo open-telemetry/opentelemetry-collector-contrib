@@ -45,6 +45,8 @@ const (
 	metricNameCalls    = "calls"
 	metricNameEvents   = "events"
 
+	adjustedCountKey = "adjusted_count"
+
 	defaultUnit = metrics.Seconds
 
 	// https://github.com/open-telemetry/opentelemetry-go/blob/3ae002c3caf3e44387f0554dfcbbde2c5aab7909/sdk/metric/internal/aggregate/limit.go#L11C36-L11C50
@@ -409,12 +411,12 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					duration = float64(endTime-startTime) / float64(unitDivider)
 				}
 
-				adjustedCount, _ := metrics.GetStochasticAdjustedCount(&span)
+				adjustedCount, isAdjusted := metrics.GetStochasticAdjustedCount(&span)
 				callsDimensions := p.dimensions
 				callsDimensions = append(callsDimensions, p.callsDimensions...)
 				key := p.buildKey(serviceName, span, callsDimensions, resourceAttr)
 				attributesFun := func() pcommon.Map {
-					return p.buildAttributes(serviceName, span, resourceAttr, callsDimensions, ils.Scope())
+					return p.buildAttributes(serviceName, span, resourceAttr, callsDimensions, ils.Scope(), isAdjusted)
 				}
 
 				// aggregate sums metrics
@@ -431,7 +433,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					durationDimensions = append(durationDimensions, p.durationDimensions...)
 					durationKey := p.buildKey(serviceName, span, durationDimensions, resourceAttr)
 					attributesFun = func() pcommon.Map {
-						return p.buildAttributes(serviceName, span, resourceAttr, durationDimensions, ils.Scope())
+						return p.buildAttributes(serviceName, span, resourceAttr, durationDimensions, ils.Scope(), isAdjusted)
 					}
 					h, durationLimitReached := histograms.GetOrCreate(durationKey, attributesFun, startTimestamp)
 					if !durationLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
@@ -459,7 +461,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
 						attributesFun = func() pcommon.Map {
-							return p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
+							return p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope(), isAdjusted)
 						}
 						e, eventLimitReached := events.GetOrCreate(eKey, attributesFun, startTimestamp)
 						if !eventLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
@@ -526,6 +528,7 @@ func (p *connectorImp) buildAttributes(
 	resourceAttrs pcommon.Map,
 	dimensions []utilattri.Dimension,
 	instrumentationScope pcommon.InstrumentationScope,
+	isAdjustedCount bool,
 ) pcommon.Map {
 	attr := pcommon.NewMap()
 	attr.EnsureCapacity(5 + len(dimensions))
@@ -562,6 +565,10 @@ func (p *connectorImp) buildAttributes(
 		if instrumentationScope.Version() != "" {
 			attr.PutStr(instrumentationScopeVersionKey, instrumentationScope.Version())
 		}
+	}
+
+	if isAdjustedCount {
+		attr.PutBool(adjustedCountKey, true)
 	}
 
 	addResourceAttributes(&attr, dimensions, span, resourceAttrs)

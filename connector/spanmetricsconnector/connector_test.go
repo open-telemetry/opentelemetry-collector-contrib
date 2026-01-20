@@ -2238,7 +2238,7 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope, false)
 
 			assert.Equal(t, len(tt.want), attrs.Len())
 			for k, v := range tt.want {
@@ -2545,7 +2545,7 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope)
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope, false)
 
 			assert.Equal(t, len(tt.want), attrs.Len())
 			for k, v := range tt.want {
@@ -2553,6 +2553,337 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 				assert.True(t, ok)
 				assert.Equal(t, v, val.Str())
 			}
+		})
+	}
+}
+
+func TestBuildAttributes_AdjustedCount(t *testing.T) {
+	tests := []struct {
+		name            string
+		isAdjustedCount bool
+		expectAttribute bool
+	}{
+		{
+			name:            "adjusted count is true - attribute should be present",
+			isAdjustedCount: true,
+			expectAttribute: true,
+		},
+		{
+			name:            "adjusted count is false - attribute should not be present",
+			isAdjustedCount: false,
+			expectAttribute: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &connectorImp{config: Config{}}
+
+			span := ptrace.NewSpan()
+			span.SetName("test_span")
+			span.SetKind(ptrace.SpanKindInternal)
+
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, pcommon.NewInstrumentationScope(), tt.isAdjustedCount)
+
+			val, ok := attrs.Get(adjustedCountKey)
+			if tt.expectAttribute {
+				assert.True(t, ok, "adjusted_count attribute should be present")
+				assert.True(t, val.Bool(), "adjusted_count should be true")
+			} else {
+				assert.False(t, ok, "adjusted_count attribute should not be present")
+			}
+		})
+	}
+}
+
+func TestAdjustedCountAttribute_Integration(t *testing.T) {
+	// Test that spans with valid tracestate produce metrics with adjusted_count attribute
+	// and spans without tracestate do not have the attribute
+
+	tests := []struct {
+		name           string
+		tracestate     string
+		expectAdjusted bool
+	}{
+		{
+			name:           "span with valid tracestate th:c (25% sampling)",
+			tracestate:     "ot=th:c",
+			expectAdjusted: true,
+		},
+		{
+			name:           "span with valid tracestate th:8 (50% sampling)",
+			tracestate:     "ot=th:8",
+			expectAdjusted: true,
+		},
+		{
+			name:           "span without tracestate",
+			tracestate:     "",
+			expectAdjusted: false,
+		},
+		{
+			name:           "span with tracestate but no th field",
+			tracestate:     "ot=rv:abcdabcdabcdff",
+			expectAdjusted: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+			require.NoError(t, err)
+
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
+			err = p.Start(ctx, componenttest.NewNopHost())
+			require.NoError(t, err)
+			defer func() { require.NoError(t, p.Shutdown(ctx)) }()
+
+			// Create a trace with the specified tracestate
+			traces := ptrace.NewTraces()
+			rs := traces.ResourceSpans().AppendEmpty()
+			rs.Resource().Attributes().PutStr("service.name", "test-service")
+			ss := rs.ScopeSpans().AppendEmpty()
+			span := ss.Spans().AppendEmpty()
+			span.SetName("test-span")
+			span.SetKind(ptrace.SpanKindServer)
+			span.Status().SetCode(ptrace.StatusCodeOk)
+			span.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+			span.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+			now := time.Now()
+			span.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+			span.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
+
+			if tt.tracestate != "" {
+				span.TraceState().FromRaw(tt.tracestate)
+			}
+
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			// First call buildMetrics() emits zero value, second call emits actual value
+			_ = p.buildMetrics()
+			receivedMetrics := p.buildMetrics()
+
+			require.NotEmpty(t, receivedMetrics.ResourceMetrics().Len(), "should have resource metrics")
+
+			// Find the sum metric (calls)
+			found := false
+			for i := 0; i < receivedMetrics.ResourceMetrics().Len(); i++ {
+				rm := receivedMetrics.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						m := sm.Metrics().At(k)
+						if m.Name() == metricNameCalls {
+							require.Equal(t, pmetric.MetricTypeSum, m.Type())
+							dps := m.Sum().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								val, hasAdjustedCount := dp.Attributes().Get(adjustedCountKey)
+
+								if tt.expectAdjusted {
+									assert.True(t, hasAdjustedCount, "adjusted_count attribute should be present for valid tracestate")
+									if hasAdjustedCount {
+										assert.True(t, val.Bool(), "adjusted_count should be true")
+									}
+								} else {
+									assert.False(t, hasAdjustedCount, "adjusted_count attribute should not be present for invalid/missing tracestate")
+								}
+								found = true
+							}
+						}
+					}
+				}
+			}
+			assert.True(t, found, "should have found calls metric")
+		})
+	}
+}
+
+func TestAdjustedCountAttribute_Histogram(t *testing.T) {
+	// Test that histogram metrics also have the adjusted_count attribute when appropriate
+
+	tests := []struct {
+		name           string
+		tracestate     string
+		expectAdjusted bool
+	}{
+		{
+			name:           "histogram with valid tracestate",
+			tracestate:     "ot=th:8",
+			expectAdjusted: true,
+		},
+		{
+			name:           "histogram without tracestate",
+			tracestate:     "",
+			expectAdjusted: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+			require.NoError(t, err)
+
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
+			err = p.Start(ctx, componenttest.NewNopHost())
+			require.NoError(t, err)
+			defer func() { require.NoError(t, p.Shutdown(ctx)) }()
+
+			// Create a trace
+			traces := ptrace.NewTraces()
+			rs := traces.ResourceSpans().AppendEmpty()
+			rs.Resource().Attributes().PutStr("service.name", "test-service")
+			ss := rs.ScopeSpans().AppendEmpty()
+			span := ss.Spans().AppendEmpty()
+			span.SetName("test-span")
+			span.SetKind(ptrace.SpanKindServer)
+			span.Status().SetCode(ptrace.StatusCodeOk)
+			span.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+			span.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+			now := time.Now()
+			span.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+			span.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
+
+			if tt.tracestate != "" {
+				span.TraceState().FromRaw(tt.tracestate)
+			}
+
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			// Build metrics twice to get actual values
+			_ = p.buildMetrics()
+			receivedMetrics := p.buildMetrics()
+
+			require.NotEmpty(t, receivedMetrics.ResourceMetrics().Len(), "should have resource metrics")
+
+			// Find the histogram metric (duration)
+			found := false
+			for i := 0; i < receivedMetrics.ResourceMetrics().Len(); i++ {
+				rm := receivedMetrics.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						m := sm.Metrics().At(k)
+						if m.Name() == metricNameDuration {
+							require.Equal(t, pmetric.MetricTypeHistogram, m.Type())
+							dps := m.Histogram().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								val, hasAdjustedCount := dp.Attributes().Get(adjustedCountKey)
+
+								if tt.expectAdjusted {
+									assert.True(t, hasAdjustedCount, "adjusted_count attribute should be present for histogram with valid tracestate")
+									if hasAdjustedCount {
+										assert.True(t, val.Bool(), "adjusted_count should be true")
+									}
+								} else {
+									assert.False(t, hasAdjustedCount, "adjusted_count attribute should not be present for histogram without tracestate")
+								}
+								found = true
+							}
+						}
+					}
+				}
+			}
+			assert.True(t, found, "should have found duration histogram metric")
+		})
+	}
+}
+
+func TestAdjustedCountAttribute_Events(t *testing.T) {
+	// Test that event metrics also have the adjusted_count attribute when appropriate
+
+	tests := []struct {
+		name           string
+		tracestate     string
+		expectAdjusted bool
+	}{
+		{
+			name:           "events with valid tracestate",
+			tracestate:     "ot=th:8",
+			expectAdjusted: true,
+		},
+		{
+			name:           "events without tracestate",
+			tracestate:     "",
+			expectAdjusted: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := newConnectorImp(nil, disabledHistogramsConfig, disabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+			require.NoError(t, err)
+
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
+			err = p.Start(ctx, componenttest.NewNopHost())
+			require.NoError(t, err)
+			defer func() { require.NoError(t, p.Shutdown(ctx)) }()
+
+			// Create a trace with an event
+			traces := ptrace.NewTraces()
+			rs := traces.ResourceSpans().AppendEmpty()
+			rs.Resource().Attributes().PutStr("service.name", "test-service")
+			ss := rs.ScopeSpans().AppendEmpty()
+			span := ss.Spans().AppendEmpty()
+			span.SetName("test-span")
+			span.SetKind(ptrace.SpanKindServer)
+			span.Status().SetCode(ptrace.StatusCodeOk)
+			span.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+			span.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+			now := time.Now()
+			span.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+			span.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
+
+			// Add an event to the span
+			event := span.Events().AppendEmpty()
+			event.SetName("exception")
+			event.Attributes().PutStr(exceptionTypeAttrName, "NullPointerException")
+
+			if tt.tracestate != "" {
+				span.TraceState().FromRaw(tt.tracestate)
+			}
+
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			// Build metrics twice to get actual values
+			_ = p.buildMetrics()
+			receivedMetrics := p.buildMetrics()
+
+			require.NotEmpty(t, receivedMetrics.ResourceMetrics().Len(), "should have resource metrics")
+
+			// Find the events metric
+			found := false
+			for i := 0; i < receivedMetrics.ResourceMetrics().Len(); i++ {
+				rm := receivedMetrics.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						m := sm.Metrics().At(k)
+						if m.Name() == metricNameEvents {
+							require.Equal(t, pmetric.MetricTypeSum, m.Type())
+							dps := m.Sum().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								val, hasAdjustedCount := dp.Attributes().Get(adjustedCountKey)
+
+								if tt.expectAdjusted {
+									assert.True(t, hasAdjustedCount, "adjusted_count attribute should be present for events with valid tracestate")
+									if hasAdjustedCount {
+										assert.True(t, val.Bool(), "adjusted_count should be true")
+									}
+								} else {
+									assert.False(t, hasAdjustedCount, "adjusted_count attribute should not be present for events without tracestate")
+								}
+								found = true
+							}
+						}
+					}
+				}
+			}
+			assert.True(t, found, "should have found events metric")
 		})
 	}
 }
