@@ -45,6 +45,7 @@ import (
 	"golang.org/x/net/netutil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/targetallocator"
 )
 
@@ -80,7 +81,7 @@ type pReceiver struct {
 func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) (*pReceiver, error) {
 	// This serves as the default for all ScrapeConfigs that don't have it explicitly set.
 	// TODO: Remove this once feature-gates and configuration options are removed.
-	extraMetrics := enableReportExtraScrapeMetricsGate.IsEnabled() || (cfg.ReportExtraScrapeMetrics && !removeReportExtraScrapeMetricsConfigGate.IsEnabled())
+	extraMetrics := metadata.ReceiverPrometheusreceiverEnableReportExtraScrapeMetricsFeatureGate.IsEnabled() || (cfg.ReportExtraScrapeMetrics && !metadata.ReceiverPrometheusreceiverRemoveReportExtraScrapeMetricsConfigFeatureGate.IsEnabled())
 	if extraMetrics {
 		cfg.PrometheusConfig.GlobalConfig.ExtraScrapeMetrics = &extraMetrics
 	}
@@ -223,7 +224,7 @@ func (r *pReceiver) initScrapeOptions() *scrape.Options {
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
-		EnableStartTimestampZeroIngestion: enableCreatedTimestampZeroIngestionGate.IsEnabled(),
+		EnableStartTimestampZeroIngestion: metadata.ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate.IsEnabled(),
 	}
 
 	return opts

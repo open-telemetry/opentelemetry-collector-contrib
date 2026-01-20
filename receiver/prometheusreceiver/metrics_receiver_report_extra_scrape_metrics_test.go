@@ -103,7 +103,7 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
 func testScraperMetrics(t *testing.T, targets []*testData, featureGateEnabled bool, globalExtra, scrapeExtra *bool, expectExtraScrapeMetrics bool) {
-	defer testutil.SetFeatureGateForTest(t, enableReportExtraScrapeMetricsGate, featureGateEnabled)()
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPrometheusreceiverEnableReportExtraScrapeMetricsFeatureGate, featureGateEnabled)()
 
 	ctx := t.Context()
 	mp, cfg, err := setupMockPrometheusWithExtraScrapeMetrics(globalExtra, scrapeExtra, targets...)
