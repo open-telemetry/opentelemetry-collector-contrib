@@ -17,6 +17,28 @@ import (
 	"go.uber.org/zap"
 )
 
+// stringBuilderPool is a pool of strings.Builder instances to reduce allocations
+var stringBuilderPool = sync.Pool{
+	New: func() any {
+		return &strings.Builder{}
+	},
+}
+
+type attributeBuffer struct {
+	attrs []string
+}
+
+var attributeBufferPool = sync.Pool{
+	New: func() any {
+		return &attributeBuffer{
+			// Pre-allocate capacity of 32 to avoid reallocations for typical metrics
+			// which usually have 5-20 attributes. For metrics with >32 attributes,
+			// the slice will grow automatically and retain the larger capacity for reuse.
+			attrs: make([]string, 0, 32),
+		}
+	},
+}
+
 type accumulatedValue struct {
 	// value contains a metric with exactly one aggregated datapoint.
 	value pmetric.Metric
@@ -404,34 +426,73 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []str
 }
 
 func timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map, metric pmetric.Metric, attributes, resourceAttrs pcommon.Map) string {
-	var b strings.Builder
-	b.WriteString("*" + metric.Name())
-	b.WriteString(metric.Type().String())
-	b.WriteString("*" + scopeName)
-	b.WriteString("*" + scopeVersion)
-	b.WriteString("*" + scopeSchemaURL)
+	// Get a string builder from the pool
+	sb := stringBuilderPool.Get().(*strings.Builder)
+	defer func() {
+		sb.Reset()
+		stringBuilderPool.Put(sb)
+	}()
 
-	attrs := make([]string, 0, scopeAttributes.Len())
-	for k, v := range scopeAttributes.All() {
-		attrs = append(attrs, k+"*"+v.AsString())
+	// Get an attribute buffer from the pool for sorting
+	attrBuf := attributeBufferPool.Get().(*attributeBuffer)
+	defer func() {
+		attrBuf.attrs = attrBuf.attrs[:0]
+		attributeBufferPool.Put(attrBuf)
+	}()
+
+	// Build signature from metric name and type
+	sb.WriteString(metric.Name())
+	sb.WriteString("*")
+	sb.WriteString(metric.Type().String())
+	sb.WriteString("*")
+	sb.WriteString(scopeName)
+	sb.WriteString("*")
+	sb.WriteString(scopeVersion)
+	sb.WriteString("*")
+	sb.WriteString(scopeSchemaURL)
+	sb.WriteString("*")
+
+	// Add scope attributes in sorted order for consistency
+	if scopeAttributes.Len() > 0 {
+		attrBuf.attrs = attrBuf.attrs[:0]
+		for k, v := range scopeAttributes.All() {
+			attrBuf.attrs = append(attrBuf.attrs, k+"*"+v.AsString())
+		}
+		sort.Strings(attrBuf.attrs)
+		for _, attr := range attrBuf.attrs {
+			sb.WriteString(attr)
+			sb.WriteString("*")
+		}
 	}
-	sort.Strings(attrs)
-	b.WriteString("*" + strings.Join(attrs, "*"))
 
-	attrs = make([]string, 0, attributes.Len())
-	for k, v := range attributes.All() {
-		attrs = append(attrs, k+"*"+v.AsString())
+	// Add metric attributes in sorted order
+	if attributes.Len() > 0 {
+		attrBuf.attrs = attrBuf.attrs[:0]
+		for k, v := range attributes.All() {
+			attrBuf.attrs = append(attrBuf.attrs, k+"*"+v.AsString())
+		}
+		sort.Strings(attrBuf.attrs)
+		for _, attr := range attrBuf.attrs {
+			sb.WriteString(attr)
+			sb.WriteString("*")
+		}
 	}
-	sort.Strings(attrs)
-	b.WriteString("*" + strings.Join(attrs, "*"))
 
+	// Add job and instance labels
 	if job, ok := extractJob(resourceAttrs); ok {
-		b.WriteString("*" + model.JobLabel + "*" + job)
+		sb.WriteString(model.JobLabel)
+		sb.WriteString("*")
+		sb.WriteString(job)
+		sb.WriteString("*")
 	}
 	if instance, ok := extractInstance(resourceAttrs); ok {
-		b.WriteString("*" + model.InstanceLabel + "*" + instance)
+		sb.WriteString(model.InstanceLabel)
+		sb.WriteString("*")
+		sb.WriteString(instance)
+		sb.WriteString("*")
 	}
-	return b.String()
+
+	return sb.String()
 }
 
 func copyMetricMetadata(metric pmetric.Metric) pmetric.Metric {
