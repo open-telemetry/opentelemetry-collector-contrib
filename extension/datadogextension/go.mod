@@ -10,7 +10,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/serializer v0.76.0-devel
 	github.com/DataDog/datadog-agent/pkg/tagset v0.76.0-devel
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.144.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.50.0
 	go.opentelemetry.io/collector/component/componentstatus v0.144.0
@@ -175,11 +175,11 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.143.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.143.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.143.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.143.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.143.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.144.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.144.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.144.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.144.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.144.0 // indirect
 	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7 // indirect
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect

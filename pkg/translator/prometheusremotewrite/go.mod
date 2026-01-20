@@ -5,8 +5,8 @@ go 1.24.0
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/google/go-cmp v0.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.143.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.144.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.144.0
 	github.com/prometheus/common v0.67.5
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.309.2-0.20260113170727-c7bc56cf6c8f
