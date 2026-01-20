@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.opentelemetry.io/collector/component"
@@ -28,6 +29,9 @@ import (
 var (
 	unknownVersion = func() *version.Version { return version.Must(version.NewVersion("0.0")) }
 
+	// otelNamespaceUUID is the official OTel namespace UUID for deterministic UUID v5 generation.
+	otelNamespaceUUID = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
+
 	_ = featuregate.GlobalRegistry().MustRegister(
 		"receiver.mongodb.removeDatabaseAttr",
 		featuregate.StageStable,
@@ -36,6 +40,17 @@ var (
 		featuregate.WithRegisterFromVersion("v0.90.0"),
 		featuregate.WithRegisterToVersion("v0.104.0"))
 )
+
+// generateInstanceID generates a deterministic UUID v5 from server address, port, and optional database name.
+func generateInstanceID(serverAddress string, serverPort int64, database string) string {
+	var name string
+	if database == "" {
+		name = fmt.Sprintf("%s:%d", serverAddress, serverPort)
+	} else {
+		name = fmt.Sprintf("%s:%d:%s", serverAddress, serverPort, database)
+	}
+	return uuid.NewSHA1(otelNamespaceUUID, []byte(name)).String()
+}
 
 type mongodbScraper struct {
 	logger             *zap.Logger
@@ -171,6 +186,8 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	rb := s.mb.NewResourceBuilder()
 	rb.SetServerAddress(serverAddress)
 	rb.SetServerPort(serverPort)
+	rb.SetServiceName("mongodb")
+	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort, ""))
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	// Collect metrics for each database
@@ -189,6 +206,8 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 		rb.SetServerAddress(serverAddress)
 		rb.SetServerPort(serverPort)
 		rb.SetDatabase(dbName)
+		rb.SetServiceName("mongodb")
+		rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort, dbName))
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }

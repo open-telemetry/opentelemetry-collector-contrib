@@ -72,6 +72,7 @@ func integrationTest(name string, script []string, cfgMod func(*Config)) func(*t
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
 			pmetrictest.IgnoreResourceAttributeValue("server.address"),
+			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
 		),
 	).Run
 }

@@ -23,6 +23,14 @@ resource_attributes:
     description: The port of the MongoDB host.
     enabled: false
     type: int
+  service.instance.id:
+    description: A unique identifier of the MongoDB resource as a UUID v5, derived from server address, port, and database.
+    enabled: true
+    type: string
+  service.name:
+    description: The database management system name (mongodb).
+    enabled: true
+    type: string
 
 attributes:
   collection:
