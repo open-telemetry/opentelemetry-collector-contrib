@@ -169,19 +169,19 @@ func calculateExponentialHistogramPercentile(dp pmetric.ExponentialHistogramData
 		previousCumulativeCount := negativeTotalCount
 		negativeTotalCount += negativeBuckets.BucketCounts().At(i)
 		if negativeTotalCount >= targetCount {
-			return calculateFromNegativeBuckets(negativeBuckets, targetCount, previousCumulativeCount, i, scale)
+			return calculateFromNegativeBuckets(negativeBuckets, targetCount, previousCumulativeCount, i, scale), nil
 		}
 	}
 
 	cumulativeAfterZero := negativeTotalCount + zeroCount
 	if cumulativeAfterZero >= targetCount {
-		return calculateFromZeroBucket(dp, negativeBuckets.BucketCounts().Len() != 0, positiveBuckets.BucketCounts().Len() != 0, targetCount, negativeTotalCount, zeroCount)
+		return calculateFromZeroBucket(dp, negativeBuckets.BucketCounts().Len() != 0, positiveBuckets.BucketCounts().Len() != 0, targetCount, negativeTotalCount, zeroCount), nil
 	}
 
 	return calculateFromPositiveBuckets(positiveBuckets, targetCount, cumulativeAfterZero, scale, percentile)
 }
 
-func calculateFromZeroBucket(dp pmetric.ExponentialHistogramDataPoint, negativeBuckets, positiveBuckets bool, targetCount, negativeTotalCount, zeroCount uint64) (float64, error) {
+func calculateFromZeroBucket(dp pmetric.ExponentialHistogramDataPoint, negativeBuckets, positiveBuckets bool, targetCount, negativeTotalCount, zeroCount uint64) float64 {
 	zeroBucketLower := -dp.ZeroThreshold()
 	zeroBucketUpper := dp.ZeroThreshold()
 
@@ -196,10 +196,10 @@ func calculateFromZeroBucket(dp pmetric.ExponentialHistogramDataPoint, negativeB
 	}
 
 	ratio := float64(targetCount-negativeTotalCount) / float64(zeroCount)
-	return linearInterpolation(zeroBucketLower, zeroBucketUpper, ratio), nil
+	return linearInterpolation(zeroBucketLower, zeroBucketUpper, ratio)
 }
 
-func calculateFromNegativeBuckets(buckets pmetric.ExponentialHistogramDataPointBuckets, targetCount, previousCumulativeCount uint64, bucketIdx, scale int) (float64, error) {
+func calculateFromNegativeBuckets(buckets pmetric.ExponentialHistogramDataPointBuckets, targetCount, previousCumulativeCount uint64, bucketIdx, scale int) float64 {
 	bucketCount := buckets.BucketCounts().At(bucketIdx)
 	bucketIndex := int(buckets.Offset()) + bucketIdx
 
@@ -208,7 +208,7 @@ func calculateFromNegativeBuckets(buckets pmetric.ExponentialHistogramDataPointB
 
 	ratio := (float64(targetCount) - float64(previousCumulativeCount)) / float64(bucketCount)
 	// For negative buckets, invert ratio direction since we move from less negative to more negative
-	return -logarithmicInterpolation(upperBound, lowerBound, 1-ratio), nil
+	return -logarithmicInterpolation(upperBound, lowerBound, 1-ratio)
 }
 
 func calculateFromPositiveBuckets(buckets pmetric.ExponentialHistogramDataPointBuckets, targetCount, cumulativeBefore uint64, scale int, percentile float64) (float64, error) {
