@@ -213,6 +213,7 @@ components:
     - processor/scalewaydetector
     - processor/schema
     - processor/span
+    - processor/spanpruning
     - processor/sumologic
     - processor/tail_sampling
     - processor/transform
