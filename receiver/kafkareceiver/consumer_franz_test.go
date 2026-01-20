@@ -155,7 +155,6 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		// commits the offset after it's left the group.
 
 		kafkaClient, cfg := mustNewFakeCluster(tb, kfake.SeedTopics(1, topic))
-		cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
 		cfg.GroupID = tb.Name()
 		cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 10 * time.Second}
 		// Set MinFetchSize to ensure all records are fetched at once
@@ -258,7 +257,6 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 func TestRaceLostVsConsume(t *testing.T) {
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
-	cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
 	cfg.GroupID = t.Name()
 	cfg.MaxFetchSize = 1 // Force a lot of iterations of consume()
 	cfg.AutoCommit = configkafka.AutoCommitConfig{
@@ -296,7 +294,6 @@ func TestRaceLostVsConsume(t *testing.T) {
 			c.lost(t.Context(), nil, topicMap, false)
 			c.assigned(t.Context(), kafkaClient, topicMap)
 			c.client.ForceRebalance()
-			time.Sleep(time.Millisecond)
 		}
 	}()
 
@@ -334,7 +331,6 @@ func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
 	cfg.UseLeaderEpoch = false // <-- exercise the option
-	cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
 	cfg.GroupID = t.Name()
 	cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond}
 
@@ -400,10 +396,7 @@ func TestExcludeTopicWithRegex(t *testing.T) {
 		kfake.SeedTopics(1, "logs-b"),
 		kfake.SeedTopics(1, "logs-c"),
 	)
-
-	cfg.ConsumerConfig = configkafka.NewDefaultConsumerConfig()
 	cfg.GroupID = t.Name()
-	cfg.InitialOffset = "earliest"
 	cfg.AutoCommit = configkafka.AutoCommitConfig{Enable: true, Interval: 100 * time.Millisecond}
 
 	// Prepare test data
