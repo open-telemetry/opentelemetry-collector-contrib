@@ -9,66 +9,9 @@ import (
 	"go/parser"
 	"go/token"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
-
-func TestExtractNameFromTag(t *testing.T) {
-	testCases := []struct {
-		name      string
-		tagSource string
-		expected  string
-		expectHit bool
-	}{
-		{
-			name:      "uses mapstructure when json present",
-			tagSource: `json:"json-name" mapstructure:"map-name"`,
-			expected:  "map-name",
-			expectHit: true,
-		},
-		{
-			name:      "falls back to mapstructure",
-			tagSource: `mapstructure:"host"`,
-			expected:  "host",
-			expectHit: true,
-		},
-		{
-			name:      "mapstructure with options trimmed",
-			tagSource: `mapstructure:"host,omitempty"`,
-			expected:  "host",
-			expectHit: true,
-		},
-		{
-			name:      "ignores json skip dash uses mapstructure",
-			tagSource: `json:"-" mapstructure:"custom_host"`,
-			expected:  "custom_host",
-			expectHit: true,
-		},
-		{
-			name:      "json only tag ignored",
-			tagSource: `json:"json_only"`,
-			expected:  "",
-			expectHit: false,
-		},
-		{
-			name:      "missing tags",
-			tagSource: "",
-			expected:  "",
-			expectHit: false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			field := parseFieldWithTag(t, tc.tagSource)
-			value, ok := ExtractNameFromTag(field)
-			if ok != tc.expectHit {
-				t.Fatalf("expected hit=%v but got %v", tc.expectHit, ok)
-			}
-			if value != tc.expected {
-				t.Fatalf("expected %q but got %q", tc.expected, value)
-			}
-		})
-	}
-}
 
 func TestExtractDescriptionFromComment(t *testing.T) {
 	testCases := []struct {
@@ -204,6 +147,64 @@ func TestParseImport(t *testing.T) {
 			}
 			if gotName != tc.nameWant {
 				t.Fatalf("expected name %q got %q", tc.nameWant, gotName)
+			}
+		})
+	}
+}
+
+func TestParseTagInfo(t *testing.T) {
+	testCases := []struct {
+		name         string
+		tagContent   string
+		ok           bool
+		expectedName string
+		omitEmpty    bool
+		squash       bool
+	}{
+		{
+			name:         "named field with omitempty",
+			tagContent:   `mapstructure:"field_name,omitempty"`,
+			ok:           true,
+			expectedName: "field_name",
+			omitEmpty:    true,
+			squash:       false,
+		},
+		{
+			name:         "squashed field",
+			tagContent:   `mapstructure:",squash"`,
+			ok:           true,
+			expectedName: "",
+			omitEmpty:    false,
+			squash:       true,
+		},
+		{
+			name:         "json tag ignored",
+			tagContent:   `json:"custom_name,omitempty,squash"`,
+			ok:           false,
+			expectedName: "custom_name",
+			omitEmpty:    true,
+			squash:       true,
+		},
+		{
+			name:         "ignored field",
+			tagContent:   `mapstructure:"-"`,
+			ok:           false,
+			expectedName: "",
+			omitEmpty:    false,
+			squash:       false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			field := parseFieldWithTag(t, tc.tagContent)
+			tagValue, ok := ParseTag(field.Tag)
+
+			assert.Equal(t, tc.ok, ok)
+			if ok {
+				assert.Equal(t, tc.expectedName, tagValue.Name)
+				assert.Equal(t, tc.omitEmpty, tagValue.OmitEmpty)
+				assert.Equal(t, tc.squash, tagValue.Squash)
 			}
 		})
 	}

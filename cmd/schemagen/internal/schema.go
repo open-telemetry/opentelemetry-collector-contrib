@@ -4,7 +4,9 @@
 package internal
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 
 	"gopkg.in/yaml.v3"
 )
@@ -72,6 +74,12 @@ func (s *ObjectSchemaElement) AddProperty(name string, property SchemaElement) {
 }
 
 func (s *ObjectSchemaElement) AddEmbeddedRef(ref string) {
+	// prevent duplicates
+	for _, refEl := range s.AllOf {
+		if r, ok := refEl.(*RefSchemaElement); ok && r.Ref == ref {
+			return
+		}
+	}
 	s.AllOf = append(s.AllOf, CreateRefField(ref, ""))
 }
 
@@ -94,7 +102,16 @@ func (s *Schema) ToJSON() ([]byte, error) {
 }
 
 func (s *Schema) ToYAML() ([]byte, error) {
-	return yaml.Marshal(s)
+	var b bytes.Buffer
+	enc := yaml.NewEncoder(&b)
+
+	enc.SetIndent(2)
+
+	if err := enc.Encode(s); err != nil {
+		return nil, err
+	}
+
+	return b.Bytes(), nil
 }
 
 func CreateSchema(id, title string) *Schema {
@@ -172,3 +189,18 @@ const (
 	SchemaTypeAny     SchemaType = ""
 	SchemaTypeUnknown SchemaType = "-"
 )
+
+func mergeSchemas(base SchemaObject, additional SchemaElement) error {
+	if objectElement, ok := additional.(*ObjectSchemaElement); ok {
+		for name, prop := range objectElement.Properties {
+			base.AddProperty(name, prop)
+		}
+		for _, ref := range objectElement.AllOf {
+			if refElem, ok := ref.(*RefSchemaElement); ok {
+				base.AddEmbeddedRef(refElem.Ref)
+			}
+		}
+		return nil
+	}
+	return errors.New("cannot merge non-object schema elements")
+}

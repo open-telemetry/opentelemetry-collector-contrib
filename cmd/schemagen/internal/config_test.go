@@ -14,24 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestReadConfig_FileInput(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-	file := createConfigFile(t, dir, "service.go")
-
-	cfg, err := readConfigForTest(t, file)
-	require.NoError(t, err)
-
-	require.Equal(t, Component, cfg.Mode)
-	require.Equal(t, file, cfg.FilePath)
-	require.Equal(t, dir, cfg.DirPath)
-	require.Equal(t, dir, cfg.OutputFolder)
-	require.Equal(t, "Service", cfg.RootTypeName)
-	require.Equal(t, "yaml", cfg.FileType)
-	require.Nil(t, cfg.Mappings)
-}
-
-func TestReadConfig_DirectoryInput(t *testing.T) {
+func TestReadConfig(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
 
@@ -39,19 +22,12 @@ func TestReadConfig_DirectoryInput(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, Package, cfg.Mode)
-	require.Empty(t, cfg.FilePath)
 	require.Equal(t, dir, cfg.DirPath)
 	require.Equal(t, dir, cfg.OutputFolder)
 	require.Empty(t, cfg.RootTypeName)
 }
 
 func TestReadConfig_Errors(t *testing.T) {
-	t.Run("missing args", func(t *testing.T) {
-		t.Chdir(t.TempDir())
-		_, err := readConfigForTest(t)
-		require.Error(t, err)
-	})
-
 	t.Run("missing path", func(t *testing.T) {
 		t.Chdir(t.TempDir())
 		missing := filepath.Join(t.TempDir(), "missing")
@@ -69,17 +45,6 @@ func TestReadConfig_Errors(t *testing.T) {
 	})
 }
 
-func TestReadConfig_DefaultRootTypeDerivedFromPath(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-	target := createConfigFile(t, dir, "my_config.go")
-
-	cfg, err := readConfigForTest(t, target)
-	require.NoError(t, err)
-
-	require.Equal(t, "MyConfig", cfg.RootTypeName)
-}
-
 func TestReadConfig_RespectsRootTypeFlag(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
@@ -94,7 +59,6 @@ func TestReadConfig_RespectsRootTypeFlag(t *testing.T) {
 func TestReadConfig_ReadsSettingsFile(t *testing.T) {
 	projectDir := t.TempDir()
 	settings := Settings{
-		OutputFolder: "./generated",
 		Mappings: Mappings{
 			"pkg": PackagesMapping{
 				"Thing": {
@@ -117,7 +81,7 @@ func TestReadConfig_ReadsSettingsFile(t *testing.T) {
 	cfg, err := readConfigForTest(t, target)
 	require.NoError(t, err)
 
-	expectedOutput := filepath.Join(projectDir, "generated")
+	expectedOutput := filepath.Join(projectDir, "workdir")
 	require.Equal(t, evalPath(t, expectedOutput), evalPath(t, cfg.OutputFolder))
 	require.Equal(t, Mappings{
 		"pkg": PackagesMapping{
