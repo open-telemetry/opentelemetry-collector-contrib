@@ -29,6 +29,10 @@ func (p *spanPruningProcessor) buildGroupKey(span ptrace.Span) string {
 
 	builder.WriteString(span.Name())
 
+	// Include span kind in grouping key
+	builder.WriteString("|kind=")
+	builder.WriteString(span.Kind().String())
+
 	// Include status code in grouping key
 	builder.WriteString("|status=")
 	builder.WriteString(span.Status().Code().String())
@@ -73,6 +77,8 @@ func (*spanPruningProcessor) buildParentGroupKey(span ptrace.Span) string {
 	defer builderPool.Put(builder)
 
 	builder.WriteString(span.Name())
+	builder.WriteString("|kind=")
+	builder.WriteString(span.Kind().String())
 	builder.WriteString("|status=")
 	builder.WriteString(span.Status().Code().String())
 	return builder.String()
