@@ -10,7 +10,7 @@ import (
 	linodemeta "github.com/linode/go-metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -66,11 +66,8 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	}
 
 	d.rb.SetCloudAccountID(inst.AccountEUUID)
-	// Cloud provider and platform values will be "akamai_cloud" and "akamai_cloud_platform" from conventions when it's merged.
-	// d.rb.SetCloudProvider(conventions.CloudProviderAkamaiCloud.Value.AsString())
-	// d.rb.SetCloudPlatform(conventions.CloudPlatformAkamaiCloud.Value.AsString())
-	d.rb.SetCloudPlatform("akamai_cloud_platform")
-	d.rb.SetCloudProvider("akamai_cloud")
+	d.rb.SetCloudProvider(conventions.CloudProviderAkamaiCloud.Value.AsString())
+	d.rb.SetCloudPlatform(conventions.CloudPlatformAkamaiCloudCompute.Value.AsString())
 	d.rb.SetCloudRegion(inst.Region)
 	d.rb.SetHostID(strconv.Itoa(inst.ID))
 	d.rb.SetHostImageID(inst.Image.ID)
