@@ -6,8 +6,10 @@ package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-
 import (
 	"bytes"
 	"context"
+	"math"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/simplelru"
@@ -26,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 const (
@@ -136,7 +139,7 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 
 	var lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
 	if cfg.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-		lastDeltaTimestamps, err = simplelru.NewLRU[metrics.Key, pcommon.Timestamp](cfg.GetDeltaTimestampCacheSize(), func(k metrics.Key, _ pcommon.Timestamp) {
+		lastDeltaTimestamps, err = simplelru.NewLRU(cfg.GetDeltaTimestampCacheSize(), func(k metrics.Key, _ pcommon.Timestamp) {
 			logger.Info("Evicting cached delta timestamp", zap.String("key", string(k)))
 		})
 		if err != nil {
@@ -372,6 +375,60 @@ func (p *connectorImp) resetState() {
 	}
 }
 
+// Returns the stochastic-rounded adjusted count for the span.
+func getStochasticAdjustedCount(span *ptrace.Span) uint64 {
+	tracestate := span.TraceState().AsRaw()
+	w3cTraceState, err := sampling.NewW3CTraceState(tracestate)
+	if err != nil {
+		return 0
+	}
+	return stochasticIncrement(w3cTraceState.OTelValue().AdjustedCount())
+}
+
+// A very fast PRNG using xor and shift.
+type xorshift64star uint64
+
+func (r *xorshift64star) Next() uint64 {
+	x := *r
+	x ^= x << 12
+	x ^= x >> 25
+	x ^= x << 27
+	*r = x
+	return uint64(x) * 0x2545F4914F6CDD1D // The "Scrambler"
+}
+
+var seedCounter uint64
+
+// We use a pool to give each Goroutine its own PRNG state.
+// This avoids global locks and cache-line bouncing.
+var prngPool = sync.Pool{
+	New: func() any {
+		// Use a non-zero seed (crucial for xorshift) that is unique for each Goroutine.
+		s := uint64(time.Now().UnixNano()) ^ atomic.AddUint64(&seedCounter, 1)
+		if s == 0 {
+			s = 1
+		}
+		var seed xorshift64star = xorshift64star(s)
+		return &seed
+	},
+}
+
+func stochasticIncrement(weight float64) uint64 {
+	floor, frac := math.Modf(weight)
+	count := uint64(floor)
+	if frac <= 0 {
+		return count
+	}
+	rng := prngPool.Get().(*xorshift64star)
+	defer prngPool.Put(rng)
+
+	threshold := uint64(frac * float64(math.MaxUint64))
+	if rng.Next() < threshold {
+		return count + 1
+	}
+	return count
+}
+
 // aggregateMetrics aggregates the raw metrics from the input trace data.
 //
 // Metrics are grouped by resource attributes.
@@ -421,7 +478,9 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				if !limitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
 				}
-				s.Add(1)
+
+				adjustedCount := getStochasticAdjustedCount(&span)
+				s.Add(adjustedCount)
 
 				// aggregate histogram metrics
 				if !p.config.Histogram.Disable {
@@ -435,7 +494,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					if !durationLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 						p.addExemplar(span, duration, h)
 					}
-					h.Observe(duration)
+					h.ObserveN(duration, adjustedCount)
 				}
 
 				// aggregate events metrics
@@ -463,7 +522,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 						if !eventLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
 						}
-						e.Add(1)
+						e.Add(adjustedCount)
 					}
 				}
 			}
