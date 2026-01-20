@@ -234,6 +234,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetDatabase("database-val")
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
+			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
