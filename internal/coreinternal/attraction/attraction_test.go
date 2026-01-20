@@ -1028,6 +1028,7 @@ func TestFromContext(t *testing.T) {
 		})
 	}
 }
+
 func TestAttributes_DefaultValue(t *testing.T) {
 	t.Run("INSERT with default_value when from_attribute missing", func(t *testing.T) {
 		testCases := []testCase{
