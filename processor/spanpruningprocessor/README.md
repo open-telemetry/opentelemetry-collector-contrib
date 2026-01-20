@@ -21,11 +21,12 @@ The Span Pruning Processor identifies duplicate or similar leaf spans within a s
 
 Spans are grouped by:
 1. **Span name** - spans must have the same name
-2. **Status code** - spans must have the same status (OK, Error, or Unset)
-3. **Configured attributes** - spans must have matching values for attributes specified in `group_by_attributes`
-4. **Parent span name** - leaf spans must share the same parent span name to be grouped together
+2. **Span kind** - spans must have the same kind (Internal, Server, Client, Producer, Consumer)
+3. **Status code** - spans must have the same status (OK, Error, or Unset)
+4. **Configured attributes** - spans must have matching values for attributes specified in `group_by_attributes`
+5. **Parent span name** - leaf spans must share the same parent span name to be grouped together
 
-Parent spans are eligible for aggregation when all of their children are aggregated, they share the same name and status code, and they are not root spans.
+Parent spans are eligible for aggregation when all of their children are aggregated, they share the same name, kind, and status code, and they are not root spans.
 
 Optionally, the processor can detect **duration outliers** using statistical methods (IQR or MAD) and either annotate summary spans with outlier correlations or **preserve outlier spans** as individual spans for debugging while still aggregating normal spans.
 
@@ -482,7 +483,7 @@ Note: Spans with different status codes are grouped separately, preserving error
 
 When spans are aggregated, the processor also checks if their parent spans can be aggregated. Parent spans are eligible for aggregation when:
 1. All of their children are being aggregated
-2. They share the same name and status code with other eligible parents
+2. They share the same name, kind, and status code with other eligible parents
 3. They are not root spans (must have a parent)
 4. At least 2 parents meet the criteria
 
@@ -522,10 +523,10 @@ root
 
 | Span | Result | Reason |
 |------|--------|--------|
-| 3x handler (OK) with SELECT children | Aggregated | All children aggregated, same name+status |
-| 3x SELECT (OK) under handler | Aggregated | Same name + status + attributes + parent name |
-| 2x handler (Error) with SELECT children | Aggregated | All children aggregated, same name+status |
-| 2x SELECT (Error) under handler | Aggregated | Same name + status + attributes + parent name |
+| 3x handler (OK) with SELECT children | Aggregated | All children aggregated, same name+kind+status |
+| 3x SELECT (OK) under handler | Aggregated | Same name + kind + status + attributes + parent name |
+| 2x handler (Error) with SELECT children | Aggregated | All children aggregated, same name+kind+status |
+| 2x SELECT (Error) under handler | Aggregated | Same name + kind + status + attributes + parent name |
 | handler (OK) with INSERT child | Unchanged | Child not aggregated (only 1 INSERT) |
 | INSERT (OK) | Unchanged | Below threshold (only 1 span) |
 | worker (OK) | Unchanged | Child not aggregated |
