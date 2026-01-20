@@ -27,6 +27,8 @@ Spans are grouped by:
 
 Parent spans are eligible for aggregation when all of their children are aggregated, they share the same name and status code, and they are not root spans.
 
+Optionally, the processor can detect **duration outliers** using statistical methods (IQR or MAD) and either annotate summary spans with outlier correlations or **preserve outlier spans** as individual spans for debugging while still aggregating normal spans.
+
 This processor is useful for reducing trace data volume while preserving meaningful information about repeated operations.
 
 ## Use Cases
