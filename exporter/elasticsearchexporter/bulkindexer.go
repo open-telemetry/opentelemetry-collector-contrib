@@ -9,14 +9,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	"github.com/elastic/go-docappender/v2"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -24,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/logging"
@@ -71,7 +72,7 @@ const (
 var otelDatasetSuffixRegex = regexp.MustCompile(`^[^-]+?-[^-]+?\.otel-`)
 
 func newBulkIndexer(
-	client esapi.Transport,
+	client elastictransport.Interface,
 	config *Config,
 	requireDataStream bool,
 	tb *metadata.TelemetryBuilder,
@@ -80,7 +81,7 @@ func newBulkIndexer(
 	return newSyncBulkIndexer(client, config, requireDataStream, tb, logger)
 }
 
-func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream bool) docappender.BulkIndexerConfig {
+func bulkIndexerConfig(client elastictransport.Interface, config *Config, requireDataStream bool, logger *zap.Logger) docappender.BulkIndexerConfig {
 	var maxDocRetries int
 	if config.Retry.Enabled {
 		maxDocRetries = defaultMaxRetries
@@ -101,7 +102,29 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 		CompressionLevel:        compressionLevel,
 		PopulateFailedDocsInput: config.LogFailedDocsInput,
 		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
+		QueryParams:             getQueryParamsFromEndpoint(config, logger),
 	}
+}
+
+func getQueryParamsFromEndpoint(config *Config, logger *zap.Logger) (queryParams map[string][]string) {
+	endpoints, _ := config.endpoints()
+
+	if len(endpoints) != 0 {
+		// we check the query params set on the first endpoint only
+		// this is enough to replicate to all requests
+		parsedURL, err := url.Parse(endpoints[0])
+		if err != nil {
+			logger.Warn("Failed to parse URL from endpoint", zap.Error(err))
+		}
+
+		rawQuery := parsedURL.RawQuery
+		queryParams, err = url.ParseQuery(rawQuery)
+		if err != nil {
+			logger.Warn("Failed to parse query parameters from endpoint", zap.Error(err))
+		}
+		return queryParams
+	}
+	return nil
 }
 
 func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Value {
@@ -115,7 +138,7 @@ func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Val
 }
 
 func newSyncBulkIndexer(
-	client esapi.Transport,
+	client elastictransport.Interface,
 	config *Config,
 	requireDataStream bool,
 	tb *metadata.TelemetryBuilder,
@@ -129,7 +152,7 @@ func newSyncBulkIndexer(
 		}
 	}
 	return &syncBulkIndexer{
-		config:                bulkIndexerConfig(client, config, requireDataStream),
+		config:                bulkIndexerConfig(client, config, requireDataStream, logger),
 		maxFlushBytes:         maxFlushBytes,
 		flushTimeout:          config.Timeout,
 		retryConfig:           config.Retry,

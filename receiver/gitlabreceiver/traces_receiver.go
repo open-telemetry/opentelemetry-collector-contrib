@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
@@ -67,7 +67,7 @@ type gitlabTracesReceiver struct {
 }
 
 func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer consumer.Traces) (*gitlabTracesReceiver, error) {
-	if cfg.WebHook.Endpoint == "" {
+	if cfg.WebHook.NetAddr.Endpoint == "" {
 		return nil, errMissingEndpoint
 	}
 
@@ -103,7 +103,7 @@ func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer co
 }
 
 func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host) error {
-	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.Endpoint, gtr.cfg.WebHook.Path)
+	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.NetAddr.Endpoint, gtr.cfg.WebHook.Path)
 	gtr.logger.Info("Starting GitLab WebHook receiving server", zap.String("endpoint", endpoint))
 
 	// noop if not nil. if start has not been called before these values should be nil.
@@ -131,7 +131,12 @@ func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host)
 	if err != nil {
 		return err
 	}
-	gtr.logger.Info("Health check now listening at", zap.String("health_path", fmt.Sprintf("%s%s", gtr.cfg.WebHook.Endpoint, gtr.cfg.WebHook.HealthPath)))
+	gtr.logger.Info(
+		"Health check now listening at",
+		zap.String("health_path",
+			fmt.Sprintf("%s%s", gtr.cfg.WebHook.NetAddr.Endpoint, gtr.cfg.WebHook.HealthPath),
+		),
+	)
 
 	gtr.shutdownWG.Add(1)
 	go func() {

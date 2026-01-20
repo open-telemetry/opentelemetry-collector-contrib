@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
@@ -168,6 +167,22 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 	return mp, (*PromConfig)(pCfg), err
 }
 
+func setupMockPrometheusWithExtraScrapeMetrics(globalExtra, scrapeExtra *bool, tds ...*testData) (*mockPrometheus, *PromConfig, error) {
+	mp, cfg, err := setupMockPrometheus(tds...)
+	if err != nil {
+		return mp, cfg, err
+	}
+
+	if globalExtra != nil {
+		cfg.GlobalConfig.ExtraScrapeMetrics = globalExtra
+	}
+	for _, sc := range cfg.ScrapeConfigs {
+		sc.ExtraScrapeMetrics = scrapeExtra
+	}
+
+	return mp, cfg, nil
+}
+
 func waitForScrapeResults(t *testing.T, targets []*testData, cms *consumertest.MetricsSink) {
 	assert.Eventually(t, func() bool {
 		// This is the receiver's pov as to what should have been collected from the server
@@ -265,20 +280,20 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, target *testDa
 }
 
 func isScrapeConfigResource(rms pmetric.ResourceMetrics, target *testData) bool {
-	targetJobName, ok := target.attributes.Get(string(conventions.ServiceNameKey))
+	targetJobName, ok := target.attributes.Get("service.name")
 	if !ok {
 		return false
 	}
-	targetInstanceID, ok := target.attributes.Get(string(conventions.ServiceInstanceIDKey))
+	targetInstanceID, ok := target.attributes.Get("service.instance.id")
 	if !ok {
 		return false
 	}
 
-	resourceJobName, ok := rms.Resource().Attributes().Get(string(conventions.ServiceNameKey))
+	resourceJobName, ok := rms.Resource().Attributes().Get("service.name")
 	if !ok {
 		return false
 	}
-	resourceInstanceID, ok := rms.Resource().Attributes().Get(string(conventions.ServiceInstanceIDKey))
+	resourceInstanceID, ok := rms.Resource().Attributes().Get("service.instance.id")
 	if !ok {
 		return false
 	}
@@ -777,8 +792,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	defer mp.Close()
 
 	config := &Config{
-		PrometheusConfig:     cfg,
-		StartTimeMetricRegex: "",
+		PrometheusConfig: cfg,
 	}
 	if alterConfig != nil {
 		alterConfig(config)

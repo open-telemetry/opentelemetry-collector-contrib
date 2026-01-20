@@ -7,7 +7,7 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftailsampling%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftailsampling) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftailsampling%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftailsampling) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_tail_sampling)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_tail_sampling&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@Logiraptor](https://www.github.com/Logiraptor) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@Logiraptor](https://www.github.com/Logiraptor), [@jmacd](https://www.github.com/jmacd) \| Seeking more code owners! |
 | Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -48,6 +48,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
+- `decision_wait_after_root_received` (default = 0s): Wait time after the root span of a trace is received before making a sampling decision. 0s means disabled (only use `decision_wait`).
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 - `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches
