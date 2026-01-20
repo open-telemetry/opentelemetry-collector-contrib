@@ -31,10 +31,12 @@ type brokerScraperFranz struct {
 	settings receiver.Settings
 	config   Config
 	mb       *metadata.MetricsBuilder
+	host     component.Host
 }
 
-func (s *brokerScraperFranz) start(_ context.Context, _ component.Host) error {
+func (s *brokerScraperFranz) start(_ context.Context, host component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
+	s.host = host
 	return nil
 }
 
@@ -54,7 +56,7 @@ func (s *brokerScraperFranz) ensureClients(ctx context.Context) error {
 	if s.cl != nil && s.adm != nil {
 		return nil
 	}
-	adm, cl, err := kafka.NewFranzClusterAdminClient(ctx, s.config.ClientConfig, s.settings.Logger)
+	adm, cl, err := kafka.NewFranzClusterAdminClient(ctx, s.host, s.config.ClientConfig, s.settings.Logger)
 	if err != nil {
 		return fmt.Errorf("failed to create franz-go admin client: %w", err)
 	}
