@@ -39,7 +39,7 @@ The supported actions are:
 
 For the actions `insert`, `update` and `upsert`,
  - `key`  is required
- - one of `value`, `from_attribute` or `from_context` is required
+ - one of `value`, `from_attribute`, `from_context`, or `default_value` is required
  - `action` is required.
 ```yaml
   # Key specifies the attribute to act upon.
@@ -70,6 +70,14 @@ For the actions `insert`, `update` and `upsert`,
   # If the key doesn't exist, no action is performed.
   # If the key has multiple values the values will be joined with `;` separator.
   from_context: <other key>
+
+  # Key specifies the attribute to act upon.
+- key: <key>
+  action: {insert, update, upsert}
+  # DefaultValue specifies the value to use if value/from_attribute/from_context
+  # doesn't provide a value (e.g., environment variable not set, attribute doesn't exist).
+  # Only used with INSERT, UPDATE, and UPSERT actions.
+  default_value: <value>
 ```
 
 For the `delete` action,
@@ -124,6 +132,14 @@ For the `convert` action,
   converted_type: <int|double|string>
 ```
 
+## Default Values
+
+The `default_value` field can be used to specify a fallback value when the primary value source (e.g., environment variable, attribute, or context value) is not available. This is useful for:
+
+- Handling optional environment variables
+- Providing sensible defaults when attributes don't exist
+- Ensuring the pipeline doesn't fail due to missing configuration
+
 The list of actions can be composed to create rich scenarios, such as
 back filling attribute, copying values to a new key, redacting sensitive information.
 The following is a sample configuration.
@@ -150,6 +166,21 @@ processors:
       - key: http.status_code
         action: convert
         converted_type: int
+      # Use default_value when environment variable is not set
+      - key: deployment.environment
+        value: "${ENV}"
+        default_value: "development"
+        action: upsert
+      # Use default_value when source attribute doesn't exist
+      - key: region
+        from_attribute: cloud.region
+        default_value: "us-east-1"
+        action: insert
+      # Use default_value when context value is not available
+      - key: tenant_id
+        from_context: "metadata.tenant"
+        default_value: "default-tenant"
+        action: upsert
 
 ```
 

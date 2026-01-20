@@ -200,6 +200,18 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_defaults"),
+			expected: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "deployment.environment", Value: "${DEPLOYMENT_ENV}", DefaultValue: "development", Action: attraction.UPSERT},
+						{Key: "service.namespace", FromAttribute: "namespace", DefaultValue: "default", Action: attraction.INSERT},
+						{Key: "cloud.region", FromContext: "metadata.region", DefaultValue: "us-east-1", Action: attraction.UPSERT},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
