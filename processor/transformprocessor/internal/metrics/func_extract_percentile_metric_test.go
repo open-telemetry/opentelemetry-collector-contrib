@@ -4,7 +4,6 @@
 package metrics
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -247,7 +246,7 @@ func Test_extractPercentileMetric_Histogram(t *testing.T) {
 
 			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), scopeMetrics, metric)
 
-			_, err = exprFunc(context.Background(), tCtx)
+			_, err = exprFunc(t.Context(), tCtx)
 			require.NoError(t, err)
 
 			validatePercentileMetric(t, tCtx, metric, tt.wantSuffix, tt.wantValue)
@@ -465,7 +464,7 @@ func Test_extractPercentileMetric_ExponentialHistogram(t *testing.T) {
 
 			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), scopeMetrics, metric)
 
-			_, err = exprFunc(context.Background(), tCtx)
+			_, err = exprFunc(t.Context(), tCtx)
 			require.NoError(t, err)
 
 			validatePercentileMetric(t, tCtx, metric, tt.wantSuffix, tt.wantValue)
@@ -486,7 +485,7 @@ func validatePercentileMetric(t *testing.T, tCtx *ottlmetric.TransformContext, o
 	require.Equal(t, 1, percentileMetric.Gauge().DataPoints().Len(), "gauge should have exactly one data point")
 
 	gaugeDataPoint := percentileMetric.Gauge().DataPoints().At(0)
-	assert.Equal(t, expectedValue, gaugeDataPoint.DoubleValue(), "percentile value should match expected")
+	assert.InDelta(t, expectedValue, gaugeDataPoint.DoubleValue(), 0.0001, "percentile value should match expected")
 
 	var originalDataPoint dataPoint[any]
 	switch originalMetric.Type() {

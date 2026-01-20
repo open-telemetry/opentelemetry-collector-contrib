@@ -128,11 +128,10 @@ func calculateHistogramPercentile(dp pmetric.HistogramDataPoint, percentile floa
 					// Last bucket's upper bound is +Inf unless Max is set.
 					// Use Max for interpolation if available; otherwise return lowerBound.
 					// https://opentelemetry.io/docs/specs/otel/metrics/data-model/#histogram-bucket-inclusivity
-					if dp.HasMax() && dp.Max() > lowerBound {
-						upperBound = dp.Max()
-					} else {
+					if !dp.HasMax() || dp.Max() <= lowerBound {
 						return lowerBound, nil
 					}
+					upperBound = dp.Max()
 				}
 			}
 
@@ -257,11 +256,10 @@ func logarithmicInterpolation(lowerBound, upperBound, ratio float64) float64 {
 // using the formulas from the OpenTelemetry specification.
 // References: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#negative-scale-extract-and-shift-the-exponent
 // https://opentelemetry.io/docs/specs/otel/metrics/data-model/#all-scales-use-the-logarithm-function
-func calculateExponentialBucketBound(index int, scale int) float64 {
+func calculateExponentialBucketBound(index, scale int) float64 {
 	if scale <= 0 {
 		return math.Ldexp(1, index<<-scale)
-	} else {
-		inverseFactor := math.Ldexp(math.Ln2, -scale)
-		return math.Exp(float64(index) * inverseFactor)
 	}
+	inverseFactor := math.Ldexp(math.Ln2, -scale)
+	return math.Exp(float64(index) * inverseFactor)
 }
