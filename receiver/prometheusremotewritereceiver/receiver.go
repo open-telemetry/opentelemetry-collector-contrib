@@ -103,6 +103,19 @@ func (mi metricIdentity) Hash() uint64 {
 	return xxhash.Sum64String(combined)
 }
 
+func exemplarID(scopeName, scopeVersion, metricName string, metricType writev2.Metadata_MetricType) uint64 {
+	const separator = "\xff"
+
+	combined := strings.Join([]string{
+		scopeName,
+		scopeVersion,
+		metricName,
+		fmt.Sprintf("%d", metricType),
+	}, separator)
+
+	return xxhash.Sum64String(combined)
+}
+
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/write", prw.handlePRW)
@@ -292,6 +305,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Once the request is fully processed, only the resource attributes contained in the request’s ResourceMetrics are snapshotted back into the LRU cache.
 		// This ensures that future requests start with the enriched resource attributes already applied.
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
+
+		// exemplarMap keeps track of exemplars and key is composed by scope_name:scope_version:metric_name:type
+		exemplarMap = collectExemplars(req, prw.settings, &stats)
 	)
 
 	for i := range req.Timeseries {
@@ -347,7 +363,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Handle histograms separately due to their complex mixed-schema processing
 		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM ||
 			ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0 {
-			prw.processHistogramTimeSeries(otelMetrics, ls, ts, scopeName, scopeVersion, metricName, unit, description, metricCache, &stats, modifiedResourceMetric)
+			prw.processHistogramTimeSeries(otelMetrics, ls, ts, scopeName, scopeVersion, metricName, unit, description, metricCache, &stats, modifiedResourceMetric, exemplarMap)
 			continue
 		}
 
@@ -440,6 +456,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	metricCache map[uint64]pmetric.Metric,
 	stats *promremote.WriteResponseStats,
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
+	exemplarMap map[uint64]pmetric.ExemplarSlice,
 ) {
 	// Drop classic histogram series (those with samples)
 	if len(ts.Samples) != 0 {
@@ -533,13 +550,31 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
 			histMetric.SetDescription(description)
 		}
-
+		var exemplarSlice pmetric.ExemplarSlice
 		// Process the individual histogram
 		if histogramType == "nhcb" {
 			prw.addNHCBDatapoint(histMetric.Histogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
+			if histMetric.Histogram().DataPoints().Len() > 0 {
+				exemplarSlice = histMetric.Histogram().DataPoints().At(0).Exemplars()
+			}
 		} else {
 			prw.addExponentialHistogramDatapoint(histMetric.ExponentialHistogram().DataPoints(), histogram, ls, ts.CreatedTimestamp, stats)
+			if histMetric.ExponentialHistogram().DataPoints().Len() > 0 {
+				exemplarSlice = histMetric.ExponentialHistogram().DataPoints().At(0).Exemplars()
+			}
 		}
+
+		key := exemplarKey{
+			ScopeName:    scopeName,
+			ScopeVersion: scopeVersion,
+			MetricName:   metricName,
+			MetricType:   ts.Metadata.Type,
+		}
+
+		if ex, ok := exemplarMap[key.Hash()]; ok {
+			ex.CopyTo(exemplarSlice)
+		}
+
 	}
 }
 
