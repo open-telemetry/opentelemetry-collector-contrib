@@ -21,3 +21,17 @@ Number of open files that are being read [Development]
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | false | Development |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `filelog.allowFileDeletion` | alpha | When enabled, allows usage of the `delete_after_read` setting. | v0.70.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314) |
+| `filelog.allowHeaderMetadataParsing` | beta | When enabled, allows usage of the `header` setting. | v0.73.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198) |
+| `filelog.decompressFingerprint` | stable | Computes fingerprint for compressed files by decompressing its data. | v0.128.0 | v0.142.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40256) |
+| `filelog.mtimeSortType` | alpha | When enabled, allows usage of `ordering_criteria.mode` = `mtime`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812) |
+| `filelog.windows.caseInsensitive` | alpha | On Windows, make matching patterns in include/exclude case insensitive. | v0.142.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

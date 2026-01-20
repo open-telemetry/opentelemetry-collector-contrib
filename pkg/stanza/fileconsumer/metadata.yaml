@@ -9,6 +9,39 @@ status:
     active: [andrzej-stencel]
     emeritus: [djaglowski]
 
+feature_gates:
+  - id: filelog.allowFileDeletion
+    stage: alpha
+    description: >-
+      When enabled, allows usage of the `delete_after_read` setting.
+    from_version: v0.70.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314
+  - id: filelog.allowHeaderMetadataParsing
+    stage: beta
+    description: >-
+      When enabled, allows usage of the `header` setting.
+    from_version: v0.73.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198
+  - id: filelog.decompressFingerprint
+    stage: stable
+    description: >-
+      Computes fingerprint for compressed files by decompressing its data.
+    from_version: v0.128.0
+    to_version: v0.142.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40256
+  - id: filelog.mtimeSortType
+    stage: alpha
+    description: >-
+      When enabled, allows usage of `ordering_criteria.mode` = `mtime`.
+    from_version: v0.89.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812
+  - id: filelog.windows.caseInsensitive
+    stage: alpha
+    description: >-
+      On Windows, make matching patterns in include/exclude case insensitive.
+    from_version: v0.142.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777
+
 telemetry:
   metrics:
     fileconsumer_open_files:
