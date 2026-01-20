@@ -76,7 +76,7 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 
 ### delete_index
 
-`delete(target, startIndex, Optional[endIndex])`
+`delete_index(target, startIndex, Optional[endIndex])`
 
 The `delete_index` function removes elements from a slice. It deletes elements from `startIndex` up to, but not including, `endIndex`. If `endIndex` is not provided, only the element at `target[startIndex]` is deleted. If `startIndex` equals `endIndex`, no changes are applied to the target.
 
