@@ -95,6 +95,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.144.0

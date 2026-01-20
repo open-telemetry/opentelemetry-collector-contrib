@@ -79,6 +79,3 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251222181119-0a764e51fe1b // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.144.0

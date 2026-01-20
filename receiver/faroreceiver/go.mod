@@ -111,6 +111,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/share
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro => ../../pkg/translator/faro
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.144.0

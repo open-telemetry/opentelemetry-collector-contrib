@@ -431,6 +431,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog =>
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../../internal/datadog
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv => ../../../internal/gopsutilenv
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.144.0

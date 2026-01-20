@@ -90,6 +90,3 @@ retract (
 	v0.76.2
 	v0.76.1
 )
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.144.0

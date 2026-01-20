@@ -179,6 +179,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector => ../../extension/k8sleaderelector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest => ../../internal/k8sleaderelectortest
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.144.0

@@ -121,6 +121,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcu
 retract v0.130.0
 
 retract v0.131.0
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.144.0
