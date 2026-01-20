@@ -13,6 +13,80 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+// OutlierMethod defines the statistical method for outlier detection.
+type OutlierMethod string
+
+const (
+	// OutlierMethodIQR uses Interquartile Range for outlier detection.
+	// Threshold: Q3 + (IQRMultiplier * IQR)
+	OutlierMethodIQR OutlierMethod = "iqr"
+
+	// OutlierMethodMAD uses Median Absolute Deviation for outlier detection.
+	// Threshold: median + (MADMultiplier * MAD * 1.4826)
+	// MAD is more robust to extreme outliers than IQR.
+	OutlierMethodMAD OutlierMethod = "mad"
+)
+
+// OutlierAnalysisConfig controls outlier detection and attribute correlation.
+type OutlierAnalysisConfig struct {
+	// Method selects the statistical method for outlier detection.
+	// Valid values: "iqr" (default), "mad"
+	Method OutlierMethod `mapstructure:"method"`
+
+	// IQRMultiplier sets the threshold for IQR-based outlier detection.
+	// Outliers are spans with duration > Q3 + (IQRMultiplier * IQR).
+	// Common values: 1.5 (standard), 3.0 (extreme only).
+	// Default: 1.5
+	IQRMultiplier float64 `mapstructure:"iqr_multiplier"`
+
+	// MADMultiplier sets the threshold for MAD-based outlier detection.
+	// Outliers are spans with duration > median + (MADMultiplier * MAD * 1.4826).
+	// Common values: 2.5-3.0 (standard), 3.5+ (extreme only).
+	// Default: 3.0
+	MADMultiplier float64 `mapstructure:"mad_multiplier"`
+
+	// MinGroupSize is the minimum number of spans needed for reliable
+	// outlier detection. Groups smaller than this skip outlier analysis.
+	// Must be at least 4 (need quartiles).
+	// Default: 7
+	MinGroupSize int `mapstructure:"min_group_size"`
+
+	// CorrelationMinOccurrence is the minimum fraction of outliers that must
+	// share an attribute value for it to be reported as correlated.
+	// Range: (0.0, 1.0]
+	// Default: 0.75 (75% of outliers must share the value)
+	CorrelationMinOccurrence float64 `mapstructure:"correlation_min_occurrence"`
+
+	// CorrelationMaxNormalOccurrence is the maximum fraction of normal spans
+	// that can have the correlated value. Lower values mean stronger signal.
+	// Range: [0.0, 1.0)
+	// Default: 0.25 (at most 25% of normal spans can have the value)
+	CorrelationMaxNormalOccurrence float64 `mapstructure:"correlation_max_normal_occurrence"`
+
+	// MaxCorrelatedAttributes limits how many correlated attributes are
+	// reported in the summary span attribute.
+	// Default: 5
+	MaxCorrelatedAttributes int `mapstructure:"max_correlated_attributes"`
+
+	// PreserveOutliers controls whether outlier spans are kept as individual
+	// spans instead of being aggregated. When true, only normal spans are
+	// aggregated; outliers remain in the trace.
+	// Default: false (aggregate all, add summary attributes)
+	PreserveOutliers bool `mapstructure:"preserve_outliers"`
+
+	// MaxPreservedOutliers limits how many outlier spans are preserved per
+	// aggregation group. Spans are selected by most extreme duration first.
+	// 0 = preserve all detected outliers.
+	// Default: 2
+	MaxPreservedOutliers int `mapstructure:"max_preserved_outliers"`
+
+	// PreserveOnlyWithCorrelation only preserves outliers when a strong
+	// attribute correlation is found. This avoids preserving outliers that
+	// are just random variance.
+	// Default: false
+	PreserveOnlyWithCorrelation bool `mapstructure:"preserve_only_with_correlation"`
+}
+
 // Config defines the configuration options for the span pruning processor
 // and the rules used to identify and aggregate similar spans.
 type Config struct {
@@ -58,6 +132,16 @@ type Config struct {
 	// metric recordings that include exemplars when loss analysis is enabled.
 	// Range: 0.0 (disabled) to 1.0 (always). Default: 0.01 (1%).
 	AttributeLossExemplarSampleRate float64 `mapstructure:"attribute_loss_exemplar_sample_rate"`
+
+	// EnableOutlierAnalysis toggles IQR-based outlier detection and attribute
+	// correlation. When enabled, adds duration_median_ns and outlier_correlated_attributes
+	// to summary spans.
+	// Default: false
+	EnableOutlierAnalysis bool `mapstructure:"enable_outlier_analysis"`
+
+	// OutlierAnalysis configures IQR-based outlier detection and
+	// attribute correlation for aggregation groups.
+	OutlierAnalysis OutlierAnalysisConfig `mapstructure:"outlier_analysis"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -108,5 +192,41 @@ func (cfg *Config) Validate() error {
 		return errors.New("attribute_loss_exemplar_sample_rate must be between 0.0 and 1.0")
 	}
 
+	if err := cfg.OutlierAnalysis.Validate(cfg.EnableOutlierAnalysis); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Validate checks OutlierAnalysisConfig for invalid values.
+func (cfg *OutlierAnalysisConfig) Validate(enabled bool) error {
+	if !enabled {
+		return nil // Skip validation when disabled
+	}
+	if cfg.Method != "" && cfg.Method != OutlierMethodIQR && cfg.Method != OutlierMethodMAD {
+		return fmt.Errorf("outlier_analysis.method must be %q or %q", OutlierMethodIQR, OutlierMethodMAD)
+	}
+	if cfg.IQRMultiplier <= 0 {
+		return errors.New("outlier_analysis.iqr_multiplier must be positive")
+	}
+	if cfg.MADMultiplier <= 0 {
+		return errors.New("outlier_analysis.mad_multiplier must be positive")
+	}
+	if cfg.MinGroupSize < 4 {
+		return errors.New("outlier_analysis.min_group_size must be at least 4")
+	}
+	if cfg.CorrelationMinOccurrence <= 0 || cfg.CorrelationMinOccurrence > 1 {
+		return errors.New("outlier_analysis.correlation_min_occurrence must be in range (0.0, 1.0]")
+	}
+	if cfg.CorrelationMaxNormalOccurrence < 0 || cfg.CorrelationMaxNormalOccurrence >= 1 {
+		return errors.New("outlier_analysis.correlation_max_normal_occurrence must be in range [0.0, 1.0)")
+	}
+	if cfg.MaxCorrelatedAttributes < 1 {
+		return errors.New("outlier_analysis.max_correlated_attributes must be at least 1")
+	}
+	if cfg.PreserveOutliers && cfg.MaxPreservedOutliers < 0 {
+		return errors.New("outlier_analysis.max_preserved_outliers must be >= 0")
+	}
 	return nil
 }

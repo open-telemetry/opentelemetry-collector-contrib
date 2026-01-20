@@ -111,9 +111,7 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 	// Process each trace independently
 	tracesProcessed := int64(0)
 	for _, spans := range traceSpans {
-		if err := p.processTrace(ctx, spans); err != nil {
-			return td, err
-		}
+		p.processTrace(ctx, spans)
 		tracesProcessed++
 	}
 
@@ -129,7 +127,7 @@ func (p *spanPruningProcessor) processTraces(ctx context.Context, td ptrace.Trac
 
 // groupSpansByTraceID flattens incoming data into a TraceID-indexed map so
 // each trace can be analyzed independently.
-func (p *spanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon.TraceID][]spanInfo {
+func (*spanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon.TraceID][]spanInfo {
 	traceSpans := make(map[pcommon.TraceID][]spanInfo)
 
 	rss := td.ResourceSpans()
@@ -156,17 +154,17 @@ func (p *spanPruningProcessor) groupSpansByTraceID(td ptrace.Traces) map[pcommon
 // processTrace applies the pruning algorithm to a single trace:
 // 1) analyze aggregation candidates bottom-up, 2) build a top-down execution
 // plan, and 3) create summary spans while removing originals.
-func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInfo) error {
+func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInfo) {
 	// Build trace tree
 	tree := p.buildTraceTree(spans)
 	if len(tree.nodeByID) == 0 {
-		return nil
+		return
 	}
 
 	// Phase 1: Analyze aggregations (bottom-up)
 	aggregationGroups := p.analyzeAggregationsWithTree(ctx, tree)
 	if len(aggregationGroups) == 0 {
-		return nil
+		return
 	}
 
 	// Phase 2: Build aggregation plan (order top-down)
@@ -178,11 +176,9 @@ func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInf
 	// Record telemetry after aggregation is complete
 	p.telemetryBuilder.ProcessorSpanpruningSpansPruned.Add(ctx, int64(prunedCount))
 	p.telemetryBuilder.ProcessorSpanpruningAggregationsCreated.Add(ctx, int64(len(plan.groups)))
-	for _, group := range plan.groups {
-		p.telemetryBuilder.ProcessorSpanpruningAggregationGroupSize.Record(ctx, int64(len(group.nodes)))
+	for i := range plan.groups {
+		p.telemetryBuilder.ProcessorSpanpruningAggregationGroupSize.Record(ctx, int64(len(plan.groups[i].nodes)))
 	}
-
-	return nil
 }
 
 // analyzeAggregationsWithTree performs Phase 1 using tree structure
@@ -206,45 +202,90 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 	var markedNodes []*spanNode
 
 	for groupKey, nodes := range leafGroups {
-		if len(nodes) >= p.config.MinSpansToAggregate {
-			// Find the template node (longest duration) for this group
-			templateNode := findLongestDurationNode(nodes)
+		if len(nodes) < p.config.MinSpansToAggregate {
+			continue
+		}
+		// Outlier analysis and filtering FIRST (before attribute loss)
+		var outlierResult *outlierAnalysisResult
+		var preservedOutliers []*spanNode
+		aggregateNodes := nodes
 
-			// Analyze attribute loss for leaf aggregation (only when enabled)
-			var lossInfo attributeLossSummary
-			if p.enableAttributeLossAnalysis {
-				lossInfo = analyzeAttributeLoss(nodes, templateNode)
+		if p.config.EnableOutlierAnalysis {
+			outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
 
-				// Determine context for recording (with or without exemplar)
-				recordCtx := ctx
-				if p.shouldSampleAttributeLossExemplar() {
-					exemplarSpan := templateNode.span
-					recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
-				}
-
-				if !lossInfo.isEmpty() {
-					p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(
-						recordCtx,
-						int64(len(lossInfo.diverse)),
-					)
-					p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(
-						recordCtx,
-						int64(len(lossInfo.missing)),
-					)
+			// Record outlier metrics
+			if outlierResult != nil && outlierResult.hasOutliers {
+				p.telemetryBuilder.ProcessorSpanpruningOutliersDetected.Add(ctx, int64(len(outlierResult.outlierIndices)))
+				if len(outlierResult.correlations) > 0 {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersCorrelationsDetected.Add(ctx, 1)
 				}
 			}
 
-			aggregationGroups[groupKey] = aggregationGroup{
-				nodes:        nodes,
-				depth:        0,
-				lossInfo:     lossInfo,
-				templateNode: templateNode,
+			// Filter out outliers to preserve them
+			if p.config.OutlierAnalysis.PreserveOutliers && outlierResult != nil {
+				aggregateNodes, preservedOutliers = filterOutlierNodes(
+					nodes,
+					outlierResult,
+					p.config.OutlierAnalysis,
+				)
+
+				// Record preserved outliers
+				if len(preservedOutliers) > 0 {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersPreserved.Add(ctx, int64(len(preservedOutliers)))
+				}
+
+				// Skip aggregation if too few normal spans remain
+				if len(aggregateNodes) < p.config.MinSpansToAggregate {
+					continue
+				}
 			}
-			// Mark nodes for removal using field instead of map
-			for _, node := range nodes {
-				node.markedForRemoval = true
+		}
+
+		// Find template from filtered nodes (excludes preserved outliers)
+		templateNode := findLongestDurationNode(aggregateNodes)
+
+		// Analyze attribute loss on filtered nodes with correct template
+		var lossInfo attributeLossSummary
+		if p.enableAttributeLossAnalysis {
+			lossInfo = analyzeAttributeLoss(aggregateNodes, templateNode)
+
+			// Determine context for recording (with or without exemplar)
+			recordCtx := ctx
+			if p.shouldSampleAttributeLossExemplar() {
+				exemplarSpan := templateNode.span
+				recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
 			}
-			markedNodes = append(markedNodes, nodes...)
+
+			if !lossInfo.isEmpty() {
+				p.telemetryBuilder.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(
+					recordCtx,
+					int64(len(lossInfo.diverse)),
+				)
+				p.telemetryBuilder.ProcessorSpanpruningLeafAttributeLoss.Record(
+					recordCtx,
+					int64(len(lossInfo.missing)),
+				)
+			}
+		}
+
+		aggregationGroups[groupKey] = aggregationGroup{
+			nodes:             aggregateNodes,
+			depth:             0,
+			lossInfo:          lossInfo,
+			templateNode:      templateNode,
+			outlierAnalysis:   outlierResult,
+			preservedOutliers: preservedOutliers,
+		}
+
+		// Mark only normal spans for removal
+		for _, node := range aggregateNodes {
+			node.markedForRemoval = true
+		}
+		markedNodes = append(markedNodes, aggregateNodes...)
+
+		// Mark outliers as preserved (not marked for removal)
+		for _, outlier := range preservedOutliers {
+			outlier.isPreservedOutlier = true
 		}
 	}
 
@@ -284,46 +325,62 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(ctx context.Context, 
 		// Add parent groups (at least 2 parents to aggregate)
 		markedNodes = markedNodes[:0] // reset for this round
 		for parentKey, nodes := range parentGroups {
-			if len(nodes) >= 2 {
-				// Find the template node (longest duration) for this group
-				templateNode := findLongestDurationNode(nodes)
-
-				// Analyze attribute loss for parent aggregation (only when enabled)
-				var lossInfo attributeLossSummary
-				if p.enableAttributeLossAnalysis {
-					lossInfo = analyzeAttributeLoss(nodes, templateNode)
-
-					// Determine context for recording (with or without exemplar)
-					recordCtx := ctx
-					if p.shouldSampleAttributeLossExemplar() {
-						exemplarSpan := templateNode.span
-						recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
-					}
-
-					if !lossInfo.isEmpty() {
-						p.telemetryBuilder.ProcessorSpanpruningParentAttributeDiversityLoss.Record(
-							recordCtx,
-							int64(len(lossInfo.diverse)),
-						)
-						p.telemetryBuilder.ProcessorSpanpruningParentAttributeLoss.Record(
-							recordCtx,
-							int64(len(lossInfo.missing)),
-						)
-					}
-				}
-
-				aggregationGroups[parentKey] = aggregationGroup{
-					nodes:        nodes,
-					depth:        depth,
-					lossInfo:     lossInfo,
-					templateNode: templateNode,
-				}
-				// Mark parent nodes for removal
-				for _, node := range nodes {
-					node.markedForRemoval = true
-				}
-				markedNodes = append(markedNodes, nodes...)
+			if len(nodes) < 2 {
+				continue
 			}
+			// Outlier analysis FIRST (before attribute loss) for consistency
+			var outlierResult *outlierAnalysisResult
+			if p.config.EnableOutlierAnalysis {
+				outlierResult = analyzeOutliers(nodes, p.config.OutlierAnalysis)
+
+				// Record outlier metrics for parent groups
+				if outlierResult != nil && outlierResult.hasOutliers {
+					p.telemetryBuilder.ProcessorSpanpruningOutliersDetected.Add(ctx, int64(len(outlierResult.outlierIndices)))
+					if len(outlierResult.correlations) > 0 {
+						p.telemetryBuilder.ProcessorSpanpruningOutliersCorrelationsDetected.Add(ctx, 1)
+					}
+				}
+			}
+
+			// Find the template node (longest duration) for this group
+			templateNode := findLongestDurationNode(nodes)
+
+			// Analyze attribute loss for parent aggregation (only when enabled)
+			var lossInfo attributeLossSummary
+			if p.enableAttributeLossAnalysis {
+				lossInfo = analyzeAttributeLoss(nodes, templateNode)
+
+				// Determine context for recording (with or without exemplar)
+				recordCtx := ctx
+				if p.shouldSampleAttributeLossExemplar() {
+					exemplarSpan := templateNode.span
+					recordCtx = createExemplarContext(ctx, exemplarSpan.TraceID(), exemplarSpan.SpanID())
+				}
+
+				if !lossInfo.isEmpty() {
+					p.telemetryBuilder.ProcessorSpanpruningParentAttributeDiversityLoss.Record(
+						recordCtx,
+						int64(len(lossInfo.diverse)),
+					)
+					p.telemetryBuilder.ProcessorSpanpruningParentAttributeLoss.Record(
+						recordCtx,
+						int64(len(lossInfo.missing)),
+					)
+				}
+			}
+
+			aggregationGroups[parentKey] = aggregationGroup{
+				nodes:           nodes,
+				depth:           depth,
+				lossInfo:        lossInfo,
+				templateNode:    templateNode,
+				outlierAnalysis: outlierResult,
+			}
+			// Mark parent nodes for removal
+			for _, node := range nodes {
+				node.markedForRemoval = true
+			}
+			markedNodes = append(markedNodes, nodes...)
 		}
 
 		if len(markedNodes) == 0 {

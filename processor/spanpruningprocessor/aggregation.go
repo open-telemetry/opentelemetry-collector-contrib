@@ -16,11 +16,13 @@ import (
 // aggregationGroup captures the spans to aggregate along with execution
 // metadata (tree depth, preassigned summary ID, and attribute loss info).
 type aggregationGroup struct {
-	nodes         []*spanNode          // nodes to aggregate (replaces []spanInfo for efficiency)
-	depth         int                  // tree depth (0 = leaf, 1 = parent of leaf, etc.)
-	summarySpanID pcommon.SpanID       // SpanID of the summary span (assigned before creation)
-	lossInfo      attributeLossSummary // attribute loss info (diverse + missing)
-	templateNode  *spanNode            // node to use as summary template (longest duration)
+	nodes             []*spanNode            // nodes to aggregate (replaces []spanInfo for efficiency)
+	depth             int                    // tree depth (0 = leaf, 1 = parent of leaf, etc.)
+	summarySpanID     pcommon.SpanID         // SpanID of the summary span (assigned before creation)
+	lossInfo          attributeLossSummary   // attribute loss info (diverse + missing)
+	templateNode      *spanNode              // node to use as summary template (longest duration)
+	outlierAnalysis   *outlierAnalysisResult // IQR analysis results
+	preservedOutliers []*spanNode            // outliers to keep as individual spans
 }
 
 // aggregationPlan orders aggregation groups for top-down execution and
@@ -58,11 +60,11 @@ func generateSpanID() pcommon.SpanID {
 
 // buildAggregationPlan sorts aggregation groups by depth (parents before
 // children) and preassigns summary SpanIDs to avoid conflicts during writes.
-func (p *spanPruningProcessor) buildAggregationPlan(groups map[string]aggregationGroup) aggregationPlan {
+func (*spanPruningProcessor) buildAggregationPlan(groups map[string]aggregationGroup) aggregationPlan {
 	// Convert map to slice with pre-allocation
 	groupSlice := make([]aggregationGroup, 0, len(groups))
-	for _, group := range groups {
-		groupSlice = append(groupSlice, group)
+	for key := range groups {
+		groupSlice = append(groupSlice, groups[key])
 	}
 
 	// Sort by depth descending (highest depth first = top-down)
@@ -88,7 +90,10 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 	spansToRemove := make(map[ptrace.ScopeSpans]map[pcommon.SpanID]struct{}, len(plan.groups))
 	prunedCount := 0
 
-	for _, group := range plan.groups {
+	prefix := p.config.AggregationAttributePrefix
+
+	for i := range plan.groups {
+		group := &plan.groups[i]
 		// Calculate statistics and time range in single pass
 		data := p.calculateAggregationData(group.nodes)
 
@@ -103,7 +108,18 @@ func (p *spanPruningProcessor) executeAggregations(plan aggregationPlan) int {
 		}
 
 		// Create summary span with correct parent
-		p.createSummarySpanWithParent(group, data, summaryParentID)
+		p.createSummarySpanWithParent(*group, data, summaryParentID)
+
+		// Mark preserved outliers with reference to summary span
+		if len(group.preservedOutliers) > 0 {
+			for _, outlier := range group.preservedOutliers {
+				// Outliers become siblings of the summary span
+				outlier.span.SetParentSpanID(summaryParentID)
+				outlier.span.Attributes().PutBool(prefix+"is_preserved_outlier", true)
+				outlier.span.Attributes().PutStr(prefix+"summary_span_id",
+					group.summarySpanID.String())
+			}
+		}
 
 		// Record that these original span IDs should be replaced by the summary span ID
 		for _, node := range group.nodes {
@@ -167,6 +183,29 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 	newSpan.Attributes().PutInt(prefix+"duration_total_ns", int64(data.sumDuration))
 	if data.count > 0 {
 		newSpan.Attributes().PutInt(prefix+"duration_avg_ns", int64(data.sumDuration)/data.count)
+	}
+
+	// Add outlier analysis attributes when enabled
+	if group.outlierAnalysis != nil {
+		newSpan.Attributes().PutStr(prefix+"outlier_method", string(group.outlierAnalysis.method))
+		newSpan.Attributes().PutInt(prefix+"duration_median_ns", int64(group.outlierAnalysis.median))
+
+		if len(group.outlierAnalysis.correlations) > 0 {
+			newSpan.Attributes().PutStr(prefix+"outlier_correlated_attributes",
+				formatCorrelations(group.outlierAnalysis.correlations))
+		}
+
+		// Track preserved outliers
+		if len(group.preservedOutliers) > 0 {
+			newSpan.Attributes().PutInt(prefix+"preserved_outlier_count",
+				int64(len(group.preservedOutliers)))
+
+			// List preserved outlier span IDs
+			outlierIDs := newSpan.Attributes().PutEmptySlice(prefix + "preserved_outlier_span_ids")
+			for _, outlier := range group.preservedOutliers {
+				outlierIDs.AppendEmpty().SetStr(outlier.span.SpanID().String())
+			}
+		}
 	}
 
 	// Add histogram attributes if enabled

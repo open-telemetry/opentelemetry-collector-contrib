@@ -45,6 +45,19 @@ func createDefaultConfig() component.Config {
 		},
 		EnableAttributeLossAnalysis:     false,
 		AttributeLossExemplarSampleRate: 0.01, // 1% default
+		EnableOutlierAnalysis:           false,
+		OutlierAnalysis: OutlierAnalysisConfig{
+			Method:                         OutlierMethodIQR,
+			IQRMultiplier:                  1.5,
+			MADMultiplier:                  3.0,
+			MinGroupSize:                   7,
+			CorrelationMinOccurrence:       0.75,
+			CorrelationMaxNormalOccurrence: 0.25,
+			MaxCorrelatedAttributes:        5,
+			PreserveOutliers:               false,
+			MaxPreservedOutliers:           2,
+			PreserveOnlyWithCorrelation:    false,
+		},
 	}
 }
 

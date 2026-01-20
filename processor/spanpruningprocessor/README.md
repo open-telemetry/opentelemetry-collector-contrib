@@ -79,6 +79,69 @@ processors:
     # Range: 0.0 (disabled) to 1.0 (always)
     # Default: 0.01 (1%)
     attribute_loss_exemplar_sample_rate: 0.01
+
+    # Enable IQR-based outlier detection and attribute correlation
+    # When enabled, adds duration_median_ns and outlier_correlated_attributes
+    # to summary spans
+    # Default: false
+    enable_outlier_analysis: false
+
+    # Outlier analysis configuration (optional)
+    outlier_analysis:
+      # Statistical method for outlier detection
+      # "iqr" (default): Interquartile Range method
+      # "mad": Median Absolute Deviation method (more robust to extreme outliers)
+      method: iqr
+
+      # IQR multiplier for outlier detection threshold (when method=iqr)
+      # Outliers are spans with duration > Q3 + (iqr_multiplier * IQR)
+      # Common values: 1.5 (standard), 3.0 (extreme only)
+      # Default: 1.5
+      iqr_multiplier: 1.5
+
+      # MAD multiplier for outlier detection threshold (when method=mad)
+      # Outliers are spans with duration > median + (mad_multiplier * MAD * 1.4826)
+      # Common values: 2.5-3.0 (standard), 3.5+ (extreme only)
+      # Default: 3.0
+      mad_multiplier: 3.0
+
+      # Minimum group size for reliable IQR calculation
+      # Groups smaller than this skip outlier analysis
+      # Must be at least 4 (need quartiles)
+      # Default: 7
+      min_group_size: 7
+
+      # Minimum fraction of outliers that must share an attribute value
+      # for it to be reported as correlated
+      # Range: (0.0, 1.0]
+      # Default: 0.75 (75% of outliers must share the value)
+      correlation_min_occurrence: 0.75
+
+      # Maximum fraction of normal spans that can have the correlated value
+      # Lower values mean stronger signal
+      # Range: [0.0, 1.0)
+      # Default: 0.25 (at most 25% of normal spans can have the value)
+      correlation_max_normal_occurrence: 0.25
+
+      # Maximum correlated attributes to report in summary span attribute
+      # Default: 5
+      max_correlated_attributes: 5
+
+      # Preserve outlier spans as individual spans instead of aggregating
+      # When true, only normal spans are aggregated; outliers remain in the trace
+      # Default: false
+      preserve_outliers: false
+
+      # Maximum number of outlier spans to preserve per aggregation group
+      # Spans are selected by most extreme duration first
+      # 0 = preserve all detected outliers
+      # Default: 2
+      max_preserved_outliers: 2
+
+      # Only preserve outliers when a strong attribute correlation is found
+      # This avoids preserving outliers that are just random variance
+      # Default: false
+      preserve_only_with_correlation: false
 ```
 
 ## Configuration Options
@@ -92,6 +155,17 @@ processors:
 | `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for histogram buckets |
 | `enable_attribute_loss_analysis` | bool | false | Enable attribute loss analysis (adds metrics and span attributes showing attribute differences) |
 | `attribute_loss_exemplar_sample_rate` | float64 | 0.01 | Fraction of attribute-loss metric recordings that include trace exemplars (0.0–1.0). Only applies when `enable_attribute_loss_analysis` is true. |
+| `enable_outlier_analysis` | bool | false | Enable outlier detection and correlation analysis |
+| `outlier_analysis.method` | string | "iqr" | Statistical method: "iqr" or "mad" |
+| `outlier_analysis.iqr_multiplier` | float64 | 1.5 | IQR threshold multiplier (when method=iqr) |
+| `outlier_analysis.mad_multiplier` | float64 | 3.0 | MAD threshold multiplier (when method=mad) |
+| `outlier_analysis.min_group_size` | int | 7 | Minimum group size for outlier analysis |
+| `outlier_analysis.correlation_min_occurrence` | float64 | 0.75 | Minimum outlier occurrence fraction for correlation |
+| `outlier_analysis.correlation_max_normal_occurrence` | float64 | 0.25 | Maximum normal occurrence fraction for correlation |
+| `outlier_analysis.max_correlated_attributes` | int | 5 | Maximum correlated attributes to report |
+| `outlier_analysis.preserve_outliers` | bool | false | Keep outliers as individual spans instead of aggregating |
+| `outlier_analysis.max_preserved_outliers` | int | 2 | Max outliers to preserve per group (0=preserve all) |
+| `outlier_analysis.preserve_only_with_correlation` | bool | false | Only preserve outliers if a strong correlation is found |
 
 ### Glob Pattern Support
 
@@ -136,6 +210,16 @@ The following attributes are added to the summary span (shown with default `aggr
 | `<prefix>histogram_bucket_bounds_s` | []float64 | Bucket upper bounds in seconds (excludes +Inf) |
 | `<prefix>histogram_bucket_counts` | []int64 | Cumulative count per bucket (includes +Inf bucket) |
 
+#### Optional Outlier Analysis Attributes
+
+When `enable_outlier_analysis: true`, the following additional attributes are added:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `<prefix>outlier_method` | string | Detection method used: "iqr" or "mad" |
+| `<prefix>duration_median_ns` | int64 | Median duration (more robust than average for skewed distributions) |
+| `<prefix>outlier_correlated_attributes` | string | Attributes that distinguish outliers from normal spans (format: `key=value(outlier%/normal%), ...`) |
+
 ### Histogram Buckets
 
 The histogram provides a latency distribution of the aggregated spans. The buckets are cumulative, meaning each bucket count includes all spans with duration less than or equal to the bucket boundary.
@@ -147,6 +231,174 @@ The histogram provides a latency distribution of the aggregated spans. The bucke
   - Bucket 1 (≤50ms): 3 spans (5ms, 15ms, 25ms)
   - Bucket 2 (≤100ms): 4 spans (5ms, 15ms, 25ms, 75ms)
   - Bucket 3 (+Inf): 5 spans (all)
+
+### Outlier Analysis (Optional)
+
+When `enable_outlier_analysis: true`, the processor detects duration outliers and identifies attributes that correlate with slow spans.
+
+#### Detection Methods
+
+The processor supports two statistical methods for outlier detection:
+
+| Method | Formula | Characteristics |
+|--------|---------|----------------|
+| **IQR** (default) | `threshold = Q3 + (multiplier × IQR)` | Standard method; sensitive to moderate outliers; uses quartiles |
+| **MAD** | `threshold = median + (multiplier × MAD × 1.4826)` | More robust to extreme outliers; uses median |
+
+**When to use each:**
+
+- **IQR**: Best for typical distributions with moderate outliers. Standard choice for most use cases.
+- **MAD**: Better when you have extreme outliers that would skew IQR calculations, or when you need more stable detection thresholds.
+
+#### How It Works
+
+**IQR (Interquartile Range) Method:**
+1. Sort spans by duration
+2. Calculate Q1 (25th percentile) and Q3 (75th percentile)
+3. Calculate IQR = Q3 - Q1
+4. Flag spans with duration > Q3 + (iqr_multiplier × IQR) as outliers
+
+**MAD (Median Absolute Deviation) Method:**
+1. Sort spans by duration and find the median
+2. Calculate |duration - median| for each span
+3. MAD = median of those deviations
+4. Flag spans with duration > median + (mad_multiplier × MAD × 1.4826) as outliers
+
+*Note: The 1.4826 scale factor makes MAD comparable to standard deviation for normal distributions.*
+
+**Attribute Correlation** (same for both methods):
+- Compare attribute values between outliers and normal spans
+- Find attribute values that appear frequently in outliers but rarely in normal spans
+- Report the strongest correlations based on the configured thresholds
+
+#### Configuration Example
+
+```yaml
+processors:
+  spanpruning:
+    enable_outlier_analysis: true
+    outlier_analysis:
+      method: iqr                # or "mad" for more robustness
+      iqr_multiplier: 1.5        # Standard outlier threshold (IQR method)
+      mad_multiplier: 3.0        # Standard outlier threshold (MAD method)
+      min_group_size: 7          # Skip groups with <7 spans
+      correlation_min_occurrence: 0.75   # 75% of outliers must share value
+      correlation_max_normal_occurrence: 0.25  # <25% of normal spans can have it
+      max_correlated_attributes: 5       # Report top 5 correlations
+```
+
+#### Example Output
+
+```
+SELECT (summary, span_count: 20)
+  aggregation.duration_avg_ns: 45000000
+  aggregation.duration_median_ns: 8000000
+  aggregation.outlier_correlated_attributes: "db.cache_hit=false(100%/0%), db.shard=7(80%/10%)"
+```
+
+**Interpretation:**
+- **Median vs Avg**: Large difference (8ms vs 45ms) indicates outliers are skewing the average
+- **Primary correlation**: All outliers (100%) had `cache_hit=false`, while 0% of normal spans did
+- **Secondary correlation**: 80% of outliers hit shard 7, but only 10% of normal spans did
+
+This helps identify root causes of latency issues:
+- Cache misses
+- Specific database shards
+- Failed retries
+- Timeout scenarios
+
+#### When to Use
+
+- **Enable** when you need to understand why some operations are slow
+- **Disable** (default) to minimize overhead when outlier analysis isn't needed
+- Works best with groups of 10+ spans for statistical reliability
+
+#### Performance Impact
+
+- **Computational overhead**: Sorts durations, calculates quartiles, counts attribute occurrences
+- **Minimal when disabled**: Zero overhead (no sorting or calculations)
+- **Recommended**: Use `min_group_size: 7` or higher to skip analysis on small groups
+
+### Preserving Outlier Spans (Optional)
+
+When `outlier_analysis.preserve_outliers: true`, detected outlier spans are **kept as individual spans** instead of being aggregated. This provides:
+
+- **Full visibility** into slow operations for debugging
+- **Preserved context**: Original attributes, events, and links remain intact
+- **Selective aggregation**: Only prune repetitive normal spans
+
+#### Configuration
+
+```yaml
+processors:
+  spanpruning:
+    enable_outlier_analysis: true
+    outlier_analysis:
+      preserve_outliers: true         # Keep outliers as individual spans
+      max_preserved_outliers: 2       # Keep top 2 slowest outliers per group
+      preserve_only_with_correlation: false  # Preserve even without correlation
+```
+
+#### Configuration Options
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `preserve_outliers` | bool | false | Keep outliers as individual spans instead of aggregating |
+| `max_preserved_outliers` | int | 2 | Max outliers to preserve per group (0=preserve all detected) |
+| `preserve_only_with_correlation` | bool | false | Only preserve outliers if a strong attribute correlation is found |
+
+#### Example Output
+
+**Before** (10 similar SELECT spans, 2 are outliers):
+```
+handler
+├── SELECT - 5ms (normal)
+├── SELECT - 6ms (normal)
+├── SELECT - 7ms (normal)
+├── SELECT - 8ms (normal)
+├── SELECT - 9ms (normal)
+├── SELECT - 10ms (normal)
+├── SELECT - 11ms (normal)
+├── SELECT - 12ms (normal)
+├── SELECT - 500ms (outlier, cache_hit=false)
+└── SELECT - 600ms (outlier, cache_hit=false)
+```
+
+**After** (with `preserve_outliers: true`, `max_preserved_outliers: 2`):
+```
+handler
+├── SELECT (summary, span_count=8)      ← Normal spans aggregated
+│   - aggregation.preserved_outlier_count: 2
+│   - aggregation.outlier_correlated_attributes: "cache_hit=false(100%/0%)"
+├── SELECT - 500ms                       ← Outlier preserved
+│   - aggregation.is_preserved_outlier: true
+│   - aggregation.summary_span_id: "abc123"
+│   - cache_hit: false
+└── SELECT - 600ms                       ← Outlier preserved
+    - aggregation.is_preserved_outlier: true
+    - aggregation.summary_span_id: "abc123"
+    - cache_hit: false
+```
+
+#### Summary Span Attributes (When Preserving Outliers)
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `<prefix>preserved_outlier_count` | int64 | Number of outlier spans preserved |
+| `<prefix>preserved_outlier_span_ids` | []string | SpanIDs of preserved outliers |
+
+#### Preserved Outlier Span Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `<prefix>is_preserved_outlier` | bool | Identifies span as a preserved outlier |
+| `<prefix>summary_span_id` | string | SpanID of the associated summary span |
+
+#### Behavior Notes
+
+- **Parent aggregation**: Parents can still be aggregated if all their children are either aggregated or preserved as outliers
+- **Skip aggregation**: If preserving outliers leaves too few normal spans (below `min_spans_to_aggregate`), the entire group is left unchanged
+- **Selection order**: Outliers are preserved starting with the most extreme (longest duration) first
 
 ## Pipeline Placement
 

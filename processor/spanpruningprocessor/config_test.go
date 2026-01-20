@@ -48,6 +48,19 @@ func TestLoadConfig(t *testing.T) {
 				AggregationHistogramBuckets:     defaultHistogramBuckets,
 				EnableAttributeLossAnalysis:     false,
 				AttributeLossExemplarSampleRate: 0.01,
+				EnableOutlierAnalysis:           false,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodIQR,
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+					PreserveOutliers:               false,
+					MaxPreservedOutliers:           2,
+					PreserveOnlyWithCorrelation:    false,
+				},
 			},
 		},
 		{
@@ -60,6 +73,19 @@ func TestLoadConfig(t *testing.T) {
 				AggregationHistogramBuckets:     defaultHistogramBuckets,
 				EnableAttributeLossAnalysis:     false,
 				AttributeLossExemplarSampleRate: 0.01,
+				EnableOutlierAnalysis:           false,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodIQR,
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+					PreserveOutliers:               false,
+					MaxPreservedOutliers:           2,
+					PreserveOnlyWithCorrelation:    false,
+				},
 			},
 		},
 	}
@@ -195,8 +221,171 @@ func TestConfig_Validate(t *testing.T) {
 			},
 			expectError: true,
 		},
+		{
+			name: "valid outlier analysis config",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodIQR,
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "valid outlier analysis with MAD method",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodMAD,
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid outlier method",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         "invalid",
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "outlier analysis disabled skips validation",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      false,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					IQRMultiplier: -1, // invalid but ignored when disabled
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid outlier iqr_multiplier",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					IQRMultiplier:                  0,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid outlier mad_multiplier",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid outlier min_group_size",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					IQRMultiplier:                  1.5,
+					MinGroupSize:                   3,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid outlier correlation_min_occurrence zero",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					IQRMultiplier:                  1.5,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid outlier correlation_max_normal_occurrence",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					IQRMultiplier:                  1.5,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 1.0,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid outlier max_correlated_attributes",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					IQRMultiplier:                  1.5,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        0,
+				},
+			},
+			expectError: true,
+		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.config.Validate()
@@ -224,8 +413,6 @@ func TestEnableAttributeLossAnalysis(t *testing.T) {
 
 	t.Run("can be enabled", func(t *testing.T) {
 		c := &Config{
-			MinSpansToAggregate:         2,
-			AggregationAttributePrefix:  "aggregation.",
 			EnableAttributeLossAnalysis: true,
 		}
 		assert.True(t, c.EnableAttributeLossAnalysis)
@@ -233,8 +420,6 @@ func TestEnableAttributeLossAnalysis(t *testing.T) {
 
 	t.Run("can be disabled explicitly", func(t *testing.T) {
 		c := &Config{
-			MinSpansToAggregate:         2,
-			AggregationAttributePrefix:  "aggregation.",
 			EnableAttributeLossAnalysis: false,
 		}
 		assert.False(t, c.EnableAttributeLossAnalysis)

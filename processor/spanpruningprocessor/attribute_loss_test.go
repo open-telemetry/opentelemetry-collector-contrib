@@ -239,10 +239,10 @@ func TestAnalyzeAttributeLoss_EmptyStringValues(t *testing.T) {
 
 func TestFormatAttributeCardinality_Empty(t *testing.T) {
 	result := formatAttributeCardinality(nil)
-	assert.Equal(t, "", result)
+	assert.Empty(t, result)
 
 	result = formatAttributeCardinality([]attributeCardinality{})
-	assert.Equal(t, "", result)
+	assert.Empty(t, result)
 }
 
 func TestFormatAttributeCardinality_Single(t *testing.T) {
@@ -268,7 +268,7 @@ func TestFormatAttributeCardinality_Multiple(t *testing.T) {
 func TestFormatAttributeCardinality_Truncation(t *testing.T) {
 	// Create more than maxLostAttributesEntries (10) entries
 	attrs := make([]attributeCardinality, 15)
-	for i := 0; i < 15; i++ {
+	for i := range 15 {
 		attrs[i] = attributeCardinality{
 			key:          "attr" + strconv.Itoa(i),
 			uniqueValues: 15 - i, // descending order
@@ -287,7 +287,7 @@ func TestFormatAttributeCardinality_Truncation(t *testing.T) {
 func TestFormatAttributeCardinality_ExactlyMax(t *testing.T) {
 	// Exactly maxLostAttributesEntries (10) entries should not be truncated
 	attrs := make([]attributeCardinality, 10)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		attrs[i] = attributeCardinality{
 			key:          "attr" + strconv.Itoa(i),
 			uniqueValues: 10 - i,
@@ -473,7 +473,7 @@ func createTestTraceWithDiverseParentAttributes(t *testing.T) ptrace.Traces {
 
 	// 3 handler spans with different user.id attributes
 	userIDs := []string{"user-001", "user-002", "user-003"}
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		handlerID := pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0})
 		handler := ss.Spans().AppendEmpty()
 		handler.SetTraceID(traceID)
@@ -521,7 +521,7 @@ func createTestTraceWithDiverseLeafAttributes(t *testing.T) ptrace.Traces {
 		"SELECT * FROM users WHERE id=2",
 		"SELECT * FROM orders WHERE user_id=1",
 	}
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
@@ -556,7 +556,7 @@ func createTestTraceWithMissingLeafAttributes(t *testing.T) ptrace.Traces {
 
 	// 3 leaf spans with varying attribute presence
 	// Regardless of which span becomes template, some attributes will be missing
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		span := ss.Spans().AppendEmpty()
 		span.SetTraceID(traceID)
 		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))

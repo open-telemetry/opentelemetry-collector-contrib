@@ -14,7 +14,7 @@ import (
 
 // builderPool reduces allocations in the hot path by reusing string builders.
 var builderPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return &strings.Builder{}
 	},
 }
@@ -67,7 +67,7 @@ func (p *spanPruningProcessor) buildGroupKey(span ptrace.Span) string {
 
 // buildParentGroupKey constructs a parent grouping key from name and status
 // only; attributes are intentionally excluded for parent aggregation.
-func (p *spanPruningProcessor) buildParentGroupKey(span ptrace.Span) string {
+func (*spanPruningProcessor) buildParentGroupKey(span ptrace.Span) string {
 	builder := builderPool.Get().(*strings.Builder)
 	builder.Reset()
 	defer builderPool.Put(builder)
