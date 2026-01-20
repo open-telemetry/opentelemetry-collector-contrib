@@ -502,9 +502,10 @@ func TestReceiverMetricsDisabled(t *testing.T) {
 
 func TestDependentMetricsWhenDisabled(t *testing.T) {
 	tests := []struct {
-		name      string
-		subject   func(*metadata.MetricsConfig)
-		dependent func(*metadata.MetricsConfig)
+		name              string
+		subject           func(*metadata.MetricsConfig)
+		dependent         func(*metadata.MetricsConfig)
+		expectedMetricGen func(t *testing.T) pmetric.Metrics
 	}{
 		{
 			name: "mongodb.commands.rate metric should work when mongodb.operation.count disabled",
@@ -514,12 +515,34 @@ func TestDependentMetricsWhenDisabled(t *testing.T) {
 			dependent: func(mc *metadata.MetricsConfig) {
 				mc.MongodbCommandsRate.Enabled = true
 			},
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				goldenPath := filepath.Join("testdata", "scraper", "mongodb-commands-rate-count-dependency.yaml")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
+			},
+		},
+		{
+			name: "mongodb.repl_commands_per_sec metric should work when mongodb.operation.repl.count disabled",
+			subject: func(mc *metadata.MetricsConfig) {
+				mc.MongodbOperationReplCount.Enabled = false
+			},
+			dependent: func(mc *metadata.MetricsConfig) {
+				mc.MongodbReplCommandsPerSec.Enabled = true
+			},
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				goldenPath := filepath.Join("testdata", "scraper", "mongodb-repl-commands-per-sec-count-dependency.yaml")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			scraperCfg := createDefaultConfig().(*Config)
+
 			tt.subject(&scraperCfg.Metrics)
 			tt.dependent(&scraperCfg.Metrics)
 
@@ -558,8 +581,18 @@ func TestDependentMetricsWhenDisabled(t *testing.T) {
 				require.Nil(t, err, "error scraping metrics")
 			}
 
-			// FIXME: somehow check if disabled metric is not in scraped metrics
-			t.Log(scrapedMetrics)
+			// wait a few seconds, then scrape again so metrics that rely on previous values can be calculated
+			time.Sleep(2 * time.Second)
+			scrapedMetrics, err = scraper.scrape(t.Context())
+			if err != nil {
+				require.Nil(t, err, "error scraping metrics")
+			}
+
+			expectedMetrics := tt.expectedMetricGen(t)
+
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapedMetrics,
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
 
