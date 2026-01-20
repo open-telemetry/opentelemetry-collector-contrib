@@ -52,7 +52,7 @@ func TestHetznerDetector_Detect_OK(t *testing.T) {
 	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := map[string]any{
-		"cloud.provider":          "hetzner",
+		"cloud.provider":          TypeStr,
 		"host.id":                 "987654321",
 		"host.name":               "srv-123",
 		"cloud.region":            "nbg1",
