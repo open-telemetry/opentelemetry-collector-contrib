@@ -13,26 +13,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type DeleteArguments[K any] struct {
+type DeleteIndexArguments[K any] struct {
 	Target     ottl.PSliceGetSetter[K]
 	StartIndex ottl.IntGetter[K]
 	EndIndex   ottl.Optional[ottl.IntGetter[K]]
 }
 
-func NewDeleteFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("delete", &DeleteArguments[K]{}, createDeleteFunction[K])
+func NewDeleteIndexFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("delete_index", &DeleteIndexArguments[K]{}, createDeleteIndexFunction[K])
 }
 
-func createDeleteFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*DeleteArguments[K])
+func createDeleteIndexFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*DeleteIndexArguments[K])
 	if !ok {
-		return nil, errors.New("DeleteFactory args must be of type *DeleteArguments[K]")
+		return nil, errors.New("DeleteIndexFactory args must be of type *DeleteIndexArguments[K]")
 	}
 
-	return deleteFrom(args.Target, args.StartIndex, args.EndIndex), nil
+	return deleteIndexFrom(args.Target, args.StartIndex, args.EndIndex), nil
 }
 
-func deleteFrom[K any](target ottl.PSliceGetSetter[K], startIndexGetter ottl.IntGetter[K], endIndexGetter ottl.Optional[ottl.IntGetter[K]]) ottl.ExprFunc[K] {
+func deleteIndexFrom[K any](target ottl.PSliceGetSetter[K], startIndexGetter ottl.IntGetter[K], endIndexGetter ottl.Optional[ottl.IntGetter[K]]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := target.Get(ctx, tCtx)
 		if err != nil {

@@ -418,18 +418,17 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
-			statement: `delete(attributes["slice2"], 0)`,
+			statement: `delete_index(attributes["slice2"], 0)`,
 			want: func(tCtx *ottllog.TransformContext) {
 				v, _ := tCtx.GetLogRecord().Attributes().Get("slice2")
 				s := v.Slice()
-				// :ToDo: Implement RemoveAt and RemoveRange in pcommon.Slice
 				s.RemoveIf(func(v pcommon.Value) bool {
 					return v.Str() == "val"
 				})
 			},
 		},
 		{
-			statement: `delete(attributes["slice2"], Len(attributes["slice2"]) - 1)`,
+			statement: `delete_index(attributes["slice2"], Len(attributes["slice2"]) - 1)`,
 			want: func(tCtx *ottllog.TransformContext) {
 				v, _ := tCtx.GetLogRecord().Attributes().Get("slice2")
 				s := v.Slice()
@@ -439,7 +438,7 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
-			statement: `delete(attributes["slice2"], 1, endIndex=3)`,
+			statement: `delete_index(attributes["slice2"], 1, endIndex=3)`,
 			want: func(tCtx *ottllog.TransformContext) {
 				v, _ := tCtx.GetLogRecord().Attributes().Get("slice2")
 				s := v.Slice()
@@ -449,7 +448,7 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
-			statement: `delete(attributes["slice2"], Index(attributes["slice2"], "foo"))`,
+			statement: `delete_index(attributes["slice2"], Index(attributes["slice2"], "foo"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				v, _ := tCtx.GetLogRecord().Attributes().Get("slice2")
 				s := v.Slice()

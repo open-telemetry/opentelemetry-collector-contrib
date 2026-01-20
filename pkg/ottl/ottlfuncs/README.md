@@ -46,7 +46,7 @@ Editors:
 Available Editors:
 
 - [append](#append)
-- [delete](#delete)
+- [delete_index](#delete_index)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_matching_keys](#keep_matching_keys)
@@ -74,21 +74,21 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 - `append(log.attributes["tags"], values = ["staging", "staging:east"])`
 - `append(log.attributes["tags_copy"], log.attributes["tags"])`
 
-### delete
+### delete_index
 
 `delete(target, startIndex, Optional[endIndex])`
 
-The `delete` function removes elements from a slice. It deletes elements from `startIndex` up to, but not including, `endIndex`. If `endIndex` is not provided, only the element at `target[startIndex]` is deleted. If `startIndex` equals `endIndex`, no changes are applied to the target.
+The `delete_index` function removes elements from a slice. It deletes elements from `startIndex` up to, but not including, `endIndex`. If `endIndex` is not provided, only the element at `target[startIndex]` is deleted. If `startIndex` equals `endIndex`, no changes are applied to the target.
 
 Examples:
 
-- `delete(attributes["tags"], 0)` # delete first
+- `delete_index(attributes["tags"], 0)` # deletes first
 
-- `delete(attributes["tags"], Len(attributes["tags"]) - 1)` # delete last
+- `delete_index(attributes["tags"], Len(attributes["tags"]) - 1)` # deletes last
 
-- `delete(attributes["tags"], 0, 3)` # delete indices 0, 1, & 2
+- `delete_index(attributes["tags"], 0, 3)` # deletes indices 0, 1, & 2
 
-- `delete(attributes["tags"], Index(attributes["tags"], "unparsed"))` # delete first occurrence of "unparsed"
+- `delete_index(attributes["tags"], Index(attributes["tags"], "unparsed"))` # deletes first occurrence of "unparsed"
 
 ### delete_key
 

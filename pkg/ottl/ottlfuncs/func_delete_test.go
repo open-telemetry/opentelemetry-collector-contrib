@@ -57,7 +57,7 @@ func sliceGetSetter(getter func(_ context.Context, _ any) (any, error)) ottl.PSl
 	}
 }
 
-func TestDelete(t *testing.T) {
+func TestDeleteIndex(t *testing.T) {
 	testCases := []struct {
 		name       string
 		target     ottl.PSliceGetSetter[any]
@@ -203,7 +203,7 @@ func TestDelete(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			exprFunc := deleteFrom(tc.target, tc.startIndex, tc.endIndex)
+			exprFunc := deleteIndexFrom(tc.target, tc.startIndex, tc.endIndex)
 
 			res := pcommon.NewSlice()
 			result, err := exprFunc(t.Context(), res)
@@ -214,7 +214,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestDelete_Errors(t *testing.T) {
+func TestDeleteIndex_Errors(t *testing.T) {
 	errorTestCases := []struct {
 		name        string
 		target      ottl.PSliceGetSetter[any]
@@ -315,7 +315,7 @@ func TestDelete_Errors(t *testing.T) {
 	}
 	for _, etc := range errorTestCases {
 		t.Run(etc.name, func(t *testing.T) {
-			exprFunc := deleteFrom(etc.target, etc.index, etc.endIndex)
+			exprFunc := deleteIndexFrom(etc.target, etc.index, etc.endIndex)
 
 			res := pcommon.NewSlice()
 			_, err := exprFunc(t.Context(), res)
