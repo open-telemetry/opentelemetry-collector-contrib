@@ -174,7 +174,8 @@ type AttrProc struct {
 // An error is returned if there are any invalid inputs.
 func NewAttrProc(settings *Settings) (*AttrProc, error) {
 	attributeActions := make([]attributeAction, 0, len(settings.Actions))
-	for i, a := range settings.Actions {
+	for i := range settings.Actions {
+		a := &settings.Actions[i]
 		// Convert `action` to lowercase for comparison.
 		a.Action = Action(strings.ToLower(string(a.Action)))
 
@@ -301,7 +302,8 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 
 // Process applies the AttrProc to an attribute map.
 func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcommon.Map) {
-	for _, action := range ap.actions {
+	for i := range ap.actions {
+		action := &ap.actions[i]
 		// TODO https://go.opentelemetry.io/collector/issues/296
 		// Do benchmark testing between having action be of type string vs integer.
 		// The reason is attributes processor will most likely be commonly used
@@ -316,7 +318,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 				})
 			}
 		case INSERT:
-			av, found := getSourceAttributeValue(ctx, action, attrs)
+			av, found := getSourceAttributeValue(ctx, *action, attrs)
 			if !found {
 				continue
 			}
@@ -325,7 +327,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			}
 			av.CopyTo(attrs.PutEmpty(action.Key))
 		case UPDATE:
-			av, found := getSourceAttributeValue(ctx, action, attrs)
+			av, found := getSourceAttributeValue(ctx, *action, attrs)
 			if !found {
 				continue
 			}
@@ -335,7 +337,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			}
 			av.CopyTo(val)
 		case UPSERT:
-			av, found := getSourceAttributeValue(ctx, action, attrs)
+			av, found := getSourceAttributeValue(ctx, *action, attrs)
 			if !found {
 				continue
 			}
@@ -358,9 +360,9 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 				}
 			}
 		case EXTRACT:
-			extractAttributes(action, attrs)
+			extractAttributes(*action, attrs)
 		case CONVERT:
-			convertAttribute(logger, action, attrs)
+			convertAttribute(logger, *action, attrs)
 		}
 	}
 }

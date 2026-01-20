@@ -1167,7 +1167,7 @@ func TestAttributes_DefaultValue(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, ap)
 
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			runIndividualTestCase(t, testCases[i], ap)
 		}
 
