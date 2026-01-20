@@ -30,6 +30,12 @@ func TestLoadConfig(t *testing.T) {
 		expectedErrContains string
 	}{
 		{
+			id: component.NewID(metadata.Type),
+			expected: &Config{
+				Connection: "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName",
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "auth"),
 			expected: &Config{
 				EventHub: EventHubConfig{
