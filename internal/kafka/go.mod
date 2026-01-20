@@ -12,7 +12,7 @@ require (
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/xdg-go/scram v1.2.0
 	go.opentelemetry.io/collector/component v1.50.0
-	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/component/componenttest v0.144.0
 	go.opentelemetry.io/collector/config/configcompression v1.50.0
 	go.opentelemetry.io/collector/config/configopaque v1.50.0
 	go.opentelemetry.io/collector/config/configtls v1.50.0
@@ -73,7 +73,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/confmap v1.50.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.144.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.50.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.50.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
@@ -94,4 +94,4 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka => ../../pkg/kafka/configkafka
 
 // Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.144.0

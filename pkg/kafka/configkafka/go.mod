@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.50.0
 	go.opentelemetry.io/collector/config/configtls v1.50.0
 	go.opentelemetry.io/collector/confmap v1.50.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.143.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/confmap/xconfmap v0.144.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -60,4 +60,4 @@ require (
 )
 
 // Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5
+replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.144.0
