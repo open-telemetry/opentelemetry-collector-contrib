@@ -64,7 +64,7 @@ func (e *Action) UnmarshalText(text []byte) error {
 	case string(Move):
 		*e = Move
 	default:
-		return fmt.Errorf("invalid encoding type: %s", str)
+		return fmt.Errorf("invalid Action string: %s", str)
 	}
 
 	return nil
