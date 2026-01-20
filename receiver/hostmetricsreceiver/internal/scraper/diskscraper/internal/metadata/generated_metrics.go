@@ -123,6 +123,7 @@ func (m *metricSystemDiskIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemDiskIo(cfg MetricConfig) metricSystemDiskIo {
 	m := metricSystemDiskIo{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -176,6 +177,7 @@ func (m *metricSystemDiskIoTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemDiskIoTime(cfg MetricConfig) metricSystemDiskIoTime {
 	m := metricSystemDiskIoTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -230,6 +232,7 @@ func (m *metricSystemDiskMerged) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemDiskMerged(cfg MetricConfig) metricSystemDiskMerged {
 	m := metricSystemDiskMerged{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -284,6 +287,7 @@ func (m *metricSystemDiskOperationTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemDiskOperationTime(cfg MetricConfig) metricSystemDiskOperationTime {
 	m := metricSystemDiskOperationTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -338,6 +342,7 @@ func (m *metricSystemDiskOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemDiskOperations(cfg MetricConfig) metricSystemDiskOperations {
 	m := metricSystemDiskOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -391,6 +396,7 @@ func (m *metricSystemDiskPendingOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemDiskPendingOperations(cfg MetricConfig) metricSystemDiskPendingOperations {
 	m := metricSystemDiskPendingOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -444,6 +450,7 @@ func (m *metricSystemDiskWeightedIoTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemDiskWeightedIoTime(cfg MetricConfig) metricSystemDiskWeightedIoTime {
 	m := metricSystemDiskWeightedIoTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
