@@ -6,10 +6,8 @@ package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-
 import (
 	"bytes"
 	"context"
-	"math"
 	"slices"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/simplelru"
@@ -28,7 +26,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 const (
@@ -375,60 +372,6 @@ func (p *connectorImp) resetState() {
 	}
 }
 
-// Returns the stochastic-rounded adjusted count for the span.
-func getStochasticAdjustedCount(span *ptrace.Span) uint64 {
-	tracestate := span.TraceState().AsRaw()
-	w3cTraceState, err := sampling.NewW3CTraceState(tracestate)
-	if err != nil {
-		return 0
-	}
-	return stochasticIncrement(w3cTraceState.OTelValue().AdjustedCount())
-}
-
-// A very fast PRNG using xor and shift.
-type xorshift64star uint64
-
-func (r *xorshift64star) Next() uint64 {
-	x := *r
-	x ^= x << 12
-	x ^= x >> 25
-	x ^= x << 27
-	*r = x
-	return uint64(x) * 0x2545F4914F6CDD1D // The "Scrambler"
-}
-
-var seedCounter uint64
-
-// We use a pool to give each Goroutine its own PRNG state.
-// This avoids global locks and cache-line bouncing.
-var prngPool = sync.Pool{
-	New: func() any {
-		// Use a non-zero seed (crucial for xorshift) that is unique for each Goroutine.
-		s := uint64(time.Now().UnixNano()) ^ atomic.AddUint64(&seedCounter, 1)
-		if s == 0 {
-			s = 1
-		}
-		var seed xorshift64star = xorshift64star(s)
-		return &seed
-	},
-}
-
-func stochasticIncrement(weight float64) uint64 {
-	floor, frac := math.Modf(weight)
-	count := uint64(floor)
-	if frac <= 0 {
-		return count
-	}
-	rng := prngPool.Get().(*xorshift64star)
-	defer prngPool.Put(rng)
-
-	threshold := uint64(frac * float64(math.MaxUint64))
-	if rng.Next() < threshold {
-		return count + 1
-	}
-	return count
-}
-
 // aggregateMetrics aggregates the raw metrics from the input trace data.
 //
 // Metrics are grouped by resource attributes.
@@ -466,6 +409,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					duration = float64(endTime-startTime) / float64(unitDivider)
 				}
 
+				adjustedCount, _ := metrics.GetStochasticAdjustedCount(&span)
 				callsDimensions := p.dimensions
 				callsDimensions = append(callsDimensions, p.callsDimensions...)
 				key := p.buildKey(serviceName, span, callsDimensions, resourceAttr)
@@ -479,7 +423,6 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
 				}
 
-				adjustedCount := getStochasticAdjustedCount(&span)
 				s.Add(adjustedCount)
 
 				// aggregate histogram metrics
