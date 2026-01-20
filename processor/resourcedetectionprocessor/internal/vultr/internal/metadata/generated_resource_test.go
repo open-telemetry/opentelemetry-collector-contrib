@@ -13,6 +13,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetCloudPlatform("cloud.platform-val")
 			rb.SetCloudProvider("cloud.provider-val")
 			rb.SetCloudRegion("cloud.region-val")
 			rb.SetHostID("host.id-val")
@@ -25,7 +26,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 4, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 4, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -33,7 +34,12 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
-			val, ok := res.Attributes().Get("cloud.provider")
+			val, ok := res.Attributes().Get("cloud.platform")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "cloud.platform-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "cloud.provider-val", val.Str())

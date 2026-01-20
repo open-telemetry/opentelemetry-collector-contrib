@@ -27,6 +27,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for vultrdetector resource attributes.
 type ResourceAttributesConfig struct {
+	CloudPlatform ResourceAttributeConfig `mapstructure:"cloud.platform"`
 	CloudProvider ResourceAttributeConfig `mapstructure:"cloud.provider"`
 	CloudRegion   ResourceAttributeConfig `mapstructure:"cloud.region"`
 	HostID        ResourceAttributeConfig `mapstructure:"host.id"`
@@ -35,6 +36,9 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		CloudPlatform: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		CloudProvider: ResourceAttributeConfig{
 			Enabled: true,
 		},

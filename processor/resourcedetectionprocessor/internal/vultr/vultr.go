@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/vultr"
@@ -65,7 +65,8 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 		hostID = md.InstanceID
 	}
 
-	d.rb.SetCloudProvider(TypeStr)
+	d.rb.SetCloudProvider(conventions.CloudProviderVultr.Value.AsString())
+	d.rb.SetCloudPlatform(conventions.CloudPlatformVultrCloudCompute.Value.AsString())
 	d.rb.SetCloudRegion(strings.ToLower(md.Region.RegionCode))
 	d.rb.SetHostID(hostID)
 	d.rb.SetHostName(md.Hostname)
