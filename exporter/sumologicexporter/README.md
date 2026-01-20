@@ -70,7 +70,7 @@ After the new exporter will be moved to this repository:
 ## Configuration
 
 This exporter supports sending logs and metrics data to [Sumo Logic](https://www.sumologic.com/).
-Traces are exported using the [native otlphttp exporter](https://help.sumologic.com/Traces/Getting_Started_with_Transaction_Tracing).
+Traces are exported using the [native otlp_http exporter](https://help.sumologic.com/Traces/Getting_Started_with_Transaction_Tracing).
 
 Configuration is specified via the yaml in the following structure:
 

@@ -51,7 +51,7 @@ const (
 // BaseOTLPDataReceiver implements the OTLP format receiver.
 type BaseOTLPDataReceiver struct {
 	DataReceiverBase
-	// One of the "otlp" for OTLP over gRPC or "otlphttp" for OTLP over HTTP.
+	// One of the "otlp" for OTLP over gRPC or "otlp_http" for OTLP over HTTP.
 	exporterType    string
 	traceReceiver   receiver.Traces
 	metricsReceiver receiver.Metrics
@@ -140,7 +140,7 @@ func (bor *BaseOTLPDataReceiver) ProtocolName() string {
 
 func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
 	addr := fmt.Sprintf("127.0.0.1:%d", bor.Port)
-	if bor.exporterType == "otlphttp" {
+	if bor.exporterType == "otlp_http" {
 		addr = "http://" + addr
 	}
 	// Note that this generates an exporter config for agent.
@@ -179,6 +179,6 @@ func NewOTLPDataReceiver(port int) *BaseOTLPDataReceiver {
 func NewOTLPHTTPDataReceiver(port int) *BaseOTLPDataReceiver {
 	return &BaseOTLPDataReceiver{
 		DataReceiverBase: DataReceiverBase{Port: port},
-		exporterType:     "otlphttp",
+		exporterType:     "otlp_http",
 	}
 }

@@ -245,7 +245,7 @@ response body such as:
             "status": "StatusOK",
             "status_time": "2024-01-18T17:27:12.571625-08:00",
             "components": {
-                "exporter:otlphttp/staging": {
+                "exporter:otlp_http/staging": {
                     "healthy": true,
                     "status": "StatusOK",
                     "status_time": "2024-01-18T17:27:12.571615-08:00"
@@ -309,7 +309,7 @@ a response body such as:
     "status": "StatusOK",
     "status_time": "2024-01-18T17:27:12.571625-08:00",
     "components": {
-        "exporter:otlphttp/staging": {
+        "exporter:otlp_http/staging": {
             "healthy": true,
             "status": "StatusOK",
             "status_time": "2024-01-18T17:27:12.571615-08:00"

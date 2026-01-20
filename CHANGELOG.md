@@ -3336,11 +3336,11 @@ This functionality is disabled by default, you can enable it by passing the foll
 ### 🚩 Deprecations 🚩
 
 - `sapmexporter`: Deprecate SAPM exporter (#36028)
-  The SAPM exporter is being marked as deprecated. Please use the `otlphttp` exporter with the configuration shown
+  The SAPM exporter is being marked as deprecated. Please use the `otlp_http` exporter with the configuration shown
   below. Also update your pipeline configuration for Traces accordingly.
   ```yaml
     exporters:
-        otlphttp:
+        otlp_http:
             traces_endpoint: "${SPLUNK_INGEST_URL}/v2/trace/otlp"
             headers:
                 "X-SF-Token": "${SPLUNK_ACCESS_TOKEN}"
