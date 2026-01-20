@@ -6,10 +6,10 @@ require (
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/aws/aws-sdk-go-v2 v1.41.1
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.17
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.279.1
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.279.2
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/hashicorp/consul/api v1.32.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.144.0
 	github.com/shirou/gopsutil/v4 v4.25.12
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel v1.39.0
@@ -124,6 +124,3 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../k8sconfig
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5
