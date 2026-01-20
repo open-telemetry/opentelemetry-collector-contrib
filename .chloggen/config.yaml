@@ -71,6 +71,7 @@ components:
     - exporter/sentry
     - exporter/signalfx
     - exporter/splunk_hec
+    - exporter/starrocks
     - exporter/stef
     - exporter/sumologic
     - exporter/syslog
