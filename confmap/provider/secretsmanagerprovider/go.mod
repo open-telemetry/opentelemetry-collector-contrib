@@ -40,6 +40,3 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.144.0
