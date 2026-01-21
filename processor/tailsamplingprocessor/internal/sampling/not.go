@@ -42,11 +42,6 @@ func (n *not) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *samp
 		return samplingpolicy.NotSampled, nil
 	case samplingpolicy.NotSampled:
 		return samplingpolicy.Sampled, nil
-	// TODO: remove inverted decisions once inversion goes from deprecated to removed
-	case samplingpolicy.InvertNotSampled:
-		return samplingpolicy.InvertSampled, nil
-	case samplingpolicy.InvertSampled:
-		return samplingpolicy.InvertNotSampled, nil
 	default:
 		// For any other decision types (Unspecified, Pending, Error), just let them bubble up.
 		return decision, nil

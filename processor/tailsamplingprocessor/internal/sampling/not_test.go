@@ -54,36 +54,6 @@ func TestNotSamplingPolicy_Evaluate_NotSampled(t *testing.T) {
 	assert.Equal(t, samplingpolicy.Sampled, decision)
 }
 
-func TestNotSamplingPolicy_Evaluate_InvertSampled(t *testing.T) {
-	logger := zap.NewNop()
-	mockSubPolicy := &mockEvaluator{decision: samplingpolicy.InvertSampled}
-
-	notPolicy := NewNot(logger, mockSubPolicy)
-
-	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
-	traceData := &samplingpolicy.TraceData{}
-
-	decision, err := notPolicy.Evaluate(t.Context(), traceID, traceData)
-
-	assert.NoError(t, err)
-	assert.Equal(t, samplingpolicy.InvertNotSampled, decision)
-}
-
-func TestNotSamplingPolicy_Evaluate_InvertNotSampled(t *testing.T) {
-	logger := zap.NewNop()
-	mockSubPolicy := &mockEvaluator{decision: samplingpolicy.InvertNotSampled}
-
-	notPolicy := NewNot(logger, mockSubPolicy)
-
-	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
-	traceData := &samplingpolicy.TraceData{}
-
-	decision, err := notPolicy.Evaluate(t.Context(), traceID, traceData)
-
-	assert.NoError(t, err)
-	assert.Equal(t, samplingpolicy.InvertSampled, decision)
-}
-
 func TestNotSamplingPolicy_Evaluate_OtherDecision(t *testing.T) {
 	logger := zap.NewNop()
 	// Using a decision value that should be handled by the default case
