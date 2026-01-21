@@ -73,22 +73,24 @@ func MoveRecordsWithContextIf(from, to plog.Logs, f func(plog.ResourceLogs, plog
 func CopyRecordsWithContextIf(from, to plog.Logs, f func(plog.ResourceLogs, plog.ScopeLogs, plog.LogRecord) bool) {
 	for i := 0; i < from.ResourceLogs().Len(); i++ {
 		rl := from.ResourceLogs().At(i)
-		var rlCopy *plog.ResourceLogs
+		var rlInit bool
+		var rlCopy plog.ResourceLogs
 		for j := 0; j < rl.ScopeLogs().Len(); j++ {
 			sl := rl.ScopeLogs().At(j)
-			var slCopy *plog.ScopeLogs
+			var slCopy plog.ScopeLogs
+			var slInit bool
 			for k := 0; k < sl.LogRecords().Len(); k++ {
 				lr := sl.LogRecords().At(k)
 				if f(rl, sl, lr) {
-					if rlCopy == nil {
-						rlc := to.ResourceLogs().AppendEmpty()
-						rlCopy = &rlc
+					if !rlInit {
+						rlInit = true
+						rlCopy = to.ResourceLogs().AppendEmpty()
 						rl.Resource().CopyTo(rlCopy.Resource())
 						rlCopy.SetSchemaUrl(rl.SchemaUrl())
 					}
-					if slCopy == nil {
-						slc := rlCopy.ScopeLogs().AppendEmpty()
-						slCopy = &slc
+					if !slInit {
+						slInit = true
+						slCopy = rlCopy.ScopeLogs().AppendEmpty()
 						sl.Scope().CopyTo(slCopy.Scope())
 						slCopy.SetSchemaUrl(sl.SchemaUrl())
 					}

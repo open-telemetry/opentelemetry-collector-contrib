@@ -73,22 +73,24 @@ func MoveSpansWithContextIf(from, to ptrace.Traces, f func(ptrace.ResourceSpans,
 func CopySpansWithContextIf(from, to ptrace.Traces, f func(ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span) bool) {
 	for i := 0; i < from.ResourceSpans().Len(); i++ {
 		rs := from.ResourceSpans().At(i)
-		var resourceSpansCopy *ptrace.ResourceSpans
+		var resourceSpansCopy ptrace.ResourceSpans
+		var rsInit bool
 		for j := 0; j < rs.ScopeSpans().Len(); j++ {
 			ss := rs.ScopeSpans().At(j)
-			var scopeSpansCopy *ptrace.ScopeSpans
+			var scopeSpansCopy ptrace.ScopeSpans
+			var ssInit bool
 			for k := 0; k < ss.Spans().Len(); k++ {
 				s := ss.Spans().At(k)
 				if f(rs, ss, s) {
-					if resourceSpansCopy == nil {
-						rmc := to.ResourceSpans().AppendEmpty()
-						resourceSpansCopy = &rmc
+					if !rsInit {
+						rsInit = true
+						resourceSpansCopy = to.ResourceSpans().AppendEmpty()
 						rs.Resource().CopyTo(resourceSpansCopy.Resource())
 						resourceSpansCopy.SetSchemaUrl(rs.SchemaUrl())
 					}
-					if scopeSpansCopy == nil {
-						smc := resourceSpansCopy.ScopeSpans().AppendEmpty()
-						scopeSpansCopy = &smc
+					if !ssInit {
+						ssInit = true
+						scopeSpansCopy = resourceSpansCopy.ScopeSpans().AppendEmpty()
 						ss.Scope().CopyTo(scopeSpansCopy.Scope())
 						scopeSpansCopy.SetSchemaUrl(ss.SchemaUrl())
 					}
