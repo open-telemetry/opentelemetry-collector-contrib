@@ -920,6 +920,251 @@ func TestResolveConfig(t *testing.T) {
 	}
 }
 
+// TestBuildReceiverResourceAttrs verifies that buildReceiverResourceAttrs correctly
+// extracts string values and skips non-string values.
+func TestBuildReceiverResourceAttrs(t *testing.T) {
+	tests := []struct {
+		name           string
+		resourceAttrs  map[string]any
+		expectedResult map[string]string
+	}{
+		{
+			name:           "empty attributes",
+			resourceAttrs:  map[string]any{},
+			expectedResult: map[string]string{},
+		},
+		{
+			name: "all string values",
+			resourceAttrs: map[string]any{
+				"key1": "value1",
+				"key2": "value2",
+			},
+			expectedResult: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+		},
+		{
+			name: "mixed types - non-strings skipped",
+			resourceAttrs: map[string]any{
+				"string_key": "string_value",
+				"int_key":    123,
+				"bool_key":   true,
+				"float_key":  3.14,
+			},
+			expectedResult: map[string]string{
+				"string_key": "string_value",
+			},
+		},
+		{
+			name: "backtick expression preserved as string",
+			resourceAttrs: map[string]any{
+				"dynamic": "`pod.labels[\"app\"]`",
+			},
+			expectedResult: map[string]string{
+				"dynamic": "`pod.labels[\"app\"]`",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := &observerHandler{
+				params: receivertest.NewNopSettings(metadata.Type),
+			}
+			template := receiverTemplate{
+				ResourceAttributes: tt.resourceAttrs,
+			}
+
+			result := handler.buildReceiverResourceAttrs(template)
+
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+// TestFindTemplateForReceiver verifies the template lookup and rule matching logic.
+func TestFindTemplateForReceiver(t *testing.T) {
+	matchingRule, err := newRule(`type == "port"`)
+	require.NoError(t, err)
+
+	nonMatchingRule, err := newRule(`type == "hostport"`)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		templates      map[string]receiverTemplate
+		receiverID     component.ID
+		env            observer.EndpointEnv
+		expectFound    bool
+		expectTemplate string // expected template ID if found
+	}{
+		{
+			name:        "template not in config",
+			templates:   map[string]receiverTemplate{},
+			receiverID:  component.MustNewID("missing"),
+			env:         observer.EndpointEnv{"type": "port"},
+			expectFound: false,
+		},
+		{
+			name: "template exists and rule matches",
+			templates: map[string]receiverTemplate{
+				"test": {
+					receiverConfig: receiverConfig{id: component.MustNewID("test")},
+					rule:           matchingRule,
+				},
+			},
+			receiverID:     component.MustNewID("test"),
+			env:            observer.EndpointEnv{"type": "port"},
+			expectFound:    true,
+			expectTemplate: "test",
+		},
+		{
+			name: "template exists but rule does not match",
+			templates: map[string]receiverTemplate{
+				"test": {
+					receiverConfig: receiverConfig{id: component.MustNewID("test")},
+					rule:           nonMatchingRule,
+				},
+			},
+			receiverID:  component.MustNewID("test"),
+			env:         observer.EndpointEnv{"type": "port"}, // type is "port", rule expects "hostport"
+			expectFound: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.receiverTemplates = tt.templates
+
+			handler := &observerHandler{
+				config: cfg,
+				params: receivertest.NewNopSettings(metadata.Type),
+			}
+
+			template, found := handler.findTemplateForReceiver(tt.receiverID, tt.env)
+
+			assert.Equal(t, tt.expectFound, found)
+			if tt.expectFound {
+				assert.Equal(t, tt.expectTemplate, template.id.String())
+			}
+		})
+	}
+}
+
+// TestFilterConsumerSignals verifies that filterConsumerSignals correctly
+// nils out consumers based on the signal flags.
+func TestFilterConsumerSignals(t *testing.T) {
+	tests := []struct {
+		name          string
+		signals       receiverSignals
+		expectMetrics bool
+		expectLogs    bool
+		expectTraces  bool
+	}{
+		{
+			name:          "all signals enabled",
+			signals:       receiverSignals{metrics: true, logs: true, traces: true},
+			expectMetrics: true,
+			expectLogs:    true,
+			expectTraces:  true,
+		},
+		{
+			name:          "all signals disabled",
+			signals:       receiverSignals{metrics: false, logs: false, traces: false},
+			expectMetrics: false,
+			expectLogs:    false,
+			expectTraces:  false,
+		},
+		{
+			name:          "only metrics enabled",
+			signals:       receiverSignals{metrics: true, logs: false, traces: false},
+			expectMetrics: true,
+			expectLogs:    false,
+			expectTraces:  false,
+		},
+		{
+			name:          "only logs enabled",
+			signals:       receiverSignals{metrics: false, logs: true, traces: false},
+			expectMetrics: false,
+			expectLogs:    true,
+			expectTraces:  false,
+		},
+		{
+			name:          "only traces enabled",
+			signals:       receiverSignals{metrics: false, logs: false, traces: true},
+			expectMetrics: false,
+			expectLogs:    false,
+			expectTraces:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a consumer with all signals set
+			consumer := &enhancingConsumer{
+				metrics: consumertest.NewNop(),
+				logs:    consumertest.NewNop(),
+				traces:  consumertest.NewNop(),
+			}
+
+			filterConsumerSignals(consumer, tt.signals)
+
+			if tt.expectMetrics {
+				assert.NotNil(t, consumer.metrics)
+			} else {
+				assert.Nil(t, consumer.metrics)
+			}
+			if tt.expectLogs {
+				assert.NotNil(t, consumer.logs)
+			} else {
+				assert.Nil(t, consumer.logs)
+			}
+			if tt.expectTraces {
+				assert.NotNil(t, consumer.traces)
+			} else {
+				assert.Nil(t, consumer.traces)
+			}
+		})
+	}
+}
+
+// TestObserverHandlerShutdown verifies that shutdown stops all running receivers.
+func TestObserverHandlerShutdown(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	rcvrCfg := receiverConfig{
+		id:         component.MustNewIDWithName("with_endpoint", "some.name"),
+		config:     userConfigMap{"endpoint": "some.endpoint"},
+		endpointID: portEndpoint.ID,
+	}
+	cfg.receiverTemplates = map[string]receiverTemplate{
+		rcvrCfg.id.String(): {
+			receiverConfig:     rcvrCfg,
+			rule:               portRule,
+			Rule:               `type == "port"`,
+			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
+		},
+	}
+
+	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
+
+	// Add two endpoints to create two receivers
+	handler.OnAdd([]observer.Endpoint{portEndpoint})
+	require.Equal(t, 1, handler.receiversByEndpointID.Size())
+	require.NotNil(t, r.startedComponent)
+
+	startedRcvr := r.startedComponent
+
+	// Shutdown the handler
+	err := handler.shutdown()
+	require.NoError(t, err)
+
+	// Verify the receiver was shutdown
+	assert.Same(t, startedRcvr, r.shutdownComponent)
+}
+
 type mockRunner struct {
 	receiverRunner
 	startedComponent  component.Component
