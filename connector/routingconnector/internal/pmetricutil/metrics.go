@@ -3,7 +3,9 @@
 
 package pmetricutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutil"
 
-import "go.opentelemetry.io/collector/pdata/pmetric"
+import (
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
 
 // MoveResourcesIf calls f sequentially for each ResourceSpans present in the first pmetric.Metrics.
 // If f returns true, the element is removed from the first pmetric.Metrics and added to the second pmetric.Metrics.
@@ -15,6 +17,17 @@ func MoveResourcesIf(from, to pmetric.Metrics, f func(pmetric.ResourceMetrics) b
 		rs.MoveTo(to.ResourceMetrics().AppendEmpty())
 		return true
 	})
+}
+
+// CopyResourcesIf calls f sequentially for each ResourceSpans present in the first pmetric.Metrics.
+// If f returns true, the element is copied from the first pmetric.Metrics to the second pmetric.Metrics.
+func CopyResourcesIf(from, to pmetric.Metrics, f func(pmetric.ResourceMetrics) bool) {
+	for i := 0; i < from.ResourceMetrics().Len(); i++ {
+		rm := from.ResourceMetrics().At(i)
+		if f(rm) {
+			rm.CopyTo(to.ResourceMetrics().AppendEmpty())
+		}
+	}
 }
 
 // MoveMetricsWithContextIf calls f sequentially for each Metric present in the first pmetric.Metrics.
@@ -46,6 +59,32 @@ func MoveMetricsWithContextIf(from, to pmetric.Metrics, f func(pmetric.ResourceM
 		})
 		return rm.ScopeMetrics().Len() == 0
 	})
+}
+
+// CopyMetricsWithContextIf calls f sequentially for each Metric present in the first pmetric.Metrics.
+// If f returns true, the element is copied from the first pmetric.Metrics to the second pmetric.Metrics.
+// Notably, the Resource and Scope associated with the Metric are created in the second pmetric.Metrics only once.
+func CopyMetricsWithContextIf(from, to pmetric.Metrics, f func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric) bool) {
+	for i := 0; i < from.ResourceMetrics().Len(); i++ {
+		rm := from.ResourceMetrics().At(i)
+		var rmCopy *pmetric.ResourceMetrics
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			var smCopy *pmetric.ScopeMetrics
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				if f(rm, sm, m) {
+					if rmCopy == nil {
+						rmCopy = copyResourceMetrics(rm, to.ResourceMetrics())
+					}
+					if smCopy == nil {
+						smCopy = copyScopeMetrics(sm, rmCopy.ScopeMetrics())
+					}
+					m.CopyTo(smCopy.Metrics().AppendEmpty())
+				}
+			}
+		}
+	}
 }
 
 // MoveDataPointsWithContextIf calls f sequentially for each DataPoint present in the first pmetric.Metrics.
@@ -174,6 +213,112 @@ func MoveDataPointsWithContextIf(from, to pmetric.Metrics, f func(pmetric.Resour
 		})
 		return rm.ScopeMetrics().Len() == 0
 	})
+}
+
+// CopyDataPointsWithContextIf calls f sequentially for each DataPoint present in the first pmetric.Metrics.
+// If f returns true, the element is copied from the first pmetric.Metrics to the second pmetric.Metrics.
+// Notably, the Resource, Scope, and Metric associated with the DataPoint are created in the second pmetric.Metrics only once.
+func CopyDataPointsWithContextIf(from, to pmetric.Metrics, f func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool) {
+	for i := 0; i < from.ResourceMetrics().Len(); i++ {
+		rm := from.ResourceMetrics().At(i)
+		var rmCopy *pmetric.ResourceMetrics
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			var smCopy *pmetric.ScopeMetrics
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				var mCopy *pmetric.Metric
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
+						dp := m.Gauge().DataPoints().At(l)
+						if f(rm, sm, m, dp) {
+							if rmCopy == nil {
+								rmCopy = copyResourceMetrics(rm, to.ResourceMetrics())
+							}
+							if smCopy == nil {
+								smCopy = copyScopeMetrics(sm, rmCopy.ScopeMetrics())
+							}
+							if mCopy == nil {
+								mCopy = copyMetricDescription(m, smCopy.Metrics())
+								mCopy.SetEmptyGauge()
+							}
+							dp.CopyTo(mCopy.Gauge().DataPoints().AppendEmpty())
+						}
+					}
+				case pmetric.MetricTypeSum:
+					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
+						dp := m.Sum().DataPoints().At(l)
+						if f(rm, sm, m, dp) {
+							if rmCopy == nil {
+								rmCopy = copyResourceMetrics(rm, to.ResourceMetrics())
+							}
+							if smCopy == nil {
+								smCopy = copyScopeMetrics(sm, rmCopy.ScopeMetrics())
+							}
+							if mCopy == nil {
+								mCopy = copyMetricDescription(m, smCopy.Metrics())
+								mCopy.SetEmptySum().SetAggregationTemporality(m.Sum().AggregationTemporality())
+								mCopy.Sum().SetIsMonotonic(m.Sum().IsMonotonic())
+							}
+							dp.CopyTo(mCopy.Sum().DataPoints().AppendEmpty())
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					for l := 0; l < m.Histogram().DataPoints().Len(); l++ {
+						dp := m.Histogram().DataPoints().At(l)
+						if f(rm, sm, m, dp) {
+							if rmCopy == nil {
+								rmCopy = copyResourceMetrics(rm, to.ResourceMetrics())
+							}
+							if smCopy == nil {
+								smCopy = copyScopeMetrics(sm, rmCopy.ScopeMetrics())
+							}
+							if mCopy == nil {
+								mCopy = copyMetricDescription(m, smCopy.Metrics())
+								mCopy.SetEmptyHistogram().SetAggregationTemporality(m.Histogram().AggregationTemporality())
+							}
+							dp.CopyTo(mCopy.Histogram().DataPoints().AppendEmpty())
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					for l := 0; l < m.ExponentialHistogram().DataPoints().Len(); l++ {
+						dp := m.ExponentialHistogram().DataPoints().At(l)
+						if f(rm, sm, m, dp) {
+							if rmCopy == nil {
+								rmCopy = copyResourceMetrics(rm, to.ResourceMetrics())
+							}
+							if smCopy == nil {
+								smCopy = copyScopeMetrics(sm, rmCopy.ScopeMetrics())
+							}
+							if mCopy == nil {
+								mCopy = copyMetricDescription(m, smCopy.Metrics())
+								mCopy.SetEmptyExponentialHistogram().SetAggregationTemporality(m.ExponentialHistogram().AggregationTemporality())
+							}
+							dp.CopyTo(mCopy.ExponentialHistogram().DataPoints().AppendEmpty())
+						}
+					}
+				case pmetric.MetricTypeSummary:
+					for l := 0; l < m.Summary().DataPoints().Len(); l++ {
+						dp := m.Summary().DataPoints().At(l)
+						if f(rm, sm, m, dp) {
+							if rmCopy == nil {
+								rmCopy = copyResourceMetrics(rm, to.ResourceMetrics())
+							}
+							if smCopy == nil {
+								smCopy = copyScopeMetrics(sm, rmCopy.ScopeMetrics())
+							}
+							if mCopy == nil {
+								mCopy = copyMetricDescription(m, smCopy.Metrics())
+								mCopy.SetEmptySummary()
+							}
+							dp.CopyTo(mCopy.Summary().DataPoints().AppendEmpty())
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 func copyResourceMetrics(from pmetric.ResourceMetrics, to pmetric.ResourceMetricsSlice) *pmetric.ResourceMetrics {
