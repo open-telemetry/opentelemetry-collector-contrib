@@ -1,5 +1,5 @@
 type: dataset
-display_name: Dataset Exporter
+display_name: DataSet Exporter
 
 status:
   class: exporter
