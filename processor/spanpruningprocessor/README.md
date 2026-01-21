@@ -241,7 +241,6 @@ When `enable_outlier_analysis: true`, the following additional attributes are ad
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `<prefix>outlier_method` | string | Detection method used: "iqr" or "mad" |
 | `<prefix>duration_median_ns` | int64 | Median duration (more robust than average for skewed distributions) |
 | `<prefix>outlier_correlated_attributes` | string | Attributes that distinguish outliers from normal spans (format: `key=value(outlier%/normal%), ...`) |
 

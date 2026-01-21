@@ -187,7 +187,6 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 
 	// Add outlier analysis attributes when enabled
 	if group.outlierAnalysis != nil {
-		newSpan.Attributes().PutStr(prefix+"outlier_method", string(group.outlierAnalysis.method))
 		newSpan.Attributes().PutInt(prefix+"duration_median_ns", int64(group.outlierAnalysis.median))
 
 		if len(group.outlierAnalysis.correlations) > 0 {

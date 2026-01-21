@@ -592,24 +592,20 @@ func TestAnalyzeOutliers_MethodSelection(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		method     OutlierMethod
-		wantMethod OutlierMethod
+		name   string
+		method OutlierMethod
 	}{
 		{
-			name:       "default (empty) uses IQR",
-			method:     "",
-			wantMethod: OutlierMethodIQR,
+			name:   "default (empty) uses IQR",
+			method: "",
 		},
 		{
-			name:       "explicit IQR",
-			method:     OutlierMethodIQR,
-			wantMethod: OutlierMethodIQR,
+			name:   "explicit IQR",
+			method: OutlierMethodIQR,
 		},
 		{
-			name:       "explicit MAD",
-			method:     OutlierMethodMAD,
-			wantMethod: OutlierMethodMAD,
+			name:   "explicit MAD",
+			method: OutlierMethodMAD,
 		},
 	}
 
@@ -629,7 +625,6 @@ func TestAnalyzeOutliers_MethodSelection(t *testing.T) {
 			result := analyzeOutliers(nodes, cfg)
 
 			require.NotNil(t, result)
-			assert.Equal(t, tt.wantMethod, result.method)
 			assert.True(t, result.hasOutliers)
 		})
 	}
@@ -680,8 +675,4 @@ func TestMADvsIQR_Comparison(t *testing.T) {
 
 	// Both should have the same median
 	assert.Equal(t, iqrResult.median, madResult.median)
-
-	// Method should be recorded correctly
-	assert.Equal(t, OutlierMethodIQR, iqrResult.method)
-	assert.Equal(t, OutlierMethodMAD, madResult.method)
 }

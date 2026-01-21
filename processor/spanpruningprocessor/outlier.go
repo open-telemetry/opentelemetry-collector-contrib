@@ -16,7 +16,6 @@ import (
 
 // outlierAnalysisResult contains outlier analysis and attribute correlations.
 type outlierAnalysisResult struct {
-	method         OutlierMethod
 	median         time.Duration
 	correlations   []attributeCorrelation
 	outlierIndices []int // indices of outlier spans (sorted by duration desc)
@@ -84,7 +83,6 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 	// Need both outliers and normals for correlation
 	if len(outlierIndices) == 0 || len(normalIndices) == 0 {
 		return &outlierAnalysisResult{
-			method:         method,
 			median:         median,
 			outlierIndices: outlierIndices,
 			normalIndices:  normalIndices,
@@ -103,7 +101,6 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 	)
 
 	return &outlierAnalysisResult{
-		method:         method,
 		median:         median,
 		correlations:   correlations,
 		outlierIndices: outlierIndices,
