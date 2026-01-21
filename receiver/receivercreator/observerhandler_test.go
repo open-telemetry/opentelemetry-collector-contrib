@@ -20,6 +20,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator/internal/metadata"
 )
 
+// TestOnAddForMetrics tests receiver creation when metrics consumer is set.
+//
+// The receiverTemplateID determines which factory is used (registered in newMockHost):
+//   - "with_endpoint" → nopWithEndpointFactory (has "endpoint" config field)
+//   - "without_endpoint" → nopWithoutEndpointFactory (no "endpoint" field)
+//
+// Default config values come from each factory's CreateDefaultConfig():
+//   - nopWithEndpointFactory defaults: IntField=1234
+//   - nopWithoutEndpointFactory defaults: IntField=0
+//
+// The endpoint value "localhost:1234" comes from portEndpoint.Target (fixtures_test.go)
+// when auto-discovered (i.e., when template doesn't specify "endpoint").
 func TestOnAddForMetrics(t *testing.T) {
 	for _, test := range []struct {
 		name                   string
@@ -30,36 +42,42 @@ func TestOnAddForMetrics(t *testing.T) {
 		expectedError          string
 	}{
 		{
+			// Template sets int_field; endpoint is auto-discovered from portEndpoint.Target
 			name:                   "dynamically set with supported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("with_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"int_field": 12345678},
 			expectedReceiverType:   &nopWithEndpointReceiver{},
 			expectedReceiverConfig: &nopWithEndpointConfig{
-				IntField: 12345678,
-				Endpoint: "localhost:1234",
+				IntField: 12345678,         // from template config
+				Endpoint: "localhost:1234", // auto-discovered from portEndpoint.Target
 			},
 		},
 		{
+			// Template sets endpoint; IntField uses factory default (1234)
 			name:                   "inherits supported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("with_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "some.endpoint"},
 			expectedReceiverType:   &nopWithEndpointReceiver{},
 			expectedReceiverConfig: &nopWithEndpointConfig{
-				IntField: 1234,
-				Endpoint: "some.endpoint",
+				IntField: 1234,            // from nopWithEndpointFactory.CreateDefaultConfig()
+				Endpoint: "some.endpoint", // from template config (overrides auto-discovery)
 			},
 		},
 		{
+			// Receiver type "without_endpoint" has no "endpoint" field, so auto-discovery
+			// is skipped (the auto-discovered endpoint would cause an error)
 			name:                   "not dynamically set with unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"int_field": 23456789, "not_endpoint": "not.an.endpoint"},
 			expectedReceiverType:   &nopWithoutEndpointReceiver{},
 			expectedReceiverConfig: &nopWithoutEndpointConfig{
-				IntField:    23456789,
-				NotEndpoint: "not.an.endpoint",
+				IntField:    23456789,          // from template config
+				NotEndpoint: "not.an.endpoint", // from template config
 			},
 		},
 		{
+			// Error case: template tries to set "endpoint" but the receiver type
+			// "without_endpoint" doesn't have that field
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
@@ -183,6 +201,8 @@ func TestOnAddForMetricsWithHints(t *testing.T) {
 	}
 }
 
+// TestOnAddForLogs tests receiver creation when logs consumer is set.
+// See TestOnAddForMetrics for detailed comments on where config values come from.
 func TestOnAddForLogs(t *testing.T) {
 	for _, test := range []struct {
 		name                   string
@@ -198,8 +218,8 @@ func TestOnAddForLogs(t *testing.T) {
 			receiverTemplateConfig: userConfigMap{"int_field": 12345678},
 			expectedReceiverType:   &nopWithEndpointReceiver{},
 			expectedReceiverConfig: &nopWithEndpointConfig{
-				IntField: 12345678,
-				Endpoint: "localhost:1234",
+				IntField: 12345678,         // from template config
+				Endpoint: "localhost:1234", // auto-discovered from portEndpoint.Target
 			},
 		},
 		{
@@ -208,8 +228,8 @@ func TestOnAddForLogs(t *testing.T) {
 			receiverTemplateConfig: userConfigMap{"endpoint": "some.endpoint"},
 			expectedReceiverType:   &nopWithEndpointReceiver{},
 			expectedReceiverConfig: &nopWithEndpointConfig{
-				IntField: 1234,
-				Endpoint: "some.endpoint",
+				IntField: 1234,            // from nopWithEndpointFactory.CreateDefaultConfig()
+				Endpoint: "some.endpoint", // from template config
 			},
 		},
 		{
@@ -218,8 +238,8 @@ func TestOnAddForLogs(t *testing.T) {
 			receiverTemplateConfig: userConfigMap{"int_field": 23456789, "not_endpoint": "not.an.endpoint"},
 			expectedReceiverType:   &nopWithoutEndpointReceiver{},
 			expectedReceiverConfig: &nopWithoutEndpointConfig{
-				IntField:    23456789,
-				NotEndpoint: "not.an.endpoint",
+				IntField:    23456789,          // from template config
+				NotEndpoint: "not.an.endpoint", // from template config
 			},
 		},
 		{
@@ -355,6 +375,8 @@ func TestOnAddForLogsWithHints(t *testing.T) {
 	}
 }
 
+// TestOnAddForTraces tests receiver creation when traces consumer is set.
+// See TestOnAddForMetrics for detailed comments on where config values come from.
 func TestOnAddForTraces(t *testing.T) {
 	for _, test := range []struct {
 		name                   string
@@ -370,8 +392,8 @@ func TestOnAddForTraces(t *testing.T) {
 			receiverTemplateConfig: userConfigMap{"int_field": 12345678},
 			expectedReceiverType:   &nopWithEndpointReceiver{},
 			expectedReceiverConfig: &nopWithEndpointConfig{
-				IntField: 12345678,
-				Endpoint: "localhost:1234",
+				IntField: 12345678,         // from template config
+				Endpoint: "localhost:1234", // auto-discovered from portEndpoint.Target
 			},
 		},
 		{
@@ -380,8 +402,8 @@ func TestOnAddForTraces(t *testing.T) {
 			receiverTemplateConfig: userConfigMap{"endpoint": "some.endpoint"},
 			expectedReceiverType:   &nopWithEndpointReceiver{},
 			expectedReceiverConfig: &nopWithEndpointConfig{
-				IntField: 1234,
-				Endpoint: "some.endpoint",
+				IntField: 1234,            // from nopWithEndpointFactory.CreateDefaultConfig()
+				Endpoint: "some.endpoint", // from template config
 			},
 		},
 		{
@@ -390,8 +412,8 @@ func TestOnAddForTraces(t *testing.T) {
 			receiverTemplateConfig: userConfigMap{"int_field": 23456789, "not_endpoint": "not.an.endpoint"},
 			expectedReceiverType:   &nopWithoutEndpointReceiver{},
 			expectedReceiverConfig: &nopWithoutEndpointConfig{
-				IntField:    23456789,
-				NotEndpoint: "not.an.endpoint",
+				IntField:    23456789,          // from template config
+				NotEndpoint: "not.an.endpoint", // from template config
 			},
 		},
 		{
