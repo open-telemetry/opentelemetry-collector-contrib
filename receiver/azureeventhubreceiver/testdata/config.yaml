@@ -1,27 +1,36 @@
-receivers:
-  azureeventhub:
-    connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+azureeventhub:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
 
-  azureeventhub/all:
-    connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
-    partition: foo
-    offset: "1234-5566"
-    format: "raw"
-    apply_semantic_conventions: true
+azureeventhub/missing_connection:
 
-processors:
-  nop:
+azureeventhub/invalid_connection_string:
+  connection: invalid
 
-exporters:
-  nop:
+azureeventhub/invalid_format:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  format: invalid
 
-service:
-  pipelines:
-    logs:
-      receivers: [azureeventhub, azureeventhub/all]
-      processors: [nop]
-      exporters: [nop]
-    metrics:
-      receivers: [azureeventhub, azureeventhub/all]
-      processors: [nop]
-      exporters: [nop]
+azureeventhub/offset_without_partition:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  offset: "1234-5566"
+
+azureeventhub/offset_with_partition:
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+  partition: foo
+  offset: "1234-5566"
+
+azureeventhub/auth:
+  event_hub:
+    name: hubName
+    namespace: namespace.servicebus.windows.net
+  auth: azureauth
+
+azureeventhub/auth_missing_event_hub_name:
+  auth: azureauth
+  event_hub:
+    namespace: ns
+
+azureeventhub/auth_missing_namespace:
+  auth: azureauth
+  event_hub:
+    name: hub

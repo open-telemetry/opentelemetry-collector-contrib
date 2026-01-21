@@ -222,6 +222,7 @@ processor/intervalprocessor
 processor/isolationforestprocessor
 processor/logdedupprocessor
 processor/logstransformprocessor
+processor/lookupprocessor
 processor/metricsgenerationprocessor
 processor/metricstarttimeprocessor
 processor/metricstransformprocessor

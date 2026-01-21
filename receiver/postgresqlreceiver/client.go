@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -88,32 +89,28 @@ type postgreSQLClient struct {
 // explainQuery implements client.
 func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logger) (string, error) {
 	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
-	var queryBuilder strings.Builder
-	var nulls []string
-	counter := 1
 
-	for _, ch := range query {
-		if ch == '?' {
-			queryBuilder.WriteString(fmt.Sprintf("$%d", counter))
-			counter++
-			nulls = append(nulls, "null")
-		} else {
-			queryBuilder.WriteRune(ch)
-		}
+	// PostgreSQL's pg_stat_statements returns queries with $1, $2 placeholders
+	paramRegex := regexp.MustCompile(`\$\d+`)
+	matches := paramRegex.FindAllString(query, -1)
+
+	// Build nulls array for placeholders
+	nulls := make([]string, len(matches))
+	for i := range nulls {
+		nulls[i] = "null"
 	}
-
-	preparedQuery := queryBuilder.String()
 
 	//nolint:errcheck
 	defer c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", normalizedQueryID))
 
 	// if there is no parameter needed, we can not put an empty bracket
+
 	nullsString := ""
 	if len(nulls) > 0 {
 		nullsString = "(" + strings.Join(nulls, ", ") + ")"
 	}
 	setPlanCacheMode := "/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;"
-	prepareStatement := fmt.Sprintf("PREPARE otel_%s AS %s;", normalizedQueryID, preparedQuery)
+	prepareStatement := fmt.Sprintf("PREPARE otel_%s AS %s;", normalizedQueryID, query)
 	explainStatement := fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_%s%s;", normalizedQueryID, nullsString)
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, setPlanCacheMode+prepareStatement+explainStatement, logger, sqlquery.TelemetryConfig{})
@@ -123,7 +120,14 @@ func (c *postgreSQLClient) explainQuery(query, queryID string, logger *zap.Logge
 		logger.Error("failed to explain statement", zap.Error(err))
 		return "", err
 	}
-	return obfuscateSQLExecPlan(result[0]["QUERY PLAN"])
+
+	plan, err := obfuscateSQLExecPlan(result[0]["QUERY PLAN"])
+	if err != nil {
+		logger.Error("failed to obfuscate explain plan", zap.Error(err), zap.String("queryID", queryID))
+		return "", err
+	}
+
+	return plan, nil
 }
 
 var _ client = (*postgreSQLClient)(nil)
@@ -1052,29 +1056,34 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger 
 			tempBlksWrittenColumnName:   convertToInt,
 			totalExecTimeColumnName:     convertMillisecondToSecond,
 			totalPlanTimeColumnName:     convertMillisecondToSecond,
-			"query": func(_, val string, logger *zap.Logger) (any, error) {
-				// TODO: check if it is truncated.
-				result, err := obfuscateSQL(val)
-				if err != nil {
-					logger.Error("failed to obfuscate query", zap.String("query", val))
-					return "", err
-				}
-				return result, nil
-			},
 		}
 		currentAttributes := make(map[string]any)
+
+		// Store raw query before obfuscation (needed for EXPLAIN with $N placeholders)
+		if rawQuery, ok := row["query"]; ok {
+			currentAttributes[dbAttributePrefix+"raw_query"] = rawQuery
+		}
 
 		for col := range row {
 			var val any
 			var err error
 			converter, ok := needConversion[col]
-			if ok {
+			switch {
+			case ok:
 				val, err = converter(col, row[col], logger)
 				if err != nil {
 					logger.Warn("failed to convert column to int", zap.String("column", col), zap.Error(err))
 					errs = append(errs, err)
 				}
-			} else {
+			case col == "query":
+				// Obfuscate query for display/logging (converts $1,$2 to ?)
+				// Raw query is already stored separately for EXPLAIN
+				val, err = obfuscateSQL(row[col])
+				if err != nil {
+					logger.Error("failed to obfuscate query", zap.String("query", row[col]))
+					val = ""
+				}
+			default:
 				val = row[col]
 			}
 			if hasConvention[col] != "" {
