@@ -25,7 +25,7 @@
 
 ```yaml
 exporters:
-  otlphttp:
+  otlp_http:
     traces_endpoint: "${SPLUNK_INGEST_URL}/v2/trace/otlp"
     headers:
         "X-SF-Token": "${SPLUNK_ACCESS_TOKEN}"
