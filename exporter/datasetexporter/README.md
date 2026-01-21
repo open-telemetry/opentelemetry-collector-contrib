@@ -308,7 +308,7 @@ To enable metrics you have to:
        metrics:
          # add prometheus among metrics receivers
          receivers: [prometheus]
-         exporters: [otlphttp/prometheus, debug]
+         exporters: [otlp_http/prometheus, debug]
    ```
 
 ### Available Metrics
