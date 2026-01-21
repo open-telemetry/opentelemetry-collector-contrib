@@ -24,7 +24,7 @@ resourceMetrics:
             stringValue: 12345678-1234-1234-1234-123456789abc
         - key: cloud.availability_zone
           value:
-            stringValue: "1"
+            stringValue: "az1"
         - key: cloud.platform
           value:
             stringValue: azure_vm

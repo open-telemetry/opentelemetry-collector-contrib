@@ -19,7 +19,7 @@ data:
         "subscriptionId": "12345678-1234-1234-1234-123456789abc",
         "resourceGroupName": "test-resource-group",
         "vmScaleSetName": "scaleset-01",
-        "zone": "1",
+        "zone": "az1",
         "osProfile": {
             "computerName": "test-azure-vm.internal.cloudapp.net"
         },
