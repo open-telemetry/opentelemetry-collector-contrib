@@ -65,11 +65,26 @@ const (
 	K8sJobAnnotation = "k8s.job.annotation.%s"
 )
 
-var AllowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
-	"k8sattr.labelsAnnotationsSingular.allow",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
-	featuregate.WithRegisterFromVersion("v0.125.0"),
+var (
+	EnableStableAttributes = featuregate.GlobalRegistry().MustRegister(
+		"semconv.k8s.k8sattributes.enableStable",
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, semconv stable attributes are enabled."),
+		featuregate.WithRegisterFromVersion("v0.144.0"),
+	)
+	DisableLegacyAttributes = featuregate.GlobalRegistry().MustRegister(
+		"semconv.k8s.k8sattributes.disableLegacy",
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, semconv legacy attributes are disabled."),
+		featuregate.WithRegisterFromVersion("v0.144.0"),
+	)
+	AllowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
+		"k8sattr.labelsAnnotationsSingular.allow",
+		featuregate.StageDeprecated,
+		featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
+		featuregate.WithRegisterFromVersion("v0.125.0"),
+		featuregate.WithRegisterToVersion("v0.150.0"),
+	)
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -926,18 +941,25 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	formatterLabel := K8sPodLabelsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
-		formatterLabel = K8sPodLabelKey
-	}
+	enableStable := EnableStableAttributes.IsEnabled()
+	disableLegacy := DisableLegacyAttributes.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromPodMetadata(pod.Labels, tags, formatterLabel)
+		if !disableLegacy {
+			r.extractFromPodMetadata(pod.Labels, tags, K8sPodLabelsKey)
+		}
+		if enableStable {
+			r.extractFromPodMetadata(pod.Labels, tags, K8sPodLabelKey)
+		}
 	}
 
-	formatterAnnotation := K8sPodAnnotationsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
-		formatterAnnotation = K8sPodAnnotationKey
+	for _, r := range c.Rules.Annotations {
+		if !disableLegacy {
+			r.extractFromPodMetadata(pod.Annotations, tags, K8sPodAnnotationsKey)
+		}
+		if enableStable {
+			r.extractFromPodMetadata(pod.Annotations, tags, K8sPodAnnotationKey)
+		}
 	}
 
 	if c.Rules.ServiceName {
@@ -950,9 +972,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		copyLabel(pod, tags, "app.kubernetes.io/version", conventions.ServiceVersionKey)
 	}
 
-	for _, r := range c.Rules.Annotations {
-		r.extractFromPodMetadata(pod.Annotations, tags, formatterAnnotation)
-	}
 	return tags
 }
 
@@ -1026,7 +1045,8 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		removeUnnecessaryContainerData := func(c api_v1.Container) api_v1.Container {
 			transformedContainer := api_v1.Container{}
 			transformedContainer.Name = c.Name // we always need the name, it's used for identification
-			if rules.ContainerImageName || rules.ContainerImageTag || rules.ServiceVersion {
+			// Need image if extracting name, tag (legacy or stable), or service version
+			if rules.ContainerImageName || rules.ContainerImageTag || rules.ContainerImageTags || rules.ServiceVersion {
 				transformedContainer.Image = c.Image
 			}
 			return transformedContainer
@@ -1101,7 +1121,11 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if !needContainerAttributes(c.Rules) {
 		return containers
 	}
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag ||
+
+	enableStable := EnableStableAttributes.IsEnabled()
+	disableLegacy := DisableLegacyAttributes.IsEnabled()
+
+	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.ContainerImageTags ||
 		c.Rules.ServiceVersion || c.Rules.ServiceInstanceID {
 		specs := append(pod.Spec.Containers, pod.Spec.InitContainers...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
 		for i := range specs {
@@ -1112,8 +1136,15 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 				if c.Rules.ContainerImageName {
 					container.ImageName = imageRef.Repository
 				}
-				if c.Rules.ContainerImageTag {
+				// Legacy: container.image.tag (singular, string)
+				if c.Rules.ContainerImageTag && !disableLegacy {
 					container.ImageTag = imageRef.Tag
+				}
+				// Stable: container.image.tags (plural, array)
+				if c.Rules.ContainerImageTags && enableStable {
+					if imageRef.Tag != "" {
+						container.ImageTags = []string{imageRef.Tag}
+					}
 				}
 				if c.Rules.ServiceVersion {
 					serviceVersion, err := parseServiceVersionFromImage(spec.Image)
@@ -1171,22 +1202,25 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
 	tags := map[string]string{}
 
-	formatterLabel := K8sNamespaceLabelsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
-		formatterLabel = K8sNamespaceLabelKey
-	}
+	enableStable := EnableStableAttributes.IsEnabled()
+	disableLegacy := DisableLegacyAttributes.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromNamespaceMetadata(namespace.Labels, tags, formatterLabel)
-	}
-
-	formatterAnnotation := K8sNamespaceAnnotationsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
-		formatterAnnotation = K8sNamespaceAnnotationKey
+		if !disableLegacy {
+			r.extractFromNamespaceMetadata(namespace.Labels, tags, K8sNamespaceLabelsKey)
+		}
+		if enableStable {
+			r.extractFromNamespaceMetadata(namespace.Labels, tags, K8sNamespaceLabelKey)
+		}
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNamespaceMetadata(namespace.Annotations, tags, formatterAnnotation)
+		if !disableLegacy {
+			r.extractFromNamespaceMetadata(namespace.Annotations, tags, K8sNamespaceAnnotationsKey)
+		}
+		if enableStable {
+			r.extractFromNamespaceMetadata(namespace.Annotations, tags, K8sNamespaceAnnotationKey)
+		}
 	}
 
 	return tags
@@ -1195,22 +1229,25 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
 	tags := map[string]string{}
 
-	formatterLabel := K8sNodeLabelsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
-		formatterLabel = K8sNodeLabelKey
-	}
+	enableStable := EnableStableAttributes.IsEnabled()
+	disableLegacy := DisableLegacyAttributes.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromNodeMetadata(node.Labels, tags, formatterLabel)
-	}
-
-	formatterAnnotation := K8sNodeAnnotationsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
-		formatterAnnotation = K8sNodeAnnotationKey
+		if !disableLegacy {
+			r.extractFromNodeMetadata(node.Labels, tags, K8sNodeLabelsKey)
+		}
+		if enableStable {
+			r.extractFromNodeMetadata(node.Labels, tags, K8sNodeLabelKey)
+		}
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNodeMetadata(node.Annotations, tags, formatterAnnotation)
+		if !disableLegacy {
+			r.extractFromNodeMetadata(node.Annotations, tags, K8sNodeAnnotationsKey)
+		}
+		if enableStable {
+			r.extractFromNodeMetadata(node.Annotations, tags, K8sNodeAnnotationKey)
+		}
 	}
 	return tags
 }
@@ -1755,6 +1792,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 	return rules.ContainerImageName ||
 		rules.ContainerName ||
 		rules.ContainerImageTag ||
+		rules.ContainerImageTags ||
 		rules.ContainerImageRepoDigests ||
 		rules.ContainerID ||
 		rules.ServiceVersion ||

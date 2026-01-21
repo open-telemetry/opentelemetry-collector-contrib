@@ -684,7 +684,21 @@ timestamp value as an RFC3339 compliant timestamp.
 
 ## Feature Gates
 
+### `semconv.k8s.k8sattributes.enableStable`
+
+The `semconv.k8s.k8sattributes.enableStable` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the SemConv valid format of the k8s attributes (`k8s.<workload>.label.<label-key>` and `k8s.<workload>.annotation.<annotation-key>`).
+
+The feature gate is in `alpha` stage, which means it is disabled by default.
+
+### `semconv.k8s.k8sattributes.disableLegacy`
+
+The `semconv.k8s.k8sattributes.disableLegacy` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) disables the old, non-SemConv valid format of the k8s attributes (`k8s.<workload>.labels.<label-key>` and `k8s.<workload>.annotations.<annotation-key>`).
+
+The feature gate is in `alpha` stage, which means it is disabled by default.
+
 ### `k8sattr.labelsAnnotationsSingular.allow`
+
+**Deprecated:** Use `semconv.k8s.k8sattributes.enableStable` instead.
 
 The `k8sattr.labelsAnnotationsSingular.allow` feature gate, when enabled, changes the default resource attribute key format from `k8s.<workload>.labels.<label-key>` to `k8s.<workload>.label.<label-key>` and `k8s.<workload>.annotations.<annotation-key>` to `k8s.<workload>.annotation.<annotation-key>`.
 

@@ -58,6 +58,12 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
+	if kube.DisableLegacyAttributes.IsEnabled() && !kube.EnableStableAttributes.IsEnabled() {
+		err := fmt.Errorf("cannot disable legacy attributes without enabling stable attributes")
+		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+		return err
+	}
+
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
 
 	for _, opt := range allOptions {
@@ -312,8 +318,16 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 	if containerSpec.ImageName != "" {
 		setResourceAttribute(attrs, string(conventions.ContainerImageNameKey), containerSpec.ImageName)
 	}
-	if containerSpec.ImageTag != "" {
+	enableStable := kube.EnableStableAttributes.IsEnabled()
+	disableLegacy := kube.DisableLegacyAttributes.IsEnabled()
+	if !disableLegacy && containerSpec.ImageTag != "" {
 		setResourceAttribute(attrs, containerImageTag, containerSpec.ImageTag)
+	}
+	if enableStable && len(containerSpec.ImageTags) > 0 {
+		sliceVal := attrs.PutEmptySlice(containerImageTags)
+		for _, tag := range containerSpec.ImageTags {
+			sliceVal.AppendEmpty().SetStr(tag)
+		}
 	}
 	if containerSpec.ServiceInstanceID != "" {
 		setResourceAttribute(attrs, string(conventions.ServiceInstanceIDKey), containerSpec.ServiceInstanceID)
