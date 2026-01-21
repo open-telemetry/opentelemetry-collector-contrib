@@ -796,9 +796,8 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
-		// infer context
 		{
-			name:      "flat sylte propagate error",
+			name:      "flat style propagate error",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
 				{
@@ -811,7 +810,7 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 			wantErrorWith: "could not convert parsed value of type float64 to JSON object",
 		},
 		{
-			name:      "flat sylte ignore error",
+			name:      "flat style ignore error",
 			errorMode: ottl.IgnoreError,
 			conditions: []condition.ContextConditions{
 				{

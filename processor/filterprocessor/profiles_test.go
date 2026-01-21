@@ -610,7 +610,6 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
-		// infer context
 		{
 			name:      "flat style propagate error",
 			errorMode: ottl.PropagateError,
