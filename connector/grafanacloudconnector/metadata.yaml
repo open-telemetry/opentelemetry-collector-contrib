@@ -1,4 +1,5 @@
 type: grafanacloud
+display_name: Grafana Cloud Connector
 
 status:
   class: connector
