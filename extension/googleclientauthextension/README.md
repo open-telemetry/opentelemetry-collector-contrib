@@ -26,7 +26,7 @@ receivers:
       grpc:
 
 exporters:
-  otlp/withauth:
+  otlp_grpc/withauth:
     endpoint: 0.0.0.0:5000
     ca_file: /tmp/certs/ca.pem
     auth:
@@ -38,7 +38,7 @@ service:
     metrics:
       receivers: [otlp]
       processors: []
-      exporters: [otlp/withauth]
+      exporters: [otlp_grpc/withauth]
 ```
 
 The following optional config fields are available:

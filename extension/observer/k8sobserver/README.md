@@ -197,7 +197,7 @@ data:
                 - node
     
     exporters:
-      otlp:
+      otlp_grpc:
         endpoint: <OTLP_ENDPOINT>
 
     service:
@@ -205,7 +205,7 @@ data:
       pipelines:
         metrics:
           receivers: [receiver_creator]
-          exporters: [otlp]
+          exporters: [otlp_grpc]
 EOF
 ```
 

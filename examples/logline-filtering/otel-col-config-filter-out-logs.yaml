@@ -9,9 +9,9 @@ service:
   pipelines:
     logs:
       receivers: [filelog]
-      exporters: [otlp/custom]
+      exporters: [otlp_grpc/custom]
       processors: []
 
 exporters:
-  otlp/custom:
+  otlp_grpc/custom:
     endpoint: http://0.0.0.0:4242

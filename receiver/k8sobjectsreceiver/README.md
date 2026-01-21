@@ -115,7 +115,7 @@ data:
           - name: events
             mode: watch
     exporters:
-      otlp:
+      otlp_grpc:
         endpoint: <OTLP_ENDPOINT>
         tls:
           insecure: true
@@ -124,7 +124,7 @@ data:
       pipelines:
         logs:
           receivers: [k8sobjects]
-          exporters: [otlp]
+          exporters: [otlp_grpc]
 EOF
 ```
 

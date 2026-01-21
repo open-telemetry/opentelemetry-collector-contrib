@@ -57,7 +57,7 @@ exporters:
     auth:
       authenticator: oauth2client
       
-  otlp/withauth:
+  otlp_grpc/withauth:
     endpoint: 0.0.0.0:5000
     tls:
       ca_file: /tmp/certs/ca.pem
@@ -70,7 +70,7 @@ service:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [otlp_http/withauth, otlp/withauth]
+      exporters: [otlp_http/withauth, otlp_grpc/withauth]
 ```
 
 Following are the configuration fields
