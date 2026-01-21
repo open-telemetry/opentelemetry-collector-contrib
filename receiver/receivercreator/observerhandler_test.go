@@ -555,13 +555,15 @@ func TestOnRemoveForTraces(t *testing.T) {
 //   - Discovered config: Auto-populated values like endpoint target (when user doesn't specify them)
 //
 // A receiver should restart when EITHER source would produce different values.
+// A receiver should be removed (not restarted) when its template's rule no longer matches.
 func TestOnChange(t *testing.T) {
 	tests := []struct {
 		name               string
 		templateConfig     userConfigMap
-		resourceAttributes map[string]any // optional custom resource attributes for the template
+		resourceAttributes map[string]any                              // optional custom resource attributes for the template
 		modifyEndpoint     func(e observer.Endpoint) observer.Endpoint // nil means no modification
 		expectRestart      bool
+		expectRemoved      bool // receiver removed because template no longer matches (mutually exclusive with expectRestart)
 	}{
 		{
 			name:           "static config unchanged - no restart",
@@ -642,6 +644,24 @@ func TestOnChange(t *testing.T) {
 			},
 			expectRestart: false,
 		},
+		{
+			// When endpoint type changes such that the template's rule no longer matches,
+			// the receiver should be removed (not restarted). Rule is `type == "port"`.
+			name:           "rule no longer matches - remove receiver",
+			templateConfig: userConfigMap{"endpoint": "some.endpoint"},
+			modifyEndpoint: func(e observer.Endpoint) observer.Endpoint {
+				// Change from Port to HostPort, so type changes from "port" to "hostport"
+				e.Details = &observer.HostPort{
+					ProcessName: "test-process",
+					Command:     "./test",
+					Port:        1234,
+					Transport:   observer.ProtocolTCP,
+				}
+				return e
+			},
+			expectRestart: false,
+			expectRemoved: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -690,19 +710,116 @@ func TestOnChange(t *testing.T) {
 			handler.OnChange([]observer.Endpoint{endpoint})
 			require.NoError(t, r.lastError)
 
-			// Verify restart behavior
-			if tt.expectRestart {
+			// Verify behavior based on expected outcome
+			switch {
+			case tt.expectRemoved:
+				// Receiver should be removed (shutdown but not restarted)
+				assert.Same(t, origRcvr, r.shutdownComponent, "original receiver should be shutdown")
+				assert.Nil(t, r.startedComponent, "no new receiver should be started")
+				assert.Equal(t, 0, handler.receiversByEndpointID.Size(), "receiver map should be empty")
+			case tt.expectRestart:
+				// Receiver should be restarted (shutdown old, start new)
 				assert.Same(t, origRcvr, r.shutdownComponent, "original receiver should be shutdown")
 				require.NotNil(t, r.startedComponent, "new receiver should be started")
 				require.NotSame(t, origRcvr, r.startedComponent, "should be a different receiver instance")
-			} else {
+				assert.Equal(t, 1, handler.receiversByEndpointID.Size())
+			default:
+				// Receiver should be kept (no shutdown, no start)
 				assert.Nil(t, r.shutdownComponent, "receiver should not be shutdown")
 				assert.Nil(t, r.startedComponent, "no new receiver should be started")
 				assert.Same(t, origRcvr, handler.receiversByEndpointID.Get("port-1")[0].receiver)
+				assert.Equal(t, 1, handler.receiversByEndpointID.Size())
 			}
-			assert.Equal(t, 1, handler.receiversByEndpointID.Size())
 		})
 	}
+}
+
+// TestOnChangeNewTemplateMatches verifies that when an endpoint changes such that
+// a previously non-matching template now matches, a new receiver is started.
+func TestOnChangeNewTemplateMatches(t *testing.T) {
+	// Create two templates:
+	// - Template 1: matches all port endpoints (type == "port")
+	// - Template 2: matches only when pod label "app" is "redis-v2"
+	// Initially, only template 1 matches. After changing the label, template 2 also matches.
+
+	cfg := createDefaultConfig().(*Config)
+
+	// Template 1: always matches port endpoints
+	template1Cfg := receiverConfig{
+		id:         component.MustNewIDWithName("with_endpoint", "always.matches"),
+		config:     userConfigMap{"endpoint": "some.endpoint"},
+		endpointID: portEndpoint.ID,
+	}
+
+	// Template 2: only matches when app label is "redis-v2"
+	template2Rule, err := newRule(`type == "port" && pod.labels["app"] == "redis-v2"`)
+	require.NoError(t, err)
+	template2Cfg := receiverConfig{
+		id:         component.MustNewIDWithName("with_endpoint", "label.matches"),
+		config:     userConfigMap{"endpoint": "label.endpoint"},
+		endpointID: portEndpoint.ID,
+	}
+
+	cfg.receiverTemplates = map[string]receiverTemplate{
+		template1Cfg.id.String(): {
+			receiverConfig:     template1Cfg,
+			rule:               portRule,
+			Rule:               `type == "port"`,
+			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
+		},
+		template2Cfg.id.String(): {
+			receiverConfig:     template2Cfg,
+			rule:               template2Rule,
+			Rule:               `type == "port" && pod.labels["app"] == "redis-v2"`,
+			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
+		},
+	}
+
+	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
+
+	// Initially add endpoint - only template 1 should match (app label is "redis")
+	handler.OnAdd([]observer.Endpoint{portEndpoint})
+
+	require.NoError(t, r.lastError)
+	require.NotNil(t, r.startedComponent)
+	assert.Equal(t, 1, handler.receiversByEndpointID.Size(), "only template1 should match initially")
+
+	origRcvr := r.startedComponent
+
+	// Clear mock to track OnChange calls
+	r.shutdownComponent = nil
+	r.startedComponent = nil
+
+	// Modify endpoint: change app label from "redis" to "redis-v2"
+	// This should make template 2 also match
+	modifiedEndpoint := portEndpoint
+	port := modifiedEndpoint.Details.(*observer.Port)
+	newPod := port.Pod
+	newPod.Labels = map[string]string{
+		"app":    "redis-v2", // changed from "redis"
+		"region": "west-1",
+	}
+	modifiedEndpoint.Details = &observer.Port{
+		Name:           port.Name,
+		Pod:            newPod,
+		Port:           port.Port,
+		Transport:      port.Transport,
+		ContainerName:  port.ContainerName,
+		ContainerID:    port.ContainerID,
+		ContainerImage: port.ContainerImage,
+	}
+
+	// Trigger OnChange
+	handler.OnChange([]observer.Endpoint{modifiedEndpoint})
+	require.NoError(t, r.lastError)
+
+	// Verify: template 1's receiver kept running, template 2's receiver started
+	assert.Nil(t, r.shutdownComponent, "template1 receiver should not be shutdown (config unchanged)")
+	require.NotNil(t, r.startedComponent, "template2 receiver should be started")
+	assert.NotSame(t, origRcvr, r.startedComponent, "should be a new receiver from template2")
+	assert.Equal(t, 2, handler.receiversByEndpointID.Size(), "both templates should now have receivers")
 }
 
 // TestResolveConfig verifies resolveConfig expands backtick expressions and properly

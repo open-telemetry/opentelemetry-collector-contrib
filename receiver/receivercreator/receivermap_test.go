@@ -33,6 +33,7 @@ func TestReceiverMap(t *testing.T) {
 		rm.Put("a", e2) // Second entry under same key "a"
 		assert.Equal(t, 2, rm.Size())
 
+		// different key still impacts size
 		rm.Put("b", e3)
 		assert.Equal(t, 3, rm.Size())
 	})

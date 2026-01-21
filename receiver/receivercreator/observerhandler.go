@@ -217,9 +217,9 @@ func (obs *observerHandler) handleEndpointChange(e observer.Endpoint) {
 	}
 
 	// 2. Shutdown receivers that need to be restarted (will start them after map update)
-	for _, restart := range entriesToRestart {
-		if err := obs.runner.shutdown(restart.oldEntry.receiver); err != nil {
-			obs.params.Logger.Error("failed to stop receiver for restart", zap.String("receiver", restart.oldEntry.id.String()), zap.Error(err))
+	for i := range entriesToRestart {
+		if err := obs.runner.shutdown(entriesToRestart[i].oldEntry.receiver); err != nil {
+			obs.params.Logger.Error("failed to stop receiver for restart", zap.String("receiver", entriesToRestart[i].oldEntry.id.String()), zap.Error(err))
 		}
 	}
 
@@ -231,8 +231,8 @@ func (obs *observerHandler) handleEndpointChange(e observer.Endpoint) {
 
 	// 4. Start receivers that need to be restarted with new config
 	//    (startReceiver will add them to the map)
-	for _, restart := range entriesToRestart {
-		obs.startReceiver(restart.template, env, e)
+	for i := range entriesToRestart {
+		obs.startReceiver(entriesToRestart[i].template, env, e)
 	}
 
 	// 5. Add any NEW receivers from templates that now match
