@@ -15,6 +15,21 @@ import (
 	"golang.org/x/text/encoding/unicode"
 )
 
+// defaultBufSize is the default size for reusable transform buffers.
+// This size covers most common log line lengths. For larger inputs,
+// a temporary buffer is allocated to avoid memory leaks from holding
+// onto oversized buffers.
+const defaultBufSize = 4096
+
+// getBuffer returns the reusable buffer if it has sufficient capacity,
+// otherwise allocates a new buffer of the needed size.
+func getBuffer(reusable []byte, neededSize int) []byte {
+	if neededSize <= cap(reusable) {
+		return reusable[:neededSize]
+	}
+	return make([]byte, neededSize)
+}
+
 // Config is the configuration for a split func
 type Config struct {
 	LineStartPattern string `mapstructure:"line_start_pattern"`
@@ -68,6 +83,9 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc enc
 	// Check if encoding is UTF-8 - in this case we can match directly on bytes
 	isUTF8 := enc == unicode.UTF8
 
+	// Reusable buffer for encoding transforms to reduce allocations
+	transformBuf := make([]byte, defaultBufSize)
+
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		// Create a fresh decoder for each invocation to avoid state issues
 		decoder := enc.NewDecoder()
@@ -83,7 +101,7 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc enc
 				firstMatchStart, firstMatchEnd = firstLoc[0], firstLoc[1]
 			}
 		} else {
-			result, flush, needMoreData := findRegexMatch(re, data, decoder, enc, atEOF, flushAtEOF, logger)
+			result, flush, needMoreData := findRegexMatch(re, data, decoder, enc, atEOF, flushAtEOF, logger, transformBuf)
 			if flush {
 				return len(data), data, nil
 			}
@@ -148,9 +166,10 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc enc
 				// Map decoded byte position back to original encoded byte position
 				matchStartBytes := remainingDecoded[:secondLoc[0]]
 				encoder := enc.NewEncoder()
-				startBuf := make([]byte, len(matchStartBytes)*4)
+				neededSize := len(matchStartBytes) * 4
+				buf := getBuffer(transformBuf, neededSize)
 				var nDst int
-				nDst, _, err = encoder.Transform(startBuf, matchStartBytes, true)
+				nDst, _, err = encoder.Transform(buf, matchStartBytes, true)
 				if err != nil {
 					return 0, nil, nil
 				}
@@ -178,6 +197,9 @@ func LineEndSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc encod
 	// Check if encoding is UTF-8 - in this case we can match directly on bytes
 	isUTF8 := enc == unicode.UTF8
 
+	// Reusable buffer for encoding transforms to reduce allocations
+	transformBuf := make([]byte, defaultBufSize)
+
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		// Create a fresh decoder for each invocation to avoid state issues
 		decoder := enc.NewDecoder()
@@ -192,7 +214,7 @@ func LineEndSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc encod
 				matchStart, matchEnd = loc[0], loc[1]
 			}
 		} else {
-			result, flush, needMoreData := findRegexMatch(re, data, decoder, enc, atEOF, flushAtEOF, logger)
+			result, flush, needMoreData := findRegexMatch(re, data, decoder, enc, atEOF, flushAtEOF, logger, transformBuf)
 			if flush {
 				return len(data), data, nil
 			}
@@ -295,11 +317,12 @@ type matchResult struct {
 // findRegexMatch finds a regex match in data that may be encoded in a non-UTF8 encoding.
 // It handles decoding, truncation at EOF for encodings like UTF-16, and maps the match
 // positions back to byte positions in the original data.
+// The transformBuf parameter is a reusable buffer for encoding transforms to reduce allocations.
 // Returns:
 // - result: the match result with positions mapped to byte offsets
 // - flush: if true, caller should return (len(data), data, nil) to flush remaining data
 // - needMoreData: if true, caller should return (0, nil, nil) to request more data
-func findRegexMatch(re *regexp.Regexp, data []byte, decoder *encoding.Decoder, enc encoding.Encoding, atEOF, flushAtEOF bool, logger *zap.Logger) (result matchResult, flush, needMoreData bool) {
+func findRegexMatch(re *regexp.Regexp, data []byte, decoder *encoding.Decoder, enc encoding.Encoding, atEOF, flushAtEOF bool, logger *zap.Logger, transformBuf []byte) (result matchResult, flush, needMoreData bool) {
 	result.data = data
 
 	decoded, decodeErr := decoder.Bytes(data)
@@ -343,8 +366,9 @@ func findRegexMatch(re *regexp.Regexp, data []byte, decoder *encoding.Decoder, e
 	matchEndBytes := decoded[:result.loc[1]]
 	encoder := enc.NewEncoder()
 
-	// Allocate buffer for encoding (UTF-16LE uses 2 bytes per ASCII char, but allocate more for safety)
-	startBuf := make([]byte, len(matchStartBytes)*4)
+	// Use reusable buffer if it has sufficient capacity, otherwise allocate
+	startNeeded := len(matchStartBytes) * 4
+	startBuf := getBuffer(transformBuf, startNeeded)
 	nDst, _, err := encoder.Transform(startBuf, matchStartBytes, true)
 	if err != nil {
 		// If encoding fails, fall back to UTF-8 matching
@@ -358,7 +382,8 @@ func findRegexMatch(re *regexp.Regexp, data []byte, decoder *encoding.Decoder, e
 		return result, false, false
 	}
 
-	endBuf := make([]byte, len(matchEndBytes)*4)
+	endNeeded := len(matchEndBytes) * 4
+	endBuf := getBuffer(transformBuf, endNeeded)
 	nDstEnd, _, err := encoder.Transform(endBuf, matchEndBytes, true)
 	if err != nil {
 		// If encoding fails, fall back to UTF-8 matching
