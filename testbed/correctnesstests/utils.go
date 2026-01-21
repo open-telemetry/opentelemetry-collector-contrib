@@ -206,7 +206,7 @@ func newDbgLogger() *zap.Logger {
 func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
 	var sender testbed.DataSender
 	switch receiver {
-	case "otlp":
+	case "otlp_grpc":
 		sender = testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	case "jaeger":
 		sender = datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
@@ -222,7 +222,7 @@ func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
 func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSender {
 	var sender testbed.MetricDataSender
 	switch receiver {
-	case "otlp":
+	case "otlp_grpc":
 		sender = testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	case "stef":
 		s := datasenders.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))

@@ -1,2 +1,2 @@
 Receiver: jaeger, otlp, zipkin
-Exporter: otlp, zipkin
+Exporter: otlp_grpc, zipkin

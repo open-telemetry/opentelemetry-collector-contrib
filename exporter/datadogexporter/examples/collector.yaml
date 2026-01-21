@@ -155,7 +155,7 @@ connectors:
 # https://opentelemetry.io/docs/collector/configuration/#exporters
 exporters:
   # The OTLP exporter is necessary **only** on gateway deployment mode, to relay telemetry data to the gateway.
-  ## otlp:
+  ## otlp_grpc:
     ## @param endpoint - string - required
     ## Endpoint where to send telemetry. On gateway mode, we set it to the gateway host IP.
     #

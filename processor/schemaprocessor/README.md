@@ -75,7 +75,7 @@ receivers:
     protocols:
       grpc:
 exporter:
-  otlp:
+  otlp_grpc:
     endpoint: "localhost:4317"
 processors:
   probabilistic_sampler:
@@ -97,10 +97,10 @@ service:
     traces/sampled:
       receivers: [otlp]
       processors: [probabilistic_sampler]
-      exporters: [otlp]
+      exporters: [otlp_grpc]
     metrics:
       receivers: [spanmetrics]
-      exporters: [otlp]
+      exporters: [otlp_grpc]
 ```
 
 ![collector pipeline](./images/collector-pipeline.png)
