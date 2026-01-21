@@ -4,7 +4,6 @@
 package spanpruningprocessor
 
 import (
-	"context"
 	"strings"
 	"testing"
 	"time"
@@ -254,7 +253,7 @@ func TestLeafSpanPruning_DurationStats(t *testing.T) {
 
 // Helper functions
 
-func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName string, attrs map[string]string) ptrace.Traces {
+func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName string, attrs map[string]string) ptrace.Traces { //nolint:unparam
 	t.Helper()
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
@@ -289,7 +288,7 @@ func createTestTraceWithLeafSpans(t *testing.T, numLeafSpans int, spanName strin
 // TestBytesMetrics_Enabled tests that bytes metrics are recorded when enabled
 func TestBytesMetrics_Enabled(t *testing.T) {
 	testTel := componenttest.NewTelemetry()
-	defer func() { require.NoError(t, testTel.Shutdown(context.Background())) }()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -321,7 +320,7 @@ func TestBytesMetrics_Enabled(t *testing.T) {
 // TestBytesMetrics_Disabled tests that bytes metrics are NOT recorded when disabled (default)
 func TestBytesMetrics_Disabled(t *testing.T) {
 	testTel := componenttest.NewTelemetry()
-	defer func() { require.NoError(t, testTel.Shutdown(context.Background())) }()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -349,7 +348,7 @@ func TestBytesMetrics_Disabled(t *testing.T) {
 // TestOutlierMetrics_IQR tests that outlier metrics are recorded correctly with IQR method
 func TestOutlierMetrics_IQR(t *testing.T) {
 	testTel := componenttest.NewTelemetry()
-	defer func() { require.NoError(t, testTel.Shutdown(context.Background())) }()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -395,7 +394,7 @@ func TestOutlierMetrics_IQR(t *testing.T) {
 // TestOutlierMetrics_MAD tests that outlier metrics are recorded correctly with MAD method
 func TestOutlierMetrics_MAD(t *testing.T) {
 	testTel := componenttest.NewTelemetry()
-	defer func() { require.NoError(t, testTel.Shutdown(context.Background())) }()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -441,7 +440,7 @@ func TestOutlierMetrics_MAD(t *testing.T) {
 // TestOutlierMetrics_NoPreservation tests metrics when outliers are detected but not preserved
 func TestOutlierMetrics_NoPreservation(t *testing.T) {
 	testTel := componenttest.NewTelemetry()
-	defer func() { require.NoError(t, testTel.Shutdown(context.Background())) }()
+	defer func() { require.NoError(t, testTel.Shutdown(t.Context())) }()
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
