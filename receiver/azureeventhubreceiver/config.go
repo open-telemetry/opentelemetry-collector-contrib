@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Azure/azure-amqp-common-go/v4/conn"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"go.opentelemetry.io/collector/component"
 )
@@ -21,9 +20,8 @@ const (
 )
 
 var (
-	validFormats           = []logFormat{defaultLogFormat, rawLogFormat, azureLogFormat}
-	errMissingConnection   = errors.New("missing connection")
-	errFeatureGateRequired = fmt.Errorf("poll_rate and max_poll_events can only be used with %s enabled", azEventHubFeatureGateName)
+	validFormats         = []logFormat{defaultLogFormat, rawLogFormat, azureLogFormat}
+	errMissingConnection = errors.New("missing connection")
 )
 
 type Config struct {
@@ -61,15 +59,7 @@ type TimeFormat struct {
 
 // Validate config
 func (config *Config) Validate() error {
-	if !azEventHubFeatureGate.IsEnabled() &&
-		(config.PollRate != 0 || config.MaxPollEvents != 0) {
-		return errFeatureGateRequired
-	}
-
 	if config.Auth != nil {
-		if !azEventHubFeatureGate.IsEnabled() {
-			return fmt.Errorf("auth can only be used with %s enabled", azEventHubFeatureGateName)
-		}
 		if config.EventHub.Name == "" {
 			return errors.New("event_hub.name is required when using auth")
 		}
@@ -80,15 +70,8 @@ func (config *Config) Validate() error {
 		if config.Connection == "" {
 			return errMissingConnection
 		}
-
-		if azEventHubFeatureGate.IsEnabled() {
-			if _, err := azeventhubs.ParseConnectionString(config.Connection); err != nil {
-				return err
-			}
-		} else {
-			if _, err := conn.ParsedConnectionFromStr(config.Connection); err != nil {
-				return err
-			}
+		if _, err := azeventhubs.ParseConnectionString(config.Connection); err != nil {
+			return err
 		}
 	}
 
