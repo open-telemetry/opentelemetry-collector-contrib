@@ -23,7 +23,8 @@ func newMockDynamicClient() mockDynamicClient {
 	objs := []runtime.Object{}
 
 	gvrToListKind := map[schema.GroupVersionResource]string{
-		{Group: "", Version: "v1", Resource: "pods"}: "PodList",
+		{Group: "", Version: "v1", Resource: "pods"}:       "PodList",
+		{Group: "", Version: "v1", Resource: "namespaces"}: "NamespaceList",
 	}
 
 	fakeClient := fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind, objs...)
@@ -43,6 +44,16 @@ func (c mockDynamicClient) createPods(objects ...*unstructured.Unstructured) {
 	})
 	for _, pod := range objects {
 		_, _ = pods.Namespace(pod.GetNamespace()).Create(context.Background(), pod, v1.CreateOptions{})
+	}
+}
+
+func (c mockDynamicClient) createNamespaces(objects ...*unstructured.Unstructured) {
+	namespaces := c.client.Resource(schema.GroupVersionResource{
+		Version:  "v1",
+		Resource: "namespaces",
+	})
+	for _, ns := range objects {
+		_, _ = namespaces.Create(context.Background(), ns, v1.CreateOptions{})
 	}
 }
 
@@ -71,4 +82,20 @@ func generatePod(name, namespace string, labels map[string]any, resourceVersion 
 
 	pod.SetResourceVersion(resourceVersion)
 	return &pod
+}
+
+func generateNamespace(name, resourceVersion string) *unstructured.Unstructured {
+	ns := unstructured.Unstructured{
+		Object: map[string]any{
+			"apiVersion": "v1",
+			"kind":       "Namespace",
+			"name":       name,
+			"metadata": map[string]any{
+				"name": name,
+			},
+		},
+	}
+
+	ns.SetResourceVersion(resourceVersion)
+	return &ns
 }
