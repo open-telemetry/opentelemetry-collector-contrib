@@ -254,21 +254,21 @@ events:
       Query sample collection enables monitoring of current running database statements.
       This provides real-time visibility into active queries, helping users monitor database activity and performance as part of their observability pipeline.
     attributes:
-      - db.system.name
-      - mysql.threads.thread_id
-      - user.name
-      - db.namespace
-      - mysql.threads.processlist_command
-      - mysql.threads.processlist_state
-      - db.query.text
-      - mysql.events_statements_current.digest
-      - mysql.event_id
-      - mysql.wait_type
-      - mysql.events_waits_current.timer_wait
       - client.address
       - client.port
+      - db.namespace
+      - db.query.text
+      - db.system.name
+      - mysql.event_id
+      - mysql.events_statements_current.digest
+      - mysql.events_waits_current.timer_wait
+      - mysql.threads.processlist_command
+      - mysql.threads.processlist_state
+      - mysql.threads.thread_id
+      - mysql.wait_type
       - network.peer.address
       - network.peer.port
+      - user.name
 
   db.server.top_query:
     enabled: false
