@@ -105,19 +105,6 @@ func (mi metricIdentity) Hash() uint64 {
 	return xxhash.Sum64String(combined)
 }
 
-func exemplarID(scopeName, scopeVersion, metricName string, metricType writev2.Metadata_MetricType) uint64 {
-	const separator = "\xff"
-
-	combined := strings.Join([]string{
-		scopeName,
-		scopeVersion,
-		metricName,
-		fmt.Sprintf("%d", metricType),
-	}, separator)
-
-	return xxhash.Sum64String(combined)
-}
-
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/write", prw.handlePRW)
@@ -561,6 +548,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
 			histMetric.SetDescription(description)
 		}
+		// all the exemplars for a given histogram are attached to first data point.
 		var exemplarSlice pmetric.ExemplarSlice
 		// Process the individual histogram
 		if histogramType == "nhcb" {
