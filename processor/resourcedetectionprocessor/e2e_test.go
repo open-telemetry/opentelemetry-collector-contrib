@@ -354,7 +354,7 @@ func TestE2EOpenstackNovaDetector(t *testing.T) {
 	defer shutdownSink()
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "openstack", "collector"), map[string]string{}, "")
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "nova", "collector"), map[string]string{}, "")
 
 	defer func() {
 		for _, obj := range collectorObjs {
