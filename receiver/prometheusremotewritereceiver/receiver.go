@@ -573,7 +573,6 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		if ex, ok := exemplarMap[key.Hash()]; ok {
 			ex.CopyTo(exemplarSlice)
 		}
-
 	}
 }
 
