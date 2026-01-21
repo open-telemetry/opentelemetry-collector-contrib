@@ -1,4 +1,5 @@
 type: prometheusremotewrite
+display_name: Prometheus Remote Write Exporter
 
 status:
   class: exporter
