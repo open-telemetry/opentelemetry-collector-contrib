@@ -481,13 +481,15 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 		filterEverything  bool
 		want              func(td ptrace.Traces)
 		errorMode         ottl.ErrorMode
+		input             func() ptrace.Traces
 	}{
 		{
 			name: "resource: drop by schema_url",
 			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.schema_url == "test_schema_url"`}},
 			},
-			want: func(_ ptrace.Traces) {},
+			want:  func(_ ptrace.Traces) {},
+			input: constructTraces,
 		},
 		{
 			name: "resource: drop by attribute",
@@ -495,13 +497,15 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 				{Conditions: []string{`resource.attributes["host.name"] == "localhost"`}},
 			},
 			filterEverything: true,
+			input:            constructTraces,
 		},
 		{
 			name: "scope: drop by attribute",
 			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["lib"] == "awesomelib"`}},
 			},
-			want: func(_ ptrace.Traces) {},
+			want:  func(_ ptrace.Traces) {},
+			input: constructTraces,
 		},
 		{
 			name: "scope: drop by name",
@@ -513,6 +517,7 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 					return ss.Scope().Name() == "scope1"
 				})
 			},
+			input: constructTraces,
 		},
 		{
 			name: "span: drop by attributes",
@@ -528,6 +533,7 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 					})
 				}
 			},
+			input: constructTraces,
 		},
 		{
 			name: "span: drop by function",
@@ -542,6 +548,7 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 					})
 				}
 			},
+			input: constructTraces,
 		},
 		{
 			name: "span: drop by enum",
@@ -556,6 +563,7 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 					})
 				}
 			},
+			input: constructTraces,
 		},
 		{
 			name: "spanevent: drop by name",
@@ -572,6 +580,7 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 					}
 				}
 			},
+			input: constructTraces,
 		},
 		{
 			name: "inferring mixed contexts",
@@ -595,6 +604,31 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 					})
 				}
 			},
+			input: constructTraces,
+		},
+		{
+			name: "zero-record lower-context: resource and spanevent with no events",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{
+					`resource.attributes["host.name"] == "localhost"`,
+					`spanevent.name == "eventA"`,
+				}},
+			},
+			filterEverything: true,
+			input:            contructTracesWithEmptySpanEvent,
+		},
+		{
+			name: "group by context: conditions in same group are respected",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{
+					`scope.name == "scope3"`,
+					`scope.name == "scope4"`,
+					`span.name == "operationA"`,
+					`span.name == "operationB"`,
+				}},
+			},
+			filterEverything: true,
+			input:            contructTracesWithMultipleSpans,
 		},
 	}
 	for _, tt := range tests {
@@ -604,13 +638,13 @@ func Test_ProcessTraces_InferredContext(t *testing.T) {
 			processor, err := newFilterSpansProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 
-			got, err := processor.processTraces(t.Context(), constructTraces())
+			got, err := processor.processTraces(t.Context(), tt.input())
 
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
 				assert.NoError(t, err)
-				exTd := constructTraces()
+				exTd := tt.input()
 				tt.want(exTd)
 				assert.Equal(t, exTd, got)
 			}
@@ -672,8 +706,8 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 			name:      "resource: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("resource")},
+				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}, Context: condition.ContextID("resource")},
 			},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
@@ -686,8 +720,8 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 			name:      "resource: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("resource")},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}, Context: condition.ContextID("resource")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
@@ -695,8 +729,8 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 			name:      "scope: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`scope.name == "scope1"`}},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("scope")},
+				{Conditions: []string{`scope.name == "scope1"`}, Context: condition.ContextID("scope")},
 			},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
@@ -708,8 +742,8 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 			name:      "scope: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("true")`}},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("scope")},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("true")`}, Context: condition.ContextID("scope")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
@@ -717,8 +751,8 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 			name:      "span: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`span.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`not IsMatch(span.name, ".*")`}},
+				{Conditions: []string{`span.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("span")},
+				{Conditions: []string{`not IsMatch(span.name, ".*")`}, Context: condition.ContextID("span")},
 			},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(span ptrace.Span) bool {
@@ -730,8 +764,8 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 			name:      "span: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`span.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`span.attributes["pass"] == ParseJSON("true")`}},
+				{Conditions: []string{`span.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("span")},
+				{Conditions: []string{`span.attributes["pass"] == ParseJSON("true")`}, Context: condition.ContextID("span")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
@@ -739,8 +773,8 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 			name:      "spanevent: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`spanevent.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`spanevent.name == "eventA"`}},
+				{Conditions: []string{`spanevent.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("spanevent")},
+				{Conditions: []string{`spanevent.name == "eventA"`}, Context: condition.ContextID("spanevent")},
 			},
 			want: func(td ptrace.Traces) {
 				rs := td.ResourceSpans().At(0)
@@ -761,6 +795,38 @@ func Test_ProcessTraces_ConditionsErrorMode(t *testing.T) {
 				{Conditions: []string{`spanevent.attributes["pass"] == ParseJSON("true")`}},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+		},
+		// infer context
+		{
+			name:      "flat sylte propagate error",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{
+					Conditions: []string{
+						`resource.attributes["pass"] == ParseJSON("1")`,
+						`not IsMatch(resource.attributes["host.name"], ".*")`,
+					},
+				},
+			},
+			wantErrorWith: "could not convert parsed value of type float64 to JSON object",
+		},
+		{
+			name:      "flat sylte ignore error",
+			errorMode: ottl.IgnoreError,
+			conditions: []condition.ContextConditions{
+				{
+					Conditions: []string{
+						`resource.attributes["pass"] == ParseJSON("1")`,
+						`not IsMatch(resource.attributes["host.name"], ".*")`,
+					},
+				},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+					v, _ := rs.Resource().Attributes().Get("host.name")
+					return v.AsString() == ""
+				})
+			},
 		},
 	}
 
@@ -889,6 +955,36 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func contructTracesWithEmptySpanEvent() ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("host.name", "localhost")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().SetName("scope1")
+	span := ss.Spans().AppendEmpty()
+	span.SetName("operationA")
+	return td
+}
+
+func contructTracesWithMultipleSpans() ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs0 := td.ResourceSpans().AppendEmpty()
+	rs0.Resource().Attributes().PutStr("host.name", "localhost")
+	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils0.Scope().SetName("scope1")
+	fillSpanOne(rs0ils0.Spans().AppendEmpty())
+	fillSpanOne(rs0ils0.Spans().AppendEmpty())
+	rs0ils1 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils1.Scope().SetName("scope2")
+	fillSpanTwo(rs0ils1.Spans().AppendEmpty())
+	fillSpanTwo(rs0ils1.Spans().AppendEmpty())
+	rs0ils3 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils3.Scope().SetName("scope3")
+	rs0ils4 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils4.Scope().SetName("scope4")
+	return td
 }
 
 func constructTraces() ptrace.Traces {

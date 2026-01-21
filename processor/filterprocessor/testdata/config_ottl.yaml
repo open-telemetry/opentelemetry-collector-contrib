@@ -291,3 +291,8 @@ filter/unknown_context:
     - context: abc
       conditions:
         - attributes["another_test"] == "fail"
+# Bad conditions flat style
+filter/empty_flat_style:
+  log_conditions:
+    -
+    -

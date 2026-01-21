@@ -366,13 +366,16 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		conditionsConfigs := make([]any, 0, len(values))
 		var basicConditions []any
 		for _, value := range values {
-			// Array of strings means it's a basic configuration style
-			if reflect.TypeOf(value).Kind() == reflect.String {
+			switch {
+			case value == nil:
+				return errors.New("condition cannot be empty")
+			case reflect.TypeOf(value).Kind() == reflect.String:
+				// Array of strings means it's a basic configuration style
 				if len(conditionsConfigs) > 0 {
 					return errors.New("configuring multiple configuration styles is not supported, please use only Basic configuration or only Advanced configuration")
 				}
 				basicConditions = append(basicConditions, value)
-			} else {
+			default:
 				if len(basicConditions) > 0 {
 					return errors.New("configuring multiple configuration styles is not supported, please use only Basic configuration or only Advanced configuration")
 				}

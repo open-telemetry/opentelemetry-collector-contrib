@@ -957,6 +957,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 		contextConditions []condition.ContextConditions
 		filterEverything  bool
 		want              func(md pmetric.Metrics)
+		input             func() pmetric.Metrics
 	}{
 		{
 			name: "resource: drop everything",
@@ -964,6 +965,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 				{Conditions: []string{`resource.schema_url == "test_schema_url"`}},
 			},
 			filterEverything: true,
+			input:            constructMetrics,
 		},
 		{
 			name: "resource: drop by attribute",
@@ -971,13 +973,15 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 				{Conditions: []string{`resource.attributes["host.name"] == "localhost"`}},
 			},
 			filterEverything: true,
+			input:            constructMetrics,
 		},
 		{
 			name: "scope: drop by attribute",
 			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["lib"] == "awesomelib"`}},
 			},
-			want: func(_ pmetric.Metrics) {},
+			want:  func(_ pmetric.Metrics) {},
+			input: constructMetrics,
 		},
 		{
 			name: "scope: drop by name",
@@ -985,6 +989,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 				{Conditions: []string{`scope.name == "scope"`}},
 			},
 			filterEverything: true,
+			input:            constructMetrics,
 		},
 		{
 			name: "metrics: drop by function",
@@ -992,6 +997,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 				{Conditions: []string{`IsMatch(metric.name, "operation.*")`}},
 			},
 			filterEverything: true,
+			input:            constructMetrics,
 		},
 		{
 			name: "metrics: drop by name",
@@ -1006,6 +1012,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 					})
 				}
 			},
+			input: constructMetrics,
 		},
 		{
 			name: "metric: drop by enum",
@@ -1017,6 +1024,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 					return metric.Type() == pmetric.MetricTypeSum
 				})
 			},
+			input: constructMetrics,
 		},
 		{
 			name: "datapoint: drop by sum",
@@ -1028,6 +1036,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 					return point.DoubleValue() == 1.0
 				})
 			},
+			input: constructMetrics,
 		},
 		{
 			name: "datapoint: drop by gauge",
@@ -1039,6 +1048,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 					return point.DoubleValue() == 1.0
 				})
 			},
+			input: constructMetrics,
 		},
 		{
 			name: "datapoint: drop by histogram",
@@ -1050,6 +1060,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 					return point.Count() == 1
 				})
 			},
+			input: constructMetrics,
 		},
 		{
 			name: "datapoint: drop by exponential histogram",
@@ -1061,6 +1072,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 					return point.Count() == 1
 				})
 			},
+			input: constructMetrics,
 		},
 		{
 			name: "datapoint: drop by summary",
@@ -1072,6 +1084,7 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 					return point.Sum() == 43.21
 				})
 			},
+			input: constructMetrics,
 		},
 		{
 			name: "mixed contexts",
@@ -1086,6 +1099,31 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 					return metric.Type() == pmetric.MetricTypeSummary
 				})
 			},
+			input: constructMetrics,
+		},
+		{
+			name: "zero-record lower-context: resource and datapoint with no datapoints",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{
+					`resource.attributes["host.name"] == "localhost"`,
+					`datapoint.value_double == 1.0`,
+				}},
+			},
+			filterEverything: true,
+			input:            constructMetricsWithEmptyDataPoints,
+		},
+		{
+			name: "group by context: conditions in same group are respected",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{
+					`metric.name == "operationB"`,
+					`metric.name == "operationC"`,
+					`datapoint.value_double == 1.0`,
+					`datapoint.value_double == 3.7`,
+				}},
+			},
+			filterEverything: true,
+			input:            constructMetricsWithMultipleMetrics,
 		},
 	}
 	for _, tt := range tests {
@@ -1095,13 +1133,13 @@ func Test_ProcessMetrics_InferredContext(t *testing.T) {
 			processor, err := newFilterMetricProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 
-			got, err := processor.processMetrics(t.Context(), constructMetrics())
+			got, err := processor.processMetrics(t.Context(), tt.input())
 
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
 				assert.NoError(t, err)
-				exTd := constructMetrics()
+				exTd := tt.input()
 				tt.want(exTd)
 				assert.Equal(t, exTd, got)
 			}
@@ -1163,8 +1201,8 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 			name:      "resource: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("resource")},
+				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}, Context: condition.ContextID("resource")},
 			},
 			want: func(md pmetric.Metrics) {
 				md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
@@ -1177,8 +1215,8 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 			name:      "resource: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("resource")},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}, Context: condition.ContextID("resource")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
@@ -1186,8 +1224,8 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 			name:      "scope: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`scope.schema_url == "test_schema_url"`}},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("scope")},
+				{Conditions: []string{`scope.schema_url == "test_schema_url"`}, Context: condition.ContextID("scope")},
 			},
 			want: func(md pmetric.Metrics) {
 				md.ResourceMetrics().At(0).ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
@@ -1199,8 +1237,8 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 			name:      "scope: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("true")`}},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("scope")},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("true")`}, Context: condition.ContextID("scope")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
@@ -1208,8 +1246,8 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 			name:      "metric: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`metric.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`not IsMatch(metric.name, ".*")`}},
+				{Conditions: []string{`metric.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("metric")},
+				{Conditions: []string{`not IsMatch(metric.name, ".*")`}, Context: condition.ContextID("metric")},
 			},
 			want: func(md pmetric.Metrics) {
 				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
@@ -1221,8 +1259,8 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 			name:      "metric: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`metric.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`metric.name == ParseJSON("true")`}},
+				{Conditions: []string{`metric.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("metric")},
+				{Conditions: []string{`metric.name == ParseJSON("true")`}, Context: condition.ContextID("metric")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
@@ -1230,8 +1268,8 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 			name:      "datapoint: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`datapoint.attributes["test"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`datapoint.count == 1`}},
+				{Conditions: []string{`datapoint.attributes["test"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("datapoint")},
+				{Conditions: []string{`datapoint.count == 1`}, Context: condition.ContextID("datapoint")},
 			},
 			want: func(md pmetric.Metrics) {
 				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().RemoveIf(func(point pmetric.HistogramDataPoint) bool {
@@ -1246,10 +1284,42 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 			name:      "datapoint: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`datapoint.attributes["test"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`datapoint.attributes["test"] == ParseJSON("true")`}},
+				{Conditions: []string{`datapoint.attributes["test"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("datapoint")},
+				{Conditions: []string{`datapoint.attributes["test"] == ParseJSON("true")`}, Context: condition.ContextID("datapoint")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+		},
+		// infer context
+		{
+			name:      "flat style propagate error",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{
+					Conditions: []string{
+						`resource.attributes["pass"] == ParseJSON("1")`,
+						`not IsMatch(resource.attributes["host.name"], ".*")`,
+					},
+				},
+			},
+			wantErrorWith: "could not convert parsed value of type float64 to JSON object",
+		},
+		{
+			name:      "flat style ignore error",
+			errorMode: ottl.IgnoreError,
+			conditions: []condition.ContextConditions{
+				{
+					Conditions: []string{
+						`resource.attributes["pass"] == ParseJSON("1")`,
+						`not IsMatch(resource.attributes["host.name"], ".*")`,
+					},
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+					v, _ := rm.Resource().Attributes().Get("host.name")
+					return v.AsString() == ""
+				})
+			},
 		},
 	}
 
@@ -1378,6 +1448,39 @@ func Test_Metrics_NonDefaultFunctions(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func constructMetricsWithEmptyDataPoints() pmetric.Metrics {
+	td := pmetric.NewMetrics()
+	rm := td.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("host.name", "localhost")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("scope")
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("operationA")
+	m.SetEmptySum()
+	return td
+}
+
+func constructMetricsWithMultipleMetrics() pmetric.Metrics {
+	td := pmetric.NewMetrics()
+	rm0 := td.ResourceMetrics().AppendEmpty()
+	rm0.Resource().Attributes().PutStr("host.name", "localhost")
+	rm0s0 := rm0.ScopeMetrics().AppendEmpty()
+	rm0s0.Scope().SetName("scope")
+	rm0s0m0 := rm0s0.Metrics().AppendEmpty()
+	fillMetricOne(rm0s0m0)
+	fillMetricOne(rm0s0m0)
+	rm0s0m1 := rm0s0.Metrics().AppendEmpty()
+	fillMetricOne(rm0s0m1)
+	fillMetricOne(rm0s0m1)
+	rm0s0m2 := rm0s0.Metrics().AppendEmpty()
+	fillMetricTwo(rm0s0m2)
+	fillMetricTwo(rm0s0m2)
+	rm0s0m3 := rm0s0.Metrics().AppendEmpty()
+	fillMetricThree(rm0s0m3)
+	fillMetricThree(rm0s0m3)
+	return td
 }
 
 func constructMetrics() pmetric.Metrics {

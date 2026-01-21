@@ -1200,6 +1200,20 @@ func Test_UnknownContext(t *testing.T) {
 	assert.ErrorContains(t, sub.Unmarshal(cfg), "unknown context abc")
 }
 
+func Test_EmptyFlatStyle(t *testing.T) {
+	id := component.NewIDWithName(metadata.Type, "empty_flat_style")
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_ottl.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(id.String())
+	require.NoError(t, err)
+	assert.ErrorContains(t, sub.Unmarshal(cfg), "condition cannot be empty")
+}
+
 func Test_MixedConfigurationStyles(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_ottl.yaml"))
 	require.NoError(t, err)

@@ -4,206 +4,24 @@
 package condition // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 
 import (
-	"context"
+	"go.opentelemetry.io/collector/component"
 
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/pprofile"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
-var _ baseContext = &resourceConditions{}
-
-type resourceConditions struct {
-	expr.BoolExpr[*ottlresource.TransformContext]
+// CommonConditions is a generic interface for signal-specific condition types
+// (LogConditions, MetricConditions, TraceConditions, ProfileConditions).
+// It provides factory methods to create signal-specific conditions from
+// resource and scope level OTTL conditions
+type CommonConditions[R any] interface {
+	newFromResource(rc []*ottl.Condition[*ottlresource.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) R
+	newFromScope(sc []*ottl.Condition[*ottlscope.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) R
 }
 
-func (resourceConditions) Context() ContextID {
-	return Resource
-}
-
-func (r resourceConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	var condErr error
-	td.ResourceSpans().RemoveIf(func(rspans ptrace.ResourceSpans) bool {
-		tCtx := ottlresource.NewTransformContextPtr(rspans.Resource(), rspans)
-		condition, err := r.Eval(ctx, tCtx)
-		tCtx.Close()
-		if err != nil {
-			condErr = multierr.Append(condErr, err)
-			return false
-		}
-		return condition
-	})
-	if td.ResourceSpans().Len() == 0 {
-		return processorhelper.ErrSkipProcessingData
-	}
-	return condErr
-}
-
-func (r resourceConditions) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	var condErr error
-	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
-		tCtx := ottlresource.NewTransformContextPtr(rmetrics.Resource(), rmetrics)
-		condition, err := r.Eval(ctx, tCtx)
-		tCtx.Close()
-		if err != nil {
-			condErr = multierr.Append(condErr, err)
-			return false
-		}
-		return condition
-	})
-	if md.ResourceMetrics().Len() == 0 {
-		return processorhelper.ErrSkipProcessingData
-	}
-	return condErr
-}
-
-func (r resourceConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	var condErr error
-	ld.ResourceLogs().RemoveIf(func(rlogs plog.ResourceLogs) bool {
-		tCtx := ottlresource.NewTransformContextPtr(rlogs.Resource(), rlogs)
-		condition, err := r.Eval(ctx, tCtx)
-		tCtx.Close()
-		if err != nil {
-			condErr = multierr.Append(condErr, err)
-			return false
-		}
-		return condition
-	})
-	if ld.ResourceLogs().Len() == 0 {
-		return processorhelper.ErrSkipProcessingData
-	}
-	return condErr
-}
-
-func (r resourceConditions) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
-	var condErr error
-	pd.ResourceProfiles().RemoveIf(func(rprofiles pprofile.ResourceProfiles) bool {
-		tCtx := ottlresource.NewTransformContextPtr(rprofiles.Resource(), rprofiles)
-		condition, err := r.Eval(ctx, tCtx)
-		tCtx.Close()
-		if err != nil {
-			condErr = multierr.Append(condErr, err)
-			return false
-		}
-		return condition
-	})
-	if pd.ResourceProfiles().Len() == 0 {
-		return processorhelper.ErrSkipProcessingData
-	}
-	return condErr
-}
-
-var _ baseContext = &scopeConditions{}
-
-type scopeConditions struct {
-	expr.BoolExpr[*ottlscope.TransformContext]
-}
-
-func (scopeConditions) Context() ContextID {
-	return Scope
-}
-
-func (s scopeConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	var condErr error
-	td.ResourceSpans().RemoveIf(func(rspans ptrace.ResourceSpans) bool {
-		rspans.ScopeSpans().RemoveIf(func(sspans ptrace.ScopeSpans) bool {
-			tCtx := ottlscope.NewTransformContextPtr(sspans.Scope(), rspans.Resource(), sspans)
-			condition, err := s.Eval(ctx, tCtx)
-			tCtx.Close()
-			if err != nil {
-				condErr = multierr.Append(condErr, err)
-				return false
-			}
-			return condition
-		})
-		return rspans.ScopeSpans().Len() == 0
-	})
-	if td.ResourceSpans().Len() == 0 {
-		return processorhelper.ErrSkipProcessingData
-	}
-	return condErr
-}
-
-func (s scopeConditions) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	var condErr error
-	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
-		rmetrics.ScopeMetrics().RemoveIf(func(smetrics pmetric.ScopeMetrics) bool {
-			tCtx := ottlscope.NewTransformContextPtr(smetrics.Scope(), rmetrics.Resource(), smetrics)
-			condition, err := s.Eval(ctx, tCtx)
-			tCtx.Close()
-			if err != nil {
-				condErr = multierr.Append(condErr, err)
-				return false
-			}
-			return condition
-		})
-		return rmetrics.ScopeMetrics().Len() == 0
-	})
-	if md.ResourceMetrics().Len() == 0 {
-		return processorhelper.ErrSkipProcessingData
-	}
-	return condErr
-}
-
-func (s scopeConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	var condErr error
-	ld.ResourceLogs().RemoveIf(func(rlogs plog.ResourceLogs) bool {
-		rlogs.ScopeLogs().RemoveIf(func(slogs plog.ScopeLogs) bool {
-			tCtx := ottlscope.NewTransformContextPtr(slogs.Scope(), rlogs.Resource(), slogs)
-			condition, err := s.Eval(ctx, tCtx)
-			tCtx.Close()
-			if err != nil {
-				condErr = multierr.Append(condErr, err)
-				return false
-			}
-			return condition
-		})
-		return rlogs.ScopeLogs().Len() == 0
-	})
-	if ld.ResourceLogs().Len() == 0 {
-		return processorhelper.ErrSkipProcessingData
-	}
-	return condErr
-}
-
-func (s scopeConditions) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
-	var condErr error
-	pd.ResourceProfiles().RemoveIf(func(rprofiles pprofile.ResourceProfiles) bool {
-		rprofiles.ScopeProfiles().RemoveIf(func(sprofiles pprofile.ScopeProfiles) bool {
-			tCtx := ottlscope.NewTransformContextPtr(sprofiles.Scope(), rprofiles.Resource(), sprofiles)
-			condition, err := s.Eval(ctx, tCtx)
-			tCtx.Close()
-			if err != nil {
-				condErr = multierr.Append(condErr, err)
-				return false
-			}
-			return condition
-		})
-		return rprofiles.ScopeProfiles().Len() == 0
-	})
-	if pd.ResourceProfiles().Len() == 0 {
-		return processorhelper.ErrSkipProcessingData
-	}
-	return condErr
-}
-
-type baseContext interface {
-	TracesConsumer
-	MetricsConsumer
-	LogsConsumer
-	ProfilesConsumer
-}
-
-func withCommonParsers[R any](resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext]) ottl.ParserCollectionOption[R] {
+func withCommonParsers[R CommonConditions[R]](resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext]) ottl.ParserCollectionOption[R] {
 	return func(pc *ottl.ParserCollection[R]) error {
 		rp, err := ottlresource.NewParser(resourceFunctions, pc.Settings, ottlresource.EnablePathContextNames())
 		if err != nil {
@@ -228,7 +46,7 @@ func withCommonParsers[R any](resourceFunctions map[string]ottl.Factory[*ottlres
 	}
 }
 
-func convertResourceConditions[R any](
+func convertResourceConditions[R CommonConditions[R]](
 	pc *ottl.ParserCollection[R],
 	conditions ottl.ConditionsGetter,
 	parsedConditions []*ottl.Condition[*ottlresource.TransformContext],
@@ -238,12 +56,11 @@ func convertResourceConditions[R any](
 		return *new(R), err
 	}
 	errorMode := getErrorMode(pc, contextConditions)
-	rConditions := ottlresource.NewConditionSequence(parsedConditions, pc.Settings, ottlresource.WithConditionSequenceErrorMode(errorMode))
-	result := baseContext(resourceConditions{&rConditions})
-	return result.(R), nil
+	var r R
+	return r.newFromResource(parsedConditions, pc.Settings, errorMode), nil
 }
 
-func convertScopeConditions[R any](
+func convertScopeConditions[R CommonConditions[R]](
 	pc *ottl.ParserCollection[R],
 	conditions ottl.ConditionsGetter,
 	parsedConditions []*ottl.Condition[*ottlscope.TransformContext],
@@ -253,7 +70,6 @@ func convertScopeConditions[R any](
 		return *new(R), err
 	}
 	errorMode := getErrorMode(pc, contextConditions)
-	sConditions := ottlscope.NewConditionSequence(parsedConditions, pc.Settings, ottlscope.WithConditionSequenceErrorMode(errorMode))
-	result := baseContext(scopeConditions{&sConditions})
-	return result.(R), nil
+	var r R
+	return r.newFromScope(parsedConditions, pc.Settings, errorMode), nil
 }

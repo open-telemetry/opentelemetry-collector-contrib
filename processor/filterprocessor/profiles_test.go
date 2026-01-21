@@ -327,13 +327,15 @@ func Test_ProcessProfiles_InferredContext(t *testing.T) {
 		contextConditions []condition.ContextConditions
 		filterEverything  bool
 		want              func(pd pprofile.Profiles)
+		input             func() pprofile.Profiles
 	}{
 		{
 			name: "resource: drop by schema_url",
 			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`resource.schema_url == "test_schema_url"`}},
 			},
-			want: func(_ pprofile.Profiles) {},
+			want:  func(_ pprofile.Profiles) {},
+			input: constructProfiles,
 		},
 		{
 			name: "resource: drop by attribute",
@@ -341,6 +343,7 @@ func Test_ProcessProfiles_InferredContext(t *testing.T) {
 				{Conditions: []string{`resource.attributes["host.name"] == "localhost"`}},
 			},
 			filterEverything: true,
+			input:            constructProfiles,
 		},
 		{
 			name: "scope: drop by name",
@@ -355,13 +358,15 @@ func Test_ProcessProfiles_InferredContext(t *testing.T) {
 					return rp.ScopeProfiles().Len() == 0
 				})
 			},
+			input: constructProfiles,
 		},
 		{
 			name: "scope: drop by attribute",
 			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["lib"] == "awesomelib"`}},
 			},
-			want: func(_ pprofile.Profiles) {},
+			want:  func(_ pprofile.Profiles) {},
+			input: constructProfiles,
 		},
 		{
 			name: "profile: drop by attributes",
@@ -386,6 +391,7 @@ func Test_ProcessProfiles_InferredContext(t *testing.T) {
 					return rp.ScopeProfiles().Len() == 0
 				})
 			},
+			input: constructProfiles,
 		},
 		{
 			name: "profile: drop by payload format",
@@ -403,6 +409,7 @@ func Test_ProcessProfiles_InferredContext(t *testing.T) {
 					return rp.ScopeProfiles().Len() == 0
 				})
 			},
+			input: constructProfiles,
 		},
 		{
 			name: "profile: drop by function",
@@ -410,6 +417,7 @@ func Test_ProcessProfiles_InferredContext(t *testing.T) {
 				{Conditions: []string{`IsMatch(profile.original_payload_format, ".*legacy")`}},
 			},
 			filterEverything: true,
+			input:            constructProfiles,
 		},
 		{
 			name: "inferring mixed contexts",
@@ -430,6 +438,31 @@ func Test_ProcessProfiles_InferredContext(t *testing.T) {
 					return rp.ScopeProfiles().Len() == 0
 				})
 			},
+			input: constructProfiles,
+		},
+		{
+			name: "zero-record lower-context: resource and profile with no profiles",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{
+					`resource.attributes["host.name"] == "localhost"`,
+					`profile.original_payload_format == "legacy"`,
+				}},
+			},
+			filterEverything: true,
+			input:            constructProfilesWithEmptyProfiles,
+		},
+		{
+			name: "group by context: conditions in same group are respected",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{
+					`scope.name == "scope1"`,
+					`scope.name == "scope2"`,
+					`profile.original_payload_format == "legacy"`,
+					`profile.original_payload_format == "non-legacy"`,
+				}},
+			},
+			filterEverything: true,
+			input:            constructProfiles,
 		},
 	}
 
@@ -440,13 +473,13 @@ func Test_ProcessProfiles_InferredContext(t *testing.T) {
 			processor, err := newFilterProfilesProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 
-			got, err := processor.processProfiles(t.Context(), constructProfiles())
+			got, err := processor.processProfiles(t.Context(), tt.input())
 
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
 				assert.NoError(t, err)
-				exTd := constructProfiles()
+				exTd := tt.input()
 				tt.want(exTd)
 				assert.Equal(t, exTd, got)
 			}
@@ -505,8 +538,8 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 			name:      "resource: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("resource")},
+				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}, Context: condition.ContextID("resource")},
 			},
 			want: func(pd pprofile.Profiles) {
 				pd.ResourceProfiles().RemoveIf(func(rp pprofile.ResourceProfiles) bool {
@@ -519,8 +552,8 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 			name:      "resource: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("resource")},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}, Context: condition.ContextID("resource")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
@@ -528,8 +561,8 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 			name:      "scope: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`scope.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`scope.name == "scope1"`}},
+				{Conditions: []string{`scope.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("scope")},
+				{Conditions: []string{`scope.name == "scope1"`}, Context: condition.ContextID("scope")},
 			},
 			want: func(pd pprofile.Profiles) {
 				pd.ResourceProfiles().RemoveIf(func(rp pprofile.ResourceProfiles) bool {
@@ -544,8 +577,8 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 			name:      "scope: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`scope.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`scope.name == ParseJSON("true")`}},
+				{Conditions: []string{`scope.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("scope")},
+				{Conditions: []string{`scope.name == ParseJSON("true")`}, Context: condition.ContextID("scope")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
@@ -553,8 +586,8 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 			name:      "profile: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`profile.original_payload_format == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`IsMatch(profile.original_payload_format, "non-legacy")`}},
+				{Conditions: []string{`profile.original_payload_format == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("profile")},
+				{Conditions: []string{`IsMatch(profile.original_payload_format, "non-legacy")`}, Context: condition.ContextID("profile")},
 			},
 			want: func(pd pprofile.Profiles) {
 				pd.ResourceProfiles().RemoveIf(func(rp pprofile.ResourceProfiles) bool {
@@ -572,10 +605,42 @@ func Test_ProcessProfiles_ConditionsErrorMode(t *testing.T) {
 			name:      "profile: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`profile.original_payload_format == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`profile.original_payload_format == ParseJSON("true")`}},
+				{Conditions: []string{`profile.original_payload_format == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("profile")},
+				{Conditions: []string{`profile.original_payload_format == ParseJSON("true")`}, Context: condition.ContextID("profile")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+		},
+		// infer context
+		{
+			name:      "flat style propagate error",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{
+					Conditions: []string{
+						`resource.attributes["pass"] == ParseJSON("1")`,
+						`not IsMatch(resource.attributes["host.name"], ".*")`,
+					},
+				},
+			},
+			wantErrorWith: "could not convert parsed value of type float64 to JSON object",
+		},
+		{
+			name:      "flat style ignore error",
+			errorMode: ottl.IgnoreError,
+			conditions: []condition.ContextConditions{
+				{
+					Conditions: []string{
+						`resource.attributes["pass"] == ParseJSON("1")`,
+						`not IsMatch(resource.attributes["host.name"], ".*")`,
+					},
+				},
+			},
+			want: func(pd pprofile.Profiles) {
+				pd.ResourceProfiles().RemoveIf(func(rp pprofile.ResourceProfiles) bool {
+					v, _ := rp.Resource().Attributes().Get("host.name")
+					return v.AsString() == ""
+				})
+			},
 		},
 	}
 
@@ -670,6 +735,15 @@ func createProfileFunc[K any](ottl.FunctionContext, ottl.Arguments) (ottl.ExprFu
 
 func NewProfileFuncFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("TestProfileFunc", &ProfileFuncArguments[K]{}, createProfileFunc[K])
+}
+
+func constructProfilesWithEmptyProfiles() pprofile.Profiles {
+	pd := pprofile.NewProfiles()
+	rp := pd.ResourceProfiles().AppendEmpty()
+	rp.Resource().Attributes().PutStr("host.name", "localhost")
+	sp := rp.ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName("scope1")
+	return pd
 }
 
 func constructProfiles() pprofile.Profiles {

@@ -925,6 +925,7 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 		filterEverything  bool
 		want              func(ld plog.Logs)
 		errorMode         ottl.ErrorMode
+		input             func() plog.Logs
 	}{
 		{
 			name: "resource: drop everything",
@@ -932,6 +933,7 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 				{Conditions: []string{`resource.schema_url == "test_schema_url"`}},
 			},
 			filterEverything: true,
+			input:            constructLogs,
 		},
 		{
 			name: "resource: drop by attribute",
@@ -939,6 +941,7 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 				{Conditions: []string{`resource.attributes["host.name"] == "localhost"`}},
 			},
 			filterEverything: true,
+			input:            constructLogs,
 		},
 		{
 			name: "scope: drop everything",
@@ -946,13 +949,15 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 				{Conditions: []string{`scope.schema_url == "test_schema_url"`}},
 			},
 			filterEverything: true,
+			input:            constructLogs,
 		},
 		{
 			name: "scope: drop by attribute",
 			contextConditions: []condition.ContextConditions{
 				{Conditions: []string{`scope.attributes["lib"] == "awesomelib"`}},
 			},
-			want: func(_ plog.Logs) {},
+			want:  func(_ plog.Logs) {},
+			input: constructLogs,
 		},
 		{
 			name: "scope: drop by name",
@@ -964,6 +969,7 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 					return sl.Scope().Name() == "scope0"
 				})
 			},
+			input: constructLogs,
 		},
 		{
 			name: "log: drop by attributes",
@@ -982,6 +988,7 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 					})
 				}
 			},
+			input: constructLogs,
 		},
 		{
 			name: "log: drop by function",
@@ -996,6 +1003,7 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 					})
 				}
 			},
+			input: constructLogs,
 		},
 		{
 			name: "log: drop by enum",
@@ -1010,6 +1018,7 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 					})
 				}
 			},
+			input: constructLogs,
 		},
 		{
 			name: "inferring mixed contexts",
@@ -1030,6 +1039,31 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 					})
 				}
 			},
+			input: constructLogs,
+		},
+		{
+			name: "zero-record lower-context: resource and log with no log records",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{
+					`resource.attributes["host.name"] == "localhost"`,
+					`log.body == "test"`,
+				}},
+			},
+			filterEverything: true,
+			input:            constructLogsWithEmptyLogRecords,
+		},
+		{
+			name: "group by context: conditions in same group are respected",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{
+					`resource.attributes["host.name"] == "host1"`,
+					`resource.attributes["host.name"] == "host3"`,
+					`scope.name == "scope3"`,
+					`scope.name == "scope4"`,
+				}},
+			},
+			filterEverything: true,
+			input:            constructLogsMultiResources,
 		},
 	}
 	for _, tt := range tests {
@@ -1039,13 +1073,13 @@ func Test_ProcessLogs_InferredContext(t *testing.T) {
 			processor, err := newFilterLogsProcessor(processortest.NewNopSettings(metadata.Type), cfg)
 			assert.NoError(t, err)
 
-			got, err := processor.processLogs(t.Context(), constructLogs())
+			got, err := processor.processLogs(t.Context(), tt.input())
 
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
 				assert.NoError(t, err)
-				exTd := constructLogs()
+				exTd := tt.input()
 				tt.want(exTd)
 				assert.Equal(t, exTd, got)
 			}
@@ -1104,8 +1138,8 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			name:      "resource: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("resource")},
+				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}, Context: condition.ContextID("resource")},
 			},
 			want: func(ld plog.Logs) {
 				ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
@@ -1118,8 +1152,8 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			name:      "resource: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("resource")},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}, Context: condition.ContextID("resource")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
@@ -1127,8 +1161,8 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			name:      "scope: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`scope.schema_url != "test_schema_url"`}},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("scope")},
+				{Conditions: []string{`scope.schema_url != "test_schema_url"`}, Context: condition.ContextID("scope")},
 			},
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
@@ -1140,8 +1174,8 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			name:      "scope: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("true")`}},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("scope")},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("true")`}, Context: condition.ContextID("scope")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
@@ -1149,8 +1183,8 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			name:      "log: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`log.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`not IsMatch(log.body, ".*")`}},
+				{Conditions: []string{`log.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("log")},
+				{Conditions: []string{`not IsMatch(log.body, ".*")`}, Context: condition.ContextID("log")},
 			},
 			want: func(ld plog.Logs) {
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(log plog.LogRecord) bool {
@@ -1162,10 +1196,42 @@ func Test_ProcessLogs_ConditionsErrorMode(t *testing.T) {
 			name:      "log: conditions group error mode does not affect default",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{
-				{Conditions: []string{`log.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
-				{Conditions: []string{`log.attributes["pass"] == ParseJSON("true")`}},
+				{Conditions: []string{`log.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("log")},
+				{Conditions: []string{`log.attributes["pass"] == ParseJSON("true")`}, Context: condition.ContextID("log")},
 			},
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+		},
+		// infer context
+		{
+			name:      "flat style propagate error",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{
+					Conditions: []string{
+						`resource.attributes["pass"] == ParseJSON("1")`,
+						`not IsMatch(resource.attributes["host.name"], ".*")`,
+					},
+				},
+			},
+			wantErrorWith: "could not convert parsed value of type float64 to JSON object",
+		},
+		{
+			name:      "flat style ignore error",
+			errorMode: ottl.IgnoreError,
+			conditions: []condition.ContextConditions{
+				{
+					Conditions: []string{
+						`resource.attributes["pass"] == ParseJSON("1")`,
+						`not IsMatch(resource.attributes["host.name"], ".*")`,
+					},
+				},
+			},
+			want: func(ld plog.Logs) {
+				ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
+					v, _ := rl.Resource().Attributes().Get("host.name")
+					return v.AsString() == ""
+				})
+			},
 		},
 	}
 
@@ -1280,6 +1346,45 @@ func TestFilterLogProcessorTelemetry(t *testing.T) {
 			Attributes: attribute.NewSet(attribute.String("filter", "filter")),
 		},
 	}, metricdatatest.IgnoreTimestamp())
+}
+
+func constructLogsWithEmptyLogRecords() plog.Logs {
+	td := plog.NewLogs()
+	rs := td.ResourceLogs().AppendEmpty()
+	rs.Resource().Attributes().PutStr("host.name", "localhost")
+	sl := rs.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("scope0")
+	return td
+}
+
+func constructLogsMultiResources() plog.Logs {
+	td := plog.NewLogs()
+
+	rs0 := td.ResourceLogs().AppendEmpty()
+	rs0.Resource().Attributes().PutStr("host.name", "host1")
+	rs0s0 := rs0.ScopeLogs().AppendEmpty()
+	rs0s0.Scope().SetName("scope1")
+	fillLogOne(rs0s0.LogRecords().AppendEmpty())
+	fillLogOne(rs0s0.LogRecords().AppendEmpty())
+	rs0s1 := rs0.ScopeLogs().AppendEmpty()
+	rs0s1.Scope().SetName("scope2")
+	fillLogOne(rs0s1.LogRecords().AppendEmpty())
+	fillLogOne(rs0s1.LogRecords().AppendEmpty())
+
+	rs1 := td.ResourceLogs().AppendEmpty()
+	rs1.Resource().Attributes().PutStr("host.name", "host2")
+	rs1s0 := rs1.ScopeLogs().AppendEmpty()
+	rs1s0.Scope().SetName("scope3")
+	fillLogTwo(rs1s0.LogRecords().AppendEmpty())
+	fillLogTwo(rs1s0.LogRecords().AppendEmpty())
+	rs1s1 := rs1.ScopeLogs().AppendEmpty()
+	rs1s1.Scope().SetName("scope4")
+	fillLogTwo(rs1s1.LogRecords().AppendEmpty())
+	fillLogTwo(rs1s1.LogRecords().AppendEmpty())
+
+	rs2 := td.ResourceLogs().AppendEmpty()
+	rs2.Resource().Attributes().PutStr("host.name", "host3")
+	return td
 }
 
 func constructLogs() plog.Logs {
