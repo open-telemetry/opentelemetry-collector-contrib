@@ -7,6 +7,7 @@ import (
 	"container/heap"
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -132,6 +133,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func (m *mySQLScraper) scrapeTopQueryFunc(ctx context.Context) (plog.Logs, error) {
+	m.logger.Info("Starting top queries scrape")
 	if m.sqlclient == nil {
 		return plog.NewLogs(), errors.New("failed to connect to http client")
 	}
@@ -145,10 +147,14 @@ func (m *mySQLScraper) scrapeTopQueryFunc(ctx context.Context) (plog.Logs, error
 	} else {
 		m.scrapeTopQueries(ctx, now, errs)
 	}
-	return m.lb.Emit(), errs.Combine()
+	rb := m.lb.NewResourceBuilder()
+	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	m.logger.Info(fmt.Sprintf("Setting Resource endpoint to %s", m.config.Endpoint))
+	return m.lb.Emit(metadata.WithLogsResource(rb.Emit())), errs.Combine()
 }
 
 func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, error) {
+	m.logger.Info("Starting query samples scrape")
 	if m.sqlclient == nil {
 		return plog.NewLogs(), errors.New("failed to connect to http client")
 	}
@@ -158,8 +164,10 @@ func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, er
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	m.scrapeQuerySamples(ctx, now, errs)
+	rb := m.lb.NewResourceBuilder()
+	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
 
-	return m.lb.Emit(), errs.Combine()
+	return m.lb.Emit(metadata.WithLogsResource(rb.Emit())), errs.Combine()
 }
 
 func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
