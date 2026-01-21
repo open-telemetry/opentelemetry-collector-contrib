@@ -85,7 +85,7 @@ func TestGetStochasticAdjustedCount_StatisticalBehavior(t *testing.T) {
 	var total uint64
 	var adjustedCount int
 
-	for i := 0; i < iterations; i++ {
+	for range iterations {
 		span := ptrace.NewSpan()
 		span.TraceState().FromRaw("ot=th:c")
 		count, adjusted := GetStochasticAdjustedCount(&span)
@@ -176,7 +176,7 @@ func TestStochasticIncrement_FractionalWeights(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Run multiple times to ensure we're getting valid results
-			for i := 0; i < 100; i++ {
+			for range 100 {
 				result := stochasticIncrement(tt.weight)
 				assert.GreaterOrEqual(t, result, tt.minResult)
 				assert.LessOrEqual(t, result, tt.maxResult)
@@ -216,7 +216,7 @@ func TestStochasticIncrement_StatisticalConvergence(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var total uint64
-			for i := 0; i < tt.iterations; i++ {
+			for range tt.iterations {
 				total += stochasticIncrement(tt.weight)
 			}
 			average := float64(total) / float64(tt.iterations)
@@ -232,7 +232,7 @@ func TestXorshift64star(t *testing.T) {
 	var rng xorshift64star = 12345 // Non-zero seed
 
 	values := make(map[uint64]struct{})
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		val := rng.next()
 		assert.NotEqual(t, uint64(0), val, "PRNG should not produce zero")
 		values[val] = struct{}{}
@@ -264,11 +264,11 @@ func TestPrngPool_Concurrency(t *testing.T) {
 
 	results := make([][]uint64, goroutines)
 
-	for g := 0; g < goroutines; g++ {
+	for g := range goroutines {
 		results[g] = make([]uint64, iterationsPerGoroutine)
 		go func(idx int) {
 			defer wg.Done()
-			for i := 0; i < iterationsPerGoroutine; i++ {
+			for i := range iterationsPerGoroutine {
 				results[idx][i] = stochasticIncrement(1.5) // Should be 1 or 2
 			}
 		}(g)
@@ -277,8 +277,8 @@ func TestPrngPool_Concurrency(t *testing.T) {
 	wg.Wait()
 
 	// Verify all results are valid (either 1 or 2)
-	for g := 0; g < goroutines; g++ {
-		for i := 0; i < iterationsPerGoroutine; i++ {
+	for g := range goroutines {
+		for i := range iterationsPerGoroutine {
 			assert.True(t, results[g][i] == 1 || results[g][i] == 2,
 				"result should be 1 or 2, got %d", results[g][i])
 		}
@@ -290,7 +290,7 @@ func TestStochasticIncrement_EdgeCases(t *testing.T) {
 		// With a very small fraction, we should almost always get the floor
 		const iterations = 1000
 		var ones int
-		for i := 0; i < iterations; i++ {
+		for range iterations {
 			if stochasticIncrement(0.001) == 1 {
 				ones++
 			}
@@ -303,7 +303,7 @@ func TestStochasticIncrement_EdgeCases(t *testing.T) {
 		// With a fraction close to 1, we should almost always round up
 		const iterations = 1000
 		var twos int
-		for i := 0; i < iterations; i++ {
+		for range iterations {
 			if stochasticIncrement(1.999) == 2 {
 				twos++
 			}

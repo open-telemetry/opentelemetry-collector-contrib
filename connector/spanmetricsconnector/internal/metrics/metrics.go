@@ -271,7 +271,7 @@ func (h *explicitHistogram) Observe(value float64) {
 }
 
 func (h *explicitHistogram) ObserveN(value float64, n uint64) {
-	h.sum += value * (float64)(n)
+	h.sum += value * float64(n)
 	h.count += n
 
 	// Binary search to find the value bucket index.

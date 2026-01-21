@@ -53,7 +53,7 @@ var prngPool = sync.Pool{
 		if s == 0 {
 			s = 1
 		}
-		var seed xorshift64star = xorshift64star(s)
+		seed := xorshift64star(s)
 		return &seed
 	},
 }
