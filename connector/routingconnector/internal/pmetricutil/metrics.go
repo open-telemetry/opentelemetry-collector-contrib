@@ -37,11 +37,11 @@ func MoveMetricsWithContextIf(from, to pmetric.Metrics, f func(pmetric.ResourceM
 				}
 				if !rmInit {
 					rmInit = true
-					rmCopy = *copyResourceMetrics(rm, to.ResourceMetrics())
+					rmCopy = copyResourceMetrics(rm, to.ResourceMetrics())
 				}
 				if !smInit {
 					smInit = true
-					smCopy = *copyScopeMetrics(sm, rmCopy.ScopeMetrics())
+					smCopy = copyScopeMetrics(sm, rmCopy.ScopeMetrics())
 				}
 				m.MoveTo(smCopy.Metrics().AppendEmpty())
 				return true
@@ -80,15 +80,15 @@ func MoveDataPointsWithContextIf(from, to pmetric.Metrics, f func(pmetric.Resour
 						}
 						if !rmInit {
 							rmInit = true
-							rmCopy = *copyResourceMetrics(rm, to.ResourceMetrics())
+							rmCopy = copyResourceMetrics(rm, to.ResourceMetrics())
 						}
 						if !smInit {
 							smInit = true
-							smCopy = *copyScopeMetrics(sm, rmCopy.ScopeMetrics())
+							smCopy = copyScopeMetrics(sm, rmCopy.ScopeMetrics())
 						}
 						if !mInit {
 							mInit = true
-							mCopy = *copyMetricDescription(m, smCopy.Metrics())
+							mCopy = copyMetricDescription(m, smCopy.Metrics())
 							mCopy.SetEmptyGauge()
 						}
 						dp.MoveTo(mCopy.Gauge().DataPoints().AppendEmpty())
@@ -103,15 +103,15 @@ func MoveDataPointsWithContextIf(from, to pmetric.Metrics, f func(pmetric.Resour
 						}
 						if !rmInit {
 							rmInit = true
-							rmCopy = *copyResourceMetrics(rm, to.ResourceMetrics())
+							rmCopy = copyResourceMetrics(rm, to.ResourceMetrics())
 						}
 						if !smInit {
 							smInit = true
-							smCopy = *copyScopeMetrics(sm, rmCopy.ScopeMetrics())
+							smCopy = copyScopeMetrics(sm, rmCopy.ScopeMetrics())
 						}
 						if !mInit {
 							mInit = true
-							mCopy = *copyMetricDescription(m, smCopy.Metrics())
+							mCopy = copyMetricDescription(m, smCopy.Metrics())
 							mCopy.SetEmptySum().SetAggregationTemporality(m.Sum().AggregationTemporality())
 							mCopy.Sum().SetIsMonotonic(m.Sum().IsMonotonic())
 						}
@@ -127,15 +127,15 @@ func MoveDataPointsWithContextIf(from, to pmetric.Metrics, f func(pmetric.Resour
 						}
 						if !rmInit {
 							rmInit = true
-							rmCopy = *copyResourceMetrics(rm, to.ResourceMetrics())
+							rmCopy = copyResourceMetrics(rm, to.ResourceMetrics())
 						}
 						if !smInit {
 							smInit = true
-							smCopy = *copyScopeMetrics(sm, rmCopy.ScopeMetrics())
+							smCopy = copyScopeMetrics(sm, rmCopy.ScopeMetrics())
 						}
 						if !mInit {
 							mInit = true
-							mCopy = *copyMetricDescription(m, smCopy.Metrics())
+							mCopy = copyMetricDescription(m, smCopy.Metrics())
 							mCopy.SetEmptyHistogram().SetAggregationTemporality(m.Histogram().AggregationTemporality())
 						}
 						dp.MoveTo(mCopy.Histogram().DataPoints().AppendEmpty())
@@ -150,15 +150,15 @@ func MoveDataPointsWithContextIf(from, to pmetric.Metrics, f func(pmetric.Resour
 						}
 						if !rmInit {
 							rmInit = true
-							rmCopy = *copyResourceMetrics(rm, to.ResourceMetrics())
+							rmCopy = copyResourceMetrics(rm, to.ResourceMetrics())
 						}
 						if !smInit {
 							smInit = true
-							smCopy = *copyScopeMetrics(sm, rmCopy.ScopeMetrics())
+							smCopy = copyScopeMetrics(sm, rmCopy.ScopeMetrics())
 						}
 						if !mInit {
 							mInit = true
-							mCopy = *copyMetricDescription(m, smCopy.Metrics())
+							mCopy = copyMetricDescription(m, smCopy.Metrics())
 							mCopy.SetEmptyExponentialHistogram().SetAggregationTemporality(m.ExponentialHistogram().AggregationTemporality())
 						}
 						dp.MoveTo(mCopy.ExponentialHistogram().DataPoints().AppendEmpty())
@@ -173,15 +173,15 @@ func MoveDataPointsWithContextIf(from, to pmetric.Metrics, f func(pmetric.Resour
 						}
 						if !rmInit {
 							rmInit = true
-							rmCopy = *copyResourceMetrics(rm, to.ResourceMetrics())
+							rmCopy = copyResourceMetrics(rm, to.ResourceMetrics())
 						}
 						if !smInit {
 							smInit = true
-							smCopy = *copyScopeMetrics(sm, rmCopy.ScopeMetrics())
+							smCopy = copyScopeMetrics(sm, rmCopy.ScopeMetrics())
 						}
 						if !mInit {
 							mInit = true
-							mCopy = *copyMetricDescription(m, smCopy.Metrics())
+							mCopy = copyMetricDescription(m, smCopy.Metrics())
 							mCopy.SetEmptySummary()
 						}
 						dp.MoveTo(mCopy.Summary().DataPoints().AppendEmpty())
@@ -198,24 +198,24 @@ func MoveDataPointsWithContextIf(from, to pmetric.Metrics, f func(pmetric.Resour
 	})
 }
 
-func copyResourceMetrics(from pmetric.ResourceMetrics, to pmetric.ResourceMetricsSlice) *pmetric.ResourceMetrics {
+func copyResourceMetrics(from pmetric.ResourceMetrics, to pmetric.ResourceMetricsSlice) pmetric.ResourceMetrics {
 	rmc := to.AppendEmpty()
 	from.Resource().CopyTo(rmc.Resource())
 	rmc.SetSchemaUrl(from.SchemaUrl())
-	return &rmc
+	return rmc
 }
 
-func copyScopeMetrics(from pmetric.ScopeMetrics, to pmetric.ScopeMetricsSlice) *pmetric.ScopeMetrics {
+func copyScopeMetrics(from pmetric.ScopeMetrics, to pmetric.ScopeMetricsSlice) pmetric.ScopeMetrics {
 	smc := to.AppendEmpty()
 	from.Scope().CopyTo(smc.Scope())
 	smc.SetSchemaUrl(from.SchemaUrl())
-	return &smc
+	return smc
 }
 
-func copyMetricDescription(from pmetric.Metric, to pmetric.MetricSlice) *pmetric.Metric {
+func copyMetricDescription(from pmetric.Metric, to pmetric.MetricSlice) pmetric.Metric {
 	mc := to.AppendEmpty()
 	mc.SetName(from.Name())
 	mc.SetDescription(from.Description())
 	mc.SetUnit(from.Unit())
-	return &mc
+	return mc
 }
