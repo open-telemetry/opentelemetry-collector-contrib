@@ -270,10 +270,10 @@ The processor can be configured to set the
 - `deployment_name_from_replicaset` allows extracting deployment name from replicaset name by trimming pod template hash. This will disable watching for replicaset resources, which can be useful in environments with limited RBAC permissions as the processor will not need `get`, `watch`, and `list` permissions for `replicasets`. It also reduces memory consumption of the processor. When enabled, this feature works automatically with the existing deployment name extraction. Take the following ownerReference of a pod managed by deployment for example:
 
 ```yaml
-  ownerReferences:                                                  
+  ownerReferences:
   - apiVersion: apps/v1
     blockOwnerDeletion: true
-    controller: true 
+    controller: true
     kind: ReplicaSet
     name: opentelemetry-collector-6c45f8d6f6
     uid: ee75293d-14ec-42a0-9548-a768d9e07c48
@@ -682,7 +682,15 @@ timestamp value as an RFC3339 compliant timestamp.
    of the node it is on, it consumes more memory than other processors. That consumption is compounded
    if users don't filter down to only the metadata for the node the processor is running on.
 
-## Feature Gates
+### Feature Gates
+
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
+
+Feature gates can be enabled using the `--feature-gates` flag:
+
+```shell
+"--feature-gates=<feature-gate>"
+```
 
 ### `k8sattr.labelsAnnotationsSingular.allow`
 
