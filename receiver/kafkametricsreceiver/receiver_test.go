@@ -22,10 +22,10 @@ import (
 )
 
 func setFranzGo(tb testing.TB, value bool) {
-	currentFranzState := franzGoFeatureGate.IsEnabled()
-	require.NoError(tb, featuregate.GlobalRegistry().Set(franzGoFeatureGate.ID(), value))
+	currentFranzState := metadata.ReceiverKafkametricsreceiverUseFranzGoFeatureGate.IsEnabled()
+	require.NoError(tb, featuregate.GlobalRegistry().Set(metadata.ReceiverKafkametricsreceiverUseFranzGoFeatureGate.ID(), value))
 	tb.Cleanup(func() {
-		require.NoError(tb, featuregate.GlobalRegistry().Set(franzGoFeatureGate.ID(), currentFranzState))
+		require.NoError(tb, featuregate.GlobalRegistry().Set(metadata.ReceiverKafkametricsreceiverUseFranzGoFeatureGate.ID(), currentFranzState))
 	})
 }
 

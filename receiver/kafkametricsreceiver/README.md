@@ -22,6 +22,16 @@ This receiver supports Kafka versions:
   -  2.X
   -  3.X
 
+## Feature gates
+
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
+
+Feature gates can be enabled using the `--feature-gates` flag:
+
+```shell
+"--feature-gates=<feature-gate>"
+```
+
 ## Getting Started
 
 > [!NOTE]
