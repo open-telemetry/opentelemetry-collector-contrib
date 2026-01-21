@@ -96,7 +96,7 @@ To enable compression, configure as follows:
 
 ```yaml
 exporters:
-  otlp:
+  stef:
     ...
     compression: zstd
 ```
