@@ -562,14 +562,15 @@ func TestOnChange(t *testing.T) {
 		templateConfig     userConfigMap
 		resourceAttributes map[string]any                              // optional custom resource attributes for the template
 		modifyEndpoint     func(e observer.Endpoint) observer.Endpoint // nil means no modification
-		expectRestart      bool
-		expectRemoved      bool // receiver removed because template no longer matches (mutually exclusive with expectRestart)
+		expectKept         bool                                        // receiver kept running (no shutdown, no restart)
+		expectRestart      bool                                        // receiver restarted (shutdown old, start new)
+		expectRemoved      bool                                        // receiver removed (shutdown, no restart) - template no longer matches
 	}{
 		{
-			name:           "static config unchanged - no restart",
+			name:           "static config unchanged - keep receiver",
 			templateConfig: userConfigMap{"endpoint": "some.endpoint"}, // Static value, won't change
 			modifyEndpoint: nil,                                        // Same endpoint
-			expectRestart:  false,
+			expectKept:     true,
 		},
 		{
 			name:           "dynamic user config changed - restart",
@@ -621,7 +622,7 @@ func TestOnChange(t *testing.T) {
 		{
 			// When labels change but no resource attribute references them,
 			// the receiver should NOT restart (config and default attrs unchanged).
-			name:               "label change without resource attr reference - no restart",
+			name:               "label change without resource attr reference - keep receiver",
 			templateConfig:     userConfigMap{"endpoint": "some.endpoint"},
 			resourceAttributes: map[string]any{}, // no custom attrs referencing labels
 			modifyEndpoint: func(e observer.Endpoint) observer.Endpoint {
@@ -642,7 +643,7 @@ func TestOnChange(t *testing.T) {
 				}
 				return e
 			},
-			expectRestart: false,
+			expectKept: true,
 		},
 		{
 			// When endpoint type changes such that the template's rule no longer matches,
@@ -659,7 +660,6 @@ func TestOnChange(t *testing.T) {
 				}
 				return e
 			},
-			expectRestart: false,
 			expectRemoved: true,
 		},
 	}
@@ -712,23 +712,25 @@ func TestOnChange(t *testing.T) {
 
 			// Verify behavior based on expected outcome
 			switch {
-			case tt.expectRemoved:
-				// Receiver should be removed (shutdown but not restarted)
-				assert.Same(t, origRcvr, r.shutdownComponent, "original receiver should be shutdown")
+			case tt.expectKept:
+				// Receiver should be kept (no shutdown, no start)
+				assert.Nil(t, r.shutdownComponent, "receiver should not be shutdown")
 				assert.Nil(t, r.startedComponent, "no new receiver should be started")
-				assert.Equal(t, 0, handler.receiversByEndpointID.Size(), "receiver map should be empty")
+				assert.Same(t, origRcvr, handler.receiversByEndpointID.Get("port-1")[0].receiver)
+				assert.Equal(t, 1, handler.receiversByEndpointID.Size())
 			case tt.expectRestart:
 				// Receiver should be restarted (shutdown old, start new)
 				assert.Same(t, origRcvr, r.shutdownComponent, "original receiver should be shutdown")
 				require.NotNil(t, r.startedComponent, "new receiver should be started")
 				require.NotSame(t, origRcvr, r.startedComponent, "should be a different receiver instance")
 				assert.Equal(t, 1, handler.receiversByEndpointID.Size())
-			default:
-				// Receiver should be kept (no shutdown, no start)
-				assert.Nil(t, r.shutdownComponent, "receiver should not be shutdown")
+			case tt.expectRemoved:
+				// Receiver should be removed (shutdown but not restarted)
+				assert.Same(t, origRcvr, r.shutdownComponent, "original receiver should be shutdown")
 				assert.Nil(t, r.startedComponent, "no new receiver should be started")
-				assert.Same(t, origRcvr, handler.receiversByEndpointID.Get("port-1")[0].receiver)
-				assert.Equal(t, 1, handler.receiversByEndpointID.Size())
+				assert.Equal(t, 0, handler.receiversByEndpointID.Size(), "receiver map should be empty")
+			default:
+				t.Fatal("test case must set exactly one of expectKept, expectRestart, or expectRemoved")
 			}
 		})
 	}
@@ -1227,6 +1229,19 @@ func newMockRunner(t *testing.T) *mockRunner {
 	}
 }
 
+// newObserverHandler creates an observerHandler for testing with a mock runner.
+//
+// Parameters:
+//   - t: the testing context
+//   - config: the receiver creator configuration (use createDefaultConfig().(*Config) as a base)
+//   - nextLogs: the downstream logs consumer (use consumertest.NewNop() or nil)
+//   - nextMetrics: the downstream metrics consumer (use consumertest.NewNop() or nil)
+//   - nextTraces: the downstream traces consumer (use consumertest.NewNop() or nil)
+//
+// Returns:
+//   - *observerHandler: the handler under test, with an empty receiver map
+//   - *mockRunner: the mock runner that tracks start/shutdown calls via
+//     startedComponent and shutdownComponent fields, and errors via lastError
 func newObserverHandler(
 	t *testing.T, config *Config,
 	nextLogs consumer.Logs,
