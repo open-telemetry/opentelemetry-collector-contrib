@@ -63,8 +63,8 @@ func (lc LogsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 				}
 			}
 
-			slogs.LogRecords().RemoveIf(func(log plog.LogRecord) bool {
-				if lc.LogExpr != nil {
+			if lc.LogExpr != nil {
+				slogs.LogRecords().RemoveIf(func(log plog.LogRecord) bool {
 					tCtx := ottllog.NewTransformContextPtr(rlogs, slogs, log)
 					cond, err := lc.LogExpr.Eval(ctx, tCtx)
 					tCtx.Close()
@@ -73,9 +73,8 @@ func (lc LogsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 						return false
 					}
 					return cond
-				}
-				return false
-			})
+				})
+			}
 			return slogs.LogRecords().Len() == 0
 		})
 		return rlogs.ScopeLogs().Len() == 0

@@ -63,8 +63,8 @@ func (pc ProfilesConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Prof
 				}
 			}
 
-			sp.Profiles().RemoveIf(func(profile pprofile.Profile) bool {
-				if pc.ProfileExpr != nil {
+			if pc.ProfileExpr != nil {
+				sp.Profiles().RemoveIf(func(profile pprofile.Profile) bool {
 					tCtx := ottlprofile.NewTransformContext(profile, pd.Dictionary(), sp.Scope(), rp.Resource(), sp, rp)
 					cond, err := pc.ProfileExpr.Eval(ctx, tCtx)
 					if err != nil {
@@ -72,9 +72,8 @@ func (pc ProfilesConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Prof
 						return false
 					}
 					return cond
-				}
-				return false
-			})
+				})
+			}
 			return sp.Profiles().Len() == 0
 		})
 		return rp.ScopeProfiles().Len() == 0

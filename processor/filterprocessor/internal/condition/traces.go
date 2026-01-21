@@ -80,8 +80,8 @@ func (tc TracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 					}
 				}
 
-				span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
-					if tc.SpanEventExpr != nil {
+				if tc.SpanEventExpr != nil {
+					span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
 						seCtx := ottlspanevent.NewTransformContextPtr(rs, ss, span, spanEvent)
 						seCond, err := tc.SpanEventExpr.Eval(ctx, seCtx)
 						seCtx.Close()
@@ -90,9 +90,8 @@ func (tc TracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 							return false
 						}
 						return seCond
-					}
-					return false
-				})
+					})
+				}
 				return false
 			})
 			return ss.Spans().Len() == 0
