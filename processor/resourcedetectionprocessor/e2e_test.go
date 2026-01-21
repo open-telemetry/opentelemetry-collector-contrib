@@ -271,6 +271,72 @@ func TestE2EHerokuDetector(t *testing.T) {
 	}, 3*time.Minute, 1*time.Second)
 }
 
+// TestE2EConsulDetector tests the consul detector by deploying a collector with a Consul agent sidecar
+// and verifying that consul metadata (datacenter, node ID, hostname, and custom meta labels)
+// is correctly detected and attached to metrics.
+func TestE2EConsulDetector(t *testing.T) {
+	var expected pmetric.Metrics
+	expectedFile := filepath.Join("testdata", "e2e", "consul", "expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	shutdownSink := startUpSink(t, metricsConsumer)
+	defer shutdownSink()
+
+	testID := uuid.NewString()[:8]
+
+	// Deploy collector with Consul agent sidecar
+	// CreateCollectorObjects waits for pods to be ready before returning
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "consul", "collector"), map[string]string{}, "")
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete collector object %s", obj.GetName())
+		}
+	}()
+
+	wantEntries := 10
+	waitForData(t, wantEntries, metricsConsumer)
+
+	// Uncomment to regenerate golden file
+	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
+
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		metrics := metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1]
+
+		// Verify that consul detector populated the dynamic attributes (not empty)
+		require.Greater(tt, metrics.ResourceMetrics().Len(), 0, "expected at least one resource metric")
+		resourceAttrs := metrics.ResourceMetrics().At(0).Resource().Attributes()
+
+		hostName, found := resourceAttrs.Get("host.name")
+		require.True(tt, found, "host.name attribute should be present")
+		require.NotEmpty(tt, hostName.Str(), "host.name should not be empty")
+
+		hostID, found := resourceAttrs.Get("host.id")
+		require.True(tt, found, "host.id attribute should be present")
+		require.NotEmpty(tt, hostID.Str(), "host.id should not be empty")
+
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metrics,
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreScopeVersion(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+
+			pmetrictest.ChangeResourceAttributeValue("host.name", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("host.id", replaceWithStar),
+		),
+		)
+	}, 3*time.Minute, 1*time.Second)
+}
+
 func replaceWithStar(_ string) string {
 	return "*"
 }
