@@ -1,4 +1,5 @@
 type: routing
+display_name: Routing Connector
 
 status:
   class: connector

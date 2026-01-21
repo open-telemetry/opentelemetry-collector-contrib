@@ -1,4 +1,5 @@
 type: awsxray
+display_name: AWS X-Ray Tracing Exporter
 
 status:
   class: exporter

@@ -46,6 +46,7 @@ import (
 	"golang.org/x/net/netutil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/targetallocator"
 )
 
@@ -78,9 +79,17 @@ type pReceiver struct {
 
 // New creates a new prometheus.Receiver reference.
 func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) (*pReceiver, error) {
+	// This serves as the default for all ScrapeConfigs that don't have it explicitly set.
+	// TODO: Remove this once feature-gates and configuration options are removed.
+	extraMetrics := metadata.ReceiverPrometheusreceiverEnableReportExtraScrapeMetricsFeatureGate.IsEnabled() || (cfg.ReportExtraScrapeMetrics && !metadata.ReceiverPrometheusreceiverRemoveReportExtraScrapeMetricsConfigFeatureGate.IsEnabled())
+	if extraMetrics {
+		cfg.PrometheusConfig.GlobalConfig.ExtraScrapeMetrics = &extraMetrics
+	}
+
 	if err := cfg.PrometheusConfig.Reload(); err != nil {
 		return nil, fmt.Errorf("failed to reload Prometheus config: %w", err)
 	}
+
 	baseCfg := promconfig.Config(*cfg.PrometheusConfig)
 	registry := prometheus.NewRegistry()
 	registerer := prometheus.WrapRegistererWith(
@@ -225,12 +234,10 @@ func (r *pReceiver) initScrapeOptions(o prometheusScrapeOptions) *scrape.Options
 	opts := &scrape.Options{
 		DiscoveryReloadInterval: model.Duration(o.discoveryReloadInterval),
 		PassMetadataInContext:   true,
-		// We're slowly switching to the feature gate, so we need to check both the feature gate and the config option for a few releases.
-		ExtraMetrics: enableReportExtraScrapeMetricsGate.IsEnabled() || (r.cfg.ReportExtraScrapeMetrics && !removeReportExtraScrapeMetricsConfigGate.IsEnabled()),
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
-		EnableCreatedTimestampZeroIngestion: enableCreatedTimestampZeroIngestionGate.IsEnabled(),
+		EnableStartTimestampZeroIngestion: metadata.ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate.IsEnabled(),
 	}
 
 	return opts
@@ -264,10 +271,10 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	o := &web.Options{
 		ScrapeManager:   r.scrapeManager,
 		Context:         ctx,
-		ListenAddresses: []string{r.cfg.APIServer.ServerConfig.Endpoint},
+		ListenAddresses: []string{r.cfg.APIServer.ServerConfig.NetAddr.Endpoint},
 		ExternalURL: &url.URL{
 			Scheme: "http",
-			Host:   r.cfg.APIServer.ServerConfig.Endpoint,
+			Host:   r.cfg.APIServer.ServerConfig.NetAddr.Endpoint,
 			Path:   "",
 		},
 		RoutePrefix:    "/",
@@ -346,11 +353,12 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		o.EnableOTLPWriteReceiver,
 		o.ConvertOTLPDelta,
 		o.NativeOTLPDeltaIngestion,
-		o.CTZeroIngestionEnabled,
+		o.STZeroIngestionEnabled,
 		5*time.Minute, // LookbackDelta - Using the default value of 5 minutes
 		o.EnableTypeAndUnitLabels,
 		false, // appendMetadata from remote write
 		nil,   // OverrideErrorCode
+		nil,   // FeatureRegistry
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579
