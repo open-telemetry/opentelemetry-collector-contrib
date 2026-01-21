@@ -32,7 +32,7 @@ Event Hub, transforms them, and pushes them through the collector pipeline.
 A string describing the connection to an Azure event hub. Ignored if `auth` is specified.
 
 ### event_hub
-This section is required when using `auth`. Only applicable when feature gate `receiver.azureeventhubreceiver.UseAzeventhubs` is enabled.
+This section is required when using `auth`.
 
 #### name (Required when using auth)
 The name of the Event Hub.
@@ -42,7 +42,7 @@ The fully qualified namespace (e.g., `namespace.servicebus.windows.net`).
 
 ### auth (Optional)
 The ID of an authentication extension to use. This can be used to authenticate using Azure Active Directory (AAD) pod identity,
-managed identity, or service principal. Only supported when feature gate `receiver.azureeventhubreceiver.UseAzeventhubs` is enabled.
+managed identity, or service principal.
 When this field is set, `connection` is ignored and `event_hub` section is required.
 
 ### group (Optional)
@@ -92,13 +92,6 @@ these datapoints.
 * With `average`, datapoints will be aggregated into an average value (`sum/count`), and keep the original metric name.
 
 Default: `nil`
-
-> [!NOTE]
-> You can opt out of using the [`azeventhubs`](https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/messaging/azeventhubs) sdk by disabling the feature gate
-> `receiver.azureeventhubreceiver.UseAzeventhubs` when you run the OpenTelemetry Collector. See the following page
-> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
->
-> The following configuration options can only be used with this feature flag enabled
 
 ### max_poll_events (optional)
 Specifies the maximum number of events to retrieve in a single poll from the Event Hub.
