@@ -365,7 +365,7 @@ run-changed-tests:
 		fi \
 	fi
 
-SRC ?= '$(CURDIR)/config.go'
+SRC ?= '$(CURDIR)'
 FLAGS ?= '-o=$(CURDIR)/'
 
 .PHONY: schemagen

@@ -1,4 +1,5 @@
 type: prometheus
+display_name: Prometheus Exporter
 
 status:
   class: exporter

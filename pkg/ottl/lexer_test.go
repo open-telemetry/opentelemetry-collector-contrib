@@ -37,6 +37,21 @@ func Test_lexer(t *testing.T) {
 		{"basic_uppercase", "ABC", false, []result{
 			{"Uppercase", "ABC"},
 		}},
+		{"basic_int", "12345", false, []result{
+			{"Int", "12345"},
+		}},
+		{"basic_float", "3.14159", false, []result{
+			{"Float", "3.14159"},
+		}},
+		{"Float decimal 0", "3.0", false, []result{
+			{"Float", "3.0"},
+		}},
+		{"Float with trailing dot", "3.", false, []result{
+			{"Float", "3."},
+		}},
+		{"float_fraction_only", ".3", false, []result{
+			{"Float", ".3"},
+		}},
 		{"basic_equality", "3==4.9", false, []result{
 			{"Int", "3"},
 			{"OpComparison", "=="},
@@ -114,12 +129,23 @@ func Test_lexer(t *testing.T) {
 			{"OpMultDiv", "*"},
 			{"OpMultDiv", "/"},
 		}},
-		{"Math Equations", `1000 - 600`, false, []result{
+		{"Math Equation AddSub", `1000 - 600`, false, []result{
 			{"Int", "1000"},
 			{"OpAddSub", "-"},
 			{"Int", "600"},
 		}},
-		{"Math Equations", `1.1 * 2.9`, false, []result{
+		{"Math Equation AddSub nospace", `3-5`, false, []result{
+			{"Int", "3"},
+			{typ: "OpAddSub", val: "-"},
+			{"Int", "5"},
+		}},
+		{"Math Equation AddSub nospace", `3*-5`, false, []result{
+			{"Int", "3"},
+			{typ: "OpMultDiv", val: "*"},
+			{typ: "OpAddSub", val: "-"},
+			{"Int", "5"},
+		}},
+		{"Math Equation MulDiv", `1.1 * 2.9`, false, []result{
 			{"Float", "1.1"},
 			{"OpMultDiv", "*"},
 			{"Float", "2.9"},
@@ -157,6 +183,52 @@ func Test_lexer(t *testing.T) {
 			{"OpAddSub", "-"},
 			{"Int", "1"},
 			{"Punct", "]"},
+		}},
+		{"Dynamic path with unary operation", `-attributes["foo"]`, false, []result{
+			{typ: "OpAddSub", val: "-"},
+			{"Lowercase", "attributes"},
+			{"Punct", "["},
+			{"String", `"foo"`},
+			{"Punct", "]"},
+		}},
+		{"Float variations with trailing dot", "1. 2. 3.", false, []result{
+			{"Float", "1."},
+			{"Float", "2."},
+			{"Float", "3."},
+		}},
+		{"Mixed int float arithmetic", "10+3.5", false, []result{
+			{"Int", "10"},
+			{"OpAddSub", "+"},
+			{"Float", "3.5"},
+		}},
+		{"Scientific notation float with trailing dot", "1.e5", false, []result{
+			{"Float", "1.e5"},
+		}},
+		{"Scientific notation with positive exponent", "3.14e+10", false, []result{
+			{"Float", "3.14e+10"},
+		}},
+		{"Scientific notation with negative exponent", "2.5e-3", false, []result{
+			{"Float", "2.5e-3"},
+		}},
+		{"Decimal only float variations", ".0 .5 .99", false, []result{
+			{"Float", ".0"},
+			{"Float", ".5"},
+			{"Float", ".99"},
+		}},
+		{"Unary minus in multiplication", "3*-5", false, []result{
+			{"Int", "3"},
+			{"OpMultDiv", "*"},
+			{"OpAddSub", "-"},
+			{"Int", "5"},
+		}},
+		{"Complex unary operations", "2+-3*-4", false, []result{
+			{"Int", "2"},
+			{"OpAddSub", "+"},
+			{"OpAddSub", "-"},
+			{"Int", "3"},
+			{"OpMultDiv", "*"},
+			{"OpAddSub", "-"},
+			{"Int", "4"},
 		}},
 	}
 
