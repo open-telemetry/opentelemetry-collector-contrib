@@ -6,6 +6,9 @@ package elbaccesslogs
 import (
 	"bytes"
 	"compress/gzip"
+	"errors"
+	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"io"
 	"os"
 	"path/filepath"
@@ -65,7 +68,7 @@ func TestUnmarshallELBAccessLogs(t *testing.T) {
 		},
 		"empty log file": {
 			reader:      readAndCompressLogFile(t, filesDirectory, "elb_empty_file.log"),
-			expectedErr: "no log lines found",
+			expectedErr: "invalid first ELB access log line part",
 		},
 		"invalid syntax field": {
 			reader:      readAndCompressLogFile(t, filesDirectory, "alb_al_invalid_syntax.log"),
@@ -121,4 +124,37 @@ func TestUnmarshallELBAccessLogs(t *testing.T) {
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
 		})
 	}
+}
+
+func TestGetStreamUnmarshaler(t *testing.T) {
+	directory := "testdata/stream_alb"
+	expectPattern := "alb_al_valid_logs_expected_%d.yaml"
+
+	input := readAndCompressLogFile(t, "testdata/stream_alb", "alb_al_valid_logs.log")
+
+	logger := zaptest.NewLogger(t)
+	elbUnmarshaler := NewELBAccessLogUnmarshaler(component.BuildInfo{}, logger)
+
+	streamer := elbUnmarshaler.GetStreamUnmarshaler(input, encoding.WithFlushItems(1))
+
+	var i int
+	for {
+		logs, err := streamer(t.Context())
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			t.Errorf("failed to unmarshal log %d: %v", i, err)
+		}
+
+		i++
+		expectedLogs, err := golden.ReadLogs(filepath.Join(directory, fmt.Sprintf(expectPattern, i)))
+		require.NoError(t, err)
+		require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+	}
+
+	// expect EOF after all logs are read
+	_, err := streamer(t.Context())
+	require.ErrorIs(t, err, io.EOF)
 }

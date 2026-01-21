@@ -5,6 +5,8 @@ package elbaccesslogs
 
 import (
 	"bytes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"io"
 	"os"
 	"testing"
 
@@ -55,13 +57,26 @@ func BenchmarkUnmarshalAWSLogs(b *testing.B) {
 		buildInfo: component.BuildInfo{},
 		logger:    zap.NewNop(),
 	}
+
 	for _, bc := range elbCases {
 		data := createELBAccessLogContent(b, bc.filename, bc.nLogs)
 		b.Run(bc.name, func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				_, err := u.UnmarshalAWSLogs(bytes.NewReader(data))
-				require.NoError(b, err)
+
+				streamer := u.GetStreamUnmarshaler(bytes.NewReader(data), encoding.WithFlushBytes(1_00_000))
+				for {
+					_, err := streamer(b.Context())
+					if err != nil {
+						if err == io.EOF {
+							break
+						}
+
+						b.Errorf("failed to unmarshal logs: %v", err)
+					}
+
+				}
+
 			}
 		})
 	}
