@@ -50,7 +50,7 @@ func createMetricsReceiver(
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scraper instance: %w", err)
 	}
 
-	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, ms))
+	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, ms))
 }
 
 func createCombinedLogReceiver(

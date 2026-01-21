@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"sync"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
@@ -182,7 +184,33 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 	kr.setting.Logger.Info("Started collecting",
 		zap.Any("gvr", object.gvr),
 		zap.Any("mode", object.Mode),
-		zap.Any("namespaces", object.Namespaces))
+	)
+	// TODO: when using informers, we should find a way to get just the metadata.name of the namespace, and then filter on that
+	if len(object.ExcludeNamespaces) > 0 {
+		allNamespaces, err := kr.client.Resource(schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			kr.setting.Logger.Error("failed to list namespaces", zap.Error(err))
+			return
+		}
+		compiledRegexes := make([]*regexp.Regexp, 0, len(object.ExcludeNamespaces))
+		for _, pattern := range object.ExcludeNamespaces {
+			re, err := regexp.Compile(pattern.Regex)
+			if err != nil {
+				kr.setting.Logger.Error("failed to compile regex "+pattern.Regex, zap.Error(err))
+				continue
+			}
+			compiledRegexes = append(compiledRegexes, re)
+		}
+		for _, ns := range allNamespaces.Items {
+			for _, re := range compiledRegexes {
+				if !re.MatchString(ns.GetName()) {
+					object.Namespaces = append(object.Namespaces, ns.GetName())
+					break
+				}
+			}
+		}
+	}
+	kr.setting.Logger.Info("Collecting from namespaces", zap.Strings("namespaces", object.Namespaces))
 
 	switch object.Mode {
 	case PullMode:
