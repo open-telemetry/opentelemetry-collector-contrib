@@ -31,6 +31,16 @@ override the resource value in telemetry data with this information.
 > $ otelcol --config=config.yaml --feature-gates=-processor.resourcedetection.propagateerrors
 > ```
 
+## Feature gates
+
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
+
+Feature gates can be enabled using the `--feature-gates` flag:
+
+```shell
+"--feature-gates=<feature-gate>"
+```
+
 ## Supported detectors
 
 ### Environment Variable

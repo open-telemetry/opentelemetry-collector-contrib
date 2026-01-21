@@ -8,7 +8,6 @@ import (
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
@@ -17,18 +16,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
+	processormetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 const (
 	// TypeStr is type of detector.
 	TypeStr = "gcp"
 )
-
-var removeGCPFaasID = featuregate.GlobalRegistry().MustRegister(
-	"processor.resourcedetection.removeGCPFaasID",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("Remove faas.id from the GCP detector. Use faas.instance instead."),
-	featuregate.WithRegisterFromVersion("v0.87.0"))
 
 // NewDetector returns a detector which can detect resource attributes on:
 // * Google Compute Engine (GCE).
@@ -95,7 +89,7 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 		)
-		if !removeGCPFaasID.IsEnabled() {
+		if !processormetadata.ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate.IsEnabled() {
 			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID))
 		}
 	case gcp.CloudRunJob:
@@ -107,7 +101,7 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobExecution, d.detector.CloudRunJobExecution),
 			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobTaskIndex, d.detector.CloudRunJobTaskIndex),
 		)
-		if !removeGCPFaasID.IsEnabled() {
+		if !processormetadata.ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate.IsEnabled() {
 			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID))
 		}
 	case gcp.CloudFunctions:
@@ -118,7 +112,7 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 		)
-		if !removeGCPFaasID.IsEnabled() {
+		if !processormetadata.ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate.IsEnabled() {
 			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID))
 		}
 	case gcp.AppEngineFlex:
@@ -129,7 +123,7 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
 			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.AppEngineServiceInstance),
 		)
-		if !removeGCPFaasID.IsEnabled() {
+		if !processormetadata.ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate.IsEnabled() {
 			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.AppEngineServiceInstance))
 		}
 	case gcp.AppEngineStandard:
@@ -141,7 +135,7 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 			d.rb.SetFromCallable(d.rb.SetCloudAvailabilityZone, d.detector.AppEngineStandardAvailabilityZone),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.AppEngineStandardCloudRegion),
 		)
-		if !removeGCPFaasID.IsEnabled() {
+		if !processormetadata.ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate.IsEnabled() {
 			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.AppEngineServiceInstance))
 		}
 	case gcp.GCE:
