@@ -21,13 +21,20 @@ type receiverEntry struct {
 	resolvedConfig userConfigMap
 	// resolvedDiscoveredConfig is the discovered config (e.g., endpoint target)
 	resolvedDiscoveredConfig userConfigMap
+	// computedResourceAttrs are the resource attributes computed from the endpoint env
+	// at receiver creation time. These are compared on endpoint changes to detect when
+	// metadata changes (like pod labels) would affect telemetry, even if the receiver
+	// config itself is unchanged.
+	computedResourceAttrs map[string]string
 }
 
-// configsEqual returns true if the receiver's effective config would be the same
-// with the given resolved configs.
-func (re *receiverEntry) configsEqual(resolvedConfig, resolvedDiscoveredConfig userConfigMap) bool {
+// configsEqual returns true if the receiver's effective config and resource attributes
+// would be the same with the given parameters. This is used during OnChange to determine
+// if a receiver restart is necessary.
+func (re *receiverEntry) configsEqual(resolvedConfig, resolvedDiscoveredConfig userConfigMap, computedAttrs map[string]string) bool {
 	return reflect.DeepEqual(re.resolvedConfig, resolvedConfig) &&
-		reflect.DeepEqual(re.resolvedDiscoveredConfig, resolvedDiscoveredConfig)
+		reflect.DeepEqual(re.resolvedDiscoveredConfig, resolvedDiscoveredConfig) &&
+		reflect.DeepEqual(re.computedResourceAttrs, computedAttrs)
 }
 
 // receiverMap is a multimap for mapping one endpoint id to many receiver entries.

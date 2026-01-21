@@ -557,10 +557,11 @@ func TestOnRemoveForTraces(t *testing.T) {
 // A receiver should restart when EITHER source would produce different values.
 func TestOnChange(t *testing.T) {
 	tests := []struct {
-		name           string
-		templateConfig userConfigMap
-		modifyEndpoint func(e observer.Endpoint) observer.Endpoint // nil means no modification
-		expectRestart  bool
+		name               string
+		templateConfig     userConfigMap
+		resourceAttributes map[string]any // optional custom resource attributes for the template
+		modifyEndpoint     func(e observer.Endpoint) observer.Endpoint // nil means no modification
+		expectRestart      bool
 	}{
 		{
 			name:           "static config unchanged - no restart",
@@ -588,6 +589,59 @@ func TestOnChange(t *testing.T) {
 			},
 			expectRestart: true,
 		},
+		{
+			// When a custom resource attribute references a label via backtick expression,
+			// and that label changes, the receiver should restart to pick up the new value.
+			name:               "label change with custom resource attr - restart",
+			templateConfig:     userConfigMap{"endpoint": "some.endpoint"},
+			resourceAttributes: map[string]any{"app.label": "`pod.labels[\"app\"]`"},
+			modifyEndpoint: func(e observer.Endpoint) observer.Endpoint {
+				// Modify the pod labels in the endpoint details
+				port := e.Details.(*observer.Port)
+				newPod := port.Pod
+				newPod.Labels = map[string]string{
+					"app":    "redis-v2", // changed from "redis"
+					"region": "west-1",
+				}
+				e.Details = &observer.Port{
+					Name:           port.Name,
+					Pod:            newPod,
+					Port:           port.Port,
+					Transport:      port.Transport,
+					ContainerName:  port.ContainerName,
+					ContainerID:    port.ContainerID,
+					ContainerImage: port.ContainerImage,
+				}
+				return e
+			},
+			expectRestart: true,
+		},
+		{
+			// When labels change but no resource attribute references them,
+			// the receiver should NOT restart (config and default attrs unchanged).
+			name:               "label change without resource attr reference - no restart",
+			templateConfig:     userConfigMap{"endpoint": "some.endpoint"},
+			resourceAttributes: map[string]any{}, // no custom attrs referencing labels
+			modifyEndpoint: func(e observer.Endpoint) observer.Endpoint {
+				port := e.Details.(*observer.Port)
+				newPod := port.Pod
+				newPod.Labels = map[string]string{
+					"app":    "redis-v2", // changed, but not referenced
+					"region": "west-1",
+				}
+				e.Details = &observer.Port{
+					Name:           port.Name,
+					Pod:            newPod,
+					Port:           port.Port,
+					Transport:      port.Transport,
+					ContainerName:  port.ContainerName,
+					ContainerID:    port.ContainerID,
+					ContainerImage: port.ContainerImage,
+				}
+				return e
+			},
+			expectRestart: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -599,12 +653,19 @@ func TestOnChange(t *testing.T) {
 				config:     tt.templateConfig,
 				endpointID: portEndpoint.ID,
 			}
+
+			// Use custom resource attributes if provided, otherwise empty
+			resAttrs := map[string]any{}
+			if tt.resourceAttributes != nil {
+				resAttrs = tt.resourceAttributes
+			}
+
 			cfg.receiverTemplates = map[string]receiverTemplate{
 				rcvrCfg.id.String(): {
 					receiverConfig:     rcvrCfg,
 					rule:               portRule,
 					Rule:               `type == "port"`,
-					ResourceAttributes: map[string]any{},
+					ResourceAttributes: resAttrs,
 					signals:            receiverSignals{metrics: true, logs: true, traces: true},
 				},
 			}

@@ -76,37 +76,56 @@ func TestReceiverEntryConfigsEqual(t *testing.T) {
 	entry := receiverEntry{
 		resolvedConfig:           userConfigMap{"key": "value", "nested": map[string]any{"a": 1}},
 		resolvedDiscoveredConfig: userConfigMap{"endpoint": "localhost:8080"},
+		computedResourceAttrs:    map[string]string{"k8s.pod.name": "my-pod", "app": "v1"},
 	}
 
 	tests := []struct {
 		name                     string
 		resolvedConfig           userConfigMap
 		resolvedDiscoveredConfig userConfigMap
+		computedAttrs            map[string]string
 		expected                 bool
 	}{
 		{
-			name:                     "same configs are equal",
+			name:                     "all configs and attrs equal",
 			resolvedConfig:           userConfigMap{"key": "value", "nested": map[string]any{"a": 1}},
 			resolvedDiscoveredConfig: userConfigMap{"endpoint": "localhost:8080"},
+			computedAttrs:            map[string]string{"k8s.pod.name": "my-pod", "app": "v1"},
 			expected:                 true,
 		},
 		{
 			name:                     "different resolved config",
 			resolvedConfig:           userConfigMap{"key": "different"},
 			resolvedDiscoveredConfig: userConfigMap{"endpoint": "localhost:8080"},
+			computedAttrs:            map[string]string{"k8s.pod.name": "my-pod", "app": "v1"},
 			expected:                 false,
 		},
 		{
 			name:                     "different discovered config",
 			resolvedConfig:           userConfigMap{"key": "value", "nested": map[string]any{"a": 1}},
 			resolvedDiscoveredConfig: userConfigMap{"endpoint": "localhost:9090"},
+			computedAttrs:            map[string]string{"k8s.pod.name": "my-pod", "app": "v1"},
+			expected:                 false,
+		},
+		{
+			name:                     "different computed resource attrs",
+			resolvedConfig:           userConfigMap{"key": "value", "nested": map[string]any{"a": 1}},
+			resolvedDiscoveredConfig: userConfigMap{"endpoint": "localhost:8080"},
+			computedAttrs:            map[string]string{"k8s.pod.name": "my-pod", "app": "v2"},
+			expected:                 false,
+		},
+		{
+			name:                     "nil vs non-empty computed attrs are not equal",
+			resolvedConfig:           userConfigMap{"key": "value", "nested": map[string]any{"a": 1}},
+			resolvedDiscoveredConfig: userConfigMap{"endpoint": "localhost:8080"},
+			computedAttrs:            nil,
 			expected:                 false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, entry.configsEqual(tt.resolvedConfig, tt.resolvedDiscoveredConfig))
+			assert.Equal(t, tt.expected, entry.configsEqual(tt.resolvedConfig, tt.resolvedDiscoveredConfig, tt.computedAttrs))
 		})
 	}
 }

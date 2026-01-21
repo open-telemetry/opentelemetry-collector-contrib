@@ -32,19 +32,20 @@ type enhancingConsumer struct {
 	attrs   map[string]string
 }
 
-func newEnhancingConsumer(
+// computeResourceAttrs evaluates resource attribute expressions against the endpoint env.
+// This function is used both when creating an enhancingConsumer and when checking if
+// an endpoint change requires a receiver restart. By comparing the computed attrs from
+// the old and new endpoint env, we can detect when metadata changes (like pod labels)
+// would affect the resource attributes added to telemetry, even if the receiver's
+// own config hasn't changed.
+func computeResourceAttrs(
 	resources resourceAttributes,
 	receiverAttributes map[string]string,
 	env observer.EndpointEnv,
 	endpoint observer.Endpoint,
-	nextLogs consumer.Logs,
-	nextMetrics consumer.Metrics,
-	nextTraces consumer.Traces,
-) (*enhancingConsumer, error) {
+) (map[string]string, error) {
 	attrs := map[string]string{}
-
 	for _, resource := range []map[string]string{resources[endpoint.Details.Type()], receiverAttributes} {
-		// Precompute values that will be inserted for each resource object passed through.
 		for attr, expr := range resource {
 			// If the attribute value is empty this signals to delete existing
 			if expr == "" {
@@ -62,6 +63,22 @@ func newEnhancingConsumer(
 				attrs[attr] = val
 			}
 		}
+	}
+	return attrs, nil
+}
+
+func newEnhancingConsumer(
+	resources resourceAttributes,
+	receiverAttributes map[string]string,
+	env observer.EndpointEnv,
+	endpoint observer.Endpoint,
+	nextLogs consumer.Logs,
+	nextMetrics consumer.Metrics,
+	nextTraces consumer.Traces,
+) (*enhancingConsumer, error) {
+	attrs, err := computeResourceAttrs(resources, receiverAttributes, env, endpoint)
+	if err != nil {
+		return nil, err
 	}
 
 	ec := &enhancingConsumer{attrs: attrs}
