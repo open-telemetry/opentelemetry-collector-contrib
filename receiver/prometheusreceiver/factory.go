@@ -7,7 +7,7 @@ import (
 	"context"
 
 	promconfig "github.com/prometheus/prometheus/config"
-	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
+	_ "github.com/prometheus/prometheus/plugins" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
