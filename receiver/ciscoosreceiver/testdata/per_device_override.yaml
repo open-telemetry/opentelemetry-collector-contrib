@@ -1,0 +1,35 @@
+ciscoos:
+  collection_interval: 60s
+  timeout: 30s
+  
+  scrapers:
+    system:
+      metrics:
+        cisco.device.up:
+          enabled: true
+    interfaces:
+      metrics:
+        system.network.io:
+          enabled: true
+  
+  devices:
+    # Device 1: Uses global scrapers (system + interfaces)
+    - name: "device-1"
+      host: "192.168.1.1"
+      port: 22
+      auth:
+        username: "admin"
+        password: "password"
+    
+    # Device 2: Override - only system scraper
+    - name: "device-2"
+      host: "192.168.1.2"
+      port: 22
+      auth:
+        username: "admin"
+        password: "password"
+      scrapers:
+        system:
+          metrics:
+            cisco.device.up:
+              enabled: true
