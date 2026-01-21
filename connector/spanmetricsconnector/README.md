@@ -346,7 +346,7 @@ connectors:
   spanmetrics:
 
 exporters:
-  otlphttp/observability-backend:
+  otlp_http/observability-backend:
   ...
 
 service:
@@ -354,11 +354,11 @@ service:
     traces:
       receivers: [otlp]
       processors: [transform/sanitize_spans, ...]
-      exporters: [otlphttp/observability-backend, spanmetrics]
+      exporters: [otlp_http/observability-backend, spanmetrics]
     metrics:
       receivers: [otlp, spanmetrics]
       processors: [...]
-      exporters: [otlphttp/observability-backend]
+      exporters: [otlp_http/observability-backend]
     # ...
 ```
 
@@ -402,7 +402,7 @@ connectors:
   spanmetrics:
 
 exporters:
-  otlphttp/observability-backend:
+  otlp_http/observability-backend:
   ...
 
 service:
@@ -410,11 +410,11 @@ service:
     traces:
       receivers: [otlp]
       processors: [transform/sanitize_spans, ...]
-      exporters: [otlphttp/observability-backend, spanmetrics]
+      exporters: [otlp_http/observability-backend, spanmetrics]
     metrics:
       receivers: [otlp, spanmetrics]
       processors: [...]
-      exporters: [otlphttp/observability-backend]
+      exporters: [otlp_http/observability-backend]
     # ...
 ```
 
