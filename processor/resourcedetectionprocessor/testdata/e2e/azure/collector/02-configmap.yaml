@@ -19,6 +19,9 @@ data:
         timeout: 2s
         override: false
         azure:
+          resource_attributes:
+            cloud.availability_zone:
+              enabled: true
           tags:
             - ^environment$
             - ^team$
