@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: k8sattributes
-note: "Fix logic ensuring k8s.node.uid is added even if k8s.node.name is not requested."
-issues: [43865]
-subtext: "Previously, the node UID was only added if the node name was also configured for extraction."
