@@ -27,23 +27,25 @@ func MoveRecordsWithContextIf(from, to plog.Logs, f func(plog.ResourceLogs, plog
 	rls := from.ResourceLogs()
 	rls.RemoveIf(func(rl plog.ResourceLogs) bool {
 		sls := rl.ScopeLogs()
-		var rlCopy *plog.ResourceLogs
+		var rlCopy plog.ResourceLogs
+		var rlInit bool
 		sls.RemoveIf(func(sl plog.ScopeLogs) bool {
 			lrs := sl.LogRecords()
-			var slCopy *plog.ScopeLogs
+			var slCopy plog.ScopeLogs
+			var slInit bool
 			lrs.RemoveIf(func(lr plog.LogRecord) bool {
 				if !f(rl, sl, lr) {
 					return false
 				}
-				if rlCopy == nil {
-					rlc := to.ResourceLogs().AppendEmpty()
-					rlCopy = &rlc
+				if !rlInit {
+					rlInit = true
+					rlCopy = to.ResourceLogs().AppendEmpty()
 					rl.Resource().CopyTo(rlCopy.Resource())
 					rlCopy.SetSchemaUrl(rl.SchemaUrl())
 				}
-				if slCopy == nil {
-					slc := rlCopy.ScopeLogs().AppendEmpty()
-					slCopy = &slc
+				if !slInit {
+					slInit = true
+					slCopy = rlCopy.ScopeLogs().AppendEmpty()
 					sl.Scope().CopyTo(slCopy.Scope())
 					slCopy.SetSchemaUrl(sl.SchemaUrl())
 				}

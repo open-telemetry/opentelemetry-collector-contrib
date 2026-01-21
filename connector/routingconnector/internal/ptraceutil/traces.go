@@ -25,23 +25,25 @@ func MoveSpansWithContextIf(from, to ptrace.Traces, f func(ptrace.ResourceSpans,
 	resourceSpansSlice := from.ResourceSpans()
 	resourceSpansSlice.RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		scopeSpanSlice := rs.ScopeSpans()
-		var resourceSpansCopy *ptrace.ResourceSpans
+		var resourceSpansCopy ptrace.ResourceSpans
+		var rsInit bool
 		scopeSpanSlice.RemoveIf(func(ss ptrace.ScopeSpans) bool {
 			spanSlice := ss.Spans()
-			var scopeSpansCopy *ptrace.ScopeSpans
+			var scopeSpansCopy ptrace.ScopeSpans
+			var ssInit bool
 			spanSlice.RemoveIf(func(span ptrace.Span) bool {
 				if !f(rs, ss, span) {
 					return false
 				}
-				if resourceSpansCopy == nil {
-					rmc := to.ResourceSpans().AppendEmpty()
-					resourceSpansCopy = &rmc
+				if !rsInit {
+					rsInit = true
+					resourceSpansCopy = to.ResourceSpans().AppendEmpty()
 					rs.Resource().CopyTo(resourceSpansCopy.Resource())
 					resourceSpansCopy.SetSchemaUrl(rs.SchemaUrl())
 				}
-				if scopeSpansCopy == nil {
-					smc := resourceSpansCopy.ScopeSpans().AppendEmpty()
-					scopeSpansCopy = &smc
+				if !ssInit {
+					ssInit = true
+					scopeSpansCopy = resourceSpansCopy.ScopeSpans().AppendEmpty()
 					ss.Scope().CopyTo(scopeSpansCopy.Scope())
 					scopeSpansCopy.SetSchemaUrl(ss.SchemaUrl())
 				}
