@@ -2585,7 +2585,7 @@ func TestBuildAttributes_AdjustedCount(t *testing.T) {
 
 			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, pcommon.NewInstrumentationScope(), tt.isAdjustedCount)
 
-			val, ok := attrs.Get(adjustedCountKey)
+			val, ok := attrs.Get(metricAttrIsExtrapolated)
 			if tt.expectAttribute {
 				assert.True(t, ok, "adjusted_count attribute should be present")
 				assert.True(t, val.Bool(), "adjusted_count should be true")
@@ -2678,7 +2678,7 @@ func TestAdjustedCountAttribute_Integration(t *testing.T) {
 							dps := m.Sum().DataPoints()
 							for l := 0; l < dps.Len(); l++ {
 								dp := dps.At(l)
-								val, hasAdjustedCount := dp.Attributes().Get(adjustedCountKey)
+								val, hasAdjustedCount := dp.Attributes().Get(metricAttrIsExtrapolated)
 
 								if tt.expectAdjusted {
 									assert.True(t, hasAdjustedCount, "adjusted_count attribute should be present for valid tracestate")
@@ -2770,7 +2770,7 @@ func TestAdjustedCountAttribute_Histogram(t *testing.T) {
 							dps := m.Histogram().DataPoints()
 							for l := 0; l < dps.Len(); l++ {
 								dp := dps.At(l)
-								val, hasAdjustedCount := dp.Attributes().Get(adjustedCountKey)
+								val, hasAdjustedCount := dp.Attributes().Get(metricAttrIsExtrapolated)
 
 								if tt.expectAdjusted {
 									assert.True(t, hasAdjustedCount, "adjusted_count attribute should be present for histogram with valid tracestate")
@@ -2867,7 +2867,7 @@ func TestAdjustedCountAttribute_Events(t *testing.T) {
 							dps := m.Sum().DataPoints()
 							for l := 0; l < dps.Len(); l++ {
 								dp := dps.At(l)
-								val, hasAdjustedCount := dp.Attributes().Get(adjustedCountKey)
+								val, hasAdjustedCount := dp.Attributes().Get(metricAttrIsExtrapolated)
 
 								if tt.expectAdjusted {
 									assert.True(t, hasAdjustedCount, "adjusted_count attribute should be present for events with valid tracestate")
