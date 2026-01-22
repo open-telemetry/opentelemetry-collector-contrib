@@ -8,10 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
+	"time"
 
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
+	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -21,11 +24,12 @@ import (
 )
 
 type storageExporter struct {
-	cfg           *Config
-	logsMarshaler plog.Marshaler
-	storageClient *storage.Client
-	bucketHandle  *storage.BucketHandle
-	logger        *zap.Logger
+	cfg             *Config
+	logsMarshaler   plog.Marshaler
+	storageClient   *storage.Client
+	bucketHandle    *storage.BucketHandle
+	logger          *zap.Logger
+	partitionFormat *strftime.Strftime
 }
 
 var _ exporter.Logs = (*storageExporter)(nil)
@@ -67,9 +71,20 @@ func newStorageExporter(
 		}
 	}
 
+	var partitionFormat *strftime.Strftime
+	if cfg.Bucket.Partition.Format != "" {
+		var err error
+		partitionFormat, err = strftime.New(cfg.Bucket.Partition.Format)
+		if err != nil {
+			// should not happen here, prevented by config.Validate
+			return nil, fmt.Errorf("failed to parse partition format: %w", err)
+		}
+	}
+
 	return &storageExporter{
-		cfg:    cfg,
-		logger: logger,
+		cfg:             cfg,
+		logger:          logger,
+		partitionFormat: partitionFormat,
 	}, nil
 }
 
@@ -139,6 +154,39 @@ func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
+// generateFilename returns the name of the file to be uploaded.
+// It starts from a unique ID, and prepends the partitionFormat and the prefix to it.
+func generateFilename(
+	uniqueID, filePrefix, partitionPrefix string,
+	partitionFormat *strftime.Strftime,
+	now time.Time,
+) string {
+	filename := uniqueID
+	if filePrefix != "" {
+		if strings.HasSuffix(filePrefix, "/") {
+			filename = filePrefix + uniqueID
+		} else {
+			filename = filePrefix + "_" + uniqueID
+		}
+	}
+
+	if partitionFormat != nil {
+		partition := partitionFormat.FormatString(now)
+		if !strings.HasSuffix(partition, "/") {
+			partition += "/"
+		}
+		filename = partition + filename
+	}
+
+	if partitionPrefix != "" {
+		if !strings.HasSuffix(partitionPrefix, "/") {
+			partitionPrefix += "/"
+		}
+		filename = partitionPrefix + filename
+	}
+	return filename
+}
+
 func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err error) {
 	if len(content) == 0 {
 		s.logger.Info("No content to upload")
@@ -147,10 +195,15 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 
 	// if we have multiple files coming, we need to make sure the name is unique so they do
 	// not overwrite each other
-	filename := uuid.New().String()
-	if s.cfg.Bucket.FilePrefix != "" {
-		filename = s.cfg.Bucket.FilePrefix + "_" + filename
-	}
+	uniqueID := uuid.New().String()
+	filename := generateFilename(
+		uniqueID,
+		s.cfg.Bucket.FilePrefix,
+		s.cfg.Bucket.Partition.Prefix,
+		s.partitionFormat,
+		time.Now().UTC(),
+	)
+
 	writer := s.bucketHandle.Object(filename).NewWriter(ctx)
 	defer func() {
 		err = writer.Close()

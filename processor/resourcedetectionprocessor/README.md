@@ -31,6 +31,16 @@ override the resource value in telemetry data with this information.
 > $ otelcol --config=config.yaml --feature-gates=-processor.resourcedetection.propagateerrors
 > ```
 
+## Feature gates
+
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
+
+Feature gates can be enabled using the `--feature-gates` flag:
+
+```shell
+"--feature-gates=<feature-gate>"
+```
+
 ## Supported detectors
 
 ### Environment Variable
@@ -115,6 +125,17 @@ processors:
     timeout: 2s
     override: false
 ```
+
+#### Docker Socket Permissions
+
+Since version 0.40.0, official OpenTelemetry Collector images run as a non-root user. To access the Docker socket, you need to configure appropriate permissions:
+
+- **Linux**: Grant access to the `docker` group (e.g., `--group-add <docker-gid>` or set `runAsGroup` in Kubernetes)
+- **Windows**: Ensure appropriate named pipe permissions
+
+For detailed permission configuration options and security considerations, see the [Docker Stats receiver documentation](../../receiver/dockerstatsreceiver/README.md#docker-socket-permissions).
+
+For more information, see [issue #11791](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11791).
 
 ### Heroku metadata
 

@@ -24,8 +24,7 @@ If used in conjunction with the `kafkaexporter` configured with `include_metadat
 
 > [!NOTE]
 > The Kafka receiver uses the [`franz-go`](https://github.com/twmb/franz-go) client library, which provides
-> better performance and support for modern Kafka features. The `receiver.kafkareceiver.UseFranzGo` feature
-> gate is now stable and always enabled (as of v0.141.0). The legacy Sarama client will be removed after v0.143.0.
+> better performance and support for modern Kafka features.
 >
 > The `franz-go` client supports directly consuming from multiple topics by specifying a regex expression.
 > To enable this feature, prefix your topic with the `^` character. This is identical to how the `librdkafka`
@@ -42,37 +41,37 @@ The following settings can be optionally configured:
 - `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
 - `logs`
-  - `topic` (Deprecated [v0.142.0]: use `topics`) 
-     (default = otlp\logs): If this is set, it will take precedence over default value of `topics`
-  - `topics` (default = otlp\_logs): List of kafka topics from which to consume logs 
+  - `topic` (Deprecated [v0.142.0]: use `topics`)
+     (default = otlp\_logs): If this is set, it will take precedence over default value of `topics`
+  - `topics` (default = otlp\_logs): List of kafka topics from which to consume logs
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`) 
+  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
      (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
-  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics. Only works with franz-go client and when topic uses regex.
+  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
 - `metrics`
-  - `topic` (Deprecated [v0.142.0]: use `topics`) 
+  - `topic` (Deprecated [v0.142.0]: use `topics`)
      (default = otlp\_metrics): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_metrics): List of Kafka topic from which to consume metrics.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`) 
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`  
-  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics. Only works with franz-go client and when topic uses regex.
+  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
+     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
+  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
 - `traces`
-  - `topic` (Deprecated [v0.142.0]: use `topics`)  
+  - `topic` (Deprecated [v0.142.0]: use `topics`)
      (default = otlp\_spans): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_spans): List of Kafka topic from which to consume traces.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`) 
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`  
-  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics. Only works with franz-go client and when topic uses regex.
+  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
+     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
+  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
 - `profiles`
-  - `topic`  (Deprecated [v0.142.0]: use `topics`)   
+  - `topic`  (Deprecated [v0.142.0]: use `topics`)
      (default = otlp\_profiles): If this is set, it will take precedence over default value of `topics`
-  - `topics` (default = otlp\_profiles): List of Kafka topic from which to consume profiles.  
+  - `topics` (default = otlp\_profiles): List of Kafka topic from which to consume profiles.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`) 
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`    
-  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics. Only works with franz-go client and when topic uses regex.
+  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
+     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
+  - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
 - `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `rack_id` (default = ""): The rack identifier for this client. When set and brokers are configured with a rack-aware replica selector, the client will prefer fetching from the closest replica.
@@ -90,10 +89,9 @@ The following settings can be optionally configured:
   - If set to an empty string (or not set), the consumer is treated as a dynamic member. In this case, the consumer's partition assignments may change during rebalances.
   - Using a `group_instance_id` is useful for stateful consumers or when you need to ensure that a specific consumer instance is always assigned the same set of partitions.
 - `min_fetch_size` (default = `1`): The minimum number of message bytes to fetch in a request, defaults to 1 byte.
-- `default_fetch_size` (default = `1048576`): (Deprecated [v0.142.0]: only used with legacy Sarama client. Use `max_fetch_size` instead) The default number of message bytes to fetch in a request, defaults to 1MB.
 - `max_fetch_size` (default = `1048576`): The maximum number of message bytes to fetch in a request, defaults to 1MB. Must be greater than or equal to `min_fetch_size`.
 - `max_fetch_wait` (default = `250ms`): The maximum amount of time the broker should wait for `min_fetch_size` bytes to be available before returning anyway.
-- `max_partition_fetch_size` (default = `1048576`): The default number of message bytes to fetch in a request per partition, defaults to 1MB. If a single record batch is larger than this value, the broker will still return it to ensure the consumer can make progress. This setting only applies while using [`franz-go`](https://github.com/twmb/franz-go).
+- `max_partition_fetch_size` (default = `1048576`): The default number of message bytes to fetch in a request per partition, defaults to 1MB. If a single record batch is larger than this value, the broker will still return it to ensure the consumer can make progress.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth`
   - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
@@ -252,7 +250,7 @@ receivers:
       exclude_topics:
       - "^logs-(test|dev)$"  # Exclude logs-test and logs-dev
     metrics:
-      topics: 
+      topics:
       - "^metrics-.*"
       exclude_topics:
       - "^metrics-internal-.*$"

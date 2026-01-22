@@ -165,12 +165,12 @@ pkg/translator/azurelogs pkg/translator/azurelogs
 pkg/translator/faro pkg/translator/faro
 pkg/translator/jaeger pkg/translator/jaeger
 pkg/translator/loki pkg/translator/loki
-pkg/translator/opencensus pkg/translator/opencensus
 pkg/translator/pprof pkg/translator/pprof
 pkg/translator/prometheus pkg/translator/prometheus
 pkg/translator/prometheusremotewrite pkg/translator/prometheusremotewrite
 pkg/translator/signalfx pkg/translator/signalfx
 pkg/translator/skywalking pkg/translator/skywalking
+pkg/translator/splunk pkg/translator/splunk
 pkg/translator/zipkin pkg/translator/zipkin
 pkg/winperfcounters pkg/winperfcounters
 pkg/xk8stest pkg/xk8stest
@@ -190,6 +190,7 @@ processor/isolationforestprocessor processor/isolationforest
 processor/k8sattributesprocessor processor/k8sattributes
 processor/logdedupprocessor processor/logdedup
 processor/logstransformprocessor processor/logstransform
+processor/lookupprocessor processor/lookup
 processor/metricsgenerationprocessor processor/metricsgeneration
 processor/metricstarttimeprocessor processor/metricstarttime
 processor/metricstransformprocessor processor/metricstransform
