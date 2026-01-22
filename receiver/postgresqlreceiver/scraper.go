@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -48,9 +49,10 @@ type postgreSQLScraper struct {
 	excludes      map[string]struct{}
 	cache         *lru.Cache[string, float64]
 	// if enabled, uses a separated attribute for the schema
-	separateSchemaAttr   bool
-	queryPlanCache       *expirable.LRU[string, string]
-	newestQueryTimestamp float64
+	separateSchemaAttr     bool
+	queryPlanCache         *expirable.LRU[string, string]
+	newestQueryTimestamp   float64
+	lastExecutionTimestamp time.Time
 }
 
 type errsMux struct {
@@ -192,10 +194,16 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 	return p.lb.Emit(), nil
 }
 
-func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery, topNQuery, maxExplainEachInterval int64) (plog.Logs, error) {
+func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery, topNQuery, maxExplainEachInterval int64, collectionInterval time.Duration) (plog.Logs, error) {
 	var errs errsMux
-
-	p.collectTopQuery(ctx, p.clientFactory, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger)
+	currentCollectionTime := time.Now()
+	lookbackTimeCounter := p.calculateLookbackSeconds(collectionInterval)
+	if lookbackTimeCounter < int(collectionInterval.Seconds()) {
+		p.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed.")
+	} else {
+		p.collectTopQuery(ctx, p.clientFactory, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger, currentCollectionTime)
+		p.lastExecutionTimestamp = currentCollectionTime
+	}
 
 	return p.lb.Emit(), nil
 }
@@ -231,8 +239,8 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 	}
 }
 
-func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger) {
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger, collectionTime time.Time) {
+	timestamp := pcommon.NewTimestampFromTime(collectionTime)
 
 	defaultDbClient, err := clientFactory.getClient(defaultPostgreSQLDatabase)
 	if err != nil {
@@ -367,6 +375,19 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		)
 		count++
 	}
+}
+
+func (p *postgreSQLScraper) calculateLookbackSeconds(topNCollectInterval time.Duration) int {
+	if p.lastExecutionTimestamp.IsZero() {
+		return int(topNCollectInterval.Seconds())
+	}
+
+	// collectionDelayOffset is the buffer to account for any previous collection delays.
+	const collectionDelayOffset = 5 * time.Second
+
+	return int(math.Ceil(time.Now().
+		Add(collectionDelayOffset).
+		Sub(p.lastExecutionTimestamp).Seconds()))
 }
 
 func (p *postgreSQLScraper) shutdown(_ context.Context) error {
