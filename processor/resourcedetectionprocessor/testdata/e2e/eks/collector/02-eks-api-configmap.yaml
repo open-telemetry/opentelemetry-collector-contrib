@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-eks-api-config
+  namespace: default
+data:
+  server.py: |
+    import json
+    import os
+    import ssl
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    NODE_NAME = os.environ.get("FAKE_NODE_NAME", "fake-node")
+    PROVIDER_ID = os.environ.get("FAKE_PROVIDER_ID", "aws:///us-west-2a/i-0abc123456789")
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == "/healthz":
+                body = b"ok"
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            if self.path == "/version":
+                payload = {"gitVersion": "v1.29.0-eks-123456"}
+                body = json.dumps(payload).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            if self.path.startswith("/api/v1/nodes/"):
+                node_name = self.path.split("/")[-1]
+                payload = {
+                    "apiVersion": "v1",
+                    "kind": "Node",
+                    "metadata": {"name": node_name},
+                    "spec": {"providerID": PROVIDER_ID},
+                }
+                body = json.dumps(payload).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            self.send_response(404)
+            self.end_headers()
+
+        def log_message(self, fmt, *args):
+            return
+
+    if __name__ == "__main__":
+        cert_file = os.environ.get("TLS_CERT_FILE")
+        key_file = os.environ.get("TLS_KEY_FILE")
+        port = int(os.environ.get("PORT", "8443"))
+        httpd = HTTPServer(("", port), Handler)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(certfile=cert_file, keyfile=key_file)
+        httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
+        httpd.serve_forever()

@@ -35,7 +35,7 @@ extensions:
     ttl: 60s
     
 exporters:
-  otlphttp/withauth:
+  otlp_http/withauth:
     endpoint: http://localhost:9000
     auth:
       authenticator: asapclient
