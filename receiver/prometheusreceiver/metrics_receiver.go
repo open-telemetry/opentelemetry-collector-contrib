@@ -168,17 +168,6 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 		}
 	}()
 
-	store, err := internal.NewAppendable(
-		r.consumer,
-		r.settings,
-		!r.cfg.ignoreMetadata,
-		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
-		r.cfg.TrimMetricSuffixes,
-	)
-	if err != nil {
-		return err
-	}
-
 	opts := r.initScrapeOptions()
 
 	// for testing only
@@ -190,9 +179,39 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger *slog.L
 			Set(reflect.ValueOf(true))
 	}
 
-	scrapeManager, err := scrape.NewManager(opts, logger, nil, store, nil, r.registerer)
-	if err != nil {
-		return err
+	var scrapeManager *scrape.Manager
+
+	if metadata.ReceiverPrometheusreceiverEnableAppenderV2FeatureGate.IsEnabled() {
+		// V2 path: Use the new AppendableV2 interface
+		storeV2, err := internal.NewAppendableV2(
+			r.consumer,
+			r.settings,
+			r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
+			r.cfg.TrimMetricSuffixes,
+		)
+		if err != nil {
+			return err
+		}
+		scrapeManager, err = scrape.NewManager(opts, logger, nil, nil, storeV2, r.registerer)
+		if err != nil {
+			return err
+		}
+	} else {
+		// V1 path: Use the existing Appendable interface
+		store, err := internal.NewAppendable(
+			r.consumer,
+			r.settings,
+			!r.cfg.ignoreMetadata,
+			r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
+			r.cfg.TrimMetricSuffixes,
+		)
+		if err != nil {
+			return err
+		}
+		scrapeManager, err = scrape.NewManager(opts, logger, nil, store, nil, r.registerer)
+		if err != nil {
+			return err
+		}
 	}
 	r.scrapeManager = scrapeManager
 
