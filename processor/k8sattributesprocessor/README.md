@@ -67,7 +67,7 @@ The following attributes are added by default:
   - k8s.pod.name
   - k8s.pod.uid
   - k8s.pod.start_time
-  - k8s.deployment.name
+  - k8s.deployment.name (requires watching Deployment resources unless `deployment_name_from_replicaset` is enabled)
   - k8s.node.name
 
 These attributes are also available for the use within association rules by default.
@@ -267,7 +267,11 @@ The processor can be configured to set the
 [recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
 
 - `otel_annotations` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
-- `deployment_name_from_replicaset` allows extracting deployment name from replicaset name by trimming pod template hash. This will disable watching for replicaset resources, which can be useful in environments with limited RBAC permissions as the processor will not need `get`, `watch`, and `list` permissions for `replicasets`. It also reduces memory consumption of the processor. When enabled, this feature works automatically with the existing deployment name extraction. Take the following ownerReference of a pod managed by deployment for example:
+- `deployment_name_from_replicaset` allows extracting deployment name from replicaset name by trimming pod template hash. This will disable watching for replicaset resources, which can be useful in environments with limited RBAC permissions as the processor will not need `get`, `watch`, and `list` permissions for `replicasets`. It also reduces memory consumption of the processor.
+
+  **Important:** When `deployment_name_from_replicaset: true` is set, the `k8s.deployment.name` attribute is **automatically extracted** even if it is **not explicitly listed** in the `extract.metadata` section. The processor derives the deployment name from the ReplicaSet's naming convention without requiring direct access to Deployment resources. Therefore, you should **omit** `k8s.deployment.name` from the `extract.metadata` list when using this option to avoid unnecessary resource watching.
+
+  Take the following ownerReference of a pod managed by deployment for example:
 
 ```yaml
   ownerReferences:
@@ -311,7 +315,7 @@ k8sattributes:
     metadata:
       - k8s.pod.name
       - k8s.pod.uid
-      - k8s.deployment.name
+      - k8s.deployment.name  # Requires watching Deployment resources. To avoid this, use deployment_name_from_replicaset instead.
       - k8s.namespace.name
       - k8s.node.name
       - k8s.pod.start_time
@@ -453,7 +457,8 @@ processors:
         - k8s.namespace.name
         - k8s.pod.name
         - k8s.pod.uid
-        - k8s.deployment.name
+        # Note: k8s.deployment.name is NOT listed here because deployment_name_from_replicaset
+        # extracts it automatically from the ReplicaSet name without watching Deployment resources
       # Use deployment name extraction without watching replicasets
       deployment_name_from_replicaset: true
 ```
