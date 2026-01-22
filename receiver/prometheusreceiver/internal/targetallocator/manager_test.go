@@ -83,7 +83,7 @@ func TestManagerShutdown(t *testing.T) {
 	discoveryManager := discovery.NewManager(ctx, promLogger, reg, sdMetrics)
 	require.NotNil(t, discoveryManager)
 
-	scrapeManager, err := scrape.NewManager(&scrape.Options{}, promLogger, nil, nil, reg)
+	scrapeManager, err := scrape.NewManager(&scrape.Options{}, promLogger, nil, nil, nil, reg)
 	require.NoError(t, err)
 	defer scrapeManager.Stop()
 
