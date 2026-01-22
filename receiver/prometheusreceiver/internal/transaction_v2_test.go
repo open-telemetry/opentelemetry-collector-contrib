@@ -32,7 +32,7 @@ import (
 // =============================================================================
 
 // newTransactionV2ForTest creates a transactionV2 for testing with the provided context.
-func newTransactionV2ForTest(t *testing.T, ctx context.Context, sink *consumertest.MetricsSink) *transactionV2 {
+func newTransactionV2ForTest(t *testing.T, ctx context.Context, sink *consumertest.MetricsSink) *transactionV2 { //nolint:revive // test helper
 	settings := receivertest.NewNopSettings(receivertest.NopType)
 	obsrecv := nopObsRecv(t)
 	return newTransactionV2(ctx, sink, labels.EmptyLabels(), settings, obsrecv, false)
@@ -50,7 +50,7 @@ func createV2Labels(metricName string, extraLabels ...string) labels.Labels {
 }
 
 // createV2Options creates AppendV2Options with the given metadata.
-func createV2Options(metricType model.MetricType, help, unit string) storage.AppendV2Options {
+func createV2Options(metricType model.MetricType, help, unit string) storage.AppendV2Options { //nolint:unparam // unit kept for API completeness
 	return storage.AppendV2Options{
 		Metadata: metadata.Metadata{
 			Type: metricType,
@@ -72,23 +72,23 @@ func float64FromBits(bits uint64) float64 {
 func TestTransactionV2_Lifecycle(t *testing.T) {
 	tests := []struct {
 		name   string
-		action func(t *testing.T, tr *transactionV2) error
+		action func(tr *transactionV2) error
 	}{
 		{
 			name: "commit without adding samples succeeds",
-			action: func(t *testing.T, tr *transactionV2) error {
+			action: func(tr *transactionV2) error {
 				return tr.Commit()
 			},
 		},
 		{
 			name: "rollback always succeeds",
-			action: func(t *testing.T, tr *transactionV2) error {
+			action: func(tr *transactionV2) error {
 				return tr.Rollback()
 			},
 		},
 		{
 			name: "commit after adding valid sample succeeds",
-			action: func(t *testing.T, tr *transactionV2) error {
+			action: func(tr *transactionV2) error {
 				ls := createV2Labels("counter_test")
 				opts := createV2Options(model.MetricTypeCounter, "", "")
 				_, err := tr.Append(0, ls, 0, time.Now().UnixMilli(), 100.0, nil, nil, opts)
@@ -105,7 +105,7 @@ func TestTransactionV2_Lifecycle(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
 			tr := newTransactionV2ForTest(t, scrapeCtx, sink)
 
-			err := tt.action(t, tr)
+			err := tt.action(tr)
 			assert.NoError(t, err)
 		})
 	}
@@ -985,7 +985,7 @@ func TestTransactionV2_NHCBHistogram(t *testing.T) {
 	// Verify bucket counts
 	// The exact counts depend on how NHCB encodes them
 	bucketCounts := dp.BucketCounts().AsRaw()
-	assert.Equal(t, len(bounds)+1, len(bucketCounts), "should have len(bounds)+1 bucket counts")
+	assert.Len(t, bucketCounts, len(bounds)+1, "should have len(bounds)+1 bucket counts")
 }
 
 // =============================================================================

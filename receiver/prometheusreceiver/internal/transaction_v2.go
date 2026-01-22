@@ -254,7 +254,7 @@ func (t *transactionV2) addDataPoint(
 	}
 }
 
-func (t *transactionV2) addGaugeDataPoint(dps pmetric.NumberDataPointSlice, ls labels.Labels, ts int64, v float64, opts storage.AppendV2Options) {
+func (*transactionV2) addGaugeDataPoint(dps pmetric.NumberDataPointSlice, ls labels.Labels, ts int64, v float64, opts storage.AppendV2Options) {
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(timestampFromMs(ts))
 	if value.IsStaleNaN(v) {
@@ -267,7 +267,7 @@ func (t *transactionV2) addGaugeDataPoint(dps pmetric.NumberDataPointSlice, ls l
 	}
 }
 
-func (t *transactionV2) addSumDataPoint(dps pmetric.NumberDataPointSlice, ls labels.Labels, st, ts int64, v float64, opts storage.AppendV2Options) {
+func (*transactionV2) addSumDataPoint(dps pmetric.NumberDataPointSlice, ls labels.Labels, st, ts int64, v float64, opts storage.AppendV2Options) {
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(timestampFromMs(ts))
 	if st > 0 {
@@ -283,7 +283,7 @@ func (t *transactionV2) addSumDataPoint(dps pmetric.NumberDataPointSlice, ls lab
 	}
 }
 
-func (t *transactionV2) addHistogramDataPoint(dps pmetric.HistogramDataPointSlice, ls labels.Labels, st, ts int64, h *histogram.Histogram, fh *histogram.FloatHistogram, opts storage.AppendV2Options) {
+func (*transactionV2) addHistogramDataPoint(dps pmetric.HistogramDataPointSlice, ls labels.Labels, st, ts int64, h *histogram.Histogram, fh *histogram.FloatHistogram, opts storage.AppendV2Options) {
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(timestampFromMs(ts))
 	if st > 0 {
@@ -319,7 +319,7 @@ func (t *transactionV2) addHistogramDataPoint(dps pmetric.HistogramDataPointSlic
 	}
 }
 
-func (t *transactionV2) addExponentialHistogramDataPoint(dps pmetric.ExponentialHistogramDataPointSlice, ls labels.Labels, st, ts int64, h *histogram.Histogram, fh *histogram.FloatHistogram, opts storage.AppendV2Options) {
+func (*transactionV2) addExponentialHistogramDataPoint(dps pmetric.ExponentialHistogramDataPointSlice, ls labels.Labels, st, ts int64, h *histogram.Histogram, fh *histogram.FloatHistogram, opts storage.AppendV2Options) {
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(timestampFromMs(ts))
 	if st > 0 {
@@ -371,7 +371,7 @@ func (t *transactionV2) addExponentialHistogramDataPoint(dps pmetric.Exponential
 	}
 }
 
-func (t *transactionV2) addSummaryDataPoint(dps pmetric.SummaryDataPointSlice, ls labels.Labels, st, ts int64, v float64, opts storage.AppendV2Options) {
+func (*transactionV2) addSummaryDataPoint(dps pmetric.SummaryDataPointSlice, ls labels.Labels, st, ts int64, v float64, _ storage.AppendV2Options) {
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(timestampFromMs(ts))
 	if st > 0 {
@@ -451,7 +451,7 @@ func (t *transactionV2) Commit() error {
 	return err
 }
 
-func (t *transactionV2) Rollback() error {
+func (*transactionV2) Rollback() error {
 	// Rollback is a no-op in the receiver since we don't buffer to external storage
 	return nil
 }
