@@ -4,6 +4,7 @@
 package plogutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutil"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pdatautil"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -27,29 +28,25 @@ func MoveRecordsWithContextIf(from, to plog.Logs, f func(plog.ResourceLogs, plog
 	rls := from.ResourceLogs()
 	rls.RemoveIf(func(rl plog.ResourceLogs) bool {
 		sls := rl.ScopeLogs()
-		var rlCopy plog.ResourceLogs
-		var rlInit bool
+		var rlCopy pdatautil.OnceValue[plog.ResourceLogs]
 		sls.RemoveIf(func(sl plog.ScopeLogs) bool {
 			lrs := sl.LogRecords()
-			var slCopy plog.ScopeLogs
-			var slInit bool
+			var slCopy pdatautil.OnceValue[plog.ScopeLogs]
 			lrs.RemoveIf(func(lr plog.LogRecord) bool {
 				if !f(rl, sl, lr) {
 					return false
 				}
-				if !rlInit {
-					rlInit = true
-					rlCopy = to.ResourceLogs().AppendEmpty()
-					rl.Resource().CopyTo(rlCopy.Resource())
-					rlCopy.SetSchemaUrl(rl.SchemaUrl())
+				if !rlCopy.IsInit() {
+					rlCopy.Init(to.ResourceLogs().AppendEmpty())
+					rl.Resource().CopyTo(rlCopy.Value().Resource())
+					rlCopy.Value().SetSchemaUrl(rl.SchemaUrl())
 				}
-				if !slInit {
-					slInit = true
-					slCopy = rlCopy.ScopeLogs().AppendEmpty()
-					sl.Scope().CopyTo(slCopy.Scope())
-					slCopy.SetSchemaUrl(sl.SchemaUrl())
+				if !slCopy.IsInit() {
+					slCopy.Init(rlCopy.Value().ScopeLogs().AppendEmpty())
+					sl.Scope().CopyTo(slCopy.Value().Scope())
+					slCopy.Value().SetSchemaUrl(sl.SchemaUrl())
 				}
-				lr.MoveTo(slCopy.LogRecords().AppendEmpty())
+				lr.MoveTo(slCopy.Value().LogRecords().AppendEmpty())
 				return true
 			})
 			return sl.LogRecords().Len() == 0
