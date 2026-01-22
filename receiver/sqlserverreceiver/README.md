@@ -90,7 +90,7 @@ Top-Query collection specific options (only useful when top-query collection are
 - `lookback_time` (optional, example = `60s`, default = `2 * collection_interval`): The time window (in second) in which to query for top queries.
   - Queries that were finished execution outside the lookback window are not included in the collection. Increasing the lookback window (in seconds) will be useful for capturing long-running queries.
 - `max_query_sample_count` (optional, example = `5000`, default = `1000`): The maximum number of records to fetch in a single run.
-- `top_query_count`: (optional, example = `100`, default = `200`): The maximum number of active queries to report (to the next consumer) in a single run.
+- `top_query_count`: (optional, example = `100`, default = `250`): The maximum number of active queries to report (to the next consumer) in a single run.
 - `collection_interval`: (optional, default = `60s`): The interval at which top queries should be emitted by this receiver.
   - This value can only guarantee that the top queries are collected at most once in this interval.
     - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `60s`.
