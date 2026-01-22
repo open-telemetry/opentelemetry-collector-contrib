@@ -609,7 +609,7 @@ func TestScrapeTopQueries(t *testing.T) {
 
 	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(sqlmock.NewRows(expectedRows).FromCSVString(expectedValues[:len(expectedValues)-1]))
 	mock.ExpectQuery(expectedExplain).WillReturnRows(sqlmock.NewRows([]string{"QUERY PLAN"}).AddRow("[{\"Plan\":{\"Node Type\":\"Merge Join\",\"Parallel Aware\":false,\"Async Capable\":false,\"Join Type\":\"Inner\",\"Startup Cost\":0.43,\"Total Cost\":55.27,\"Plan Rows\":290,\"Plan Width\":1675,\"Inner Unique\":\"?\",\"Merge Cond\":\"( e.businessentityid = p.businessentityid )\",\"Plans\":[{\"Node Type\":\"Index Scan\",\"Parent Relationship\":\"Outer\",\"Parallel Aware\":false,\"Async Capable\":false,\"Scan Direction\":\"Forward\",\"Index Name\":\"PK_Employee_BusinessEntityID\",\"Relation Name\":\"employee\",\"Alias\":\"e\",\"Startup Cost\":0.15,\"Total Cost\":21.5,\"Plan Rows\":290,\"Plan Width\":112},{\"Node Type\":\"Index Scan\",\"Parent Relationship\":\"Inner\",\"Parallel Aware\":false,\"Async Capable\":false,\"Scan Direction\":\"Forward\",\"Index Name\":\"PK_Person_BusinessEntityID\",\"Relation Name\":\"person\",\"Alias\":\"p\",\"Startup Cost\":0.29,\"Total Cost\":2261.87,\"Plan Rows\":19972,\"Plan Width\":1563}]}}]"))
-	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33)
+	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, 60*time.Second)
 	assert.NoError(t, err)
 	expectedFile := filepath.Join("testdata", "scraper", "top-query", "expected.yaml")
 	expectedLogs, err := golden.ReadLogs(expectedFile)
@@ -629,6 +629,79 @@ func TestScrapeTopQueries(t *testing.T) {
 	planTime, planTimeExists := scraper.cache.Get(queryid + totalPlanTimeColumnName)
 	assert.True(t, planTimeExists)
 	assert.Equal(t, float64(12), planTime)
+}
+
+func TestScrapeTopQueriesCollectsOnlyWhenIntervalHasElapsed(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	cfg.Events.DbServerTopQuery.Enabled = true
+	cfg.TopQueryCollection.CollectionInterval = 600 * time.Second
+	db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.NoError(t, err)
+
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{
+		db: db,
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	assert.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{
+		Logger: logger,
+	}
+
+	queryid := "114514"
+	expectedReturnedValue := map[string]string{
+		"calls":               "123",
+		"datname":             "postgres",
+		"shared_blks_dirtied": "1111",
+		"shared_blks_hit":     "1112",
+		"shared_blks_read":    "1113",
+		"shared_blks_written": "1114",
+		"temp_blks_read":      "1115",
+		"temp_blks_written":   "1116",
+		"query":               "select * from pg_stat_activity where id = 32",
+		"queryid":             queryid,
+		"rolname":             "master",
+		"rows":                "30",
+		"total_exec_time":     "11000",
+		"total_plan_time":     "12000",
+	}
+
+	expectedRows := make([]string, 0, len(expectedReturnedValue))
+	expectedValues := ""
+	for k, v := range expectedReturnedValue {
+		expectedRows = append(expectedRows, k)
+		expectedValues += fmt.Sprintf("%s,", v)
+	}
+
+	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
+
+	assert.True(t, scraper.lastExecutionTimestamp.IsZero(), "lastExecutionTimestamp should be zero before first collection")
+	_, err = scraper.scrapeTopQuery(t.Context(), 31, 32, 33, 60*time.Second)
+	assert.NoError(t, err)
+	assert.False(t, scraper.lastExecutionTimestamp.IsZero(), "lastExecutionTimestamp won't be zero after first collection")
+
+	collectionTime := scraper.lastExecutionTimestamp
+	_, err = scraper.scrapeTopQuery(t.Context(), 31, 32, 33, 60*time.Second)
+	assert.Equal(t, collectionTime, scraper.lastExecutionTimestamp, "No new collection should happen until configured collection_interval")
+}
+
+func TestCalculateLookbackSeconds(t *testing.T) {
+	collectionInterval := 20 * time.Second
+	expectedMinimumLookbackTime := int((collectionInterval).Seconds())
+	currentCollectionTime := time.Now()
+
+	scrpr := postgreSQLScraper{
+		lastExecutionTimestamp: currentCollectionTime.Add(-collectionInterval),
+	}
+	lookbackTime := scrpr.calculateLookbackSeconds(collectionInterval)
+
+	fmt.Print(lookbackTime)
+
+	assert.LessOrEqual(t, expectedMinimumLookbackTime, lookbackTime, "`lookbackTime` should be minimum %d", expectedMinimumLookbackTime)
 }
 
 func TestExplainQuery(t *testing.T) {
