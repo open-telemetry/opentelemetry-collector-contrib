@@ -48,5 +48,4 @@ SELECT TOP(@top)
 FROM sys.dm_exec_requests r
 INNER JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
 INNER JOIN sys.dm_exec_connections c ON s.session_id = c.session_id
-CROSS APPLY sys.dm_exec_sql_text(r.plan_handle) AS o
-WHERE st.text IS NOT NULL;
+CROSS APPLY sys.dm_exec_sql_text(r.plan_handle) AS o;
