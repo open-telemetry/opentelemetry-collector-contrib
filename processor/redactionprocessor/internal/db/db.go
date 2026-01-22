@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
-	semconv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
+	semconv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 )
 
@@ -60,11 +60,11 @@ func NewObfuscator(cfg DBSanitizerConfig, logger *zap.Logger) *Obfuscator {
 
 	if cfg.SQLConfig.Enabled {
 		dbAttrs := newDBAttributes(cfg.SQLConfig.Attributes, []string{
-			semconv128.DBSystemOtherSQL.Value.AsString(),
-			semconv128.DBSystemMySQL.Value.AsString(),
-			semconv128.DBSystemPostgreSQL.Value.AsString(),
-			semconv128.DBSystemMariaDB.Value.AsString(),
-			semconv128.DBSystemSqlite.Value.AsString(),
+			semconv138.DBSystemNameOtherSQL.Value.AsString(),
+			semconv138.DBSystemNameMySQL.Value.AsString(),
+			semconv138.DBSystemNamePostgreSQL.Value.AsString(),
+			semconv138.DBSystemNameMariaDB.Value.AsString(),
+			semconv138.DBSystemNameSQLite.Value.AsString(),
 		})
 		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &sqlObfuscator{
@@ -75,7 +75,7 @@ func NewObfuscator(cfg DBSanitizerConfig, logger *zap.Logger) *Obfuscator {
 
 	if cfg.RedisConfig.Enabled {
 		dbAttrs := newDBAttributes(cfg.RedisConfig.Attributes, []string{
-			semconv128.DBSystemRedis.Value.AsString(),
+			semconv138.DBSystemNameRedis.Value.AsString(),
 		})
 		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &redisObfuscator{
@@ -97,7 +97,7 @@ func NewObfuscator(cfg DBSanitizerConfig, logger *zap.Logger) *Obfuscator {
 
 	if cfg.MemcachedConfig.Enabled {
 		dbAttrs := newDBAttributes(cfg.MemcachedConfig.Attributes, []string{
-			semconv128.DBSystemMemcached.Value.AsString(),
+			semconv138.DBSystemNameMemcached.Value.AsString(),
 		})
 		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &memcachedObfuscator{
@@ -108,7 +108,7 @@ func NewObfuscator(cfg DBSanitizerConfig, logger *zap.Logger) *Obfuscator {
 
 	if cfg.MongoConfig.Enabled {
 		dbAttrs := newDBAttributes(cfg.MongoConfig.Attributes, []string{
-			semconv128.DBSystemMongoDB.Value.AsString(),
+			semconv138.DBSystemNameMongoDB.Value.AsString(),
 		})
 		processAttributesEnabled = processAttributesEnabled || len(dbAttrs.attributes) > 0
 		obfuscators = append(obfuscators, &mongoObfuscator{
@@ -120,7 +120,7 @@ func NewObfuscator(cfg DBSanitizerConfig, logger *zap.Logger) *Obfuscator {
 
 	if cfg.OpenSearchConfig.Enabled {
 		dbAttrs := newDBAttributes([]string{}, []string{
-			"opensearch", // Not part of semantic conventions
+			semconv138.DBSystemNameOpenSearch.Value.AsString(),
 		})
 		obfuscators = append(obfuscators, &opensearchObfuscator{
 			dbAttributes: dbAttrs,
@@ -131,7 +131,7 @@ func NewObfuscator(cfg DBSanitizerConfig, logger *zap.Logger) *Obfuscator {
 
 	if cfg.ESConfig.Enabled {
 		dbAttrs := newDBAttributes([]string{}, []string{
-			semconv128.DBSystemElasticsearch.Value.AsString(),
+			semconv138.DBSystemNameElasticsearch.Value.AsString(),
 		})
 		obfuscators = append(obfuscators, &esObfuscator{
 			dbAttributes: dbAttrs,
