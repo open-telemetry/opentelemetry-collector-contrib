@@ -700,7 +700,7 @@ type metricK8sContainerStatusReason struct {
 // init fills k8s.container.status.reason metric with initial data.
 func (m *metricK8sContainerStatusReason) init() {
 	m.data.SetName("k8s.container.status.reason")
-	m.data.SetDescription("Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a state for a given reason. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.")
+	m.data.SetDescription("Experimental metric, may experience breaking changes. Describes the reason for given state of the K8s container. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.")
 	m.data.SetUnit("{container}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -754,7 +754,7 @@ type metricK8sContainerStatusState struct {
 // init fills k8s.container.status.state metric with initial data.
 func (m *metricK8sContainerStatusState) init() {
 	m.data.SetName("k8s.container.status.state")
-	m.data.SetDescription("Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.")
+	m.data.SetDescription("Experimental metric, may experience breaking changes. Describes the current state of the K8s container. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.")
 	m.data.SetUnit("{container}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)

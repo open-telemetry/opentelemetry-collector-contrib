@@ -411,7 +411,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["k8s.container.status.reason"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a state for a given reason. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.", ms.At(i).Description())
+					assert.Equal(t, "Experimental metric, may experience breaking changes. Describes the reason for given state of the K8s container. All possible container state reasons will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state reason will be non-zero.", ms.At(i).Description())
 					assert.Equal(t, "{container}", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -428,7 +428,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["k8s.container.status.state"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Experimental metric, may experience breaking changes. Describes the number of K8s containers that are currently in a given state. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.", ms.At(i).Description())
+					assert.Equal(t, "Experimental metric, may experience breaking changes. Describes the current state of the K8s container. All possible container states will be reported at each time interval to avoid missing metrics. Only the value corresponding to the current state will be non-zero.", ms.At(i).Description())
 					assert.Equal(t, "{container}", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
