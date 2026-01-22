@@ -244,6 +244,7 @@ func (m *metricNfsClientNetCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsClientNetCount(cfg MetricConfig) metricNfsClientNetCount {
 	m := metricNfsClientNetCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -295,6 +296,7 @@ func (m *metricNfsClientNetTCPConnectionAccepted) emit(metrics pmetric.MetricSli
 
 func newMetricNfsClientNetTCPConnectionAccepted(cfg MetricConfig) metricNfsClientNetTCPConnectionAccepted {
 	m := metricNfsClientNetTCPConnectionAccepted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -349,6 +351,7 @@ func (m *metricNfsClientOperationCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsClientOperationCount(cfg MetricConfig) metricNfsClientOperationCount {
 	m := metricNfsClientOperationCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -403,6 +406,7 @@ func (m *metricNfsClientProcedureCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsClientProcedureCount(cfg MetricConfig) metricNfsClientProcedureCount {
 	m := metricNfsClientProcedureCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -454,6 +458,7 @@ func (m *metricNfsClientRPCAuthrefreshCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsClientRPCAuthrefreshCount(cfg MetricConfig) metricNfsClientRPCAuthrefreshCount {
 	m := metricNfsClientRPCAuthrefreshCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -505,6 +510,7 @@ func (m *metricNfsClientRPCCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsClientRPCCount(cfg MetricConfig) metricNfsClientRPCCount {
 	m := metricNfsClientRPCCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -556,6 +562,7 @@ func (m *metricNfsClientRPCRetransmitCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsClientRPCRetransmitCount(cfg MetricConfig) metricNfsClientRPCRetransmitCount {
 	m := metricNfsClientRPCRetransmitCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -607,6 +614,7 @@ func (m *metricNfsServerFhStaleCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsServerFhStaleCount(cfg MetricConfig) metricNfsServerFhStaleCount {
 	m := metricNfsServerFhStaleCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -660,6 +668,7 @@ func (m *metricNfsServerIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsServerIo(cfg MetricConfig) metricNfsServerIo {
 	m := metricNfsServerIo{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -713,6 +722,7 @@ func (m *metricNfsServerNetCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsServerNetCount(cfg MetricConfig) metricNfsServerNetCount {
 	m := metricNfsServerNetCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -764,6 +774,7 @@ func (m *metricNfsServerNetTCPConnectionAccepted) emit(metrics pmetric.MetricSli
 
 func newMetricNfsServerNetTCPConnectionAccepted(cfg MetricConfig) metricNfsServerNetTCPConnectionAccepted {
 	m := metricNfsServerNetTCPConnectionAccepted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -818,6 +829,7 @@ func (m *metricNfsServerOperationCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsServerOperationCount(cfg MetricConfig) metricNfsServerOperationCount {
 	m := metricNfsServerOperationCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -872,6 +884,7 @@ func (m *metricNfsServerProcedureCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsServerProcedureCount(cfg MetricConfig) metricNfsServerProcedureCount {
 	m := metricNfsServerProcedureCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -925,6 +938,7 @@ func (m *metricNfsServerRepcacheRequests) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsServerRepcacheRequests(cfg MetricConfig) metricNfsServerRepcacheRequests {
 	m := metricNfsServerRepcacheRequests{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -978,6 +992,7 @@ func (m *metricNfsServerRPCCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsServerRPCCount(cfg MetricConfig) metricNfsServerRPCCount {
 	m := metricNfsServerRPCCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1029,6 +1044,7 @@ func (m *metricNfsServerThreadCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNfsServerThreadCount(cfg MetricConfig) metricNfsServerThreadCount {
 	m := metricNfsServerThreadCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
