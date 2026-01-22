@@ -50,7 +50,7 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 			StrategiesFile: jrse.cfg.Source.File,
 			ReloadInterval: jrse.cfg.Source.ReloadInterval,
 		}
-		ss, err := filesource.NewFileSource(opts, jrse.telemetry.Logger)
+		ss, err := filesource.NewFileSource(ctx, opts, jrse.telemetry.Logger)
 		if err != nil {
 			return fmt.Errorf("failed to create the local file strategy store: %w", err)
 		}
@@ -67,6 +67,7 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 		}
 		jrse.closers = append(jrse.closers, conn.Close)
 		remoteStore, closer := remotesource.NewRemoteSource(
+			ctx,
 			conn,
 			jrse.cfg.Source.Remote,
 			jrse.cfg.Source.ReloadInterval,

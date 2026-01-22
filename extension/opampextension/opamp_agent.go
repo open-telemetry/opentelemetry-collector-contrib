@@ -104,6 +104,13 @@ var (
 )
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
+	ctx, o.lifetimeCtxCancel = context.WithCancel(ctx)
+	o.lifetimeCtx = ctx
+
+	if o.capabilities.ReportsHealth {
+		o.initHealthReporting()
+	}
+
 	o.reportFunc = func(event *componentstatus.Event) {
 		componentstatus.ReportStatus(host, event)
 	}
@@ -119,7 +126,7 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	}
 
 	if o.cfg.PPID != 0 {
-		go monitorPPID(o.lifetimeCtx, o.cfg.PPIDPollInterval, o.cfg.PPID, o.reportFunc)
+		go monitorPPID(ctx, o.cfg.PPIDPollInterval, o.cfg.PPID, o.reportFunc)
 	}
 
 	headerFunc, err := makeHeadersFunc(o.logger, o.cfg.Server, host)
@@ -178,7 +185,7 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 
 	o.logger.Debug("Starting OpAMP client...")
 
-	if err := o.opampClient.Start(context.Background(), settings); err != nil {
+	if err := o.opampClient.Start(ctx, settings); err != nil {
 		return err
 	}
 
@@ -333,12 +340,6 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		componentHealthWg:        &sync.WaitGroup{},
 		readyCh:                  make(chan struct{}),
 		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, opampClient),
-	}
-
-	agent.lifetimeCtx, agent.lifetimeCtxCancel = context.WithCancel(context.Background())
-
-	if agent.capabilities.ReportsHealth {
-		agent.initHealthReporting()
 	}
 
 	return agent, nil

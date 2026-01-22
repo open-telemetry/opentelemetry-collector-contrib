@@ -72,7 +72,9 @@ func (si *signingRoundTripper) signRequest(req *http.Request) (*http.Request, er
 	if si.credsProvider == nil {
 		return nil, errors.New("a credentials provider is not set")
 	}
-	creds, err := (*si.credsProvider).Retrieve(req2.Context())
+	// Use req.Context() (not req2.Context()) to inherit the original request's context.
+	// cloneRequest does a shallow copy, so both return the same context anyway.
+	creds, err := (*si.credsProvider).Retrieve(req.Context())
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving credentials: %w", err)
 	}

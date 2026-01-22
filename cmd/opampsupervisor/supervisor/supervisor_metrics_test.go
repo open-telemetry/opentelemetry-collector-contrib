@@ -60,7 +60,7 @@ func TestSupervisorMetrics(t *testing.T) {
 	supervisor.runCtx, supervisor.runCtxCancel = context.WithCancel(t.Context())
 
 	supervisor.telemetrySettings.MeterProvider = mp
-	metrics, err := supervisorTelemetry.NewMetrics(mp)
+	metrics, err := supervisorTelemetry.NewMetrics(t.Context(), mp)
 	require.NoError(t, err)
 	supervisor.metrics = metrics
 
@@ -106,7 +106,7 @@ func TestSupervisorMetricsLifecycle(t *testing.T) {
 	supervisor.runCtx, supervisor.runCtxCancel = context.WithCancel(t.Context())
 
 	supervisor.telemetrySettings.MeterProvider = mp
-	metrics, err := supervisorTelemetry.NewMetrics(mp)
+	metrics, err := supervisorTelemetry.NewMetrics(t.Context(), mp)
 	require.NoError(t, err)
 	supervisor.metrics = metrics
 

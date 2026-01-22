@@ -47,8 +47,8 @@ type storedStrategies struct {
 type strategyLoader func() ([]byte, error)
 
 // NewFileSource creates a strategy store that holds static sampling strategies.
-func NewFileSource(options Options, logger *zap.Logger) (source.Source, error) {
-	ctx, cancelFunc := context.WithCancel(context.Background())
+func NewFileSource(ctx context.Context, options Options, logger *zap.Logger) (source.Source, error) {
+	ctx, cancelFunc := context.WithCancel(ctx)
 	h := &samplingProvider{
 		logger:     logger,
 		cancelFunc: cancelFunc,
@@ -61,7 +61,7 @@ func NewFileSource(options Options, logger *zap.Logger) (source.Source, error) {
 		return h, nil
 	}
 
-	loadFn := h.samplingStrategyLoader(options.StrategiesFile)
+	loadFn := h.samplingStrategyLoader(ctx, options.StrategiesFile)
 	strategies, err := loadStrategies(loadFn)
 	if err != nil {
 		return nil, err
@@ -104,10 +104,10 @@ func (h *samplingProvider) Close() error {
 	return nil
 }
 
-func (h *samplingProvider) downloadSamplingStrategies(samplingURL string) ([]byte, error) {
+func (h *samplingProvider) downloadSamplingStrategies(ctx context.Context, samplingURL string) ([]byte, error) {
 	h.logger.Info("Downloading sampling strategies", zap.String("url", samplingURL))
 
-	ctx, cx := context.WithTimeout(context.Background(), time.Second)
+	ctx, cx := context.WithTimeout(ctx, time.Second)
 	defer cx()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, samplingURL, http.NoBody)
 	if err != nil {
@@ -143,10 +143,10 @@ func isURL(str string) bool {
 	return err == nil && u.Scheme != "" && u.Host != ""
 }
 
-func (h *samplingProvider) samplingStrategyLoader(strategiesFile string) strategyLoader {
+func (h *samplingProvider) samplingStrategyLoader(ctx context.Context, strategiesFile string) strategyLoader {
 	if isURL(strategiesFile) {
 		return func() ([]byte, error) {
-			return h.downloadSamplingStrategies(strategiesFile)
+			return h.downloadSamplingStrategies(ctx, strategiesFile)
 		}
 	}
 

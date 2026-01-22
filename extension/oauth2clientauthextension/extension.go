@@ -52,10 +52,10 @@ var _ oauth2.TokenSource = (*errorWrappingTokenSource)(nil)
 // errFailedToGetSecurityToken indicates a problem communicating with OAuth2 server.
 var errFailedToGetSecurityToken = errors.New("failed to get security token from token endpoint")
 
-func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticator, error) {
+func newClientAuthenticator(ctx context.Context, cfg *Config, logger *zap.Logger) (*clientAuthenticator, error) {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 
-	tlsCfg, err := cfg.TLS.LoadTLSConfig(context.Background())
+	tlsCfg, err := cfg.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}

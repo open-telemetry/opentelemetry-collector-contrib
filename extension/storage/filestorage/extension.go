@@ -65,7 +65,7 @@ func (*localFileStorage) Shutdown(context.Context) error {
 }
 
 // GetClient returns a storage client for an individual component
-func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, ent component.ID, name string) (storage.Client, error) {
+func (lfs *localFileStorage) GetClient(ctx context.Context, kind component.Kind, ent component.ID, name string) (storage.Client, error) {
 	var rawName string
 	if name == "" {
 		rawName = fmt.Sprintf("%s_%s_%s", kindString(kind), ent.Type(), ent.Name())
@@ -77,14 +77,14 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
 
 	// Try to create client, handling panics if recreate is enabled
-	client, err := lfs.createClientWithPanicRecovery(absoluteName)
+	client, err := lfs.createClientWithPanicRecovery(ctx, absoluteName)
 
 	// If the error is due to filename being too long, truncate and try again
 	if errors.Is(err, syscall.ENAMETOOLONG) {
 		hashedName := filepath.Join(lfs.cfg.Directory, hash(rawName))
 		lfs.logger.Warn("filename too long, using hashed filename instead",
 			zap.String("originalFile", absoluteName), zap.String("component", rawName), zap.String("hashedFileName", hashedName))
-		client, err = lfs.createClientWithPanicRecovery(hashedName)
+		client, err = lfs.createClientWithPanicRecovery(ctx, hashedName)
 	}
 
 	// return error if still not successful
@@ -106,11 +106,14 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 // createClientWithPanicRecovery attempts to create a client, and if recreate is enabled
 // and a panic occurs (typically due to database corruption), it will rename the file
 // and try again with a fresh database
-func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) (client *fileStorageClient, err error) {
+func (lfs *localFileStorage) createClientWithPanicRecovery(
+	ctx context.Context,
+	absoluteName string,
+) (client *fileStorageClient, err error) {
 	// First attempt: try to create client normally
 	if !lfs.cfg.Recreate {
 		// If recreate is disabled, just try once
-		return newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+		return newClient(ctx, lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
 	}
 
 	// If recreate is enabled, handle potential panics during database opening
@@ -133,12 +136,12 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 				zap.String("backup", backupName))
 
 			// Try to create client again with fresh database
-			client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+			client, err = newClient(ctx, lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
 		}
 	}()
 
 	// Try to create the client normally first
-	client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+	client, err = newClient(ctx, lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
 	return client, err
 }
 

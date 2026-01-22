@@ -29,13 +29,14 @@ type grpcRemoteStrategyStore struct {
 // Note: it would be nice to expand the configuration surface to include an optional TTL-based caching behavior
 // for service-specific outbound GetSamplingStrategy calls.
 func NewRemoteSource(
+	ctx context.Context,
 	conn *grpc.ClientConn,
 	grpcClientSettings *configgrpc.ClientConfig,
 	reloadInterval time.Duration,
 ) (source.Source, io.Closer) {
 	cache := newNoopStrategyCache()
 	if reloadInterval > 0 {
-		cache = newServiceStrategyCache(reloadInterval)
+		cache = newServiceStrategyCache(ctx, reloadInterval)
 	}
 
 	return &grpcRemoteStrategyStore{

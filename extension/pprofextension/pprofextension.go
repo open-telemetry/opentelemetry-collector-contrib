@@ -29,7 +29,7 @@ type pprofExtension struct {
 	telemetrySettings component.TelemetrySettings
 }
 
-func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
+func (p *pprofExtension) Start(ctx context.Context, host component.Host) error {
 	// The runtime settings are global to the application, so while in principle it
 	// is possible to have more than one instance, running multiple will mean that
 	// the settings of the last started instance will prevail. In order to avoid
@@ -50,7 +50,7 @@ func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
 	var ln net.Listener
-	ln, startErr = p.config.TCPAddr.Listen(context.Background())
+	ln, startErr = p.config.TCPAddr.Listen(ctx)
 	if startErr != nil {
 		return startErr
 	}

@@ -18,7 +18,7 @@ type Metrics struct {
 	healthStatus                bool
 }
 
-func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
+func NewMetrics(ctx context.Context, meterProvider metric.MeterProvider) (*Metrics, error) {
 	meter := meterProvider.Meter("opamp-supervisor")
 
 	healthStatus, err := meter.Int64UpDownCounter(
@@ -30,7 +30,7 @@ func NewMetrics(meterProvider metric.MeterProvider) (*Metrics, error) {
 	}
 
 	// Initialize metrics to 0 to ensure they are exported
-	healthStatus.Add(context.Background(), 0)
+	healthStatus.Add(ctx, 0)
 	return &Metrics{
 		collectorHealthStatusMetric: healthStatus,
 		healthStatus:                false,

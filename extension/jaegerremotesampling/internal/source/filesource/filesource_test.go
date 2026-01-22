@@ -109,17 +109,17 @@ func mockStrategyServer(t *testing.T) (*httptest.Server, *atomic.Pointer[string]
 }
 
 func TestStrategyStoreWithFile(t *testing.T) {
-	_, err := NewFileSource(Options{StrategiesFile: "fileNotFound.json"}, zap.NewNop())
+	_, err := NewFileSource(t.Context(), Options{StrategiesFile: "fileNotFound.json"}, zap.NewNop())
 	require.ErrorContains(t, err, "failed to read strategies file fileNotFound.json")
 
-	_, err = NewFileSource(Options{StrategiesFile: "fixtures/bad_strategies.json"}, zap.NewNop())
+	_, err = NewFileSource(t.Context(), Options{StrategiesFile: "fixtures/bad_strategies.json"}, zap.NewNop())
 	require.EqualError(t, err,
 		"failed to unmarshal strategies: json: cannot unmarshal string into Go value of type filesource.strategies")
 
 	// Test default strategy
 	zapCore, logs := observer.New(zap.InfoLevel)
 	logger := zap.New(zapCore)
-	provider, err := NewFileSource(Options{}, logger)
+	provider, err := NewFileSource(t.Context(), Options{}, logger)
 	require.NoError(t, err)
 	message := logs.FilterMessage("No sampling strategies source provided, using defaults")
 	assert.Equal(t, 1, message.Len(), "Expected No sampling strategies provided log message")
@@ -128,7 +128,7 @@ func TestStrategyStoreWithFile(t *testing.T) {
 	assert.Equal(t, makeResponse(api_v2.SamplingStrategyType_PROBABILISTIC, 0.001), *s)
 
 	// Test reading strategies from a file
-	provider, err = NewFileSource(Options{StrategiesFile: "fixtures/strategies.json"}, logger)
+	provider, err = NewFileSource(t.Context(), Options{StrategiesFile: "fixtures/strategies.json"}, logger)
 	require.NoError(t, err)
 	s, err = provider.GetSamplingStrategy(t.Context(), "foo")
 	require.NoError(t, err)
@@ -148,7 +148,7 @@ func TestStrategyStoreWithURL(t *testing.T) {
 	zapCore, logs := observer.New(zap.InfoLevel)
 	logger := zap.New(zapCore)
 	mockServer, _ := mockStrategyServer(t)
-	provider, err := NewFileSource(Options{StrategiesFile: mockServer.URL + "/service-unavailable"}, logger)
+	provider, err := NewFileSource(t.Context(), Options{StrategiesFile: mockServer.URL + "/service-unavailable"}, logger)
 	require.NoError(t, err)
 	message := logs.FilterMessage("No sampling strategies found or URL is unavailable, using defaults")
 	assert.Equal(t, 1, message.Len(), "Expected No sampling strategies found log message.")
@@ -157,7 +157,7 @@ func TestStrategyStoreWithURL(t *testing.T) {
 	assert.Equal(t, makeResponse(api_v2.SamplingStrategyType_PROBABILISTIC, 0.001), *s)
 
 	// Test downloading strategies from a URL.
-	provider, err = NewFileSource(Options{StrategiesFile: mockServer.URL}, logger)
+	provider, err = NewFileSource(t.Context(), Options{StrategiesFile: mockServer.URL}, logger)
 	require.NoError(t, err)
 
 	s, err = provider.GetSamplingStrategy(t.Context(), "foo")
@@ -183,7 +183,7 @@ func TestPerOperationSamplingStrategies(t *testing.T) {
 	for _, tc := range tests {
 		zapCore, logs := observer.New(zap.InfoLevel)
 		logger := zap.New(zapCore)
-		provider, err := NewFileSource(tc.options, logger)
+		provider, err := NewFileSource(t.Context(), tc.options, logger)
 		message := logs.FilterMessage("Operation strategies only supports probabilistic sampling at the moment," +
 			"'op2' defaulting to probabilistic sampling with probability 0.800000")
 		assert.Equal(t, 1, message.Len(), "Expected Operation strategies only supports probabilistic sampling, op2 change to probability 0.8 log message")
@@ -268,7 +268,7 @@ func TestPerOperationSamplingStrategies(t *testing.T) {
 func TestMissingServiceSamplingStrategyTypes(t *testing.T) {
 	zapCore, logs := observer.New(zap.InfoLevel)
 	logger := zap.New(zapCore)
-	provider, err := NewFileSource(Options{StrategiesFile: "fixtures/missing-service-types.json"}, logger)
+	provider, err := NewFileSource(t.Context(), Options{StrategiesFile: "fixtures/missing-service-types.json"}, logger)
 	message := logs.FilterMessage("Failed to parse sampling strategy")
 	assert.Equal(t, "Failed to parse sampling strategy", message.All()[0].Message)
 	require.NoError(t, err)
@@ -388,7 +388,7 @@ func TestAutoUpdateStrategyWithFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(dstFile, srcBytes, 0o600))
 
-	ss, err := NewFileSource(Options{
+	ss, err := NewFileSource(t.Context(), Options{
 		StrategiesFile: dstFile,
 		ReloadInterval: time.Millisecond * 10,
 	}, zap.NewNop())
@@ -402,7 +402,7 @@ func TestAutoUpdateStrategyWithFile(t *testing.T) {
 	assert.Equal(t, makeResponse(api_v2.SamplingStrategyType_PROBABILISTIC, 0.8), *s)
 
 	// verify that reloading is a no-op
-	value := provider.reloadSamplingStrategy(provider.samplingStrategyLoader(dstFile), string(srcBytes))
+	value := provider.reloadSamplingStrategy(provider.samplingStrategyLoader(t.Context(), dstFile), string(srcBytes))
 	assert.Equal(t, string(srcBytes), value)
 
 	// update file with new probability of 0.9
@@ -423,7 +423,7 @@ func TestAutoUpdateStrategyWithFile(t *testing.T) {
 
 func TestAutoUpdateStrategyWithURL(t *testing.T) {
 	mockServer, mockStrategy := mockStrategyServer(t)
-	ss, err := NewFileSource(Options{
+	ss, err := NewFileSource(t.Context(), Options{
 		StrategiesFile: mockServer.URL,
 		ReloadInterval: 10 * time.Millisecond,
 	}, zap.NewNop())
@@ -438,7 +438,7 @@ func TestAutoUpdateStrategyWithURL(t *testing.T) {
 
 	// verify that reloading in no-op
 	value := provider.reloadSamplingStrategy(
-		provider.samplingStrategyLoader(mockServer.URL),
+		provider.samplingStrategyLoader(t.Context(), mockServer.URL),
 		*mockStrategy.Load(),
 	)
 	assert.Equal(t, *mockStrategy.Load(), value)
@@ -471,7 +471,7 @@ func TestAutoUpdateStrategyErrors(t *testing.T) {
 	zapCore, logs := observer.New(zap.InfoLevel)
 	logger := zap.New(zapCore)
 
-	s, err := NewFileSource(Options{
+	s, err := NewFileSource(t.Context(), Options{
 		StrategiesFile: "fixtures/strategies.json",
 		ReloadInterval: time.Hour,
 	}, logger)
@@ -480,32 +480,42 @@ func TestAutoUpdateStrategyErrors(t *testing.T) {
 	defer provider.Close()
 
 	// check invalid file path or read failure
-	assert.Equal(t, "blah", provider.reloadSamplingStrategy(provider.samplingStrategyLoader(tempFile.Name()+"bad-path"), "blah"))
+	assert.Equal(t, "blah", provider.reloadSamplingStrategy(
+		provider.samplingStrategyLoader(t.Context(), tempFile.Name()+"bad-path"), "blah"),
+	)
 	assert.Len(t, logs.FilterMessage("failed to re-load sampling strategies").All(), 1)
 
 	// check bad file content
 	require.NoError(t, os.WriteFile(tempFile.Name(), []byte("bad value"), 0o600))
-	assert.Equal(t, "blah", provider.reloadSamplingStrategy(provider.samplingStrategyLoader(tempFile.Name()), "blah"))
+	assert.Equal(t, "blah", provider.reloadSamplingStrategy(
+		provider.samplingStrategyLoader(t.Context(), tempFile.Name()), "blah"),
+	)
 	assert.Len(t, logs.FilterMessage("failed to update sampling strategies").All(), 1)
 
 	// check invalid url
-	assert.Equal(t, "duh", provider.reloadSamplingStrategy(provider.samplingStrategyLoader("bad-url"), "duh"))
+	assert.Equal(t, "duh", provider.reloadSamplingStrategy(
+		provider.samplingStrategyLoader(t.Context(), "bad-url"), "duh"),
+	)
 	assert.Len(t, logs.FilterMessage("failed to re-load sampling strategies").All(), 2)
 
 	// check status code other than 200
 	mockServer, _ := mockStrategyServer(t)
-	assert.Equal(t, "duh", provider.reloadSamplingStrategy(provider.samplingStrategyLoader(mockServer.URL+"/bad-status"), "duh"))
+	assert.Equal(t, "duh", provider.reloadSamplingStrategy(
+		provider.samplingStrategyLoader(t.Context(), mockServer.URL+"/bad-status"), "duh"),
+	)
 	assert.Len(t, logs.FilterMessage("failed to re-load sampling strategies").All(), 3)
 
 	// check bad content from url
-	assert.Equal(t, "duh", provider.reloadSamplingStrategy(provider.samplingStrategyLoader(mockServer.URL+"/bad-content"), "duh"))
+	assert.Equal(t, "duh", provider.reloadSamplingStrategy(
+		provider.samplingStrategyLoader(t.Context(), mockServer.URL+"/bad-content"), "duh"),
+	)
 	assert.Len(t, logs.FilterMessage("failed to update sampling strategies").All(), 2)
 }
 
 func TestServiceNoPerOperationStrategies(t *testing.T) {
 	// given setup of strategy provider with no specific per operation sampling strategies
 	// and option "sampling.strategies.bugfix-5270=true"
-	provider, err := NewFileSource(Options{
+	provider, err := NewFileSource(t.Context(), Options{
 		StrategiesFile:             "fixtures/service_no_per_operation.json",
 		IncludeDefaultOpStrategies: true,
 	}, zap.NewNop())
@@ -539,7 +549,7 @@ func TestServiceNoPerOperationStrategiesDeprecatedBehavior(t *testing.T) {
 	// see https://github.com/jaegertracing/jaeger/issues/5270 for more details
 
 	// given setup of strategy provider with no specific per operation sampling strategies
-	provider, err := NewFileSource(Options{
+	provider, err := NewFileSource(t.Context(), Options{
 		StrategiesFile: "fixtures/service_no_per_operation.json",
 	}, zap.NewNop())
 	require.NoError(t, err)
@@ -570,18 +580,18 @@ func TestServiceNoPerOperationStrategiesDeprecatedBehavior(t *testing.T) {
 func TestSamplingStrategyLoader(t *testing.T) {
 	provider := &samplingProvider{logger: zap.NewNop()}
 	// invalid file path
-	loader := provider.samplingStrategyLoader("not-exists")
+	loader := provider.samplingStrategyLoader(t.Context(), "not-exists")
 	_, err := loader()
 	require.ErrorContains(t, err, "failed to read strategies file not-exists")
 
 	// status code other than 200
 	mockServer, _ := mockStrategyServer(t)
-	loader = provider.samplingStrategyLoader(mockServer.URL + "/bad-status")
+	loader = provider.samplingStrategyLoader(t.Context(), mockServer.URL+"/bad-status")
 	_, err = loader()
 	require.ErrorContains(t, err, "receiving 404 Not Found while downloading strategies file")
 
 	// should download content from URL
-	loader = provider.samplingStrategyLoader(mockServer.URL + "/bad-content")
+	loader = provider.samplingStrategyLoader(t.Context(), mockServer.URL+"/bad-content")
 	content, err := loader()
 	require.NoError(t, err)
 	assert.Equal(t, "bad-content", string(content))

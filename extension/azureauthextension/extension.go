@@ -239,7 +239,7 @@ func (r *roundTripper) RoundTrip(request *http.Request) (*http.Response, error) 
 		}
 	}
 
-	token, err := r.auth.getTokenForHost(req.Context(), host)
+	token, err := r.auth.getTokenForHost(request.Context(), host)
 	if err != nil {
 		return nil, fmt.Errorf("azureauth: failed to get token: %w", err)
 	}

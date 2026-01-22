@@ -760,7 +760,7 @@ service:
 		configStorageDir := t.TempDir()
 
 		mp := metric.NewMeterProvider()
-		metrics, err := telemetry.NewMetrics(mp)
+		metrics, err := telemetry.NewMetrics(t.Context(), mp)
 		require.NoError(t, err)
 		defer func() {
 			_ = mp.Shutdown(t.Context())
@@ -1270,7 +1270,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		mp := metric.NewMeterProvider()
-		metrics, err := telemetry.NewMetrics(mp)
+		metrics, err := telemetry.NewMetrics(t.Context(), mp)
 		require.NoError(t, err)
 		defer func() {
 			_ = mp.Shutdown(t.Context())

@@ -48,7 +48,14 @@ func bboltOptions(timeout time.Duration, noSync bool) *bbolt.Options {
 	}
 }
 
-func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compactionCfg *CompactionConfig, noSync bool) (*fileStorageClient, error) {
+func newClient(
+	ctx context.Context,
+	logger *zap.Logger,
+	filePath string,
+	timeout time.Duration,
+	compactionCfg *CompactionConfig,
+	noSync bool,
+) (*fileStorageClient, error) {
 	options := bboltOptions(timeout, noSync)
 	db, err := bbolt.Open(filePath, 0o600, options)
 	if err != nil {
@@ -66,7 +73,7 @@ func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compa
 
 	client := &fileStorageClient{logger: logger, db: db, compactionCfg: compactionCfg, openTimeout: timeout}
 	if compactionCfg.OnRebound {
-		client.startCompactionLoop(context.Background())
+		client.startCompactionLoop(ctx)
 	}
 
 	return client, nil

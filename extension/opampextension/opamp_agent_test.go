@@ -253,6 +253,7 @@ func TestStartAvailableComponents(t *testing.T) {
 	cfg := createDefaultConfig()
 	agentConfig := cfg.(*Config)
 	agentConfig.Capabilities.ReportsAvailableComponents = true
+	agentConfig.Capabilities.ReportsHealth = false // not testing health
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	o, err := newOpampAgent(agentConfig, set)
 	o.opampClient = mockOpAMPClient{}
@@ -472,8 +473,6 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 
 	o := newTestOpampAgent(cfg, set, mockOpampClient, sa)
 
-	o.initHealthReporting()
-
 	assert.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
 
 	statusUpdateChannel <- nil
@@ -540,8 +539,6 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 				return nil
 			},
 		}, sa)
-
-	o.initHealthReporting()
 
 	assert.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
 
@@ -649,8 +646,6 @@ func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 	}
 
 	o := newTestOpampAgent(cfg, set, mockOpampClient, sa)
-
-	o.initHealthReporting()
 
 	assert.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
 

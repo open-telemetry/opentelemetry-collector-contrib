@@ -222,10 +222,9 @@ func (c *Commander) watch() {
 // StartOneShot starts the Collector with the expectation that it will immediately
 // exit after it finishes a quick operation. This is useful for situations like reading stdout/sterr
 // to e.g. check the feature gate the Collector supports.
-func (c *Commander) StartOneShot() ([]byte, []byte, error) {
+func (c *Commander) StartOneShot(ctx context.Context) ([]byte, []byte, error) {
 	stdout := []byte{}
 	stderr := []byte{}
-	ctx := context.Background()
 
 	cmd := exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
 	cmd.Env = envVarMapToEnvMapSlice(c.cfg.Env)

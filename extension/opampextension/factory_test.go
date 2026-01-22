@@ -21,6 +21,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	ext, err := createExtension(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	require.NoError(t, ext.Shutdown(t.Context()))
 }
 

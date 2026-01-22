@@ -38,7 +38,7 @@ type serviceStrategyTTLCache struct {
 // Initial size of cache's underlying map
 const initialRemoteResponseCacheSize = 32
 
-func newServiceStrategyCache(itemTTL time.Duration) serviceStrategyCache {
+func newServiceStrategyCache(ctx context.Context, itemTTL time.Duration) serviceStrategyCache {
 	result := &serviceStrategyTTLCache{
 		itemTTL: itemTTL,
 		items:   make(map[string]serviceStrategyCacheEntry, initialRemoteResponseCacheSize),
@@ -47,7 +47,7 @@ func newServiceStrategyCache(itemTTL time.Duration) serviceStrategyCache {
 
 	// Launches a "cleaner" goroutine that naively blows away stale items with a frequency equal to the item TTL.
 	// Note that this is for memory usage and not for correctness (the get() function checks item validity).
-	go result.periodicallyClearCache(context.Background(), itemTTL)
+	go result.periodicallyClearCache(ctx, itemTTL)
 	return result
 }
 

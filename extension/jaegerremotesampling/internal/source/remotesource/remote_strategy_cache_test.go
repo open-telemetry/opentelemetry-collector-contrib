@@ -54,7 +54,7 @@ func Test_serviceStrategyCache_ReadWriteSequence(t *testing.T) {
 	ctx, cancel := context.WithCancel(clockwork.AddToContext(t.Context(), mock))
 	defer cancel()
 
-	cache := newServiceStrategyCache(cacheTestItemTTL).(*serviceStrategyTTLCache)
+	cache := newServiceStrategyCache(t.Context(), cacheTestItemTTL).(*serviceStrategyTTLCache)
 	defer func() {
 		assert.NoError(t, cache.Close())
 	}()
@@ -139,7 +139,7 @@ func Test_serviceStrategyCache_WritesUpdateTimestamp(t *testing.T) {
 	ctx, cancel := context.WithCancel(clockwork.AddToContext(t.Context(), mock))
 	defer cancel()
 
-	cache := newServiceStrategyCache(cacheTestItemTTL).(*serviceStrategyTTLCache)
+	cache := newServiceStrategyCache(t.Context(), cacheTestItemTTL).(*serviceStrategyTTLCache)
 	defer func() {
 		assert.NoError(t, cache.Close())
 	}()
@@ -231,7 +231,7 @@ func Test_serviceStrategyCache_WritesUpdateTimestamp(t *testing.T) {
 func Test_serviceStrategyCache_Concurrency(t *testing.T) {
 	defer leaktest.CheckTimeout(t, time.Minute*3)
 
-	cache := newServiceStrategyCache(cacheTestItemTTL).(*serviceStrategyTTLCache)
+	cache := newServiceStrategyCache(t.Context(), cacheTestItemTTL).(*serviceStrategyTTLCache)
 	defer func() {
 		assert.NoError(t, cache.Close())
 	}()

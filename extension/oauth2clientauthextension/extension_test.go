@@ -276,7 +276,7 @@ func TestRoundTripper(t *testing.T) {
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			oauth2Authenticator, err := newClientAuthenticator(testcase.settings, zap.NewNop())
+			oauth2Authenticator, err := newClientAuthenticator(t.Context(), testcase.settings, zap.NewNop())
 			if testcase.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, oauth2Authenticator)
@@ -333,7 +333,7 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			oauth2Authenticator, err := newClientAuthenticator(testcase.settings, zap.NewNop())
+			oauth2Authenticator, err := newClientAuthenticator(t.Context(), testcase.settings, zap.NewNop())
 			if testcase.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, oauth2Authenticator)
@@ -360,7 +360,7 @@ func TestFailContactingOAuth(t *testing.T) {
 	serverURL, err := url.Parse(server.URL)
 	require.NoError(t, err)
 
-	oauth2Authenticator, err := newClientAuthenticator(&Config{
+	oauth2Authenticator, err := newClientAuthenticator(t.Context(), &Config{
 		ClientID:     "dummy",
 		ClientSecret: "ABC",
 		TokenURL:     serverURL.String(),
@@ -450,7 +450,7 @@ func TestJwtOAuth(t *testing.T) {
 	serverURL, err := url.Parse(tokenTS.URL)
 	require.NoError(t, err)
 
-	oauth2Authenticator, err := newClientAuthenticator(&Config{
+	oauth2Authenticator, err := newClientAuthenticator(t.Context(), &Config{
 		ClientID:                 "1",
 		ClientCertificateKeyFile: "testdata/client.key",
 		GrantType:                "urn:ietf:params:oauth:grant-type:jwt-bearer",

@@ -233,7 +233,7 @@ func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Superviso
 		return nil, err
 	}
 
-	s.metrics, err = supervisorTelemetry.NewMetrics(s.telemetrySettings.MeterProvider)
+	s.metrics, err = supervisorTelemetry.NewMetrics(ctx, s.telemetrySettings.MeterProvider)
 	if err != nil {
 		return nil, fmt.Errorf("error creating internal metrics: %w", err)
 	}
@@ -338,11 +338,11 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err = s.getFeatureGates(); err != nil {
+	if err = s.getFeatureGates(ctx); err != nil {
 		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
 	}
 
-	if err = s.getBootstrapInfo(); err != nil {
+	if err = s.getBootstrapInfo(ctx); err != nil {
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
@@ -390,7 +390,7 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *Supervisor) getFeatureGates() error {
+func (s *Supervisor) getFeatureGates(ctx context.Context) error {
 	cmd, err := commander.NewCommander(
 		s.telemetrySettings.Logger,
 		s.config.Storage.Directory,
@@ -401,7 +401,7 @@ func (s *Supervisor) getFeatureGates() error {
 		return err
 	}
 
-	stdout, _, err := cmd.StartOneShot()
+	stdout, _, err := cmd.StartOneShot(ctx)
 	if err != nil {
 		return err
 	}
@@ -449,8 +449,8 @@ func (s *Supervisor) createTemplates() error {
 // an OpAMP extension, obtains the agent description, then
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
-func (s *Supervisor) getBootstrapInfo() (err error) {
-	_, span := s.getTracer().Start(s.runCtx, "GetBootstrapInfo")
+func (s *Supervisor) getBootstrapInfo(ctx context.Context) (err error) {
+	_, span := s.getTracer().Start(ctx, "GetBootstrapInfo")
 	defer span.End()
 
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
@@ -554,7 +554,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}
 
 	defer func() {
-		if stopErr := srv.Stop(s.runCtx); stopErr != nil {
+		if stopErr := srv.Stop(ctx); stopErr != nil {
 			err = errors.Join(err, fmt.Errorf("error when stopping the opamp server: %w", stopErr))
 		}
 	}()
@@ -577,13 +577,13 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	if err = cmd.Start(s.runCtx); err != nil {
+	if err = cmd.Start(ctx); err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
 		return err
 	}
 
 	defer func() {
-		if stopErr := cmd.Stop(s.runCtx); stopErr != nil {
+		if stopErr := cmd.Stop(ctx); stopErr != nil {
 			err = errors.Join(err, fmt.Errorf("error when stopping the collector: %w", stopErr))
 		}
 	}()
@@ -604,7 +604,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 			// try to report the issue to the OpAMP server
 			if startOpAMPErr := s.startOpAMPClient(); startOpAMPErr == nil {
 				defer func(s *Supervisor) {
-					if stopErr := s.stopOpAMPClient(); stopErr != nil {
+					if stopErr := s.stopOpAMPClient(ctx); stopErr != nil {
 						s.telemetrySettings.Logger.Error("Could not stop OpAmp client", zap.Error(stopErr))
 					}
 				}(s)
@@ -982,9 +982,9 @@ func applyKeyValueOverrides(overrides map[string]string, orig []*protobufs.KeyVa
 	return kvOut
 }
 
-func (s *Supervisor) stopOpAMPClient() error {
+func (s *Supervisor) stopOpAMPClient(ctx context.Context) error {
 	s.telemetrySettings.Logger.Debug("Stopping OpAMP client...")
-	ctx, cancel := context.WithTimeout(s.runCtx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	err := s.opampClient.Stop(ctx)
 	// TODO(srikanthccv): remove context.DeadlineExceeded after https://github.com/open-telemetry/opamp-go/pull/213
@@ -1004,7 +1004,7 @@ func (*Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) http.
 	return headers
 }
 
-func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+func (s *Supervisor) onOpampConnectionSettings(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
 	if settings == nil {
 		s.telemetrySettings.Logger.Debug("Received ConnectionSettings request with nil settings")
 		return nil
@@ -1043,7 +1043,7 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		s.heartbeatIntervalSeconds = settings.HeartbeatIntervalSeconds
 	}
 
-	if err := s.stopOpAMPClient(); err != nil {
+	if err := s.stopOpAMPClient(ctx); err != nil {
 		s.telemetrySettings.Logger.Error("Cannot stop the OpAMP client", zap.Error(err))
 		return err
 	}
@@ -1809,7 +1809,7 @@ func (s *Supervisor) Shutdown() {
 			s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
 		}
 
-		err = s.stopOpAMPClient()
+		err = s.stopOpAMPClient(s.runCtx)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("Could not stop the OpAMP client", zap.Error(err))
 		}
