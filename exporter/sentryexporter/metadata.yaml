@@ -1,4 +1,5 @@
 type: sentry
+display_name: Sentry Exporter
 
 status:
   class: exporter
