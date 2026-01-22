@@ -26,7 +26,8 @@ import (
 const readerBufferSize = 128 * 1024 // 128KB buffer size
 
 type CloudTrailLogUnmarshaler struct {
-	buildInfo component.BuildInfo
+	buildInfo         component.BuildInfo
+	uIDFeatureEnabled bool
 }
 
 var _ unmarshaler.AWSUnmarshaler = (*CloudTrailLogUnmarshaler)(nil)
@@ -139,9 +140,10 @@ type CloudTrailLog struct {
 	Records []CloudTrailRecord `json:"Records"`
 }
 
-func NewCloudTrailLogUnmarshaler(buildInfo component.BuildInfo) *CloudTrailLogUnmarshaler {
+func NewCloudTrailLogUnmarshaler(buildInfo component.BuildInfo, uIDFeatureEnabled bool) *CloudTrailLogUnmarshaler {
 	return &CloudTrailLogUnmarshaler{
-		buildInfo: buildInfo,
+		buildInfo:         buildInfo,
+		uIDFeatureEnabled: uIDFeatureEnabled,
 	}
 }
 
@@ -305,7 +307,7 @@ func (u *CloudTrailLogUnmarshaler) setLogRecord(logRecord plog.LogRecord, record
 	return nil
 }
 
-func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
+func (u *CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
 	attrs.PutStr("aws.cloudtrail.event_version", record.EventVersion)
 	attrs.PutStr("aws.cloudtrail.event_id", record.EventID)
 
@@ -358,34 +360,11 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 			attrs.PutStr(string(conventions.UserNameKey), record.UserIdentity.UserName)
 		}
 
-		if record.UserIdentity.AccountID != "" {
-			attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
-		}
-
-		if record.UserIdentity.AccessKeyID != "" {
-			attrs.PutStr("aws.access_key.id", record.UserIdentity.AccessKeyID)
-		}
-
-		// Store the Identity Store ARN and others as custom attributes
-		// since there are no standard conventions for them
-		if record.UserIdentity.IdentityStoreARN != "" {
-			attrs.PutStr("aws.identity_store.arn", record.UserIdentity.IdentityStoreARN)
-		}
-
-		if record.UserIdentity.InvokedBy != "" {
-			attrs.PutStr("aws.user_identity.invoked_by", record.UserIdentity.InvokedBy)
-		}
-
-		if record.UserIdentity.PrincipalID != "" {
-			attrs.PutStr("aws.principal.id", record.UserIdentity.PrincipalID)
-		}
-
-		if record.UserIdentity.ARN != "" {
-			attrs.PutStr("aws.principal.arn", record.UserIdentity.ARN)
-		}
-
-		if record.UserIdentity.Type != "" {
-			attrs.PutStr("aws.principal.type", record.UserIdentity.Type)
+		// check feature flag decision
+		if u.uIDFeatureEnabled {
+			withUserIdentityPrefix(attrs, record)
+		} else {
+			defaultAttributes(attrs, record)
 		}
 
 		// Add session context details if available
@@ -496,6 +475,74 @@ func enrichWithSessionContext(attrs pcommon.Map, sessionContext *SessionContext)
 		if sessionContext.SessionIssuer.UserName != "" {
 			attrs.PutStr("aws.user_identity.session_context.issuer.user_name", sessionContext.SessionIssuer.UserName)
 		}
+	}
+}
+
+// defaultAttributes is the legacy helper to add UserIdentity elements
+// todo : remove when feature gate constants.CloudTrailEnableUserIdentityPrefixID is deprecated
+func defaultAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
+	if record.UserIdentity.AccountID != "" {
+		attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
+	}
+
+	if record.UserIdentity.AccessKeyID != "" {
+		attrs.PutStr("aws.access_key.id", record.UserIdentity.AccessKeyID)
+	}
+
+	// Store the Identity Store ARN and others as custom attributes
+	// since there are no standard conventions for them
+	if record.UserIdentity.IdentityStoreARN != "" {
+		attrs.PutStr("aws.identity_store.arn", record.UserIdentity.IdentityStoreARN)
+	}
+
+	if record.UserIdentity.InvokedBy != "" {
+		attrs.PutStr("aws.user_identity.invoked_by", record.UserIdentity.InvokedBy)
+	}
+
+	if record.UserIdentity.PrincipalID != "" {
+		attrs.PutStr("aws.principal.id", record.UserIdentity.PrincipalID)
+	}
+
+	if record.UserIdentity.ARN != "" {
+		attrs.PutStr("aws.principal.arn", record.UserIdentity.ARN)
+	}
+
+	if record.UserIdentity.Type != "" {
+		attrs.PutStr("aws.principal.type", record.UserIdentity.Type)
+	}
+}
+
+// withUserIdentityPrefix is a helper to add UserIdentity details with aws.user_identity prefix.
+// todo : remove when feature gate constants.CloudTrailEnableUserIdentityPrefixID is deprecated & move to caller
+func withUserIdentityPrefix(attrs pcommon.Map, record *CloudTrailRecord) {
+	if record.UserIdentity.AccountID != "" {
+		attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
+	}
+
+	if record.UserIdentity.AccessKeyID != "" {
+		attrs.PutStr("aws.user_identity.access_key.id", record.UserIdentity.AccessKeyID)
+	}
+
+	// Store the Identity Store ARN and others as custom attributes
+	// since there are no standard conventions for them
+	if record.UserIdentity.IdentityStoreARN != "" {
+		attrs.PutStr("aws.user_identity.identity_store.arn", record.UserIdentity.IdentityStoreARN)
+	}
+
+	if record.UserIdentity.InvokedBy != "" {
+		attrs.PutStr("aws.user_identity.invoked_by", record.UserIdentity.InvokedBy)
+	}
+
+	if record.UserIdentity.PrincipalID != "" {
+		attrs.PutStr("aws.user_identity.principal.id", record.UserIdentity.PrincipalID)
+	}
+
+	if record.UserIdentity.ARN != "" {
+		attrs.PutStr("aws.user_identity.principal.arn", record.UserIdentity.ARN)
+	}
+
+	if record.UserIdentity.Type != "" {
+		attrs.PutStr("aws.user_identity.principal.type", record.UserIdentity.Type)
 	}
 }
 
