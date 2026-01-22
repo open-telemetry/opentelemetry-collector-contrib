@@ -63,13 +63,14 @@ type bearerTokenAuth struct {
 	telemetry *metadata.TelemetryBuilder
 }
 
-func newBearerTokenAuth(cfg *Config, set component.TelemetrySettings) *bearerTokenAuth {
+func newBearerTokenAuth(cfg *Config, set component.TelemetrySettings) (*bearerTokenAuth, error) {
 	if cfg.Filename != "" && (cfg.BearerToken != "" || len(cfg.Tokens) > 0) {
 		set.Logger.Warn("a filename is specified. Configured token(s) is ignored!")
 	}
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		set.Logger.Error("failed to create telemetry builder", zap.Error(err))
+		return nil, err
 	}
 	a := &bearerTokenAuth{
 		header:    cfg.Header,
@@ -90,7 +91,7 @@ func newBearerTokenAuth(cfg *Config, set component.TelemetrySettings) *bearerTok
 	case cfg.Filename != "":
 		a.refreshToken() // Load tokens from file
 	}
-	return a
+	return a, nil
 }
 
 // Start of BearerTokenAuth does nothing and returns nil if no filename
@@ -285,23 +286,32 @@ type bearerAuthRoundTripper struct {
 
 // RoundTrip modifies the original request and adds Bearer token Authorization headers. Incoming requests support multiple tokens, but outgoing requests only use one.
 func (interceptor *bearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Track client authentication usage (always uses first token, index 0)
+	req2 := req.Clone(req.Context())
+	if req2.Header == nil {
+		req2.Header = make(http.Header)
+	}
+	req2.Header.Set(interceptor.header, interceptor.auth.authorizationValue())
+
+	// Make the request
+	resp, err := interceptor.baseTransport.RoundTrip(req2)
+
+	// Track client authentication usage after the request completes (always uses first token, index 0)
 	if interceptor.auth.telemetry != nil {
+		status := "success"
+		if err != nil {
+			status = "failure"
+		}
 		interceptor.auth.telemetry.BearerTokenAuthUsage.Add(
 			req.Context(),
 			1,
 			metric.WithAttributes(
 				attribute.Int("token.index", 0),
 				attribute.String("auth.type", "client"),
-				attribute.String("auth.status", "success"),
+				attribute.String("auth.status", status),
 				attribute.Bool("token.matched", true),
 			),
 		)
 	}
-	req2 := req.Clone(req.Context())
-	if req2.Header == nil {
-		req2.Header = make(http.Header)
-	}
-	req2.Header.Set(interceptor.header, interceptor.auth.authorizationValue())
-	return interceptor.baseTransport.RoundTrip(req2)
+
+	return resp, err
 }
