@@ -12,19 +12,56 @@ metrics:
     enabled: false
 ```
 
+### systemd.service.cpu.time
+
+Total CPU time spent by this service.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| us | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| cpu.mode | Breakdown of CPU usage by type. | Str: ``system``, ``user`` | Recommended |
+
 ### systemd.unit.state
 
 1 if the check resulted in active_state matching the current state, otherwise 0.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | Development |
+| 1 | Sum | Int | Cumulative | false | Alpha |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | systemd.unit.active_state | The active state of the unit (https://www.freedesktop.org/software/systemd/man/latest/systemd.html#Units) | Str: ``active``, ``reloading``, ``inactive``, ``failed``, ``activating``, ``deactivating``, ``maintenance``, ``refreshing`` | Recommended |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### systemd.service.restarts
+
+Number of automatic restarts for the service.
+
+This exposes services' `NRestarts` property as a metric. This only tracks
+automatic service restarts (restarts when the process exits), and does
+not include manual restarts (e.g. from `systemctl restart`).
+
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {restarts} | Sum | Int | Cumulative | true | Development |
 
 ## Resource Attributes
 

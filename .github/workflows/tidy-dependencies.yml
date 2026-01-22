@@ -19,23 +19,15 @@ jobs:
       contents: write # required for pushing changes
     timeout-minutes: 30
     runs-on: ubuntu-24.04
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.actor == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.actor == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) && github.event.pull_request.head.repo.fork == false }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           ref: ${{ github.head_ref }}
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make install-tools
-      - uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+      - uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
@@ -52,3 +44,4 @@ jobs:
       - uses: actions-ecosystem/action-remove-labels@2ce5d41b4b6aa8503e285553f75ed56e0a40bae0 # v1
         with:
           labels: renovatebot
+      - run: ./.github/workflows/scripts/check-disk-space.sh

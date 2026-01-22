@@ -62,10 +62,8 @@ func TestNew_VPCFlowLog(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, e)
 
-	// VPC Flow Log unmarshaler handles non-log input gracefully
-	logs, err := e.UnmarshalLogs([]byte("some test input"))
-	require.NoError(t, err)
-	require.NotNil(t, logs)
+	_, err = e.UnmarshalLogs([]byte("some test input"))
+	require.ErrorContains(t, err, "failed to read first line of VPC logs from S3")
 }
 
 func TestNew_VPCFlowLogV1(t *testing.T) {

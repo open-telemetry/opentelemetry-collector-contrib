@@ -21,8 +21,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv22 "go.opentelemetry.io/otel/semconv/v1.22.0"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
@@ -40,22 +38,22 @@ const (
 	expectedLogBodyWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
 )
 
-const expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":440.23}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.14}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.77}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":24.8}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":64.78}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":1.65}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":475.69}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.1}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.57}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":15.88}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
+const expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":440.23}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.14}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.77}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":24.8}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":64.78}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":1.65}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":475.69}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.1}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.57}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":15.88}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
 
 func TestEncodeSpan(t *testing.T) {
 	t.Run("non data stream", func(t *testing.T) {
@@ -214,7 +212,7 @@ func mockResourceSpans() ptrace.Traces {
 	attr.PutStr("service.instance.id", "23")
 	attr.PutStr("service.version", "env-version-1234")
 
-	resourceSpans.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), "some-service")
+	resourceSpans.Resource().Attributes().PutStr("service.name", "some-service")
 
 	tStart := time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)
 	tEnd := time.Date(2023, 4, 19, 3, 4, 6, 6, time.UTC)
@@ -410,19 +408,19 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	logs := plog.NewLogs()
 	resource := logs.ResourceLogs().AppendEmpty().Resource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		string(semconv.ServiceNameKey):    "foo.bar",
-		string(semconv.HostNameKey):       "localhost",
-		string(semconv.ServiceVersionKey): "1.1.0",
-		string(semconv.OSTypeKey):         "darwin",
-		string(semconv.OSDescriptionKey):  "Mac OS Mojave",
-		string(semconv.OSNameKey):         "Mac OS X",
-		string(semconv.OSVersionKey):      "10.14.1",
+		"service.name":    "foo.bar",
+		"host.name":       "localhost",
+		"service.version": "1.1.0",
+		"os.type":         "darwin",
+		"os.description":  "Mac OS Mojave",
+		"os.name":         "Mac OS X",
+		"os.version":      "10.14.1",
 	})
 	require.NoError(t, err)
 
 	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"otlp"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
 
-	resourceContainerImageTags := resource.Attributes().PutEmptySlice(string(semconv.ContainerImageTagsKey))
+	resourceContainerImageTags := resource.Attributes().PutEmptySlice("container.image.tags")
 	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
 	require.NoError(t, err)
 
@@ -453,24 +451,24 @@ func TestEncodeSpanECSMode(t *testing.T) {
 
 	resource := pcommon.NewResource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		string(semconv.CloudProviderKey):             "aws",
-		string(semconv.CloudPlatformKey):             "aws_elastic_beanstalk",
-		string(semconv22.DeploymentEnvironmentKey):   "BETA",
-		string(semconv.DeploymentEnvironmentNameKey): "BETA",
-		string(semconv.ServiceInstanceIDKey):         "23",
-		string(semconv.ServiceNameKey):               "some-service",
-		string(semconv.ServiceVersionKey):            "env-version-1234",
-		string(semconv.ProcessParentPIDKey):          "42",
-		string(semconv.ProcessExecutableNameKey):     "node",
-		string(semconv.ClientAddressKey):             "12.53.12.1",
-		string(semconv.SourceAddressKey):             "12.53.12.1",
-		string(semconv.FaaSInstanceKey):              "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
-		string(semconv.FaaSTriggerKey):               "api-gateway",
+		"cloud.provider":              "aws",
+		"cloud.platform":              "aws_elastic_beanstalk",
+		"deployment.environment":      "BETA",
+		"deployment.environment.name": "BETA",
+		"service.instance.id":         "23",
+		"service.name":                "some-service",
+		"service.version":             "env-version-1234",
+		"process.parent_pid":          "42",
+		"process.executable.name":     "node",
+		"client.address":              "12.53.12.1",
+		"source.address":              "12.53.12.1",
+		"faas.instance":               "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		"faas.trigger":                "api-gateway",
 	})
 	require.NoError(t, err)
 
 	// add slice attributes
-	processCommandLineSlice := resource.Attributes().PutEmptySlice(string(semconv.ProcessCommandLineKey))
+	processCommandLineSlice := resource.Attributes().PutEmptySlice("process.command_line")
 	err = processCommandLineSlice.FromRaw([]any{"node", "app.js"})
 	require.NoError(t, err)
 
@@ -484,12 +482,10 @@ func TestEncodeSpanECSMode(t *testing.T) {
 
 	span := scopeSpans.Spans().AppendEmpty()
 	err = span.Attributes().FromRaw(map[string]any{
-		string(semconv.MessagingDestinationNameKey): "users_queue",
-		"messaging.operation.name":                  "receive",
-		string(semconv22.DBSystemKey):               "sql",
-		"db.namespace":                              "users",
-		"db.query.text":                             "SELECT * FROM users WHERE user_id=?",
-		string(semconv.HTTPResponseBodySizeKey):     "http.response.encoded_body_size",
+		"db.system":               "sql",
+		"db.namespace":            "users",
+		"db.query.text":           "SELECT * FROM users WHERE user_id=?",
+		"http.response.body.size": "http.response.encoded_body_size",
 	})
 	require.NoError(t, err)
 
@@ -532,14 +528,11 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	  "span": {
 		"id": "1920212223242526",
 		"name": "client span",
-		"action": "receive",
+		"kind": "CLIENT",
 		"db": {
 		  "instance": "users",
 		  "statement": "SELECT * FROM users WHERE user_id=?",
 		  "type": "sql"
-		},
-		"message": {
-		  "queue": { "name": "users_queue" }
 		},
 		"links": [
 		  {
@@ -595,127 +588,67 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	}`, buf.String())
 }
 
-func TestEncodeSpanECSModeMessageQueueName(t *testing.T) {
-	tests := map[string]struct {
-		processorEvent             string
-		expectedMessageQueuePrefix string
-	}{
-		"processor event: span": {
-			processorEvent:             "span",
-			expectedMessageQueuePrefix: "span",
-		},
-		"processor event: other": {
-			processorEvent:             "other",
-			expectedMessageQueuePrefix: "span",
-		},
-		"processor event missing": {
-			processorEvent:             "",
-			expectedMessageQueuePrefix: "span",
-		},
-		"processor event: transaction": {
-			processorEvent:             "transaction",
-			expectedMessageQueuePrefix: "transaction",
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			traces := ptrace.NewTraces()
-			resourceSpans := traces.ResourceSpans().AppendEmpty()
-			scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
-			span := scopeSpans.Spans().AppendEmpty()
-			err := span.Attributes().FromRaw(map[string]any{
-				"processor.event": test.processorEvent,
-				string(semconv.MessagingDestinationNameKey): "orders_queue",
-			})
-			require.NoError(t, err)
-
-			timestamp := pcommon.Timestamp(1710373859123456789)
-			span.SetStartTimestamp(timestamp)
-
-			var buf bytes.Buffer
-			encoder, _ := newEncoder(MappingECS)
-			err = encoder.encodeSpan(
-				encodingContext{resource: resourceSpans.Resource(), scope: scopeSpans.Scope()},
-				span, elasticsearch.Index{}, &buf,
-			)
-			require.NoError(t, err)
-
-			require.JSONEq(t, fmt.Sprintf(`{
-			  "@timestamp": "2024-03-13T23:50:59.123456789Z",
-              "processor": { "event": %q },
-			  %q: { 
-				"message": { 
-					"queue": { 
-						"name": "orders_queue" 
-						} 
-					} 
-				}
-			}`, test.processorEvent, test.expectedMessageQueuePrefix), buf.String())
-		})
-	}
-}
-
 func TestEncodeLogECSMode(t *testing.T) {
 	logs := plog.NewLogs()
 	resource := logs.ResourceLogs().AppendEmpty().Resource()
 	err := resource.Attributes().FromRaw(map[string]any{
-		string(semconv.ServiceNameKey):               "foo.bar",
-		string(semconv22.DeploymentEnvironmentKey):   "BETA",
-		string(semconv.DeploymentEnvironmentNameKey): "BETA",
-		string(semconv.ServiceVersionKey):            "1.1.0",
-		string(semconv.ServiceInstanceIDKey):         "i-103de39e0a",
-		string(semconv.TelemetrySDKNameKey):          "opentelemetry",
-		string(semconv.TelemetrySDKVersionKey):       "7.9.12",
-		string(semconv.TelemetrySDKLanguageKey):      "perl",
-		string(semconv.CloudProviderKey):             "gcp",
-		string(semconv.CloudAccountIDKey):            "19347013",
-		string(semconv.CloudRegionKey):               "us-west-1",
-		string(semconv.CloudAvailabilityZoneKey):     "us-west-1b",
-		string(semconv.CloudPlatformKey):             "gke",
-		string(semconv.ContainerNameKey):             "happy-seger",
-		string(semconv.ContainerIDKey):               "e69cc5d3dda",
-		string(semconv.ContainerImageNameKey):        "my-app",
-		string(semconv22.ContainerRuntimeKey):        "docker",
-		string(semconv.HostNameKey):                  "i-103de39e0a.gke.us-west-1b.cloud.google.com",
-		string(semconv.HostIDKey):                    "i-103de39e0a",
-		string(semconv.HostTypeKey):                  "t2.medium",
-		string(semconv.HostArchKey):                  "x86_64",
-		string(semconv.ProcessPIDKey):                9833,
-		string(semconv.ProcessCommandLineKey):        "/usr/bin/ssh -l user 10.0.0.16",
-		string(semconv.ProcessExecutablePathKey):     "/usr/bin/ssh",
-		string(semconv.ProcessRuntimeNameKey):        "OpenJDK Runtime Environment",
-		string(semconv.ProcessRuntimeVersionKey):     "14.0.2",
-		string(semconv.OSTypeKey):                    "darwin",
-		string(semconv.OSDescriptionKey):             "Mac OS Mojave",
-		string(semconv.OSNameKey):                    "Mac OS X",
-		string(semconv.OSVersionKey):                 "10.14.1",
-		string(semconv.DeviceIDKey):                  "00000000-54b3-e7c7-0000-000046bffd97",
-		string(semconv.DeviceModelIdentifierKey):     "SM-G920F",
-		string(semconv.DeviceModelNameKey):           "Samsung Galaxy S6",
-		string(semconv.DeviceManufacturerKey):        "Samsung",
-		"k8s.namespace.name":                         "default",
-		"k8s.node.name":                              "node-1",
-		"k8s.pod.name":                               "opentelemetry-pod-autoconf",
-		"k8s.pod.uid":                                "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
-		"k8s.deployment.name":                        "coredns",
-		string(semconv.K8SJobNameKey):                "job.name",
-		string(semconv.K8SCronJobNameKey):            "cronjob.name",
-		string(semconv.K8SStatefulSetNameKey):        "statefulset.name",
-		string(semconv.K8SReplicaSetNameKey):         "replicaset.name",
-		string(semconv.K8SDaemonSetNameKey):          "daemonset.name",
-		string(semconv.K8SContainerNameKey):          "container.name",
-		string(semconv.K8SClusterNameKey):            "cluster.name",
-		string(semconv.ProcessParentPIDKey):          "42",
-		string(semconv.ProcessExecutableNameKey):     "node",
-		string(semconv.ClientAddressKey):             "12.53.12.1",
-		string(semconv.SourceAddressKey):             "12.53.12.1",
-		string(semconv.FaaSInstanceKey):              "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
-		string(semconv.FaaSTriggerKey):               "api-gateway",
+		"service.name":                "foo.bar",
+		"deployment.environment":      "BETA",
+		"deployment.environment.name": "BETA",
+		"service.version":             "1.1.0",
+		"service.instance.id":         "i-103de39e0a",
+		"telemetry.sdk.name":          "opentelemetry",
+		"telemetry.sdk.version":       "7.9.12",
+		"telemetry.sdk.language":      "perl",
+		"cloud.provider":              "gcp",
+		"cloud.account.id":            "19347013",
+		"cloud.region":                "us-west-1",
+		"cloud.availability_zone":     "us-west-1b",
+		"cloud.platform":              "gke",
+		"container.name":              "happy-seger",
+		"container.id":                "e69cc5d3dda",
+		"container.image.name":        "my-app",
+		"container.runtime":           "docker",
+		"host.name":                   "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		"host.hostname":               "hostname.example.com",
+		"host.id":                     "i-103de39e0a",
+		"host.type":                   "t2.medium",
+		"host.arch":                   "x86_64",
+		"process.pid":                 9833,
+		"process.command_line":        "/usr/bin/ssh -l user 10.0.0.16",
+		"process.executable.path":     "/usr/bin/ssh",
+		"process.runtime.name":        "OpenJDK Runtime Environment",
+		"process.runtime.version":     "14.0.2",
+		"os.type":                     "darwin",
+		"os.description":              "Mac OS Mojave",
+		"os.name":                     "Mac OS X",
+		"os.version":                  "10.14.1",
+		"device.id":                   "00000000-54b3-e7c7-0000-000046bffd97",
+		"device.model.identifier":     "SM-G920F",
+		"device.model.name":           "Samsung Galaxy S6",
+		"device.manufacturer":         "Samsung",
+		"k8s.namespace.name":          "default",
+		"k8s.node.name":               "node-1",
+		"k8s.pod.name":                "opentelemetry-pod-autoconf",
+		"k8s.pod.uid":                 "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
+		"k8s.deployment.name":         "coredns",
+		"k8s.job.name":                "job.name",
+		"k8s.cronjob.name":            "cronjob.name",
+		"k8s.statefulset.name":        "statefulset.name",
+		"k8s.replicaset.name":         "replicaset.name",
+		"k8s.daemonset.name":          "daemonset.name",
+		"k8s.container.name":          "container.name",
+		"k8s.cluster.name":            "cluster.name",
+		"process.parent_pid":          "42",
+		"process.executable.name":     "node",
+		"client.address":              "12.53.12.1",
+		"source.address":              "12.53.12.1",
+		"faas.instance":               "arn:aws:lambda:us-east-2:123456789012:function:custom-runtime",
+		"faas.trigger":                "api-gateway",
 	})
 	require.NoError(t, err)
 
-	resourceContainerImageTags := resource.Attributes().PutEmptySlice(string(semconv.ContainerImageTagsKey))
+	resourceContainerImageTags := resource.Attributes().PutEmptySlice("container.image.tags")
 	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
 	require.NoError(t, err)
 
@@ -723,8 +656,8 @@ func TestEncodeLogECSMode(t *testing.T) {
 
 	record := plog.NewLogRecord()
 	err = record.Attributes().FromRaw(map[string]any{
-		"event.name":                            "user-password-change",
-		string(semconv.HTTPResponseBodySizeKey): 1024,
+		"event.name":              "user-password-change",
+		"http.response.body.size": 1024,
 	})
 	require.NoError(t, err)
 	observedTimestamp := pcommon.Timestamp(1710273641123456789)
@@ -762,7 +695,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "runtime": "docker"
 		},
 		"host": {
-		  "hostname": "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		  "hostname": "hostname.example.com",
 		  "name": "i-103de39e0a.gke.us-west-1b.cloud.google.com",
 		  "id": "i-103de39e0a",
 		  "type": "t2.medium",
@@ -894,13 +827,13 @@ func TestEncodeLogECSModeAgentName(t *testing.T) {
 			record := plog.NewLogRecord()
 
 			if test.telemetrySdkName != "" {
-				resource.Attributes().PutStr(string(semconv.TelemetrySDKNameKey), test.telemetrySdkName)
+				resource.Attributes().PutStr("telemetry.sdk.name", test.telemetrySdkName)
 			}
 			if test.telemetrySdkLanguage != "" {
-				resource.Attributes().PutStr(string(semconv.TelemetrySDKLanguageKey), test.telemetrySdkLanguage)
+				resource.Attributes().PutStr("telemetry.sdk.language", test.telemetrySdkLanguage)
 			}
 			if test.telemetryDistroName != "" {
-				resource.Attributes().PutStr(string(semconv.TelemetryDistroNameKey), test.telemetryDistroName)
+				resource.Attributes().PutStr("telemetry.distro.name", test.telemetryDistroName)
 			}
 
 			timestamp := pcommon.Timestamp(1710373859123456789)
@@ -954,10 +887,10 @@ func TestEncodeLogECSModeAgentVersion(t *testing.T) {
 			record := plog.NewLogRecord()
 
 			if test.telemetryDistroVersion != "" {
-				resource.Attributes().PutStr(string(semconv.TelemetryDistroVersionKey), test.telemetryDistroVersion)
+				resource.Attributes().PutStr("telemetry.distro.version", test.telemetryDistroVersion)
 			}
 			if test.telemetrySdkVersion != "" {
-				resource.Attributes().PutStr(string(semconv.TelemetrySDKVersionKey), test.telemetrySdkVersion)
+				resource.Attributes().PutStr("telemetry.sdk.version", test.telemetrySdkVersion)
 			}
 
 			timestamp := pcommon.Timestamp(1710373859123456789)
@@ -1065,10 +998,10 @@ func TestEncodeLogECSModeHostOSType(t *testing.T) {
 			record := plog.NewLogRecord()
 
 			if test.osType != "" {
-				resource.Attributes().PutStr(string(semconv.OSTypeKey), test.osType)
+				resource.Attributes().PutStr("os.type", test.osType)
 			}
 			if test.osName != "" {
-				resource.Attributes().PutStr(string(semconv.OSNameKey), test.osName)
+				resource.Attributes().PutStr("os.name", test.osName)
 			}
 
 			timestamp := pcommon.Timestamp(1710373859123456789)
@@ -1159,14 +1092,14 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 func TestMapLogAttributesToECS(t *testing.T) {
 	tests := map[string]struct {
 		attrs         func() pcommon.Map
-		conversionMap map[string]string
+		conversionMap map[string]conversionEntry
 		preserveMap   map[string]bool
 		expectedDoc   func() objmodel.Document
 	}{
 		"no_attrs": {
 			attrs: pcommon.NewMap,
-			conversionMap: map[string]string{
-				"foo.bar": "baz",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "baz"},
 			},
 			expectedDoc: func() objmodel.Document {
 				return objmodel.Document{}
@@ -1190,7 +1123,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutStr("foo.bar", "baz")
 				return m
 			},
-			conversionMap: map[string]string{},
+			conversionMap: map[string]conversionEntry{},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
 				d.AddString("foo.bar", "baz")
@@ -1204,9 +1137,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutInt("qux", 17)
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
-				"qux":     "foo",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux"},
+				"qux":     {to: "foo"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1222,8 +1155,8 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutInt("qux", 17)
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1239,8 +1172,8 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutInt("qux", 17)
 				return m
 			},
-			conversionMap: map[string]string{
-				"baz": "qux",
+			conversionMap: map[string]conversionEntry{
+				"baz": {to: "qux"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1255,9 +1188,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutStr("foo.bar", "baz")
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
-				"qux":     "foo",
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux"},
+				"qux":     {to: "foo"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1271,11 +1204,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				m.PutStr("foo.bar", "baz")
 				return m
 			},
-			conversionMap: map[string]string{
-				"foo.bar": "bar.qux",
-				"qux":     "foo",
-			}, preserveMap: map[string]bool{
-				"foo.bar": true,
+			conversionMap: map[string]conversionEntry{
+				"foo.bar": {to: "bar.qux", preserveOriginal: true},
+				"qux":     {to: "foo"},
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
@@ -1289,7 +1220,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var doc objmodel.Document
-			encodeAttributesECSMode(&doc, test.attrs(), test.conversionMap, test.preserveMap)
+			encodeAttributesECSMode(&doc, test.attrs(), test.conversionMap)
 
 			expectedDoc := test.expectedDoc()
 			require.Equal(t, expectedDoc, doc)

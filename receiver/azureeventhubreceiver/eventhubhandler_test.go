@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"github.com/stretchr/testify/assert"
@@ -145,17 +144,24 @@ func TestShouldInitializeStorageClient(t *testing.T) {
 	}
 }
 
-type mockStorageClient struct{}
+type mockStorageClient struct {
+	storage map[string][]byte
+}
 
-func (*mockStorageClient) Get(_ context.Context, _ string) ([]byte, error) {
+func (m *mockStorageClient) Get(_ context.Context, key string) ([]byte, error) {
+	if len(m.storage[key]) > 0 {
+		return m.storage[key], nil
+	}
 	return nil, nil
 }
 
-func (*mockStorageClient) Set(_ context.Context, _ string, _ []byte) error {
+func (m *mockStorageClient) Set(_ context.Context, key string, val []byte) error {
+	m.storage[key] = val
 	return nil
 }
 
-func (*mockStorageClient) Delete(_ context.Context, _ string) error {
+func (m *mockStorageClient) Delete(_ context.Context, key string) error {
+	m.storage[key] = []byte{}
 	return nil
 }
 
@@ -246,19 +252,14 @@ func TestEventhubHandler_newLegacyMessageHandler(t *testing.T) {
 
 	now := time.Now()
 	err = ehHandler.newMessageHandler(t.Context(), &azureEvent{
-		EventHubEvent: &eventhub.Event{
-			Data:         []byte("hello"),
-			PartitionKey: nil,
-			Properties:   map[string]any{"foo": "bar"},
-			ID:           "11234",
-			SystemProperties: &eventhub.SystemProperties{
-				SequenceNumber: nil,
-				EnqueuedTime:   &now,
-				Offset:         nil,
-				PartitionID:    nil,
-				PartitionKey:   nil,
-				Annotations:    nil,
+		AzEventData: &azeventhubs.ReceivedEventData{
+			EventData: azeventhubs.EventData{
+				Body:       []byte("hello"),
+				Properties: map[string]any{"foo": "bar"},
 			},
+			EnqueuedTime: &now,
+			Offset:       "",
+			PartitionKey: nil,
 		},
 	})
 

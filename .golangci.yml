@@ -36,6 +36,7 @@ linters:
     - gosec
     - govet
     - misspell
+    - modernize
     - nolintlint
     - predeclared
     - reassign
@@ -72,6 +73,77 @@ linters:
         path: pagefile.go # This exclusion is required for Windows only
         text: cachedBytes
 
+      - linters:
+          - unused
+        path: receiver/macosunifiedloggingreceiver/config_common.go
+        text: resolvedArchivePaths
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45002
+      - linters:
+          - revive
+        path: processor/transformprocessor/internal/common/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45003
+      - linters:
+          - revive
+        path: internal/healthcheck/internal/common/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45004
+      - linters:
+          - revive
+        path: cmd/telemetrygen/pkg/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45005
+      - linters:
+          - revive
+        path: extension/encoding/googlecloudlogentryencodingextension/internal/shared/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45006
+      - linters:
+          - revive
+        path: pkg/stanza/errors/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45006
+      - linters:
+          - revive
+        path: pkg/stanza/internal/time/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45006
+      - linters:
+          - revive
+        path: pkg/stanza/operator/parser/json/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45006
+      - linters:
+          - revive
+        path: pkg/stanza/operator/parser/time/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45008
+      - linters:
+          - revive
+        path: extension/jaegerremotesampling/internal/server/http/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45008
+      - linters:
+          - revive
+        path: extension/sumologicextension/internal/api/
+        text: "var-naming: avoid meaningless package names"
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45003
+      - linters:
+          - revive
+        path: internal/healthcheck/internal/http/
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+
     # Log a warning if an exclusion rule is unused.
     warn-unused: true
 
@@ -83,7 +155,7 @@ linters:
           deny:
             - pkg: github.com/azure/go-autorest
               desc: "This package is deprecated (EOL). Please use an alternative Azure SDK."
-              
+
             - pkg: go.uber.org/atomic
               desc: Use 'sync/atomic' instead of go.uber.org/atomic
 
@@ -99,6 +171,65 @@ linters:
             - pkg: sigs.k8s.io/yaml
               desc: "Use 'go.yaml.in/yaml' instead of sigs.k8s.io/yaml"
 
+        semconv:
+          list-mode: lax
+          deny:
+            - pkg: go.opentelemetry.io/otel/semconv
+              desc: Use go.opentelemetry.io/otel/semconv/v1.39.0 instead. If a newer semconv version has been released, update the depguard rule.
+          allow:
+            # TODO: Remove older semconv versions after v1.39.0 migration is complete.
+            # If for any reason an individual package needs to use an older semconv version,
+            # add a nolint directive on the import line.
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35325
+            - go.opentelemetry.io/otel/semconv/v1.9.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45041
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076
+            - go.opentelemetry.io/otel/semconv/v1.12.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45077
+            - go.opentelemetry.io/otel/semconv/v1.16.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45080
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45293
+            - go.opentelemetry.io/otel/semconv/v1.18.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45294
+            - go.opentelemetry.io/otel/semconv/v1.19.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45295
+            - go.opentelemetry.io/otel/semconv/v1.20.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45079
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45087
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45296
+            - go.opentelemetry.io/otel/semconv/v1.21.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45036
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45084
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44801
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45089
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45297
+            - go.opentelemetry.io/otel/semconv/v1.25.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43806
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45074
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45298
+            - go.opentelemetry.io/otel/semconv/v1.26.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45086
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45299
+            - go.opentelemetry.io/otel/semconv/v1.28.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44994
+            - go.opentelemetry.io/otel/semconv/v1.31.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45030
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45034
+            - go.opentelemetry.io/otel/semconv/v1.34.0
+            - go.opentelemetry.io/otel/semconv/v1.38.0
+            - go.opentelemetry.io/otel/semconv/v1.39.0
+
+        semconv-in-test:
+          list-mode: lax
+          deny:
+            - pkg: go.opentelemetry.io/otel/semconv
+              desc: Don't import semconv packages in test files, use strings directly instead.
+
+          files:
+            - "**/*_test.go"
+
         # Add a different guard rule so that we can ignore tests.
         ignore-in-test:
           deny:
@@ -107,7 +238,7 @@ linters:
 
           # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
           files:
-            - '!**/*_test.go'
+            - "!**/*_test.go"
 
     exhaustive:
       # Presence of "default" case in switch statements satisfies exhaustiveness,
@@ -261,6 +392,9 @@ linters:
 
       test:
         begin: false
+
+    usetesting:
+      context-background: true
 
 output:
   # The formats used to render issues.

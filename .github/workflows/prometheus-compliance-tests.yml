@@ -29,11 +29,11 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           path: opentelemetry-collector-contrib
       - run: opentelemetry-collector-contrib/.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         id: go-setup
         with:
           go-version: oldstable
@@ -51,10 +51,11 @@ jobs:
       - run: make otelcontribcol
         working-directory: opentelemetry-collector-contrib
       - name: Checkout compliance repo
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           repository: prometheus/compliance
           path: compliance
+          ref: adfa690dd4df11f9c1bc1b130db5843fdca219f1 # Pin to commit using Go 1.23.0
       - name: Copy binary to compliance directory
         # The required name of the downloaded artifact is `otelcol_0.42.0_linux_amd64`, so we place the collector contrib artifact under the same name in the bin folder to run.
         # Source: https://github.com/prometheus/compliance/blob/12cbdf92abf7737531871ab7620a2de965fc5382/remote_write_sender/targets/otel.go#L8
@@ -68,3 +69,4 @@ jobs:
           # Skipping Staleness test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43893 is resolved
           go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" -skip "TestRemoteWrite/otelcollector/Staleness" ./ |& tee ./test-report.txt
         working-directory: compliance/remotewrite/sender
+      - run: opentelemetry-collector-contrib/.github/workflows/scripts/check-disk-space.sh

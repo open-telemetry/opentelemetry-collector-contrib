@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -31,20 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
-const franzGoClientFeatureGateName = "exporter.kafkaexporter.UseFranzGo"
-
-// franzGoClientFeatureGate is a feature gate that controls whether the Kafka exporter
-// uses the franz-go client or the Sarama client. When enabled, the Kafka exporter
-// will use the franz-go client, which is more performant and has better support for
-// modern Kafka features.
-var franzGoClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	franzGoClientFeatureGateName, featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, the Kafka exporter will use the franz-go client to produce messages to Kafka."),
-	featuregate.WithRegisterFromVersion("v0.128.0"),
-)
-
 // producer is an interface that abstracts the Kafka producer operations
-// to allow for different implementations (e.g., Sarama, franz-go)
 type producer interface {
 	// ExportData sends a batch of messages to Kafka
 	ExportData(ctx context.Context, messages kafkaclient.Messages) error
@@ -99,32 +85,19 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		return err
 	}
 
-	if franzGoClientFeatureGate.IsEnabled() {
-		producer, ferr := kafka.NewFranzSyncProducer(
-			ctx,
-			e.cfg.ClientConfig,
-			e.cfg.Producer,
-			e.cfg.TimeoutSettings.Timeout,
-			e.logger,
-			kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
-		)
-		if ferr != nil {
-			return ferr
-		}
-		e.producer = kafkaclient.NewFranzSyncProducer(producer,
-			e.cfg.IncludeMetadataKeys,
-		)
-		return nil
-	}
-	producer, err := kafka.NewSaramaSyncProducer(ctx, e.cfg.ClientConfig,
-		e.cfg.Producer, e.cfg.TimeoutSettings.Timeout,
+	producer, err := kafka.NewFranzSyncProducer(
+		ctx,
+		host,
+		e.cfg.ClientConfig,
+		e.cfg.Producer,
+		e.cfg.TimeoutSettings.Timeout,
+		e.logger,
+		kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
 	)
 	if err != nil {
 		return err
 	}
-	e.producer = kafkaclient.NewSaramaSyncProducer(
-		producer,
-		kafkaclient.NewSaramaProducerMetrics(tb),
+	e.producer = kafkaclient.NewFranzSyncProducer(producer,
 		e.cfg.IncludeMetadataKeys,
 	)
 	return nil

@@ -4,6 +4,8 @@
 package cloudtraillog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -13,15 +15,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
 
+// readerBufferSize defines the buffer size for buffered readers.
+const readerBufferSize = 128 * 1024 // 128KB buffer size
+
 type CloudTrailLogUnmarshaler struct {
-	buildInfo component.BuildInfo
+	buildInfo         component.BuildInfo
+	uIDFeatureEnabled bool
 }
 
 var _ unmarshaler.AWSUnmarshaler = (*CloudTrailLogUnmarshaler)(nil)
@@ -134,41 +140,64 @@ type CloudTrailLog struct {
 	Records []CloudTrailRecord `json:"Records"`
 }
 
-func NewCloudTrailLogUnmarshaler(buildInfo component.BuildInfo) *CloudTrailLogUnmarshaler {
+func NewCloudTrailLogUnmarshaler(buildInfo component.BuildInfo, uIDFeatureEnabled bool) *CloudTrailLogUnmarshaler {
 	return &CloudTrailLogUnmarshaler{
-		buildInfo: buildInfo,
+		buildInfo:         buildInfo,
+		uIDFeatureEnabled: uIDFeatureEnabled,
 	}
 }
 
 func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	decompressedBuf, err := io.ReadAll(reader)
+	bufferedReader := bufio.NewReaderSize(reader, readerBufferSize)
+
+	// Peek into the first 64 bytes to determine the type of CloudTrail log
+	peekBytes, err := bufferedReader.Peek(64)
 	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to read CloudTrail logs: %w", err)
+		if !errors.Is(err, io.EOF) {
+			return plog.Logs{}, fmt.Errorf("failed to peek into CloudTrail log: %w", err)
+		}
 	}
 
-	var cloudTrailLog CloudTrailLog
-	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as CloudTrail logs: %w", err)
+	firstKey, err := extractFirstKey(peekBytes)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to extract the first JSON key: %w", err)
 	}
 
-	if cloudTrailLog.Records != nil {
-		return u.processRecords(cloudTrailLog.Records)
+	decoder := gojson.NewDecoder(bufferedReader)
+
+	// Records indicates a CloudTrail log file
+	if firstKey == "Records" {
+		return u.processRecords(decoder)
 	}
 
 	// Try to parse as a CloudTrail digest record
+	// Note - Digest files are relatively small and has fields at root level.
 	var cloudTrailDigest CloudTrailDigest
-	if err := gojson.Unmarshal(decompressedBuf, &cloudTrailDigest); err != nil {
+	if err := decoder.Decode(&cloudTrailDigest); err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as a CloudTrail digest: %w", err)
 	}
 
 	return u.processDigestRecord(cloudTrailDigest)
 }
 
-func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (plog.Logs, error) {
+// processRecords is specialized in processing CloudTrail log records.
+// Implementation works with a gojson.Decoder to efficiently stream through potentially large log files.
+func (u *CloudTrailLogUnmarshaler) processRecords(decoder *gojson.Decoder) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
-	if len(records) == 0 {
-		return logs, nil
+	// Check opening bracket
+	if token, err := decoder.Token(); err != nil || token != gojson.Delim('{') {
+		return plog.Logs{}, fmt.Errorf("expected '{': %w", err)
+	}
+
+	// Move to Records array
+	if _, err := decoder.Token(); err != nil {
+		return plog.Logs{}, fmt.Errorf("expected 'Records' key: %w", err)
+	}
+
+	// Check for array opening
+	if token, err := decoder.Token(); err != nil || token != gojson.Delim('[') {
+		return plog.Logs{}, fmt.Errorf("expected '[': %w", err)
 	}
 
 	// Create a single resource logs entry for all records
@@ -176,14 +205,27 @@ func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (p
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	u.setCommonScopeAttributes(scopeLogs)
 
-	// Set resource attributes based on the first record
-	// (all records have the same account ID and region)
-	u.setResourceAttributes(resourceLogs.Resource().Attributes(), records[0])
+	logRecords := scopeLogs.LogRecords()
+	// Pre-allocate space for log records to improve performance
+	logRecords.EnsureCapacity(100)
 
-	for i := range records {
-		record := &records[i]
-		logRecord := scopeLogs.LogRecords().AppendEmpty()
-		if err := u.setLogRecord(logRecord, record); err != nil {
+	var record CloudTrailRecord
+	init := true
+
+	for decoder.More() {
+		record = CloudTrailRecord{}
+		err := decoder.Decode(&record)
+		if err != nil {
+			return plog.Logs{}, err
+		}
+
+		if init {
+			u.setResourceAttributes(resourceLogs.Resource().Attributes(), record)
+			init = false
+		}
+
+		logRecord := logRecords.AppendEmpty()
+		if err := u.setLogRecord(logRecord, &record); err != nil {
 			return plog.Logs{}, err
 		}
 	}
@@ -191,6 +233,7 @@ func (u *CloudTrailLogUnmarshaler) processRecords(records []CloudTrailRecord) (p
 	return logs, nil
 }
 
+// processDigestRecord is specialized in processing CloudTrail digest records
 func (u *CloudTrailLogUnmarshaler) processDigestRecord(record CloudTrailDigest) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
@@ -264,7 +307,7 @@ func (u *CloudTrailLogUnmarshaler) setLogRecord(logRecord plog.LogRecord, record
 	return nil
 }
 
-func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
+func (u *CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
 	attrs.PutStr("aws.cloudtrail.event_version", record.EventVersion)
 	attrs.PutStr("aws.cloudtrail.event_id", record.EventID)
 
@@ -317,34 +360,11 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 			attrs.PutStr(string(conventions.UserNameKey), record.UserIdentity.UserName)
 		}
 
-		if record.UserIdentity.AccountID != "" {
-			attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
-		}
-
-		if record.UserIdentity.AccessKeyID != "" {
-			attrs.PutStr("aws.access_key.id", record.UserIdentity.AccessKeyID)
-		}
-
-		// Store the Identity Store ARN and others as custom attributes
-		// since there are no standard conventions for them
-		if record.UserIdentity.IdentityStoreARN != "" {
-			attrs.PutStr("aws.identity_store.arn", record.UserIdentity.IdentityStoreARN)
-		}
-
-		if record.UserIdentity.InvokedBy != "" {
-			attrs.PutStr("aws.user_identity.invoked_by", record.UserIdentity.InvokedBy)
-		}
-
-		if record.UserIdentity.PrincipalID != "" {
-			attrs.PutStr("aws.principal.id", record.UserIdentity.PrincipalID)
-		}
-
-		if record.UserIdentity.ARN != "" {
-			attrs.PutStr("aws.principal.arn", record.UserIdentity.ARN)
-		}
-
-		if record.UserIdentity.Type != "" {
-			attrs.PutStr("aws.principal.type", record.UserIdentity.Type)
+		// check feature flag decision
+		if u.uIDFeatureEnabled {
+			withUserIdentityPrefix(attrs, record)
+		} else {
+			defaultAttributes(attrs, record)
 		}
 
 		// Add session context details if available
@@ -458,10 +478,114 @@ func enrichWithSessionContext(attrs pcommon.Map, sessionContext *SessionContext)
 	}
 }
 
+// defaultAttributes is the legacy helper to add UserIdentity elements
+// todo : remove when feature gate constants.CloudTrailEnableUserIdentityPrefixID is deprecated
+func defaultAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
+	if record.UserIdentity.AccountID != "" {
+		attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
+	}
+
+	if record.UserIdentity.AccessKeyID != "" {
+		attrs.PutStr("aws.access_key.id", record.UserIdentity.AccessKeyID)
+	}
+
+	// Store the Identity Store ARN and others as custom attributes
+	// since there are no standard conventions for them
+	if record.UserIdentity.IdentityStoreARN != "" {
+		attrs.PutStr("aws.identity_store.arn", record.UserIdentity.IdentityStoreARN)
+	}
+
+	if record.UserIdentity.InvokedBy != "" {
+		attrs.PutStr("aws.user_identity.invoked_by", record.UserIdentity.InvokedBy)
+	}
+
+	if record.UserIdentity.PrincipalID != "" {
+		attrs.PutStr("aws.principal.id", record.UserIdentity.PrincipalID)
+	}
+
+	if record.UserIdentity.ARN != "" {
+		attrs.PutStr("aws.principal.arn", record.UserIdentity.ARN)
+	}
+
+	if record.UserIdentity.Type != "" {
+		attrs.PutStr("aws.principal.type", record.UserIdentity.Type)
+	}
+}
+
+// withUserIdentityPrefix is a helper to add UserIdentity details with aws.user_identity prefix.
+// todo : remove when feature gate constants.CloudTrailEnableUserIdentityPrefixID is deprecated & move to caller
+func withUserIdentityPrefix(attrs pcommon.Map, record *CloudTrailRecord) {
+	if record.UserIdentity.AccountID != "" {
+		attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
+	}
+
+	if record.UserIdentity.AccessKeyID != "" {
+		attrs.PutStr("aws.user_identity.access_key.id", record.UserIdentity.AccessKeyID)
+	}
+
+	// Store the Identity Store ARN and others as custom attributes
+	// since there are no standard conventions for them
+	if record.UserIdentity.IdentityStoreARN != "" {
+		attrs.PutStr("aws.user_identity.identity_store.arn", record.UserIdentity.IdentityStoreARN)
+	}
+
+	if record.UserIdentity.InvokedBy != "" {
+		attrs.PutStr("aws.user_identity.invoked_by", record.UserIdentity.InvokedBy)
+	}
+
+	if record.UserIdentity.PrincipalID != "" {
+		attrs.PutStr("aws.user_identity.principal.id", record.UserIdentity.PrincipalID)
+	}
+
+	if record.UserIdentity.ARN != "" {
+		attrs.PutStr("aws.user_identity.principal.arn", record.UserIdentity.ARN)
+	}
+
+	if record.UserIdentity.Type != "" {
+		attrs.PutStr("aws.user_identity.principal.type", record.UserIdentity.Type)
+	}
+}
+
 // extract the version number from a TLS version string (e.g. "TLSv1.2" becomes "1.2")
 func extractTLSVersion(tlsVersion string) string {
 	if len(tlsVersion) > 4 && tlsVersion[:4] == "TLSv" {
 		return tlsVersion[4:]
 	}
 	return tlsVersion
+}
+
+// extractFirstKey extracts the first JSON key from byte array without parsing it.
+// This improves performance as there's no need to parse the entire JSON structure to extract the first key.
+func extractFirstKey(data []byte) (string, error) {
+	pos := 0
+	n := len(data)
+
+	// skip any spaces
+	for pos < n && data[pos] <= ' ' {
+		pos++
+	}
+	if pos >= n || data[pos] != '{' {
+		return "", errors.New("invalid JSON payload, failed to find the JSON opening")
+	}
+
+	// advance to opening quote
+	pos++
+	for pos < n && data[pos] <= ' ' {
+		pos++
+	}
+	if pos >= n || data[pos] != '"' {
+		return "", errors.New("invalid JSON payload, expected a JSON key but found none")
+	}
+
+	// extract the first key
+	pos++
+	keyStart := pos
+	for pos < n {
+		if data[pos] == '"' {
+			return string(data[keyStart:pos]), nil
+		}
+		pos++
+	}
+
+	return "", errors.New("invalid JSON payload")
 }
