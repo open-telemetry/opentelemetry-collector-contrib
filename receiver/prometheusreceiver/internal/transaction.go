@@ -530,6 +530,12 @@ func (t *transaction) initTransaction(lbs labels.Labels) (*resourceKey, error) {
 }
 
 func (t *transaction) getJobAndInstance(labels labels.Labels) (*resourceKey, error) {
+	return getJobAndInstance(t.ctx, labels)
+}
+
+// getJobAndInstance extracts job and instance from labels or falls back to target from context.
+// This is a shared helper used by both V1 and V2 transactions.
+func getJobAndInstance(ctx context.Context, labels labels.Labels) (*resourceKey, error) {
 	// first, try to get job and instance from the labels
 	job, instance := labels.Get(model.JobLabel), labels.Get(model.InstanceLabel)
 	if job != "" && instance != "" {
@@ -544,7 +550,7 @@ func (t *transaction) getJobAndInstance(labels labels.Labels) (*resourceKey, err
 	// this can be the case for, e.g., aggregated metrics coming from a federate endpoint
 	// that represent the whole cluster, rather than an individual workload.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32555 for reference
-	if target, ok := scrape.TargetFromContext(t.ctx); ok {
+	if target, ok := scrape.TargetFromContext(ctx); ok {
 		if job == "" {
 			job = target.GetValue(model.JobLabel)
 		}
@@ -595,7 +601,19 @@ func (*transaction) UpdateMetadata(_ storage.SeriesRef, _ labels.Labels, _ metad
 func (t *transaction) AddTargetInfo(key resourceKey, ls labels.Labels) {
 	t.addingNativeHistogram = false
 	t.addingNHCB = false
-	if resource, ok := t.nodeResources[key]; ok {
+	addTargetInfo(key, ls, t.nodeResources)
+}
+
+func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
+	t.addingNativeHistogram = false
+	t.addingNHCB = false
+	addScopeInfo(key, ls, t.scopeAttributes)
+}
+
+// addTargetInfo adds target_info labels as resource attributes.
+// This is a shared helper used by both V1 and V2 transactions.
+func addTargetInfo(key resourceKey, ls labels.Labels, nodeResources map[resourceKey]pcommon.Resource) {
+	if resource, ok := nodeResources[key]; ok {
 		attrs := resource.Attributes()
 		ls.Range(func(lbl labels.Label) {
 			if lbl.Name == model.JobLabel || lbl.Name == model.InstanceLabel || lbl.Name == model.MetricNameLabel {
@@ -606,9 +624,9 @@ func (t *transaction) AddTargetInfo(key resourceKey, ls labels.Labels) {
 	}
 }
 
-func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
-	t.addingNativeHistogram = false
-	t.addingNHCB = false
+// addScopeInfo adds otel_scope_info labels as scope attributes.
+// This is a shared helper used by both V1 and V2 transactions.
+func addScopeInfo(key resourceKey, ls labels.Labels, scopeAttributes map[resourceKey]map[scopeID]pcommon.Map) {
 	attrs := pcommon.NewMap()
 	scope := scopeID{}
 	ls.Range(func(lbl labels.Label) {
@@ -629,10 +647,10 @@ func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
 		}
 		attrs.PutStr(lbl.Name, lbl.Value)
 	})
-	if _, ok := t.scopeAttributes[key]; !ok {
-		t.scopeAttributes[key] = make(map[scopeID]pcommon.Map)
+	if _, ok := scopeAttributes[key]; !ok {
+		scopeAttributes[key] = make(map[scopeID]pcommon.Map)
 	}
-	t.scopeAttributes[key][scope] = attrs
+	scopeAttributes[key][scope] = attrs
 }
 
 func getSeriesRef(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uint64, []byte) {
