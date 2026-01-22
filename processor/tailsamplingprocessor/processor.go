@@ -777,6 +777,8 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		actualData.bytes > tsp.maxTraceSizeBytes {
 		tsp.telemetry.ProcessorTailSamplingTracesDroppedTooLarge.Add(tsp.ctx, 1)
 		actualData.finalDecision = samplingpolicy.NotSampled
+		// Since we are not in a normal decision flow when dropping large traces, also be sure to remove it from the batcher.
+		tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
 		tsp.releaseNotSampledTrace(id, "")
 		return
 	}

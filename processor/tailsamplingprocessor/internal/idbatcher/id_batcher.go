@@ -38,6 +38,10 @@ type Batcher interface {
 	// batch that the trace will now be a part of (which may stay the same).
 	MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFromNow uint64) uint64
 
+	// RemoveFromBatch will remove the trace from the given batch.
+	// If the batch is not in the range of batches then it is a noop.
+	RemoveFromBatch(id pcommon.TraceID, batch uint64)
+
 	// CloseCurrentAndTakeFirstBatch takes the batch at the front of the pipe, and moves the current
 	// batch to the end of the pipe, creating a new batch to receive new items. This operation should
 	// be atomic.
@@ -108,6 +112,19 @@ func (b *batcher) MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFr
 		return proposedBatch
 	}
 	return currentBatch
+}
+
+func (b *batcher) RemoveFromBatch(id pcommon.TraceID, batch uint64) {
+	b.mux.Lock()
+	defer b.mux.Unlock()
+
+	currentBatchID := b.takeID + uint64(len(b.batches))
+	if batch == currentBatchID {
+		delete(b.currentBatch, id)
+	} else if batch >= b.takeID && batch < currentBatchID {
+		delete(b.batches[batch%uint64(len(b.batches))], id)
+	}
+	// Nothing to remove if we are outside of the batch range.
 }
 
 func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
