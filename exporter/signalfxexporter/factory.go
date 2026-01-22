@@ -174,7 +174,8 @@ func createLogsExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(expCfg.BackOffConfig),
 		exporterhelper.WithQueue(expCfg.QueueSettings),
-		exporterhelper.WithStart(exp.startLogs))
+		exporterhelper.WithStart(exp.startLogs),
+		exporterhelper.WithShutdown(exp.shutdown))
 	if err != nil {
 		return nil, err
 	}

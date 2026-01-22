@@ -806,13 +806,13 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 }
 
 func TestNewEventExporter(t *testing.T) {
-	got, err := newEventExporter(nil, exportertest.NewNopSettings(componentmetadata.Type))
+	exp, err := newEventExporter(nil, exportertest.NewNopSettings(componentmetadata.Type))
 	assert.EqualError(t, err, "nil config")
-	assert.Nil(t, got)
+	assert.Nil(t, exp)
 
-	got, err = newEventExporter(nil, exportertest.NewNopSettings(componentmetadata.Type))
+	exp, err = newEventExporter(nil, exportertest.NewNopSettings(componentmetadata.Type))
 	assert.Error(t, err)
-	assert.Nil(t, got)
+	assert.Nil(t, exp)
 
 	cfg := &Config{
 		AccessToken:  "someToken",
@@ -820,17 +820,19 @@ func TestNewEventExporter(t *testing.T) {
 		ClientConfig: confighttp.ClientConfig{Timeout: 1 * time.Second},
 	}
 
-	got, err = newEventExporter(cfg, exportertest.NewNopSettings(componentmetadata.Type))
+	exp, err = newEventExporter(cfg, exportertest.NewNopSettings(componentmetadata.Type))
 	assert.NoError(t, err)
-	require.NotNil(t, got)
+	require.NotNil(t, exp)
 
-	err = got.startLogs(t.Context(), componenttest.NewNopHost())
+	err = exp.startLogs(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	// This is expected to fail.
 	ld := makeSampleResourceLogs()
-	err = got.pushLogs(t.Context(), ld)
+	err = exp.pushLogs(t.Context(), ld)
 	assert.Error(t, err)
+
+	require.NoError(t, exp.shutdown(t.Context()))
 }
 
 func makeSampleResourceLogs() plog.Logs {
@@ -857,61 +859,51 @@ func makeSampleResourceLogs() plog.Logs {
 
 func TestConsumeEventData(t *testing.T) {
 	tests := []struct {
-		name                 string
-		resourceLogs         plog.Logs
-		reqTestFunc          func(t *testing.T, r *http.Request)
-		httpResponseCode     int
-		numDroppedLogRecords int
-		wantErr              bool
+		name             string
+		events           []*sfxpb.Event
+		reqTestFunc      func(t *testing.T, r *http.Request)
+		httpResponseCode int
+		wantErr          bool
 	}{
 		{
-			name:             "happy_path",
-			resourceLogs:     makeSampleResourceLogs(),
+			name: "happy_path",
+			events: []*sfxpb.Event{
+				{
+					EventType: "shutdown",
+					Category:  sfxpb.EventCategory_USER_DEFINED.Enum(),
+					Dimensions: []*sfxpb.Dimension{
+						{Key: "host", Value: "server1"},
+					},
+				},
+			},
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
 		{
-			name: "no_event_attribute",
-			resourceLogs: func() plog.Logs {
-				out := makeSampleResourceLogs()
-				attrs := out.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-				attrs.Remove("com.splunk.signalfx.event_category")
-				attrs.Remove("com.splunk.signalfx.event_type")
-				return out
+			name:             "empty_events",
+			events:           []*sfxpb.Event{},
+			reqTestFunc:      nil,
+			httpResponseCode: http.StatusAccepted,
+		},
+		{
+			name:             "response_forbidden",
+			events:           []*sfxpb.Event{{EventType: "test"}},
+			reqTestFunc:      nil,
+			httpResponseCode: http.StatusForbidden,
+			wantErr:          true,
+		},
+		{
+			name: "large_batch",
+			events: func() []*sfxpb.Event {
+				events := make([]*sfxpb.Event, 65000)
+				for i := range events {
+					events[i] = &sfxpb.Event{
+						EventType: "test",
+						Category:  sfxpb.EventCategory_USER_DEFINED.Enum(),
+					}
+				}
+				return events
 			}(),
-			reqTestFunc:          nil,
-			numDroppedLogRecords: 1,
-			httpResponseCode:     http.StatusAccepted,
-		},
-		{
-			name: "nonconvertible_log_attrs",
-			resourceLogs: func() plog.Logs {
-				out := makeSampleResourceLogs()
-
-				attrs := out.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-				attrs.PutEmptyMap("map")
-
-				propsAttrs, _ := attrs.Get("com.splunk.signalfx.event_properties")
-				propsAttrs.Map().PutEmptyMap("map")
-
-				return out
-			}(),
-			reqTestFunc: nil,
-			// The log does go through, just without that prop
-			numDroppedLogRecords: 0,
-			httpResponseCode:     http.StatusAccepted,
-		},
-		{
-			name:                 "response_forbidden",
-			resourceLogs:         makeSampleResourceLogs(),
-			reqTestFunc:          nil,
-			httpResponseCode:     http.StatusForbidden,
-			numDroppedLogRecords: 1,
-			wantErr:              true,
-		},
-		{
-			name:             "large_batch",
-			resourceLogs:     generateLargeEventBatch(),
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
@@ -951,15 +943,17 @@ func TestConsumeEventData(t *testing.T) {
 				logger: zap.NewNop(),
 			}
 
-			numDroppedLogRecords, err := eventClient.pushLogsData(t.Context(), tt.resourceLogs)
-			assert.Equal(t, tt.numDroppedLogRecords, numDroppedLogRecords)
+			var pushErr error
+			if len(tt.events) > 0 {
+				pushErr = eventClient.pushEvents(t.Context(), plog.NewResourceLogs(), tt.events)
+			}
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				assert.Error(t, pushErr)
 				return
 			}
 
-			assert.NoError(t, err)
+			assert.NoError(t, pushErr)
 		})
 	}
 }
@@ -1071,23 +1065,6 @@ func generateLargeDPBatch() pmetric.Metrics {
 	}
 
 	return md
-}
-
-func generateLargeEventBatch() plog.Logs {
-	out := plog.NewLogs()
-	logs := out.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
-
-	batchSize := 65000
-	logs.EnsureCapacity(batchSize)
-	ts := time.Now()
-	for range batchSize {
-		lr := logs.AppendEmpty()
-		lr.Attributes().PutStr("k0", "k1")
-		lr.Attributes().PutEmpty("com.splunk.signalfx.event_category")
-		lr.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-	}
-
-	return out
 }
 
 func TestConsumeMetadataNotStarted(t *testing.T) {
@@ -1699,17 +1676,6 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 }
 
 func TestTLSAPIConnection(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	converter, err := translation.NewMetricsConverter(
-		zap.NewNop(),
-		nil,
-		cfg.ExcludeMetrics,
-		cfg.IncludeMetrics,
-		cfg.NonAlphanumericDimensionChars,
-		false,
-		true)
-	require.NoError(t, err)
-
 	metadata := []*metadata.MetadataUpdate{
 		{
 			ResourceIDKey: "key",
@@ -1770,6 +1736,17 @@ func TestTLSAPIConnection(t *testing.T) {
 			require.NoError(t, err)
 			serverURL, err := url.Parse(tt.config.APIURL)
 			assert.NoError(t, err)
+
+			converter, err := translation.NewMetricsConverter(
+				zap.NewNop(),
+				nil,
+				nil,
+				nil,
+				"",
+				false,
+				true)
+			require.NoError(t, err)
+
 			dimClient := dimensions.NewDimensionClient(
 				dimensions.DimensionClientOptions{
 					Token:            "",
@@ -1778,8 +1755,8 @@ func TestTLSAPIConnection(t *testing.T) {
 					Logger:           logger,
 					SendDelay:        1,
 					MaxBuffered:      10,
-					MetricsConverter: *converter,
 					APITLSConfig:     apiTLSCfg,
+					MetricsConverter: *converter,
 				})
 			dimClient.Start()
 			defer func() { dimClient.Shutdown() }()
