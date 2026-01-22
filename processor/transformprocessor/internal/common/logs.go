@@ -117,7 +117,7 @@ func convertLogStatements(pc *ottl.ParserCollection[LogsConsumer], statements ot
 func (lpc *LogParserCollection) ParseContextStatements(contextStatements ContextStatements) (LogsConsumer, error) {
 	pc := ottl.ParserCollection[LogsConsumer](*lpc)
 	if contextStatements.Context != "" {
-		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements)
+		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements, true)
 	}
 	return pc.ParseStatements(contextStatements, ottl.WithContextInferenceConditions(contextStatements.Conditions))
 }

@@ -112,7 +112,7 @@ func convertProfileStatements(pc *ottl.ParserCollection[ProfilesConsumer], state
 func (ppc *ProfileParserCollection) ParseContextStatements(contextStatements ContextStatements) (ProfilesConsumer, error) {
 	pc := ottl.ParserCollection[ProfilesConsumer](*ppc)
 	if contextStatements.Context != "" {
-		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements)
+		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements, true)
 	}
 	return pc.ParseStatements(contextStatements, ottl.WithContextInferenceConditions(contextStatements.Conditions))
 }
