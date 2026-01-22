@@ -523,7 +523,7 @@ func Test_ParseStatementsWithContext_UnknownContextError(t *testing.T) {
 	require.NoError(t, err)
 
 	statements := mockGetter{[]string{`set(attributes["bar"], "bar")`}}
-	_, err = pc.ParseStatementsWithContext("bar", statements, true)
+	_, err = pc.ParseStatementsWithContext("bar", statements, false)
 
 	assert.ErrorContains(t, err, `unknown context "bar"`)
 }
@@ -718,7 +718,7 @@ func Test_ParseConditionsWithContext_UnknownContextError(t *testing.T) {
 	require.NoError(t, err)
 
 	conditions := mockGetter{[]string{`attributes["bar"] == "bar"`}}
-	_, err = pc.ParseConditionsWithContext("bar", conditions, true)
+	_, err = pc.ParseConditionsWithContext("bar", conditions, false)
 
 	assert.ErrorContains(t, err, `unknown context "bar"`)
 }
@@ -942,7 +942,7 @@ func Test_ParseValueExpressionsWithContext_UnknownContextError(t *testing.T) {
 	require.NoError(t, err)
 
 	expressions := mockGetter{[]string{`attributes["bar"]`}}
-	_, err = pc.ParseValueExpressionsWithContext("bar", expressions, true)
+	_, err = pc.ParseValueExpressionsWithContext("bar", expressions, false)
 
 	assert.ErrorContains(t, err, `unknown context "bar"`)
 }
