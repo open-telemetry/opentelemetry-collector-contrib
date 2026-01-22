@@ -450,6 +450,74 @@ func Test_ParseStatements_WithContextInferenceConditions(t *testing.T) {
 	require.NotNil(t, result)
 }
 
+func Test_ParseStatements_WithContextInferenceDefaultContext(t *testing.T) {
+	tests := []struct {
+		name           string
+		statements     []string
+		defaultContext string
+		wantErr        bool
+		errContains    string
+		wantOrigText   string
+	}{
+		{
+			name:           "returns error when inference fails and no default is set",
+			statements:     []string{`set(attributes["foo"], "bar")`},
+			defaultContext: "",
+			wantErr:        true,
+			errContains:    "unable to infer context",
+		},
+		{
+			name:           "uses default context and prepends paths when inference fails",
+			statements:     []string{`set(attributes["foo"], "bar")`},
+			defaultContext: "resource",
+			wantErr:        false,
+			wantOrigText:   `set(resource.attributes["foo"], "bar")`,
+		},
+		{
+			name:           "ignores default context when inference succeeds",
+			statements:     []string{`set(resource.attributes["foo"], "bar")`},
+			defaultContext: "log",
+			wantErr:        false,
+			wantOrigText:   `set(resource.attributes["foo"], "bar")`,
+		},
+		{
+			name:           "returns error when default context is not registered",
+			statements:     []string{`set(attributes["foo"], "bar")`},
+			defaultContext: "invalid",
+			wantErr:        true,
+			errContains:    "not a supported context",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resourceParser := mockParser(t, WithPathContextNames[any]([]string{"resource"}))
+			pc, err := NewParserCollection(
+				componenttest.NewNopTelemetrySettings(),
+				WithParserCollectionContext("resource", resourceParser, WithStatementConverter(newNopParsedStatementsConverter[any]())),
+			)
+			require.NoError(t, err)
+
+			var opts []ParserCollectionContextInferenceOption
+			if tt.defaultContext != "" {
+				opts = append(opts, WithContextInferenceDefaultContext(tt.defaultContext))
+			}
+
+			result, err := pc.ParseStatements(NewStatementsGetter(tt.statements), opts...)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errContains)
+			} else {
+				require.NoError(t, err)
+				parsedStatements := result.([]*Statement[any])
+				require.Len(t, parsedStatements, 1)
+				assert.Equal(t, tt.wantOrigText, parsedStatements[0].origText)
+			}
+		})
+	}
+}
+
 func Test_ParseStatementsWithContext_UnknownContextError(t *testing.T) {
 	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)

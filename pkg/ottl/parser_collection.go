@@ -288,8 +288,8 @@ func createStatementsParserWithConverter[K, R any](converter ParsedStatementsCon
 		if prependPathsContext {
 			originalStatements := statements.GetStatements()
 			parsingStatements = make([]string, 0, len(originalStatements))
-			for _, stmt := range originalStatements {
-				prependedStatement, prependErr := parser.prependContextToStatementPaths(context, stmt)
+			for _, cond := range originalStatements {
+				prependedStatement, prependErr := parser.prependContextToStatementPaths(context, cond)
 				if prependErr != nil {
 					err = prependErr
 					break
@@ -440,12 +440,12 @@ func WithContextInferenceConditions(conditions []string) ParserCollectionContext
 	}
 }
 
-// WithDefaultContext sets the default context to be used if inference fails to determine a context.
+// WithContextInferenceDefaultContext sets the default context to be used if inference fails to determine a context.
 // This is useful for backward compatibility when migrating components that previously supported
 // only a single context (e.g., resource) to support multiple contexts via inference.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func WithDefaultContext(context string) ParserCollectionContextInferenceOption {
+func WithContextInferenceDefaultContext(context string) ParserCollectionContextInferenceOption {
 	return func(p *parseCollectionContextInferenceOptions) {
 		p.defaultContext = context
 	}
