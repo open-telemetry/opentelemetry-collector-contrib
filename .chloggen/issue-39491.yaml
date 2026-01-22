@@ -7,10 +7,7 @@ change_type: enhancement
 component: receiver/filelog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: |
-  Suppress repeated permission-denied error logs for unreadable files in filelog receiver.
-  Now, only one error is logged per file per process run, and an informational message is emitted when the file becomes readable again.
-  This reduces log spam and improves clarity for operators.
+note: Suppress repeated permission-denied errors
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39491]
@@ -18,7 +15,9 @@ issues: [39491]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  Only one error is logged per file per process run, and an informational message is emitted when the file becomes readable again.
+  This reduces log spam and improves clarity for operators.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

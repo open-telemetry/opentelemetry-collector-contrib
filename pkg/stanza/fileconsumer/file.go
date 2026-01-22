@@ -5,7 +5,9 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"sync"
 	"time"
@@ -197,19 +199,19 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 	file, err := os.Open(normalizedPath) // #nosec - operator must read in files defined by user
 	if err != nil {
 		// If a file is unreadable due to permissions error, store path in map and log error once (unless in debug mode)
-		if os.IsPermission(err) {
+		if errors.Is(err, fs.ErrPermission) {
 			_, seen := m.unreadable[path]
 			if !seen {
 				// Limit map size to prevent unbounded growth
 				if len(m.unreadable) < maxUnreadableEntries {
 					m.unreadable[path] = struct{}{}
 				}
-				m.set.Logger.Error("Failed to open file", zap.Error(err))
-			} else {
-				m.set.Logger.Debug("Failed to open file (already reported)", zap.Error(err))
+				m.set.Logger.Error("Failed to open file - unreadable", zap.Error(err), zap.String("original_path", path), zap.String("normalized_path", normalizedPath))
 			}
+		} else {
+			// For non-permission errors, always log
+			m.set.Logger.Error("Failed to open file", zap.Error(err), zap.String("original_path", path), zap.String("normalized_path", normalizedPath))
 		}
-		m.set.Logger.Error("Failed to open file", zap.Error(err), zap.String("original_path", path), zap.String("normalized_path", normalizedPath))
 		return nil, nil
 	}
 
