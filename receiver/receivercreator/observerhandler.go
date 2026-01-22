@@ -206,7 +206,10 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 	obs.params.Logger.Info("starting receiver",
 		zap.String("name", template.id.String()),
 		zap.String("endpoint", e.Target),
-		zap.String("endpoint_id", string(e.ID)))
+		zap.String("endpoint_id", string(e.ID)),
+	)
+
+	obs.params.Logger.Debug("starting receiver with resolved config", zap.Any("config", resolvedConfig))
 
 	var receiver component.Component
 	if receiver, err = obs.runner.start(
