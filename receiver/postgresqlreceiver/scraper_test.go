@@ -680,12 +680,15 @@ func TestScrapeTopQueriesCollectsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 
 	assert.True(t, scraper.lastExecutionTimestamp.IsZero(), "lastExecutionTimestamp should be zero before first collection")
-	_, err = scraper.scrapeTopQuery(t.Context(), 31, 32, 33, 60*time.Second)
+	logs1, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, 60*time.Second)
+	assert.NotNil(t, logs1)
 	assert.NoError(t, err)
 	assert.False(t, scraper.lastExecutionTimestamp.IsZero(), "lastExecutionTimestamp won't be zero after first collection")
 
 	collectionTime := scraper.lastExecutionTimestamp
-	_, err = scraper.scrapeTopQuery(t.Context(), 31, 32, 33, 60*time.Second)
+	logs2, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, 60*time.Second)
+	assert.NotNil(t, logs2)
+	assert.NoError(t, err)
 	assert.Equal(t, collectionTime, scraper.lastExecutionTimestamp, "No new collection should happen until configured collection_interval")
 }
 
