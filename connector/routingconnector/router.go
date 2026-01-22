@@ -129,6 +129,7 @@ func (r *router[C]) buildParsers(_ []RoutingTableItem, settings component.Teleme
 
 	r.parserCollection, err = ottl.NewParserCollection(
 		settings,
+		ottl.EnableParserCollectionModifiedPathsLogging[any](true),
 		ottl.WithParserCollectionContext(
 			ottlresource.ContextName,
 			&resourceParser,
