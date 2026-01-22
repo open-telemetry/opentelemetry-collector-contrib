@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -44,17 +45,18 @@ const (
 )
 
 type K8sObjectsConfig struct {
-	Name             string               `mapstructure:"name"`
-	Group            string               `mapstructure:"group"`
-	Namespaces       []string             `mapstructure:"namespaces"`
-	Mode             mode                 `mapstructure:"mode"`
-	LabelSelector    string               `mapstructure:"label_selector"`
-	FieldSelector    string               `mapstructure:"field_selector"`
-	Interval         time.Duration        `mapstructure:"interval"`
-	ResourceVersion  string               `mapstructure:"resource_version"`
-	ExcludeWatchType []apiWatch.EventType `mapstructure:"exclude_watch_type"`
-	exclude          map[apiWatch.EventType]bool
-	gvr              *schema.GroupVersionResource
+	Name              string               `mapstructure:"name"`
+	Group             string               `mapstructure:"group"`
+	Namespaces        []string             `mapstructure:"namespaces"`
+	ExcludeNamespaces []filter.Config      `mapstructure:"exclude_namespaces"`
+	Mode              mode                 `mapstructure:"mode"`
+	LabelSelector     string               `mapstructure:"label_selector"`
+	FieldSelector     string               `mapstructure:"field_selector"`
+	Interval          time.Duration        `mapstructure:"interval"`
+	ResourceVersion   string               `mapstructure:"resource_version"`
+	ExcludeWatchType  []apiWatch.EventType `mapstructure:"exclude_watch_type"`
+	exclude           map[apiWatch.EventType]bool
+	gvr               *schema.GroupVersionResource
 }
 
 type Config struct {
@@ -95,6 +97,9 @@ func (c *Config) Validate() error {
 
 		if object.Mode == PullMode && c.IncludeInitialState {
 			return errors.New("include_initial_state can only be used with watch mode")
+		}
+		if len(object.ExcludeNamespaces) != 0 && len(object.Namespaces) != 0 {
+			return errors.New("namespaces and exclude_namespaces cannot both be set at the same time")
 		}
 	}
 	return nil
@@ -157,13 +162,14 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 
 func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
 	copied := &K8sObjectsConfig{
-		Name:            k.Name,
-		Group:           k.Group,
-		Mode:            k.Mode,
-		LabelSelector:   k.LabelSelector,
-		FieldSelector:   k.FieldSelector,
-		Interval:        k.Interval,
-		ResourceVersion: k.ResourceVersion,
+		Name:              k.Name,
+		Group:             k.Group,
+		Mode:              k.Mode,
+		LabelSelector:     k.LabelSelector,
+		FieldSelector:     k.FieldSelector,
+		Interval:          k.Interval,
+		ResourceVersion:   k.ResourceVersion,
+		ExcludeNamespaces: k.ExcludeNamespaces,
 	}
 
 	copied.Namespaces = make([]string, len(k.Namespaces))
