@@ -718,6 +718,7 @@ This provides insights into query performance and resource usage, helping users 
 | db.system.name | The name of the database system. | Str: ``mysql`` |
 | db.query.text | The SQL statement text for the event. | Any Str |
 | mysql.query_plan | The query plan for the statement, if available. | Any Str |
+| mysql.query_plan_hash | The SHA256 hash of the query plan for the statement, if available. | Any Str |
 | mysql.events_statements_summary_by_digest.digest | The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no. | Any Str |
 | mysql.events_statements_summary_by_digest.count_star | The number of times the statement was executed, report in delta value. | Any Int |
 | mysql.events_statements_summary_by_digest.sum_timer_wait | The total time spent executing the statement, report in delta seconds. | Any Double |

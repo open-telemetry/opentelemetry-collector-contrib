@@ -13,6 +13,9 @@ resourceLogs:
                 value:
                   stringValue: |
                     {"query_block":{"select_id":1,"cost_info":{"query_cost":"?"},"ordering_operation":{"using_filesort":true,"table":{"table_name":"events_statements_summary_by_digest","access_type":"ALL","rows_examined_per_scan":"?","rows_produced_per_join":"?","filtered":"?","cost_info":{"read_cost":"?","eval_cost":"?","prefix_cost":"?","data_read_per_join":"?"},"used_columns":["SCHEMA_NAME","DIGEST","DIGEST_TEXT","COUNT_STAR","SUM_TIMER_WAIT","LAST_SEEN","QUERY_SAMPLE_TEXT"],"attached_condition":"( ( performance_schema . events_statements_summary_by_digest . LAST_SEEN >= < cache > ( ( now ( ) - interval ? second ) ) ) and ( ( ( not ( ( performance_schema . events_statements_summary_by_digest . DIGEST_TEXT like ? ) ) ) and ( not ( ( performance_schema . events_statements_summary_by_digest . DIGEST_TEXT like ? ) ) ) ) or ( performance_schema . events_statements_summary_by_digest . DIGEST_TEXT is ? ) ) )"}}}}
+              - key: mysql.query_plan_hash
+                value:
+                  stringValue: 9a2692756afe28fbfd3057805a4768d4f0587eb49095cb8461982e4aca4563f7
               - key: mysql.events_statements_summary_by_digest.digest
                 value:
                   stringValue: c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739

@@ -4,9 +4,6 @@ package metadata
 
 import (
 	"context"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -14,6 +11,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"testing"
+	"time"
 )
 
 type eventsTestDataSet int
@@ -132,7 +131,7 @@ func TestLogsBuilder(t *testing.T) {
 			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNameMysql, 23, "user.name-val", "db.namespace-val", "mysql.threads.processlist_command-val", "mysql.threads.processlist_state-val", "db.query.text-val", "mysql.events_statements_current.digest-val", 14, "mysql.wait_type-val", 37.100000, "client.address-val", 11, "network.peer.address-val", 17)
 
 			allEventsCount++
-			lb.RecordDbServerTopQueryEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.query.text-val", "mysql.query_plan-val", "mysql.events_statements_summary_by_digest.digest-val", 52, 56.100000)
+			lb.RecordDbServerTopQueryEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.query.text-val", "mysql.query_plan-val", "mysql.query_plan_hash-val", "mysql.events_statements_summary_by_digest.digest-val", 52, 56.100000)
 
 			rb := lb.NewResourceBuilder()
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
@@ -226,6 +225,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("mysql.query_plan")
 					assert.True(t, ok)
 					assert.Equal(t, "mysql.query_plan-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("mysql.query_plan_hash")
+					assert.True(t, ok)
+					assert.Equal(t, "mysql.query_plan_hash-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mysql.events_statements_summary_by_digest.digest")
 					assert.True(t, ok)
 					assert.Equal(t, "mysql.events_statements_summary_by_digest.digest-val", attrVal.Str())

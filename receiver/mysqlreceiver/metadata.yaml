@@ -16,7 +16,18 @@ resource_attributes:
     description: Endpoint of the MySQL instance.
     enabled: true
     type: string
-
+  service.instance.id:
+    description: OTel service instance identifier, set to the value of `mysql.instance.endpoint` if unset.
+    enabled: true
+    type: string
+  service.name:
+    description: OTel service name, set to `unknown_service:mysql` if unset.
+    enabled: true
+    type: string
+  service.namespace:
+    description: OTel service namespace, set to `` if unset.
+    enabled: true
+    type: string
 attributes:
   buffer_pool_data:
     name_override: status
@@ -140,6 +151,9 @@ attributes:
   mysql.query_plan:
     description: The query plan for the statement, if available.
     type: string
+  mysql.query_plan_hash:
+    description: The SHA256 hash of the query plan for the statement, if available.
+    type: string
   mysql.threads.processlist_command:
     description: The type of command the thread is executing on behalf of the client for foreground threads, or `Sleep` if the session is idle.
     type: string
@@ -240,21 +254,21 @@ events:
       Query sample collection enables monitoring of current running database statements.
       This provides real-time visibility into active queries, helping users monitor database activity and performance as part of their observability pipeline.
     attributes:
-      - client.address
-      - client.port
-      - db.namespace
-      - db.query.text
       - db.system.name
-      - mysql.event_id
-      - mysql.events_statements_current.digest
-      - mysql.events_waits_current.timer_wait
+      - mysql.threads.thread_id
+      - user.name
+      - db.namespace
       - mysql.threads.processlist_command
       - mysql.threads.processlist_state
-      - mysql.threads.thread_id
+      - db.query.text
+      - mysql.events_statements_current.digest
+      - mysql.event_id
       - mysql.wait_type
+      - mysql.events_waits_current.timer_wait
+      - client.address
+      - client.port
       - network.peer.address
       - network.peer.port
-      - user.name
 
   db.server.top_query:
     enabled: false
@@ -265,6 +279,7 @@ events:
       - db.system.name
       - db.query.text
       - mysql.query_plan
+      - mysql.query_plan_hash
       - mysql.events_statements_summary_by_digest.digest
       - mysql.events_statements_summary_by_digest.count_star
       - mysql.events_statements_summary_by_digest.sum_timer_wait
