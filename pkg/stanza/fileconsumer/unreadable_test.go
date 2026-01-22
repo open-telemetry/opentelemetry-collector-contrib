@@ -62,12 +62,12 @@ func TestUnreadableFileLoggedOnce(t *testing.T) {
 	require.Eventually(t, func() bool {
 		countErrMsgs := 0
 		for _, e := range obs.All() {
-			if e.Level == zapcore.ErrorLevel && e.Message == "Failed to open file" {
+			if e.Level == zapcore.ErrorLevel && e.Message == "Failed to open file - unreadable" {
 				countErrMsgs++
 			}
 		}
 		return countErrMsgs == 1
-	}, 2*time.Second, 10*time.Millisecond, "expected exactly one 'Failed to open file' error after first poll")
+	}, 2*time.Second, 10*time.Millisecond, "expected exactly one 'Failed to open file - unreadable' error after first poll")
 
 	// Second poll should not add another error-level log for the same path
 	operator.poll(t.Context())
@@ -75,12 +75,12 @@ func TestUnreadableFileLoggedOnce(t *testing.T) {
 	require.Eventually(t, func() bool {
 		countErrMsgs := 0
 		for _, e := range obs.All() {
-			if e.Level == zapcore.ErrorLevel && e.Message == "Failed to open file" {
+			if e.Level == zapcore.ErrorLevel && e.Message == "Failed to open file - unreadable" {
 				countErrMsgs++
 			}
 		}
 		return countErrMsgs == 1
-	}, 2*time.Second, 10*time.Millisecond, "expected still exactly one 'Failed to open file' error after second poll")
+	}, 2*time.Second, 10*time.Millisecond, "expected still exactly one 'Failed to open file - unreadable' error after second poll")
 
 	// Verify the unreadable map still contains the entry (no reinitialization)
 	require.Len(t, operator.unreadable, 1, "expected unreadable map to still have one entry after second poll")
