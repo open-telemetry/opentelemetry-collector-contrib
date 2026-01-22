@@ -72,13 +72,13 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 	switch r.compression {
 	case "gzip":
-		_, err := r.createGzipReader()
+		err := r.createGzipReader()
 		if err != nil {
 			return
 		}
 	case "auto":
 		if r.FileType == gzipExtension {
-			_, err := r.createGzipReader()
+			err := r.createGzipReader()
 			if err != nil {
 				return
 			}
@@ -110,13 +110,13 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 }
 
 // createGzipReader creates gzip reader and returns the file offset
-func (r *Reader) createGzipReader() (int64, error) {
+func (r *Reader) createGzipReader() error {
 	// We need to create a gzip reader each time ReadToEnd is called because the underlying
 	// SectionReader can only read a fixed window (from previous offset to EOF).
 	info, err := r.file.Stat()
 	if err != nil {
 		r.set.Logger.Error("failed to stat", zap.Error(err))
-		return 0, err
+		return err
 	}
 	currentEOF := info.Size()
 	// use a gzip Reader with an underlying SectionReader to pick up at the last
@@ -126,10 +126,10 @@ func (r *Reader) createGzipReader() (int64, error) {
 		if !errors.Is(err, io.EOF) {
 			r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
 		}
-		return 0, err
+		return err
 	}
 	r.reader = gzipReader
-	return currentEOF, nil
+	return nil
 }
 
 func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
