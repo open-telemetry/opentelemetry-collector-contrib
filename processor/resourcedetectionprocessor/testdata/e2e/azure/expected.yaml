@@ -13,7 +13,7 @@ resourceMetrics:
         - key: azure.vm.name
           value:
             stringValue: test-azure-vm
-        - key: azure.vm.scale_set.name
+        - key: azure.vm.scaleset.name
           value:
             stringValue: scaleset-01
         - key: azure.vm.size
