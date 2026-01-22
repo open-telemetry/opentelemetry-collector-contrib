@@ -6,6 +6,7 @@ package hostmetricsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/host"
@@ -125,12 +126,21 @@ func createAddScraperOptions(
 
 	envMap := gopsutilenv.SetGoPsutilEnvVars(cfg.RootPath)
 
+	// Get hostname once for all scrapers to use in service.instance.id generation.
+	// If hostname unavailable, fall back to "unknown" to ensure scrapers still work.
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+
 	for key, cfg := range cfg.Scrapers {
 		factory, err := getFactory(key, factories)
 		if err != nil {
 			return nil, err
 		}
+		// Apply wrappers in order: envVar first, then resourceAttribute
 		factory = internal.NewEnvVarFactory(factory, envMap)
+		factory = internal.NewResourceAttributeFactory(factory, hostname)
 		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddFactoryWithConfig(factory, cfg))
 	}
 
