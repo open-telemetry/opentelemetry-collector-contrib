@@ -250,7 +250,7 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 				result, err = r.parserCollection.ParseStatements(statementsGetter, ottl.WithDefaultContext(ottlresource.ContextName))
 			} else {
 				// Context is explicit
-				result, err = r.parserCollection.ParseStatementsWithContext(item.Context, statementsGetter)
+				result, err = r.parserCollection.ParseStatementsWithContext(item.Context, statementsGetter, true)
 			}
 
 			if err != nil {

@@ -2047,7 +2047,7 @@ func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statemen
 		return nil, err
 	}
 
-	withPathCtxResult, err := pc.ParseStatementsWithContext(ottllog.ContextName, ottl.NewStatementsGetter([]string{statement}))
+	withPathCtxResult, err := pc.ParseStatementsWithContext(ottllog.ContextName, ottl.NewStatementsGetter([]string{statement}), true)
 	if err != nil {
 		return nil, err
 	}

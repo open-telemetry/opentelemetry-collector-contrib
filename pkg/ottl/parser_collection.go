@@ -181,8 +181,9 @@ type (
 	// parserCollectionContextParserFunc is the internal generic type that parses the given []string
 	// returned from a getter G into type [R] using the specified context's OTTL parser.
 	// The provided context must be supported by the ParserCollection, otherwise an error is returned.
-	// Paths without context prefixes are automatically prepended with the specified context.
-	parserCollectionContextParserFunc[R any, G any] func(collection *ParserCollection[R], context string, getter G) (R, error)
+	// If the OTTL Path does not provide their Path.Context value, the prependPathsContext argument should be set to true,
+	// so it rewrites the OTTL prepending the missing paths contexts.
+	parserCollectionContextParserFunc[R any, G any] func(collection *ParserCollection[R], context string, getter G, prependPathsContext bool) (R, error)
 	// ParserCollectionContextParser is a struct that holds the converters for parsing statements and conditions
 	// into a common representation of type [R].
 	//
@@ -195,30 +196,38 @@ type (
 )
 
 // createConditionsParserWithConverter creates a parser wrapper that:
-// - Normalizes condition paths by prepending the context name to any path missing one
-// - Parses the normalized conditions via parser.ParseConditions
+// - Optionally normalizes condition paths by prepending the context name to any path missing one
+// - Parses the conditions via parser.ParseConditions
 // - Converts the parsed result to the collection's return type R
 //
-// The context prepending only affects paths without an explicit context prefix.
+// When prependPathsContext is true, the context prepending only affects paths without an explicit context prefix.
 // For example, with context="resource":
 //   - `attributes["env"]` becomes `resource.attributes["env"]`
 //   - `resource.attributes["env"]` stays unchanged (already has context)
 //   - `span.attributes["method"]` stays unchanged (has different context)
 func createConditionsParserWithConverter[K, R any](converter ParsedConditionsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, ConditionsGetter] {
-	return func(pc *ParserCollection[R], context string, conditions ConditionsGetter) (R, error) {
-		originalConditions := conditions.GetConditions()
-		parsingConditions := make([]string, 0, len(originalConditions))
-		for _, cond := range originalConditions {
-			// prependContextToConditionPaths only modifies paths that lack a recognized context prefix.
-			// Paths that already have a context (e.g., "resource.", "span.") are left unchanged.
-			prependedCondition, err := parser.prependContextToConditionPaths(context, cond)
+	return func(pc *ParserCollection[R], context string, conditions ConditionsGetter, prependPathsContext bool) (R, error) {
+		var err error
+		var parsingConditions []string
+		if prependPathsContext {
+			originalConditions := conditions.GetConditions()
+			parsingConditions = make([]string, 0, len(originalConditions))
+			for _, cond := range originalConditions {
+				prependedCondition, prependErr := parser.prependContextToConditionPaths(context, cond)
+				if prependErr != nil {
+					err = prependErr
+					break
+				}
+				parsingConditions = append(parsingConditions, prependedCondition)
+			}
 			if err != nil {
 				return *new(R), err
 			}
-			parsingConditions = append(parsingConditions, prependedCondition)
-		}
-		if pc.modifiedLogging {
-			pc.logModifications(originalConditions, parsingConditions)
+			if pc.modifiedLogging {
+				pc.logModifications(originalConditions, parsingConditions)
+			}
+		} else {
+			parsingConditions = conditions.GetConditions()
 		}
 		parsedConditions, err := parser.ParseConditions(parsingConditions)
 		if err != nil {
@@ -235,18 +244,28 @@ func createConditionsParserWithConverter[K, R any](converter ParsedConditionsCon
 // createValueExpressionsParserWithConverter creates a parser wrapper for value expressions.
 // See createConditionsParserWithConverter for details on path normalization behavior.
 func createValueExpressionsParserWithConverter[K, R any](converter ParsedValueExpressionsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, ValueExpressionsGetter] {
-	return func(pc *ParserCollection[R], context string, expressions ValueExpressionsGetter) (R, error) {
-		originalValueExpressions := expressions.GetValueExpressions()
-		parsingValueExpressions := make([]string, 0, len(originalValueExpressions))
-		for _, expr := range originalValueExpressions {
-			prependedValueExpression, err := parser.prependContextToValueExpressionPaths(context, expr)
+	return func(pc *ParserCollection[R], context string, expressions ValueExpressionsGetter, prependPathsContext bool) (R, error) {
+		var err error
+		var parsingValueExpressions []string
+		if prependPathsContext {
+			originalValueExpressions := expressions.GetValueExpressions()
+			parsingValueExpressions = make([]string, 0, len(originalValueExpressions))
+			for _, expr := range originalValueExpressions {
+				prependedValueExpression, prependErr := parser.prependContextToValueExpressionPaths(context, expr)
+				if prependErr != nil {
+					err = prependErr
+					break
+				}
+				parsingValueExpressions = append(parsingValueExpressions, prependedValueExpression)
+			}
 			if err != nil {
 				return *new(R), err
 			}
-			parsingValueExpressions = append(parsingValueExpressions, prependedValueExpression)
-		}
-		if pc.modifiedLogging {
-			pc.logModifications(originalValueExpressions, parsingValueExpressions)
+			if pc.modifiedLogging {
+				pc.logModifications(originalValueExpressions, parsingValueExpressions)
+			}
+		} else {
+			parsingValueExpressions = expressions.GetValueExpressions()
 		}
 		parsedValueExpressions, err := parser.ParseValueExpressions(parsingValueExpressions)
 		if err != nil {
@@ -263,18 +282,28 @@ func createValueExpressionsParserWithConverter[K, R any](converter ParsedValueEx
 // createStatementsParserWithConverter creates a parser wrapper for statements.
 // See createConditionsParserWithConverter for details on path normalization behavior.
 func createStatementsParserWithConverter[K, R any](converter ParsedStatementsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, StatementsGetter] {
-	return func(pc *ParserCollection[R], context string, statements StatementsGetter) (R, error) {
-		originalStatements := statements.GetStatements()
-		parsingStatements := make([]string, 0, len(originalStatements))
-		for _, stmt := range originalStatements {
-			prependedStatement, err := parser.prependContextToStatementPaths(context, stmt)
+	return func(pc *ParserCollection[R], context string, statements StatementsGetter, prependPathsContext bool) (R, error) {
+		var err error
+		var parsingStatements []string
+		if prependPathsContext {
+			originalStatements := statements.GetStatements()
+			parsingStatements = make([]string, 0, len(originalStatements))
+			for _, stmt := range originalStatements {
+				prependedStatement, prependErr := parser.prependContextToStatementPaths(context, stmt)
+				if prependErr != nil {
+					err = prependErr
+					break
+				}
+				parsingStatements = append(parsingStatements, prependedStatement)
+			}
 			if err != nil {
 				return *new(R), err
 			}
-			parsingStatements = append(parsingStatements, prependedStatement)
-		}
-		if pc.modifiedLogging {
-			pc.logModifications(originalStatements, parsingStatements)
+			if pc.modifiedLogging {
+				pc.logModifications(originalStatements, parsingStatements)
+			}
+		} else {
+			parsingStatements = statements.GetStatements()
 		}
 		parsedStatements, err := parser.ParseStatements(parsingStatements)
 		if err != nil {
@@ -470,7 +499,7 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter, opti
 		return *new(R), fmt.Errorf(`context "%s" inferred from the statements %+q and conditions %+q is not a supported context: %+q`, inferredContext, statementsValues, conditionsValues, pc.supportedContextNames())
 	}
 
-	return pc.ParseStatementsWithContext(inferredContext, statements)
+	return pc.ParseStatementsWithContext(inferredContext, statements, true)
 }
 
 // ParseStatementsWithContext parses the given statements into [R] using the configured
@@ -478,11 +507,13 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter, opti
 // Unlike ParseStatements, it uses the provided context and does not infer it
 // automatically. The context value must be supported by the [ParserCollection],
 // otherwise an error is returned.
-// Paths without context prefixes are automatically prepended with the specified context.
+// If the statement's Path does not provide their Path.Context value, the prependPathsContext
+// argument should be set to true, so it rewrites the statements prepending the missing paths
+// contexts.
 // If parsing the statements fails, it returns the underlying [ottl.Parser.ParseStatements] error.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func (pc *ParserCollection[R]) ParseStatementsWithContext(context string, statements StatementsGetter) (R, error) {
+func (pc *ParserCollection[R]) ParseStatementsWithContext(context string, statements StatementsGetter, prependPathsContext bool) (R, error) {
 	contextParser, ok := pc.contextParsers[context]
 	if !ok {
 		return *new(R), fmt.Errorf(`unknown context "%s" for statements: %v`, context, statements.GetStatements())
@@ -494,6 +525,7 @@ func (pc *ParserCollection[R]) ParseStatementsWithContext(context string, statem
 		pc,
 		context,
 		statements,
+		prependPathsContext,
 	)
 }
 
@@ -522,7 +554,7 @@ func (pc *ParserCollection[R]) ParseConditions(conditions ConditionsGetter) (R, 
 		return *new(R), fmt.Errorf(`context "%s" inferred from the conditions %+q is not a supported context: %+q`, inferredContext, conditionsValues, pc.supportedContextNames())
 	}
 
-	return pc.ParseConditionsWithContext(inferredContext, conditions)
+	return pc.ParseConditionsWithContext(inferredContext, conditions, true)
 }
 
 // ParseConditionsWithContext parses the given conditions into [R] using the configured
@@ -530,11 +562,13 @@ func (pc *ParserCollection[R]) ParseConditions(conditions ConditionsGetter) (R, 
 // Unlike ParseConditions, it uses the provided context and does not infer it
 // automatically. The context value must be supported by the [ParserCollection],
 // otherwise an error is returned.
-// Paths without context prefixes are automatically prepended with the specified context.
+// If the condition's Path does not provide their Path.Context value, the prependPathsContext
+// argument should be set to true, so it rewrites the conditions prepending the missing paths
+// contexts.
 // If parsing the conditions fails, it returns the underlying [ottl.Parser.ParseConditions] error.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func (pc *ParserCollection[R]) ParseConditionsWithContext(context string, conditions ConditionsGetter) (R, error) {
+func (pc *ParserCollection[R]) ParseConditionsWithContext(context string, conditions ConditionsGetter, prependPathsContext bool) (R, error) {
 	contextParser, ok := pc.contextParsers[context]
 	if !ok {
 		return *new(R), fmt.Errorf(`unknown context "%s" for conditions: %v`, context, conditions.GetConditions())
@@ -547,6 +581,7 @@ func (pc *ParserCollection[R]) ParseConditionsWithContext(context string, condit
 		pc,
 		context,
 		conditions,
+		prependPathsContext,
 	)
 }
 
@@ -591,7 +626,7 @@ func (pc *ParserCollection[R]) ParseValueExpressions(expressions ValueExpression
 		)
 	}
 
-	return pc.ParseValueExpressionsWithContext(inferredContext, expressions)
+	return pc.ParseValueExpressionsWithContext(inferredContext, expressions, true)
 }
 
 // ParseValueExpressionsWithContext parses the given expressions into [R] using the configured
@@ -599,11 +634,13 @@ func (pc *ParserCollection[R]) ParseValueExpressions(expressions ValueExpression
 // Unlike ParseValueExpressions, it uses the provided context and does not infer it
 // automatically. The context value must be supported by the [ParserCollection],
 // otherwise an error is returned.
-// Paths without context prefixes are automatically prepended with the specified context.
+// If the expression's Path does not provide their Path.Context value, the prependPathsContext
+// argument should be set to true, so it rewrites the expressions prepending the missing paths
+// contexts.
 // If parsing the expressions fails, it returns the underlying [ottl.Parser.ParseValueExpressions] error.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func (pc *ParserCollection[R]) ParseValueExpressionsWithContext(context string, expressions ValueExpressionsGetter) (R, error) {
+func (pc *ParserCollection[R]) ParseValueExpressionsWithContext(context string, expressions ValueExpressionsGetter, prependPathsContext bool) (R, error) {
 	contextParser, ok := pc.contextParsers[context]
 	if !ok {
 		return *new(R), fmt.Errorf(`unknown context "%s" for value expressions: %v`, context, expressions.GetValueExpressions())
@@ -616,6 +653,7 @@ func (pc *ParserCollection[R]) ParseValueExpressionsWithContext(context string, 
 		pc,
 		context,
 		expressions,
+		prependPathsContext,
 	)
 }
 
