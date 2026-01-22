@@ -652,31 +652,6 @@ func TestScrapeTopQueriesCollectsOnlyWhenIntervalHasElapsed(t *testing.T) {
 		Logger: logger,
 	}
 
-	queryid := "114514"
-	expectedReturnedValue := map[string]string{
-		"calls":               "123",
-		"datname":             "postgres",
-		"shared_blks_dirtied": "1111",
-		"shared_blks_hit":     "1112",
-		"shared_blks_read":    "1113",
-		"shared_blks_written": "1114",
-		"temp_blks_read":      "1115",
-		"temp_blks_written":   "1116",
-		"query":               "select * from pg_stat_activity where id = 32",
-		"queryid":             queryid,
-		"rolname":             "master",
-		"rows":                "30",
-		"total_exec_time":     "11000",
-		"total_plan_time":     "12000",
-	}
-
-	expectedRows := make([]string, 0, len(expectedReturnedValue))
-	expectedValues := ""
-	for k, v := range expectedReturnedValue {
-		expectedRows = append(expectedRows, k)
-		expectedValues += fmt.Sprintf("%s,", v)
-	}
-
 	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 
 	assert.True(t, scraper.lastExecutionTimestamp.IsZero(), "lastExecutionTimestamp should be zero before first collection")
