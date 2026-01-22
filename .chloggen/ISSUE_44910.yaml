@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/hostmetrics
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add two new Darwin-specific memory metrics: `system.darwin.memory.pressure` and `system.darwin.memory.compressor.pages`."
+note: "Add two new Darwin-specific memory metrics: `system.memory.darwin.pressure` and `system.memory.darwin.compressor.pages`."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44910]
