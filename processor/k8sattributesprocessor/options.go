@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -274,7 +274,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			// name for KeyRegex case is set at extraction time/runtime, skipped here
 			// Use singular form when feature gate is enabled
 			fieldTypeName := fieldType
-			if kube.AllowLabelsAnnotationsSingular.IsEnabled() {
+			if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 				fieldTypeName = strings.TrimSuffix(fieldType, "s")
 			}
 			name = fmt.Sprintf("k8s.%v.%v.%v", a.From, fieldTypeName, a.Key)

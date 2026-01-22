@@ -41,36 +41,36 @@ The following settings can be optionally configured:
 - `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
 - `logs`
-  - `topic` (Deprecated [v0.142.0]: use `topics`) 
-     (default = otlp\logs): If this is set, it will take precedence over default value of `topics`
-  - `topics` (default = otlp\_logs): List of kafka topics from which to consume logs 
+  - `topic` (Deprecated [v0.142.0]: use `topics`)
+     (default = otlp\_logs): If this is set, it will take precedence over default value of `topics`
+  - `topics` (default = otlp\_logs): List of kafka topics from which to consume logs
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`) 
+  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
      (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
   - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
 - `metrics`
-  - `topic` (Deprecated [v0.142.0]: use `topics`) 
+  - `topic` (Deprecated [v0.142.0]: use `topics`)
      (default = otlp\_metrics): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_metrics): List of Kafka topic from which to consume metrics.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`) 
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`  
+  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
+     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
   - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
 - `traces`
-  - `topic` (Deprecated [v0.142.0]: use `topics`)  
+  - `topic` (Deprecated [v0.142.0]: use `topics`)
      (default = otlp\_spans): If this is set, it will take precedence over default value of `topics`
   - `topics` (default = otlp\_spans): List of Kafka topic from which to consume traces.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`) 
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`  
+  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
+     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
   - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
 - `profiles`
-  - `topic`  (Deprecated [v0.142.0]: use `topics`)   
+  - `topic`  (Deprecated [v0.142.0]: use `topics`)
      (default = otlp\_profiles): If this is set, it will take precedence over default value of `topics`
-  - `topics` (default = otlp\_profiles): List of Kafka topic from which to consume profiles.  
+  - `topics` (default = otlp\_profiles): List of Kafka topic from which to consume profiles.
   - `encoding` (default = otlp\_proto): The encoding for the Kafka topic. See [Supported encodings](#supported-encodings).
-  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`) 
-     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`    
+  - `exclude_topic` (Deprecated [v0.142.0]: use `exclude_topics`)
+     (default = ""): If this is set, it will take precedence over default value of `exclude_topics`
   - `exclude_topics` (default = ""): When using regex topic patterns (prefix with `^`), this regex pattern excludes matching topics.
 - `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
@@ -250,7 +250,7 @@ receivers:
       exclude_topics:
       - "^logs-(test|dev)$"  # Exclude logs-test and logs-dev
     metrics:
-      topics: 
+      topics:
       - "^metrics-.*"
       exclude_topics:
       - "^metrics-internal-.*$"
