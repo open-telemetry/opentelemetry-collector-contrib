@@ -72,26 +72,16 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 	switch r.compression {
 	case "gzip":
-		currentEOF, err := r.createGzipReader()
+		_, err := r.createGzipReader()
 		if err != nil {
 			return
 		}
-		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
-		// we need to set the offset to the end of the file.
-		defer func() {
-			r.Offset = currentEOF
-		}()
 	case "auto":
 		if r.FileType == gzipExtension {
-			currentEOF, err := r.createGzipReader()
+			_, err := r.createGzipReader()
 			if err != nil {
 				return
 			}
-			// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
-			// we need to set the offset to the end of the file.
-			defer func() {
-				r.Offset = currentEOF
-			}()
 		} else {
 			r.reader = r.file
 		}
