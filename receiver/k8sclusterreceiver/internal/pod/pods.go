@@ -166,8 +166,8 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 		meta = maps.MergeStringMaps(meta, collectPodReplicaSetProperties(pod, store, logger))
 	}
 
-	meta[constants.K8sKeyNamespaceName] = pod.Namespace
-	meta[constants.K8sKeyPodName] = pod.Name
+	meta[string(conventions.K8SNamespaceNameKey)] = pod.Namespace
+	meta[string(conventions.K8SPodNameKey)] = pod.Name
 
 	podID := experimentalmetricmetadata.ResourceID(pod.UID)
 	return metadata.MergeKubernetesMetadataMaps(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
