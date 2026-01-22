@@ -313,10 +313,16 @@ func (*observerHandler) resolveConfig(template receiverTemplate, env observer.En
 	return resolvedUserConfig, resolvedDiscoveredConfig, nil
 }
 
+// receiverStartedCallback is called when a new receiver is about to be started.
+// It receives the receiver template being started and the endpoint ID.
+// This callback is optional (can be nil) and is used for additional logging
+// beyond the standard debug logging that startMatchingReceivers performs.
+type receiverStartedCallback func(template receiverTemplate, endpointID observer.EndpointID)
+
 // addReceiversForEndpoint starts receivers for an endpoint, skipping any that already exist.
 // Caller must hold the lock.
 func (obs *observerHandler) addReceiversForEndpoint(e observer.Endpoint, env observer.EndpointEnv) {
-	obs.startMatchingReceivers(e, env, false)
+	obs.startMatchingReceivers(e, env, nil)
 }
 
 // addNewReceiversForEndpoint starts receivers for templates that newly match this endpoint.
@@ -324,15 +330,19 @@ func (obs *observerHandler) addReceiversForEndpoint(e observer.Endpoint, env obs
 // but now match after the endpoint changed.
 // Caller must hold the lock.
 func (obs *observerHandler) addNewReceiversForEndpoint(e observer.Endpoint, env observer.EndpointEnv) {
-	obs.startMatchingReceivers(e, env, true)
+	obs.startMatchingReceivers(e, env, func(t receiverTemplate, endpointID observer.EndpointID) {
+		obs.params.Logger.Info("starting new receiver (template now matches)",
+			zap.String("receiver", t.id.String()),
+			zap.String("endpoint_id", string(endpointID)))
+	})
 }
 
 // startMatchingReceivers starts receivers for templates that match the endpoint, skipping
 // any that are already running (based on what's in the receiver map).
-// When logAsNewMatch is true, logs at Info level with "template now matches" messaging
-// (used during endpoint changes). When false, uses Debug level (used for initial add).
+// Debug logging is performed for each new receiver. The optional onStart callback
+// is invoked just before each new receiver is started for additional logging.
 // Caller must hold the lock.
-func (obs *observerHandler) startMatchingReceivers(e observer.Endpoint, env observer.EndpointEnv, logAsNewMatch bool) {
+func (obs *observerHandler) startMatchingReceivers(e observer.Endpoint, env observer.EndpointEnv, onStart receiverStartedCallback) {
 	existingIDs := make(map[component.ID]bool)
 	for _, entry := range obs.receiversByEndpointID.Get(e.ID) {
 		existingIDs[entry.id] = true
@@ -347,12 +357,11 @@ func (obs *observerHandler) startMatchingReceivers(e observer.Endpoint, env obse
 		}
 		if subreceiverTemplate != nil {
 			if !existingIDs[subreceiverTemplate.id] {
-				if logAsNewMatch {
-					obs.params.Logger.Info("starting new receiver (template now matches)",
-						zap.String("receiver", subreceiverTemplate.id.String()),
-						zap.String("endpoint_id", string(e.ID)))
-				} else {
-					obs.params.Logger.Debug("adding K8s hinted receiver", zap.Any("subreceiver", subreceiverTemplate))
+				obs.params.Logger.Debug("adding K8s hinted receiver",
+					zap.String("endpoint_id", string(e.ID)),
+					zap.Any("receiver_template", *subreceiverTemplate))
+				if onStart != nil {
+					onStart(*subreceiverTemplate, e.ID)
 				}
 				obs.startReceiver(*subreceiverTemplate, env, e)
 			}
@@ -371,10 +380,11 @@ func (obs *observerHandler) startMatchingReceivers(e observer.Endpoint, env obse
 		} else if !matches {
 			continue
 		}
-		if logAsNewMatch {
-			obs.params.Logger.Info("starting new receiver (template now matches)",
-				zap.String("receiver", template.id.String()),
-				zap.String("endpoint_id", string(e.ID)))
+		obs.params.Logger.Debug("adding receiver",
+			zap.String("endpoint_id", string(e.ID)),
+			zap.Any("receiver_template", template))
+		if onStart != nil {
+			onStart(template, e.ID)
 		}
 		obs.startReceiver(template, env, e)
 	}
