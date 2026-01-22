@@ -11,6 +11,10 @@ resource_attributes:
     description: The host.cpu.cache.l2.size
     type: int
     enabled: false
+  host.cpu.core.id:
+    description: The host.cpu.core.id
+    type: string
+    enabled: false
   host.cpu.family:
     description: The host.cpu.family
     type: string
@@ -21,6 +25,10 @@ resource_attributes:
     enabled: false
   host.cpu.model.name:
     description: The host.cpu.model.name
+    type: string
+    enabled: false
+  host.cpu.socket.id:
+    description: The host.cpu.socket.id
     type: string
     enabled: false
   host.cpu.stepping:

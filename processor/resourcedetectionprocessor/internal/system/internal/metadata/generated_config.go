@@ -29,9 +29,11 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 type ResourceAttributesConfig struct {
 	HostArch           ResourceAttributeConfig `mapstructure:"host.arch"`
 	HostCPUCacheL2Size ResourceAttributeConfig `mapstructure:"host.cpu.cache.l2.size"`
+	HostCPUCoreID      ResourceAttributeConfig `mapstructure:"host.cpu.core.id"`
 	HostCPUFamily      ResourceAttributeConfig `mapstructure:"host.cpu.family"`
 	HostCPUModelID     ResourceAttributeConfig `mapstructure:"host.cpu.model.id"`
 	HostCPUModelName   ResourceAttributeConfig `mapstructure:"host.cpu.model.name"`
+	HostCPUSocketID    ResourceAttributeConfig `mapstructure:"host.cpu.socket.id"`
 	HostCPUStepping    ResourceAttributeConfig `mapstructure:"host.cpu.stepping"`
 	HostCPUVendorID    ResourceAttributeConfig `mapstructure:"host.cpu.vendor.id"`
 	HostID             ResourceAttributeConfig `mapstructure:"host.id"`
@@ -54,6 +56,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		HostCPUCacheL2Size: ResourceAttributeConfig{
 			Enabled: false,
 		},
+		HostCPUCoreID: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		HostCPUFamily: ResourceAttributeConfig{
 			Enabled: false,
 		},
@@ -61,6 +66,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		HostCPUModelName: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		HostCPUSocketID: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		HostCPUStepping: ResourceAttributeConfig{

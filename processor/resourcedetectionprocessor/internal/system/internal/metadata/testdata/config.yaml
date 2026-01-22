@@ -5,11 +5,15 @@ all_set:
       enabled: true
     host.cpu.cache.l2.size:
       enabled: true
+    host.cpu.core.id:
+      enabled: true
     host.cpu.family:
       enabled: true
     host.cpu.model.id:
       enabled: true
     host.cpu.model.name:
+      enabled: true
+    host.cpu.socket.id:
       enabled: true
     host.cpu.stepping:
       enabled: true
@@ -41,11 +45,15 @@ none_set:
       enabled: false
     host.cpu.cache.l2.size:
       enabled: false
+    host.cpu.core.id:
+      enabled: false
     host.cpu.family:
       enabled: false
     host.cpu.model.id:
       enabled: false
     host.cpu.model.name:
+      enabled: false
+    host.cpu.socket.id:
       enabled: false
     host.cpu.stepping:
       enabled: false
