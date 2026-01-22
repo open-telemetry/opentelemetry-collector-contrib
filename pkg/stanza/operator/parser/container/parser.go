@@ -76,11 +76,20 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 
 // Process will parse an entry of Container logs
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
+	// Short circuit if the "if" condition does not match
+	skip, err := p.Skip(ctx, entry)
+	if err != nil {
+		return p.HandleEntryError(ctx, entry, err)
+	}
+	if skip {
+		return p.Write(ctx, entry)
+	}
+
 	format := p.format
 	if format == "" {
 		format, err = p.detectFormat(entry)
 		if err != nil {
-			return fmt.Errorf("failed to detect a valid container log format: %w", err)
+			return p.HandleEntryError(ctx, entry, fmt.Errorf("failed to detect a valid container log format: %w", err))
 		}
 	}
 
@@ -105,15 +114,6 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			}
 			p.asyncConsumerStarted = true
 		})
-
-		// Short circuit if the "if" condition does not match
-		skip, err := p.Skip(ctx, entry)
-		if err != nil {
-			return p.HandleEntryError(ctx, entry, err)
-		}
-		if skip {
-			return p.Write(ctx, entry)
-		}
 
 		if format == containerdFormat {
 			// parse the message

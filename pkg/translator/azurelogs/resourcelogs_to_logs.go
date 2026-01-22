@@ -4,6 +4,7 @@
 package azurelogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs"
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,7 +16,8 @@ import (
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 )
 
@@ -25,8 +27,11 @@ const (
 
 	attributeAzureCategory          = "azure.category"
 	attributeAzureCorrelationID     = "azure.correlation_id"
+	attributeAzureDuration          = "azure.duration"
+	attributeAzureLocation          = "azure.location"
 	attributeAzureOperationName     = "azure.operation.name"
 	attributeAzureOperationVersion  = "azure.operation.version"
+	attributeEventOriginal          = "event.original"
 	attributeAzureResultType        = "azure.result.type"
 	attributeAzureResultSignature   = "azure.result.signature"
 	attributeAzureResultDescription = "azure.result.description"
@@ -44,8 +49,22 @@ const (
 	azureResultDescription = "result.description"
 	azureTenantID          = "tenant.id"
 
-	// Identity claims
-	identityClaimEmail = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
+	// Constants for Identity > claims
+	identityClaimIssuer    = "iss"
+	identityClaimSubject   = "sub"
+	identityClaimAudience  = "aud"
+	identityClaimExpires   = "exp"
+	identityClaimNotBefore = "nbf"
+	identityClaimIssuedAt  = "iat"
+
+	identityClaimScope                 = "http://schemas.microsoft.com/identity/claims/scope"
+	identityClaimType                  = "idtyp"
+	identityClaimApplicationID         = "appid"
+	identityClaimAuthMethodsReferences = "http://schemas.microsoft.com/claims/authnmethodsreferences"
+	identityClaimProvider              = "http://schemas.microsoft.com/identity/claims/identityprovider"
+	identityClaimIdentifierObject      = "http://schemas.microsoft.com/identity/claims/objectidentifier"
+	identityClaimIdentifierName        = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+	identityClaimEmailAddress          = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
 )
 
 var errMissingTimestamp = errors.New("missing timestamp")
@@ -55,13 +74,29 @@ type azureRecords struct {
 	Records []azureLogRecord `json:"records"`
 }
 
+type evidence struct {
+	Role                string `json:"role"`
+	RoleAssignmentScope string `json:"roleAssignmentScope"`
+	RoleAssignmentID    string `json:"roleAssignmentId"`
+	RoleDefinitionID    string `json:"roleDefinitionId"`
+	PrincipalID         string `json:"principalId"`
+	PrincipalType       string `json:"principalType"`
+}
+
+type authorization struct {
+	Scope    string    `json:"scope"`
+	Action   string    `json:"action"`
+	Evidence *evidence `json:"evidence"`
+}
+
 // identity describes the identity of the user or application that performed the operation
 // described by the log event.
 type identity struct {
 	// Claims usually contains the JWT token used by Active Directory
 	// to authenticate the user or application to perform this
 	// operation in Resource Manager.
-	Claims map[string]string `json:"claims"`
+	Claims        map[string]string `json:"claims"`
+	Authorization *authorization    `json:"authorization"`
 }
 
 // azureLogRecord represents a single Azure log following
@@ -106,6 +141,26 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
+	var rawRecordMap map[int]json.RawMessage
+	getRawRecord := func(index int) json.RawMessage {
+		if rawRecordMap == nil {
+			// Create rawRecordMap on first use
+			var rawRecords struct {
+				Records []json.RawMessage `json:"records"`
+			}
+			if err := json.Unmarshal(buf, &rawRecords); err == nil {
+				rawRecordMap = make(map[int]json.RawMessage)
+				for i := range rawRecords.Records {
+					rawRecordMap[i] = rawRecords.Records[i]
+				}
+			}
+		}
+		if rawRecordMap != nil {
+			return rawRecordMap[index]
+		}
+		return nil
+	}
+
 	observedTimestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	allResourceScopeLogs := map[string]plog.ScopeLogs{}
@@ -141,7 +196,8 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 				// TODO @constanca-m This will be removed once the categories
 				// are properly mapped to the semantic conventions in
 				// category_logs.go
-				err = lr.Body().FromRaw(extractRawAttributes(log))
+				rawRecord := getRawRecord(i)
+				err = lr.Body().FromRaw(extractRawAttributes(log, rawRecord))
 				if err != nil {
 					return plog.Logs{}, err
 				}
@@ -169,7 +225,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		rl := l.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 		rl.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), resourceID)
-		rl.Resource().Attributes().PutStr(string(conventions.EventNameKey), "az.resource.log")
+		rl.Resource().Attributes().PutStr(string(conventionsv128.EventNameKey), "az.resource.log")
 		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
 	}
 
@@ -207,12 +263,21 @@ func asTimestamp(s string, formats ...string) (pcommon.Timestamp, error) {
 	return 0, err
 }
 
+// asTimeFromUnixTimestamp converts a Unix timestamp string to a time.Time.
+func parseUnixTimestamp(unixStr string) (time.Time, error) {
+	t, err := strconv.ParseInt(unixStr, 10, 64)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(t, 0).UTC(), nil
+}
+
 // asSeverity converts the Azure log level to equivalent
 // OpenTelemetry severity numbers. If the log level is not
 // valid, then the 'Unspecified' value is returned.
 func asSeverity(number json.Number) plog.SeverityNumber {
 	switch number.String() {
-	case "Informational":
+	case "Informational", "Information":
 		return plog.SeverityNumberInfo
 	case "Warning":
 		return plog.SeverityNumberWarn
@@ -236,6 +301,7 @@ func putStrPtr(field string, value *string, record plog.LogRecord) {
 	}
 }
 
+// addCommonSchema adds the common schema attributes to the log record.
 func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	record.Attributes().PutStr(attributeAzureCategory, log.Category)
 	putStrPtr(attributeAzureCorrelationID, log.CorrelationID, record)
@@ -246,11 +312,18 @@ func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	putStrPtr(attributeAzureResultSignature, log.ResultSignature, record)
 	putStrPtr(attributeAzureResultDescription, log.ResultDescription, record)
 	putStrPtr(string(conventions.NetworkPeerAddressKey), log.CallerIPAddress, record)
+	putStrPtr(attributeAzureLocation, log.Location, record)
+
+	if log.DurationMs != nil {
+		if duration, err := strconv.ParseInt(log.DurationMs.String(), 10, 64); err == nil {
+			record.Attributes().PutInt(attributeAzureDuration, duration)
+		}
+	}
 
 	addIdentityAttributes(log.Identity, record)
 }
 
-func extractRawAttributes(log *azureLogRecord) map[string]any {
+func extractRawAttributes(log *azureLogRecord, rawRecord json.RawMessage) map[string]any {
 	attrs := map[string]any{}
 
 	attrs[azureCategory] = log.Category
@@ -272,6 +345,17 @@ func extractRawAttributes(log *azureLogRecord) map[string]any {
 
 	if log.Properties != nil {
 		copyPropertiesAndApplySemanticConventions(log.Category, log.Properties, attrs)
+	}
+
+	// The original log needs to be preserved for logs that don't have a properties field
+	if len(log.Properties) == 0 && len(rawRecord) > 0 {
+		// Format the JSON with proper indentation to match expected output
+		var formattedJSON bytes.Buffer
+		if err := json.Indent(&formattedJSON, rawRecord, "", "\t"); err == nil {
+			attrs[attributeEventOriginal] = formattedJSON.String()
+		} else {
+			attrs[attributeEventOriginal] = string(rawRecord)
+		}
 	}
 
 	setIf(attrs, azureResultDescription, log.ResultDescription)
@@ -298,10 +382,8 @@ func copyPropertiesAndApplySemanticConventions(category string, properties []byt
 		if err = json.Unmarshal(properties, &val); err == nil {
 			// Try primitive value
 			attrs[azureProperties] = val
-			return
 		}
-		// Otherwise add it as a string
-		attrs[azureProperties] = string(properties)
+		// Parsing failed completely - just return without setting properties
 		return
 	}
 
@@ -360,10 +442,76 @@ func addIdentityAttributes(identityJSON json.RawMessage, record plog.LogRecord) 
 		return
 	}
 
+	// Authorization
+	// ------------------------------------------------------------
+
+	if id.Authorization != nil {
+		record.Attributes().PutStr(attributeIdentityAuthorizationScope, id.Authorization.Scope)
+		record.Attributes().PutStr(attributeIdentityAuthorizationAction, id.Authorization.Action)
+
+		if id.Authorization.Evidence != nil {
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRole, id.Authorization.Evidence.Role)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRoleAssignmentScope, id.Authorization.Evidence.RoleAssignmentScope)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRoleAssignmentID, id.Authorization.Evidence.RoleAssignmentID)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidenceRoleDefinitionID, id.Authorization.Evidence.RoleDefinitionID)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidencePrincipalID, id.Authorization.Evidence.PrincipalID)
+			record.Attributes().PutStr(attributeIdentityAuthorizationEvidencePrincipalType, id.Authorization.Evidence.PrincipalType)
+		}
+	}
+
+	// Claims
+	// ------------------------------------------------------------
+
 	// Extract known claims details we want to include in the
 	// log record.
 	// Extract common claim fields
-	if email := id.Claims[identityClaimEmail]; email != "" {
+
+	if iss := id.Claims[identityClaimIssuer]; iss != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsIssuer, iss)
+	}
+	if sub := id.Claims[identityClaimSubject]; sub != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsSubject, sub)
+	}
+	if aud := id.Claims[identityClaimAudience]; aud != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsAudience, aud)
+	}
+	if exp := id.Claims[identityClaimExpires]; exp != "" {
+		if expTime, err := parseUnixTimestamp(exp); err == nil {
+			record.Attributes().PutStr(attributeIdentityClaimsNotAfter, expTime.Format(time.RFC3339))
+		}
+	}
+	if nbf := id.Claims[identityClaimNotBefore]; nbf != "" {
+		if nbfTime, err := parseUnixTimestamp(nbf); err == nil {
+			record.Attributes().PutStr(attributeIdentityClaimsNotBefore, nbfTime.Format(time.RFC3339))
+		}
+	}
+	if iat := id.Claims[identityClaimIssuedAt]; iat != "" {
+		if iatTime, err := parseUnixTimestamp(iat); err == nil {
+			record.Attributes().PutStr(attributeIdentityClaimsCreated, iatTime.Format(time.RFC3339))
+		}
+	}
+	if scope := id.Claims[identityClaimScope]; scope != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsScope, scope)
+	}
+	if idtyp := id.Claims[identityClaimType]; idtyp != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsType, idtyp)
+	}
+	if appid := id.Claims[identityClaimApplicationID]; appid != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsApplicationID, appid)
+	}
+	if authmethods := id.Claims[identityClaimAuthMethodsReferences]; authmethods != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsAuthMethodsReferences, authmethods)
+	}
+	if provider := id.Claims[identityClaimProvider]; provider != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsProvider, provider)
+	}
+	if object := id.Claims[identityClaimIdentifierObject]; object != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsIdentifierObject, object)
+	}
+	if name := id.Claims[identityClaimIdentifierName]; name != "" {
+		record.Attributes().PutStr(attributeIdentityClaimsIdentifierName, name)
+	}
+	if email := id.Claims[identityClaimEmailAddress]; email != "" {
 		record.Attributes().PutStr(string(conventions.UserEmailKey), email)
 	}
 }

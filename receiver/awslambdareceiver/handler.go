@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
@@ -117,17 +117,17 @@ func (s *s3Handler[T]) handle(ctx context.Context, event json.RawMessage) error 
 	}
 
 	s.logger.Debug("Processing S3 event notification.",
-		zap.String("File", parsedEvent.S3.Object.Key),
+		zap.String("File", parsedEvent.S3.Object.URLDecodedKey),
 		zap.String("S3Bucket", parsedEvent.S3.Bucket.Arn),
 	)
 
 	// Skip processing zero length objects. This includes events from folder creation and empty object.
 	if parsedEvent.S3.Object.Size == 0 {
-		s.logger.Info("Empty object, skipping download", zap.String("File", parsedEvent.S3.Object.Key))
+		s.logger.Info("Empty object, skipping download", zap.String("File", parsedEvent.S3.Object.URLDecodedKey))
 		return nil
 	}
 
-	body, err := s.s3Service.ReadObject(ctx, parsedEvent.S3.Bucket.Name, parsedEvent.S3.Object.Key)
+	body, err := s.s3Service.ReadObject(ctx, parsedEvent.S3.Bucket.Name, parsedEvent.S3.Object.URLDecodedKey)
 	if err != nil {
 		return err
 	}

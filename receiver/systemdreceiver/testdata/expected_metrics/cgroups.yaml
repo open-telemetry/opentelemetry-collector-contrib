@@ -6,8 +6,8 @@ resourceMetrics:
             stringValue: nginx.service
     scopeMetrics:
       - metrics:
-          - description: Total CPU time spent by this unit.
-            name: systemd.unit.cpu.time
+          - description: Total CPU time spent by this service.
+            name: systemd.service.cpu.time
             sum:
               aggregationTemporality: 2
               dataPoints:

@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 )
 
 func getDefaultDoublestarOptions() []doublestar.GlobOption {
@@ -18,7 +20,7 @@ func getDefaultDoublestarOptions() []doublestar.GlobOption {
 	// This is currently guarded by a featuregate, which will eventually become
 	// the default.
 	options := []doublestar.GlobOption{}
-	if WindowsCaseInsensitiveFeatureGate.IsEnabled() {
+	if metadata.FilelogWindowsCaseInsensitiveFeatureGate.IsEnabled() {
 		options = append(options, doublestar.WithCaseInsensitive())
 	}
 	return options
@@ -28,7 +30,7 @@ func pathExcluded(excludes []string, path string) bool {
 	// To allow case-insensitive matching, the path and exclude
 	// are unified to lowercase before matching.
 
-	if WindowsCaseInsensitiveFeatureGate.IsEnabled() {
+	if metadata.FilelogWindowsCaseInsensitiveFeatureGate.IsEnabled() {
 		lowerPath := strings.ToLower(path)
 		for _, exclude := range excludes {
 			lowerExclude := strings.ToLower(exclude)
@@ -45,4 +47,19 @@ func pathExcluded(excludes []string, path string) bool {
 		}
 	}
 	return false
+}
+
+// fixUNCPath corrects UNC path corruption that occurs when doublestar's path.Join
+// collapses // to /. If the pattern starts with \\ (UNC) but the match only has \,
+// we restore the UNC prefix.
+func fixUNCPath(pattern, match string) string {
+	// Check if pattern is a UNC path (starts with \\)
+	if len(pattern) >= 2 && pattern[0] == '\\' && pattern[1] == '\\' {
+		// Check if match is corrupted (starts with single \ instead of \\)
+		if len(match) >= 1 && match[0] == '\\' && (len(match) == 1 || match[1] != '\\') {
+			// Restore the missing backslash
+			return `\` + match
+		}
+	}
+	return match
 }
