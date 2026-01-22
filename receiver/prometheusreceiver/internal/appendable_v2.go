@@ -13,15 +13,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
-// appendableV2 translates Prometheus scraping diffs into OpenTelemetry format
-// using the new AppenderV2 interface from Prometheus.
-//
-// Key differences from V1 (appendable):
-// - Single Append method instead of 7+ separate methods
-// - Metadata passed directly in opts.Metadata (no context lookup needed)
-// - Exemplars passed directly in opts.Exemplars
-// - Start timestamp passed as st parameter
-// - No state tracking flags needed (addingNativeHistogram, addingNHCB)
 type appendableV2 struct {
 	sink           consumer.Metrics
 	trimSuffixes   bool
