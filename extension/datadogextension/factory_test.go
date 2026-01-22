@@ -36,7 +36,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, datadogconfig.DefaultSite, extCfg.API.Site)
 	assert.True(t, extCfg.API.FailOnInvalidKey)
-	assert.Equal(t, httpserver.DefaultServerEndpoint, extCfg.HTTPConfig.Endpoint)
+	assert.Equal(t, httpserver.DefaultServerEndpoint, extCfg.HTTPConfig.NetAddr.Endpoint)
 	assert.Equal(t, "/metadata", extCfg.HTTPConfig.Path)
 	assert.Equal(t, confighttp.NewDefaultClientConfig(), extCfg.ClientConfig)
 }
