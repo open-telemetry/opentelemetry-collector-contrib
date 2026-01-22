@@ -691,19 +691,3 @@ Feature gates can be enabled using the `--feature-gates` flag:
 ```shell
 "--feature-gates=<feature-gate>"
 ```
-
-### `k8sattr.labelsAnnotationsSingular.allow`
-
-The `k8sattr.labelsAnnotationsSingular.allow` feature gate, when enabled, changes the default resource attribute key format from `k8s.<workload>.labels.<label-key>` to `k8s.<workload>.label.<label-key>` and `k8s.<workload>.annotations.<annotation-key>` to `k8s.<workload>.annotation.<annotation-key>`.
-
-This affects both:
-- Runtime attribute extraction from Kubernetes metadata
-- Default tag names in configuration when `tag_name` is not specified
-
-The reason behind this change is to align the Kubernetes related resource attribute keys with the latest semantic conventions.
-
-Affected resources are:
-
-- namespaces
-- nodes
-- pods
