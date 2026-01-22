@@ -712,8 +712,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "pid": 9833,
 		  "args": "/usr/bin/ssh -l user 10.0.0.16",
 		  "executable": "/usr/bin/ssh",
-          "parent": { "pid": "42" },
-		   "title": "node"
+          "parent": { "pid": "42" }
 		},
 		"service": {
 		  "name": "foo.bar",
@@ -1226,6 +1225,125 @@ func TestMapLogAttributesToECS(t *testing.T) {
 			require.Equal(t, expectedDoc, doc)
 		})
 	}
+}
+
+func TestEncodeLogECSModeProcessExecutableConflict(t *testing.T) {
+	// Test that process.executable.name is omitted when process.executable.path is present
+	// to avoid mapping conflicts (issue #37211)
+	t.Run("both_executable_path_and_name_present", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.path": "/usr/bin/ssh",
+			"process.executable.name": "ssh",
+		})
+		require.NoError(t, err)
+
+		scope := pcommon.NewInstrumentationScope()
+		record := plog.NewLogRecord()
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: scope},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		// Parse the JSON to verify the structure
+		var result map[string]any
+		err = json.Unmarshal(buf.Bytes(), &result)
+		require.NoError(t, err)
+
+		// Verify that process.executable contains the path value
+		process, ok := result["process"].(map[string]any)
+		require.True(t, ok, "process field should be present")
+		require.Equal(t, "/usr/bin/ssh", process["executable"], "process.executable should contain the path")
+
+		// Verify that process.title is NOT present (process.executable.name should be omitted)
+		_, titleExists := process["title"]
+		require.False(t, titleExists, "process.title should not be present when process.executable.path exists")
+	})
+
+	t.Run("only_executable_name_present", func(t *testing.T) {
+		// Test that process.executable.name is correctly mapped to process.title
+		// when process.executable.path is NOT present
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.name": "ssh",
+		})
+		require.NoError(t, err)
+
+		scope := pcommon.NewInstrumentationScope()
+		record := plog.NewLogRecord()
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: scope},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		// Parse the JSON to verify the structure
+		var result map[string]any
+		err = json.Unmarshal(buf.Bytes(), &result)
+		require.NoError(t, err)
+
+		// Verify that process.title is present
+		process, ok := result["process"].(map[string]any)
+		require.True(t, ok, "process field should be present")
+		require.Equal(t, "ssh", process["title"], "process.title should contain the name when path is not present")
+
+		// Verify that process.executable is NOT present
+		_, executableExists := process["executable"]
+		require.False(t, executableExists, "process.executable should not be present when only name is provided")
+	})
+
+	t.Run("only_executable_path_present", func(t *testing.T) {
+		// Test that process.executable.path is correctly mapped to process.executable
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.path": "/usr/bin/ssh",
+		})
+		require.NoError(t, err)
+
+		scope := pcommon.NewInstrumentationScope()
+		record := plog.NewLogRecord()
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: scope},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		// Parse the JSON to verify the structure
+		var result map[string]any
+		err = json.Unmarshal(buf.Bytes(), &result)
+		require.NoError(t, err)
+
+		// Verify that process.executable is present
+		process, ok := result["process"].(map[string]any)
+		require.True(t, ok, "process field should be present")
+		require.Equal(t, "/usr/bin/ssh", process["executable"], "process.executable should contain the path")
+
+		// Verify that process.title is NOT present
+		_, titleExists := process["title"]
+		require.False(t, titleExists, "process.title should not be present when only path is provided")
+	})
 }
 
 // JSON serializable structs for OTel test convenience

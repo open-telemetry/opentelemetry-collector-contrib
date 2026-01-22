@@ -26,10 +26,11 @@ import (
 )
 
 type conversionEntry struct {
-	to               string
-	preserveOriginal bool
-	skip             bool
-	skipIfExists     bool
+	to                 string
+	preserveOriginal   bool
+	skip               bool
+	skipIfExists       bool
+	skipIfSourceExists string // Skip this conversion if the specified source attribute exists
 }
 
 // resourceAttrsConversionMap contains conversions for resource-level attributes
@@ -52,7 +53,7 @@ var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventions.HostNameKey):                  {to: "host.hostname", preserveOriginal: true, skipIfExists: true},
 	string(conventions.HostArchKey):                  {to: "host.architecture"},
 	string(conventions.ProcessParentPIDKey):          {to: "process.parent.pid"},
-	string(conventions.ProcessExecutableNameKey):     {to: "process.title"},
+	string(conventions.ProcessExecutableNameKey):     {to: "process.title", skipIfSourceExists: string(conventions.ProcessExecutablePathKey)},
 	string(conventions.ProcessExecutablePathKey):     {to: "process.executable"},
 	string(conventions.ProcessCommandLineKey):        {to: "process.args"},
 	string(conventions.ProcessRuntimeNameKey):        {to: "service.runtime.name"},
@@ -546,6 +547,12 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 			if c.skip {
 				// Skip the conversion for this k.
 				continue
+			}
+			if c.skipIfSourceExists != "" {
+				// Skip the conversion if the specified source attribute exists.
+				if _, exists := attrs.Get(c.skipIfSourceExists); exists {
+					continue
+				}
 			}
 			if !c.skipIfExists {
 				document.AddAttribute(c.to, v)
