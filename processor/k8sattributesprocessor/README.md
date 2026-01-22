@@ -270,10 +270,10 @@ The processor can be configured to set the
 - `deployment_name_from_replicaset` allows extracting deployment name from replicaset name by trimming pod template hash. This will disable watching for replicaset resources, which can be useful in environments with limited RBAC permissions as the processor will not need `get`, `watch`, and `list` permissions for `replicasets`. It also reduces memory consumption of the processor. When enabled, this feature works automatically with the existing deployment name extraction. Take the following ownerReference of a pod managed by deployment for example:
 
 ```yaml
-  ownerReferences:                                                  
+  ownerReferences:
   - apiVersion: apps/v1
     blockOwnerDeletion: true
-    controller: true 
+    controller: true
     kind: ReplicaSet
     name: opentelemetry-collector-6c45f8d6f6
     uid: ee75293d-14ec-42a0-9548-a768d9e07c48
@@ -960,20 +960,12 @@ timestamp value as an RFC3339 compliant timestamp.
    of the node it is on, it consumes more memory than other processors. That consumption is compounded
    if users don't filter down to only the metadata for the node the processor is running on.
 
-## Feature Gates
+### Feature Gates
 
-### `k8sattr.labelsAnnotationsSingular.allow`
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
 
-The `k8sattr.labelsAnnotationsSingular.allow` feature gate, when enabled, changes the default resource attribute key format from `k8s.<workload>.labels.<label-key>` to `k8s.<workload>.label.<label-key>` and `k8s.<workload>.annotations.<annotation-key>` to `k8s.<workload>.annotation.<annotation-key>`.
+Feature gates can be enabled using the `--feature-gates` flag:
 
-This affects both:
-- Runtime attribute extraction from Kubernetes metadata
-- Default tag names in configuration when `tag_name` is not specified
-
-The reason behind this change is to align the Kubernetes related resource attribute keys with the latest semantic conventions.
-
-Affected resources are:
-
-- namespaces
-- nodes
-- pods
+```shell
+"--feature-gates=<feature-gate>"
+```

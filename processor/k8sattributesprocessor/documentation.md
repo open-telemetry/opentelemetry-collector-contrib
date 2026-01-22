@@ -152,3 +152,13 @@ Number of ReplicaSet update events received [Development]
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `k8sattr.labelsAnnotationsSingular.allow` | alpha | When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural | v0.125.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
