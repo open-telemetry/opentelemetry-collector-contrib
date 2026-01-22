@@ -486,12 +486,15 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter, opti
 		return *new(R), fmt.Errorf("unable to infer a valid context (%+q) from statements %+q and conditions %+q: %w", pc.supportedContextNames(), statementsValues, conditionsValues, err)
 	}
 
+	// Track whether we're using the default context fallback (requires path prepending)
+	useDefaultContext := false
 	if inferredContext == "" {
 		if parseStatementsOpts.defaultContext == "" {
 			return *new(R), fmt.Errorf("unable to infer context from statements %+q and conditions %+q, path's first segment must be a valid context name %+q, and at least one context must be capable of parsing all statements", pc.supportedContextNames(), statementsValues, conditionsValues)
 		}
 
 		inferredContext = parseStatementsOpts.defaultContext
+		useDefaultContext = true
 	}
 
 	_, ok := pc.contextParsers[inferredContext]
@@ -499,7 +502,7 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter, opti
 		return *new(R), fmt.Errorf(`context "%s" inferred from the statements %+q and conditions %+q is not a supported context: %+q`, inferredContext, statementsValues, conditionsValues, pc.supportedContextNames())
 	}
 
-	return pc.ParseStatementsWithContext(inferredContext, statements, true)
+	return pc.ParseStatementsWithContext(inferredContext, statements, useDefaultContext)
 }
 
 // ParseStatementsWithContext parses the given statements into [R] using the configured
@@ -554,7 +557,7 @@ func (pc *ParserCollection[R]) ParseConditions(conditions ConditionsGetter) (R, 
 		return *new(R), fmt.Errorf(`context "%s" inferred from the conditions %+q is not a supported context: %+q`, inferredContext, conditionsValues, pc.supportedContextNames())
 	}
 
-	return pc.ParseConditionsWithContext(inferredContext, conditions, true)
+	return pc.ParseConditionsWithContext(inferredContext, conditions, false)
 }
 
 // ParseConditionsWithContext parses the given conditions into [R] using the configured
@@ -626,7 +629,7 @@ func (pc *ParserCollection[R]) ParseValueExpressions(expressions ValueExpression
 		)
 	}
 
-	return pc.ParseValueExpressionsWithContext(inferredContext, expressions, true)
+	return pc.ParseValueExpressionsWithContext(inferredContext, expressions, false)
 }
 
 // ParseValueExpressionsWithContext parses the given expressions into [R] using the configured
