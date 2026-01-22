@@ -1,7 +1,9 @@
-//go:build linux
-// +build linux
+// Copyright SAP Cloud Infrastructure
+// SPDX-License-Identifier: Apache-2.0
 
-package auditdreceiver
+//go:build linux
+
+package auditdreceiver // import "github.com/cloudoperators/opentelemetry-collector-contrib/receiver/auditdreceiver"
 
 import (
 	"fmt"
@@ -25,8 +27,8 @@ import (
 )
 
 var (
-	TEST_PATH                   = "testdata"
-	TEST_CONFIG_PATH            = "config.yaml"
+	TEST_PATH        = "testdata"
+	TEST_CONFIG_PATH = "config.yaml"
 )
 
 func beforeEach[A testing.TB](t A, should_create_inner_dir bool) (receiver.Logs, *consumertest.LogsSink, *AuditdReceiverConfig, string) {

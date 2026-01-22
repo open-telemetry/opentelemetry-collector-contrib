@@ -1,7 +1,9 @@
-//go:build linux
-// +build linux
+// Copyright SAP Cloud Infrastructure
+// SPDX-License-Identifier: Apache-2.0
 
-package auditdreceiver
+//go:build linux
+
+package auditdreceiver // import "github.com/cloudoperators/opentelemetry-collector-contrib/receiver/auditdreceiver"
 
 import (
 	"context"
@@ -36,13 +38,6 @@ type Auditd struct {
 	consumer consumer.Logs
 	logger   *zap.Logger
 	done     chan struct{}
-	internal metrics // Benchmark
-}
-
-// Benchmark
-type metrics struct {
-	total_duration  int64 // µs
-	events_recorded int64
 }
 
 func newAuditd(cfg *AuditdReceiverConfig, consumer consumer.Logs, settings receiver.Settings) (*Auditd, error) {
@@ -50,7 +45,6 @@ func newAuditd(cfg *AuditdReceiverConfig, consumer consumer.Logs, settings recei
 		rules:    cfg.Rules,
 		consumer: consumer,
 		logger:   settings.Logger,
-		internal: metrics{0, 0}, // Benchmark
 	}, nil
 }
 
@@ -162,6 +156,7 @@ func (aud *Auditd) initAuditing() error {
 }
 
 func (aud *Auditd) Start(ctx context.Context, host component.Host) error {
+	aud.done = make(chan struct{})
 	var w io.Writer
 	client, err := libaudit.NewAuditClient(w)
 	if err != nil {
@@ -191,9 +186,4 @@ func (aud *Auditd) Shutdown(_ context.Context) error {
 		aud.done = nil
 	}
 	return nil
-}
-
-// Benchmark
-func (aud *Auditd) Benchmark() metrics {
-	return aud.internal
 }
