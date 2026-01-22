@@ -1,4 +1,4 @@
-// Copyright The OpenTelemetry Authors
+// Copyright SAP Cloud Infrastructure
 // SPDX-License-Identifier: Apache-2.0
 
 //go:generate mdatagen metadata.yaml

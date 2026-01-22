@@ -1,7 +1,9 @@
-//go:build linux
-// +build linux
+// Copyright SAP Cloud Infrastructure
+// SPDX-License-Identifier: Apache-2.0
 
-package auditdreceiver
+//go:build linux
+
+package auditdreceiver // import "github.com/cloudoperators/opentelemetry-collector-contrib/receiver/auditdreceiver"
 
 import (
 	"context"
