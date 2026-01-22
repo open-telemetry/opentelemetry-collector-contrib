@@ -422,23 +422,6 @@ func WithDefaultContext(context string) ParserCollectionContextInferenceOption {
 	}
 }
 
-// WithContextInferrerPriorities sets the context inference priorities, controlling which context
-// is selected when a statement could be valid in multiple contexts. The first context in the
-// priority list that can parse the statement will be used. This is useful for backward
-// compatibility when ambiguous paths (e.g., 'attributes') should resolve to a specific context.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-func WithContextInferrerPriorities[R any](priorities []string) ParserCollectionOption[R] {
-	return func(pc *ParserCollection[R]) error {
-		pc.contextInferrer = newPriorityContextInferrer(
-			pc.Settings,
-			pc.contextInferrerCandidates,
-			withContextInferrerPriorities(priorities),
-		)
-		return nil
-	}
-}
-
 // ParseStatements parses the given statements into [R] using the configured context's ottl.Parser
 // and subsequently calling the ParsedStatementsConverter function.
 // The statement's context is automatically inferred from the [Path.Context] values, choosing the
