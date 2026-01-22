@@ -50,6 +50,8 @@ func Test_ProcessScrape(t *testing.T) {
 			pmetrictest.IgnoreResourceAttributeValue("process.owner"),
 			pmetrictest.IgnoreResourceAttributeValue("process.parent_pid"),
 			pmetrictest.IgnoreResourceAttributeValue("process.pid"),
+			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
+			pmetrictest.IgnoreResourceAttributeValue("service.name"),
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
@@ -78,6 +80,8 @@ func Test_ProcessScrapeWithCustomRootPath(t *testing.T) {
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
+			pmetrictest.IgnoreResourceAttributeValue("service.name"),
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
@@ -108,6 +112,8 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
+			pmetrictest.IgnoreResourceAttributeValue("service.name"),
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
