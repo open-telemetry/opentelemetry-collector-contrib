@@ -6,8 +6,9 @@ package unmarshaler // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"io"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 type AWSUnmarshaler interface {

@@ -39,56 +39,47 @@ type resourceAttributes struct {
 	resourceID string
 }
 
-// UnmarshalAWSLogs processes a file containing ELB access logs.
+// UnmarshalAWSLogs processes all logs from the provided reader
 func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	bufReader := bufio.NewReader(reader)
-
-	syntax, err := peekAndGetSyntax(bufReader)
+	// Read all logs from stream reader
+	logs, err := f.GetStreamUnmarshaler(reader)(context.Background())
 	if err != nil {
-		return plog.Logs{}, err
-	}
+		//nolint:errorlint
+		if err == io.EOF {
+			// EOF indicates no logs were found, return any logs that's available
+			return logs, nil
+		}
 
-	if syntax == controlMessage {
-		f.logger.Info(fmt.Sprintf("ELB Control message received"))
-		return plog.Logs{}, nil
-	}
-
-	// Read all logs from the streamer
-	logs, err := f.streamReadInternal(syntax, bufReader)(context.Background())
-	if err != nil && !errors.Is(err, io.EOF) {
 		return plog.Logs{}, err
 	}
 
 	return logs, nil
 }
 
+// GetStreamUnmarshaler returns a LogsStreamer that processes ELB access logs from the provided reader
 func (f *elbAccessLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamer {
 	bufReader := bufio.NewReader(reader)
-
 	syntax, err := peekAndGetSyntax(bufReader)
 	if err != nil {
-		return func(ctx context.Context) (plog.Logs, error) {
+		return func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, err
 		}
 	}
 
 	if syntax == controlMessage {
-		f.logger.Info(fmt.Sprintf("ELB Control message received"))
-		return func(ctx context.Context) (plog.Logs, error) {
+		f.logger.Info("ELB Control message received")
+		return func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, nil
 		}
 	}
 
-	return f.streamReadInternal(syntax, bufReader, options...)
-}
-
-func (f *elbAccessLogUnmarshaler) streamReadInternal(syntax logSyntaxType, bufReader *bufio.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamer {
-	streamTerminalHelper := encoding.NewStreamTerminalHelper(options...)
+	scannerHelper := encoding.NewStreamScannerHelper(bufReader, options...)
 
 	return func(ctx context.Context) (plog.Logs, error) {
 		logs, resourceLogs, scopeLogs := f.createLogs()
 		resourceAttr := &resourceAttributes{}
 
+		var isEOF bool
 		for {
 			select {
 			case <-ctx.Done():
@@ -96,26 +87,19 @@ func (f *elbAccessLogUnmarshaler) streamReadInternal(syntax logSyntaxType, bufRe
 			default:
 			}
 
-			line, err := bufReader.ReadString('\n')
-			line = strings.TrimSpace(line)
-			isEOF := errors.Is(err, io.EOF)
-
-			if err != nil && !isEOF {
-				return plog.Logs{}, err
+			line, flush, err := scannerHelper.ScanString()
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					isEOF = true
+					break
+				}
+				return plog.Logs{}, fmt.Errorf("error reading ELB access logs from stream: %w", err)
 			}
 
 			// Check for empty line
 			if line == "" {
-				if isEOF {
-					f.setResourceAttributes(resourceAttr, resourceLogs)
-					return logs, io.EOF
-				}
-
 				return plog.Logs{}, fmt.Errorf("log line has no fields: %s", line)
 			}
-
-			streamTerminalHelper.IncrementBytes(int64(len(line)))
-			streamTerminalHelper.IncrementItems(1)
 
 			fields, err := extractFields(line)
 			if err != nil {
@@ -139,17 +123,17 @@ func (f *elbAccessLogUnmarshaler) streamReadInternal(syntax logSyntaxType, bufRe
 				return plog.Logs{}, err
 			}
 
-			if isEOF || streamTerminalHelper.ShouldFlush() {
-				streamTerminalHelper.Reset()
-				f.setResourceAttributes(resourceAttr, resourceLogs)
-				if isEOF {
-					return logs, io.EOF
-				}
-				return logs, nil
+			if flush {
+				break
 			}
 		}
-	}
 
+		f.setResourceAttributes(resourceAttr, resourceLogs)
+		if isEOF {
+			return logs, io.EOF
+		}
+		return logs, nil
+	}
 }
 
 // createLogs with the expected fields for the scope logs

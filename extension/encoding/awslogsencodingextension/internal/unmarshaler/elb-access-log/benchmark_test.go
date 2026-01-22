@@ -5,7 +5,7 @@ package elbaccesslogs
 
 import (
 	"bytes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"errors"
 	"io"
 	"os"
 	"testing"
@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 type elbBenchmarkCase struct {
@@ -63,20 +65,17 @@ func BenchmarkUnmarshalAWSLogs(b *testing.B) {
 		b.Run(bc.name, func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-
 				streamer := u.GetStreamUnmarshaler(bytes.NewReader(data), encoding.WithFlushBytes(1_00_000))
 				for {
 					_, err := streamer(b.Context())
 					if err != nil {
-						if err == io.EOF {
+						if errors.Is(err, io.EOF) {
 							break
 						}
 
 						b.Errorf("failed to unmarshal logs: %v", err)
 					}
-
 				}
-
 			}
 		})
 	}

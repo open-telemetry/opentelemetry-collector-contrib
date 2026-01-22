@@ -8,7 +8,6 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"io"
 	"os"
 	"path/filepath"
@@ -19,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -130,11 +130,13 @@ func TestGetStreamUnmarshaler(t *testing.T) {
 	directory := "testdata/stream_alb"
 	expectPattern := "alb_al_valid_logs_expected_%d.yaml"
 
-	input := readAndCompressLogFile(t, "testdata/stream_alb", "alb_al_valid_logs.log")
+	// Input with 3 valid ALB logs
+	input := readAndCompressLogFile(t, directory, "alb_al_valid_logs.log")
 
 	logger := zaptest.NewLogger(t)
 	elbUnmarshaler := NewELBAccessLogUnmarshaler(component.BuildInfo{}, logger)
 
+	// Flush after every log for testing purposes
 	streamer := elbUnmarshaler.GetStreamUnmarshaler(input, encoding.WithFlushItems(1))
 
 	var i int
