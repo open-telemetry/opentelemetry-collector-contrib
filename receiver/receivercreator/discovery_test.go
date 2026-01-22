@@ -218,16 +218,16 @@ endpoint: 1.2.3.4:6379`
 			builder := createK8sHintsBuilder(DiscoveryConfig{Enabled: true, IgnoreReceivers: test.ignoreReceivers}, logger)
 			env, err := test.inputEndpoint.Env()
 			require.NoError(t, err)
-			subreceiverTemplate, err := builder.createReceiverTemplateFromHints(env)
-			if subreceiverTemplate == nil {
+			hintedTemplate, err := builder.createReceiverTemplateFromHints(env)
+			if hintedTemplate == nil {
 				require.Equal(t, receiverTemplate{}, test.expectedReceiver)
 				return
 			}
 			if !test.wantError {
 				require.NoError(t, err)
-				require.Equal(t, subreceiverTemplate.config, test.expectedReceiver.config)
-				require.Equal(t, subreceiverTemplate.signals, test.expectedReceiver.signals)
-				require.Equal(t, subreceiverTemplate.id, test.expectedReceiver.id)
+				require.Equal(t, hintedTemplate.config, test.expectedReceiver.config)
+				require.Equal(t, hintedTemplate.signals, test.expectedReceiver.signals)
+				require.Equal(t, hintedTemplate.id, test.expectedReceiver.id)
 			} else {
 				require.Error(t, err)
 			}
@@ -588,16 +588,16 @@ include:
 				logger)
 			env, err := test.inputEndpoint.Env()
 			require.NoError(t, err)
-			subreceiverTemplate, err := builder.createReceiverTemplateFromHints(env)
-			if subreceiverTemplate == nil {
+			hintedTemplate, err := builder.createReceiverTemplateFromHints(env)
+			if hintedTemplate == nil {
 				require.Equal(t, receiverTemplate{}, test.expectedReceiver)
 				return
 			}
 			if !test.wantError {
 				require.NoError(t, err)
-				require.Equal(t, subreceiverTemplate.config, test.expectedReceiver.config)
-				require.Equal(t, subreceiverTemplate.signals, test.expectedReceiver.signals)
-				require.Equal(t, subreceiverTemplate.id, test.expectedReceiver.id)
+				require.Equal(t, hintedTemplate.config, test.expectedReceiver.config)
+				require.Equal(t, hintedTemplate.signals, test.expectedReceiver.signals)
+				require.Equal(t, hintedTemplate.id, test.expectedReceiver.id)
 			} else {
 				require.Error(t, err)
 			}

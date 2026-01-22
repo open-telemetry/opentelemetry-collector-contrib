@@ -350,20 +350,20 @@ func (obs *observerHandler) startMatchingReceivers(e observer.Endpoint, env obse
 
 	if obs.config.Discovery.Enabled {
 		builder := createK8sHintsBuilder(obs.config.Discovery, obs.params.Logger)
-		subreceiverTemplate, err := builder.createReceiverTemplateFromHints(env)
+		hintedTemplate, err := builder.createReceiverTemplateFromHints(env)
 		if err != nil {
 			obs.params.Logger.Error("could not extract configurations from K8s hints' annotations", zap.Error(err))
 			return
 		}
-		if subreceiverTemplate != nil {
-			if !existingIDs[subreceiverTemplate.id] {
+		if hintedTemplate != nil {
+			if !existingIDs[hintedTemplate.id] {
 				obs.params.Logger.Debug("adding K8s hinted receiver",
 					zap.String("endpoint_id", string(e.ID)),
-					zap.Any("receiver_template", *subreceiverTemplate))
+					zap.Any("receiver_template", *hintedTemplate))
 				if onStart != nil {
-					onStart(*subreceiverTemplate, e.ID)
+					onStart(*hintedTemplate, e.ID)
 				}
-				obs.startReceiver(*subreceiverTemplate, env, e)
+				obs.startReceiver(*hintedTemplate, env, e)
 			}
 			return // When hints create a receiver, skip regular templates
 		}
