@@ -49,6 +49,10 @@ func (pc ProfilesConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Prof
 			}
 		}
 
+		if pc.ScopeExpr == nil && pc.ProfileExpr == nil {
+			return rp.ScopeProfiles().Len() == 0
+		}
+
 		rp.ScopeProfiles().RemoveIf(func(sp pprofile.ScopeProfiles) bool {
 			if pc.ScopeExpr != nil {
 				sCtx := ottlscope.NewTransformContextPtr(sp.Scope(), rp.Resource(), sp)

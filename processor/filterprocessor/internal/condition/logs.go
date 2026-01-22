@@ -49,6 +49,10 @@ func (lc LogsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			}
 		}
 
+		if lc.ScopeExpr == nil && lc.LogExpr == nil {
+			return rlogs.ScopeLogs().Len() == 0
+		}
+
 		rlogs.ScopeLogs().RemoveIf(func(slogs plog.ScopeLogs) bool {
 			if lc.ScopeExpr != nil {
 				sCtx := ottlscope.NewTransformContextPtr(slogs.Scope(), rlogs.Resource(), slogs)

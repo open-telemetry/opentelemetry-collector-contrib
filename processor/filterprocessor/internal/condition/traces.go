@@ -52,6 +52,10 @@ func (tc TracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 			}
 		}
 
+		if tc.ScopeExpr == nil && tc.SpanExpr == nil && tc.SpanEventExpr == nil {
+			return rs.ScopeSpans().Len() == 0
+		}
+
 		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
 			if tc.ScopeExpr != nil {
 				sCtx := ottlscope.NewTransformContextPtr(ss.Scope(), rs.Resource(), ss)
@@ -64,6 +68,10 @@ func (tc TracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 				if sCond {
 					return true
 				}
+			}
+
+			if tc.SpanExpr == nil && tc.SpanEventExpr == nil {
+				return ss.Spans().Len() == 0
 			}
 
 			ss.Spans().RemoveIf(func(span ptrace.Span) bool {

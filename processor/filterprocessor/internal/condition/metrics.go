@@ -52,6 +52,10 @@ func (mc MetricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 			}
 		}
 
+		if mc.ScopeExpr == nil && mc.MetricExpr == nil && mc.DataPointExpr == nil {
+			return rm.ScopeMetrics().Len() == 0
+		}
+
 		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
 			if mc.ScopeExpr != nil {
 				sCtx := ottlscope.NewTransformContextPtr(sm.Scope(), rm.Resource(), sm)
@@ -64,6 +68,10 @@ func (mc MetricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 				if sCond {
 					return true
 				}
+			}
+
+			if mc.MetricExpr == nil && mc.DataPointExpr == nil {
+				return sm.Metrics().Len() == 0
 			}
 
 			sm.Metrics().RemoveIf(func(metric pmetric.Metric) bool {
