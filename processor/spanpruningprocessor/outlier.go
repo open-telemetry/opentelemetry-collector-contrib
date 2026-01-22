@@ -64,9 +64,9 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 
 	switch method {
 	case OutlierMethodMAD:
-		outlierIndices, normalIndices, median = detectOutliersMAD(durations, cfg.MADMultiplier)
+		outlierIndices, normalIndices, median = detectOutliersMAD(durations, cfg.MADMultiplier, cfg.MinOutlierThresholdPercent)
 	default: // IQR
-		outlierIndices, normalIndices, median = detectOutliersIQR(durations, cfg.IQRMultiplier)
+		outlierIndices, normalIndices, median = detectOutliersIQR(durations, cfg.IQRMultiplier, cfg.MinOutlierThresholdPercent)
 	}
 
 	hasOutliers := len(outlierIndices) > 0
@@ -117,7 +117,7 @@ type indexedDuration struct {
 
 // detectOutliersIQR identifies outliers using Interquartile Range method.
 // Returns (outlierIndices, normalIndices, median).
-func detectOutliersIQR(durations []indexedDuration, multiplier float64) ([]int, []int, time.Duration) {
+func detectOutliersIQR(durations []indexedDuration, multiplier float64, minThresholdPercent float64) ([]int, []int, time.Duration) {
 	n := len(durations)
 
 	// Calculate median
@@ -133,8 +133,12 @@ func detectOutliersIQR(durations []indexedDuration, multiplier float64) ([]int, 
 	q3 := durations[3*n/4].duration
 	iqr := q3 - q1
 
+	// Calculate thresholds
+	statisticalThreshold := q3 + time.Duration(float64(iqr)*multiplier)
+	minimumThreshold := time.Duration(float64(median) * (1 + minThresholdPercent))
+	upperThreshold := max(statisticalThreshold, minimumThreshold)
+
 	// Classify spans (pre-allocate: outliers typically <20%)
-	upperThreshold := q3 + time.Duration(float64(iqr)*multiplier)
 	outlierIndices := make([]int, 0, n/5+1)
 	normalIndices := make([]int, 0, n)
 
@@ -157,7 +161,7 @@ const madScaleFactor = 1.4826
 // detectOutliersMAD identifies outliers using Median Absolute Deviation method.
 // Returns (outlierIndices, normalIndices, median).
 // MAD is more robust to extreme outliers than IQR.
-func detectOutliersMAD(durations []indexedDuration, multiplier float64) ([]int, []int, time.Duration) {
+func detectOutliersMAD(durations []indexedDuration, multiplier float64, minThresholdPercent float64) ([]int, []int, time.Duration) {
 	n := len(durations)
 
 	// Calculate median (durations are already sorted)
@@ -188,16 +192,10 @@ func detectOutliersMAD(durations []indexedDuration, multiplier float64) ([]int, 
 		mad = (deviations[n/2-1] + deviations[n/2]) / 2
 	}
 
-	// Handle edge case: MAD = 0 (all values identical or clustered)
-	// In this case, any value different from median is an outlier
-	var upperThreshold time.Duration
-	if mad == 0 {
-		// Use median as threshold - anything above is an outlier
-		upperThreshold = median
-	} else {
-		// Threshold = median + multiplier * MAD * scaleFactor
-		upperThreshold = median + time.Duration(multiplier*madScaleFactor*float64(mad))
-	}
+	// Calculate thresholds
+	statisticalThreshold := median + time.Duration(multiplier*madScaleFactor*float64(mad))
+	minimumThreshold := time.Duration(float64(median) * (1 + minThresholdPercent))
+	upperThreshold := max(statisticalThreshold, minimumThreshold)
 
 	// Classify spans (pre-allocate: outliers typically <20%)
 	outlierIndices := make([]int, 0, n/5+1)

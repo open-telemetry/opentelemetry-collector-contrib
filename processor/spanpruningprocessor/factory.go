@@ -57,6 +57,7 @@ func createDefaultConfig() component.Config {
 			PreserveOutliers:               false,
 			MaxPreservedOutliers:           2,
 			PreserveOnlyWithCorrelation:    false,
+			MinOutlierThresholdPercent:     0.1,
 		},
 	}
 }

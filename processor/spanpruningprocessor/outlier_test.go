@@ -187,22 +187,26 @@ func TestAnalyzeOutliers_AllOutliersStillReturnsIndices(t *testing.T) {
 
 	// Negative multipliers are rejected by config validation, but analyzeOutliers
 	// should still behave consistently if called with a malformed config.
+	// With min_outlier_threshold_percent=0, anything above median is an outlier.
 	cfg := OutlierAnalysisConfig{
 		IQRMultiplier:                  -100,
 		MinGroupSize:                   7,
 		CorrelationMinOccurrence:       0.75,
 		CorrelationMaxNormalOccurrence: 0.25,
 		MaxCorrelatedAttributes:        5,
+		MinOutlierThresholdPercent:     0, // Anything above median is outlier
 	}
 
 	durations := []time.Duration{5 * ms, 6 * ms, 7 * ms, 8 * ms, 9 * ms, 10 * ms, 11 * ms}
 	nodes := makeNodesWithAttrs(durations, nil)
 	result := analyzeOutliers(nodes, cfg)
 
+	// With median=8ms and threshold=8ms (min_outlier_threshold_percent=0),
+	// spans 9ms, 10ms, 11ms are outliers (3 outliers, 4 normals)
 	require.NotNil(t, result)
 	require.True(t, result.hasOutliers)
-	assert.Len(t, result.outlierIndices, len(durations))
-	assert.Empty(t, result.normalIndices)
+	assert.Len(t, result.outlierIndices, 3)
+	assert.Len(t, result.normalIndices, 4)
 }
 
 func TestFormatCorrelations(t *testing.T) {
@@ -489,7 +493,7 @@ func TestDetectOutliersMAD_Basic(t *testing.T) {
 		{9, 600 * ms}, // outliers
 	}
 
-	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0)
+	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0, 0.1)
 
 	// n=10, median = (durations[4] + durations[5]) / 2 = (9ms + 10ms) / 2 = 9.5ms
 	assert.Equal(t, (9*ms+10*ms)/2, median)
@@ -513,10 +517,11 @@ func TestDetectOutliersMAD_ZeroMAD(t *testing.T) {
 		{6, 1000 * ms}, // spike
 	}
 
-	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0)
+	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0, 0.1)
 
 	assert.Equal(t, 10*ms, median)
-	// With MAD=0, anything > median is an outlier
+	// With MAD=0 and 10% min threshold, threshold = 10ms * 1.1 = 11ms
+	// 1000ms > 11ms, so it's still an outlier
 	assert.Len(t, outlierIndices, 1)
 	assert.Equal(t, 6, outlierIndices[0])
 	assert.Len(t, normalIndices, 6)
@@ -540,7 +545,7 @@ func TestDetectOutliersMAD_BimodalDistribution(t *testing.T) {
 		{8, 120 * ms}, // cache misses
 	}
 
-	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0)
+	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0, 0.1)
 
 	// Median should be around 12ms
 	assert.Equal(t, 12*ms, median)
@@ -563,7 +568,7 @@ func TestDetectOutliersMAD_SmallGroup(t *testing.T) {
 		{6, 500 * ms}, // outlier
 	}
 
-	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0)
+	outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0, 0.1)
 
 	assert.Equal(t, 8*ms, median)
 	assert.Len(t, outlierIndices, 1)
@@ -675,4 +680,67 @@ func TestMADvsIQR_Comparison(t *testing.T) {
 
 	// Both should have the same median
 	assert.Equal(t, iqrResult.median, madResult.median)
+}
+
+func TestMinOutlierThresholdPercent(t *testing.T) {
+	ms := time.Millisecond
+
+	// All same value except one that's slightly above (5% above median)
+	// With 10% threshold, it should NOT be an outlier
+	// With 0% threshold, it SHOULD be an outlier
+	durations := []indexedDuration{
+		{0, 100 * ms},
+		{1, 100 * ms},
+		{2, 100 * ms},
+		{3, 100 * ms},
+		{4, 100 * ms},
+		{5, 100 * ms},
+		{6, 105 * ms}, // 5% above median
+	}
+
+	t.Run("IQR with 10% threshold excludes 5% deviation", func(t *testing.T) {
+		// IQR=0, so statistical threshold = Q3 = 100ms
+		// Minimum threshold = 100ms * 1.10 = 110ms
+		// upperThreshold = max(100ms, 110ms) = 110ms
+		// 105ms is NOT > 110ms, so no outlier
+		outlierIndices, normalIndices, median := detectOutliersIQR(durations, 1.5, 0.10)
+		assert.Equal(t, 100*ms, median)
+		assert.Empty(t, outlierIndices)
+		assert.Len(t, normalIndices, 7)
+	})
+
+	t.Run("IQR with 0% threshold includes 5% deviation", func(t *testing.T) {
+		// IQR=0, so statistical threshold = Q3 = 100ms
+		// Minimum threshold = 100ms * 1.0 = 100ms
+		// upperThreshold = max(100ms, 100ms) = 100ms
+		// 105ms > 100ms, so it's an outlier
+		outlierIndices, normalIndices, median := detectOutliersIQR(durations, 1.5, 0.0)
+		assert.Equal(t, 100*ms, median)
+		assert.Len(t, outlierIndices, 1)
+		assert.Equal(t, 6, outlierIndices[0])
+		assert.Len(t, normalIndices, 6)
+	})
+
+	t.Run("MAD with 10% threshold excludes 5% deviation", func(t *testing.T) {
+		// MAD=0, so statistical threshold = median = 100ms
+		// Minimum threshold = 100ms * 1.10 = 110ms
+		// upperThreshold = max(100ms, 110ms) = 110ms
+		// 105ms is NOT > 110ms, so no outlier
+		outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0, 0.10)
+		assert.Equal(t, 100*ms, median)
+		assert.Empty(t, outlierIndices)
+		assert.Len(t, normalIndices, 7)
+	})
+
+	t.Run("MAD with 0% threshold includes 5% deviation", func(t *testing.T) {
+		// MAD=0, so statistical threshold = median = 100ms
+		// Minimum threshold = 100ms * 1.0 = 100ms
+		// upperThreshold = max(100ms, 100ms) = 100ms
+		// 105ms > 100ms, so it's an outlier
+		outlierIndices, normalIndices, median := detectOutliersMAD(durations, 3.0, 0.0)
+		assert.Equal(t, 100*ms, median)
+		assert.Len(t, outlierIndices, 1)
+		assert.Equal(t, 6, outlierIndices[0])
+		assert.Len(t, normalIndices, 6)
+	})
 }

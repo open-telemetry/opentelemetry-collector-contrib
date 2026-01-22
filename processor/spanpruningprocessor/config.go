@@ -85,6 +85,14 @@ type OutlierAnalysisConfig struct {
 	// are just random variance.
 	// Default: false
 	PreserveOnlyWithCorrelation bool `mapstructure:"preserve_only_with_correlation"`
+
+	// MinOutlierThresholdPercent sets a minimum percentage above median that
+	// a span must exceed to be considered an outlier, regardless of statistical
+	// method. This prevents overly sensitive outlier detection when IQR or MAD
+	// is zero (tightly clustered data) or produces very small thresholds.
+	// Range: [0.0, 1.0+]
+	// Default: 0.1 (10% above median)
+	MinOutlierThresholdPercent float64 `mapstructure:"min_outlier_threshold_percent"`
 }
 
 // Config defines the configuration options for the span pruning processor
@@ -234,6 +242,9 @@ func (cfg *OutlierAnalysisConfig) Validate(enabled bool) error {
 	}
 	if cfg.PreserveOutliers && cfg.MaxPreservedOutliers < 0 {
 		return errors.New("outlier_analysis.max_preserved_outliers must be >= 0")
+	}
+	if cfg.MinOutlierThresholdPercent < 0 {
+		return errors.New("outlier_analysis.min_outlier_threshold_percent must be >= 0")
 	}
 	return nil
 }
