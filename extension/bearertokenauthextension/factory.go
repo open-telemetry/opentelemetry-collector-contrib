@@ -35,5 +35,5 @@ func createDefaultConfig() component.Config {
 }
 
 func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
-	return newBearerTokenAuth(cfg.(*Config), set.TelemetrySettings), nil
+	return newBearerTokenAuth(cfg.(*Config), set.TelemetrySettings)
 }
