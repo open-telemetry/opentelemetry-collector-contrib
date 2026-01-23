@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/featuregate"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -32,10 +31,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
-	return fake.NewSimpleClientset(), nil
+	return fake.NewClientset(), nil
 }
 
 func newPodIdentifier(from, name, value string) PodIdentifier {
@@ -371,7 +371,6 @@ func TestPodCreate(t *testing.T) {
 func TestPodAddOutOfSync(t *testing.T) {
 	c, _ := newTestClient(t)
 	c.Associations = append(c.Associations, Association{
-		Name: "name",
 		Sources: []AssociationSource{
 			{
 				From: ResourceSource,
@@ -1068,9 +1067,9 @@ func TestExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), false))
 				}()
 			}
 
@@ -1367,9 +1366,9 @@ func TestNamespaceExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), false))
 				}()
 			}
 
@@ -1625,9 +1624,9 @@ func TestNodeExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), false))
 				}()
 			}
 
@@ -3148,7 +3147,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 					Sources: []AssociationSource{
 						{
 							From: ResourceSource,
-							Name: string(conventions.K8SPodUIDKey),
+							Name: "k8s.pod.uid",
 						},
 					},
 				},
@@ -3177,7 +3176,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 					Sources: []AssociationSource{
 						{
 							From: ResourceSource,
-							Name: string(conventions.ContainerIDKey),
+							Name: "container.id",
 						},
 					},
 				},
@@ -3222,7 +3221,7 @@ func TestGetIdentifiersFromAssoc(t *testing.T) {
 					Sources: []AssociationSource{
 						{
 							From: ResourceSource,
-							Name: string(conventions.ContainerIDKey),
+							Name: "container.id",
 						},
 						{
 							From: ConnectionSource,
@@ -3749,11 +3748,11 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 
 			// Check the result
 			if tt.expectedDeploymentName != "" {
-				deploymentName, exists := attributes[string(conventions.K8SDeploymentNameKey)]
+				deploymentName, exists := attributes["k8s.deployment.name"]
 				assert.True(t, exists, "Expected deployment name to be extracted")
 				assert.Equal(t, tt.expectedDeploymentName, deploymentName)
 			} else {
-				_, exists := attributes[string(conventions.K8SDeploymentNameKey)]
+				_, exists := attributes["k8s.deployment.name"]
 				assert.False(t, exists, "Expected no deployment name to be extracted")
 			}
 		})
@@ -3814,4 +3813,236 @@ func TestDeploymentHashSuffixPattern(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestHandleDeploymentUpdate(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		DeploymentName: true,
+	}
+
+	deployment := &apps_v1.Deployment{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-deployment",
+			Namespace: "default",
+			UID:       "deployment-uid-123",
+		},
+	}
+
+	// Add initial deployment
+	c.handleDeploymentAdd(deployment)
+	assert.Len(t, c.Deployments, 1)
+
+	// Update deployment
+	updatedDeployment := &apps_v1.Deployment{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-deployment-updated",
+			Namespace: "default",
+			UID:       "deployment-uid-123",
+		},
+	}
+	c.handleDeploymentUpdate(deployment, updatedDeployment)
+
+	// Verify update
+	d, ok := c.GetDeployment(string(updatedDeployment.UID))
+	require.True(t, ok)
+	assert.Equal(t, "test-deployment-updated", d.Name)
+}
+
+func TestHandleDeploymentDelete(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	deployment := &apps_v1.Deployment{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-deployment",
+			Namespace: "default",
+			UID:       "deployment-uid-123",
+		},
+	}
+
+	// Add deployment
+	c.handleDeploymentAdd(deployment)
+	assert.Len(t, c.Deployments, 1)
+
+	// Delete deployment
+	c.handleDeploymentDelete(deployment)
+
+	// Verify deletion
+	_, ok := c.GetDeployment(string(deployment.UID))
+	assert.False(t, ok)
+	assert.Empty(t, c.Deployments)
+}
+
+func TestHandleStatefulSetUpdate(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		StatefulSetName: true,
+	}
+
+	statefulset := &apps_v1.StatefulSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-statefulset",
+			Namespace: "default",
+			UID:       "statefulset-uid-123",
+		},
+	}
+
+	// Add initial statefulset
+	c.handleStatefulSetAdd(statefulset)
+	assert.Len(t, c.StatefulSets, 1)
+
+	// Update statefulset
+	updatedStatefulSet := &apps_v1.StatefulSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-statefulset-updated",
+			Namespace: "default",
+			UID:       "statefulset-uid-123",
+		},
+	}
+	c.handleStatefulSetUpdate(statefulset, updatedStatefulSet)
+
+	// Verify update
+	s, ok := c.GetStatefulSet(string(updatedStatefulSet.UID))
+	require.True(t, ok)
+	assert.Equal(t, "test-statefulset-updated", s.Name)
+}
+
+func TestHandleStatefulSetDelete(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	statefulset := &apps_v1.StatefulSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-statefulset",
+			Namespace: "default",
+			UID:       "statefulset-uid-123",
+		},
+	}
+
+	// Add statefulset
+	c.handleStatefulSetAdd(statefulset)
+	assert.Len(t, c.StatefulSets, 1)
+
+	// Delete statefulset
+	c.handleStatefulSetDelete(statefulset)
+
+	// Verify deletion
+	_, ok := c.GetStatefulSet(string(statefulset.UID))
+	assert.False(t, ok)
+	assert.Empty(t, c.StatefulSets)
+}
+
+func TestHandleDaemonSetUpdate(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		DaemonSetName: true,
+	}
+
+	daemonset := &apps_v1.DaemonSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-daemonset",
+			Namespace: "default",
+			UID:       "daemonset-uid-123",
+		},
+	}
+
+	// Add initial daemonset
+	c.handleDaemonSetAdd(daemonset)
+	assert.Len(t, c.DaemonSets, 1)
+
+	// Update daemonset
+	updatedDaemonSet := &apps_v1.DaemonSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-daemonset-updated",
+			Namespace: "default",
+			UID:       "daemonset-uid-123",
+		},
+	}
+	c.handleDaemonSetUpdate(daemonset, updatedDaemonSet)
+
+	// Verify update
+	d, ok := c.GetDaemonSet(string(updatedDaemonSet.UID))
+	require.True(t, ok)
+	assert.Equal(t, "test-daemonset-updated", d.Name)
+}
+
+func TestHandleDaemonSetDelete(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	daemonset := &apps_v1.DaemonSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-daemonset",
+			Namespace: "default",
+			UID:       "daemonset-uid-123",
+		},
+	}
+
+	// Add daemonset
+	c.handleDaemonSetAdd(daemonset)
+	assert.Len(t, c.DaemonSets, 1)
+
+	// Delete daemonset
+	c.handleDaemonSetDelete(daemonset)
+
+	// Verify deletion
+	_, ok := c.GetDaemonSet(string(daemonset.UID))
+	assert.False(t, ok)
+	assert.Empty(t, c.DaemonSets)
+}
+
+func TestHandleJobUpdate(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		JobName: true,
+	}
+
+	job := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-job",
+			Namespace: "default",
+			UID:       "job-uid-123",
+		},
+	}
+
+	// Add initial job
+	c.handleJobAdd(job)
+	assert.Len(t, c.Jobs, 1)
+
+	// Update job
+	updatedJob := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-job-updated",
+			Namespace: "default",
+			UID:       "job-uid-123",
+		},
+	}
+	c.handleJobUpdate(job, updatedJob)
+
+	// Verify update
+	j, ok := c.GetJob(string(updatedJob.UID))
+	require.True(t, ok)
+	assert.Equal(t, "test-job-updated", j.Name)
+}
+
+func TestHandleJobDelete(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	job := &batch_v1.Job{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-job",
+			Namespace: "default",
+			UID:       "job-uid-123",
+		},
+	}
+
+	// Add job
+	c.handleJobAdd(job)
+	assert.Len(t, c.Jobs, 1)
+
+	// Delete job
+	c.handleJobDelete(job)
+
+	// Verify deletion
+	_, ok := c.GetJob(string(job.UID))
+	assert.False(t, ok)
+	assert.Empty(t, c.Jobs)
 }

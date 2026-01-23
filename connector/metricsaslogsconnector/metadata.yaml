@@ -1,0 +1,10 @@
+type: metricsaslogs
+display_name: Metrics as Logs Connector
+
+status:
+  class: connector
+  stability:
+    development: [metrics_to_logs]
+  distributions: []
+  codeowners:
+    active: [atoulme]

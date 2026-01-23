@@ -29,7 +29,7 @@ import (
 var (
 	batchSizes     = []int{1, 10}
 	partitions     = []int32{1, 2}
-	clients        = []string{"Sarama", "Franz"}
+	clients        = []string{"Franz"}
 	benchmarkCases = []struct {
 		name string
 		MessageMarking
@@ -73,9 +73,9 @@ func newBenchConfigClient(b *testing.B, topic string, partitions int32,
 	messageMarking MessageMarking,
 ) (*Config, *kgo.Client) {
 	client, cfg := mustNewFakeCluster(b, kfake.SeedTopics(partitions, topic))
-	cfg.Logs.Topic = topic
-	cfg.Traces.Topic = topic
-	cfg.Metrics.Topic = topic
+	cfg.Logs.Topics = []string{topic}
+	cfg.Traces.Topics = []string{topic}
+	cfg.Metrics.Topics = []string{topic}
 	cfg.GroupID = b.Name()
 	cfg.InitialOffset = "earliest"
 	cfg.AutoCommit = autoCommit
@@ -121,7 +121,6 @@ func BenchmarkTracesReceiver(b *testing.B) {
 					name := fmt.Sprintf("%s/%s/batch_%d/partitions_%d", client, tc.name, size, p)
 					b.Run(name, func(b *testing.B) {
 						defer sink.Reset()
-						setFranzGo(b, client == "Franz")
 						cfg, client := newBenchConfigClient(b, topic, p,
 							tc.AutoCommitConfig, tc.MessageMarking,
 						)
@@ -153,7 +152,6 @@ func BenchmarkLogsReceiver(b *testing.B) {
 					name := fmt.Sprintf("%s/%s/batch_%d/partitions_%d", client, tc.name, size, p)
 					b.Run(name, func(b *testing.B) {
 						defer sink.Reset()
-						setFranzGo(b, client == "Franz")
 						cfg, client := newBenchConfigClient(b, topic, p,
 							tc.AutoCommitConfig, tc.MessageMarking,
 						)
@@ -181,19 +179,20 @@ func BenchmarkMetricsReceiver(b *testing.B) {
 			data, err := marshaler.MarshalMetrics(testdata.GenerateMetrics(size))
 			require.NoError(b, err)
 			for _, p := range partitions {
-				suffix := fmt.Sprintf("/%s/batch_%d/partitions_%d", tc.name, size, p)
-				b.Run("Sarama"+suffix, func(b *testing.B) {
-					defer sink.Reset()
-					setFranzGo(b, false)
-					cfg, client := newBenchConfigClient(b, topic, p,
-						tc.AutoCommitConfig, tc.MessageMarking,
-					)
-					rcv, err := newMetricsReceiver(cfg, set, &sink)
-					require.NoError(b, err)
+				for _, client := range clients {
+					name := fmt.Sprintf("%s/%s/batch_%d/partitions_%d", client, tc.name, size, p)
+					b.Run(name, func(b *testing.B) {
+						defer sink.Reset()
+						cfg, client := newBenchConfigClient(b, topic, p,
+							tc.AutoCommitConfig, tc.MessageMarking,
+						)
+						rcv, err := newMetricsReceiver(cfg, set, &sink)
+						require.NoError(b, err)
 
-					runBenchmark(b, topic, data, rcv, client)
-					b.ReportMetric(float64(sink.DataPointCount())/b.Elapsed().Seconds(), "metrics/s")
-				})
+						runBenchmark(b, topic, data, rcv, client)
+						b.ReportMetric(float64(sink.DataPointCount())/b.Elapsed().Seconds(), "metrics/s")
+					})
+				}
 			}
 		}
 	}

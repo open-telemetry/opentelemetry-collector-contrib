@@ -17,7 +17,7 @@ import (
 	apilog "go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
@@ -59,7 +59,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 	}
 
 	wg := sync.WaitGroup{}
-	res := resource.NewWithAttributes(semconv.SchemaURL, c.GetAttributes()...)
+	res := resource.NewWithAttributes(conventions.SchemaURL, c.GetAttributes()...)
 
 	running := &atomic.Bool{}
 	running.Store(true)
@@ -84,9 +84,14 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			index:          i,
 			traceID:        c.TraceID,
 			spanID:         c.SpanID,
+			batch:          c.Batch,
+			batchBuffer:    make([]sdklog.Record, 0),
+			bufferMutex:    sync.Mutex{},
+			batchSize:      c.BatchSize,
 			loadSize:       c.LoadSize,
 			allowFailures:  c.AllowExportFailures,
 		}
+
 		exp, err := expF()
 		if err != nil {
 			w.logger.Error("failed to create the exporter", zap.Error(err))

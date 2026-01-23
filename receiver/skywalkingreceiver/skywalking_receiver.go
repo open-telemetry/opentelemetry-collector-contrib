@@ -136,12 +136,12 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		cln, cerr := sr.config.CollectorHTTPSettings.ToListener(ctx)
 		if cerr != nil {
 			return fmt.Errorf("failed to bind to Collector address %q: %w",
-				sr.config.CollectorHTTPSettings.Endpoint, cerr)
+				sr.config.CollectorHTTPSettings.NetAddr.Endpoint, cerr)
 		}
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/v3/segments", sr.traceReceiver.HTTPHandler).Methods(http.MethodPost)
-		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServer(ctx, host, sr.settings.TelemetrySettings, nr)
+		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServer(ctx, host.GetExtensions(), sr.settings.TelemetrySettings, nr)
 		if cerr != nil {
 			return cerr
 		}
@@ -157,7 +157,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 
 	if sr.collectorGRPCEnabled() {
 		var err error
-		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(ctx, host, sr.settings.TelemetrySettings)
+		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(ctx, host.GetExtensions(), sr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %w", err)
 		}

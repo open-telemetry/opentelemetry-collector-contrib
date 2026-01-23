@@ -105,7 +105,7 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 }
 
 func (exporter *logzioExporter) start(ctx context.Context, host component.Host) error {
-	client, err := exporter.config.ToClient(ctx, host, exporter.settings)
+	client, err := exporter.config.ToClient(ctx, host.GetExtensions(), exporter.settings)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace
 	return exporter.export(ctx, exporter.config.Endpoint, request)
 }
 
-// export is similar to otlphttp export method with changes in log messages + Permanent error for `StatusUnauthorized` and `StatusForbidden`
+// export is similar to otlp_http export method with changes in log messages + Permanent error for `StatusUnauthorized` and `StatusForbidden`
 // https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/otlphttpexporter/otlp.go#L127
 func (exporter *logzioExporter) export(ctx context.Context, url string, request []byte) error {
 	exporter.logger.Debug(fmt.Sprintf("Preparing to make HTTP request with %d bytes", len(request)))

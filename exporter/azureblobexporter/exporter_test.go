@@ -165,6 +165,45 @@ func TestGenerateBlobName(t *testing.T) {
 	assert.True(t, strings.HasPrefix(tracesBlobName, now.Format(c.BlobNameFormat.TracesFormat)))
 }
 
+func TestGenerateBlobNameTimezoneSpecificLocation(t *testing.T) {
+	t.Parallel()
+
+	const tzName = "America/New_York"
+	loc, err := time.LoadLocation(tzName)
+	require.NoError(t, err)
+
+	c := &Config{
+		BlobNameFormat: BlobNameFormat{
+			MetricsFormat:     "2006/01/02/metrics_15_04_05.json",
+			LogsFormat:        "2006/01/02/logs_15_04_05.json",
+			TracesFormat:      "2006/01/02/traces_15_04_05.json",
+			SerialNumEnabled:  true,
+			SerialNumRange:    10000,
+			Params:            map[string]string{},
+			TimeParserEnabled: true,
+			Timezone:          tzName,
+		},
+	}
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	ae.timeLocation = loc
+
+	before := time.Now().In(loc)
+	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	require.NoError(t, err)
+	after := time.Now().In(loc)
+
+	lastUnderscore := strings.LastIndex(metricsBlobName, "_")
+	require.NotEqual(t, -1, lastUnderscore, "expected serial number separator in blob name")
+	prefix := metricsBlobName[:lastUnderscore]
+
+	parsed, err := time.ParseInLocation(c.BlobNameFormat.MetricsFormat, prefix, loc)
+	require.NoError(t, err)
+
+	assert.False(t, parsed.Before(before.Add(-time.Second)))
+	assert.False(t, parsed.After(after.Add(time.Second)))
+}
+
 func TestGenerateBlobNameSerialNumBefore(t *testing.T) {
 	t.Parallel()
 
@@ -423,4 +462,151 @@ func TestGenerateBlobNameTimeParserDisabledWithSerialNumber(t *testing.T) {
 	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(blobName, layout+"_"))
+}
+
+func TestGenerateBlobNameWithTimeParserRanges(t *testing.T) {
+	t.Parallel()
+
+	// Format: "prefix_2006/01/02_suffix.json"
+	// Indices: 0-6 = "prefix_", 7-17 = "2006/01/02", 17-29 = "_suffix.json"
+	layout := "prefix_2006/01/02_suffix.json"
+	c := &Config{
+		BlobNameFormat: BlobNameFormat{
+			MetricsFormat:     layout,
+			SerialNumEnabled:  false,
+			TimeParserEnabled: true,
+			TimeParserRanges:  []string{"7-17"},
+		},
+	}
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+
+	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	require.NoError(t, err)
+	// The prefix and suffix should remain unchanged, only 7-17 (date part) should be parsed
+	assert.True(t, strings.HasPrefix(blobName, "prefix_"))
+	assert.True(t, strings.HasSuffix(blobName, "_suffix.json"))
+	// Should not contain the literal "2006" since it was parsed
+	assert.NotContains(t, blobName, "2006")
+}
+
+func TestGenerateBlobNameWithMultipleTimeParserRanges(t *testing.T) {
+	t.Parallel()
+
+	// Format with two date sections
+	// "2006-01-02_static_15:04:05.json"
+	// Range 0-10 parses the date, range 18-26 parses the time
+	layout := "2006-01-02_static_15:04:05.json"
+	c := &Config{
+		BlobNameFormat: BlobNameFormat{
+			MetricsFormat:     layout,
+			SerialNumEnabled:  false,
+			TimeParserEnabled: true,
+			TimeParserRanges:  []string{"0-10", "18-26"},
+		},
+	}
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+
+	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	require.NoError(t, err)
+	// "static" should remain, but date/time parts should be parsed
+	assert.Contains(t, blobName, "_static_")
+	// Should not contain the literal "2006" or "15:04:05" since they were parsed
+	assert.NotContains(t, blobName, "2006")
+}
+
+func TestGenerateBlobNameWithInvalidTimeParserRange(t *testing.T) {
+	t.Parallel()
+
+	layout := "2006/01/02/metrics.json"
+	c := &Config{
+		BlobNameFormat: BlobNameFormat{
+			MetricsFormat:     layout,
+			SerialNumEnabled:  false,
+			TimeParserEnabled: true,
+			TimeParserRanges:  []string{"invalid", "5-3", "100-200"},
+		},
+	}
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+
+	// Should not error, just skip invalid ranges and log warnings
+	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	require.NoError(t, err)
+	// With all ranges invalid or out of bounds, the format should remain unchanged
+	assert.Equal(t, layout, blobName)
+}
+
+func TestParseRange(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		input     string
+		maxLen    int
+		wantStart int
+		wantEnd   int
+		wantErr   bool
+	}{
+		{
+			name:      "valid range",
+			input:     "0-10",
+			maxLen:    20,
+			wantStart: 0,
+			wantEnd:   10,
+			wantErr:   false,
+		},
+		{
+			name:      "valid range at end",
+			input:     "15-25",
+			maxLen:    30,
+			wantStart: 15,
+			wantEnd:   25,
+			wantErr:   false,
+		},
+		{
+			name:    "invalid format - no dash",
+			input:   "1020",
+			maxLen:  20,
+			wantErr: true,
+		},
+		{
+			name:    "invalid format - not a number start",
+			input:   "abc-10",
+			maxLen:  20,
+			wantErr: true,
+		},
+		{
+			name:    "invalid format - not a number end",
+			input:   "0-xyz",
+			maxLen:  20,
+			wantErr: true,
+		},
+		{
+			name:    "invalid range - negative start",
+			input:   "-5-10",
+			maxLen:  20,
+			wantErr: true,
+		},
+		{
+			name:    "invalid range - end less than start",
+			input:   "10-5",
+			maxLen:  20,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			start, end, err := parseRange(tt.input)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.wantStart, start)
+				assert.Equal(t, tt.wantEnd, end)
+			}
+		})
+	}
 }

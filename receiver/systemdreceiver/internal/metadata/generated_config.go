@@ -9,8 +9,7 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
+	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
@@ -18,21 +17,31 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
+
 	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
 // MetricsConfig provides config for systemd metrics.
 type MetricsConfig struct {
-	SystemdUnitState MetricConfig `mapstructure:"systemd.unit.state"`
+	SystemdServiceCPUTime  MetricConfig `mapstructure:"systemd.service.cpu.time"`
+	SystemdServiceRestarts MetricConfig `mapstructure:"systemd.service.restarts"`
+	SystemdUnitState       MetricConfig `mapstructure:"systemd.unit.state"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		SystemdServiceCPUTime: MetricConfig{
+			Enabled: true,
+		},
+		SystemdServiceRestarts: MetricConfig{
+			Enabled: false,
+		},
 		SystemdUnitState: MetricConfig{
 			Enabled: true,
 		},

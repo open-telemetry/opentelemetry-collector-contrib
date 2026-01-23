@@ -492,6 +492,7 @@ func (m *metricMongodbActiveReads) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbActiveReads(cfg MetricConfig) metricMongodbActiveReads {
 	m := metricMongodbActiveReads{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -543,6 +544,7 @@ func (m *metricMongodbActiveWrites) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbActiveWrites(cfg MetricConfig) metricMongodbActiveWrites {
 	m := metricMongodbActiveWrites{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -596,6 +598,7 @@ func (m *metricMongodbCacheOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbCacheOperations(cfg MetricConfig) metricMongodbCacheOperations {
 	m := metricMongodbCacheOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -647,6 +650,7 @@ func (m *metricMongodbCollectionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbCollectionCount(cfg MetricConfig) metricMongodbCollectionCount {
 	m := metricMongodbCollectionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -696,6 +700,7 @@ func (m *metricMongodbCommandsRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbCommandsRate(cfg MetricConfig) metricMongodbCommandsRate {
 	m := metricMongodbCommandsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -749,6 +754,7 @@ func (m *metricMongodbConnectionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbConnectionCount(cfg MetricConfig) metricMongodbConnectionCount {
 	m := metricMongodbConnectionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -800,6 +806,7 @@ func (m *metricMongodbCursorCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbCursorCount(cfg MetricConfig) metricMongodbCursorCount {
 	m := metricMongodbCursorCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -851,6 +858,7 @@ func (m *metricMongodbCursorTimeoutCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbCursorTimeoutCount(cfg MetricConfig) metricMongodbCursorTimeoutCount {
 	m := metricMongodbCursorTimeoutCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -902,6 +910,7 @@ func (m *metricMongodbDataSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbDataSize(cfg MetricConfig) metricMongodbDataSize {
 	m := metricMongodbDataSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -953,6 +962,7 @@ func (m *metricMongodbDatabaseCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbDatabaseCount(cfg MetricConfig) metricMongodbDatabaseCount {
 	m := metricMongodbDatabaseCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1002,6 +1012,7 @@ func (m *metricMongodbDeletesRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbDeletesRate(cfg MetricConfig) metricMongodbDeletesRate {
 	m := metricMongodbDeletesRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1055,6 +1066,7 @@ func (m *metricMongodbDocumentOperationCount) emit(metrics pmetric.MetricSlice) 
 
 func newMetricMongodbDocumentOperationCount(cfg MetricConfig) metricMongodbDocumentOperationCount {
 	m := metricMongodbDocumentOperationCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1106,6 +1118,7 @@ func (m *metricMongodbExtentCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbExtentCount(cfg MetricConfig) metricMongodbExtentCount {
 	m := metricMongodbExtentCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1155,6 +1168,7 @@ func (m *metricMongodbFlushesRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbFlushesRate(cfg MetricConfig) metricMongodbFlushesRate {
 	m := metricMongodbFlushesRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1204,6 +1218,7 @@ func (m *metricMongodbGetmoresRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbGetmoresRate(cfg MetricConfig) metricMongodbGetmoresRate {
 	m := metricMongodbGetmoresRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1255,6 +1270,7 @@ func (m *metricMongodbGlobalLockTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbGlobalLockTime(cfg MetricConfig) metricMongodbGlobalLockTime {
 	m := metricMongodbGlobalLockTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1304,6 +1320,7 @@ func (m *metricMongodbHealth) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbHealth(cfg MetricConfig) metricMongodbHealth {
 	m := metricMongodbHealth{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1357,6 +1374,7 @@ func (m *metricMongodbIndexAccessCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbIndexAccessCount(cfg MetricConfig) metricMongodbIndexAccessCount {
 	m := metricMongodbIndexAccessCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1408,6 +1426,7 @@ func (m *metricMongodbIndexCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbIndexCount(cfg MetricConfig) metricMongodbIndexCount {
 	m := metricMongodbIndexCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1459,6 +1478,7 @@ func (m *metricMongodbIndexSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbIndexSize(cfg MetricConfig) metricMongodbIndexSize {
 	m := metricMongodbIndexSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1508,6 +1528,7 @@ func (m *metricMongodbInsertsRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbInsertsRate(cfg MetricConfig) metricMongodbInsertsRate {
 	m := metricMongodbInsertsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1562,6 +1583,7 @@ func (m *metricMongodbLockAcquireCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbLockAcquireCount(cfg MetricConfig) metricMongodbLockAcquireCount {
 	m := metricMongodbLockAcquireCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1616,6 +1638,7 @@ func (m *metricMongodbLockAcquireTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbLockAcquireTime(cfg MetricConfig) metricMongodbLockAcquireTime {
 	m := metricMongodbLockAcquireTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1670,6 +1693,7 @@ func (m *metricMongodbLockAcquireWaitCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbLockAcquireWaitCount(cfg MetricConfig) metricMongodbLockAcquireWaitCount {
 	m := metricMongodbLockAcquireWaitCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1724,6 +1748,7 @@ func (m *metricMongodbLockDeadlockCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbLockDeadlockCount(cfg MetricConfig) metricMongodbLockDeadlockCount {
 	m := metricMongodbLockDeadlockCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1777,6 +1802,7 @@ func (m *metricMongodbMemoryUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbMemoryUsage(cfg MetricConfig) metricMongodbMemoryUsage {
 	m := metricMongodbMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1828,6 +1854,7 @@ func (m *metricMongodbNetworkIoReceive) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbNetworkIoReceive(cfg MetricConfig) metricMongodbNetworkIoReceive {
 	m := metricMongodbNetworkIoReceive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1879,6 +1906,7 @@ func (m *metricMongodbNetworkIoTransmit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbNetworkIoTransmit(cfg MetricConfig) metricMongodbNetworkIoTransmit {
 	m := metricMongodbNetworkIoTransmit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1930,6 +1958,7 @@ func (m *metricMongodbNetworkRequestCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbNetworkRequestCount(cfg MetricConfig) metricMongodbNetworkRequestCount {
 	m := metricMongodbNetworkRequestCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1981,6 +2010,7 @@ func (m *metricMongodbObjectCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbObjectCount(cfg MetricConfig) metricMongodbObjectCount {
 	m := metricMongodbObjectCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2034,6 +2064,7 @@ func (m *metricMongodbOperationCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbOperationCount(cfg MetricConfig) metricMongodbOperationCount {
 	m := metricMongodbOperationCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2085,6 +2116,7 @@ func (m *metricMongodbOperationLatencyTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbOperationLatencyTime(cfg MetricConfig) metricMongodbOperationLatencyTime {
 	m := metricMongodbOperationLatencyTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2138,6 +2170,7 @@ func (m *metricMongodbOperationReplCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbOperationReplCount(cfg MetricConfig) metricMongodbOperationReplCount {
 	m := metricMongodbOperationReplCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2191,6 +2224,7 @@ func (m *metricMongodbOperationTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbOperationTime(cfg MetricConfig) metricMongodbOperationTime {
 	m := metricMongodbOperationTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2242,6 +2276,7 @@ func (m *metricMongodbPageFaults) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbPageFaults(cfg MetricConfig) metricMongodbPageFaults {
 	m := metricMongodbPageFaults{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2291,6 +2326,7 @@ func (m *metricMongodbQueriesRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbQueriesRate(cfg MetricConfig) metricMongodbQueriesRate {
 	m := metricMongodbQueriesRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2340,6 +2376,7 @@ func (m *metricMongodbReplCommandsPerSec) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbReplCommandsPerSec(cfg MetricConfig) metricMongodbReplCommandsPerSec {
 	m := metricMongodbReplCommandsPerSec{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2389,6 +2426,7 @@ func (m *metricMongodbReplDeletesPerSec) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbReplDeletesPerSec(cfg MetricConfig) metricMongodbReplDeletesPerSec {
 	m := metricMongodbReplDeletesPerSec{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2438,6 +2476,7 @@ func (m *metricMongodbReplGetmoresPerSec) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbReplGetmoresPerSec(cfg MetricConfig) metricMongodbReplGetmoresPerSec {
 	m := metricMongodbReplGetmoresPerSec{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2487,6 +2526,7 @@ func (m *metricMongodbReplInsertsPerSec) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbReplInsertsPerSec(cfg MetricConfig) metricMongodbReplInsertsPerSec {
 	m := metricMongodbReplInsertsPerSec{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2536,6 +2576,7 @@ func (m *metricMongodbReplQueriesPerSec) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbReplQueriesPerSec(cfg MetricConfig) metricMongodbReplQueriesPerSec {
 	m := metricMongodbReplQueriesPerSec{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2585,6 +2626,7 @@ func (m *metricMongodbReplUpdatesPerSec) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbReplUpdatesPerSec(cfg MetricConfig) metricMongodbReplUpdatesPerSec {
 	m := metricMongodbReplUpdatesPerSec{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2636,6 +2678,7 @@ func (m *metricMongodbSessionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbSessionCount(cfg MetricConfig) metricMongodbSessionCount {
 	m := metricMongodbSessionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2687,6 +2730,7 @@ func (m *metricMongodbStorageSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbStorageSize(cfg MetricConfig) metricMongodbStorageSize {
 	m := metricMongodbStorageSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2736,6 +2780,7 @@ func (m *metricMongodbUpdatesRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbUpdatesRate(cfg MetricConfig) metricMongodbUpdatesRate {
 	m := metricMongodbUpdatesRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2787,6 +2832,7 @@ func (m *metricMongodbUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbUptime(cfg MetricConfig) metricMongodbUptime {
 	m := metricMongodbUptime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2838,6 +2884,7 @@ func (m *metricMongodbWtcacheBytesRead) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbWtcacheBytesRead(cfg MetricConfig) metricMongodbWtcacheBytesRead {
 	m := metricMongodbWtcacheBytesRead{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

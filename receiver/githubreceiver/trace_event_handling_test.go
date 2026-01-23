@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v79/github"
+	"github.com/google/go-github/v81/github"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -25,7 +25,7 @@ import (
 
 func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.Endpoint = "localhost:0"
+	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -55,7 +55,7 @@ func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
 
 func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.Endpoint = "localhost:0"
+	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -85,7 +85,7 @@ func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
 
 func TestHandleWorkflowJobWithGoldenFileSkipped(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.Endpoint = "localhost:0"
+	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -706,7 +706,7 @@ func TestNewJobSpanID_Consistency(t *testing.T) {
 
 func TestHandleWorkflowRunWithSpanEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.Endpoint = "localhost:0"
+	config.WebHook.NetAddr.Endpoint = "localhost:0"
 	config.WebHook.IncludeSpanEvents = true // Enable span events
 	consumer := consumertest.NewNop()
 
@@ -753,7 +753,7 @@ func TestHandleWorkflowRunWithSpanEvents(t *testing.T) {
 
 func TestHandleWorkflowJobWithSpanEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.Endpoint = "localhost:0"
+	config.WebHook.NetAddr.Endpoint = "localhost:0"
 	config.WebHook.IncludeSpanEvents = true // Enable span events
 	consumer := consumertest.NewNop()
 
@@ -798,7 +798,7 @@ func TestHandleWorkflowJobWithSpanEvents(t *testing.T) {
 
 func TestHandleWorkflowRunWithoutSpanEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.Endpoint = "localhost:0"
+	config.WebHook.NetAddr.Endpoint = "localhost:0"
 	// IncludeSpanEvents defaults to false
 	consumer := consumertest.NewNop()
 
@@ -833,7 +833,7 @@ func TestHandleWorkflowRunWithoutSpanEvents(t *testing.T) {
 
 func TestStepSpansHaveNoEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.Endpoint = "localhost:0"
+	config.WebHook.NetAddr.Endpoint = "localhost:0"
 	config.WebHook.IncludeSpanEvents = true // Enable span events
 	consumer := consumertest.NewNop()
 
@@ -864,5 +864,77 @@ func TestStepSpansHaveNoEvents(t *testing.T) {
 			require.Equal(t, 0, span.Events().Len(),
 				"Step/queue span '%s' should not have events", span.Name())
 		}
+	}
+}
+
+func TestCorrectActionTimestamps(t *testing.T) {
+	tests := []struct {
+		name          string
+		start         time.Time
+		end           time.Time
+		expectedStart time.Time
+		expectedEnd   time.Time
+	}{
+		{
+			name:          "normal order - no change needed",
+			start:         time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+		},
+		{
+			name:          "same timestamp - no change needed",
+			start:         time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+		},
+		{
+			name:          "inverted timestamps - end before start",
+			start:         time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+		},
+		{
+			name:          "end one second before start",
+			start:         time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 54, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 55, 0, time.UTC),
+		},
+		{
+			name:          "large time difference - inverted",
+			start:         time.Date(2025, 5, 2, 15, 0, 0, 0, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 0, 0, 0, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 15, 0, 0, 0, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 15, 0, 0, 0, time.UTC),
+		},
+		{
+			name:          "nanosecond precision - inverted",
+			start:         time.Date(2025, 5, 2, 14, 15, 55, 100, time.UTC),
+			end:           time.Date(2025, 5, 2, 14, 15, 55, 99, time.UTC),
+			expectedStart: time.Date(2025, 5, 2, 14, 15, 55, 100, time.UTC),
+			expectedEnd:   time.Date(2025, 5, 2, 14, 15, 55, 100, time.UTC),
+		},
+		{
+			name:          "zero times",
+			start:         time.Time{},
+			end:           time.Time{},
+			expectedStart: time.Time{},
+			expectedEnd:   time.Time{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotStart, gotEnd := correctActionTimestamps(tt.start, tt.end)
+
+			require.Equal(t, tt.expectedStart, gotStart, "start timestamp mismatch")
+			require.Equal(t, tt.expectedEnd, gotEnd, "end timestamp mismatch")
+
+			// Verify the invariant: end is never before start
+			require.False(t, gotEnd.Before(gotStart), "end timestamp should not be before start timestamp")
+		})
 	}
 }

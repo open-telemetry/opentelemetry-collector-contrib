@@ -221,7 +221,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	var err error
 	ddr.server, err = ddr.config.ToServer(
 		ctx,
-		host,
+		host.GetExtensions(),
 		ddr.params.TelemetrySettings,
 		ddmux,
 	)
@@ -362,7 +362,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 			ddr.params.Logger.Error("Error converting traces", zap.Error(err))
 			continue
 		}
-		spanCount = otelTraces.SpanCount()
+		spanCount += otelTraces.SpanCount()
 		err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 		if err != nil {
 			errorutil.HTTPError(w, err)
@@ -482,13 +482,20 @@ func (ddr *datadogReceiver) handleCheckRun(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
+	// try parsing as array first, then single service check
 	var services []translator.ServiceCheck
 
 	err = json.Unmarshal(buf.Bytes(), &services)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		ddr.params.Logger.Error(err.Error())
-		return
+		// now try parsing as a single service check
+		var service translator.ServiceCheck
+		err = json.Unmarshal(buf.Bytes(), &service)
+		if err != nil {
+			http.Error(w, "unable to unmarshal service checks", http.StatusBadRequest)
+			ddr.params.Logger.Error("unable to unmarshal service checks", zap.Error(err))
+			return
+		}
+		services = append(services, service)
 	}
 
 	metrics := ddr.metricsTranslator.TranslateServices(services)

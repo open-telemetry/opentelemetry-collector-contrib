@@ -68,7 +68,7 @@ func newMetricsReceiver(config *Config, settings receiver.Settings, nextConsumer
 func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error {
 	ln, err := r.httpServerSettings.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", r.httpServerSettings.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", r.httpServerSettings.NetAddr.Endpoint, err)
 	}
 
 	router := http.NewServeMux()
@@ -77,7 +77,7 @@ func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error 
 	router.HandleFunc("/ping", r.handlePing)
 
 	r.wg.Add(1)
-	r.server, err = r.httpServerSettings.ToServer(ctx, host, r.settings, router)
+	r.server, err = r.httpServerSettings.ToServer(ctx, host.GetExtensions(), r.settings, router)
 	if err != nil {
 		return err
 	}

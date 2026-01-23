@@ -1,4 +1,5 @@
 type: routing
+display_name: Routing Connector
 
 status:
   class: connector
@@ -6,7 +7,7 @@ status:
     alpha: [traces_to_traces, metrics_to_metrics, logs_to_logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [mwear, TylerHelmuth, evan-bradley, edmocosta]
+    active: [mwear, TylerHelmuth, evan-bradley, edmocosta, bogdandrutu]
     emeritus: [jpkrohling]
     seeking_new: true
 
