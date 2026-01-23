@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
@@ -1066,9 +1067,9 @@ func TestExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), false))
 				}()
 			}
 
@@ -1365,9 +1366,9 @@ func TestNamespaceExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), false))
 				}()
 			}
 
@@ -1623,9 +1624,9 @@ func TestNodeExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(AllowLabelsAnnotationsSingular.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), false))
 				}()
 			}
 

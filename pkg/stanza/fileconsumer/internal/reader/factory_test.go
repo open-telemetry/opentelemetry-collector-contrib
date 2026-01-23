@@ -156,3 +156,70 @@ func TestStartAt(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(len(content)), r.Offset)
 }
+
+// TestNewReaderFromMetadataConcurrentAccess tests that FileAttributes map
+// is not mutated in place, which would cause data races when the metadata
+// is accessed concurrently (e.g., by test assertions or persistence).
+func TestNewReaderFromMetadataConcurrentAccess(t *testing.T) {
+	tempDir := t.TempDir()
+	temp := filetest.OpenTemp(t, tempDir)
+	content := "test log line\n"
+	_, err := temp.WriteString(content)
+	require.NoError(t, err)
+
+	f, _ := testFactory(t)
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+
+	// Create initial reader
+	r1, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+
+	// Get metadata (simulating persistence or reader recycling)
+	metadata := r1.Close()
+
+	// Store original map reference to detect if it's mutated
+	originalAttrs := metadata.FileAttributes
+	originalLen := len(originalAttrs)
+
+	// Create a done channel for synchronization
+	done := make(chan bool)
+
+	// Goroutine 1: Continuously read the FileAttributes map
+	// (simulating test assertions or persistence reading)
+	go func() {
+		defer func() { done <- true }()
+		for range 100 {
+			// This simulates what reflect.DeepEqual does in test assertions
+			_ = len(originalAttrs)
+			for k, v := range originalAttrs {
+				_ = k
+				_ = v
+			}
+			time.Sleep(time.Microsecond)
+		}
+	}()
+
+	// Goroutine 2: Create new reader from metadata
+	// (simulating the polling goroutine calling NewReaderFromMetadata)
+	go func() {
+		defer func() { done <- true }()
+		for range 100 {
+			temp2 := filetest.OpenFile(t, temp.Name())
+			_, err := f.NewReaderFromMetadata(temp2, metadata)
+			if err != nil {
+				t.Errorf("NewReaderFromMetadata failed: %v", err)
+			}
+			time.Sleep(time.Microsecond)
+		}
+	}()
+
+	// Wait for both goroutines to complete
+	<-done
+	<-done
+
+	// Verify that the original map was not mutated
+	// (it should still have the same length, though a new map may have been created)
+	require.Len(t, originalAttrs, originalLen,
+		"Original FileAttributes map should not be mutated")
+}
