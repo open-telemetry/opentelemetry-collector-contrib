@@ -61,7 +61,7 @@ sqlserver:
   top_query_collection:                        # this collection exports the most expensive queries as logs
     lookback_time: 60s                         # which time window should we look for the top queries
     max_query_sample_count: 1000               # maximum number query we store in cache for top queries.
-    top_query_count: 200                       # The maximum number of active queries to report in a single run.
+    top_query_count: 250                       # The maximum number of active queries to report in a single run.
     collection_interval: 60s                   # collection interval for top query collection specifically
   query_sample_collection:                     # this collection exports the currently (relate to the query time) executing queries as logs
     max_rows_per_query: 100                    # the maximum number of samples to return for one single query.

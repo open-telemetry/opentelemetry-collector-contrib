@@ -4,19 +4,20 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/sqlserver
+component: receiver/filelog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: adding sqlserver.procedure_id and sqlserver.procedure_name attributes to TopQuery and Sample Events
+note: Suppress repeated permission-denied errors
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [44656]
+issues: [39491]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Refined query and reported events to include stored procedure information when applicable.
-  Additionally, the maximum number of active queries reported by default has been increased from 200 to 250 to account for record deaggregation introduced by this change, ensuring the effective limit remains consistent with the previous 200-query baseline.
+subtext: |
+  Only one error is logged per file per process run, and an informational message is emitted when the file becomes readable again.
+  This reduces log spam and improves clarity for operators.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
