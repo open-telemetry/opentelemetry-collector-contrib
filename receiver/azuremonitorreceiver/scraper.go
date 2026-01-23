@@ -158,7 +158,6 @@ func (s *azureScraper) start(_ context.Context, host component.Host) (err error)
 }
 
 func (s *azureScraper) loadSubscription(sub azureSubscription) {
-	s.settings.Logger.Debug("Loading subscription", zap.String("subscription_id", sub.SubscriptionID))
 	s.resources[sub.SubscriptionID] = make(map[string]*azureResource)
 	s.subscriptions[sub.SubscriptionID] = &azureSubscription{
 		SubscriptionID: sub.SubscriptionID,
@@ -242,14 +241,15 @@ func (s *azureScraper) loadSubscriptions(ctx context.Context) {
 
 			// We need additional info,
 			// => It makes some get requests
-			s.settings.Logger.Debug("Getting Subscription info from Azure",
-				zap.String("subscription_id", subID))
 			resp, err := armSubscriptionClient.Get(ctx, subID, &armsubscriptions.ClientGetOptions{})
+			logFields := []zap.Field{zap.String("subscription_id", subID)}
 			if err != nil {
-				s.settings.Logger.Error("Failed to get Subscription info from Azure",
-					zap.String("subscription_id", subID), zap.Error(err))
+				logFields = append(logFields, zap.Error(err))
+				s.settings.Logger.Error("Failed to collect Subscription info from Azure", logFields...)
 				return
 			}
+			logFields = append(logFields, zap.String("subscription_display_name", *resp.DisplayName))
+			s.settings.Logger.Debug("Collected Subscription info from Azure", logFields...)
 			s.loadSubscription(azureSubscription{
 				SubscriptionID: *resp.SubscriptionID,
 				DisplayName:    *resp.DisplayName,
@@ -267,17 +267,20 @@ func (s *azureScraper) loadSubscriptions(ctx context.Context) {
 		existingSubscriptions[id] = void{}
 	}
 
-	s.settings.Logger.Debug("Getting Subscription list from Azure")
 	opts := &armsubscriptions.ClientListOptions{}
 	pager := armSubscriptionClient.NewListPager(opts)
-
+	page := 0
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
+		logFields := []zap.Field{zap.Int("page", page)}
 		if err != nil {
-			s.settings.Logger.Error("Failed to get Subscription list from Azure",
-				zap.Error(err))
+			logFields = append(logFields, zap.Error(err))
+			s.settings.Logger.Error("Failed to collect Subscription list from Azure", logFields...)
 			return
 		}
+		logFields = append(logFields, zap.Int("subscriptions_count", len(nextResult.Value)))
+		s.settings.Logger.Debug("Collected Subscription list page from Azure", logFields...)
+		page++
 
 		for _, subscription := range nextResult.Value {
 			s.loadSubscription(azureSubscription{
@@ -334,19 +337,25 @@ func (s *azureScraper) loadResources(ctx context.Context, subscriptionID string)
 		Filter: &filter,
 	}
 
-	s.settings.Logger.Debug("Getting Resource list from Azure",
-		zap.String("subscription_id", subscriptionID),
-		zap.String("filter", filter))
 	pager := clientResources.NewListPager(opts)
-
+	page := 0
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
+
+		logFields := []zap.Field{
+			zap.String("subscription_id", subscriptionID),
+			zap.String("filter", filter),
+			zap.Int("page", page),
+		}
 		if err != nil {
-			s.settings.Logger.Error("Failed to get Resource list from Azure",
-				zap.String("subscription_id", subscriptionID),
-				zap.Error(err))
+			logFields = append(logFields, zap.Error(err))
+			s.settings.Logger.Error("Failed to collect Resource list from Azure", logFields...)
 			return
 		}
+		logFields = append(logFields, zap.Int("resources_count", len(nextResult.Value)))
+		s.settings.Logger.Debug("Collected Resource list from Azure", logFields...)
+		page++
+
 		for _, resource := range s.processResources(nextResult.Value) {
 			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
@@ -474,20 +483,25 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 		return
 	}
 
-	s.settings.Logger.Debug("Getting Azure Metrics Definitions list from Azure",
-		zap.String("resource_id", resourceID),
-		zap.String("subscription_id", subscriptionID))
 	pager := clientMetricsDefinitions.NewListPager(resourceID, nil)
 
+	page := 0
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
+
+		logFields := []zap.Field{
+			zap.String("resource_id", resourceID),
+			zap.String("subscription_id", subscriptionID),
+			zap.Int("page", page),
+		}
 		if err != nil {
-			s.settings.Logger.Error("Failed to get Azure Metrics Definitions list from Azure",
-				zap.String("resource_id", resourceID),
-				zap.String("subscription_id", subscriptionID),
-				zap.Error(err))
+			logFields = append(logFields, zap.Error(err))
+			s.settings.Logger.Error("Failed to collect Azure Definitions list from Azure", logFields...)
 			return
 		}
+		logFields = append(logFields, zap.Int("definitions_count", len(nextResult.Value)))
+		s.settings.Logger.Debug("Collected Azure Metrics Definitions list from Azure", logFields...)
+		page++
 
 		for _, v := range nextResult.Value {
 			metricName := *v.Name.Value
@@ -569,25 +583,27 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 			)
 			start = end
 
-			s.settings.Logger.Debug("Getting Azure Metrics values from Azure",
-				zap.Any("metrics", metricsByGrain.metrics[start:end]),
-				zap.String("dimensions", compositeKey.dimensions),
-				zap.String("aggregations", compositeKey.aggregations),
-				zap.String("timegrain", compositeKey.timeGrain),
-				zap.String("resource_id", resourceID),
-				zap.String("subscription_id", subscriptionID))
 			result, err := clientMetricsValues.List(
 				ctx,
 				resourceID,
 				&opts,
 			)
+			logFields := []zap.Field{
+				zap.Any("metrics", metricsByGrain.metrics[start:end]),
+				zap.String("dimensions", compositeKey.dimensions),
+				zap.String("aggregations", compositeKey.aggregations),
+				zap.String("timegrain", compositeKey.timeGrain),
+				zap.String("resource_id", resourceID),
+				zap.String("subscription_id", subscriptionID),
+			}
 			if err != nil {
-				s.settings.Logger.Error("Failed to get Azure Metrics values from Azure",
-					zap.String("resource_id", resourceID),
-					zap.String("subscription_id", subscriptionID),
-					zap.Error(err))
+				logFields = append(logFields, zap.Error(err))
+				s.settings.Logger.Error("Failed to collect Azure Metrics values from Azure", logFields...)
 				return
 			}
+
+			logFields = append(logFields, zap.Int("metrics_count", len(result.Value)))
+			s.settings.Logger.Debug("Collected Azure Metrics values from Azure", logFields...)
 
 			for _, metric := range result.Value {
 				for _, timeseriesElement := range metric.Timeseries {

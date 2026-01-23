@@ -138,7 +138,6 @@ func TestAzureScraperScrape(t *testing.T) {
 			)
 
 			s := &azureScraper{
-				settings:                     settings.TelemetrySettings,
 				cfg:                          tt.fields.cfg,
 				mb:                           metadata.NewMetricsBuilder(tt.fields.cfg.MetricsBuilderConfig, settings),
 				mutex:                        &sync.Mutex{},
@@ -259,7 +258,6 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 
 		settings := receivertest.NewNopSettings(metadata.Type)
 		s := &azureScraper{
-			settings:                     settings.TelemetrySettings,
 			cfg:                          cfgLimitedMertics,
 			mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
 			mutex:                        &sync.Mutex{},
