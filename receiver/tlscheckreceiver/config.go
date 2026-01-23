@@ -21,6 +21,7 @@ var errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <hostname
 type CertificateTarget struct {
 	confignet.TCPAddrConfig `mapstructure:",squash"`
 	FilePath                string `mapstructure:"file_path"`
+	ScrapeAllCerts          bool   `mapstructure:"scrape_all_certs"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
