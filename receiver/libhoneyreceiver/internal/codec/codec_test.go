@@ -561,6 +561,61 @@ func TestGetEncoder(t *testing.T) {
 	}
 }
 
+func TestBuildLibhoneyEventFromMap_SamplerateTypes(t *testing.T) {
+	tests := []struct {
+		name               string
+		rawEvent           map[string]any
+		expectedSampleRate int
+	}{
+		{
+			name: "samplerate as int",
+			rawEvent: map[string]any{
+				"data":       map[string]any{"field1": "value1"},
+				"samplerate": int(10),
+			},
+			expectedSampleRate: 10,
+		},
+		{
+			name: "samplerate as int64",
+			rawEvent: map[string]any{
+				"data":       map[string]any{"field1": "value1"},
+				"samplerate": int64(10),
+			},
+			expectedSampleRate: 10,
+		},
+		{
+			name: "samplerate as uint64",
+			rawEvent: map[string]any{
+				"data":       map[string]any{"field1": "value1"},
+				"samplerate": uint64(10),
+			},
+			expectedSampleRate: 10,
+		},
+		{
+			name: "samplerate as float64",
+			rawEvent: map[string]any{
+				"data":       map[string]any{"field1": "value1"},
+				"samplerate": float64(10.0),
+			},
+			expectedSampleRate: 10,
+		},
+		{
+			name: "no samplerate defaults to 1",
+			rawEvent: map[string]any{
+				"data": map[string]any{"field1": "value1"},
+			},
+			expectedSampleRate: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			event := buildLibhoneyEventFromMap(tt.rawEvent)
+			assert.Equal(t, tt.expectedSampleRate, event.Samplerate)
+		})
+	}
+}
+
 func TestEncoder_RoundTrip(t *testing.T) {
 	tests := []struct {
 		name        string

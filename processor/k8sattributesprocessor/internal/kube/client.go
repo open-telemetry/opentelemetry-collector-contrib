@@ -15,9 +15,8 @@ import (
 
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
 	batch_v1 "k8s.io/api/batch/v1"
@@ -63,13 +62,6 @@ const (
 	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#job
 	K8sJobLabel      = "k8s.job.label.%s"
 	K8sJobAnnotation = "k8s.job.annotation.%s"
-)
-
-var AllowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
-	"k8sattr.labelsAnnotationsSingular.allow",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
-	featuregate.WithRegisterFromVersion("v0.125.0"),
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -182,7 +174,6 @@ func New(
 		waitForMetadata:        waitForMetadata,
 		waitForMetadataTimeout: waitForMetadataTimeout,
 	}
-	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
 	c.Pods = map[PodIdentifier]*Pod{}
 	c.Namespaces = map[string]*Namespace{}
@@ -292,6 +283,9 @@ func New(
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
+	// Start the delete loop for cleaning up old pods from cache
+	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
+
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
@@ -925,7 +919,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	formatterLabel := K8sPodLabelsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
+	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 		formatterLabel = K8sPodLabelKey
 	}
 
@@ -934,7 +928,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	formatterAnnotation := K8sPodAnnotationsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
+	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 		formatterAnnotation = K8sPodAnnotationKey
 	}
 
@@ -1170,7 +1164,7 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	tags := map[string]string{}
 
 	formatterLabel := K8sNamespaceLabelsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
+	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 		formatterLabel = K8sNamespaceLabelKey
 	}
 
@@ -1179,7 +1173,7 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	}
 
 	formatterAnnotation := K8sNamespaceAnnotationsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
+	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 		formatterAnnotation = K8sNamespaceAnnotationKey
 	}
 
@@ -1194,7 +1188,7 @@ func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string
 	tags := map[string]string{}
 
 	formatterLabel := K8sNodeLabelsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
+	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 		formatterLabel = K8sNodeLabelKey
 	}
 
@@ -1203,7 +1197,7 @@ func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string
 	}
 
 	formatterAnnotation := K8sNodeAnnotationsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
+	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 		formatterAnnotation = K8sNodeAnnotationKey
 	}
 

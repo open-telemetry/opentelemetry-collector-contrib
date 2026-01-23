@@ -21,7 +21,7 @@ var (
 )
 
 func (cfg *Config) Validate() error {
-	if cfg.Endpoint == "" {
+	if cfg.NetAddr.Endpoint == "" {
 		return errors.New("must specify endpoint")
 	}
 	return nil

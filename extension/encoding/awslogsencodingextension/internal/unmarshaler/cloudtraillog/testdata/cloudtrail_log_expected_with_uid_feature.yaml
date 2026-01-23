@@ -1,0 +1,682 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.region
+          value:
+            stringValue: us-east-1
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789012"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: aws.cloudtrail.event_version
+                value:
+                  stringValue: "1.08"
+              - key: aws.cloudtrail.event_id
+                value:
+                  stringValue: e755e09c-42f9-4c5c-9064-EXAMPLE228c7
+              - key: rpc.method
+                value:
+                  stringValue: StartInstances
+              - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
+              - key: aws.cloudtrail.api_version
+                value:
+                  stringValue: v1
+              - key: rpc.service
+                value:
+                  stringValue: ec2.amazonaws.com
+              - key: aws.request_id
+                value:
+                  stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16
+              - key: aws.event.category
+                value:
+                  stringValue: Management
+              - key: aws.event.read_only
+                value:
+                  boolValue: false
+              - key: aws.event.management
+                value:
+                  boolValue: true
+              - key: source.address
+                value:
+                  stringValue: 192.0.2.0
+              - key: user_agent.original
+                value:
+                  stringValue: aws-cli/2.13.5 Python/3.11.4 Linux/4.14.255-314-253.539.amzn2.x86_64 exec-env/CloudShell exe/x86_64.amzn.2 prompt/off command/ec2.start-instances
+              - key: aws.session.console
+                value:
+                  boolValue: true
+              - key: user.name
+                value:
+                  stringValue: Mateo
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "123456789012"
+              - key: aws.user_identity.access_key.id
+                value:
+                  stringValue: AKIAIOSFODNN7EXAMPLE
+              - key: aws.user_identity.principal.id
+                value:
+                  stringValue: EXAMPLE6E4XEGITWATV6R
+              - key: aws.user_identity.principal.arn
+                value:
+                  stringValue: arn:aws:iam::123456789012:user/Mateo
+              - key: aws.user_identity.principal.type
+                value:
+                  stringValue: IAMUser
+              - key: aws.user_identity.session_context.attributes.mfa_authenticated
+                value:
+                  boolValue: false
+              - key: aws.user_identity.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-07-19T21:11:57Z"
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.2"
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
+              - key: server.address
+                value:
+                  stringValue: ec2.us-east-1.amazonaws.com
+              - key: aws.request.parameters
+                value:
+                  kvlistValue:
+                    values:
+                      - key: instancesSet
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: items
+                                value:
+                                  arrayValue:
+                                    values:
+                                      - kvlistValue:
+                                          values:
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLE56126103cb
+                                      - kvlistValue:
+                                          values:
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLEaff4840c22
+              - key: aws.response.elements
+                value:
+                  kvlistValue:
+                    values:
+                      - key: requestId
+                        value:
+                          stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16
+                      - key: instancesSet
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: items
+                                value:
+                                  arrayValue:
+                                    values:
+                                      - kvlistValue:
+                                          values:
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLEaff4840c22
+                                            - key: currentState
+                                              value:
+                                                kvlistValue:
+                                                  values:
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 0
+                                                    - key: name
+                                                      value:
+                                                        stringValue: pending
+                                            - key: previousState
+                                              value:
+                                                kvlistValue:
+                                                  values:
+                                                    - key: name
+                                                      value:
+                                                        stringValue: stopped
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 80
+                                      - kvlistValue:
+                                          values:
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLE56126103cb
+                                            - key: currentState
+                                              value:
+                                                kvlistValue:
+                                                  values:
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 0
+                                                    - key: name
+                                                      value:
+                                                        stringValue: pending
+                                            - key: previousState
+                                              value:
+                                                kvlistValue:
+                                                  values:
+                                                    - key: name
+                                                      value:
+                                                        stringValue: stopped
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 80
+            body: {}
+            timeUnixNano: "1689801448000000000"
+          - attributes:
+              - key: aws.cloudtrail.event_version
+                value:
+                  stringValue: "1.08"
+              - key: aws.cloudtrail.event_id
+                value:
+                  stringValue: ba0801a1-87ec-4d26-be87-EXAMPLE75bbb
+              - key: rpc.method
+                value:
+                  stringValue: CreateUser
+              - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
+              - key: rpc.service
+                value:
+                  stringValue: iam.amazonaws.com
+              - key: aws.request_id
+                value:
+                  stringValue: 2d528c76-329e-410b-9516-EXAMPLE565dc
+              - key: aws.event.category
+                value:
+                  stringValue: Management
+              - key: aws.event.read_only
+                value:
+                  boolValue: false
+              - key: aws.event.management
+                value:
+                  boolValue: true
+              - key: source.address
+                value:
+                  stringValue: 192.0.2.0
+              - key: user_agent.original
+                value:
+                  stringValue: aws-cli/2.13.5 Python/3.11.4 Linux/4.14.255-314-253.539.amzn2.x86_64 exec-env/CloudShell exe/x86_64.amzn.2 prompt/off command/iam.create-user
+              - key: aws.session.console
+                value:
+                  boolValue: true
+              - key: user.name
+                value:
+                  stringValue: Mary
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "123456789012"
+              - key: aws.user_identity.access_key.id
+                value:
+                  stringValue: AKIAIOSFODNN7EXAMPLE
+              - key: aws.user_identity.principal.id
+                value:
+                  stringValue: AIDA6ON6E4XEGITEXAMPLE
+              - key: aws.user_identity.principal.arn
+                value:
+                  stringValue: arn:aws:iam::123456789012:user/Mary
+              - key: aws.user_identity.principal.type
+                value:
+                  stringValue: IAMUser
+              - key: aws.user_identity.session_context.attributes.mfa_authenticated
+                value:
+                  boolValue: false
+              - key: aws.user_identity.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-07-19T21:11:57Z"
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.2"
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
+              - key: server.address
+                value:
+                  stringValue: iam.amazonaws.com
+              - key: aws.request.parameters
+                value:
+                  kvlistValue:
+                    values:
+                      - key: userName
+                        value:
+                          stringValue: Richard
+              - key: aws.response.elements
+                value:
+                  kvlistValue:
+                    values:
+                      - key: user
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: path
+                                value:
+                                  stringValue: /
+                              - key: arn
+                                value:
+                                  stringValue: arn:aws:iam::123456789012:user/Richard
+                              - key: userId
+                                value:
+                                  stringValue: AIDA6ON6E4XEP7EXAMPLE
+                              - key: createDate
+                                value:
+                                  stringValue: Jul 19, 2023 9:25:09 PM
+                              - key: userName
+                                value:
+                                  stringValue: Richard
+            body: {}
+            timeUnixNano: "1689801909000000000"
+          - attributes:
+              - key: aws.cloudtrail.event_version
+                value:
+                  stringValue: "1.08"
+              - key: aws.cloudtrail.event_id
+                value:
+                  stringValue: bb3496d4-5252-4660-9c28-3c6aebdb21c0
+              - key: rpc.method
+                value:
+                  stringValue: Publish
+              - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
+              - key: rpc.service
+                value:
+                  stringValue: sns.amazonaws.com
+              - key: aws.request_id
+                value:
+                  stringValue: 0a8ab208-11bf-5e01-bd2d-ef55861b545d
+              - key: aws.event.category
+                value:
+                  stringValue: Data
+              - key: aws.event.read_only
+                value:
+                  boolValue: false
+              - key: aws.event.management
+                value:
+                  boolValue: false
+              - key: source.address
+                value:
+                  stringValue: 192.0.2.0
+              - key: user_agent.original
+                value:
+                  stringValue: aws-cli/1.29.16 md/Botocore#1.31.16 ua/2.0 os/linux#5.4.250-173.369.amzn2int.x86_64 md/arch#x86_64 lang/python#3.8.17 md/pyimpl#CPython cfg/retry-mode#legacy botocore/1.31.16
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "123456789012"
+              - key: aws.user_identity.access_key.id
+                value:
+                  stringValue: AKIAIOSFODNN7EXAMPLE
+              - key: aws.user_identity.principal.id
+                value:
+                  stringValue: EX_PRINCIPAL_ID
+              - key: aws.user_identity.principal.arn
+                value:
+                  stringValue: arn:aws:iam::123456789012:user/Bob
+              - key: aws.user_identity.principal.type
+                value:
+                  stringValue: AssumedRole
+              - key: aws.user_identity.session_context.attributes.mfa_authenticated
+                value:
+                  boolValue: true
+              - key: aws.user_identity.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-08-21T16:44:05Z"
+              - key: aws.user_identity.session_context.issuer.type
+                value:
+                  stringValue: Role
+              - key: aws.user_identity.session_context.issuer.principal_id
+                value:
+                  stringValue: AKIAIOSFODNN7EXAMPLE
+              - key: aws.user_identity.session_context.issuer.arn
+                value:
+                  stringValue: arn:aws:iam::123456789012:role/Admin
+              - key: aws.user_identity.session_context.issuer.account_id
+                value:
+                  stringValue: "123456789012"
+              - key: aws.user_identity.session_context.issuer.user_name
+                value:
+                  stringValue: ExampleUser
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.2"
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
+              - key: server.address
+                value:
+                  stringValue: sns.us-east-1.amazonaws.com
+              - key: aws.request.parameters
+                value:
+                  kvlistValue:
+                    values:
+                      - key: topicArn
+                        value:
+                          stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
+                      - key: message
+                        value:
+                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
+                      - key: subject
+                        value:
+                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
+                      - key: messageStructure
+                        value:
+                          stringValue: json
+                      - key: messageAttributes
+                        value:
+                          stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
+              - key: aws.response.elements
+                value:
+                  kvlistValue:
+                    values:
+                      - key: messageId
+                        value:
+                          stringValue: 0787cd1e-d92b-521c-a8b4-90434e8ef840
+              - key: aws.resources
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: account.id
+                              value:
+                                stringValue: "123456789012"
+                            - key: type
+                              value:
+                                stringValue: AWS::SNS::Topic
+                            - key: arn
+                              value:
+                                stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
+            body: {}
+            timeUnixNano: "1692636517000000000"
+          - attributes:
+              - key: aws.cloudtrail.event_version
+                value:
+                  stringValue: "1.08"
+              - key: aws.cloudtrail.event_id
+                value:
+                  stringValue: 654a30ff-b0f3-4527-81b6-EXAMPLEf2393
+              - key: rpc.system
+                value:
+                  stringValue: AwsCloudTrailInsight
+              - key: aws.event.category
+                value:
+                  stringValue: Insight
+              - key: aws.shared_event_id
+                value:
+                  stringValue: bcbfc274-8559-4a56-beb0-EXAMPLEa6c34
+              - key: aws.insight_details
+                value:
+                  kvlistValue:
+                    values:
+                      - key: state
+                        value:
+                          stringValue: Start
+                      - key: eventSource
+                        value:
+                          stringValue: ssm.amazonaws.com
+                      - key: eventName
+                        value:
+                          stringValue: UpdateInstanceInformation
+                      - key: insightType
+                        value:
+                          stringValue: ApiCallRateInsight
+                      - key: insightContext
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: statistics
+                                value:
+                                  kvlistValue:
+                                    values:
+                                      - key: baseline
+                                        value:
+                                          kvlistValue:
+                                            values:
+                                              - key: average
+                                                value:
+                                                  doubleValue: 84.410596421
+                                      - key: insight
+                                        value:
+                                          kvlistValue:
+                                            values:
+                                              - key: average
+                                                value:
+                                                  doubleValue: 669
+            body: {}
+            timeUnixNano: "1672627860000000000"
+          - attributes:
+              - key: aws.cloudtrail.event_version
+                value:
+                  stringValue: "1.09"
+              - key: aws.cloudtrail.event_id
+                value:
+                  stringValue: 694d604a-d190-4470-8dd1-EXAMPLEe20c1
+              - key: rpc.method
+                value:
+                  stringValue: UpdateTrail
+              - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
+              - key: rpc.service
+                value:
+                  stringValue: cloudtrail.amazonaws.com
+              - key: aws.request_id
+                value:
+                  stringValue: 28d2faaf-3319-4649-998d-EXAMPLE72818
+              - key: aws.event.category
+                value:
+                  stringValue: Management
+              - key: aws.event.read_only
+                value:
+                  boolValue: false
+              - key: aws.event.management
+                value:
+                  boolValue: true
+              - key: source.address
+                value:
+                  stringValue: 192.0.2.0
+              - key: user_agent.original
+                value:
+                  stringValue: aws-cli/2.13.0 Python/3.11.4 Linux/4.14.255-314-253.539.amzn2.x86_64 exec-env/CloudShell exe/x86_64.amzn.2 prompt/off command/cloudtrail.update-trail
+              - key: aws.session.console
+                value:
+                  boolValue: true
+              - key: user.name
+                value:
+                  stringValue: Terry
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "111122223333"
+              - key: aws.user_identity.access_key.id
+                value:
+                  stringValue: AKIAIOSFODNN7EXAMPLE
+              - key: aws.user_identity.principal.id
+                value:
+                  stringValue: AIDA6ON6E4XEGIEXAMPLE
+              - key: aws.user_identity.principal.arn
+                value:
+                  stringValue: arn:aws:iam::111122223333:user/Terry
+              - key: aws.user_identity.principal.type
+                value:
+                  stringValue: IAMUser
+              - key: aws.user_identity.session_context.attributes.mfa_authenticated
+                value:
+                  boolValue: false
+              - key: aws.user_identity.session_context.attributes.creation_date
+                value:
+                  stringValue: "2023-07-19T21:11:57Z"
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.2"
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
+              - key: server.address
+                value:
+                  stringValue: cloudtrail.us-east-1.amazonaws.com
+              - key: aws.error.code
+                value:
+                  stringValue: TrailNotFoundException
+              - key: aws.error.message
+                value:
+                  stringValue: 'Unknown trail: arn:aws:cloudtrail:us-east-1:111122223333:trail/myTrail2 for the user: 111122223333'
+              - key: aws.request.parameters
+                value:
+                  kvlistValue:
+                    values:
+                      - key: name
+                        value:
+                          stringValue: myTrail2
+                      - key: isMultiRegionTrail
+                        value:
+                          boolValue: true
+            body: {}
+            timeUnixNano: "1689802503000000000"
+          - attributes:
+              - key: aws.cloudtrail.event_version
+                value:
+                  stringValue: "1.09"
+              - key: aws.cloudtrail.event_id
+                value:
+                  stringValue: a1b2c3d4-5678-90ab-cdef-EXAMPLE22222
+              - key: rpc.method
+                value:
+                  stringValue: ConsoleLogin
+              - key: rpc.system
+                value:
+                  stringValue: AwsConsoleSignIn
+              - key: rpc.service
+                value:
+                  stringValue: signin.amazonaws.com
+              - key: aws.request_id
+                value:
+                  stringValue: a1b2c3d4-5678-90ab-cdef-EXAMPLE11111
+              - key: aws.event.category
+                value:
+                  stringValue: Management
+              - key: aws.event.read_only
+                value:
+                  boolValue: true
+              - key: aws.event.management
+                value:
+                  boolValue: true
+              - key: source.address
+                value:
+                  stringValue: 192.0.2.1
+              - key: user_agent.original
+                value:
+                  stringValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+              - key: user.id
+                value:
+                  stringValue: d-12345abcde
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "123456789012"
+              - key: aws.user_identity.identity_store.arn
+                value:
+                  stringValue: arn:aws:identitystore::123456789012:identitystore/d-12345abcde
+              - key: aws.user_identity.principal.arn
+                value:
+                  stringValue: arn:aws:iam::123456789012:user/identity-center-user
+              - key: aws.user_identity.principal.type
+                value:
+                  stringValue: IdentityCenterUser
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.3"
+              - key: tls.cipher
+                value:
+                  stringValue: TLS_AES_256_GCM_SHA384
+              - key: server.address
+                value:
+                  stringValue: signin.aws.amazon.com
+              - key: aws.response.elements
+                value:
+                  kvlistValue:
+                    values:
+                      - key: ConsoleLogin
+                        value:
+                          stringValue: Success
+              - key: aws.cloudtrail.additional_event_data
+                value:
+                  kvlistValue:
+                    values:
+                      - key: MobileVersion
+                        value:
+                          stringValue: "No"
+                      - key: LoginTo
+                        value:
+                          stringValue: https://console.aws.amazon.com/console/home?region=us
+                      - key: MFAUsed
+                        value:
+                          boolValue: true
+            body: {}
+            timeUnixNano: "1749997800000000000"
+          - attributes:
+              - key: aws.cloudtrail.event_version
+                value:
+                  stringValue: "1.08"
+              - key: aws.cloudtrail.event_id
+                value:
+                  stringValue: a24b3967-ddad-417f-9b22-2332b918db06
+              - key: rpc.method
+                value:
+                  stringValue: RotateKey
+              - key: rpc.system
+                value:
+                  stringValue: AwsServiceEvent
+              - key: rpc.service
+                value:
+                  stringValue: kms.amazonaws.com
+              - key: aws.event.category
+                value:
+                  stringValue: Management
+              - key: aws.event.read_only
+                value:
+                  boolValue: false
+              - key: source.address
+                value:
+                  stringValue: AWS Internal
+              - key: user_agent.original
+                value:
+                  stringValue: AWS Internal
+              - key: aws.user_identity.account_id
+                value:
+                  stringValue: "111122223333"
+              - key: aws.user_identity.invoked_by
+                value:
+                  stringValue: AWS Internal
+              - key: aws.resources
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: account.id
+                              value:
+                                stringValue: "111122223333"
+                            - key: type
+                              value:
+                                stringValue: AWS::KMS::Key
+                            - key: arn
+                              value:
+                                stringValue: arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab
+            body: {}
+            timeUnixNano: "1610588519000000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.cloudtrail
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+          version: test-version
