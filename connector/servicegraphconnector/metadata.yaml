@@ -1,4 +1,5 @@
 type: servicegraph
+display_name: Service Graph Connector
 
 status:
   class: connector
