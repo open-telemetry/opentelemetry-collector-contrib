@@ -33,19 +33,19 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.50.1-0.20260121161034-55399d4743af // indirect
 	go.opentelemetry.io/collector/config/configretry v1.50.1-0.20260121161034-55399d4743af // indirect
 	go.opentelemetry.io/collector/confmap v1.50.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.144.0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.144.1-0.20260121161034-55399d4743af // indirect
 	go.opentelemetry.io/collector/consumer v1.50.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.144.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.144.1-0.20260121161034-55399d4743af // indirect
 	go.opentelemetry.io/collector/exporter v1.50.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/collector/exporter/exporterhelper v0.144.0 // indirect
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.144.1-0.20260121161034-55399d4743af // indirect
 	go.opentelemetry.io/collector/extension v1.50.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.144.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.144.1-0.20260121161034-55399d4743af // indirect
 	go.opentelemetry.io/collector/featuregate v1.50.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.144.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.144.0 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.144.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.144.1-0.20260121161034-55399d4743af // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.144.1-0.20260121161034-55399d4743af // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.144.1-0.20260121161034-55399d4743af // indirect
 	go.opentelemetry.io/collector/pipeline v1.50.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.144.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.144.1-0.20260121161034-55399d4743af // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
