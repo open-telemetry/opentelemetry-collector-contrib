@@ -117,7 +117,7 @@ type indexedDuration struct {
 
 // detectOutliersIQR identifies outliers using Interquartile Range method.
 // Returns (outlierIndices, normalIndices, median).
-func detectOutliersIQR(durations []indexedDuration, multiplier float64, minThresholdPercent float64) ([]int, []int, time.Duration) {
+func detectOutliersIQR(durations []indexedDuration, multiplier, minThresholdPercent float64) ([]int, []int, time.Duration) {
 	n := len(durations)
 
 	// Calculate median
@@ -161,7 +161,7 @@ const madScaleFactor = 1.4826
 // detectOutliersMAD identifies outliers using Median Absolute Deviation method.
 // Returns (outlierIndices, normalIndices, median).
 // MAD is more robust to extreme outliers than IQR.
-func detectOutliersMAD(durations []indexedDuration, multiplier float64, minThresholdPercent float64) ([]int, []int, time.Duration) {
+func detectOutliersMAD(durations []indexedDuration, multiplier, minThresholdPercent float64) ([]int, []int, time.Duration) {
 	n := len(durations)
 
 	// Calculate median (durations are already sorted)
