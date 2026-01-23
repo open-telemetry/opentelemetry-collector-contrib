@@ -52,9 +52,9 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 		}
 		var errs error
 		for _, cs := range cfg.TraceConditions {
-			traceConditions, parseErr := pc.ParseContextConditions(cs)
+			consumer, parseErr := pc.ParseContextConditions(cs)
 			errs = multierr.Append(errs, parseErr)
-			fsp.consumers = append(fsp.consumers, traceConditions.ToTracesConsumer())
+			fsp.consumers = append(fsp.consumers, consumer)
 		}
 		if errs != nil {
 			return nil, errs
