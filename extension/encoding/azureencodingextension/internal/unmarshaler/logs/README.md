@@ -236,7 +236,69 @@ in OpenTelemetry Collector pipeline (for example, using `transformprocessor`) or
 | `securityCipher`          | `tls.cipher`                  | Log Attribute |
 | `OriginIP`                | `server.address` + `server.port`. If unparsable - `server.original_address` | Log Attribute |
 
-## Recommendation Logs
+## Activity Logs
+
+Activity Logs are a type of Azure platform log that provides insight into subscription-level events. The following categories are supported:
+
+### Administrative
+
+| Azure "properties" Field  | OpenTelemetry                       | OpenTelemetry Scope |
+|---------------------------|-------------------------------------|---------------------|
+| `entity`                  | `azure.administrative.entity`       | Log Attribute |
+| `message`                 | `azure.administrative.message`      | Log Attribute |
+| `hierarchy`               | `azure.administrative.hierarchy`    | Log Attribute |
+
+### Alert
+
+| Azure "properties" Field  | OpenTelemetry                       | OpenTelemetry Scope |
+|---------------------------|-------------------------------------|---------------------|
+| `webHookUri`              | `azure.alert.webhook.uri`           | Log Attribute |
+| `RuleUri`                 | `azure.alert.rule.uri`              | Log Attribute |
+| `RuleName`                | `azure.alert.rule.name`             | Log Attribute |
+| `RuleDescription`         | `azure.alert.rule.description`      | Log Attribute |
+| `Threshold`               | `azure.alert.threshold`             | Log Attribute |
+| `WindowSizeInMinutes`     | `azure.alert.window_size_minutes`   | Log Attribute |
+| `Aggregation`             | `azure.alert.aggregation`           | Log Attribute |
+| `Operator`                | `azure.alert.operator`              | Log Attribute |
+| `MetricName`              | `azure.alert.metric.name`           | Log Attribute |
+| `MetricUnit`              | `azure.alert.metric.unit`           | Log Attribute |
+
+### Autoscale
+
+| Azure "properties" Field  | OpenTelemetry                               | OpenTelemetry Scope |
+|---------------------------|---------------------------------------------|---------------------|
+| `Description`             | `azure.autoscale.description`               | Log Attribute |
+| `ResourceName`            | `azure.autoscale.resource.name`             | Log Attribute |
+| `OldInstancesCount`       | `azure.autoscale.instances.previous_count`  | Log Attribute |
+| `NewInstancesCount`       | `azure.autoscale.instances.count`           | Log Attribute |
+| `LastScaleActionTime`     | `azure.autoscale.resource.last_scale`       | Log Attribute |
+
+### Security
+
+| Azure "properties" Field  | OpenTelemetry                       | OpenTelemetry Scope |
+|---------------------------|-------------------------------------|---------------------|
+| `commandLine`             | `process.command_line`              | Log Attribute |
+| `processName`             | `process.executable.path`           | Log Attribute |
+| `userName`                | `process.owner`                     | Log Attribute |
+| `UserSID`                 | `enduser.id`                        | Log Attribute |
+| `processId`               | `process.pid`                       | Log Attribute |
+| `parentProcess id`        | `process.parent_pid`                | Log Attribute |
+| `accountLogonId`          | `azure.security.account_logon_id`   | Log Attribute |
+| `domainName`              | `azure.security.domain_name`        | Log Attribute |
+| `ActionTaken`             | `azure.security.action_taken`       | Log Attribute |
+| `Severity`                | `azure.security.severity`           | Log Attribute |
+
+### Policy
+
+| Azure "properties" Field  | OpenTelemetry                       | OpenTelemetry Scope |
+|---------------------------|-------------------------------------|---------------------|
+| `isComplianceCheck`       | `azure.policy.compliance_check`     | Log Attribute |
+| `resourceLocation`        | `azure.location`                    | Log Attribute |
+| `ancestors`               | `azure.policy.ancestors`            | Log Attribute |
+| `hierarchy`               | `azure.policy.hierarchy`            | Log Attribute |
+| `policies`                | `azure.policy.policies` (parsed as structured array) | Log Attribute |
+
+### Recommendation
 
 | Azure "properties" Field      | OpenTelemetry                         | OpenTelemetry Scope |
 |-------------------------------|---------------------------------------|---------------------|
@@ -247,3 +309,38 @@ in OpenTelemetry Collector pipeline (for example, using `transformprocessor`) or
 | `recommendationResourceLink`  | `azure.recommendation.link`           | Log Attribute |
 | `recommendationType`          | `azure.recommendation.type`           | Log Attribute |
 | `recommendationRisk`          | `azure.recommendation.risk`           | Log Attribute |
+
+### Service Health
+
+| Azure "properties" Field  | OpenTelemetry                               | OpenTelemetry Scope |
+|---------------------------|---------------------------------------------|---------------------|
+| `title`                   | `azure.servicehealth.title`                 | Log Attribute |
+| `service`                 | `azure.servicehealth.service`               | Log Attribute |
+| `region`                  | `azure.servicehealth.region`                | Log Attribute |
+| `communication`           | `azure.servicehealth.communication.body`    | Log Attribute |
+| `communicationId`         | `azure.servicehealth.communication.id`      | Log Attribute |
+| `incidentType`            | `azure.servicehealth.incident.type`         | Log Attribute |
+| `trackingId`              | `azure.servicehealth.tracking.id`           | Log Attribute |
+| `impactStartTime`         | `azure.servicehealth.impact.start`          | Log Attribute |
+| `impactMitigationTime`    | `azure.servicehealth.impact.mitigation`     | Log Attribute |
+| `impactedServices`        | `azure.servicehealth.impact.services` (parsed as structured array) | Log Attribute |
+| `impactType`              | `azure.servicehealth.impact.type`           | Log Attribute |
+| `impactCategory`          | `azure.servicehealth.impact.category`       | Log Attribute |
+| `defaultLanguageTitle`    | `azure.servicehealth.default_language.title`   | Log Attribute |
+| `defaultLanguageContent`  | `azure.servicehealth.default_language.content` | Log Attribute |
+| `stage`                   | `azure.servicehealth.state`                 | Log Attribute |
+| `maintenanceId`           | `azure.servicehealth.maintenance.id`        | Log Attribute |
+| `maintenanceType`         | `azure.servicehealth.maintenance.type`      | Log Attribute |
+| `isHIR`                   | `azure.servicehealth.is_hir`                | Log Attribute |
+| `IsSynthetic`             | `azure.servicehealth.is_synthetic`          | Log Attribute |
+
+### Resource Health
+
+| Azure "properties" Field  | OpenTelemetry                               | OpenTelemetry Scope |
+|---------------------------|---------------------------------------------|---------------------|
+| `title`                   | `azure.resourcehealth.title`                | Log Attribute |
+| `details`                 | `azure.resourcehealth.details`              | Log Attribute |
+| `currentHealthStatus`     | `azure.resourcehealth.state`                | Log Attribute |
+| `previousHealthStatus`    | `azure.resourcehealth.previous_state`       | Log Attribute |
+| `type`                    | `azure.resourcehealth.type`                 | Log Attribute |
+| `cause`                   | `azure.resourcehealth.cause`                | Log Attribute |
