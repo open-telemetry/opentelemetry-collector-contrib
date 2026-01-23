@@ -68,7 +68,7 @@ type TransformContextOption func(*TransformContext)
 
 // NewTransformContext creates a new TransformContext with the provided parameters.
 //
-// Deprecated: [v0.144.0] Use NewTransformContextPtr.
+// Deprecated: [v0.145.0] Use NewTransformContextPtr.
 func NewTransformContext(sample pprofile.Sample, profile pprofile.Profile, dictionary pprofile.ProfilesDictionary, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeProfiles pprofile.ScopeProfiles, resourceProfiles pprofile.ResourceProfiles, options ...TransformContextOption) TransformContext {
 	tc := TransformContext{
 		sample:               sample,
