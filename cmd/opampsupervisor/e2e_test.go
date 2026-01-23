@@ -261,6 +261,19 @@ service:
 	return bytes.NewBufferString(cfg), h[:]
 }
 
+// createHealthCheckCollectorConfFile creates a collector config file with a healthcheck on the specified port.
+func createHealthCheckCollectorConfFile(t *testing.T, port string) string {
+	cfg, _ := createHealthCheckCollectorConfWithPort(t, port)
+	cfgFile, err := os.CreateTemp(t.TempDir(), "healthcheck_config_*.yaml")
+	require.NoError(t, err)
+	t.Cleanup(func() { cfgFile.Close() })
+
+	_, err = cfgFile.Write(cfg.Bytes())
+	require.NoError(t, err)
+
+	return cfgFile.Name()
+}
+
 func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) (*supervisor.Supervisor, *config.Supervisor) {
 	cfgFile := getSupervisorConfig(t, configType, extraConfigData)
 
@@ -628,6 +641,13 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 
 			require.NoError(t, os.WriteFile(remoteConfigFilePath, marshalledRemoteConfig, 0o600))
 
+			fallbackConfigHealthCheckPort, err := findRandomPort()
+			require.NoError(t, err)
+			fallbackConfigPath, _, _ := createFallbackCollectorConf(
+				t,
+				strconv.Itoa(fallbackConfigHealthCheckPort),
+			)
+
 			connected := atomic.Bool{}
 			server := newUnstartedOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
 				OnConnected: func(ctx context.Context, conn types.Connection) {
@@ -637,20 +657,26 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 			defer server.shutdown()
 
 			extraConfigData := map[string]string{
-				"url":         server.addr,
-				"storage_dir": storageDir,
+				"url":              server.addr,
+				"storage_dir":      storageDir,
+				"fallback_configs": strings.ReplaceAll(fallbackConfigPath, "\\", "\\\\"),
 			}
 			if mode.UseHUPConfigReload {
 				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
-			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			s, supervisorCfg := newSupervisor(t, "fallback", extraConfigData)
 			if mode.UseHUPConfigReload {
 				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
 			}
 
 			require.Nil(t, s.Start(t.Context()))
 			defer s.Shutdown()
+
+			// Fallback should not be applied when a persisted remote config exists.
+			require.Never(t, func() bool {
+				return healthCheckOK(fallbackConfigHealthCheckPort)
+			}, 2*time.Second, 200*time.Millisecond, "Fallback config should not be applied when persisted config exists")
 
 			// Verify the collector runs eventually by pinging the healthcheck extension
 			require.Eventually(t, func() bool {
@@ -1494,6 +1520,15 @@ func createHostMetricsCollectorConf(t *testing.T) (*bytes.Buffer, []byte) {
 	}
 
 	return &confmapBuf, h.Sum(nil)
+}
+
+func healthCheckOK(port int) bool {
+	resp, err := http.Get(fmt.Sprintf("http://localhost:%d", port))
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode >= 200 && resp.StatusCode < 300
 }
 
 // Wait for the Supervisor to connect to or disconnect from the OpAMP server
@@ -2759,11 +2794,20 @@ func createFallbackCollectorConf(t *testing.T, healthCheckPort string) (string, 
 	return fallbackConfigFile.Name(), inputFile, outputFile
 }
 
-func TestSupervisorFallbackOnStartupTimeout(t *testing.T) {
+func TestSupervisorFallbackWhenNoPersistedConfig(t *testing.T) {
 	storageDir := t.TempDir()
 
-	// Create fallback config with healthcheck on port 13133
-	fallbackConfigPath, fallbackInputFile, fallbackOutputFile := createFallbackCollectorConf(t, "13133")
+	fallbackPort, err := findRandomPort()
+	require.NoError(t, err)
+
+	localPort, err := findRandomPort()
+	require.NoError(t, err)
+
+	fallbackConfigPath, fallbackInputFile, fallbackOutputFile := createFallbackCollectorConf(
+		t,
+		strconv.Itoa(fallbackPort),
+	)
+	localConfigPath := createHealthCheckCollectorConfFile(t, strconv.Itoa(localPort))
 
 	// Create an unstarted server - simulating server being unavailable at startup
 	connected := atomic.Bool{}
@@ -2775,30 +2819,25 @@ func TestSupervisorFallbackOnStartupTimeout(t *testing.T) {
 		})
 	defer server.shutdown()
 
-	// Start supervisor with fallback config and short startup timeout
-	// We also provide a local config (healthcheck_config.yaml) so the collector can bootstrap
-	fallbackStartupTimeout := 2 * time.Second
+	// Start supervisor with fallback config and local config for normal operation
 	s, _ := newSupervisor(t, "fallback", map[string]string{
-		"url":                      server.addr,
-		"storage_dir":              storageDir,
-		"local_config":             filepath.Join("testdata", "collector", "healthcheck_config.yaml"),
-		"fallback_configs":         strings.ReplaceAll(fallbackConfigPath, "\\", "\\\\"),
-		"fallback_startup_timeout": fallbackStartupTimeout.String(),
+		"url":              server.addr,
+		"storage_dir":      storageDir,
+		"local_config":     localConfigPath,
+		"fallback_configs": strings.ReplaceAll(fallbackConfigPath, "\\", "\\\\"),
 	})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
-	// Wait for the fallback timeout to trigger and the collector to start with fallback config
-	// The fallback config has healthcheck on port 13133
+	// Collector should start with fallback config while the server is unavailable.
 	require.Eventually(t, func() bool {
-		resp, err := http.Get("http://localhost:13133")
-		if err != nil {
-			return false
-		}
-		defer resp.Body.Close()
-		return resp.StatusCode == http.StatusOK
-	}, 2*fallbackStartupTimeout, 500*time.Millisecond, "Collector did not start with fallback config after startup timeout")
+		return healthCheckOK(fallbackPort)
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not start with fallback config")
+
+	require.Never(t, func() bool {
+		return healthCheckOK(localPort)
+	}, 2*time.Second, 200*time.Millisecond, "Collector should not use local config before initial OpAMP connection")
 
 	// Verify the collector is processing data with fallback config
 	sampleLog := `{"body":"fallback startup test"}`
@@ -2815,24 +2854,25 @@ func TestSupervisorFallbackOnStartupTimeout(t *testing.T) {
 		return n != 0
 	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in fallback output")
 
-	// Now start the OpAMP server
-	server.start()
-
-	// Wait for supervisor to connect
-	waitForSupervisorConnection(server.supervisorConnected, true)
-	require.True(t, connected.Load(), "Supervisor failed to connect after server started")
+	require.False(t, connected.Load(), "Supervisor should not connect without a running server")
 }
 
-func TestSupervisorFallbackRecovery(t *testing.T) {
+func TestSupervisorFallbackDisablesAfterFirstConnect(t *testing.T) {
 	storageDir := t.TempDir()
 
-	// Create remote config for when server is connected
-	remoteCfg, remoteHash, _, _ := createSimplePipelineCollectorConf(t)
+	fallbackPort, err := findRandomPort()
+	require.NoError(t, err)
+	localPort, err := findRandomPort()
+	require.NoError(t, err)
+	for localPort == fallbackPort {
+		localPort, err = findRandomPort()
+		require.NoError(t, err)
+	}
 
 	// Create fallback config for when server is unavailable
-	fallbackConfigPath, _, _ := createFallbackCollectorConf(t, "13135")
+	fallbackConfigPath, _, _ := createFallbackCollectorConf(t, strconv.Itoa(fallbackPort))
+	localConfigPath := createHealthCheckCollectorConfFile(t, strconv.Itoa(localPort))
 
-	var agentConfig atomic.Value
 	connected := atomic.Bool{}
 
 	// Start with an unstarted server to trigger startup fallback
@@ -2841,39 +2881,23 @@ func TestSupervisorFallbackRecovery(t *testing.T) {
 			OnConnected: func(ctx context.Context, conn types.Connection) {
 				connected.Store(true)
 			},
-			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
-				if message.EffectiveConfig != nil {
-					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
-					if config != nil {
-						agentConfig.Store(string(config.Body))
-					}
-				}
-				return &protobufs.ServerToAgent{}
-			},
 		})
 	defer server.shutdown()
 
-	// Start supervisor with fallback config and short startup timeout
-	// We also provide a local config so the collector can bootstrap
+	// Start supervisor with fallback config and local config
 	s, _ := newSupervisor(t, "fallback", map[string]string{
-		"url":                      server.addr,
-		"storage_dir":              storageDir,
-		"local_config":             filepath.Join("testdata", "collector", "healthcheck_config.yaml"),
-		"fallback_configs":         strings.ReplaceAll(fallbackConfigPath, "\\", "\\\\"),
-		"fallback_startup_timeout": "2s",
+		"url":              server.addr,
+		"storage_dir":      storageDir,
+		"local_config":     localConfigPath,
+		"fallback_configs": strings.ReplaceAll(fallbackConfigPath, "\\", "\\\\"),
 	})
 
-	require.Nil(t, s.Start(t.Context()))
+	require.NoError(t, s.Start(t.Context()))
 	defer s.Shutdown()
 
 	// Wait for fallback to be triggered and collector to start with fallback config
 	require.Eventually(t, func() bool {
-		resp, err := http.Get("http://localhost:13135")
-		if err != nil {
-			return false
-		}
-		defer resp.Body.Close()
-		return resp.StatusCode == http.StatusOK
+		return healthCheckOK(fallbackPort)
 	}, 10*time.Second, 500*time.Millisecond, "Collector did not start with fallback config")
 
 	// Now start the OpAMP server
@@ -2883,25 +2907,22 @@ func TestSupervisorFallbackRecovery(t *testing.T) {
 	waitForSupervisorConnection(server.supervisorConnected, true)
 	require.True(t, connected.Load(), "Supervisor failed to connect after server started")
 
-	// Send remote config - supervisor should switch from fallback to remote config
-	server.sendToSupervisor(&protobufs.ServerToAgent{
-		RemoteConfig: &protobufs.AgentRemoteConfig{
-			Config: &protobufs.AgentConfigMap{
-				ConfigMap: map[string]*protobufs.AgentConfigFile{
-					"": {Body: remoteCfg.Bytes()},
-				},
-			},
-			ConfigHash: remoteHash,
-		},
-	})
-
-	// Wait for remote config to be applied - this verifies recovery from fallback
+	// After the first connection, the supervisor should switch to the normal config.
 	require.Eventually(t, func() bool {
-		cfg, ok := agentConfig.Load().(string)
-		if ok {
-			// The effective config should now contain filelog from remote config
-			return strings.Contains(cfg, "filelog")
-		}
-		return false
-	}, 10*time.Second, 500*time.Millisecond, "Collector did not switch from fallback to remote config after recovery")
+		return healthCheckOK(localPort)
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not switch to normal config after first connection")
+	require.Eventually(t, func() bool {
+		return !healthCheckOK(fallbackPort)
+	}, 10*time.Second, 500*time.Millisecond, "Fallback config still active after first connection")
+
+	// Simulate the backend going down. Fallback should not be reapplied.
+	server.closeHTTPServer()
+	waitForSupervisorConnection(server.supervisorConnected, false)
+
+	require.Eventually(t, func() bool {
+		return healthCheckOK(localPort)
+	}, 5*time.Second, 500*time.Millisecond, "Collector stopped running after backend loss")
+	require.Never(t, func() bool {
+		return healthCheckOK(fallbackPort)
+	}, 3*time.Second, 200*time.Millisecond, "Fallback config should not be re-applied after initial connection")
 }
