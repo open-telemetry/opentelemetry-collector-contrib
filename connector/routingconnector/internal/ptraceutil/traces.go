@@ -3,7 +3,11 @@
 
 package ptraceutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutil"
 
-import "go.opentelemetry.io/collector/pdata/ptrace"
+import (
+	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pdatautil"
+)
 
 // MoveResourcesIf calls f sequentially for each ResourceSpans present in the first ptrace.Traces.
 // If f returns true, the element is removed from the first ptrace.Traces and added to the second ptrace.Traces.
@@ -25,27 +29,25 @@ func MoveSpansWithContextIf(from, to ptrace.Traces, f func(ptrace.ResourceSpans,
 	resourceSpansSlice := from.ResourceSpans()
 	resourceSpansSlice.RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		scopeSpanSlice := rs.ScopeSpans()
-		var resourceSpansCopy *ptrace.ResourceSpans
+		var resourceSpansCopy pdatautil.OnceValue[ptrace.ResourceSpans]
 		scopeSpanSlice.RemoveIf(func(ss ptrace.ScopeSpans) bool {
 			spanSlice := ss.Spans()
-			var scopeSpansCopy *ptrace.ScopeSpans
+			var scopeSpansCopy pdatautil.OnceValue[ptrace.ScopeSpans]
 			spanSlice.RemoveIf(func(span ptrace.Span) bool {
 				if !f(rs, ss, span) {
 					return false
 				}
-				if resourceSpansCopy == nil {
-					rmc := to.ResourceSpans().AppendEmpty()
-					resourceSpansCopy = &rmc
-					rs.Resource().CopyTo(resourceSpansCopy.Resource())
-					resourceSpansCopy.SetSchemaUrl(rs.SchemaUrl())
+				if !resourceSpansCopy.IsInit() {
+					resourceSpansCopy.Init(to.ResourceSpans().AppendEmpty())
+					rs.Resource().CopyTo(resourceSpansCopy.Value().Resource())
+					resourceSpansCopy.Value().SetSchemaUrl(rs.SchemaUrl())
 				}
-				if scopeSpansCopy == nil {
-					smc := resourceSpansCopy.ScopeSpans().AppendEmpty()
-					scopeSpansCopy = &smc
-					ss.Scope().CopyTo(scopeSpansCopy.Scope())
-					scopeSpansCopy.SetSchemaUrl(ss.SchemaUrl())
+				if !scopeSpansCopy.IsInit() {
+					scopeSpansCopy.Init(resourceSpansCopy.Value().ScopeSpans().AppendEmpty())
+					ss.Scope().CopyTo(scopeSpansCopy.Value().Scope())
+					scopeSpansCopy.Value().SetSchemaUrl(ss.SchemaUrl())
 				}
-				span.MoveTo(scopeSpansCopy.Spans().AppendEmpty())
+				span.MoveTo(scopeSpansCopy.Value().Spans().AppendEmpty())
 				return true
 			})
 			return ss.Spans().Len() == 0
