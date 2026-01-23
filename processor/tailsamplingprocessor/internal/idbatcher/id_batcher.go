@@ -76,6 +76,11 @@ func New(numBatches, newBatchesInitialCapacity uint64) (Batcher, error) {
 	if numBatches < 1 {
 		return nil, ErrInvalidNumBatches
 	}
+	if newBatchesInitialCapacity == 0 {
+		// Always allocate a small map rather than sending a size hint of 0.
+		// As the batcher runs it will allocate based on previous batch sizes.
+		newBatchesInitialCapacity = 10
+	}
 
 	batcher := &batcher{
 		batches:                   make([]Batch, numBatches),
@@ -106,7 +111,7 @@ func (b *batcher) MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFr
 		delete(b.batches[currentIdx], id)
 		proposedIdx := proposedBatch % uint64(len(b.batches))
 		if b.batches[proposedIdx] == nil {
-			b.batches[proposedIdx] = make(Batch, max(b.newBatchesInitialCapacity, 10))
+			b.batches[proposedIdx] = make(Batch, b.newBatchesInitialCapacity)
 		}
 		b.batches[proposedIdx][id] = struct{}{}
 		return proposedBatch
