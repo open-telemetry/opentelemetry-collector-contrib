@@ -69,7 +69,7 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/klauspost/compress v1.18.2 // indirect
+	github.com/klauspost/compress v1.18.3 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.144.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.144.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.144.0
