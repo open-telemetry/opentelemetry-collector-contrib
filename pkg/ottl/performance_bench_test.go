@@ -5,6 +5,7 @@ package ottl_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -29,17 +30,17 @@ var (
 func BenchmarkParserParseStatements(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
 
-	logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create log parser: %v", err)
 	}
 
-	spanParser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
+	spanParser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[*ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create span parser: %v", err)
 	}
 
-	metricParser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
+	metricParser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create metric parser: %v", err)
 	}
@@ -56,7 +57,7 @@ func BenchmarkParserParseStatements(b *testing.B) {
 	for _, scenario := range logScenarios {
 		b.Run("logs/"+scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				parsed, err := logParser.ParseStatements(scenario.statements)
 				if err != nil {
 					b.Fatalf("failed to parse log statements: %v", err)
@@ -78,7 +79,7 @@ func BenchmarkParserParseStatements(b *testing.B) {
 	for _, scenario := range spanScenarios {
 		b.Run("spans/"+scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				parsed, err := spanParser.ParseStatements(scenario.statements)
 				if err != nil {
 					b.Fatalf("failed to parse span statements: %v", err)
@@ -100,7 +101,7 @@ func BenchmarkParserParseStatements(b *testing.B) {
 	for _, scenario := range metricScenarios {
 		b.Run("metrics/"+scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				parsed, err := metricParser.ParseStatements(scenario.statements)
 				if err != nil {
 					b.Fatalf("failed to parse metric statements: %v", err)
@@ -113,7 +114,7 @@ func BenchmarkParserParseStatements(b *testing.B) {
 
 func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create log parser: %v", err)
 	}
@@ -136,7 +137,7 @@ func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 		}
 		sequence := ottllog.NewStatementSequence(parsed, settings)
 
-		contexts := make([]ottllog.TransformContext, benchmarkContextPoolSize)
+		contexts := make([]*ottllog.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
 			contexts[i] = newBenchmarkLogContext(len(scenario.statements))
 		}
@@ -144,18 +145,22 @@ func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 		b.Run(scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for i := 0; b.Loop(); i++ {
 				if err := sequence.Execute(ctx, contexts[i%len(contexts)]); err != nil {
 					b.Fatalf("failed to execute log statements: %v", err)
 				}
 			}
 		})
+
+		for i := range contexts {
+			contexts[i].Close()
+		}
 	}
 }
 
 func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
+	parser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[*ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create span parser: %v", err)
 	}
@@ -178,7 +183,7 @@ func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 		}
 		sequence := ottlspan.NewStatementSequence(parsed, settings)
 
-		contexts := make([]ottlspan.TransformContext, benchmarkContextPoolSize)
+		contexts := make([]*ottlspan.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
 			contexts[i] = newBenchmarkSpanContext(len(scenario.statements))
 		}
@@ -186,18 +191,21 @@ func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 		b.Run(scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for i := 0; b.Loop(); i++ {
 				if err := sequence.Execute(ctx, contexts[i%len(contexts)]); err != nil {
 					b.Fatalf("failed to execute span statements: %v", err)
 				}
 			}
 		})
+		for i := range contexts {
+			contexts[i].Close()
+		}
 	}
 }
 
 func BenchmarkStatementSequenceExecuteMetrics(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
+	parser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create metric parser: %v", err)
 	}
@@ -220,7 +228,7 @@ func BenchmarkStatementSequenceExecuteMetrics(b *testing.B) {
 		}
 		sequence := ottlmetric.NewStatementSequence(parsed, settings)
 
-		contexts := make([]ottlmetric.TransformContext, benchmarkContextPoolSize)
+		contexts := make([]*ottlmetric.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
 			contexts[i] = newBenchmarkMetricContext(len(scenario.statements))
 		}
@@ -228,18 +236,22 @@ func BenchmarkStatementSequenceExecuteMetrics(b *testing.B) {
 		b.Run(scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for i := 0; b.Loop(); i++ {
 				if err := sequence.Execute(ctx, contexts[i%len(contexts)]); err != nil {
 					b.Fatalf("failed to execute metric statements: %v", err)
 				}
 			}
 		})
+
+		for i := range contexts {
+			contexts[i].Close()
+		}
 	}
 }
 
 func BenchmarkConditionSequenceEvalLogs(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create log parser: %v", err)
 	}
@@ -262,7 +274,7 @@ func BenchmarkConditionSequenceEvalLogs(b *testing.B) {
 		}
 		sequence := ottllog.NewConditionSequence(parsed, settings)
 
-		contexts := make([]ottllog.TransformContext, benchmarkContextPoolSize)
+		contexts := make([]*ottllog.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
 			contexts[i] = newBenchmarkLogContext(len(scenario.predicates))
 		}
@@ -270,7 +282,7 @@ func BenchmarkConditionSequenceEvalLogs(b *testing.B) {
 		b.Run(scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for i := 0; b.Loop(); i++ {
 				result, err := sequence.Eval(ctx, contexts[i%len(contexts)])
 				if err != nil {
 					b.Fatalf("failed to evaluate log conditions: %v", err)
@@ -278,12 +290,15 @@ func BenchmarkConditionSequenceEvalLogs(b *testing.B) {
 				conditionSequenceResult = result
 			}
 		})
+		for i := range contexts {
+			contexts[i].Close()
+		}
 	}
 }
 
 func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
-	parser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
+	parser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
 	if err != nil {
 		b.Fatalf("failed to create metric parser: %v", err)
 	}
@@ -306,7 +321,7 @@ func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
 		}
 		sequence := ottlmetric.NewConditionSequence(parsed, settings)
 
-		contexts := make([]ottlmetric.TransformContext, benchmarkContextPoolSize)
+		contexts := make([]*ottlmetric.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
 			contexts[i] = newBenchmarkMetricContext(len(scenario.predicates))
 		}
@@ -314,7 +329,7 @@ func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
 		b.Run(scenario.name, func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for i := 0; b.Loop(); i++ {
 				result, err := sequence.Eval(ctx, contexts[i%len(contexts)])
 				if err != nil {
 					b.Fatalf("failed to evaluate metric conditions: %v", err)
@@ -322,12 +337,15 @@ func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
 				conditionSequenceResult = result
 			}
 		})
+		for i := range contexts {
+			contexts[i].Close()
+		}
 	}
 }
 
 func buildMetricStatements(count int) []string {
 	result := make([]string, 0, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		switch i % 5 {
 		case 0:
 			result = append(result, fmt.Sprintf(`set(metric.metadata["copy_source_%[1]d"], metric.metadata["source_%[1]d"])`, i))
@@ -346,7 +364,7 @@ func buildMetricStatements(count int) []string {
 
 func buildMetricConditions(count int) []string {
 	result := make([]string, 0, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		switch i % 5 {
 		case 0:
 			result = append(result, "metric.type == METRIC_DATA_TYPE_SUM")
@@ -363,7 +381,7 @@ func buildMetricConditions(count int) []string {
 	return result
 }
 
-func newBenchmarkMetricContext(attributeCount int) ottlmetric.TransformContext {
+func newBenchmarkMetricContext(attributeCount int) *ottlmetric.TransformContext {
 	metrics := pmetric.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 	resource := resourceMetrics.Resource()
@@ -399,17 +417,17 @@ func newBenchmarkMetricContext(attributeCount int) ottlmetric.TransformContext {
 	dp.Attributes().PutStr("method", "GET")
 	dp.SetIntValue(4200)
 
-	for i := 0; i < attributeCount; i++ {
+	for i := range attributeCount {
 		metric.Metadata().PutStr(fmt.Sprintf("source_%d", i), fmt.Sprintf("value_%d", i))
 		dp.Attributes().PutStr(fmt.Sprintf("label_%d", i), fmt.Sprintf("value_%d", i))
 	}
 
-	return ottlmetric.NewTransformContext(metric, scopeMetrics.Metrics(), scope, resource, scopeMetrics, resourceMetrics)
+	return ottlmetric.NewTransformContextPtr(resourceMetrics, scopeMetrics, metric)
 }
 
 func buildLogStatements(count int) []string {
 	result := make([]string, 0, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		switch i % 5 {
 		case 0:
 			result = append(result, fmt.Sprintf(`set(log.attributes["conditional_copy_%[1]d"], log.attributes["source_%[1]d"]) where log.attributes["severity_text"] == "error"`, i))
@@ -428,7 +446,7 @@ func buildLogStatements(count int) []string {
 
 func buildSpanStatements(count int) []string {
 	result := make([]string, 0, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		switch i % 4 {
 		case 0:
 			result = append(result, fmt.Sprintf(`set(span.attributes["span_copy_%[1]d"], span.attributes["source_%[1]d"]) where span.kind.string == "SPAN_KIND_CLIENT"`, i))
@@ -445,7 +463,7 @@ func buildSpanStatements(count int) []string {
 
 func buildLogConditions(count int) []string {
 	result := make([]string, 0, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		switch i % 3 {
 		case 0:
 			result = append(result, fmt.Sprintf(`log.attributes["source_%[1]d"] != nil`, i))
@@ -458,7 +476,7 @@ func buildLogConditions(count int) []string {
 	return result
 }
 
-func newBenchmarkLogContext(attributeCount int) ottllog.TransformContext {
+func newBenchmarkLogContext(attributeCount int) *ottllog.TransformContext {
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	resource := resourceLogs.Resource()
@@ -480,16 +498,16 @@ func newBenchmarkLogContext(attributeCount int) ottllog.TransformContext {
 	tags.AppendEmpty().SetStr("prod")
 	tags.AppendEmpty().SetStr("critical")
 
-	for i := 0; i < attributeCount; i++ {
+	for i := range attributeCount {
 		logRecord.Attributes().PutStr(fmt.Sprintf("source_%d", i), fmt.Sprintf("value_%d", i))
 	}
 
 	logRecord.Body().SetStr("benchmark log record")
 
-	return ottllog.NewTransformContext(logRecord, scope, resource, scopeLogs, resourceLogs)
+	return ottllog.NewTransformContextPtr(resourceLogs, scopeLogs, logRecord)
 }
 
-func newBenchmarkSpanContext(attributeCount int) ottlspan.TransformContext {
+func newBenchmarkSpanContext(attributeCount int) *ottlspan.TransformContext {
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
 	resource := resourceSpans.Resource()
@@ -512,9 +530,141 @@ func newBenchmarkSpanContext(attributeCount int) ottlspan.TransformContext {
 	span.Status().SetCode(ptrace.StatusCodeOk)
 	span.Status().SetMessage("ok")
 
-	for i := 0; i < attributeCount; i++ {
+	for i := range attributeCount {
 		span.Attributes().PutStr(fmt.Sprintf("source_%d", i), fmt.Sprintf("span_value_%d", i))
 	}
 
-	return ottlspan.NewTransformContext(span, scope, resource, scopeSpans, resourceSpans)
+	return ottlspan.NewTransformContextPtr(resourceSpans, scopeSpans, span)
+}
+
+func BenchmarkSliceToMap(b *testing.B) {
+	settings := componenttest.NewNopTelemetrySettings()
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	if err != nil {
+		b.Fatalf("failed to create log parser: %v", err)
+	}
+
+	stmtsNoPaths := []string{
+		`set(log.attributes["mapped_no_paths"], SliceToMap(log.attributes["arr"]))`,
+	}
+	stmtsKeyOnly := []string{
+		`set(log.attributes["mapped_key_only"], SliceToMap(log.attributes["arr"], ["id"]))`,
+	}
+	stmtsKeyAndValue := []string{
+		`set(log.attributes["mapped_key_value"], SliceToMap(log.attributes["arr"], ["id"], ["nested","k"]))`,
+	}
+
+	parsedNoPaths, err := parser.ParseStatements(stmtsNoPaths)
+	if err != nil {
+		b.Fatalf("failed to parse SliceToMap no-paths statements: %v", err)
+	}
+	seqNoPaths := ottllog.NewStatementSequence(parsedNoPaths, settings)
+
+	parsedKeyOnly, err := parser.ParseStatements(stmtsKeyOnly)
+	if err != nil {
+		b.Fatalf("failed to parse SliceToMap key-only statements: %v", err)
+	}
+	seqKeyOnly := ottllog.NewStatementSequence(parsedKeyOnly, settings)
+
+	parsedKeyAndValue, err := parser.ParseStatements(stmtsKeyAndValue)
+	if err != nil {
+		b.Fatalf("failed to parse SliceToMap key+value statements: %v", err)
+	}
+	seqKeyAndValue := ottllog.NewStatementSequence(parsedKeyAndValue, settings)
+
+	sizes := []struct {
+		label string
+		n     int
+	}{
+		{"small", 50},
+		{"medium", 200},
+	}
+
+	for _, sz := range sizes {
+		// no_paths: arr is slice of primitives
+		b.Run("SliceToMap/no_paths/"+sz.label, func(b *testing.B) {
+			ctx := b.Context()
+			tc := newSliceContextWithPrimitiveArr(sz.n)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				if err := seqNoPaths.Execute(ctx, tc); err != nil {
+					b.Fatalf("execute failed: %v", err)
+				}
+			}
+			tc.Close()
+		})
+
+		// key_only: arr is slice of maps
+		b.Run("SliceToMap/key_only/"+sz.label, func(b *testing.B) {
+			ctx := b.Context()
+			tc := newSliceContextWithMapArr(sz.n)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				if err := seqKeyOnly.Execute(ctx, tc); err != nil {
+					b.Fatalf("execute failed: %v", err)
+				}
+			}
+			tc.Close()
+		})
+
+		// key_and_value: arr is slice of maps
+		b.Run("SliceToMap/key_and_value/"+sz.label, func(b *testing.B) {
+			ctx := b.Context()
+			tc := newSliceContextWithMapArr(sz.n)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				if err := seqKeyAndValue.Execute(ctx, tc); err != nil {
+					b.Fatalf("execute failed: %v", err)
+				}
+			}
+			tc.Close()
+		})
+	}
+}
+
+func newSliceContextWithPrimitiveArr(arrSize int) *ottllog.TransformContext {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
+
+	lr.SetTimestamp(pcommon.Timestamp(1710000000000000000))
+	lr.SetObservedTimestamp(pcommon.Timestamp(1710000000000000000))
+
+	arr := lr.Attributes().PutEmptySlice("arr")
+	arr.EnsureCapacity(arrSize)
+	for i := range arrSize {
+		arr.AppendEmpty().SetStr("v_" + strconv.Itoa(i))
+	}
+
+	return ottllog.NewTransformContextPtr(rl, sl, lr)
+}
+
+func newSliceContextWithMapArr(arrSize int) *ottllog.TransformContext {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
+
+	lr.SetTimestamp(pcommon.Timestamp(1710000000000000000))
+	lr.SetObservedTimestamp(pcommon.Timestamp(1710000000000000000))
+
+	arr := lr.Attributes().PutEmptySlice("arr")
+	arr.EnsureCapacity(arrSize)
+	for i := range arrSize {
+		elem := arr.AppendEmpty()
+		m := elem.SetEmptyMap()
+		m.PutStr("id", "item_"+strconv.Itoa(i))
+		m.PutInt("val", int64(i))
+		nm := m.PutEmptyMap("nested")
+		nm.PutStr("k", "v_"+strconv.Itoa(i))
+	}
+
+	return ottllog.NewTransformContextPtr(rl, sl, lr)
 }

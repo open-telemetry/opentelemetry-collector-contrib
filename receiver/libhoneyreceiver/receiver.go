@@ -86,11 +86,11 @@ func (r *libhoneyReceiver) startHTTPServer(ctx context.Context, host component.H
 	}
 
 	var err error
-	if r.server, err = httpCfg.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux); err != nil {
+	if r.server, err = httpCfg.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, httpMux); err != nil {
 		return err
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpCfg.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpCfg.NetAddr.Endpoint))
 	var hln net.Listener
 	if hln, err = httpCfg.ToListener(ctx); err != nil {
 		return err

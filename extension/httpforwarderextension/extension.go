@@ -32,10 +32,10 @@ var _ extension.Extension = (*httpForwarder)(nil)
 func (h *httpForwarder) Start(ctx context.Context, host component.Host) error {
 	listener, err := h.config.Ingress.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", h.config.Ingress.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", h.config.Ingress.NetAddr.Endpoint, err)
 	}
 
-	httpClient, err := h.config.Egress.ToClient(ctx, host, h.settings)
+	httpClient, err := h.config.Egress.ToClient(ctx, host.GetExtensions(), h.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -44,7 +44,7 @@ func (h *httpForwarder) Start(ctx context.Context, host component.Host) error {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/", h.forwardRequest)
 
-	h.server, err = h.config.Ingress.ToServer(ctx, host, h.settings, handler)
+	h.server, err = h.config.Ingress.ToServer(ctx, host.GetExtensions(), h.settings, handler)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}

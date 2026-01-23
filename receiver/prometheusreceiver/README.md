@@ -21,10 +21,10 @@ Receives metric data in [Prometheus](https://prometheus.io/) format. See the
 ## ⚠️ Warning
 
 Note: This component is currently work in progress. It has several limitations
-and please don't use it if the following limitations is a concern:
+and please don't use it if the following limitations are a concern:
 
 * Collector cannot auto-scale the scraping yet when multiple replicas of the
-  collector is run. 
+  collector are run. 
 * When running multiple replicas of the collector with the same config, it will
   scrape the targets multiple times.
 * Users need to configure each replica with different scraping configuration
@@ -86,9 +86,7 @@ receivers:
 The prometheus receiver also supports additional top-level options:
 
 - **trim_metric_suffixes**: [**Experimental**] When set to true, this enables trimming unit and some counter type suffixes from metric names. For example, it would cause `singing_duration_seconds_total` to be trimmed to `singing_duration`. This can be useful when trying to restore the original metric names used in OpenTelemetry instrumentation. Defaults to false.
-- **use_start_time_metric**: When set to true, this enables retrieving the start time of all counter metrics from the process_start_time_seconds metric. This is only correct if all counters on that endpoint started after the process start time, and the process is the only actor exporting the metric after the process started. It should not be used in "exporters" which export counters that may have started before the process itself. Use only if you know what you are doing, as this may result in incorrect rate calculations. Defaults to false.
-- **start_time_metric_regex**: The regular expression for the start time metric, and is only applied when use_start_time_metric is enabled.  Defaults to process_start_time_seconds.
-- **report_extra_scrape_metrics**: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`
+- **report_extra_scrape_metrics**: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`. Deprecated; use the feature gate `receiver.prometheusreceiver.EnableReportExtraScrapeMetrics` instead.
 
 Example configuration:
 
@@ -96,9 +94,6 @@ Example configuration:
 receivers:
     prometheus:
       trim_metric_suffixes: true
-      use_start_time_metric: true
-      report_extra_scrape_metrics: true
-      start_time_metric_regex: foo_bar_.*
       config:
         scrape_configs:
           - job_name: 'otel-collector'
@@ -107,17 +102,88 @@ receivers:
               - targets: ['0.0.0.0:8888']
 ```
 
+## Complete Configuration Example
+
+The following example demonstrates a complete end-to-end configuration showing how to use the Prometheus receiver with processors and exporters in a service pipeline:
+
+```yaml
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'my-service'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['localhost:9090']
+          # Filter metrics to keep only those matching the regex pattern
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: 'http_request_duration_seconds.*'
+              action: keep
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1000
+  resource:
+    attributes:
+      # Note: service.name is automatically set by the prometheus receiver from job_name
+      - key: deployment.environment
+        value: production
+        action: upsert
+
+exporters:
+  otlp:
+    endpoint: otel-collector:4317
+    tls:
+      insecure: false
+      # For local testing only you may set `insecure: true`, but avoid this in production.
+  prometheusremotewrite:
+    endpoint: https://prometheus:9090/api/v1/write
+
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      processors: [resource, batch]
+      exporters: [otlp, prometheusremotewrite]
+```
+
+This configuration:
+- Scrapes metrics from a service running on `localhost:9090` every 5 seconds
+- Filters metrics to keep only those matching `http_request_duration_seconds.*` using `metric_relabel_configs`
+- Adds resource attributes (`deployment.environment`) to all metrics (note: `service.name` is automatically set from the job name)
+- Batches metrics before exporting to improve efficiency when multiple scrapes occur
+- Exports metrics to both an OTLP endpoint and Prometheus remote write endpoint
+
 ## Prometheus native histograms
 
 Native histograms are a data type in Prometheus, for more information see the [specification](https://prometheus.io/docs/specs/native_histograms/).
 
-To start scraping native histograms, set `config.global.scrape_protocols` to `[ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]`
-in the receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
+The Prometheus receiver automatically converts native histograms to OpenTelemetry exponential histograms. To enable scraping and ingestion of native histograms, you need to configure two things in your Prometheus scrape config:
 
-To enable converting native histograms to OpenTelemetry exponential histograms, enable the feature gate `receiver.prometheusreceiver.EnableNativeHistograms`.
-The feature is considered experimental.
+1. **Enable native histogram scraping**: Set `scrape_native_histograms: true` (globally or per-job)
+2. **Use the protobuf scrape protocol**: Include `PrometheusProto` in `scrape_protocols` (required until Prometheus supports native histograms over text formats)
 
-This feature applies to the most common integer counter histograms, gauge histograms are dropped.
+```yaml
+receivers:
+  prometheus:
+    config:
+      global:
+        # Required: Include PrometheusProto to scrape native histograms
+        scrape_protocols: [ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]
+        # Enable native histogram scraping globally
+        scrape_native_histograms: true
+      scrape_configs:
+        - job_name: 'my-app'
+          # Per-job setting takes precedence over global
+          # scrape_native_histograms: true
+          static_configs:
+            - targets: ['localhost:8080']
+```
+
+
+This feature applies to the most common integer counter histograms; gauge histograms are dropped.
 In case a metric has both the conventional (aka classic) buckets and also native histogram buckets, only the native histogram buckets will be
 taken into account to create the corresponding exponential histogram. To scrape the classic buckets instead use the
 [scrape option](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) `always_scrape_classic_histograms`.
@@ -137,7 +203,7 @@ receivers:
 
 The `target_allocator` section embeds the full [confighttp client configuration][confighttp].
 
-[confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration
+[confighttp]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#client-configuration
 
 ## Exemplars
 This receiver accepts exemplars coming in Prometheus format and converts it to OTLP format.
@@ -182,37 +248,301 @@ More info about querying `/api/v1/` and the data format that is returned can be 
 
 ## Feature gates
 
-- `receiver.prometheusreceiver.UseCreatedMetric`: Start time for Summary, Histogram 
-  and Sum metrics can be retrieved from `_created` metrics. Currently, this behaviour
-  is disabled by default. To enable it, use the following feature gate option:
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this receiver.
+
+Feature gates can be enabled using the `--feature-gates` flag:
 
 ```shell
-"--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
-```
-- `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion`: Enables the Prometheus feature flag [created-timestamps-zero-injection](https://prometheus.io/docs/prometheus/latest/feature_flags/#created-timestamps-zero-injection). Currently, this behaviour is disabled by default due to worse CPU performance with higher metric volumes. To enable it, use the following feature gate option:
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion"
-```
-- `receiver.prometheusreceiver.UseCollectorStartTimeFallback`:  enables using
-  the collector start time as the metric start time if the
-  process_start_time_seconds metric yields no result (for example if targets
-  expose no process_start_time_seconds metric). This is useful when the collector
-  start time is a good approximation of the process start time - for example in
-  serverless workloads when the collector is deployed as a sidecar. To enable it,
-  use the following feature gate option:
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.UseCollectorStartTimeFallback"
-```
-- `receiver.prometheusreceiver.EnableNativeHistograms`: process and turn native histogram metrics into OpenTelemetry exponential histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms"
+"--feature-gates=<feature-gate>"
 ```
 
-- `receiver.prometheusreceiver.RemoveStartTimeAdjustment`: If enabled, the prometheus receiver no longer sets the start timestamp of metrics if it is not known. Use the `metricstarttime` processor instead if you need this functionality.
+## Troubleshooting and Best Practices
 
-```shell
-"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment"
+This section provides guidance for common issues, performance optimization, and best practices when using the Prometheus receiver in production environments.
+
+### Common Issues and Solutions
+
+#### Metrics Not Appearing
+
+**Symptoms**: Metrics are not being scraped or exported despite correct configuration.
+
+**Possible Causes and Solutions**:
+
+1. **Target Not Reachable**
+   - Verify network connectivity between the collector and target endpoints
+   - Check firewall rules and security groups
+   - Test connectivity using `curl` or `wget` to the target's metrics endpoint
+
+2. **Incorrect Scrape Configuration**
+   - Verify `scrape_configs` syntax matches Prometheus format
+   - Check that `targets` are correctly formatted (e.g., `['hostname:port']`)
+   - Ensure `job_name` is unique and descriptive
+
+3. **Metric Filtering Too Aggressive**
+   - Review `metric_relabel_configs` to ensure desired metrics are not being dropped
+   - Temporarily remove filters to verify metrics are being scraped
+   - Use the Prometheus API server (if enabled) to inspect active targets
+
+4. **Service Discovery Not Working**
+   - For Kubernetes service discovery, verify RBAC permissions for service account
+   - Check that service discovery configurations match your environment
+   - Review collector logs for service discovery errors
+
+**Debugging Steps**:
+```yaml
+# Enable the Prometheus API server to inspect targets
+receivers:
+  prometheus:
+    api_server:
+      enabled: true
+      server_config:
+        endpoint: "localhost:9090"
 ```
+
+Then query `/api/v1/targets` to see target status and any scrape errors.
+
+- **Enable debug logs**: You can also enable debug-level logs in the collector to see detailed scrape errors in logs:
+
+```yaml
+service:
+  telemetry:
+    logs:
+      level: debug  # Use with caution in production
+```
+
+This will surface detailed scrape errors and help diagnose connectivity or configuration issues.
+
+#### High CPU Usage
+
+**Symptoms**: Collector consuming excessive CPU resources, especially with high metric volumes.
+
+**Solutions**:
+
+1. **Optimize Scrape Intervals**
+   - Increase `scrape_interval` for less critical metrics
+   - Use different intervals for different jobs based on metric importance
+   - Consider using `scrape_timeout` to prevent long-running scrapes
+
+2. **Reduce Metric Volume**
+   - Use `metric_relabel_configs` to drop unnecessary metrics at scrape time
+   - Filter metrics before they enter the pipeline to reduce processing overhead
+   - Consider using the `filter` processor for more complex filtering logic
+
+3. **Disable Expensive Features**
+   - Avoid enabling `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion` unless necessary (known CPU impact)
+   - Use `batch` processor to reduce export frequency
+   - Consider disabling extra scrape metrics if not needed
+
+**Example Configuration**:
+```yaml
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'high-frequency'
+          scrape_interval: 30s  # Increased from default
+          scrape_timeout: 10s    # Prevent hanging scrapes
+          metric_relabel_configs:
+            # Drop verbose metrics to reduce volume
+            - source_labels: [__name__]
+              regex: 'go_.*'
+              action: drop
+```
+
+#### Memory Issues
+
+**Symptoms**: Collector running out of memory, especially with many targets or long scrape intervals.
+
+**Solutions**:
+
+1. **Limit Target Count**
+   - Use service discovery filters to reduce number of targets
+   - Implement manual sharding across multiple collector instances
+   - Use TargetAllocator for automatic sharding in Kubernetes
+
+2. **Optimize Batch Processing**
+   - Configure `batch` processor with appropriate `send_batch_size` and `timeout`
+   - Balance between memory usage (smaller batches) and efficiency (larger batches)
+
+3. **Monitor Memory Usage**
+   - Enable the `memory_limiter` processor to prevent OOM conditions
+   - Set appropriate memory limits based on your metric volume
+
+**Example Configuration**:
+```yaml
+processors:
+  memory_limiter:
+    limit_mib: 512
+    check_interval: 1s
+  batch:
+    timeout: 10s
+    send_batch_size: 1000  # Adjust based on memory constraints
+```
+
+### Best Practices for Production
+
+#### Multi-Replica Deployments
+
+When running multiple collector replicas, manually shard scraping to avoid duplicate metrics:
+
+**Option 1: Manual Sharding by Job**
+```yaml
+# Collector Replica 1
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'service-a'
+          static_configs:
+            - targets: ['service-a:9090']
+        - job_name: 'service-b'
+          static_configs:
+            - targets: ['service-b:9090']
+
+# Collector Replica 2
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'service-c'
+          static_configs:
+            - targets: ['service-c:9090']
+        - job_name: 'service-d'
+          static_configs:
+            - targets: ['service-d:9090']
+```
+
+**Option 2: Use TargetAllocator (Recommended for Kubernetes)**
+```yaml
+receivers:
+  prometheus:
+    target_allocator:
+      endpoint: http://targetallocator-service:8080
+      interval: 30s
+      collector_id: ${HOSTNAME}  # Unique per replica
+```
+
+#### Performance Optimization
+
+1. **Scrape Interval Tuning**
+   - Critical metrics: 5-15 seconds
+   - Standard metrics: 30-60 seconds
+   - Low-priority metrics: 2-5 minutes
+
+2. **Metric Filtering Strategy**
+   - Filter at scrape time using `metric_relabel_configs` (most efficient)
+   - Use `filter` processor for complex logic
+   - Avoid filtering in exporters when possible
+
+3. **Resource Management**
+   - Always use `memory_limiter` processor in production
+   - Configure appropriate resource limits in Kubernetes
+   - Monitor collector metrics (CPU, memory, scrape duration)
+
+**Example Production Configuration**:
+```yaml
+receivers:
+  prometheus:
+    config:
+      global:
+        scrape_interval: 30s
+        scrape_timeout: 10s
+      scrape_configs:
+        - job_name: 'critical-services'
+          scrape_interval: 15s
+          static_configs:
+            - targets: ['service1:9090', 'service2:9090']
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: 'http_request_duration_seconds.*|http_request_total'
+              action: keep
+
+processors:
+  memory_limiter:
+    limit_mib: 1024
+    check_interval: 1s
+  batch:
+    timeout: 10s
+    send_batch_size: 2000
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: production
+        action: upsert
+
+exporters:
+  otlp:
+    endpoint: otel-collector:4317
+    tls:
+      insecure: false
+      ca_file: /etc/ssl/certs/ca-certificates.crt
+```
+
+#### Monitoring the Receiver
+
+Monitor the Prometheus receiver itself to ensure it's operating correctly:
+
+1. **Enable Extra Scrape Metrics**
+   ```yaml
+   # Use feature gate or deprecated flag
+   # This exposes prometheus_receiver_scrapes_total, prometheus_receiver_scrape_errors_total, etc.
+   ```
+
+2. **Key Metrics to Monitor**:
+   - `prometheus_receiver_scrapes_total`: Total number of scrapes
+   - `prometheus_receiver_scrape_errors_total`: Number of failed scrapes
+   - `prometheus_receiver_target_scrapes_exceeded_timeout_total`: Timeouts
+   - Collector's internal metrics (CPU, memory, pipeline metrics)
+
+3. **Set Up Alerts**:
+   - Alert on high scrape error rates
+   - Alert on scrape timeouts
+   - Alert on collector memory/CPU usage
+
+#### Security Considerations
+
+1. **TLS Configuration**
+   - Always use TLS for exporter endpoints in production
+   - Use proper certificate management
+   - Consider using mTLS for enhanced security
+
+2. **Network Security**
+   - Restrict network access to metrics endpoints
+   - Use service meshes or network policies to limit exposure
+   - Consider using authentication for sensitive metrics endpoints
+
+3. **Configuration Security**
+   - Avoid hardcoding credentials in configuration files
+   - Use environment variable substitution for sensitive values
+   - Implement proper secret management (e.g., Kubernetes secrets)
+
+### Debugging Tips
+
+1. **Enable Verbose Logging**
+   ```yaml
+   service:
+     telemetry:
+       logs:
+         level: debug  # Use with caution in production
+   ```
+
+2. **Use Prometheus API Server**
+   - Enable API server to inspect targets, config, and scrape pools
+   - Query `/api/v1/targets` to see target health
+   - Check `/api/v1/status/config` to verify configuration
+
+3. **Test Configuration**
+   - Validate YAML syntax before deployment
+   - Test with a single job first, then expand
+   - Use `otelcol` with `--dry-run` flag if available
+
+4. **Check Collector Logs**
+   - Look for scrape errors, timeouts, or connection issues
+   - Monitor for memory or CPU warnings
+   - Review service discovery logs for Kubernetes deployments
+
+### Additional Resources
+
+- [Prometheus Configuration Documentation](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
+- [OpenTelemetry Collector Documentation](https://opentelemetry.io/docs/collector/)
+- [Design Document](DESIGN.md) for implementation details

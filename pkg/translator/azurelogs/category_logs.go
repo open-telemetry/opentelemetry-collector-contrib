@@ -13,7 +13,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 const (
@@ -30,6 +30,14 @@ const (
 	categoryAppServiceHTTPLogs                 = "AppServiceHTTPLogs"
 	categoryAppServiceIPSecAuditLogs           = "AppServiceIPSecAuditLogs"
 	categoryAppServicePlatformLogs             = "AppServicePlatformLogs"
+	categoryAdministrative                     = "Administrative"
+	categoryAlert                              = "Alert"
+	categoryAutoscale                          = "Autoscale"
+	categorySecurity                           = "Security"
+	categoryPolicy                             = "Policy"
+	categoryRecommendation                     = "Recommendation"
+	categoryServiceHealth                      = "ServiceHealth"
+	categoryResourceHealth                     = "ResourceHealth"
 
 	// attributeAzureRef holds the request tracking reference, also
 	// placed in the request header "X-Azure-Ref".
@@ -60,6 +68,32 @@ const (
 )
 
 const (
+	// Identity specific attributes
+	attributeIdentityAuthorizationScope  = "azure.identity.authorization.scope"
+	attributeIdentityAuthorizationAction = "azure.identity.authorization.action"
+	// Identity > authorization > evidence
+	attributeIdentityAuthorizationEvidenceRole                = "azure.identity.authorization.evidence.role"
+	attributeIdentityAuthorizationEvidenceRoleAssignmentScope = "azure.identity.authorization.evidence.role.assignment.scope"
+	attributeIdentityAuthorizationEvidenceRoleAssignmentID    = "azure.identity.authorization.evidence.role.assignment.id"
+	attributeIdentityAuthorizationEvidenceRoleDefinitionID    = "azure.identity.authorization.evidence.role.definition.id"
+	attributeIdentityAuthorizationEvidencePrincipalID         = "azure.identity.authorization.evidence.principal.id"
+	attributeIdentityAuthorizationEvidencePrincipalType       = "azure.identity.authorization.evidence.principal.type"
+	// Identity > claims (standard JWT claims)
+	attributeIdentityClaimsAudience  = "azure.identity.audience"
+	attributeIdentityClaimsIssuer    = "azure.identity.issuer"
+	attributeIdentityClaimsSubject   = "azure.identity.subject"
+	attributeIdentityClaimsNotAfter  = "azure.identity.not_after"
+	attributeIdentityClaimsNotBefore = "azure.identity.not_before"
+	attributeIdentityClaimsCreated   = "azure.identity.created"
+	// Identity > claims (Azure specific claims)
+	attributeIdentityClaimsScope                 = "azure.identity.scope"
+	attributeIdentityClaimsType                  = "azure.identity.type"
+	attributeIdentityClaimsApplicationID         = "azure.identity.application.id"
+	attributeIdentityClaimsAuthMethodsReferences = "azure.identity.auth.methods.references"
+	attributeIdentityClaimsIdentifierObject      = "azure.identity.identifier.object"
+	attributeIdentityClaimsIdentifierName        = "user.name"
+	attributeIdentityClaimsProvider              = "azure.identity.provider"
+
 	// azure front door WAF attributes
 
 	// attributeAzureFrontDoorWAFRuleName holds the name of the WAF rule that
@@ -76,6 +110,87 @@ const (
 
 	// attributeAzureFrontDoorWAFAction holds the action taken on the request.
 	attributeAzureFrontDoorWAFAction = "azure.frontdoor.waf.action"
+
+	// Administrative specific attributes
+	attributeAzureAdministrativeEntity    = "azure.administrative.entity"
+	attributeAzureAdministrativeMessage   = "azure.administrative.message"
+	attributeAzureAdministrativeHierarchy = "azure.administrative.hierarchy"
+
+	// Alert specific attributes
+	attributeAzureAlertWebhookURI      = "azure.alert.webhook.uri"
+	attributeAzureAlertRuleURI         = "azure.alert.rule.uri"
+	attributeAzureAlertRuleName        = "azure.alert.rule.name"
+	attributeAzureAlertRuleDescription = "azure.alert.rule.description"
+	attributeAzureAlertThreshold       = "azure.alert.threshold"
+	attributeAzureAlertWindowSize      = "azure.alert.window_size_minutes"
+	attributeAzureAlertAggregation     = "azure.alert.aggregation"
+	attributeAzureAlertOperator        = "azure.alert.operator"
+	attributeAzureAlertMetricName      = "azure.alert.metric.name"
+	attributeAzureAlertMetricUnit      = "azure.alert.metric.unit"
+
+	// Autoscale specific attributes
+	attributeAzureAutoscaleDescription     = "azure.autoscale.description"
+	attributeAzureAutoscaleResourceName    = "azure.autoscale.resource.name"
+	attributeAzureAutoscaleOldInstances    = "azure.autoscale.instances.previous_count"
+	attributeAzureAutoscaleNewInstances    = "azure.autoscale.instances.count"
+	attributeAzureAutoscaleLastScaleAction = "azure.autoscale.resource.last_scale"
+
+	// Policy specific attributes
+	attributeAzurePolicyIsComplianceCheck = "azure.policy.compliance_check"
+	attributeAzurePolicyAncestors         = "azure.policy.ancestors"
+	attributeAzurePolicyHierarchy         = "azure.policy.hierarchy"
+
+	// Recommendation specific attributes
+	attributeAzureRecommendationCategory      = "azure.recommendation.category"
+	attributeAzureRecommendationImpact        = "azure.recommendation.impact"
+	attributeAzureRecommendationName          = "azure.recommendation.name"
+	attributeAzureRecommendationType          = "azure.recommendation.type"
+	attributeAzureRecommendationSchemaVersion = "azure.recommendation.schema_version"
+	attributeAzureRecommendationLink          = "azure.recommendation.link"
+
+	// Security specific attributes
+	attributeAzureSecurityAccountLogonID = "azure.security.account_logon_id"
+	attributeAzureSecurityDomainName     = "azure.security.domain_name"
+	attributeAzureSecurityActionTaken    = "azure.security.action_taken"
+	attributeAzureSecuritySeverity       = "azure.security.severity"
+
+	// Service Health specific attributes
+	attributeAzureServiceHealthTitle                    = "azure.servicehealth.title"
+	attributeAzureServiceHealthService                  = "azure.servicehealth.service"
+	attributeAzureServiceHealthRegion                   = "azure.servicehealth.region"
+	attributeAzureServiceHealthCommunicationID          = "azure.servicehealth.communication.id"
+	attributeAzureServiceHealthCommunicationBody        = "azure.servicehealth.communication.body"
+	attributeAzureServiceHealthCommunicationRouteType   = "azure.servicehealth.communication.route_type"
+	attributeAzureServiceHealthIncidentType             = "azure.servicehealth.incident.type"
+	attributeAzureServiceHealthTrackingID               = "azure.servicehealth.tracking.id"
+	attributeAzureServiceHealthImpactStartTime          = "azure.servicehealth.impact.start"
+	attributeAzureServiceHealthImpactMitigationTime     = "azure.servicehealth.impact.mitigation"
+	attributeAzureServiceHealthImpactedServices         = "azure.servicehealth.impact.services"
+	attributeAzureServiceHealthImpactType               = "azure.servicehealth.impact.type"
+	attributeAzureServiceHealthImpactCategory           = "azure.servicehealth.impact.category"
+	attributeAzureServiceHealthDefaultLanguageTitle     = "azure.servicehealth.default_language.title"
+	attributeAzureServiceHealthDefaultLanguageContent   = "azure.servicehealth.default_language.content"
+	attributeAzureServiceHealthState                    = "azure.servicehealth.state"
+	attributeAzureServiceHealthMaintenanceID            = "azure.servicehealth.maintenance.id"
+	attributeAzureServiceHealthMaintenanceType          = "azure.servicehealth.maintenance.type"
+	attributeAzureServiceHealthIsHIR                    = "azure.servicehealth.is_hir"
+	attributeAzureServiceHealthIsSynthetic              = "azure.servicehealth.is_synthetic"
+	attributeAzureServiceHealthEmailTemplateID          = "azure.servicehealth.email.template.id"
+	attributeAzureServiceHealthEmailTemplateFullVersion = "azure.servicehealth.email.template.full_version"
+	attributeAzureServiceHealthEmailTemplateLocale      = "azure.servicehealth.email.template.locale"
+	attributeAzureServiceHealthSMSText                  = "azure.servicehealth.sms.text"
+	attributeAzureServiceHealthVersion                  = "azure.servicehealth.version"
+	attributeAzureServiceHealthArgQuery                 = "azure.servicehealth.arg_query"
+	attributeAzureServiceHealthRateNew                  = "azure.servicehealth.new_rate"
+	attributeAzureServiceHealthRateOld                  = "azure.servicehealth.old_rate"
+
+	// Resource Health specific attributes
+	attributeAzureResourceHealthTitle                = "azure.resourcehealth.title"
+	attributeAzureResourceHealthDetails              = "azure.resourcehealth.details"
+	attributeAzureResourceHealthCurrentHealthStatus  = "azure.resourcehealth.state"
+	attributeAzureResourceHealthPreviousHealthStatus = "azure.resourcehealth.previous_state"
+	attributeAzureResourceHealthType                 = "azure.resourcehealth.type"
+	attributeAzureResourceHealthCause                = "azure.resourcehealth.cause"
 )
 
 var (
@@ -109,6 +224,22 @@ func addRecordAttributes(category string, data []byte, record plog.LogRecord) er
 		err = addAppServiceIPSecAuditLogsProperties(data, record)
 	case categoryAppServicePlatformLogs:
 		err = addAppServicePlatformLogsProperties(data, record)
+	case categoryAdministrative:
+		err = addAdministrativeLogProperties(data, record)
+	case categoryAlert:
+		err = addAlertLogProperties(data, record)
+	case categoryAutoscale:
+		err = addAutoscaleLogProperties(data, record)
+	case categorySecurity:
+		err = addSecurityLogProperties(data, record)
+	case categoryPolicy:
+		err = addPolicyLogProperties(data, record)
+	case categoryRecommendation:
+		err = addRecommendationLogProperties(data, record)
+	case categoryServiceHealth:
+		err = addServiceHealthLogProperties(data, record)
+	case categoryResourceHealth:
+		err = addResourceHealthLogProperties(data, record)
 	default:
 		err = errUnsupportedCategory
 	}
@@ -138,6 +269,12 @@ func putStr(field, value string, record plog.LogRecord) {
 		// ignore
 	default:
 		record.Attributes().PutStr(field, value)
+	}
+}
+
+func putBool(field, value string, record plog.LogRecord) {
+	if b, err := strconv.ParseBool(value); err == nil {
+		record.Attributes().PutBool(field, b)
 	}
 }
 
@@ -349,9 +486,9 @@ func addAzureCdnAccessLogProperties(data []byte, record plog.LogRecord) error {
 	putStr(attributeCacheStatus, properties.CacheStatus, record)
 
 	if properties.IsReceivedFromClient {
-		record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "receive")
+		record.Attributes().PutStr(string(conventions.NetworkIODirectionKey), "receive")
 	} else {
-		record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "transmit")
+		record.Attributes().PutStr(string(conventions.NetworkIODirectionKey), "transmit")
 	}
 
 	return nil
@@ -558,4 +695,395 @@ func addAppServiceIPSecAuditLogsProperties(_ []byte, _ plog.LogRecord) error {
 func addAppServicePlatformLogsProperties(_ []byte, _ plog.LogRecord) error {
 	// TODO @constanca-m implement this the same way as addAzureCdnAccessLogProperties
 	return errStillToImplement
+}
+
+// ------------------------------------------------------------
+// Activity Log - Administrative category
+// ------------------------------------------------------------
+
+// administrativeLogProperties represents the properties field of an Administrative activity log.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#administrative-category
+type administrativeLogProperties struct {
+	Entity    string `json:"entity"`
+	Message   string `json:"message"`
+	Hierarchy string `json:"hierarchy"`
+}
+
+// addAdministrativeLogProperties parses Administrative activity logs
+// and maps them to OpenTelemetry semantic conventions.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#administrative-category
+func addAdministrativeLogProperties(data []byte, record plog.LogRecord) error {
+	var properties administrativeLogProperties
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse Administrative properties: %w", err)
+	}
+
+	putStr(attributeAzureAdministrativeEntity, properties.Entity, record)
+	putStr(attributeAzureAdministrativeMessage, properties.Message, record)
+	putStr(attributeAzureAdministrativeHierarchy, properties.Hierarchy, record)
+
+	return nil
+}
+
+// ------------------------------------------------------------
+// Activity Log - Alert category
+// ------------------------------------------------------------
+
+// alertLogProperties represents the properties field of an Alert activity log.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#alert-category
+type alertLogProperties struct {
+	WebHookURI          string `json:"webHookUri"`
+	RuleURI             string `json:"RuleUri"`
+	RuleName            string `json:"RuleName"`
+	RuleDescription     string `json:"RuleDescription"`
+	Threshold           string `json:"Threshold"`
+	WindowSizeInMinutes string `json:"WindowSizeInMinutes"`
+	Aggregation         string `json:"Aggregation"`
+	Operator            string `json:"Operator"`
+	MetricName          string `json:"MetricName"`
+	MetricUnit          string `json:"MetricUnit"`
+}
+
+// addAlertLogProperties parses Alert activity logs
+// and maps them to OpenTelemetry semantic conventions.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#alert-category
+func addAlertLogProperties(data []byte, record plog.LogRecord) error {
+	var properties alertLogProperties
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse Alert properties: %w", err)
+	}
+
+	putStr(attributeAzureAlertWebhookURI, properties.WebHookURI, record)
+	putStr(attributeAzureAlertRuleURI, properties.RuleURI, record)
+	putStr(attributeAzureAlertRuleName, properties.RuleName, record)
+	putStr(attributeAzureAlertRuleDescription, properties.RuleDescription, record)
+	putStr(attributeAzureAlertThreshold, properties.Threshold, record)
+	putStr(attributeAzureAlertWindowSize, properties.WindowSizeInMinutes, record)
+	putStr(attributeAzureAlertAggregation, properties.Aggregation, record)
+	putStr(attributeAzureAlertOperator, properties.Operator, record)
+	putStr(attributeAzureAlertMetricName, properties.MetricName, record)
+	putStr(attributeAzureAlertMetricUnit, properties.MetricUnit, record)
+
+	return nil
+}
+
+// ------------------------------------------------------------
+// Activity Log - Autoscale category
+// ------------------------------------------------------------
+
+// autoscaleLogProperties represents the properties field of an Autoscale activity log.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#autoscale-category
+type autoscaleLogProperties struct {
+	Description         string `json:"Description"`
+	ResourceName        string `json:"ResourceName"`
+	OldInstancesCount   string `json:"OldInstancesCount"`
+	NewInstancesCount   string `json:"NewInstancesCount"`
+	LastScaleActionTime string `json:"LastScaleActionTime"`
+}
+
+// addAutoscaleLogProperties parses Autoscale activity logs
+// and maps them to OpenTelemetry semantic conventions.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#autoscale-category
+func addAutoscaleLogProperties(data []byte, record plog.LogRecord) error {
+	var properties autoscaleLogProperties
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse Autoscale properties: %w", err)
+	}
+
+	putStr(attributeAzureAutoscaleDescription, properties.Description, record)
+	putStr(attributeAzureAutoscaleResourceName, properties.ResourceName, record)
+	putStr(attributeAzureAutoscaleOldInstances, properties.OldInstancesCount, record)
+	putStr(attributeAzureAutoscaleNewInstances, properties.NewInstancesCount, record)
+	putStr(attributeAzureAutoscaleLastScaleAction, properties.LastScaleActionTime, record)
+
+	return nil
+}
+
+// ------------------------------------------------------------
+// Activity Log - Policy category
+// ------------------------------------------------------------
+
+type policyElement struct {
+	DefinitionID             string   `json:"policyDefinitionId"`
+	SetDefinitionID          string   `json:"policySetDefinitionId"`
+	ReferenceID              string   `json:"policyDefinitionReferenceId"`
+	SetDefinitionName        string   `json:"policySetDefinitionName"`
+	SetDefinitionDisplayName string   `json:"policySetDefinitionDisplayName"`
+	SetDefinitionVersion     string   `json:"policySetDefinitionVersion"`
+	DefinitionName           string   `json:"policyDefinitionName"`
+	DefinitionDisplayName    string   `json:"policyDefinitionDisplayName"`
+	DefinitionVersion        string   `json:"policyDefinitionVersion"`
+	DefinitionEffect         string   `json:"policyDefinitionEffect"`
+	AssignmentID             string   `json:"policyAssignmentId"`
+	AssignmentName           string   `json:"policyAssignmentName"`
+	AssignmentDisplayName    string   `json:"policyAssignmentDisplayName"`
+	AssignmentScope          string   `json:"policyAssignmentScope"`
+	ExemptionIDs             []string `json:"policyExemptionIds"`
+	AssignmentIDs            []string `json:"policyAssignmentIds"`
+}
+
+type policyLogProperties struct {
+	IsComplianceCheck string `json:"isComplianceCheck"`
+	ResourceLocation  string `json:"resourceLocation"`
+	Ancestors         string `json:"ancestors"`
+	Policies          string `json:"policies"`
+	Hierarchy         string `json:"hierarchy"`
+}
+
+func addPolicyLogProperties(data []byte, record plog.LogRecord) error {
+	var properties policyLogProperties
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse Policy properties: %w", err)
+	}
+
+	// check if Policies is a string and unmarshal the embedded JSON
+	// object in the `policyElement` struct
+	var policies []policyElement
+	if err := gojson.Unmarshal([]byte(properties.Policies), &policies); err != nil {
+		return fmt.Errorf("failed to parse Policy properties: %w", err)
+	}
+
+	putBool(attributeAzurePolicyIsComplianceCheck, properties.IsComplianceCheck, record)
+	putStr(attributeAzureLocation, properties.ResourceLocation, record)
+	putStr(attributeAzurePolicyAncestors, properties.Ancestors, record)
+	putStr(attributeAzurePolicyHierarchy, properties.Hierarchy, record)
+
+	// Add policies as a slice of maps
+	if len(policies) > 0 {
+		policiesSlice := record.Attributes().PutEmptySlice("azure.policy.policies")
+		for i := range policies {
+			policyMap := policiesSlice.AppendEmpty().SetEmptyMap()
+			policyMap.PutStr("definition.id", policies[i].DefinitionID)
+			policyMap.PutStr("definition.name", policies[i].DefinitionName)
+			policyMap.PutStr("definition.display_name", policies[i].DefinitionDisplayName)
+			policyMap.PutStr("definition.version", policies[i].DefinitionVersion)
+			policyMap.PutStr("definition.effect", policies[i].DefinitionEffect)
+			policyMap.PutStr("definition.reference_id", policies[i].ReferenceID)
+			policyMap.PutStr("set_definition.id", policies[i].SetDefinitionID)
+			policyMap.PutStr("set_definition.name", policies[i].SetDefinitionName)
+			policyMap.PutStr("set_definition.display_name", policies[i].SetDefinitionDisplayName)
+			policyMap.PutStr("set_definition.version", policies[i].SetDefinitionVersion)
+			policyMap.PutStr("assignment.id", policies[i].AssignmentID)
+			policyMap.PutStr("assignment.name", policies[i].AssignmentName)
+			policyMap.PutStr("assignment.display_name", policies[i].AssignmentDisplayName)
+			policyMap.PutStr("assignment.scope", policies[i].AssignmentScope)
+		}
+	}
+
+	return nil
+}
+
+// ------------------------------------------------------------
+// Activity Log - Recommendation category
+// ------------------------------------------------------------
+
+// recommendationLogProperties represents the properties field of a Recommendation activity log.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#recommendation-category
+type recommendationLogProperties struct {
+	RecommendationSchemaVersion string `json:"recommendationSchemaVersion"`
+	RecommendationCategory      string `json:"recommendationCategory"`
+	RecommendationImpact        string `json:"recommendationImpact"`
+	RecommendationName          string `json:"recommendationName"`
+	RecommendationResourceLink  string `json:"recommendationResourceLink"`
+	RecommendationType          string `json:"recommendationType"`
+}
+
+// addRecommendationLogProperties parses Recommendation activity logs from Azure Advisor
+// and maps them to OpenTelemetry semantic conventions.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#recommendation-category
+func addRecommendationLogProperties(data []byte, record plog.LogRecord) error {
+	var properties recommendationLogProperties
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse Recommendation properties: %w", err)
+	}
+
+	putStr(attributeAzureRecommendationCategory, properties.RecommendationCategory, record)
+	putStr(attributeAzureRecommendationImpact, properties.RecommendationImpact, record)
+	putStr(attributeAzureRecommendationName, properties.RecommendationName, record)
+	putStr(attributeAzureRecommendationType, properties.RecommendationType, record)
+	putStr(attributeAzureRecommendationSchemaVersion, properties.RecommendationSchemaVersion, record)
+	putStr(attributeAzureRecommendationLink, properties.RecommendationResourceLink, record)
+
+	return nil
+}
+
+// ------------------------------------------------------------
+// Activity Log - Security category
+// ------------------------------------------------------------
+
+// securityLogProperties represents the properties field of a Security activity log.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#security-category
+type securityLogProperties struct {
+	AccountLogonID  string `json:"accountLogonId"`
+	CommandLine     string `json:"commandLine"`
+	DomainName      string `json:"domainName"`
+	ParentProcess   string `json:"parentProcess"`
+	ParentProcessID string `json:"parentProcess id"`
+	ProcessID       string `json:"processId"`
+	ProcessName     string `json:"processName"`
+	UserName        string `json:"userName"`
+	UserSID         string `json:"UserSID"`
+	ActionTaken     string `json:"ActionTaken"`
+	Severity        string `json:"Severity"`
+}
+
+// addSecurityLogProperties parses Security activity logs
+// and maps them to OpenTelemetry semantic conventions.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#security-category
+func addSecurityLogProperties(data []byte, record plog.LogRecord) error {
+	var properties securityLogProperties
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse Security properties: %w", err)
+	}
+
+	// Map to OTel process semantic conventions
+	putStr(string(conventions.ProcessCommandLineKey), properties.CommandLine, record)
+	if err := putInt(string(conventions.ProcessPIDKey), properties.ProcessID, record); err != nil {
+		return err
+	}
+	if err := putInt(string(conventions.ProcessParentPIDKey), properties.ParentProcessID, record); err != nil {
+		return err
+	}
+	putStr(string(conventions.ProcessExecutablePathKey), properties.ProcessName, record)
+	putStr(string(conventions.ProcessOwnerKey), properties.UserName, record)
+	putStr(string(conventions.EnduserIDKey), properties.UserSID, record)
+
+	// Azure-specific fields that don't have OTel equivalents
+	putStr(attributeAzureSecurityAccountLogonID, properties.AccountLogonID, record)
+	putStr(attributeAzureSecurityDomainName, properties.DomainName, record)
+	putStr(attributeAzureSecurityActionTaken, properties.ActionTaken, record)
+	putStr(attributeAzureSecuritySeverity, properties.Severity, record)
+
+	return nil
+}
+
+// ------------------------------------------------------------
+// Activity Log - Service Health category
+// ------------------------------------------------------------
+
+// serviceHealthLogProperties represents the properties field of a Service Health activity log.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#service-health-category
+type serviceHealthLogProperties struct {
+	Title                  string `json:"title"`
+	Service                string `json:"service"`
+	Region                 string `json:"region"`
+	CommunicationText      string `json:"communication"`
+	CommunicationID        string `json:"communicationId"`
+	IncidentType           string `json:"incidentType"`
+	TrackingID             string `json:"trackingId"`
+	ImpactStartTime        string `json:"impactStartTime"`
+	ImpactMitigationTime   string `json:"impactMitigationTime"`
+	ImpactedServices       string `json:"impactedServices"`
+	DefaultLanguageTitle   string `json:"defaultLanguageTitle"`
+	DefaultLanguageContent string `json:"defaultLanguageContent"`
+	Stage                  string `json:"stage"`
+	MaintenanceID          string `json:"maintenanceId"`
+	MaintenanceType        string `json:"maintenanceType"`
+	IsHIR                  bool   `json:"isHIR"`
+	IsSynthetic            string `json:"IsSynthetic"`
+	ImpactType             string `json:"impactType"`
+	ImpactCategory         string `json:"impactCategory"`
+}
+
+type impactedService struct {
+	Name    string `json:"ServiceName"`
+	ID      string `json:"ServiceId"`
+	GUID    string `json:"ServiceGuid"`
+	Regions []struct {
+		Name string `json:"RegionName"`
+		ID   string `json:"RegionId"`
+	} `json:"ImpactedRegions"`
+}
+
+// addServiceHealthLogProperties parses Service Health activity logs
+// and maps them to OpenTelemetry semantic conventions.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#service-health-category
+func addServiceHealthLogProperties(data []byte, record plog.LogRecord) error {
+	var properties serviceHealthLogProperties
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse Service Health properties: %w", err)
+	}
+
+	// check if Policies is a string and unmarshal the embedded JSON
+	// object in the `policyElement` struct
+	var impactedServices []impactedService
+	if err := gojson.Unmarshal([]byte(properties.ImpactedServices), &impactedServices); err != nil {
+		return fmt.Errorf("failed to parse Impacted Services properties: %w", err)
+	}
+
+	// Add impacted services as a slice of maps
+	if len(impactedServices) > 0 {
+		impactedServicesSlice := record.Attributes().PutEmptySlice(attributeAzureServiceHealthImpactedServices)
+		for _, s := range impactedServices {
+			impactedServiceMap := impactedServicesSlice.AppendEmpty().SetEmptyMap()
+			impactedServiceMap.PutStr("name", s.Name)
+			impactedServiceMap.PutStr("id", s.ID)
+			impactedServiceMap.PutStr("guid", s.GUID)
+
+			if len(s.Regions) > 0 {
+				regionsSlice := impactedServiceMap.PutEmptySlice("regions")
+				for _, r := range s.Regions {
+					regionMap := regionsSlice.AppendEmpty().SetEmptyMap()
+					regionMap.PutStr("name", r.Name)
+					regionMap.PutStr("id", r.ID)
+				}
+			}
+		}
+	}
+
+	putStr(attributeAzureServiceHealthTitle, properties.Title, record)
+	putStr(attributeAzureServiceHealthService, properties.Service, record)
+	putStr(attributeAzureServiceHealthRegion, properties.Region, record)
+	putStr(attributeAzureServiceHealthCommunicationBody, properties.CommunicationText, record)
+	putStr(attributeAzureServiceHealthCommunicationID, properties.CommunicationID, record)
+	putStr(attributeAzureServiceHealthIncidentType, properties.IncidentType, record)
+	putStr(attributeAzureServiceHealthTrackingID, properties.TrackingID, record)
+	putStr(attributeAzureServiceHealthImpactStartTime, properties.ImpactStartTime, record)
+	putStr(attributeAzureServiceHealthImpactMitigationTime, properties.ImpactMitigationTime, record)
+	putStr(attributeAzureServiceHealthDefaultLanguageTitle, properties.DefaultLanguageTitle, record)
+	putStr(attributeAzureServiceHealthDefaultLanguageContent, properties.DefaultLanguageContent, record)
+	putStr(attributeAzureServiceHealthState, properties.Stage, record)
+	putStr(attributeAzureServiceHealthMaintenanceID, properties.MaintenanceID, record)
+	putStr(attributeAzureServiceHealthMaintenanceType, properties.MaintenanceType, record)
+	if properties.IsHIR {
+		record.Attributes().PutBool(attributeAzureServiceHealthIsHIR, properties.IsHIR)
+	}
+	putBool(attributeAzureServiceHealthIsSynthetic, properties.IsSynthetic, record)
+	putStr(attributeAzureServiceHealthImpactType, properties.ImpactType, record)
+	putStr(attributeAzureServiceHealthImpactCategory, properties.ImpactCategory, record)
+	return nil
+}
+
+// ------------------------------------------------------------
+// Activity Log - Resource Health category
+// ------------------------------------------------------------
+
+// resourceHealthLogProperties represents the properties field of a Resource Health activity log.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#resource-health-category
+type resourceHealthLogProperties struct {
+	Title                string `json:"title"`
+	Details              string `json:"details"`
+	CurrentHealthStatus  string `json:"currentHealthStatus"`
+	PreviousHealthStatus string `json:"previousHealthStatus"`
+	Type                 string `json:"type"`
+	Cause                string `json:"cause"`
+}
+
+// addResourceHealthLogProperties parses Resource Health activity logs
+// and maps them to OpenTelemetry semantic conventions.
+// See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#resource-health-category
+func addResourceHealthLogProperties(data []byte, record plog.LogRecord) error {
+	var properties resourceHealthLogProperties
+	if err := gojson.Unmarshal(data, &properties); err != nil {
+		return fmt.Errorf("failed to parse Resource Health properties: %w", err)
+	}
+
+	putStr(attributeAzureResourceHealthTitle, properties.Title, record)
+	putStr(attributeAzureResourceHealthDetails, properties.Details, record)
+	putStr(attributeAzureResourceHealthCurrentHealthStatus, properties.CurrentHealthStatus, record)
+	putStr(attributeAzureResourceHealthPreviousHealthStatus, properties.PreviousHealthStatus, record)
+	putStr(attributeAzureResourceHealthType, properties.Type, record)
+	putStr(attributeAzureResourceHealthCause, properties.Cause, record)
+
+	return nil
 }

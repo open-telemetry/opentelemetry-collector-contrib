@@ -50,7 +50,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.HTTP != nil {
-		if _, err := extractPortFromEndpoint(cfg.HTTP.Endpoint); err != nil {
+		if _, err := extractPortFromEndpoint(cfg.HTTP.NetAddr.Endpoint); err != nil {
 			return fmt.Errorf("unable to extract port for the HTTP endpoint: %w", err)
 		}
 	}

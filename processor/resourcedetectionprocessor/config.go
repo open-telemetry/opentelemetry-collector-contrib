@@ -4,6 +4,8 @@
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -45,11 +47,9 @@ type Config struct {
 	// HTTP client settings for the detector
 	// Timeout default is 5s
 	confighttp.ClientConfig `mapstructure:",squash"`
-	// Attributes is an allowlist of attributes to add.
-	// If a supplied attribute is not a valid attribute of a supplied detector it will be ignored.
-	//
-	// Deprecated: Please use detector's resource_attributes config instead
-	Attributes []string `mapstructure:"attributes"`
+	// If > 0, periodically re-run detection for all configured detectors.
+	// When 0 (default), no periodic refresh occurs.
+	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 }
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors
@@ -99,7 +99,7 @@ type DetectorConfig struct {
 	// OpenShift contains user-specified configurations for the OpenShift detector
 	OpenShiftConfig openshift.Config `mapstructure:"openshift"`
 
-	// OpenShift contains user-specified configurations for the OpenShift detector
+	// OpenStackNovaConfig contains user-specified configurations for the OpenStackNova detector
 	OpenStackNovaConfig nova.Config `mapstructure:"nova"`
 
 	// OracleCloud contains user-specified configurations for the OracleCloud detector
@@ -114,7 +114,7 @@ type DetectorConfig struct {
 	// AkamaiConfig contains user-specified configurations for the akamai detector
 	AkamaiConfig akamai.Config `mapstructure:"akamai"`
 
-	// ScalewayConfig contains user-specified configurations for the akamai detector
+	// ScalewayConfig contains user-specified configurations for the scaleway detector
 	ScalewayConfig scaleway.Config `mapstructure:"scaleway"`
 
 	// UpcloudConfig contains user-specified configurations for the upcloud detector

@@ -74,7 +74,8 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		case "", "resource":
 			plogutil.MoveResourcesIf(ld, matched,
 				func(rl plog.ResourceLogs) bool {
-					rtx := ottlresource.NewTransformContext(rl.Resource(), rl)
+					rtx := ottlresource.NewTransformContextPtr(rl.Resource(), rl)
+					defer rtx.Close()
 					_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
 					// If error during statement evaluation consider it as not a match.
 					if err != nil {
@@ -87,7 +88,8 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		case "log":
 			plogutil.MoveRecordsWithContextIf(ld, matched,
 				func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
-					ltx := ottllog.NewTransformContext(lr, sl.Scope(), rl.Resource(), sl, rl)
+					ltx := ottllog.NewTransformContextPtr(rl, sl, lr)
+					defer ltx.Close()
 					_, isMatch, err := route.logStatement.Execute(ctx, ltx)
 					// If error during statement evaluation consider it as not a match.
 					if err != nil {

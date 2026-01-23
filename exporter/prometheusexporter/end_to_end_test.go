@@ -18,7 +18,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"gopkg.in/yaml.v3"
@@ -58,7 +60,10 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	exporterCfg := &Config{
 		Namespace: "test",
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:8787",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:8787",
+			},
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 2 * time.Hour,
@@ -67,7 +72,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := exporterFactory.CreateMetrics(ctx, set, exporterCfg)
 	require.NoError(t, err)
-	require.NoError(t, exporter.Start(ctx, nil), "Failed to start the Prometheus exporter")
+	require.NoError(t, exporter.Start(ctx, componenttest.NewNopHost()), "Failed to start the Prometheus exporter")
 	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(ctx)) })
 
 	// 3. Create the Prometheus receiver scraping from the DropWizard mock server and
@@ -94,13 +99,13 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	// 3.5 Create the Prometheus receiver and pass in the previously created Prometheus exporter.
 	prometheusReceiver, err := receiverFactory.CreateMetrics(ctx, receiverCreateSet, rcvCfg, exporter)
 	require.NoError(t, err)
-	require.NoError(t, prometheusReceiver.Start(ctx, nil), "Failed to start the Prometheus receiver")
+	require.NoError(t, prometheusReceiver.Start(ctx, componenttest.NewNopHost()), "Failed to start the Prometheus receiver")
 	t.Cleanup(func() { require.NoError(t, prometheusReceiver.Shutdown(ctx)) })
 
 	// 4. Scrape from the Prometheus receiver to ensure that we export summary metrics
 	wg.Wait()
 
-	res, err := http.Get("http://" + exporterCfg.Endpoint + "/metrics")
+	res, err := http.Get("http://" + exporterCfg.NetAddr.Endpoint + "/metrics")
 	require.NoError(t, err, "Failed to scrape from the exporter")
 	prometheusExporterScrape, err := io.ReadAll(res.Body)
 	res.Body.Close()

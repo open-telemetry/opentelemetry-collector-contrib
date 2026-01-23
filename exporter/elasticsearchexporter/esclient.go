@@ -10,10 +10,13 @@ import (
 	"io"
 	"math/rand/v2"
 	"net/http"
+	"net/url"
+	"strings"
+	"sync/atomic"
 	"time"
 
-	elasticsearchv8 "github.com/elastic/go-elasticsearch/v8"
-	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"github.com/elastic/elastic-transport-go/v8/elastictransport"
+	elastictransportversion "github.com/elastic/elastic-transport-go/v8/elastictransport/version"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -99,21 +102,64 @@ func (cl *clientLogger) ResponseBodyEnabled() bool {
 	return cl.logResponseBody
 }
 
-// newElasticsearchClient returns a new esapi.Transport.
+const (
+	unknownProduct = "the client noticed that the server is not Elasticsearch and we do not support this unknown product"
+	defaultURL     = "http://localhost:9200"
+)
+
+// genuineCheckHeader validates the presence of the X-Elastic-Product header
+func genuineCheckHeader(header http.Header) error {
+	if header.Get("X-Elastic-Product") != "Elasticsearch" {
+		return errors.New(unknownProduct)
+	}
+	return nil
+}
+
+type esClient struct {
+	transport           elastictransport.Interface
+	productCheckSuccess atomic.Bool
+}
+
+func (e *esClient) Perform(req *http.Request) (*http.Response, error) {
+	res, err := e.transport.Perform(req)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode >= 200 && res.StatusCode < 300 {
+		checkHeader := func() error { return genuineCheckHeader(res.Header) }
+		if err := e.doProductCheck(checkHeader); err != nil {
+			res.Body.Close()
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (e *esClient) doProductCheck(f func() error) error {
+	if e.productCheckSuccess.Load() {
+		return nil
+	}
+	if err := f(); err != nil {
+		return err
+	}
+	e.productCheckSuccess.Store(true)
+	return nil
+}
+
+// newElasticsearchClient returns a new elastictransport.Interface.
 func newElasticsearchClient(
 	ctx context.Context,
 	config *Config,
 	host component.Host,
 	telemetry component.TelemetrySettings,
 	userAgent string,
-) (esapi.Transport, error) {
-	httpClient, err := config.ToClient(ctx, host, telemetry)
+) (elastictransport.Interface, error) {
+	httpClient, err := config.ToClient(ctx, host.GetExtensions(), telemetry)
 	if err != nil {
 		return nil, err
 	}
 
 	headers := make(http.Header)
-	headers.Set("User-Agent", userAgent)
 
 	// endpoints converts Config.Endpoints, Config.CloudID,
 	// and Config.ClientConfig.Endpoint to a list of addresses.
@@ -134,17 +180,35 @@ func newElasticsearchClient(
 		maxRetries = config.Retry.MaxRetries
 	}
 
-	return elasticsearchv8.NewClient(elasticsearchv8.Config{
-		Transport: httpClient.Transport,
+	// Convert addresses to URLs
+	urls, err := addrsToURLs(endpoints)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create client: %w", err)
+	}
 
-		// configure connection setup
-		Addresses: endpoints,
-		Username:  config.Authentication.User,
-		Password:  string(config.Authentication.Password),
-		APIKey:    string(config.Authentication.APIKey),
-		Header:    headers,
+	if len(urls) == 0 {
+		u, _ := url.Parse(defaultURL)
+		urls = append(urls, u)
+	}
 
-		// configure retry behavior
+	username := config.Authentication.User
+	password := string(config.Authentication.Password)
+	if user := urls[0].User; user != nil {
+		username = user.Username()
+		password, _ = user.Password()
+	}
+
+	// Create transport configuration matching elasticsearch.newTransport structure
+	tpConfig := elastictransport.Config{
+		UserAgent: userAgent,
+
+		URLs:     urls,
+		Username: username,
+		Password: password,
+		APIKey:   string(config.Authentication.APIKey),
+
+		Header: headers,
+
 		RetryOnStatus: config.Retry.RetryOnStatus,
 		DisableRetry:  !config.Retry.Enabled,
 		RetryOnError: func(_ *http.Request, err error) bool {
@@ -153,19 +217,47 @@ func newElasticsearchClient(
 		MaxRetries:   maxRetries,
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 
-		// configure sniffing
-		DiscoverNodesOnStart:  config.Discovery.OnStart,
-		DiscoverNodesInterval: config.Discovery.Interval,
-
-		// configure internal metrics reporting and logging
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
-		Instrumentation: elasticsearchv8.NewOpenTelemetryInstrumentation(
+
+		DiscoverNodesInterval: config.Discovery.Interval,
+
+		Transport: httpClient.Transport,
+		Logger:    esLogger,
+		Instrumentation: elastictransport.NewOtelInstrumentation(
 			telemetry.TracerProvider,
 			false, /* captureSearchBody */
+			elastictransportversion.Version,
 		),
-		Logger: esLogger,
-	})
+	}
+
+	tp, err := elastictransport.New(tpConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error creating transport: %w", err)
+	}
+
+	// Handle node discovery on start, matching elasticsearch.NewClient behavior
+	if config.Discovery.OnStart {
+		go func() {
+			_ = tp.DiscoverNodesContext(ctx)
+		}()
+	}
+
+	return &esClient{transport: tp}, nil
+}
+
+// addrsToURLs creates a list of url.URL structures from url list.
+func addrsToURLs(addrs []string) ([]*url.URL, error) {
+	var urls []*url.URL
+	for _, addr := range addrs {
+		u, err := url.Parse(strings.TrimRight(addr, "/"))
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse url: %w", err)
+		}
+
+		urls = append(urls, u)
+	}
+	return urls, nil
 }
 
 func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Duration {
