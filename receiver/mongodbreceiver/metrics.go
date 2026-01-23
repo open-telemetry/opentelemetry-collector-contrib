@@ -229,7 +229,9 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 		metricName := "mongodb.operation.count"
 		val, err := collectMetric(doc, metricPath)
 		if err != nil {
-			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
+			if s.config.Metrics.MongodbOperationCount.Enabled {
+				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
+			}
 			continue
 		}
 
@@ -275,7 +277,9 @@ func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M,
 		metricName := "mongodb.operation.repl.count"
 		val, err := collectMetric(replDoc, metricPath)
 		if err != nil {
-			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
+			if s.config.Metrics.MongodbOperationReplCount.Enabled {
+				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
+			}
 			continue
 		}
 		s.mb.RecordMongodbOperationReplCountDataPoint(now, val, operation)
