@@ -7,6 +7,8 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"strconv"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -47,8 +49,8 @@ var (
 // According to the documentation, the level Must be one of:
 // `Informational`, `Warning`, `Error` or `Critical`.
 // see https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-schema
-func asSeverity(input string) plog.SeverityNumber {
-	switch input {
+func asSeverity(number json.Number) plog.SeverityNumber {
+	switch number.String() {
 	case "Informational":
 		return plog.SeverityNumberInfo
 	case "Warning":
@@ -212,4 +214,13 @@ func convertStringToJSONNumber(s string) json.Number {
 	}
 
 	return json.Number(s)
+}
+
+// parseUnixTimestamp parses a Unix timestamp string (seconds since epoch) and returns a time.Time
+func parseUnixTimestamp(s string) (time.Time, error) {
+	ts, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(ts, 0).UTC(), nil
 }

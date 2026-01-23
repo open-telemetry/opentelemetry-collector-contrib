@@ -27,7 +27,7 @@ func TestAsSeverity(t *testing.T) {
 
 	for input, expected := range tests {
 		t.Run(input, func(t *testing.T) {
-			assert.Equal(t, expected, asSeverity(input))
+			assert.Equal(t, expected, asSeverity(json.Number(input)))
 		})
 	}
 }

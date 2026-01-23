@@ -43,17 +43,9 @@ resourceLogs:
               - key: azure.operation.duration
                 value:
                   intValue: "10"
-              - key: azure.identity
+              - key: user.email
                 value:
-                  kvlistValue:
-                    values:
-                      - key: claims
-                        value:
-                          kvlistValue:
-                            values:
-                              - key: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress
-                                value:
-                                  stringValue: Microsoft.Advisor
+                  stringValue: Microsoft.Advisor
               - key: azure.recommendation.category
                 value:
                   stringValue: HighAvailability

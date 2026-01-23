@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
+	gojson "github.com/goccy/go-json"
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -42,10 +44,17 @@ const (
 	categoryFrontDoorHealthProbeLog            = "FrontDoorHealthProbeLog"
 	categoryFrontdoorWebApplicationFirewallLog = "FrontDoorWebApplicationFirewallLog"
 	categoryFunctionAppLogs                    = "FunctionAppLogs"
-	categoryRecommendation                     = "Recommendation"
 	categoryStorageRead                        = "StorageRead"
 	categoryStorageWrite                       = "StorageWrite"
 	categoryStorageDelete                      = "StorageDelete"
+	categoryAdministrative                     = "Administrative"
+	categoryAlert                              = "Alert"
+	categoryAutoscale                          = "Autoscale"
+	categorySecurity                           = "Security"
+	categoryPolicy                             = "Policy"
+	categoryServiceHealth                      = "ServiceHealth"
+	categoryRecommendation                     = "Recommendation"
+	categoryResourceHealth                     = "ResourceHealth"
 )
 
 // Non-SemConv attributes that are used for common Azure Log Record fields
@@ -105,6 +114,80 @@ const (
 	attributeAzureRequestDuration = "azure.request.duration"
 )
 
+// Constants for Identity > claims
+const (
+	identityClaimIssuer    = "iss"
+	identityClaimSubject   = "sub"
+	identityClaimAudience  = "aud"
+	identityClaimExpires   = "exp"
+	identityClaimNotBefore = "nbf"
+	identityClaimIssuedAt  = "iat"
+
+	identityClaimScope                 = "http://schemas.microsoft.com/identity/claims/scope"
+	identityClaimType                  = "idtyp"
+	identityClaimApplicationID         = "appid"
+	identityClaimAuthMethodsReferences = "http://schemas.microsoft.com/claims/authnmethodsreferences"
+	identityClaimProvider              = "http://schemas.microsoft.com/identity/claims/identityprovider"
+	identityClaimIdentifierObject      = "http://schemas.microsoft.com/identity/claims/objectidentifier"
+	identityClaimIdentifierName        = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+	identityClaimEmailAddress          = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
+)
+
+// Identity specific attributes
+const (
+	attributeIdentityAuthorizationScope  = "azure.identity.authorization.scope"
+	attributeIdentityAuthorizationAction = "azure.identity.authorization.action"
+	// Identity > authorization > evidence
+	attributeIdentityAuthorizationEvidenceRole                = "azure.identity.authorization.evidence.role"
+	attributeIdentityAuthorizationEvidenceRoleAssignmentScope = "azure.identity.authorization.evidence.role.assignment.scope"
+	attributeIdentityAuthorizationEvidenceRoleAssignmentID    = "azure.identity.authorization.evidence.role.assignment.id"
+	attributeIdentityAuthorizationEvidenceRoleDefinitionID    = "azure.identity.authorization.evidence.role.definition.id"
+	attributeIdentityAuthorizationEvidencePrincipalID         = "azure.identity.authorization.evidence.principal.id"
+	attributeIdentityAuthorizationEvidencePrincipalType       = "azure.identity.authorization.evidence.principal.type"
+	// Identity > claims (standard JWT claims)
+	attributeIdentityClaimsAudience  = "azure.identity.audience"
+	attributeIdentityClaimsIssuer    = "azure.identity.issuer"
+	attributeIdentityClaimsSubject   = "azure.identity.subject"
+	attributeIdentityClaimsNotAfter  = "azure.identity.not_after"
+	attributeIdentityClaimsNotBefore = "azure.identity.not_before"
+	attributeIdentityClaimsCreated   = "azure.identity.created"
+	// Identity > claims (Azure specific claims)
+	attributeIdentityClaimsScope                 = "azure.identity.scope"
+	attributeIdentityClaimsType                  = "azure.identity.type"
+	attributeIdentityClaimsApplicationID         = "azure.identity.application.id"
+	attributeIdentityClaimsAuthMethodsReferences = "azure.identity.auth.methods.references"
+	attributeIdentityClaimsIdentifierObject      = "azure.identity.identifier.object"
+	attributeIdentityClaimsIdentifierName        = "user.name"
+	attributeIdentityClaimsProvider              = "azure.identity.provider"
+)
+
+// evidence describes role assignment evidence in identity authorization
+type evidence struct {
+	Role                string `json:"role"`
+	RoleAssignmentScope string `json:"roleAssignmentScope"`
+	RoleAssignmentID    string `json:"roleAssignmentId"`
+	RoleDefinitionID    string `json:"roleDefinitionId"`
+	PrincipalID         string `json:"principalId"`
+	PrincipalType       string `json:"principalType"`
+}
+
+// authorization describes identity authorization details
+type authorization struct {
+	Scope    string    `json:"scope"`
+	Action   string    `json:"action"`
+	Evidence *evidence `json:"evidence"`
+}
+
+// identity describes the identity of the user or application that performed the operation
+// described by the log event.
+type identity struct {
+	// Claims usually contains the JWT token used by Active Directory
+	// to authenticate the user or application to perform this
+	// operation in Resource Manager.
+	Claims        map[string]string `json:"claims"`
+	Authorization *authorization    `json:"authorization"`
+}
+
 var errNoTimestamp = errors.New("no valid time fields are set on Log record ('time' or 'timestamp')")
 
 // azureLogRecord is a common interface for all category-specific structures
@@ -133,8 +216,8 @@ type azureLogRecordBase struct {
 	DurationMs        *json.Number    `json:"durationMs"` // int
 	CallerIPAddress   *string         `json:"callerIpAddress"`
 	CorrelationID     *string         `json:"correlationId"`
-	Identity          *map[string]any `json:"identity"`
-	Level             *string         `json:"level"`
+	Identity          json.RawMessage `json:"identity"`
+	Level             *json.Number    `json:"level"`
 	Location          string          `json:"location"`
 }
 
@@ -180,7 +263,7 @@ func (r *azureLogRecordBase) GetLevel() (plog.SeverityNumber, string, bool) {
 	severity := asSeverity(*r.Level)
 	// Saving original log.Level text,
 	// not the internal OpenTelemetry SeverityNumber -> SeverityText mapping
-	return severity, *r.Level, true
+	return severity, r.Level.String(), true
 }
 
 // PutCommonAttributes puts already parsed common attributes into provided Attributes Map/Body
@@ -195,8 +278,98 @@ func (r *azureLogRecordBase) PutCommonAttributes(attrs pcommon.Map, _ pcommon.Va
 	unmarshaler.AttrPutStrPtrIf(attrs, string(conventions.NetworkPeerAddressKey), r.CallerIPAddress)
 	unmarshaler.AttrPutStrPtrIf(attrs, attributeAzureCorrelationID, r.CorrelationID)
 	unmarshaler.AttrPutIntNumberPtrIf(attrs, attributeAzureOperationDuration, r.DurationMs)
-	if r.Identity != nil {
-		unmarshaler.AttrPutMapIf(attrs, attributeAzureIdentity, *r.Identity)
+	addIdentityAttributes(r.Identity, attrs)
+}
+
+// addIdentityAttributes extracts identity details
+//
+// The `identity` field is part of the Top-level common schema for
+// resource logs and it's also in use in the activity logs.
+//
+// We're applying the strategy to only pick the identity elements
+// that we know are useful. This approach also minimizes the risk
+// of accidentally including sensitive data.
+func addIdentityAttributes(identityJSON json.RawMessage, attrs pcommon.Map) {
+	if len(identityJSON) == 0 {
+		return
+	}
+
+	var id identity
+	if err := gojson.Unmarshal(identityJSON, &id); err != nil {
+		return
+	}
+
+	// Authorization
+	// ------------------------------------------------------------
+
+	if id.Authorization != nil {
+		attrs.PutStr(attributeIdentityAuthorizationScope, id.Authorization.Scope)
+		attrs.PutStr(attributeIdentityAuthorizationAction, id.Authorization.Action)
+
+		if id.Authorization.Evidence != nil {
+			attrs.PutStr(attributeIdentityAuthorizationEvidenceRole, id.Authorization.Evidence.Role)
+			attrs.PutStr(attributeIdentityAuthorizationEvidenceRoleAssignmentScope, id.Authorization.Evidence.RoleAssignmentScope)
+			attrs.PutStr(attributeIdentityAuthorizationEvidenceRoleAssignmentID, id.Authorization.Evidence.RoleAssignmentID)
+			attrs.PutStr(attributeIdentityAuthorizationEvidenceRoleDefinitionID, id.Authorization.Evidence.RoleDefinitionID)
+			attrs.PutStr(attributeIdentityAuthorizationEvidencePrincipalID, id.Authorization.Evidence.PrincipalID)
+			attrs.PutStr(attributeIdentityAuthorizationEvidencePrincipalType, id.Authorization.Evidence.PrincipalType)
+		}
+	}
+
+	// Claims
+	// ------------------------------------------------------------
+
+	// Extract known claims details we want to include in the
+	// log record.
+	// Extract common claim fields
+
+	if iss := id.Claims[identityClaimIssuer]; iss != "" {
+		attrs.PutStr(attributeIdentityClaimsIssuer, iss)
+	}
+	if sub := id.Claims[identityClaimSubject]; sub != "" {
+		attrs.PutStr(attributeIdentityClaimsSubject, sub)
+	}
+	if aud := id.Claims[identityClaimAudience]; aud != "" {
+		attrs.PutStr(attributeIdentityClaimsAudience, aud)
+	}
+	if exp := id.Claims[identityClaimExpires]; exp != "" {
+		if expTime, err := parseUnixTimestamp(exp); err == nil {
+			attrs.PutStr(attributeIdentityClaimsNotAfter, expTime.Format(time.RFC3339))
+		}
+	}
+	if nbf := id.Claims[identityClaimNotBefore]; nbf != "" {
+		if nbfTime, err := parseUnixTimestamp(nbf); err == nil {
+			attrs.PutStr(attributeIdentityClaimsNotBefore, nbfTime.Format(time.RFC3339))
+		}
+	}
+	if iat := id.Claims[identityClaimIssuedAt]; iat != "" {
+		if iatTime, err := parseUnixTimestamp(iat); err == nil {
+			attrs.PutStr(attributeIdentityClaimsCreated, iatTime.Format(time.RFC3339))
+		}
+	}
+	if scope := id.Claims[identityClaimScope]; scope != "" {
+		attrs.PutStr(attributeIdentityClaimsScope, scope)
+	}
+	if idtyp := id.Claims[identityClaimType]; idtyp != "" {
+		attrs.PutStr(attributeIdentityClaimsType, idtyp)
+	}
+	if appid := id.Claims[identityClaimApplicationID]; appid != "" {
+		attrs.PutStr(attributeIdentityClaimsApplicationID, appid)
+	}
+	if authmethods := id.Claims[identityClaimAuthMethodsReferences]; authmethods != "" {
+		attrs.PutStr(attributeIdentityClaimsAuthMethodsReferences, authmethods)
+	}
+	if provider := id.Claims[identityClaimProvider]; provider != "" {
+		attrs.PutStr(attributeIdentityClaimsProvider, provider)
+	}
+	if object := id.Claims[identityClaimIdentifierObject]; object != "" {
+		attrs.PutStr(attributeIdentityClaimsIdentifierObject, object)
+	}
+	if name := id.Claims[identityClaimIdentifierName]; name != "" {
+		attrs.PutStr(attributeIdentityClaimsIdentifierName, name)
+	}
+	if email := id.Claims[identityClaimEmailAddress]; email != "" {
+		attrs.PutStr(string(conventions.UserEmailKey), email)
 	}
 }
 
@@ -316,12 +489,26 @@ func processLogRecord(logCategory string, record []byte) (azureLogRecord, error)
 		parsed = new(frontDoorWAFLog)
 	case categoryFunctionAppLogs:
 		parsed = new(azureFunctionAppLog)
-	case categoryRecommendation:
-		parsed = new(azureRecommendationLog)
 	// StorageRead, StorageWrite, StorageDelete share the same properties,
 	// called StorageBlobLogs, see https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/storagebloblogs
 	case categoryStorageRead, categoryStorageWrite, categoryStorageDelete:
 		parsed = new(azureStorageBlobLog)
+	case categoryAdministrative:
+		parsed = new(azureAdministrativeLog)
+	case categoryAlert:
+		parsed = new(azureAlertLog)
+	case categoryAutoscale:
+		parsed = new(azureAutoscaleLog)
+	case categorySecurity:
+		parsed = new(azureSecurityLog)
+	case categoryPolicy:
+		parsed = new(azurePolicyLog)
+	case categoryServiceHealth:
+		parsed = new(azureServiceHealthLog)
+	case categoryRecommendation:
+		parsed = new(azureRecommendationLog)
+	case categoryResourceHealth:
+		parsed = new(azureResourceHealthLog)
 	default:
 		parsed = new(azureLogRecordGeneric)
 	}
