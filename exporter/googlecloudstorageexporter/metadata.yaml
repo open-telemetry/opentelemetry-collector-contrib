@@ -1,4 +1,5 @@
 type: googlecloudstorage
+display_name: Google Cloud Storage Exporter
 
 status:
   class: exporter

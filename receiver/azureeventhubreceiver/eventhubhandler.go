@@ -64,19 +64,11 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	}
 
 	if h.hub == nil { // set manually for testing.
-		if azEventHubFeatureGate.IsEnabled() {
-			newHub, err := newAzeventhubWrapper(h)
-			if err != nil {
-				return err
-			}
-			h.hub = newHub
-		} else {
-			newHub, err := newLegacyHubWrapper(h)
-			if err != nil {
-				return err
-			}
-			h.hub = newHub
+		newHub, err := newAzeventhubWrapper(h, host)
+		if err != nil {
+			return err
 		}
+		h.hub = newHub
 	}
 
 	if h.config.Partition != "" {

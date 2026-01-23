@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"runtime"
 	"slices"
@@ -49,6 +50,7 @@ type traceData struct {
 
 	arrivalTime   time.Time
 	decisionTime  time.Time
+	bytes         uint64
 	finalDecision samplingpolicy.Decision
 	policyName    string
 	deleteElement *list.Element
@@ -61,24 +63,27 @@ type tailSamplingSpanProcessor struct {
 	telemetry *metadata.TelemetryBuilder
 	logger    *zap.Logger
 
-	deleteTraceQueue   *list.List
-	nextConsumer       consumer.Traces
-	policies           []*policy
-	idToTrace          map[pcommon.TraceID]*traceData
-	tickerFrequency    time.Duration
-	decisionBatcher    idbatcher.Batcher
-	sampledIDCache     cache.Cache
-	nonSampledIDCache  cache.Cache
-	recordPolicy       bool
-	sampleOnFirstMatch bool
-	blockOnOverflow    bool
+	deleteTraceQueue    *list.List
+	nextConsumer        consumer.Traces
+	policies            []*policy
+	idToTrace           map[pcommon.TraceID]*traceData
+	tickerFrequency     time.Duration
+	decisionBatcher     idbatcher.Batcher
+	rootReceivedBatcher idbatcher.Batcher
+	sampledIDCache      cache.Cache
+	nonSampledIDCache   cache.Cache
+	recordPolicy        bool
+	sampleOnFirstMatch  bool
+	blockOnOverflow     bool
+	maxTraceSizeBytes   uint64
 
 	cfg  Config
 	host component.Host
 
-	newPolicyChan chan newPolicyCmd
-	workChan      chan []traceBatch
-	doneChan      chan struct{}
+	newPolicyChan    chan newPolicyCmd
+	newTraceSizeChan chan uint64
+	workChan         chan []traceBatch
+	doneChan         chan struct{}
 
 	// tickChan triggers ticks and responds on the provided channel when the tick is complete.
 	// this is used in tests to produce deterministic ticks.
@@ -120,11 +125,13 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		deleteTraceQueue:   list.New(),
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 		blockOnOverflow:    cfg.BlockOnOverflow,
+		maxTraceSizeBytes:  cfg.MaximumTraceSizeBytes,
 		// Similar to the id batcher, allow a batch per CPU to be buffered before blocking ConsumeTraces.
 		workChan: make(chan []traceBatch, runtime.NumCPU()),
-		// We need to buffer one new policy command so that external callers can
+		// We need to buffer one new policy command/size update so that external callers can
 		// queue up new policies without blocking on the ticker.
-		newPolicyChan: make(chan newPolicyCmd, 1),
+		newPolicyChan:    make(chan newPolicyCmd, 1),
+		newTraceSizeChan: make(chan uint64, 1),
 	}
 
 	for _, opt := range cfg.Options {
@@ -160,11 +167,20 @@ func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Ho
 		// this will start a goroutine in the background, so we run it only if everything went
 		// well in creating the policies, and only when the processor starts.
 		numDecisionBatches := math.Max(1, tsp.cfg.DecisionWait.Seconds())
-		inBatcher, err := idbatcher.New(uint64(numDecisionBatches), tsp.cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
+		idBatcher, err := idbatcher.New(uint64(numDecisionBatches), tsp.cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
 		if err != nil {
 			return err
 		}
-		tsp.decisionBatcher = inBatcher
+		tsp.decisionBatcher = idBatcher
+	}
+
+	if tsp.rootReceivedBatcher == nil && tsp.cfg.DecisionWaitAfterRootReceived > 0 {
+		numDecisionBatches := math.Max(1, tsp.cfg.DecisionWaitAfterRootReceived.Seconds())
+		idBatcher, err := idbatcher.New(uint64(numDecisionBatches), tsp.cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
+		if err != nil {
+			return err
+		}
+		tsp.rootReceivedBatcher = idBatcher
 	}
 
 	tsp.doneChan = make(chan struct{})
@@ -183,9 +199,11 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 		// be more efficient on its single goroutine.
 		batch := []traceBatch{}
 		for traceID, spans := range idToSpansAndScope {
+			newRSS, rootSpan := newResourceSpanFromSpanAndScopes(rss, spans)
 			batch = append(batch, traceBatch{
 				id:        traceID,
-				rss:       newResourceSpanFromSpanAndScopes(rss, spans),
+				rootSpan:  rootSpan,
+				rss:       newRSS,
 				spanCount: int64(len(spans)),
 			})
 		}
@@ -251,9 +269,14 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 	return slices.Concat(dropPolicies, policies), nil
 }
 
+func (tsp *tailSamplingSpanProcessor) SetMaximumTraceSizeBytes(size uint64) {
+	tsp.newTraceSizeChan <- size
+}
+
 // traceBatch contains all spans from a single batch for a single trace.
 type traceBatch struct {
 	id        pcommon.TraceID
+	rootSpan  *ptrace.Span
 	rss       ptrace.ResourceSpans
 	spanCount int64
 }
@@ -275,11 +298,13 @@ var (
 	attrDecisionNotSampled = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("decision", "not_sampled"))
 	attrDecisionDropped    = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("decision", "dropped"))
 	decisionToAttributes   = map[samplingpolicy.Decision]metric.MeasurementOption{
-		samplingpolicy.Sampled:          attrDecisionSampled,
-		samplingpolicy.NotSampled:       attrDecisionNotSampled,
+		samplingpolicy.Sampled:    attrDecisionSampled,
+		samplingpolicy.NotSampled: attrDecisionNotSampled,
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 		samplingpolicy.InvertNotSampled: attrDecisionNotSampled,
-		samplingpolicy.InvertSampled:    attrDecisionSampled,
-		samplingpolicy.Dropped:          attrDecisionDropped,
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+		samplingpolicy.InvertSampled: attrDecisionSampled,
+		samplingpolicy.Dropped:       attrDecisionDropped,
 	}
 
 	attrSampledTrue  = metric.WithAttributes(attribute.String("sampled", "true"))
@@ -314,6 +339,8 @@ func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg, po
 		return getNewCompositePolicy(settings, &cfg.CompositeCfg, policyExtensions)
 	case And:
 		return getNewAndPolicy(settings, &cfg.AndCfg, policyExtensions)
+	case Not:
+		return getNewNotPolicy(settings, &cfg.NotCfg, policyExtensions)
 	case Drop:
 		return getNewDropPolicy(settings, &cfg.DropCfg, policyExtensions)
 	default:
@@ -447,6 +474,9 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 		if !ok {
 			// Stop the batcher so that we can read all batches without creating new ones.
 			tsp.decisionBatcher.Stop()
+			if tsp.rootReceivedBatcher != nil {
+				tsp.rootReceivedBatcher.Stop()
+			}
 
 			// Do the best decision we can for any traces we have already ingested unless a user wants to drop them.
 			if !tsp.cfg.DropPendingTracesOnShutdown {
@@ -467,11 +497,14 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 				tsp.waitForSpace(tickChan)
 			}
 
-			tsp.processTrace(trace.id, trace.rss, trace.spanCount)
+			tsp.processTrace(trace.id, trace.rss, trace.spanCount, trace.rootSpan != nil)
 		}
 	case cmd := <-tsp.newPolicyChan:
 		tsp.policies = cmd.policies
 		tsp.logger.Debug("New policies loaded", zap.Int("policies.len", len(tsp.policies)))
+	case maxTraceSize := <-tsp.newTraceSizeChan:
+		tsp.maxTraceSizeBytes = maxTraceSize
+		tsp.logger.Debug("New maximum trace size loaded", zap.Uint64("size", maxTraceSize))
 	case <-tickChan:
 		tsp.samplingPolicyOnTick()
 	case tickChan := <-tsp.tickChan:
@@ -547,14 +580,36 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	globalTracesSampledByDecision := make(map[samplingpolicy.Decision]int64)
 
 	batch, hasMore := tsp.decisionBatcher.CloseCurrentAndTakeFirstBatch()
+	if tsp.rootReceivedBatcher != nil {
+		rootBatch, _ := tsp.rootReceivedBatcher.CloseCurrentAndTakeFirstBatch()
+		if batch == nil {
+			batch = rootBatch
+		} else {
+			maps.Copy(batch, rootBatch)
+		}
+	}
 	batchLen := len(batch)
 
-	for _, id := range batch {
+	for id := range batch {
 		trace, ok := tsp.idToTrace[id]
 		if !ok {
-			metrics.idNotFoundOnMapCount++
+			// Only increment the not found metric if the trace is not in the
+			// cache. If it is in the cache that means a decision was already
+			// made and the trace properly released. If using block on overflow
+			// we can avoid checking the cache as it is not possible to release
+			// a trace that is still in the batcher with that flow.
+			if !tsp.blockOnOverflow && !tsp.inCache(id) {
+				metrics.idNotFoundOnMapCount++
+			}
 			continue
 		}
+		// A decision was already made, no need to do it again. This happens
+		// when no decision cache is used and a trace was processed both due to
+		// a root span trigger and after decision_wait.
+		if trace.finalDecision != samplingpolicy.Unspecified {
+			continue
+		}
+
 		trace.decisionTime = time.Now()
 
 		decision, policyName := tsp.makeDecision(id, &trace.TraceData, metrics)
@@ -604,13 +659,25 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	return hasMore
 }
 
+// inCache returns if a trace id is in either cache, i.e. a decision has been made for it and it was released.
+func (tsp *tailSamplingSpanProcessor) inCache(id pcommon.TraceID) bool {
+	_, ok := tsp.nonSampledIDCache.Get(id)
+	if ok {
+		return true
+	}
+	_, ok = tsp.sampledIDCache.Get(id)
+	return ok
+}
+
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyTickMetrics) (samplingpolicy.Decision, string) {
 	finalDecision := samplingpolicy.NotSampled
 	samplingDecisions := map[samplingpolicy.Decision]*policy{
-		samplingpolicy.Error:            nil,
-		samplingpolicy.Sampled:          nil,
-		samplingpolicy.NotSampled:       nil,
-		samplingpolicy.InvertSampled:    nil,
+		samplingpolicy.Error:      nil,
+		samplingpolicy.Sampled:    nil,
+		samplingpolicy.NotSampled: nil,
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+		samplingpolicy.InvertSampled: nil,
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 		samplingpolicy.InvertNotSampled: nil,
 		samplingpolicy.Dropped:          nil,
 	}
@@ -655,13 +722,16 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	case samplingDecisions[samplingpolicy.Dropped] != nil: // Dropped takes precedence
 		finalDecision = samplingpolicy.Dropped
 		sampledPolicy = samplingDecisions[samplingpolicy.Dropped]
+	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 	case samplingDecisions[samplingpolicy.InvertNotSampled] != nil: // Then InvertNotSampled
 		finalDecision = samplingpolicy.NotSampled
 	case samplingDecisions[samplingpolicy.Sampled] != nil:
 		finalDecision = samplingpolicy.Sampled
 		sampledPolicy = samplingDecisions[samplingpolicy.Sampled]
+	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 	case samplingDecisions[samplingpolicy.InvertSampled] != nil && samplingDecisions[samplingpolicy.NotSampled] == nil:
 		finalDecision = samplingpolicy.Sampled
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 		sampledPolicy = samplingDecisions[samplingpolicy.InvertSampled]
 	}
 
@@ -701,7 +771,7 @@ func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceI
 	return idToSpans
 }
 
-func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64) {
+func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64, containsRootSpan bool) {
 	currTime := time.Now()
 
 	var newTraceIDs int64
@@ -731,8 +801,23 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	} else {
 		actualData.SpanCount += spanCount
 	}
+	if containsRootSpan && tsp.rootReceivedBatcher != nil {
+		tsp.rootReceivedBatcher.AddToCurrentBatch(id)
+	}
 
 	finalDecision := actualData.finalDecision
+
+	marshaler := &ptrace.ProtoMarshaler{}
+	actualData.bytes += uint64(marshaler.ResourceSpansSize(rss))
+
+	if finalDecision == samplingpolicy.Unspecified &&
+		tsp.maxTraceSizeBytes > 0 &&
+		actualData.bytes > tsp.maxTraceSizeBytes {
+		tsp.telemetry.ProcessorTailSamplingTracesDroppedTooLarge.Add(tsp.ctx, 1)
+		actualData.finalDecision = samplingpolicy.NotSampled
+		tsp.releaseNotSampledTrace(id, "")
+		return
+	}
 
 	if finalDecision == samplingpolicy.Unspecified {
 		// If the final decision hasn't been made, add the new spans to the
@@ -843,24 +928,29 @@ func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans) {
 	rss.MoveTo(rs)
 }
 
-func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) ptrace.ResourceSpans {
+func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) (ptrace.ResourceSpans, *ptrace.Span) {
 	rs := ptrace.NewResourceSpans()
 	rss.Resource().CopyTo(rs.Resource())
+	var rootSpan *ptrace.Span
 
 	scopePointerToNewScope := make(map[*pcommon.InstrumentationScope]*ptrace.ScopeSpans)
 	for _, spanAndScope := range spanAndScopes {
 		// If the scope of the spanAndScope is not in the map, add it to the map and the destination.
+		var sp ptrace.Span
 		if scope, ok := scopePointerToNewScope[spanAndScope.instrumentationScope]; !ok {
 			is := rs.ScopeSpans().AppendEmpty()
 			spanAndScope.instrumentationScope.CopyTo(is.Scope())
 			scopePointerToNewScope[spanAndScope.instrumentationScope] = &is
 
-			sp := is.Spans().AppendEmpty()
-			spanAndScope.span.CopyTo(sp)
+			sp = is.Spans().AppendEmpty()
 		} else {
-			sp := scope.Spans().AppendEmpty()
-			spanAndScope.span.CopyTo(sp)
+			sp = scope.Spans().AppendEmpty()
+		}
+
+		spanAndScope.span.CopyTo(sp)
+		if sp.ParentSpanID().IsEmpty() {
+			rootSpan = &sp
 		}
 	}
-	return rs
+	return rs, rootSpan
 }

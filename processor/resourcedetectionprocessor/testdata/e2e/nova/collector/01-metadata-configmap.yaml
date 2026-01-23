@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-metadata-config
+  namespace: default
+data:
+  server.py: |
+    import json
+    import os
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    # OpenStack Nova metadata format
+    OPENSTACK_METADATA = {
+        "availability_zone": "az1",
+        "hostname": "test-openstack-instance.example.com",
+        "name": "test-openstack-instance",
+        "meta": {
+            "team": "observability",
+            "env": "testing"
+        },
+        "project_id": "test-project-id-12345",
+        "uuid": "b221c929-59b8-4c45-a6fa-104ee0b8b175"
+    }
+
+    # EC2-compatible metadata endpoints
+    EC2_METADATA = {
+        "/latest/meta-data/instance-type": "m1.medium",
+    }
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            # Health check endpoint
+            if self.path == "/healthz":
+                body = b"ok"
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            # OpenStack metadata endpoint
+            if self.path == "/openstack/latest/meta_data.json":
+                body = json.dumps(OPENSTACK_METADATA).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            # EC2-compatible metadata endpoints
+            value = EC2_METADATA.get(self.path)
+            if value is not None:
+                body = value.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            # Not found
+            self.send_response(404)
+            self.end_headers()
+
+        def log_message(self, fmt, *args):
+            return
+
+    if __name__ == "__main__":
+        port = int(os.environ.get("PORT", "80"))
+        server = HTTPServer(("", port), Handler)
+        server.serve_forever()

@@ -136,6 +136,7 @@ func (m *metricSystemCPUFrequency) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemCPUFrequency(cfg MetricConfig) metricSystemCPUFrequency {
 	m := metricSystemCPUFrequency{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -187,6 +188,7 @@ func (m *metricSystemCPULogicalCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemCPULogicalCount(cfg MetricConfig) metricSystemCPULogicalCount {
 	m := metricSystemCPULogicalCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -238,6 +240,7 @@ func (m *metricSystemCPUPhysicalCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemCPUPhysicalCount(cfg MetricConfig) metricSystemCPUPhysicalCount {
 	m := metricSystemCPUPhysicalCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -292,6 +295,7 @@ func (m *metricSystemCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemCPUTime(cfg MetricConfig) metricSystemCPUTime {
 	m := metricSystemCPUTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -344,6 +348,7 @@ func (m *metricSystemCPUUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemCPUUtilization(cfg MetricConfig) metricSystemCPUUtilization {
 	m := metricSystemCPUUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

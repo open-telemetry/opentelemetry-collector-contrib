@@ -28,15 +28,10 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+          install-tools: "false"
       - name: Set up QEMU
         uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
       - name: Set up Docker Buildx
@@ -64,15 +59,10 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+          install-tools: "false"
       - name: Set up QEMU
         uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
       - name: Set up Docker Buildx
@@ -106,15 +96,10 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+          install-tools: "false"
       - name: Set up QEMU
         uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
       - name: Set up Docker Buildx
