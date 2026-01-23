@@ -144,11 +144,10 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 		case signalTypeTraces:
 			tracesEncoding, err := loadExtension[ptrace.Marshaler](host, *s.cfg.Encoding, "traces marshaler", errNotTracesMarshaler)
 			if err != nil {
-				if errors.Is(err, errNotTracesMarshaler) {
-					s.logger.Warn("Configured encoding extension does not support traces, falling back to JSON marshaler", zap.String("encoding", s.cfg.Encoding.String()))
-				} else {
+				if !errors.Is(err, errNotTracesMarshaler) {
 					return fmt.Errorf("failed to load traces extension: %w", err)
 				}
+				s.logger.Warn("Configured encoding extension does not support traces, falling back to JSON marshaler", zap.String("encoding", s.cfg.Encoding.String()))
 			} else {
 				s.tracesMarshaler = tracesEncoding
 			}
@@ -290,7 +289,7 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 }
 
 // loadExtension tries to load an available extension for the given id.
-func loadExtension[T any](host component.Host, id component.ID, extensionType string, errNotMarshaler error) (T, error) {
+func loadExtension[T any](host component.Host, id component.ID, _ string, errNotMarshaler error) (T, error) {
 	var zero T
 	ext, ok := host.GetExtensions()[id]
 	if !ok {

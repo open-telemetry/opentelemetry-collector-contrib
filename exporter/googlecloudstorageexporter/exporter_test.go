@@ -353,11 +353,11 @@ func TestConsumeLogs(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                string
-		id                  string
-		signal              signalType
-		expectsConsumeErr   string
-		expectedMarshaler   any
+		name              string
+		id                string
+		signal            signalType
+		expectsConsumeErr string
+		expectedMarshaler any
 	}{
 		{
 			name:              "logs encoding fails",
@@ -420,8 +420,6 @@ func TestConsumeLogs(t *testing.T) {
 		})
 	}
 }
-
-
 
 func newTestGCSExporter(t *testing.T, cfg *Config, signal ...signalType) *storageExporter {
 	sig := signalTypeLogs
