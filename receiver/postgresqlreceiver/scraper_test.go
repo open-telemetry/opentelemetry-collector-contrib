@@ -674,7 +674,7 @@ func TestIsCollectionDue(t *testing.T) {
 	logger, err := zap.NewProduction()
 	require.NoError(t, err)
 	scrpr := postgreSQLScraper{
-		//setting lastExecutionTimestamp to be past 'collectionInterval'
+		// setting lastExecutionTimestamp to be past 'collectionInterval'
 		lastExecutionTimestamp: currentCollectionTime.Add(-collectionInterval),
 		logger:                 logger,
 	}

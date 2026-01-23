@@ -217,7 +217,7 @@ func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery,
 
 func (p *postgreSQLScraper) isCollectionDue(collectionTime time.Time, interval time.Duration) bool {
 	if p.lastExecutionTimestamp.IsZero() {
-		//This is the first collection
+		// This is the first collection
 		return true
 	}
 
