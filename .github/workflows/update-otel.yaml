@@ -23,6 +23,11 @@ jobs:
         with:
           path: opentelemetry-collector
           repository: open-telemetry/opentelemetry-collector
+      - uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        id: otelbot-token
+        with:
+          app-id: ${{ vars.OTELBOT_APP_ID }}
+          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
       - name: Prepare to update dependencies
         run: |
           exec > >(tee log.out) 2>&1
@@ -40,6 +45,8 @@ jobs:
             echo "LAST_COMMIT=$LAST_COMMIT"
             echo "BRANCH_NAME=$branch"
           } >> "$GITHUB_ENV"
+        env:
+          GH_TOKEN: ${{ steps.otelbot-token.outputs.token }}
       - name: Gets packages from links with retries
         uses: nick-fields/retry@ce71cc2ab81d554ebbe88c79ab5975992d79ba08 # v3.0.2
         with:
@@ -51,11 +58,6 @@ jobs:
             exec > >(tee -a log.out) 2>&1
             cd opentelemetry-collector-contrib
             make update-otel OTEL_STABLE_VERSION=${{ env.LAST_COMMIT }} OTEL_VERSION=${{ env.LAST_COMMIT }}
-      - uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
-        id: otelbot-token
-        with:
-          app-id: ${{ vars.OTELBOT_APP_ID }}
-          private-key: ${{ secrets.OTELBOT_PRIVATE_KEY }}
       - name: Push and create PR
         run: |
           exec > >(tee -a log.out) 2>&1
