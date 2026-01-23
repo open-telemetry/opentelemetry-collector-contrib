@@ -103,7 +103,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 
 	splitFunc := o.splitFunc
 	if splitFunc == nil {
-		splitFunc, err = c.SplitConfig.Func(enc, true, int(c.MaxLogSize))
+		splitFunc, err = c.SplitConfig.Func(enc, false, int(c.MaxLogSize))
 		if err != nil {
 			return nil, err
 		}

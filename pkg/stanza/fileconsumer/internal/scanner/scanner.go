@@ -21,12 +21,17 @@ type Scanner struct {
 }
 
 // New creates a new positional scanner
-func New(r io.Reader, maxLogSize int, buf []byte, startOffset int64, splitFunc bufio.SplitFunc) *Scanner {
+func New(r io.Reader, maxLogSize int, buf []byte, startOffset int64, splitFunc bufio.SplitFunc, isGzip bool) *Scanner {
 	s := &Scanner{Scanner: bufio.NewScanner(r), pos: startOffset}
 	s.Buffer(buf, maxLogSize)
 	scanFunc := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		advance, token, err = splitFunc(data, atEOF)
 		s.pos += int64(advance)
+		// flush data if we are at EOF and it is a gzip file
+		// this is because gzip reader reads the entire compressed stream in one go
+		if isGzip && atEOF && len(data) != 0 {
+			return len(data), data, nil
+		}
 		return advance, token, err
 	}
 	s.Split(scanFunc)
