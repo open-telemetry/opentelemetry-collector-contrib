@@ -14,13 +14,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
 // testdataProcesses is the list of valid lead processes within the
@@ -66,7 +67,7 @@ func getTestdataPid(handles processHandles, pid int32) processHandle {
 	return nil
 }
 
-func newTestProcessScraper(t *testing.T, ctx context.Context) *processScraper {
+func newTestProcessScraper(ctx context.Context, t *testing.T) *processScraper {
 	t.Helper()
 	metricsCfg := metadata.DefaultMetricsBuilderConfig()
 	metricsCfg.Metrics = metricsConfigAllEnabled()
@@ -97,31 +98,32 @@ func TestProcessScraper_Procfs(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	ctx := context.WithValue(
-		context.Background(),
+		t.Context(),
 		common.EnvKey,
 		common.EnvMap{common.HostProcEnvKey: filepath.Join(wd, "testdata", "procfs")},
 	)
 
-	scraper := newTestProcessScraper(t, ctx)
+	scraper := newTestProcessScraper(ctx, t)
 
 	handles, err := testdataProcessHandles(ctx)
 	require.NoError(t, err)
 
-	runTestdataProcfsTest(t, ctx, scraper, handles, "context switches", testContextSwitches)
+	runTestdataProcfsTest(ctx, t, scraper, handles, "context switches", testContextSwitches)
 }
 
-type testdataProcfsTestFunc func(*testing.T, context.Context, *processScraper, processHandles)
+type testdataProcfsTestFunc func(context.Context, *testing.T, *processScraper, processHandles)
 
 func runTestdataProcfsTest(
-	t *testing.T,
 	ctx context.Context,
+	t *testing.T,
 	scraper *processScraper,
 	handles processHandles,
 	name string,
-	testFunc testdataProcfsTestFunc) {
+	testFunc testdataProcfsTestFunc,
+) {
 	t.Run(name, func(t *testing.T) {
 		t.Parallel()
-		testFunc(t, ctx, scraper, handles)
+		testFunc(ctx, t, scraper, handles)
 	})
 }
 
@@ -142,7 +144,7 @@ func runTestdataProcfsTest(
 //
 //	voluntary_ctxt_switches:	190
 //	nonvoluntary_ctxt_switches:	5
-func testContextSwitches(t *testing.T, ctx context.Context, scraper *processScraper, handles processHandles) {
+func testContextSwitches(ctx context.Context, t *testing.T, scraper *processScraper, handles processHandles) {
 	ctxSwitchProcess := getTestdataPid(handles, testdataProcesses["context switches"])
 	require.NoError(t, scraper.scrapeAndAppendContextSwitchMetrics(ctx, pcommon.NewTimestampFromTime(time.Now()), ctxSwitchProcess))
 
@@ -187,7 +189,7 @@ func metricsConfigAllEnabled() metadata.MetricsConfig {
 	v := reflect.ValueOf(&cfg).Elem()
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
-		if field.Type() == reflect.TypeOf(metadata.MetricConfig{}) {
+		if field.Type() == reflect.TypeFor[metadata.MetricConfig]() {
 			field.FieldByName("Enabled").SetBool(true)
 		}
 	}
