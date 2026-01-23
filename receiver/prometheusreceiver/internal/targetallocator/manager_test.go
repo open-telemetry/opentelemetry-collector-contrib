@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -99,6 +100,56 @@ func TestManagerShutdown(t *testing.T) {
 		logEntries := logs.FilterMessage("Stopping target allocator")
 		return logEntries.Len() > 0
 	}, 5*time.Second, 50*time.Millisecond, "expected shutdown log message")
+}
+
+func TestSyncForcesClassicHistogramConversionToNHCB(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/scrape_configs" {
+			_, _ = w.Write([]byte(`test:
+  job_name: "test"
+  convert_classic_histograms_to_nhcb: false
+`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	promCfg, err := promconfig.Load("", promslog.NewNopLogger())
+	require.NoError(t, err)
+
+	cfg := &Config{
+		ClientConfig: confighttp.ClientConfig{
+			Endpoint: server.URL,
+		},
+		Interval:    30 * time.Second,
+		CollectorID: "collector-1",
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	manager := NewManager(settings, cfg, promCfg)
+
+	ctx := t.Context()
+	promLogger := promslog.NewNopLogger()
+	reg := prometheus.NewRegistry()
+	sdMetrics, err := discovery.RegisterSDMetrics(reg, discovery.NewRefreshMetrics(reg))
+	require.NoError(t, err)
+	discoveryManager := discovery.NewManager(ctx, promLogger, reg, sdMetrics)
+	require.NotNil(t, discoveryManager)
+
+	scrapeManager, err := scrape.NewManager(&scrape.Options{}, promLogger, nil, nil, reg)
+	require.NoError(t, err)
+	defer scrapeManager.Stop()
+
+	manager.scrapeManager = scrapeManager
+	manager.discoveryManager = discoveryManager
+
+	_, err = manager.sync(0, server.Client())
+	require.NoError(t, err)
+
+	require.Len(t, manager.promCfg.ScrapeConfigs, 1)
+	require.NotNil(t, manager.promCfg.ScrapeConfigs[0].ConvertClassicHistogramsToNHCB)
+	assert.True(t, *manager.promCfg.ScrapeConfigs[0].ConvertClassicHistogramsToNHCB)
 }
 
 func TestInstantiateShard(t *testing.T) {

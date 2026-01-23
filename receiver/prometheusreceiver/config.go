@@ -194,7 +194,20 @@ func reloadPromConfig(dst *PromConfig, src any) error {
 	}
 	copyStaticConfig((*PromConfig)(newCfg), src)
 	*dst = PromConfig(*newCfg)
+	forceClassicHistogramConversionToNHCB(dst)
 	return nil
+}
+
+func forceClassicHistogramConversionToNHCB(cfg *PromConfig) {
+	if cfg == nil {
+		return
+	}
+
+	cfg.GlobalConfig.ConvertClassicHistogramsToNHCB = true
+	enabled := true
+	for _, sc := range cfg.ScrapeConfigs {
+		sc.ConvertClassicHistogramsToNHCB = &enabled
+	}
 }
 
 func validateHTTPClientConfig(cfg *commonconfig.HTTPClientConfig) error {
