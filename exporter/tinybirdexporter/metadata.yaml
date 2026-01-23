@@ -1,4 +1,5 @@
 type: tinybird
+display_name: Tinybird Exporter
 
 status:
   class: exporter
