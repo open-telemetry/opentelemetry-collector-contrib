@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ReceiverPrometheusreceiverEnableAppenderV2FeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.EnableAppenderV2",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, uses the new Prometheus AppenderV2 interface for translating Prometheus metrics into OTLP. This new interface is expected to be more efficient but is still experimental."),
+	featuregate.WithRegisterReferenceURL("https://github.com/prometheus/prometheus/pull/17872"),
+	featuregate.WithRegisterFromVersion("v0.145.0"),
+)
+
 var ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion",
 	featuregate.StageAlpha,

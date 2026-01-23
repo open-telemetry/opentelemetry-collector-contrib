@@ -510,8 +510,8 @@ github.com/prometheus/procfs v0.0.2/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsT
 github.com/prometheus/procfs v0.0.8/go.mod h1:7Qr8sr6344vo1JqZ6HhLceV9o3AJ1Ff+GxbHq6oeK9A=
 github.com/prometheus/procfs v0.17.0 h1:FuLQ+05u4ZI+SS/w9+BWEM2TXiHKsUQ9TADiRH7DuK0=
 github.com/prometheus/procfs v0.17.0/go.mod h1:oPQLaDAMRbA+u8H5Pbfq+dl3VDAvHxMUOVhe0wYB2zw=
-github.com/prometheus/prometheus v0.309.2-0.20260113170727-c7bc56cf6c8f h1:jdB0ldVZ0vDSopY9ya4h/XPGlRYVEDsWH5x7+vIx4R8=
-github.com/prometheus/prometheus v0.309.2-0.20260113170727-c7bc56cf6c8f/go.mod h1:wSFyaZQ1ioryO2X47s2wvQEWypS+Mwf9IQ1ABDEo2Sk=
+github.com/prometheus/prometheus v0.309.2-0.20260122112922-0c6a269e10cb h1:t6B+SBor1778Vg1Z3/G9p1WVSIWaHVfcqaJnYdlKCWg=
+github.com/prometheus/prometheus v0.309.2-0.20260122112922-0c6a269e10cb/go.mod h1:d8TXutJOWphYjQKOS/XprctWZOr3cwaa+yhPK+e3jYQ=
 github.com/prometheus/sigv4 v0.3.0 h1:QIG7nTbu0JTnNidGI1Uwl5AGVIChWUACxn2B/BQ1kms=
 github.com/prometheus/sigv4 v0.3.0/go.mod h1:fKtFYDus2M43CWKMNtGvFNHGXnAJJEGZbiYCmVp/F8I=
 github.com/puzpuzpuz/xsync/v3 v3.5.1 h1:GJYJZwO6IdxN/IKbneznS6yPkVC+c3zyY/j19c++5Fg=
@@ -703,8 +703,6 @@ go.opentelemetry.io/collector/receiver/receivertest v0.144.0 h1:In2XIG7G0gX1up5T
 go.opentelemetry.io/collector/receiver/receivertest v0.144.0/go.mod h1:E49flKIM47jyblv8nsPcB5WAXRPMkrNwJ+gCDgcVT1I=
 go.opentelemetry.io/collector/receiver/xreceiver v0.144.0 h1:Oj4EUvPL8MUWZHxZKQLsL2oyBcPUWmDE0d1ZyGNyhIM=
 go.opentelemetry.io/collector/receiver/xreceiver v0.144.0/go.mod h1:tfXYu2fm5fKAvk8x2AzEuc3t6QEianQG0Z5fcN7/dco=
-go.opentelemetry.io/collector/semconv v0.128.1-0.20250610090210-188191247685 h1:XCN7qkZRNzRYfn6chsMZkbFZxoFcW6fZIsZs2aCzcbc=
-go.opentelemetry.io/collector/semconv v0.128.1-0.20250610090210-188191247685/go.mod h1:OPXer4l43X23cnjLXIZnRj/qQOjSuq4TgBLI76P9hns=
 go.opentelemetry.io/collector/service v0.144.0 h1:N+3XbPUPh3ECRFWC6c1M+fP8LZ12HgJNUFn63SM051I=
 go.opentelemetry.io/collector/service v0.144.0/go.mod h1:po7wu8OobdJUasxFt/S5CPnNiFu14+9Rl+i6zJbmy2k=
 go.opentelemetry.io/collector/service/hostcapabilities v0.144.0 h1:N43+QytJwMlK91H+6D+KO4fV1vkWO7/e5iyrlCzKyaM=

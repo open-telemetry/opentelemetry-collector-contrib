@@ -6,13 +6,17 @@ package internal
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/metadata"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
@@ -21,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
+	mdata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 const (
@@ -52,20 +56,37 @@ func BenchmarkAppend(b *testing.B) {
 }
 
 func benchmarkAppend(b *testing.B) {
+	impl := benchmarkImpl(b)
 	labelSets := generateLabelSets(numSeries, 50)
 	timestamp := int64(1234567890)
+	opts := storage.AppendV2Options{
+		Metadata: metadata.Metadata{
+			Type: model.MetricTypeGauge,
+		},
+	}
 
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		tx := newBenchmarkTransaction(b)
+		var txV1 *transaction
+		var txV2 *transactionV2
+		if impl == "v2" {
+			txV2 = newBenchmarkTransactionV2(b)
+		} else {
+			txV1 = newBenchmarkTransaction(b)
+		}
 		b.StartTimer()
 
 		for j, ls := range labelSets {
 			value := float64(j)
-			_, err := tx.Append(0, ls, timestamp, value)
+			var err error
+			if impl == "v2" {
+				_, err = txV2.Append(0, ls, 0, timestamp, value, nil, nil, opts)
+			} else {
+				_, err = txV1.Append(0, ls, timestamp, value)
+			}
 			assert.NoError(b, err)
 		}
 	}
@@ -78,20 +99,37 @@ func BenchmarkAppendHistogram(b *testing.B) {
 }
 
 func benchmarkAppendHistogram(b *testing.B) {
+	impl := benchmarkImpl(b)
 	labelSets := generateLabelSets(numSeries, 50)
 	histograms := generateNativeHistograms(numSeries)
 	timestamp := int64(1234567890)
+	opts := storage.AppendV2Options{
+		Metadata: metadata.Metadata{
+			Type: model.MetricTypeHistogram,
+		},
+	}
 
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		tx := newBenchmarkTransaction(b)
+		var txV1 *transaction
+		var txV2 *transactionV2
+		if impl == "v2" {
+			txV2 = newBenchmarkTransactionV2(b)
+		} else {
+			txV1 = newBenchmarkTransaction(b)
+		}
 		b.StartTimer()
 
 		for j := range labelSets {
-			_, err := tx.AppendHistogram(0, labelSets[j], timestamp, histograms[j], nil)
+			var err error
+			if impl == "v2" {
+				_, err = txV2.Append(0, labelSets[j], 0, timestamp, 0, histograms[j], nil, opts)
+			} else {
+				_, err = txV1.AppendHistogram(0, labelSets[j], timestamp, histograms[j], nil)
+			}
 			assert.NoError(b, err)
 		}
 	}
@@ -103,74 +141,222 @@ func benchmarkAppendHistogram(b *testing.B) {
 // Note: The presence of target_info and otel_scope_info metrics affects the performance of the Commit method,
 // so they are benchmarked in sub-benchmarks.
 func BenchmarkCommit(b *testing.B) {
+	impl := benchmarkImpl(b)
 	b.Run("ClassicMetrics", func(b *testing.B) {
 		b.Run("Baseline", func(b *testing.B) {
-			benchmarkCommit(b, false, false, false)
+			benchmarkCommit(b, impl, false, false, false)
 		})
 
 		b.Run("WithTargetInfo", func(b *testing.B) {
-			benchmarkCommit(b, false, true, false)
+			benchmarkCommit(b, impl, false, true, false)
 		})
 
 		b.Run("WithScopeInfo", func(b *testing.B) {
-			benchmarkCommit(b, false, false, true)
+			benchmarkCommit(b, impl, false, false, true)
 		})
 	})
 
 	b.Run("NativeHistogram", func(b *testing.B) {
 		b.Run("Baseline", func(b *testing.B) {
-			benchmarkCommit(b, true, false, false)
+			benchmarkCommit(b, impl, true, false, false)
 		})
 
 		b.Run("WithTargetInfo", func(b *testing.B) {
-			benchmarkCommit(b, true, true, false)
+			benchmarkCommit(b, impl, true, true, false)
 		})
 
 		b.Run("WithScopeInfo", func(b *testing.B) {
-			benchmarkCommit(b, true, false, true)
+			benchmarkCommit(b, impl, true, false, true)
 		})
 	})
 }
 
-func benchmarkCommit(b *testing.B, useNativeHistograms, withTargetInfo, withScopeInfo bool) {
+// BenchmarkAppendCommit benchmarks append(s) plus commit together.
+// This measures end-to-end transaction cost for a single scrape.
+func BenchmarkAppendCommit(b *testing.B) {
+	impl := benchmarkImpl(b)
+	b.Run("ClassicMetrics", func(b *testing.B) {
+		b.Run("Baseline", func(b *testing.B) {
+			benchmarkAppendCommit(b, impl, false, false, false)
+		})
+		b.Run("WithTargetInfo", func(b *testing.B) {
+			benchmarkAppendCommit(b, impl, false, true, false)
+		})
+		b.Run("WithScopeInfo", func(b *testing.B) {
+			benchmarkAppendCommit(b, impl, false, false, true)
+		})
+	})
+	b.Run("NativeHistogram", func(b *testing.B) {
+		b.Run("Baseline", func(b *testing.B) {
+			benchmarkAppendCommit(b, impl, true, false, false)
+		})
+		b.Run("WithTargetInfo", func(b *testing.B) {
+			benchmarkAppendCommit(b, impl, true, true, false)
+		})
+		b.Run("WithScopeInfo", func(b *testing.B) {
+			benchmarkAppendCommit(b, impl, true, false, true)
+		})
+	})
+}
+
+func benchmarkImpl(b *testing.B) string {
+	b.Helper()
+	impl := strings.ToLower(strings.TrimSpace(os.Getenv("APPENDER_IMPL")))
+	if impl == "" {
+		return "v1"
+	}
+	if impl != "v1" && impl != "v2" {
+		b.Fatalf("invalid APPENDER_IMPL %q (expected v1 or v2)", impl)
+	}
+	return impl
+}
+func benchmarkCommit(b *testing.B, impl string, useNativeHistograms, withTargetInfo, withScopeInfo bool) {
 	labelSets := generateLabelSets(numSeries, 50)
 	var histograms []*histogram.Histogram
 	if useNativeHistograms {
 		histograms = generateNativeHistograms(numSeries)
 	}
 	timestamp := int64(1234567890)
+	metricType := model.MetricTypeGauge
+	if useNativeHistograms {
+		metricType = model.MetricTypeHistogram
+	}
+	opts := storage.AppendV2Options{
+		Metadata: metadata.Metadata{
+			Type: metricType,
+		},
+	}
 
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		// Setup: Create transaction and append all data (not timed)
-		b.StopTimer()
-		tx := newBenchmarkTransaction(b)
+		// Setup is intentionally included in timing to avoid excessive wall-clock time
+		// when Commit is very fast (particularly in V2). This keeps b.N reasonable.
+		var txV1 *transaction
+		var txV2 *transactionV2
+		if impl == "v2" {
+			txV2 = newBenchmarkTransactionV2(b)
+		} else {
+			txV1 = newBenchmarkTransaction(b)
+		}
 
 		if withTargetInfo {
 			targetInfoLabels := createTargetInfoLabels()
-			_, _ = tx.Append(0, targetInfoLabels, timestamp, 1)
+			if impl == "v2" {
+				_, _ = txV2.Append(0, targetInfoLabels, 0, timestamp, 1, nil, nil, opts)
+			} else {
+				_, _ = txV1.Append(0, targetInfoLabels, timestamp, 1)
+			}
 		}
 
 		if withScopeInfo {
 			scopeInfoLabels := createScopeInfoLabels()
-			_, _ = tx.Append(0, scopeInfoLabels, timestamp, 1)
+			if impl == "v2" {
+				_, _ = txV2.Append(0, scopeInfoLabels, 0, timestamp, 1, nil, nil, opts)
+			} else {
+				_, _ = txV1.Append(0, scopeInfoLabels, timestamp, 1)
+			}
 		}
 
 		if useNativeHistograms {
 			for j := range labelSets {
-				_, _ = tx.AppendHistogram(0, labelSets[j], timestamp, histograms[j], nil)
+				if impl == "v2" {
+					_, _ = txV2.Append(0, labelSets[j], 0, timestamp, 0, histograms[j], nil, opts)
+				} else {
+					_, _ = txV1.AppendHistogram(0, labelSets[j], timestamp, histograms[j], nil)
+				}
 			}
 		} else {
 			for j, ls := range labelSets {
-				_, _ = tx.Append(0, ls, timestamp, float64(j))
+				if impl == "v2" {
+					_, _ = txV2.Append(0, ls, 0, timestamp, float64(j), nil, nil, opts)
+				} else {
+					_, _ = txV1.Append(0, ls, timestamp, float64(j))
+				}
 			}
 		}
-		b.StartTimer()
+		// Benchmark: Commit plus setup for each iteration
+		var err error
+		if impl == "v2" {
+			err = txV2.Commit()
+		} else {
+			err = txV1.Commit()
+		}
+		assert.NoError(b, err)
+	}
+}
 
-		// Benchmark: Only measure Commit
-		err := tx.Commit()
+func benchmarkAppendCommit(b *testing.B, impl string, useNativeHistograms, withTargetInfo, withScopeInfo bool) {
+	labelSets := generateLabelSets(numSeries, 50)
+	var histograms []*histogram.Histogram
+	if useNativeHistograms {
+		histograms = generateNativeHistograms(numSeries)
+	}
+	timestamp := int64(1234567890)
+	metricType := model.MetricTypeGauge
+	if useNativeHistograms {
+		metricType = model.MetricTypeHistogram
+	}
+	opts := storage.AppendV2Options{
+		Metadata: metadata.Metadata{
+			Type: metricType,
+		},
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		var txV1 *transaction
+		var txV2 *transactionV2
+		if impl == "v2" {
+			txV2 = newBenchmarkTransactionV2(b)
+		} else {
+			txV1 = newBenchmarkTransaction(b)
+		}
+
+		if withTargetInfo {
+			targetInfoLabels := createTargetInfoLabels()
+			if impl == "v2" {
+				_, _ = txV2.Append(0, targetInfoLabels, 0, timestamp, 1, nil, nil, opts)
+			} else {
+				_, _ = txV1.Append(0, targetInfoLabels, timestamp, 1)
+			}
+		}
+		if withScopeInfo {
+			scopeInfoLabels := createScopeInfoLabels()
+			if impl == "v2" {
+				_, _ = txV2.Append(0, scopeInfoLabels, 0, timestamp, 1, nil, nil, opts)
+			} else {
+				_, _ = txV1.Append(0, scopeInfoLabels, timestamp, 1)
+			}
+		}
+
+		if useNativeHistograms {
+			for j := range labelSets {
+				if impl == "v2" {
+					_, _ = txV2.Append(0, labelSets[j], 0, timestamp, 0, histograms[j], nil, opts)
+				} else {
+					_, _ = txV1.AppendHistogram(0, labelSets[j], timestamp, histograms[j], nil)
+				}
+			}
+		} else {
+			for j, ls := range labelSets {
+				if impl == "v2" {
+					_, _ = txV2.Append(0, ls, 0, timestamp, float64(j), nil, nil, opts)
+				} else {
+					_, _ = txV1.Append(0, ls, timestamp, float64(j))
+				}
+			}
+		}
+
+		var err error
+		if impl == "v2" {
+			err = txV2.Commit()
+		} else {
+			err = txV1.Commit()
+		}
 		assert.NoError(b, err)
 	}
 }
@@ -181,7 +367,7 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 	b.Helper()
 
 	sink := new(consumertest.MetricsSink)
-	settings := receivertest.NewNopSettings(metadata.Type)
+	settings := receivertest.NewNopSettings(mdata.Type)
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.MustNewID("prometheus"),
 		Transport:              "http",
@@ -205,6 +391,30 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 	tx.mc = &mockMetadataStore{}
 
 	return tx
+}
+
+func newBenchmarkTransactionV2(b *testing.B) *transactionV2 {
+	b.Helper()
+
+	sink := new(consumertest.MetricsSink)
+	settings := receivertest.NewNopSettings(mdata.Type)
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.MustNewID("prometheus"),
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		b.Fatalf("Failed to create ObsReport: %v", err)
+	}
+
+	return newTransactionV2(
+		benchCtx,
+		sink,
+		labels.EmptyLabels(), // no external labels
+		settings,
+		obsrecv,
+		false, // trimSuffixes
+	)
 }
 
 // generateLabelSets creates label sets for benchmarking with the specified cardinality.
