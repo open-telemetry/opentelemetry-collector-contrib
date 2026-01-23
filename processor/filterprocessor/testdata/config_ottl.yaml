@@ -152,7 +152,6 @@ filter/mix_log_conditions_with_exclude:
       match_type: strict
       bodies:
         - test_body
-        -
 filter/mix_profile_conditions:
   profile_conditions:
     - conditions:
