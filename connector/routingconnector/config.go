@@ -91,14 +91,11 @@ func (c *Config) Validate() error {
 		}
 
 		switch item.Action {
-		case "", Copy, Move: // ok
+		case "":
+			item.Action = Move // use move if empty.
+		case Copy, Move: // ok
 		default:
 			return errUnexpectedAction
-		}
-
-		if item.Action == Copy && !routingUseActionFeatureGate.IsEnabled() {
-			// we allow copy action to be only used when feature gate is enabled else it uses default move.
-			return fmt.Errorf("'action: copy' requires feature gate %q to be enabled", routingUseActionFeatureGateId)
 		}
 
 		switch item.Context {

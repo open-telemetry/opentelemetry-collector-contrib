@@ -14,23 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"go.opentelemetry.io/collector/featuregate"
 )
-
-const (
-	routingUseActionFeatureGateId = "connector.routing.useAction"
-)
-
-var routingUseActionFeatureGate *featuregate.Gate
-
-func init() {
-	routingUseActionFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		routingUseActionFeatureGateId,
-		featuregate.StageAlpha, // or StageBeta, StageStable
-		featuregate.WithRegisterDescription("When enabled, allows 'action: copy/move' in routing table."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45061"),
-	)
-}
 
 // NewFactory returns a ConnectorFactory.
 func NewFactory() connector.Factory {
