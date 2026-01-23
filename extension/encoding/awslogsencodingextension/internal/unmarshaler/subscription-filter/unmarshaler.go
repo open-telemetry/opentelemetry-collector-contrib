@@ -77,7 +77,7 @@ func (f *subscriptionFilterUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog
 	return logs, nil
 }
 
-func (f *subscriptionFilterUnmarshaler) GetStreamUnmarshaler(reader io.Reader, _ ...encoding.StreamUnmarshalOption) encoding.LogsStreamer {
+func (f *subscriptionFilterUnmarshaler) GetStreamUnmarshaler(reader io.Reader, _ ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
 	// Note - no real streaming as CloudWatch Logs subscription filter events are small in size
 
 	var complete bool

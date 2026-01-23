@@ -57,7 +57,7 @@ func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs,
 }
 
 // GetStreamUnmarshaler returns a LogsStreamer that processes ELB access logs from the provided reader
-func (f *elbAccessLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamer {
+func (f *elbAccessLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
 	bufReader := bufio.NewReader(reader)
 	syntax, err := peekAndGetSyntax(bufReader)
 	if err != nil {

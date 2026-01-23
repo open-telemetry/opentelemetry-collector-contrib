@@ -115,7 +115,7 @@ func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, e
 	}
 }
 
-func (v *vpcFlowLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamer {
+func (v *vpcFlowLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
 	if v.cfg.FileFormat == constants.FileFormatParquet {
 		return func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, errors.New("streaming parquet VPC flow logs is not yet implemented")
@@ -170,11 +170,6 @@ func (v *vpcFlowLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options .
 			}
 
 			line, err = bufReader.ReadString('\n')
-			line = strings.TrimSpace(line)
-
-			batchHelper.IncrementBytes(int64(len(line)))
-			batchHelper.IncrementItems(1)
-
 			if err != nil {
 				if !errors.Is(err, io.EOF) {
 					return plog.Logs{}, fmt.Errorf("error reading VPC logs: %w", err)
@@ -184,7 +179,11 @@ func (v *vpcFlowLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options .
 					break
 				}
 			}
+			batchHelper.IncrementBytes(int64(len(line)) + 1)
+			batchHelper.IncrementItems(1)
 
+			// Trim spaces and new lines
+			line = strings.TrimSpace(line)
 			if err := v.addToLogs(resourceLogs, scopeLogs, fields, line); err != nil {
 				return plog.Logs{}, err
 			}

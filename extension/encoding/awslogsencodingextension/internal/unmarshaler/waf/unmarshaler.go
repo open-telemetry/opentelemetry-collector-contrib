@@ -76,7 +76,7 @@ func (w *wafLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error
 	return logs, nil
 }
 
-func (w *wafLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamer {
+func (w *wafLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
 	scannerHelper := encoding.NewStreamScannerHelper(reader, options...)
 
 	var sharedWebACLID string

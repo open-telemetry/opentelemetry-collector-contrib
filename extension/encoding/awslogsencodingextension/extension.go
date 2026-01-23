@@ -192,7 +192,7 @@ func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return logs, nil
 }
 
-func (e *encodingExtension) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamer {
+func (e *encodingExtension) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
 	return e.unmarshaler.GetStreamUnmarshaler(reader, options...)
 }
 

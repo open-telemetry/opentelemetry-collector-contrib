@@ -114,7 +114,7 @@ func (n *networkFirewallLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog
 	return logs, nil
 }
 
-func (n *networkFirewallLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamer {
+func (n *networkFirewallLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
 	scannerHelper := encoding.NewStreamScannerHelper(reader, options...)
 
 	return func(ctx context.Context) (plog.Logs, error) {

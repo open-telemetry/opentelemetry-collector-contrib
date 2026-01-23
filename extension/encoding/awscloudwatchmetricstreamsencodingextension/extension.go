@@ -6,6 +6,7 @@ package awscloudwatchmetricstreamsencodingextension // import "github.com/open-t
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -14,7 +15,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
-var _ encoding.MetricsUnmarshalerExtension = (*encodingExtension)(nil)
+var (
+	_ encoding.MetricsUnmarshalerExtension     = (*encodingExtension)(nil)
+	_ encoding.MetricsStreamUnmarshalExtension = (*encodingExtension)(nil)
+)
 
 type encodingExtension struct {
 	unmarshaler pmetric.Unmarshaler
@@ -57,4 +61,18 @@ func (e *encodingExtension) UnmarshalMetrics(record []byte) (pmetric.Metrics, er
 		return pmetric.Metrics{}, fmt.Errorf("failed to unmarshal metrics as '%s' format: %w", e.format, err)
 	}
 	return metrics, nil
+}
+
+// GetStreamUnmarshaler fulfills the contract, however, does not implement true streaming.
+// TODO : consider streaming implementations for extensions
+func (e *encodingExtension) GetStreamUnmarshaler(reader io.Reader, _ ...encoding.StreamUnmarshalOption) encoding.StreamIterator[pmetric.Metrics] {
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return nil
+	}
+
+	metrics, err := e.UnmarshalMetrics(data)
+	return func(_ context.Context) (pmetric.Metrics, error) {
+		return metrics, err
+	}
 }

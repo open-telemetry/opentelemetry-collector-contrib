@@ -61,7 +61,7 @@ func (s *s3AccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, 
 	return logs, nil
 }
 
-func (s *s3AccessLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamer {
+func (s *s3AccessLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
 	scannerHelper := encoding.NewStreamScannerHelper(reader, options...)
 
 	return func(ctx context.Context) (plog.Logs, error) {

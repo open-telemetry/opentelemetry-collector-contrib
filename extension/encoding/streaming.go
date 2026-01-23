@@ -10,8 +10,9 @@ import (
 
 // StreamUnmarshalOptions configures the behavior of stream unmarshaling.
 type StreamUnmarshalOptions struct {
-	FlushBytes int64
-	FlushItems int64
+	FlushBytes         int64
+	FlushItems         int64
+	StreamReaderBuffer int
 }
 
 // StreamUnmarshalOption defines the functional option for StreamUnmarshalOptions.
@@ -31,8 +32,15 @@ func WithFlushItems(i int64) StreamUnmarshalOption {
 	}
 }
 
-// StreamScannerHelper is a helper to scan lines from an io.Reader and determine when to flush
-// based on configured byte or item thresholds. It wraps a bufio.Scanner and tracks batch metrics.
+// WithStreamReaderBuffer sets the size of buffer that should be used by the stream reader.
+func WithStreamReaderBuffer(size int) StreamUnmarshalOption {
+	return func(o *StreamUnmarshalOptions) {
+		o.StreamReaderBuffer = size
+	}
+}
+
+// StreamScannerHelper is a helper to scan new line delimited records from io.Reader and determine when to flush.
+// It wraps a bufio.Scanner and tracks batch metrics to support flushing based on configured options.
 // Not safe for concurrent use.
 type StreamScannerHelper struct {
 	batchHelper *StreamBatchHelper
@@ -40,9 +48,17 @@ type StreamScannerHelper struct {
 }
 
 func NewStreamScannerHelper(reader io.Reader, opts ...StreamUnmarshalOption) *StreamScannerHelper {
+	batchHelper := NewStreamBatchHelper(opts...)
+
+	scanner := bufio.NewScanner(reader)
+	if batchHelper.options.StreamReaderBuffer > 0 {
+		bufSize := batchHelper.options.StreamReaderBuffer
+		scanner.Buffer(make([]byte, bufSize), bufSize)
+	}
+
 	return &StreamScannerHelper{
-		batchHelper: NewStreamBatchHelper(opts...),
-		scanner:     bufio.NewScanner(reader),
+		batchHelper: batchHelper,
+		scanner:     scanner,
 	}
 }
 
@@ -77,7 +93,8 @@ func (h *StreamScannerHelper) scanInternal() ([]byte, bool, error) {
 
 	b := h.scanner.Bytes()
 	h.batchHelper.IncrementItems(1)
-	h.batchHelper.IncrementBytes(int64(len(b)))
+	// +1 for the newline character that was scanned but not included in b
+	h.batchHelper.IncrementBytes(int64(len(b)) + 1)
 
 	if h.batchHelper.ShouldFlush() {
 		h.batchHelper.Reset()

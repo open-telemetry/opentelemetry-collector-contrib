@@ -164,7 +164,7 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 	return logs, nil
 }
 
-func (u *CloudTrailLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamer {
+func (u *CloudTrailLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
 	bufferedReader := bufio.NewReaderSize(reader, readerBufferSize)
 
 	// Peek into the first 64 bytes to determine the type of CloudTrail log
@@ -208,7 +208,7 @@ func (u *CloudTrailLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, option
 
 // processRecords is specialized in processing CloudTrail log records with streaming support
 // Implementation works with a gojson.Decoder to efficiently stream through potentially large log files.
-func (u *CloudTrailLogUnmarshaler) processRecords(decoder *gojson.Decoder, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamer {
+func (u *CloudTrailLogUnmarshaler) processRecords(decoder *gojson.Decoder, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
 	// Check opening bracket
 	if token, err := decoder.Token(); err != nil || token != gojson.Delim('{') {
 		return func(_ context.Context) (plog.Logs, error) {

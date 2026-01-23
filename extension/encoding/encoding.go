@@ -14,6 +14,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+// StreamIterator defines a function that returns from a stream.
+type StreamIterator[T any] func(context.Context) (T, error)
+
 // LogsMarshalerExtension is an extension that marshals logs.
 type LogsMarshalerExtension interface {
 	extension.Extension
@@ -26,13 +29,10 @@ type LogsUnmarshalerExtension interface {
 	plog.Unmarshaler
 }
 
-// LogsStreamer defines streaming contract for logs.
-type LogsStreamer func(context.Context) (plog.Logs, error)
-
 // LogsStreamUnmarshalExtension is an extension that unmarshals logs from a stream.
 type LogsStreamUnmarshalExtension interface {
 	extension.Extension
-	GetStreamUnmarshaler(reader io.Reader, options ...StreamUnmarshalOption) LogsStreamer
+	GetStreamUnmarshaler(reader io.Reader, options ...StreamUnmarshalOption) StreamIterator[plog.Logs]
 }
 
 // MetricsMarshalerExtension is an extension that marshals metrics.
@@ -45,6 +45,12 @@ type MetricsMarshalerExtension interface {
 type MetricsUnmarshalerExtension interface {
 	extension.Extension
 	pmetric.Unmarshaler
+}
+
+// MetricsStreamUnmarshalExtension is an extension that unmarshals metrics from a stream.
+type MetricsStreamUnmarshalExtension interface {
+	extension.Extension
+	GetStreamUnmarshaler(reader io.Reader, options ...StreamUnmarshalOption) StreamIterator[pmetric.Metrics]
 }
 
 // TracesMarshalerExtension is an extension that marshals traces.
