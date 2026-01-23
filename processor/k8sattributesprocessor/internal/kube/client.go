@@ -15,7 +15,6 @@ import (
 
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/attribute"
 	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.uber.org/zap"
@@ -63,13 +62,6 @@ const (
 	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#job
 	K8sJobLabel      = "k8s.job.label.%s"
 	K8sJobAnnotation = "k8s.job.annotation.%s"
-)
-
-var AllowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
-	"k8sattr.labelsAnnotationsSingular.allow",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
-	featuregate.WithRegisterFromVersion("v0.125.0"),
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -927,7 +919,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	formatterLabel := K8sPodLabelsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
+	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 		formatterLabel = K8sPodLabelKey
 	}
 
@@ -936,7 +928,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	formatterAnnotation := K8sPodAnnotationsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
+	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 		formatterAnnotation = K8sPodAnnotationKey
 	}
 
@@ -1172,7 +1164,7 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	tags := map[string]string{}
 
 	formatterLabel := K8sNamespaceLabelsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
+	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 		formatterLabel = K8sNamespaceLabelKey
 	}
 
@@ -1181,7 +1173,7 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	}
 
 	formatterAnnotation := K8sNamespaceAnnotationsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
+	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 		formatterAnnotation = K8sNamespaceAnnotationKey
 	}
 
@@ -1196,7 +1188,7 @@ func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string
 	tags := map[string]string{}
 
 	formatterLabel := K8sNodeLabelsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
+	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 		formatterLabel = K8sNodeLabelKey
 	}
 
@@ -1205,7 +1197,7 @@ func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string
 	}
 
 	formatterAnnotation := K8sNodeAnnotationsKey
-	if AllowLabelsAnnotationsSingular.IsEnabled() {
+	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
 		formatterAnnotation = K8sNodeAnnotationKey
 	}
 

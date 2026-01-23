@@ -1,4 +1,5 @@
 type: dataset
+display_name: DataSet Exporter
 
 status:
   class: exporter
