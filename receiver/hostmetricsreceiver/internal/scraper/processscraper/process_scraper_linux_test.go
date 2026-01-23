@@ -8,6 +8,8 @@ package processscraper
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
@@ -36,7 +38,7 @@ var testdataProcesses = map[string]int32{
 // list is constructed by each process in the valid lead process list and wrapped in our own
 // interfaces the same way that the scraper would.
 func testdataProcessHandles(ctx context.Context) (processHandles, error) {
-	processes := make([]*process.Process, 0, len(testdataProcesses))
+	processes := make([]wrappedProcessHandle, 0, len(testdataProcesses))
 	for _, pid := range testdataProcesses {
 		p, err := process.NewProcessWithContext(ctx, pid)
 		// We ignore ErrorProcessNotRunning; since this is mock data there
@@ -46,10 +48,10 @@ func testdataProcessHandles(ctx context.Context) (processHandles, error) {
 		if err != nil && !errors.Is(err, process.ErrorProcessNotRunning) {
 			return nil, err
 		}
-		processes = append(processes, p)
+		processes = append(processes, wrappedProcessHandle{Process: p})
 	}
 
-	return wrapGopsProcessHandles(processes), nil
+	return &gopsProcessHandles{handles: processes}, nil
 }
 
 // getTestdataPid can be used to fetch a particular processHandle by pid from
@@ -92,7 +94,13 @@ func newTestProcessScraper(t *testing.T, ctx context.Context) *processScraper {
 func TestProcessScraper_Procfs(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.WithValue(context.Background(), common.EnvKey, common.EnvMap{common.HostProcEnvKey: "testdata/procfs"})
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+	ctx := context.WithValue(
+		context.Background(),
+		common.EnvKey,
+		common.EnvMap{common.HostProcEnvKey: filepath.Join(wd, "testdata", "procfs")},
+	)
 
 	scraper := newTestProcessScraper(t, ctx)
 

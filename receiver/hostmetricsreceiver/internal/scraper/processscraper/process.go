@@ -103,16 +103,6 @@ type gopsProcessHandles struct {
 	handles []wrappedProcessHandle
 }
 
-func wrapGopsProcessHandles(processes []*process.Process) processHandles {
-	wrapped := make([]wrappedProcessHandle, len(processes))
-	for i, p := range processes {
-		wrapped[i] = wrappedProcessHandle{
-			Process: p,
-		}
-	}
-	return &gopsProcessHandles{handles: wrapped}
-}
-
 func (p *gopsProcessHandles) Pid(index int) int32 {
 	return p.handles[index].Pid
 }

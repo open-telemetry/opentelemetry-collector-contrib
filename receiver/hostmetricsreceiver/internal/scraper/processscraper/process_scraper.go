@@ -432,11 +432,7 @@ func (s *processScraper) scrapeAndAppendContextSwitchMetrics(ctx context.Context
 		// The sum will be reported as the context switches for the "entire process".
 		errs := make([]error, 0, len(threadMap))
 		for tid := range threadMap {
-			thread, err := process.NewProcess(tid)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
+			thread := &process.Process{Pid: tid}
 			threadContextSwitches, err := thread.NumCtxSwitchesWithContext(ctx)
 			if err != nil {
 				errs = append(errs, err)

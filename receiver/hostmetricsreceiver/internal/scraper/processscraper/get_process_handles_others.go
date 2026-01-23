@@ -16,5 +16,12 @@ func getGopsutilProcessHandles(ctx context.Context) (processHandles, error) {
 	if err != nil {
 		return nil, err
 	}
-	return wrapGopsProcessHandles(processes), nil
+
+	wrapped := make([]wrappedProcessHandle, len(processes))
+	for i, p := range processes {
+		wrapped[i] = wrappedProcessHandle{
+			Process: p,
+		}
+	}
+	return &gopsProcessHandles{handles: wrapped}, nil
 }
