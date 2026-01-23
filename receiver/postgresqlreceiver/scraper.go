@@ -205,16 +205,30 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery, topNQuery, maxExplainEachInterval int64, collectionInterval time.Duration) (plog.Logs, error) {
 	var errs errsMux
 	currentCollectionTime := time.Now()
-	lookbackTimeCounter := p.calculateLookbackSeconds(collectionInterval)
-	if lookbackTimeCounter < int(collectionInterval.Seconds()) {
-		p.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed.")
-	} else {
+
+	if p.isCollectionDue(currentCollectionTime, collectionInterval) {
 		p.collectTopQuery(ctx, p.clientFactory, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger, currentCollectionTime)
 		p.lastExecutionTimestamp = currentCollectionTime
 	}
 
 	rb := p.setupResourceBuilder(p.lb.NewResourceBuilder(), "", "", "", "")
 	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
+}
+
+func (p *postgreSQLScraper) isCollectionDue(collectionTime time.Time, interval time.Duration) bool {
+	if p.lastExecutionTimestamp.IsZero() {
+		//This is the first collection
+		return true
+	}
+
+	lookbackTimeCounter := int(math.Ceil(collectionTime.
+		Sub(p.lastExecutionTimestamp).Seconds()))
+
+	if lookbackTimeCounter < int(interval.Seconds()) {
+		p.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed.")
+		return false
+	}
+	return true
 }
 
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
@@ -393,19 +407,6 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		)
 		count++
 	}
-}
-
-func (p *postgreSQLScraper) calculateLookbackSeconds(topNCollectInterval time.Duration) int {
-	if p.lastExecutionTimestamp.IsZero() {
-		return int(topNCollectInterval.Seconds())
-	}
-
-	// collectionDelayOffset is the buffer to account for any previous collection delays.
-	const collectionDelayOffset = 5 * time.Second
-
-	return int(math.Ceil(time.Now().
-		Add(collectionDelayOffset).
-		Sub(p.lastExecutionTimestamp).Seconds()))
 }
 
 func (p *postgreSQLScraper) shutdown(_ context.Context) error {

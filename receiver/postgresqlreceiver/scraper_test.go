@@ -667,19 +667,23 @@ func TestScrapeTopQueriesCollectsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	assert.Equal(t, collectionTime, scraper.lastExecutionTimestamp, "No new collection should happen until configured collection_interval")
 }
 
-func TestCalculateLookbackSeconds(t *testing.T) {
+func TestIsCollectionDue(t *testing.T) {
 	collectionInterval := 20 * time.Second
-	expectedMinimumLookbackTime := int((collectionInterval).Seconds())
 	currentCollectionTime := time.Now()
 
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
 	scrpr := postgreSQLScraper{
+		//setting lastExecutionTimestamp to be past 'collectionInterval'
 		lastExecutionTimestamp: currentCollectionTime.Add(-collectionInterval),
+		logger:                 logger,
 	}
-	lookbackTime := scrpr.calculateLookbackSeconds(collectionInterval)
+	isCollectionDue := scrpr.isCollectionDue(currentCollectionTime, collectionInterval)
+	assert.True(t, isCollectionDue, "lastExecutionTimestamp is older than collection_interval, so collection should be due.")
 
-	fmt.Print(lookbackTime)
-
-	assert.LessOrEqual(t, expectedMinimumLookbackTime, lookbackTime, "`lookbackTime` should be minimum %d", expectedMinimumLookbackTime)
+	scrpr.lastExecutionTimestamp = currentCollectionTime.Add(-10)
+	isCollectionDue = scrpr.isCollectionDue(currentCollectionTime, collectionInterval)
+	assert.False(t, isCollectionDue, "collection_interval is not yet reached since lastExecutionTimestamp, so collection is not due.")
 }
 
 func TestExplainQuery(t *testing.T) {
