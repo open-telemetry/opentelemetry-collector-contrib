@@ -106,7 +106,7 @@ func newLogConditionsFromScope(sc []*ottl.Condition[*ottlscope.TransformContext]
 	}
 }
 
-func (lc parsedLogConditions) toLogsConsumer() LogsConsumer {
+func newLogsConsumer(lc *parsedLogConditions) LogsConsumer {
 	var rExpr expr.BoolExpr[*ottlresource.TransformContext]
 	var sExpr expr.BoolExpr[*ottlscope.TransformContext]
 	var lExpr expr.BoolExpr[*ottllog.TransformContext]
@@ -203,7 +203,7 @@ func (lpc *LogParserCollection) ParseContextConditions(contextConditions Context
 		if err != nil {
 			return LogsConsumer{}, err
 		}
-		return lc.toLogsConsumer(), nil
+		return newLogsConsumer(&lc), nil
 	}
 
 	var rConditions []*ottl.Condition[*ottlresource.TransformContext]
@@ -235,5 +235,5 @@ func (lpc *LogParserCollection) ParseContextConditions(contextConditions Context
 		errorMode:          pc.ErrorMode,
 	}
 
-	return aggregatedConditions.toLogsConsumer(), nil
+	return newLogsConsumer(&aggregatedConditions), nil
 }

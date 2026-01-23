@@ -128,7 +128,7 @@ func newTraceConditionsFromScope(sc []*ottl.Condition[*ottlscope.TransformContex
 	}
 }
 
-func (tc parsedTraceConditions) toTracesConsumer() TracesConsumer {
+func newTracesConsumer(tc *parsedTraceConditions) TracesConsumer {
 	var rExpr expr.BoolExpr[*ottlresource.TransformContext]
 	var sExpr expr.BoolExpr[*ottlscope.TransformContext]
 	var spanExpr expr.BoolExpr[*ottlspan.TransformContext]
@@ -245,7 +245,7 @@ func (tpc *TraceParserCollection) ParseContextConditions(contextConditions Conte
 		if err != nil {
 			return TracesConsumer{}, err
 		}
-		return tc.toTracesConsumer(), nil
+		return newTracesConsumer(&tc), nil
 	}
 
 	var rConditions []*ottl.Condition[*ottlresource.TransformContext]
@@ -282,5 +282,5 @@ func (tpc *TraceParserCollection) ParseContextConditions(contextConditions Conte
 		errorMode:           pc.ErrorMode,
 	}
 
-	return aggregatedConditions.toTracesConsumer(), nil
+	return newTracesConsumer(&aggregatedConditions), nil
 }

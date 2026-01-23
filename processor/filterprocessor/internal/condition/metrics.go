@@ -219,7 +219,7 @@ func newMetricConditionsFromScope(sc []*ottl.Condition[*ottlscope.TransformConte
 	}
 }
 
-func (mc parsedMetricConditions) toMetricsConsumer() MetricsConsumer {
+func newMetricsConsumer(mc *parsedMetricConditions) MetricsConsumer {
 	var rExpr expr.BoolExpr[*ottlresource.TransformContext]
 	var sExpr expr.BoolExpr[*ottlscope.TransformContext]
 	var mExpr expr.BoolExpr[*ottlmetric.TransformContext]
@@ -338,7 +338,7 @@ func (mpc *MetricParserCollection) ParseContextConditions(contextConditions Cont
 		if err != nil {
 			return MetricsConsumer{}, err
 		}
-		return mc.toMetricsConsumer(), nil
+		return newMetricsConsumer(&mc), nil
 	}
 
 	var rConditions []*ottl.Condition[*ottlresource.TransformContext]
@@ -375,5 +375,5 @@ func (mpc *MetricParserCollection) ParseContextConditions(contextConditions Cont
 		errorMode:           pc.ErrorMode,
 	}
 
-	return aggregatedConditions.toMetricsConsumer(), nil
+	return newMetricsConsumer(&aggregatedConditions), nil
 }

@@ -105,23 +105,23 @@ func newProfileConditionsFromScope(sc []*ottl.Condition[*ottlscope.TransformCont
 	}
 }
 
-func (pc parsedProfileConditions) toProfilesConsumer() ProfilesConsumer {
+func newProfilesConsumer(ppc *parsedProfileConditions) ProfilesConsumer {
 	var rExpr expr.BoolExpr[*ottlresource.TransformContext]
 	var sExpr expr.BoolExpr[*ottlscope.TransformContext]
 	var pExpr expr.BoolExpr[ottlprofile.TransformContext]
 
-	if len(pc.resourceConditions) > 0 {
-		cs := ottlresource.NewConditionSequence(pc.resourceConditions, pc.telemetrySettings, ottlresource.WithConditionSequenceErrorMode(pc.errorMode))
+	if len(ppc.resourceConditions) > 0 {
+		cs := ottlresource.NewConditionSequence(ppc.resourceConditions, ppc.telemetrySettings, ottlresource.WithConditionSequenceErrorMode(ppc.errorMode))
 		rExpr = &cs
 	}
 
-	if len(pc.scopeConditions) > 0 {
-		cs := ottlscope.NewConditionSequence(pc.scopeConditions, pc.telemetrySettings, ottlscope.WithConditionSequenceErrorMode(pc.errorMode))
+	if len(ppc.scopeConditions) > 0 {
+		cs := ottlscope.NewConditionSequence(ppc.scopeConditions, ppc.telemetrySettings, ottlscope.WithConditionSequenceErrorMode(ppc.errorMode))
 		sExpr = &cs
 	}
 
-	if len(pc.profileConditions) > 0 {
-		cs := ottlprofile.NewConditionSequence(pc.profileConditions, pc.telemetrySettings, ottlprofile.WithConditionSequenceErrorMode(pc.errorMode))
+	if len(ppc.profileConditions) > 0 {
+		cs := ottlprofile.NewConditionSequence(ppc.profileConditions, ppc.telemetrySettings, ottlprofile.WithConditionSequenceErrorMode(ppc.errorMode))
 		pExpr = &cs
 	}
 
@@ -193,7 +193,7 @@ func (ppc *ProfileParserCollection) ParseContextConditions(contextConditions Con
 		if err != nil {
 			return ProfilesConsumer{}, err
 		}
-		return pConditions.toProfilesConsumer(), nil
+		return newProfilesConsumer(&pConditions), nil
 	}
 
 	var rConditions []*ottl.Condition[*ottlresource.TransformContext]
@@ -225,5 +225,5 @@ func (ppc *ProfileParserCollection) ParseContextConditions(contextConditions Con
 		errorMode:          pc.ErrorMode,
 	}
 
-	return aggregatedConditions.toProfilesConsumer(), nil
+	return newProfilesConsumer(&aggregatedConditions), nil
 }
