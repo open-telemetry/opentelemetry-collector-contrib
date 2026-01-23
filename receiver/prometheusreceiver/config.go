@@ -203,10 +203,17 @@ func forceClassicHistogramConversionToNHCB(cfg *PromConfig) {
 		return
 	}
 
+	// Force NHCB conversion and disable classic histogram scraping for performance reasons.
+	// Both classic histograms and NHCBs produce the same OTLP Explicit Histogram output,
+	// but NHCB conversion is significantly more efficient.
 	cfg.GlobalConfig.ConvertClassicHistogramsToNHCB = true
+	cfg.GlobalConfig.AlwaysScrapeClassicHistograms = false
+
 	enabled := true
+	disabled := false
 	for _, sc := range cfg.ScrapeConfigs {
 		sc.ConvertClassicHistogramsToNHCB = &enabled
+		sc.AlwaysScrapeClassicHistograms = &disabled
 	}
 }
 

@@ -108,6 +108,7 @@ func TestSyncForcesClassicHistogramConversionToNHCB(t *testing.T) {
 			_, _ = w.Write([]byte(`test:
   job_name: "test"
   convert_classic_histograms_to_nhcb: false
+  always_scrape_classic_histograms: true
 `))
 			return
 		}
@@ -148,8 +149,12 @@ func TestSyncForcesClassicHistogramConversionToNHCB(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, manager.promCfg.ScrapeConfigs, 1)
+	// Verify NHCB conversion is forced to true
 	require.NotNil(t, manager.promCfg.ScrapeConfigs[0].ConvertClassicHistogramsToNHCB)
 	assert.True(t, *manager.promCfg.ScrapeConfigs[0].ConvertClassicHistogramsToNHCB)
+	// Verify classic histogram scraping is forced to false
+	require.NotNil(t, manager.promCfg.ScrapeConfigs[0].AlwaysScrapeClassicHistograms)
+	assert.False(t, *manager.promCfg.ScrapeConfigs[0].AlwaysScrapeClassicHistograms)
 }
 
 func TestInstantiateShard(t *testing.T) {

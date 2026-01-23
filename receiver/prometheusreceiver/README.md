@@ -185,12 +185,13 @@ receivers:
 
 This feature applies to the most common integer counter histograms; gauge histograms are dropped.
 In case a metric has both the conventional (aka classic) buckets and also native histogram buckets, only the native histogram buckets will be
-taken into account to create the corresponding exponential histogram. To scrape the classic buckets instead use the
-[scrape option](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) `always_scrape_classic_histograms`.
+taken into account to create the corresponding exponential histogram.
 
-The Prometheus receiver also forces classic histograms to be converted into native histograms with custom buckets
-(`convert_classic_histograms_to_nhcb: true`) for all scrape configs for performance reasons. Both Classic Histograms and NHCB are translated into the same
-OTLP Explicit Histogram metrics, but converting NHCB is way more efficient.
+The Prometheus receiver forces the following scrape configuration options for performance reasons:
+- `convert_classic_histograms_to_nhcb: true` - Classic histograms are converted to native histograms with custom buckets (NHCB).
+- `always_scrape_classic_histograms: false` - Classic histogram buckets are not scraped separately.
+
+Both Classic Histograms and NHCB are translated into the same OTLP Explicit Histogram metrics, but converting NHCB is significantly more efficient as it avoids per-bucket series state tracking.
 
 ## OpenTelemetry Operator
 Additional to this static job definitions this receiver allows to query a list of jobs from the 
