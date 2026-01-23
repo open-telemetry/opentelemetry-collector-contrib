@@ -51,6 +51,14 @@ Common functionality for all of these receivers is provided by the adapter packa
 
 ### Feature Gates
 
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
+
+Feature gates can be enabled using the `--feature-gates` flag:
+
+```shell
+"--feature-gates=<feature-gate>"
+```
+
 #### `stanza.synchronousLogEmitter`
 
 The `stanza.synchronousLogEmitter` feature gate prevents possible data loss during an ungraceful shutdown of the collector by emitting logs in LogEmitter synchronously,
