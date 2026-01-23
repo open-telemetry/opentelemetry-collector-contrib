@@ -89,7 +89,7 @@ func (pc ProfilesConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Prof
 	return condErr
 }
 
-func (ProfileConditions) newFromResource(rc []*ottl.Condition[*ottlresource.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) ProfileConditions {
+func newProfileConditionsFromResource(rc []*ottl.Condition[*ottlresource.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) ProfileConditions {
 	return ProfileConditions{
 		resourceConditions: rc,
 		telemetrySettings:  telemetrySettings,
@@ -97,7 +97,7 @@ func (ProfileConditions) newFromResource(rc []*ottl.Condition[*ottlresource.Tran
 	}
 }
 
-func (ProfileConditions) newFromScope(sc []*ottl.Condition[*ottlscope.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) ProfileConditions {
+func newProfileConditionsFromScope(sc []*ottl.Condition[*ottlscope.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) ProfileConditions {
 	return ProfileConditions{
 		scopeConditions:   sc,
 		telemetrySettings: telemetrySettings,
@@ -151,7 +151,7 @@ func WithProfileErrorMode(errorMode ottl.ErrorMode) ProfileParserCollectionOptio
 }
 
 func WithProfileCommonParsers(functions map[string]ottl.Factory[*ottlresource.TransformContext]) ProfileParserCollectionOption {
-	return ProfileParserCollectionOption(withCommonParsers[ProfileConditions](functions))
+	return ProfileParserCollectionOption(withCommonParsers(functions, newProfileConditionsFromResource, newProfileConditionsFromScope))
 }
 
 func NewProfileParserCollection(settings component.TelemetrySettings, options ...ProfileParserCollectionOption) (*ProfileParserCollection, error) {

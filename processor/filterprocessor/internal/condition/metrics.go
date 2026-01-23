@@ -203,7 +203,7 @@ func (mc MetricsConsumer) handleSummaryDataPoints(ctx context.Context, rm pmetri
 	return errors
 }
 
-func (MetricConditions) newFromResource(rc []*ottl.Condition[*ottlresource.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) MetricConditions {
+func newMetricConditionsFromResource(rc []*ottl.Condition[*ottlresource.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) MetricConditions {
 	return MetricConditions{
 		resourceConditions: rc,
 		telemetrySettings:  telemetrySettings,
@@ -211,7 +211,7 @@ func (MetricConditions) newFromResource(rc []*ottl.Condition[*ottlresource.Trans
 	}
 }
 
-func (MetricConditions) newFromScope(sc []*ottl.Condition[*ottlscope.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) MetricConditions {
+func newMetricConditionsFromScope(sc []*ottl.Condition[*ottlscope.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) MetricConditions {
 	return MetricConditions{
 		scopeConditions:   sc,
 		telemetrySettings: telemetrySettings,
@@ -282,7 +282,7 @@ func WithMetricErrorMode(errorMode ottl.ErrorMode) MetricParserCollectionOption 
 }
 
 func WithMetricCommonParsers(functions map[string]ottl.Factory[*ottlresource.TransformContext]) MetricParserCollectionOption {
-	return MetricParserCollectionOption(withCommonParsers[MetricConditions](functions))
+	return MetricParserCollectionOption(withCommonParsers(functions, newMetricConditionsFromResource, newMetricConditionsFromScope))
 }
 
 func NewMetricParserCollection(settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {

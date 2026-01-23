@@ -112,7 +112,7 @@ func (tc TracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 	return condErr
 }
 
-func (TraceConditions) newFromResource(rc []*ottl.Condition[*ottlresource.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) TraceConditions {
+func newTraceConditionsFromResource(rc []*ottl.Condition[*ottlresource.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) TraceConditions {
 	return TraceConditions{
 		resourceConditions: rc,
 		telemetrySettings:  telemetrySettings,
@@ -120,7 +120,7 @@ func (TraceConditions) newFromResource(rc []*ottl.Condition[*ottlresource.Transf
 	}
 }
 
-func (TraceConditions) newFromScope(sc []*ottl.Condition[*ottlscope.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) TraceConditions {
+func newTraceConditionsFromScope(sc []*ottl.Condition[*ottlscope.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) TraceConditions {
 	return TraceConditions{
 		scopeConditions:   sc,
 		telemetrySettings: telemetrySettings,
@@ -191,7 +191,7 @@ func WithTraceErrorMode(errorMode ottl.ErrorMode) TraceParserCollectionOption {
 }
 
 func WithTraceCommonParsers(functions map[string]ottl.Factory[*ottlresource.TransformContext]) TraceParserCollectionOption {
-	return TraceParserCollectionOption(withCommonParsers[TraceConditions](functions))
+	return TraceParserCollectionOption(withCommonParsers(functions, newTraceConditionsFromResource, newTraceConditionsFromScope))
 }
 
 func NewTraceParserCollection(settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {

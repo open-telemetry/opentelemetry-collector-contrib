@@ -12,16 +12,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
-// CommonConditions is a generic interface for signal-specific condition types
-// (LogConditions, MetricConditions, TraceConditions, ProfileConditions).
-// It provides factory methods to create signal-specific conditions from
-// resource and scope level OTTL conditions
-type CommonConditions[R any] interface {
-	newFromResource(rc []*ottl.Condition[*ottlresource.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) R
-	newFromScope(sc []*ottl.Condition[*ottlscope.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) R
-}
+// resourceConditionBuilder creates signal-specific conditions (parsedLogConditions, parsedMetricConditions, parsedTraceConditions, parsedProfileConditions) from resource conditions
+type resourceConditionBuilder[R any] func([]*ottl.Condition[*ottlresource.TransformContext], component.TelemetrySettings, ottl.ErrorMode) R
 
-func withCommonParsers[R CommonConditions[R]](resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext]) ottl.ParserCollectionOption[R] {
+// scopeConditionBuilder creates signal-specific conditions (parsedLogConditions, parsedMetricConditions, parsedTraceConditions, parsedProfileConditions) from scope conditions
+type scopeConditionBuilder[R any] func([]*ottl.Condition[*ottlscope.TransformContext], component.TelemetrySettings, ottl.ErrorMode) R
+
+func withCommonParsers[R any](resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext], resourceBuilder resourceConditionBuilder[R], scopeBuilder scopeConditionBuilder[R]) ottl.ParserCollectionOption[R] {
 	return func(pc *ottl.ParserCollection[R]) error {
 		rp, err := ottlresource.NewParser(resourceFunctions, pc.Settings, ottlresource.EnablePathContextNames())
 		if err != nil {
@@ -32,12 +29,12 @@ func withCommonParsers[R CommonConditions[R]](resourceFunctions map[string]ottl.
 			return err
 		}
 
-		err = ottl.WithParserCollectionContext(ottlresource.ContextName, &rp, ottl.WithConditionConverter[*ottlresource.TransformContext, R](convertResourceConditions))(pc)
+		err = ottl.WithParserCollectionContext(ottlresource.ContextName, &rp, ottl.WithConditionConverter[*ottlresource.TransformContext, R](resourceConditionsConverter(resourceBuilder)))(pc)
 		if err != nil {
 			return err
 		}
 
-		err = ottl.WithParserCollectionContext(ottlscope.ContextName, &sp, ottl.WithConditionConverter[*ottlscope.TransformContext, R](convertScopeConditions))(pc)
+		err = ottl.WithParserCollectionContext(ottlscope.ContextName, &sp, ottl.WithConditionConverter[*ottlscope.TransformContext, R](scopeConditionsConverter(scopeBuilder)))(pc)
 		if err != nil {
 			return err
 		}
@@ -46,30 +43,24 @@ func withCommonParsers[R CommonConditions[R]](resourceFunctions map[string]ottl.
 	}
 }
 
-func convertResourceConditions[R CommonConditions[R]](
-	pc *ottl.ParserCollection[R],
-	conditions ottl.ConditionsGetter,
-	parsedConditions []*ottl.Condition[*ottlresource.TransformContext],
-) (R, error) {
-	contextConditions, err := toContextConditions(conditions)
-	if err != nil {
-		return *new(R), err
+func resourceConditionsConverter[R any](builder resourceConditionBuilder[R]) ottl.ParsedConditionsConverter[*ottlresource.TransformContext, R] {
+	return func(pc *ottl.ParserCollection[R], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottlresource.TransformContext]) (R, error) {
+		contextConditions, cErr := toContextConditions(conditions)
+		if cErr != nil {
+			return *new(R), cErr
+		}
+		errorMode := getErrorMode(pc, contextConditions)
+		return builder(parsedConditions, pc.Settings, errorMode), nil
 	}
-	errorMode := getErrorMode(pc, contextConditions)
-	var r R
-	return r.newFromResource(parsedConditions, pc.Settings, errorMode), nil
 }
 
-func convertScopeConditions[R CommonConditions[R]](
-	pc *ottl.ParserCollection[R],
-	conditions ottl.ConditionsGetter,
-	parsedConditions []*ottl.Condition[*ottlscope.TransformContext],
-) (R, error) {
-	contextConditions, err := toContextConditions(conditions)
-	if err != nil {
-		return *new(R), err
+func scopeConditionsConverter[R any](builder scopeConditionBuilder[R]) ottl.ParsedConditionsConverter[*ottlscope.TransformContext, R] {
+	return func(pc *ottl.ParserCollection[R], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottlscope.TransformContext]) (R, error) {
+		contextConditions, cErr := toContextConditions(conditions)
+		if cErr != nil {
+			return *new(R), cErr
+		}
+		errorMode := getErrorMode(pc, contextConditions)
+		return builder(parsedConditions, pc.Settings, errorMode), nil
 	}
-	errorMode := getErrorMode(pc, contextConditions)
-	var r R
-	return r.newFromScope(parsedConditions, pc.Settings, errorMode), nil
 }

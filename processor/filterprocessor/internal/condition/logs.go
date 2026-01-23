@@ -90,7 +90,7 @@ func (lc LogsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return condErr
 }
 
-func (LogConditions) newFromResource(rc []*ottl.Condition[*ottlresource.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) LogConditions {
+func newLogConditionsFromResource(rc []*ottl.Condition[*ottlresource.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) LogConditions {
 	return LogConditions{
 		resourceConditions: rc,
 		telemetrySettings:  telemetrySettings,
@@ -98,7 +98,7 @@ func (LogConditions) newFromResource(rc []*ottl.Condition[*ottlresource.Transfor
 	}
 }
 
-func (LogConditions) newFromScope(sc []*ottl.Condition[*ottlscope.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) LogConditions {
+func newLogConditionsFromScope(sc []*ottl.Condition[*ottlscope.TransformContext], telemetrySettings component.TelemetrySettings, errorMode ottl.ErrorMode) LogConditions {
 	return LogConditions{
 		scopeConditions:   sc,
 		telemetrySettings: telemetrySettings,
@@ -152,7 +152,7 @@ func WithLogErrorMode(errorMode ottl.ErrorMode) LogParserCollectionOption {
 }
 
 func WithLogCommonParsers(functions map[string]ottl.Factory[*ottlresource.TransformContext]) LogParserCollectionOption {
-	return LogParserCollectionOption(withCommonParsers[LogConditions](functions))
+	return LogParserCollectionOption(withCommonParsers(functions, newLogConditionsFromResource, newLogConditionsFromScope))
 }
 
 func NewLogParserCollection(settings component.TelemetrySettings, options ...LogParserCollectionOption) (*LogParserCollection, error) {
