@@ -18,6 +18,7 @@ import (
 	"github.com/google/cadvisor/container/crio"
 	"github.com/google/cadvisor/container/docker"
 	"github.com/google/cadvisor/container/systemd"
+	// Register filesystem plugins via init() functions
 	_ "github.com/google/cadvisor/fs/overlay/install"
 	_ "github.com/google/cadvisor/fs/tmpfs/install"
 	_ "github.com/google/cadvisor/fs/vfs/install"
