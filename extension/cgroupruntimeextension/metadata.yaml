@@ -1,4 +1,4 @@
-display_name: Cgroup Go runtime extension
+display_name: Cgroup Go Runtime Extension
 type: cgroupruntime
 
 status:
