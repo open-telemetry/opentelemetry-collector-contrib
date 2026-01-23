@@ -157,7 +157,7 @@ agent:
 
 ### Important Notes
 
-- The fallback configuration is a **standalone configuration file**. It is intentionally not merged with the `config_files` setting. This ensures predictable fallback behavior without dependencies on other configuration files.
+- The fallback configuration is a set of **standalone configuration files**. It is intentionally not merged with the `config_files` setting. This ensures predictable fallback behavior without dependencies on other configuration files.
 
 - The OpAMP extension and "own telemetry" configuration are automatically added to the fallback configuration. This maintains the Collector's own telemetry flowing and the communication between Supervisor and Collector.
 
