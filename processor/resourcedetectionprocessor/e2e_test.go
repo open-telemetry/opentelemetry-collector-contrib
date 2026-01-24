@@ -571,6 +571,53 @@ func TestE2EScalewayDetector(t *testing.T) {
 	}, 3*time.Minute, 1*time.Second)
 }
 
+// TestE2EDigitalOceanDetector tests the DigitalOcean detector by deploying a metadata-server
+// sidecar that simulates the DigitalOcean metadata service and verifying that the resource
+// attributes are correctly detected and attached to metrics.
+func TestE2EDigitalOceanDetector(t *testing.T) {
+	var expected pmetric.Metrics
+	expectedFile := filepath.Join("testdata", "e2e", "digitalocean", "expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	shutdownSink := startUpSink(t, metricsConsumer)
+	defer shutdownSink()
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "digitalocean", "collector"), map[string]string{}, "")
+
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}()
+
+	wantEntries := 10
+	waitForData(t, wantEntries, metricsConsumer)
+
+	// Uncomment to regenerate golden file
+	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
+
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreScopeVersion(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+		),
+		)
+	}, 3*time.Minute, 1*time.Second)
+}
+
 // TestE2EAzureDetector tests the Azure detector by deploying a metadata-server
 // sidecar that simulates the Azure IMDS and verifying that the resource attributes
 // are correctly detected and attached to metrics.
@@ -618,6 +665,53 @@ func TestE2EAzureDetector(t *testing.T) {
 	}, 3*time.Minute, 1*time.Second)
 }
 
+// TestE2EDynatraceDetector tests the Dynatrace detector by mounting a mock
+// dt_host_metadata.properties file and verifying that the resource attributes
+// are correctly detected and attached to metrics.
+func TestE2EDynatraceDetector(t *testing.T) {
+	var expected pmetric.Metrics
+	expectedFile := filepath.Join("testdata", "e2e", "dynatrace", "expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	shutdownSink := startUpSink(t, metricsConsumer)
+	defer shutdownSink()
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "dynatrace", "collector"), map[string]string{}, "")
+
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}()
+
+	wantEntries := 10
+	waitForData(t, wantEntries, metricsConsumer)
+
+	// Uncomment to regenerate golden file
+	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
+
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreScopeVersion(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+		),
+		)
+	}, 3*time.Minute, 1*time.Second)
+}
+
 // TestE2EAkamaiDetector tests the Akamai detector by deploying a metadata-server
 // sidecar that simulates the Akamai/Linode IMDS (at 169.254.169.254) and verifying
 // that the resource attributes are correctly detected and attached to metrics.
@@ -636,6 +730,53 @@ func TestE2EAkamaiDetector(t *testing.T) {
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "akamai", "collector"), map[string]string{}, "")
+
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}()
+
+	wantEntries := 10
+	waitForData(t, wantEntries, metricsConsumer)
+
+	// Uncomment to regenerate golden file
+	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
+
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreScopeVersion(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreSubsequentDataPoints("system.cpu.time"),
+		),
+		)
+	}, 3*time.Minute, 1*time.Second)
+}
+
+// TestE2EHetznerDetector tests the Hetzner detector by deploying a metadata-server
+// sidecar that simulates the Hetzner IMDS and verifying that the resource attributes
+// are correctly detected and attached to metrics.
+func TestE2EHetznerDetector(t *testing.T) {
+	var expected pmetric.Metrics
+	expectedFile := filepath.Join("testdata", "e2e", "hetzner", "expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	shutdownSink := startUpSink(t, metricsConsumer)
+	defer shutdownSink()
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "hetzner", "collector"), map[string]string{}, "")
 
 	defer func() {
 		for _, obj := range collectorObjs {
