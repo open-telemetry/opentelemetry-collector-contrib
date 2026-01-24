@@ -22,27 +22,52 @@ const filesDirectory = "testdata"
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
-	reader := readLogFile(t, filesDirectory, "cloudtrail_log.json")
-	logs, err := unmarshaler.UnmarshalAWSLogs(reader)
-	require.NoError(t, err)
 
-	// Read the expected logs from the file
-	expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, "cloudtrail_log_expected.yaml"))
-	require.NoError(t, err)
-
-	compareOptions := []plogtest.CompareLogsOption{
-		plogtest.IgnoreResourceLogsOrder(),
-		plogtest.IgnoreScopeLogsOrder(),
-		plogtest.IgnoreLogRecordsOrder(),
+	tests := []struct {
+		name           string
+		inputLogsFile  string
+		outputLogsFile string
+		userIDFeature  bool
+	}{
+		{
+			name:           "Valid with CloudTrailUserIdentityPrefixFeatureGate disabled",
+			inputLogsFile:  "cloudtrail_log.json",
+			outputLogsFile: "cloudtrail_log_expected.yaml",
+			userIDFeature:  false,
+		},
+		{
+			name:           "Valid with CloudTrailUserIdentityPrefixFeatureGate enabled",
+			inputLogsFile:  "cloudtrail_log.json",
+			outputLogsFile: "cloudtrail_log_expected_with_uid_feature.yaml",
+			userIDFeature:  true,
+		},
 	}
 
-	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareOptions...))
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, test.userIDFeature)
+			reader := readLogFile(t, filesDirectory, test.inputLogsFile)
+			logs, err := unmarshaler.UnmarshalAWSLogs(reader)
+			require.NoError(t, err)
+
+			// Read the expected logs from the file
+			expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, test.outputLogsFile))
+			require.NoError(t, err)
+
+			compareOptions := []plogtest.CompareLogsOption{
+				plogtest.IgnoreResourceLogsOrder(),
+				plogtest.IgnoreScopeLogsOrder(),
+				plogtest.IgnoreLogRecordsOrder(),
+			}
+
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareOptions...))
+		})
+	}
 }
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_EmptyRecords(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
 	reader := readLogFile(t, filesDirectory, "cloudtrail_log_empty.json")
 	logs, err := unmarshaler.UnmarshalAWSLogs(reader)
 	require.NoError(t, err)
@@ -80,7 +105,7 @@ func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest(t *testing.T) {
 		},
 	}
 
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -104,7 +129,7 @@ func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest(t *testing.T) {
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidJSON(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
 	reader := bytes.NewReader([]byte(`{invalid-json}`))
 	_, err := unmarshaler.UnmarshalAWSLogs(reader)
 	require.ErrorContains(t, err, "failed to extract the first JSON key")
@@ -112,7 +137,7 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidJSON(t *testing.T) {
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidTimestamp(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
 	reader := bytes.NewReader([]byte(`{
 		"Records": [{
 			"eventTime": "invalid-timestamp",
@@ -126,7 +151,7 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidTimestamp(t *testing.T
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_ReadError(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
 	reader := &errorReader{err: errors.New("read failed")}
 	_, err := unmarshaler.UnmarshalAWSLogs(reader)
 	require.ErrorContains(t, err, "failed to peek into CloudTrail log")

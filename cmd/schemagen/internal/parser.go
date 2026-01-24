@@ -4,34 +4,38 @@
 package internal
 
 import (
+	"container/list"
 	"errors"
 	"fmt"
 	"go/ast"
 	"go/token"
-	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
 
 type Parser struct {
-	config  *Config
-	schema  *Schema
-	types   map[string]TypeInfo
-	imports map[string]string
+	config       *Config
+	schema       *Schema
+	types        map[string]*TypeInfo
+	imports      map[string]string
+	processQueue *list.List
+	rootPkg      *packages.Package
 }
 
 type TypeInfo struct {
-	spec    *ast.TypeSpec
-	comms   []*ast.CommentGroup
-	pkgName string
+	spec      *ast.TypeSpec
+	comms     []*ast.CommentGroup
+	pkgName   string
+	processed bool
 }
 
 func NewParser(cfg *Config) *Parser {
 	return &Parser{
-		config:  cfg,
-		types:   make(map[string]TypeInfo),
-		imports: make(map[string]string),
+		config:       cfg,
+		types:        make(map[string]*TypeInfo),
+		imports:      make(map[string]string),
+		processQueue: list.New(),
 	}
 }
 
@@ -49,43 +53,45 @@ func (p *Parser) Parse() (*Schema, error) {
 		return nil, e
 	}
 
-	mainPkg := p.processPackages(set, pkgs)
-	p.initializeSchema(mainPkg.ID, fmt.Sprintf("%s %s", mainPkg.Name, p.config.Mode))
+	p.rootPkg = pkgs[0]
+	p.processPackages(set, pkgs)
+	p.initializeSchema()
+	p.feedProcessQueue()
 
-	if err := p.parseTypes(); err != nil {
+	if p.processQueue.Len() == 0 {
+		msg := "no types to process"
+		if p.config.Mode == Component {
+			msg += fmt.Sprintf("; check if the root type name '%s' is correct", p.config.RootTypeName)
+		}
+		return nil, errors.New(msg)
+	}
+	if err := p.processTypes(); err != nil {
 		return nil, err
 	}
 
 	return p.schema, nil
 }
 
-func (p *Parser) processPackages(set *token.FileSet, pkgs []*packages.Package) *packages.Package {
-	mainPkg := pkgs[0]
+func (p *Parser) processPackages(set *token.FileSet, pkgs []*packages.Package) {
 	for _, pkg := range pkgs {
-		isMainPkg := pkg.Dir == p.config.DirPath
-		if isMainPkg {
-			mainPkg = pkg
-		} else {
-			relPath, _ := filepath.Rel(p.config.DirPath, pkg.Dir)
-			if !strings.HasPrefix(relPath, "internal") {
-				continue
-			}
-		}
 		for _, file := range pkg.Syntax {
-			p.collectTypeSpecs(file, pkg.PkgPath, ast.NewCommentMap(set, file, file.Comments), isMainPkg)
+			p.collectTypesAndImports(file, pkg.PkgPath, ast.NewCommentMap(set, file, file.Comments))
 		}
 	}
 	if _, ok := p.types[p.config.RootTypeName]; !ok && p.config.Mode == Component {
 		fmt.Printf("Warning: Root type %s not found among collected type specs\n", p.config.RootTypeName)
 	}
-	return mainPkg
 }
 
-func (p *Parser) initializeSchema(id, title string) {
+func (p *Parser) initializeSchema() {
+	var (
+		id    = p.rootPkg.ID
+		title = fmt.Sprintf("%s %s", p.rootPkg.Name, p.config.Mode)
+	)
 	p.schema = CreateSchema(id, title)
 }
 
-func (p *Parser) collectTypeSpecs(file *ast.File, pkgPath string, cmap ast.CommentMap, isMain bool) {
+func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast.CommentMap) {
 	target := p.types
 	for _, decl := range file.Decls {
 		genDecl, ok := decl.(*ast.GenDecl)
@@ -100,11 +106,8 @@ func (p *Parser) collectTypeSpecs(file *ast.File, pkgPath string, cmap ast.Comme
 			}
 			if typeSpec.Name.IsExported() {
 				name := typeSpec.Name.Name
-				pgkName := ""
-				if !isMain {
-					pgkName = file.Name.Name
-				}
-				target[name] = TypeInfo{typeSpec, comms, pgkName}
+				pgkName := file.Name.Name
+				target[name] = &TypeInfo{typeSpec, comms, pgkName, false}
 			}
 		}
 	}
@@ -122,9 +125,32 @@ func (p *Parser) collectTypeSpecs(file *ast.File, pkgPath string, cmap ast.Comme
 	}
 }
 
-func (p *Parser) parseTypes() error {
+func (p *Parser) feedProcessQueue() {
+	filterFn := func(name string, t *TypeInfo) bool {
+		if p.config.Mode == Component {
+			return name == p.config.RootTypeName
+		}
+		return t.pkgName == p.rootPkg.Name
+	}
 	for name, typeSpec := range p.types {
-		schemaElement, err := p.parseType(typeSpec)
+		if filterFn(name, typeSpec) {
+			p.processQueue.PushBack(name)
+		}
+	}
+}
+
+func (p *Parser) processTypes() error {
+	for p.processQueue.Len() > 0 {
+		item := p.processQueue.Front()
+		p.processQueue.Remove(item)
+
+		name, _ := item.Value.(string)
+		typeInfo := p.types[name]
+		if typeInfo.processed {
+			continue
+		}
+		typeInfo.processed = true
+		schemaElement, err := p.parseType(typeInfo)
 		if err != nil {
 			return fmt.Errorf("parse type spec %s: %w", name, err)
 		}
@@ -147,8 +173,8 @@ func (p *Parser) parseTypes() error {
 				p.schema.ElementType = field.ElementType
 			}
 		} else {
-			if typeSpec.pkgName != "" {
-				name = typeSpec.pkgName + "." + name
+			if typeInfo.pkgName != p.rootPkg.Name {
+				name = typeInfo.pkgName + "." + name
 			}
 			p.schema.Defs.AddDef(name, schemaElement)
 		}
@@ -160,7 +186,7 @@ func (p *Parser) isRootType(name string) bool {
 	return p.config.Mode == Component && (name == p.config.RootTypeName || len(p.types) == 1)
 }
 
-func (p *Parser) parseType(typeInfo TypeInfo) (SchemaElement, error) {
+func (p *Parser) parseType(typeInfo *TypeInfo) (SchemaElement, error) {
 	typeSpec := typeInfo.spec
 	switch typeSpec.Type.(type) {
 	case *ast.InterfaceType, *ast.FuncType:
@@ -203,8 +229,13 @@ func (p *Parser) parseExpr(expr ast.Expr) (SchemaElement, error) {
 
 func (p *Parser) parseStruct(structType *ast.StructType) (SchemaElement, error) {
 	var schemaObject SchemaObject = CreateObjectField("")
+
 	for _, field := range structType.Fields.List {
-		if len(field.Names) == 0 {
+		tag, ok := ParseTag(field.Tag)
+		if !ok {
+			continue
+		}
+		if len(field.Names) == 0 || tag.Squash {
 			if err := p.addEmbeddedField(field, schemaObject); err != nil {
 				return nil, err
 			}
@@ -238,33 +269,37 @@ func (p *Parser) addEmbeddedField(field *ast.Field, schemaObject SchemaObject) e
 	}
 
 	typeName := ident.Name
-	if info, exists := p.types[typeName]; !exists {
-		if info.pkgName != "" {
-			typeName = info.pkgName + "." + typeName
+	if _, exists := p.types[typeName]; !exists {
+		if typeSpec, ok := ident.Obj.Decl.(*ast.TypeSpec); ok {
+			elem, err := p.parseExpr(typeSpec.Type)
+			if err != nil {
+				return err
+			}
+			return mergeSchemas(schemaObject, elem)
 		}
 		return fmt.Errorf("type %s not found in collected type specs", typeName)
 	}
+	p.processQueue.PushBack(typeName)
 	schemaObject.AddEmbeddedRef("#/$defs/" + typeName)
 	return nil
 }
 
 func (p *Parser) addNamedFields(field *ast.Field, schemaObject SchemaObject) {
 	for _, ident := range field.Names {
-		hasTag := field.Tag != nil && field.Tag.Value != ""
-		isValid := ident.IsExported() && hasTag && strings.Contains(field.Tag.Value, "mapstructure")
+		tag, hasTag := ParseTag(field.Tag)
+		isValid := ident.IsExported() && hasTag
 		if !isValid {
 			continue
 		}
-		p.addNamedField(ident, field, schemaObject)
+		fieldName := tag.Name
+		if fieldName == "" {
+			fieldName = ident.Name
+		}
+		p.addNamedField(fieldName, field, schemaObject)
 	}
 }
 
-func (p *Parser) addNamedField(ident *ast.Ident, field *ast.Field, schemaObject SchemaObject) {
-	fieldName := ident.Name
-	if name, ok := ExtractNameFromTag(field); ok {
-		fieldName = name
-	}
-
+func (p *Parser) addNamedField(fieldName string, field *ast.Field, schemaObject SchemaObject) {
 	element, err := p.parseExpr(field.Type)
 	if err != nil {
 		fmt.Printf("Error parsing field %s: %v\n", fieldName, err)
@@ -305,7 +340,8 @@ func (p *Parser) parseIdent(ident *ast.Ident) (SchemaElement, error) {
 	}
 
 	if info, exists := p.types[typeName]; exists {
-		if info.pkgName != "" {
+		p.processQueue.PushBack(typeName)
+		if info.pkgName != p.rootPkg.Name {
 			typeName = info.pkgName + "." + typeName
 		}
 		return CreateRefField("#/$defs/"+typeName, ""), nil
@@ -354,8 +390,9 @@ func (p *Parser) parseSelector(selector *ast.SelectorExpr) (SchemaElement, error
 
 	name := selector.Sel.Name
 	if info, exists := p.types[name]; exists {
-		if info.pkgName != "" {
-			name = info.pkgName + "." + name
+		p.processQueue.PushBack(name)
+		if info.pkgName != p.rootPkg.Name {
+			name = fullTypeName
 		}
 		element := CreateRefField("#/$defs/"+name, "")
 		return element, nil
