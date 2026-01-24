@@ -19,9 +19,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
-func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func PathGetSetter[K Context](path ottlpath.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
 		return nil, ctxerror.New("nil", "nil", Name, DocRef)
 	}
@@ -196,7 +197,7 @@ func accessTraceState[K Context]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessTraceStateKey[K Context](keys []ottl.Key[K]) (ottl.StandardGetSetter[K], error) {
+func accessTraceStateKey[K Context](keys []ottlpath.Key[K]) (ottl.StandardGetSetter[K], error) {
 	if len(keys) != 1 {
 		return ottl.StandardGetSetter[K]{}, errors.New("must provide exactly 1 key when accessing trace_state")
 	}
@@ -424,7 +425,7 @@ func accessAttributes[K Context]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessAttributesKey[K Context](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
+func accessAttributesKey[K Context](keys []ottlpath.Key[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetSpan().Attributes(), keys)

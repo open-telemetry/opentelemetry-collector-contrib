@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -24,7 +25,7 @@ func TestPathGetSetter(t *testing.T) {
 	tests := []struct {
 		path     string
 		val      any
-		keys     []ottl.Key[*profileContext]
+		keys     []ottlpath.Key[*profileContext]
 		setFails bool
 	}{
 		{
@@ -122,7 +123,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "attributes",
-			keys: []ottl.Key[*profileContext]{
+			keys: []ottlpath.Key[*profileContext]{
 				&pathtest.Key[*profileContext]{
 					S: ottltest.Strp("akey"),
 				},
@@ -131,7 +132,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "attributes",
-			keys: []ottl.Key[*profileContext]{
+			keys: []ottlpath.Key[*profileContext]{
 				&pathtest.Key[*profileContext]{
 					S: ottltest.Strp("akey"),
 				},
@@ -143,7 +144,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "attributes",
-			keys: []ottl.Key[*profileContext]{
+			keys: []ottlpath.Key[*profileContext]{
 				&pathtest.Key[*profileContext]{
 					G: &ottl.StandardGetSetter[*profileContext]{
 						Getter: func(context.Context, *profileContext) (any, error) {

@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
 func Test_SetIndexableValue_InvalidValue(t *testing.T) {
-	keys := []ottl.Key[any]{
+	keys := []ottlpath.Key[any]{
 		&pathtest.Key[any]{},
 	}
 	err := ctxutil.SetIndexableValue[any](t.Context(), nil, pcommon.NewValueStr("str"), nil, keys)

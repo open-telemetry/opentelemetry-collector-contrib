@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
 var tcPool = sync.Pool{
@@ -236,7 +237,7 @@ func pathExpressionParser(cacheGetter ctxcache.Getter[*TransformContext]) ottl.P
 		})
 }
 
-func spanEventGetSetterWithIndex(path ottl.Path[*TransformContext]) (ottl.GetSetter[*TransformContext], error) {
+func spanEventGetSetterWithIndex(path ottlpath.Path[*TransformContext]) (ottl.GetSetter[*TransformContext], error) {
 	if path.Name() == "event_index" {
 		return accessSpanEventIndex(), nil
 	}

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -53,7 +53,7 @@ func Test_PathExpressionParser(t *testing.T) {
 	t.Run("access specific cache key", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
 			N: "cache",
-			KeySlice: []ottl.Key[testContext]{
+			KeySlice: []ottlpath.Key[testContext]{
 				&pathtest.Key[testContext]{
 					S: ottltest.Strp("key1"),
 				},
@@ -111,7 +111,7 @@ func Test_PathExpressionParser(t *testing.T) {
 	t.Run("modify specific cache key", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
 			N: "cache",
-			KeySlice: []ottl.Key[testContext]{
+			KeySlice: []ottlpath.Key[testContext]{
 				&pathtest.Key[testContext]{
 					S: ottltest.Strp("key1"),
 				},
@@ -132,7 +132,7 @@ func Test_PathExpressionParser(t *testing.T) {
 	t.Run("add new cache key", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
 			N: "cache",
-			KeySlice: []ottl.Key[testContext]{
+			KeySlice: []ottlpath.Key[testContext]{
 				&pathtest.Key[testContext]{
 					S: ottltest.Strp("key3"),
 				},
@@ -158,7 +158,7 @@ func Test_PathExpressionParser(t *testing.T) {
 
 		path := &pathtest.Path[testContext]{
 			N: "cache",
-			KeySlice: []ottl.Key[testContext]{
+			KeySlice: []ottlpath.Key[testContext]{
 				&pathtest.Key[testContext]{
 					S: ottltest.Strp("parent"),
 				},

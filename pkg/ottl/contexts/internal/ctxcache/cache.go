@@ -10,6 +10,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
 const Name = "cache"
@@ -17,7 +18,7 @@ const Name = "cache"
 type Getter[K any] func(K) pcommon.Map
 
 func PathExpressionParser[K any](cacheGetter Getter[K]) ottl.PathExpressionParser[K] {
-	return func(path ottl.Path[K]) (ottl.GetSetter[K], error) {
+	return func(path ottlpath.Path[K]) (ottl.GetSetter[K], error) {
 		if path.Keys() == nil {
 			return accessCache(cacheGetter), nil
 		}
@@ -36,7 +37,7 @@ func accessCache[K any](cacheGetter Getter[K]) ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessCacheKey[K any](cacheGetter Getter[K], key []ottl.Key[K]) ottl.StandardGetSetter[K] {
+func accessCacheKey[K any](cacheGetter Getter[K], key []ottlpath.Key[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			return ctxutil.GetMapValue(ctx, tCtx, cacheGetter(tCtx), key)

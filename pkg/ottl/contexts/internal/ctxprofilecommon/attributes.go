@@ -11,6 +11,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
 type ProfileAttributable interface {
@@ -52,7 +53,7 @@ func AccessAttributes[K any](source attributeSource[K]) ottl.StandardGetSetter[K
 	}
 }
 
-func AccessAttributesKey[K any](key []ottl.Key[K], source attributeSource[K]) ottl.StandardGetSetter[K] {
+func AccessAttributesKey[K any](key []ottlpath.Key[K], source attributeSource[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			dict, attributable := source(tCtx)

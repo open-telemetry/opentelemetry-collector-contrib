@@ -10,8 +10,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
 func SetValue(value pcommon.Value, val any) error {
@@ -80,7 +80,7 @@ func SetValue(value pcommon.Value, val any) error {
 	return err
 }
 
-func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, keys []ottl.Key[K]) (any, error) {
+func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, keys []ottlpath.Key[K]) (any, error) {
 	val := value
 	var ok bool
 	for index := range keys {
@@ -117,7 +117,7 @@ func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, 
 	return ottlcommon.GetValue(val), nil
 }
 
-func SetIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.Value, val any, keys []ottl.Key[K]) error {
+func SetIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.Value, val any, keys []ottlpath.Key[K]) error {
 	for index := range keys {
 		switch currentValue.Type() {
 		case pcommon.ValueTypeMap:

@@ -12,10 +12,13 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlruntime"
 )
 
 // PathExpressionParser is how a context provides OTTL access to all its Paths.
-type PathExpressionParser[K any] func(Path[K]) (GetSetter[K], error)
+type PathExpressionParser[K any] func(ottlpath.Path[K]) (GetSetter[K], error)
 
 // EnumParser is how a context provides OTTL access to all its Enums.
 type EnumParser func(*EnumSymbol) (*Enum, error)
@@ -147,34 +150,12 @@ func (p *Parser[K]) buildPathContextNamesText(path string) string {
 	return builder.String()
 }
 
-// Path represents a chain of path parts in an OTTL statement, such as `body.string`.
-// A Path has a name, and potentially a set of keys.
-// If the path in the OTTL statement contains multiple parts (separated by a dot (`.`)), then the Path will have a pointer to the next Path.
-type Path[K any] interface {
-	// Context is the OTTL context name of this Path.
-	Context() string
-
-	// Name is the name of this segment of the path.
-	Name() string
-
-	// Next provides the next path segment for this Path.
-	// Will return nil if there is no next path.
-	Next() Path[K]
-
-	// Keys provides the Keys for this Path.
-	// Will return nil if there are no Keys.
-	Keys() []Key[K]
-
-	// String returns a string representation of this Path and the next Paths
-	String() string
-}
-
-var _ Path[any] = &basePath[any]{}
+var _ ottlpath.Path[any] = &basePath[any]{}
 
 type basePath[K any] struct {
 	context      string
 	name         string
-	keys         []Key[K]
+	keys         []ottlpath.Key[K]
 	nextPath     *basePath[K]
 	fetched      bool
 	fetchedKeys  bool
@@ -189,7 +170,7 @@ func (p *basePath[K]) Name() string {
 	return p.name
 }
 
-func (p *basePath[K]) Next() Path[K] {
+func (p *basePath[K]) Next() ottlpath.Path[K] {
 	if p.nextPath == nil {
 		return nil
 	}
@@ -197,7 +178,7 @@ func (p *basePath[K]) Next() Path[K] {
 	return p.nextPath
 }
 
-func (p *basePath[K]) Keys() []Key[K] {
+func (p *basePath[K]) Keys() []ottlpath.Key[K] {
 	if p.keys == nil {
 		return nil
 	}
@@ -222,13 +203,13 @@ func (p *basePath[K]) isComplete() error {
 	return p.nextPath.isComplete()
 }
 
-func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
+func (p *Parser[K]) newKeys(keys []key) ([]ottlpath.Key[K], error) {
 	if len(keys) == 0 {
 		return nil, nil
 	}
-	ks := make([]Key[K], len(keys))
+	ks := make([]ottlpath.Key[K], len(keys))
 	for i := range keys {
-		var getter Getter[K]
+		var getter ottlruntime.Getter[K, any]
 		if keys[i].Expression != nil {
 			if keys[i].Expression.Path != nil {
 				g, err := p.buildGetSetterFromPath(keys[i].Expression.Path)
@@ -261,33 +242,12 @@ func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
 	return ks, nil
 }
 
-// Key represents a chain of keys in an OTTL statement, such as `attributes["foo"]["bar"]`.
-// A Key has a String or Int, and potentially the next Key.
-// If the path in the OTTL statement contains multiple keys, then the Key will have a pointer to the next Key.
-type Key[K any] interface {
-	// String returns a pointer to the Key's string value.
-	// If the Key does not have a string value the returned value is nil.
-	// If Key experiences an error retrieving the value it is returned.
-	String(context.Context, K) (*string, error)
-
-	// Int returns a pointer to the Key's int value.
-	// If the Key does not have a int value the returned value is nil.
-	// If Key experiences an error retrieving the value it is returned.
-	Int(context.Context, K) (*int64, error)
-
-	// ExpressionGetter returns a Getter to the expression, that can be
-	// part of the path.
-	// If the Key does not have an expression the returned value is nil.
-	// If Key experiences an error retrieving the value it is returned.
-	ExpressionGetter(context.Context, K) (Getter[K], error)
-}
-
-var _ Key[any] = &baseKey[any]{}
+var _ ottlpath.Key[any] = &baseKey[any]{}
 
 type baseKey[K any] struct {
 	s *string
 	i *int64
-	g Getter[K]
+	g ottlruntime.Getter[K, any]
 }
 
 func (k *baseKey[K]) String(_ context.Context, _ K) (*string, error) {
@@ -298,11 +258,11 @@ func (k *baseKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 	return k.i, nil
 }
 
-func (k *baseKey[K]) ExpressionGetter(_ context.Context, _ K) (Getter[K], error) {
+func (k *baseKey[K]) ExpressionGetter(_ context.Context, _ K) (ottlruntime.Getter[K, any], error) {
 	return k.g, nil
 }
 
-func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
+func (p *Parser[K]) parsePath(ip *basePath[K]) (ottlruntime.GetSetter[K, any], error) {
 	g, err := p.pathParser(ip)
 	if err != nil {
 		return nil, err
@@ -535,7 +495,7 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 	}
 }
 
-func (p *Parser[K]) buildGetSetterFromPath(path *path) (GetSetter[K], error) {
+func (p *Parser[K]) buildGetSetterFromPath(path *path) (ottlruntime.GetSetter[K, any], error) {
 	np, err := p.newPath(path)
 	if err != nil {
 		return nil, err

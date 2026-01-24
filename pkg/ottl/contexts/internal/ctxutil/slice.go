@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"golang.org/x/exp/constraints"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlpath"
 )
 
 const (
@@ -23,7 +23,7 @@ var (
 	errMissingGetKey = errors.New("cannot get slice value without key")
 )
 
-func getSliceIndexFromKeys[K any](ctx context.Context, tCtx K, sliceLen int, keys []ottl.Key[K]) (int, error) {
+func getSliceIndexFromKeys[K any](ctx context.Context, tCtx K, sliceLen int, keys []ottlpath.Key[K]) (int, error) {
 	i, err := keys[0].Int(ctx, tCtx)
 	if err != nil {
 		return 0, err
@@ -45,7 +45,7 @@ func getSliceIndexFromKeys[K any](ctx context.Context, tCtx K, sliceLen int, key
 	return idx, nil
 }
 
-func GetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []ottl.Key[K]) (any, error) {
+func GetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []ottlpath.Key[K]) (any, error) {
 	if len(keys) == 0 {
 		return 0, errMissingGetKey
 	}
@@ -58,7 +58,7 @@ func GetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []o
 	return getIndexableValue[K](ctx, tCtx, s.At(idx), keys[1:])
 }
 
-func SetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []ottl.Key[K], val any) error {
+func SetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []ottlpath.Key[K], val any) error {
 	if len(keys) == 0 {
 		return errMissingSetKey
 	}
@@ -84,7 +84,7 @@ type CommonTypedSlice[T any] interface {
 // GetCommonTypedSliceValue is like GetSliceValue, but for retrieving a value from a pdata
 // typed slice. [V] is the type of the slice elements. If no keys are provided, it returns
 // an error. This function does not support slice elements indexing.
-func GetCommonTypedSliceValue[K, V any](ctx context.Context, tCtx K, s CommonTypedSlice[V], keys []ottl.Key[K]) (V, error) {
+func GetCommonTypedSliceValue[K, V any](ctx context.Context, tCtx K, s CommonTypedSlice[V], keys []ottlpath.Key[K]) (V, error) {
 	if len(keys) == 0 {
 		return *new(V), errMissingGetKey
 	}
@@ -103,7 +103,7 @@ func GetCommonTypedSliceValue[K, V any](ctx context.Context, tCtx K, s CommonTyp
 // SetCommonTypedSliceValue sets the value of a pdata typed slice element. [V] is the type
 // of the slice elements. The any-wrapped value type must be [V], otherwise an error is
 // returned. This function does not support slice elements indexing.
-func SetCommonTypedSliceValue[K, V any](ctx context.Context, tCtx K, s CommonTypedSlice[V], keys []ottl.Key[K], val any) error {
+func SetCommonTypedSliceValue[K, V any](ctx context.Context, tCtx K, s CommonTypedSlice[V], keys []ottlpath.Key[K], val any) error {
 	if len(keys) == 0 {
 		return errMissingSetKey
 	} else if len(keys) > 1 {
@@ -173,7 +173,7 @@ func GetCommonIntSliceValues[V constraints.Integer](val CommonTypedSlice[V]) []i
 
 // GetCommonIntSliceValue is like GetCommonTypedSliceValue, but for integer pdata typed
 // slices.
-func GetCommonIntSliceValue[K any, V constraints.Integer](ctx context.Context, tCtx K, s CommonTypedSlice[V], keys []ottl.Key[K]) (int64, error) {
+func GetCommonIntSliceValue[K any, V constraints.Integer](ctx context.Context, tCtx K, s CommonTypedSlice[V], keys []ottlpath.Key[K]) (int64, error) {
 	value, err := GetCommonTypedSliceValue[K, V](ctx, tCtx, s, keys)
 	if err != nil {
 		return 0, err
@@ -185,7 +185,7 @@ func GetCommonIntSliceValue[K any, V constraints.Integer](ctx context.Context, t
 // slice element values. [V] is the type of the slice elements.
 // The any-wrapped value type must be and integer convertible to [V], otherwise an error
 // is returned. This function does not support slice elements indexing.
-func SetCommonIntSliceValue[K any, V constraints.Integer](ctx context.Context, tCtx K, s CommonTypedSlice[V], keys []ottl.Key[K], val any) error {
+func SetCommonIntSliceValue[K any, V constraints.Integer](ctx context.Context, tCtx K, s CommonTypedSlice[V], keys []ottlpath.Key[K], val any) error {
 	var intVal V
 	switch typeVal := val.(type) {
 	case int:
