@@ -837,13 +837,13 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		},
 		{
 			name:          "Threads error",
-			osFilter:      []string{"linux"},
+			osFilter:      []string{"darwin", "windows"},
 			threadsError:  errors.New("err12"),
 			expectedError: `error reading threads info for process "test" (pid 1): err12`,
 		},
 		{
 			name:            "Context Switches Error",
-			osFilter:        []string{"darwin"},
+			osFilter:        []string{"darwin", "windows"},
 			numThreadsError: errors.New("err9"),
 			expectedError:   `error reading thread info for process "test" (pid 1): err9`,
 		},
@@ -893,7 +893,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				`error reading disk usage for process "test" (pid 1): err7; ` +
 				`error reading memory paging info for process "test" (pid 1): err-paging; ` +
 				`error reading thread info for process "test" (pid 1): err8; ` +
-				`error reading context switch counts for process "test" (pid 1): err12; ` +
+				handleContextSwitchErrorMessageIfSupportedOnPlatform() +
 				`error reading open file descriptor count for process "test" (pid 1): err10; ` +
 				handleCountErrorMessageIfSupportedOnPlatform() +
 				`error reading pending signals for process "test" (pid 1): err-rlimit; ` +
@@ -925,6 +925,12 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				// disable darwin unsupported default metric
 				metricsBuilderConfig.Metrics.ProcessUptime.Enabled = true
 				metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
+			}
+
+			// If not on Linux, don't bother collecting a metric that
+			// is guaranteed to produce an error.
+			if runtime.GOOS != "linux" {
+				metricsBuilderConfig.Metrics.ProcessContextSwitches.Enabled = false
 			}
 
 			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsBuilderConfig})
@@ -1057,6 +1063,11 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPerc
 	if runtime.GOOS == "darwin" {
 		darwinMetricsLen := cpuMetricsLen + memoryMetricsLen + uptimeMetricsLen
 		return darwinMetricsLen - expectedMetricsLen
+	}
+
+	// Exclude context switch metrics when on Windows.
+	if runtime.GOOS == "windows" {
+		return metricsLen - contextSwitchMetricsLen - expectedMetricsLen
 	}
 
 	return metricsLen - expectedMetricsLen
@@ -1398,6 +1409,13 @@ func handleCGroupErrorMessageIfSupportedOnPlatform() string {
 func handleCountErrorMessageIfSupportedOnPlatform() string {
 	if handleCountErr := handleCountErrorIfSupportedOnPlatform(); handleCountErr != nil {
 		return fmt.Errorf("error reading handle count for process \"test\" (pid 1): %w; ", handleCountErr).Error()
+	}
+	return ""
+}
+
+func handleContextSwitchErrorMessageIfSupportedOnPlatform() string {
+	if runtime.GOOS == "linux" {
+		return `error reading context switch counts for process "test" (pid 1): err12;`
 	}
 	return ""
 }
