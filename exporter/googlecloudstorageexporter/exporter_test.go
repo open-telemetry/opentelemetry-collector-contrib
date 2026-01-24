@@ -582,7 +582,6 @@ func decompressData(t *testing.T, compressedData []byte, compression configcompr
 	}
 }
 
-func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
 func newTestGCSExporter(t *testing.T, cfg *Config, signal ...signalType) *storageExporter {
 	sig := signalTypeLogs
 	if len(signal) > 0 {
