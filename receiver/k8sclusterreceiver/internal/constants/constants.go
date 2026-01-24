@@ -11,6 +11,7 @@ const (
 	K8sKindJob                   = "Job"
 	K8sKindReplicationController = "ReplicationController"
 	K8sKindReplicaSet            = "ReplicaSet"
+	K8sKindService               = "Service"
 	K8sStatefulSet               = "StatefulSet"
 
 	// Keys for K8s metadata
