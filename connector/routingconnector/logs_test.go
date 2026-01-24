@@ -28,6 +28,9 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	logs0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
 	logs1 := pipeline.NewIDWithName(pipeline.SignalLogs, "1")
 
+	// The unqualified `attributes["X-Tenant"]` syntax is the legacy form that
+	// defaults to resource context for backward compatibility. The modern form
+	// is `resource.attributes["X-Tenant"]` which explicitly specifies the context.
 	cfg := &Config{
 		DefaultPipelines: []pipeline.ID{logsDefault},
 		Table: []RoutingTableItem{
@@ -77,6 +80,118 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 
 	assert.NoError(t, conn.Shutdown(t.Context()))
+}
+
+func TestLogsRoutingWithInferredContexts(t *testing.T) {
+	// This test demonstrates context inference with explicit context-qualified paths.
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logsProd := pipeline.NewIDWithName(pipeline.SignalLogs, "prod")
+	logsErrors := pipeline.NewIDWithName(pipeline.SignalLogs, "errors")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{logsDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `resource.attributes["env"] == "prod"`,
+				Pipelines: []pipeline.ID{logsProd},
+			},
+			{
+				Condition: `log.severity_text == "ERROR"`,
+				Pipelines: []pipeline.ID{logsErrors},
+			},
+		},
+	}
+
+	var defaultSink, prodSink, errorsSink consumertest.LogsSink
+
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+		logsDefault: &defaultSink,
+		logsProd:    &prodSink,
+		logsErrors:  &errorsSink,
+	})
+
+	factory := NewFactory()
+	conn, err := factory.CreateLogsToLogs(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Logs),
+	)
+	require.NoError(t, err)
+
+	// Helper function to create logs with specific attributes
+	createLogs := func(env, severity string) plog.Logs {
+		logs := plog.NewLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("env", env)
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetSeverityText(severity)
+		return logs
+	}
+
+	// Helper function to reset all sinks
+	resetSinks := func() {
+		prodSink.Reset()
+		errorsSink.Reset()
+		defaultSink.Reset()
+	}
+
+	// Helper function to assert sink counts
+	assertSinkCounts := func(t *testing.T, prodCount, errorsCount, defaultCount int) {
+		assert.Equal(t, prodCount, prodSink.LogRecordCount(), "prod sink count")
+		assert.Equal(t, errorsCount, errorsSink.LogRecordCount(), "errors sink count")
+		assert.Equal(t, defaultCount, defaultSink.LogRecordCount(), "default sink count")
+	}
+
+	testCases := []struct {
+		name            string
+		env             string
+		severity        string
+		expectedProd    int
+		expectedErrors  int
+		expectedDefault int
+	}{
+		{
+			name:            "resource context routing: env=prod routes to prod sink",
+			env:             "prod",
+			severity:        "INFO",
+			expectedProd:    1,
+			expectedErrors:  0,
+			expectedDefault: 0,
+		},
+		{
+			name:            "log context routing: ERROR severity routes to errors sink",
+			env:             "dev",
+			severity:        "ERROR",
+			expectedProd:    0,
+			expectedErrors:  1,
+			expectedDefault: 0,
+		},
+		{
+			name:            "default routing: non-matching logs go to default",
+			env:             "dev",
+			severity:        "INFO",
+			expectedProd:    0,
+			expectedErrors:  0,
+			expectedDefault: 1,
+		},
+		{
+			name:            "multiple route matches: both prod env and ERROR severity",
+			env:             "prod",
+			severity:        "ERROR",
+			expectedProd:    1,
+			expectedErrors:  0,
+			expectedDefault: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetSinks()
+			logs := createLogs(tc.env, tc.severity)
+			require.NoError(t, conn.ConsumeLogs(t.Context(), logs))
+			assertSinkCounts(t, tc.expectedProd, tc.expectedErrors, tc.expectedDefault)
+		})
+	}
 }
 
 func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {

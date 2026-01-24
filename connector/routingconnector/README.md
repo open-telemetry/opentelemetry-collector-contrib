@@ -34,16 +34,54 @@ If you are not already familiar with connectors, you may find it helpful to firs
 The following settings are available:
 
 - `table (required)`: the routing table for this connector.
-- `table.context (optional, default: resource)`: the [OTTL Context] in which the statement will be evaluated. Currently, only `resource`, `span`, `metric`, `datapoint`, `log`, and `request` are supported.
-- `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. May not be used for `request` context.
-- `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. Required for `request` context.
+- `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. Required for `request` context. Use context-qualified paths (e.g., `resource.attributes["key"]`, `span.attributes["key"]`) to automatically infer the context (see [Context Inference](#context-inference)).
+- `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. May not be used for `request` context. Generally `condition` is preferred since it is more terse.
+- `table.context (optional)`: the [OTTL Context] in which the condition/statement will be evaluated. Only `resource`, `span`, `metric`, `datapoint`, `log`, and `request` are supported. In most cases, you should omit this field and use context-qualified paths instead, which allows the context to be inferred automatically. If specified, takes precedence over inference. Defaults to `resource` when neither explicit context nor qualified paths are provided.
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
 - `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `propagate`, `ignore` and `silent`. If `ignore` or `silent` is used and a statement's condition has an error then the payload will be routed to the default pipelines. When `silent` is used the error is not logged. If not supplied, `propagate` is used.
 
+### Context Inference
+
+The routing connector supports OTTL context inference, allowing you to write clearer and more maintainable routing conditions using context-qualified paths. This is the recommended approach for specifying routing conditions.
+
+```yaml
+# Recommended: Use context-qualified paths for clarity
+- condition: resource.attributes["env"] == "prod"
+  pipelines: [logs/prod]
+- condition: span.attributes["http.method"] == "GET"
+  pipelines: [traces/http]
+- condition: log.severity_text == "ERROR"
+  pipelines: [logs/errors]
+```
+
+This approach makes it immediately clear which attributes you're accessing without needing a separate `context` field.
+
+**Supported context-qualified paths:**
+
+| Context | Path prefix | Example |
+|---------|-------------|---------|
+| Resource | `resource.` | `resource.attributes["service.name"]` |
+| Span | `span.` | `span.attributes["http.method"]` |
+| Log | `log.` | `log.body`, `log.attributes["level"]` |
+| Metric | `metric.` | `metric.name` |
+| Datapoint | `datapoint.` | `datapoint.attributes["host"]` |
+
+**Using explicit context:** If you prefer, you can still set the `context` field explicitly. This can be useful when working with unqualified paths:
+
+```yaml
+# Alternative: Explicit context with unqualified paths
+- context: log
+  condition: attributes["level"] == "error"
+  pipelines: [logs/errors]
+```
+
+**Backward compatibility:** Unqualified paths like `attributes["env"]` without an explicit `context` field continue to work and default to the `resource` context.
+
 ### Limitations
 
 - The `request` context requires use of the `condition` setting, and relies on a very limited grammar. Conditions must be in the form of `request["key"] == "value"` or `request["key"] != "value"`. (In the future, this grammar may be expanded to support more complex conditions.)
+- When using context inference without an explicit `context` field, the inferred context must be compatible with the pipeline signal type (e.g., `span` context can only be used in traces pipelines).
 
 ### Supported [OTTL] functions
 
@@ -61,7 +99,50 @@ The full list of settings exposed for this connector are documented in [config.g
 
 ## Examples
 
-Route logs based on tenant:
+### Route traces using context-qualified paths
+
+This example demonstrates context inference with explicit context-qualified paths:
+
+```yaml
+receivers:
+  otlp:
+
+exporters:
+  file/prod:
+    path: ./prod.json
+  file/debug:
+    path: ./debug.json
+  file/other:
+    path: ./other.json
+
+connectors:
+  routing:
+    default_pipelines: [traces/other]
+    table:
+      # Using resource context with qualified path - routes based on resource attributes
+      - condition: resource.attributes["deployment.environment"] == "production"
+        pipelines: [traces/prod]
+      # Using span context with qualified path - routes based on span attributes
+      - condition: span.attributes["debug"] == true
+        pipelines: [traces/debug]
+
+service:
+  pipelines:
+    traces/in:
+      receivers: [otlp]
+      exporters: [routing]
+    traces/prod:
+      receivers: [routing]
+      exporters: [file/prod]
+    traces/debug:
+      receivers: [routing]
+      exporters: [file/debug]
+    traces/other:
+      receivers: [routing]
+      exporters: [file/other]
+```
+
+### Route logs based on tenant
 
 ```yaml
 receivers:

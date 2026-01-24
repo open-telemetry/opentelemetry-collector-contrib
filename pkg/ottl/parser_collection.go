@@ -195,7 +195,16 @@ type (
 	}
 )
 
-// createConditionsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
+// createConditionsParserWithConverter creates a parser wrapper that:
+// - Optionally normalizes condition paths by prepending the context name to any path missing one
+// - Parses the conditions via parser.ParseConditions
+// - Converts the parsed result to the collection's return type R
+//
+// When prependPathsContext is true, the context prepending only affects paths without an explicit context prefix.
+// For example, with context="resource":
+//   - `attributes["env"]` becomes `resource.attributes["env"]`
+//   - `resource.attributes["env"]` stays unchanged (already has context)
+//   - `span.attributes["method"]` stays unchanged (has different context)
 func createConditionsParserWithConverter[K, R any](converter ParsedConditionsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, ConditionsGetter] {
 	return func(pc *ParserCollection[R], context string, conditions ConditionsGetter, prependPathsContext bool) (R, error) {
 		var err error
@@ -232,7 +241,8 @@ func createConditionsParserWithConverter[K, R any](converter ParsedConditionsCon
 	}
 }
 
-// createValueExpressionsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
+// createValueExpressionsParserWithConverter creates a parser wrapper for value expressions.
+// See createConditionsParserWithConverter for details on path normalization behavior.
 func createValueExpressionsParserWithConverter[K, R any](converter ParsedValueExpressionsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, ValueExpressionsGetter] {
 	return func(pc *ParserCollection[R], context string, expressions ValueExpressionsGetter, prependPathsContext bool) (R, error) {
 		var err error
@@ -269,7 +279,8 @@ func createValueExpressionsParserWithConverter[K, R any](converter ParsedValueEx
 	}
 }
 
-// createStatementsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
+// createStatementsParserWithConverter creates a parser wrapper for statements.
+// See createConditionsParserWithConverter for details on path normalization behavior.
 func createStatementsParserWithConverter[K, R any](converter ParsedStatementsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, StatementsGetter] {
 	return func(pc *ParserCollection[R], context string, statements StatementsGetter, prependPathsContext bool) (R, error) {
 		var err error
@@ -408,7 +419,8 @@ func EnableParserCollectionModifiedPathsLogging[R any](enabled bool) ParserColle
 }
 
 type parseCollectionContextInferenceOptions struct {
-	conditions []string
+	conditions     []string
+	defaultContext string
 }
 
 // ParserCollectionContextInferenceOption allows configuring the context inference and use
@@ -425,6 +437,17 @@ type ParserCollectionContextInferenceOption func(p *parseCollectionContextInfere
 func WithContextInferenceConditions(conditions []string) ParserCollectionContextInferenceOption {
 	return func(p *parseCollectionContextInferenceOptions) {
 		p.conditions = conditions
+	}
+}
+
+// WithContextInferenceDefaultContext sets the default context to be used if inference fails to determine a context.
+// This is useful for backward compatibility when migrating components that previously supported
+// only a single context (e.g., resource) to support multiple contexts via inference.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
+func WithContextInferenceDefaultContext(context string) ParserCollectionContextInferenceOption {
+	return func(p *parseCollectionContextInferenceOptions) {
+		p.defaultContext = context
 	}
 }
 
@@ -463,8 +486,15 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter, opti
 		return *new(R), fmt.Errorf("unable to infer a valid context (%+q) from statements %+q and conditions %+q: %w", pc.supportedContextNames(), statementsValues, conditionsValues, err)
 	}
 
+	// Track whether we're using the default context fallback (requires path prepending)
+	useDefaultContext := false
 	if inferredContext == "" {
-		return *new(R), fmt.Errorf("unable to infer context from statements %+q and conditions %+q, path's first segment must be a valid context name %+q, and at least one context must be capable of parsing all statements", pc.supportedContextNames(), statementsValues, conditionsValues)
+		if parseStatementsOpts.defaultContext == "" {
+			return *new(R), fmt.Errorf("unable to infer context from statements %+q and conditions %+q, path's first segment must be a valid context name %+q, and at least one context must be capable of parsing all statements", pc.supportedContextNames(), statementsValues, conditionsValues)
+		}
+
+		inferredContext = parseStatementsOpts.defaultContext
+		useDefaultContext = true
 	}
 
 	_, ok := pc.contextParsers[inferredContext]
@@ -472,7 +502,7 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter, opti
 		return *new(R), fmt.Errorf(`context "%s" inferred from the statements %+q and conditions %+q is not a supported context: %+q`, inferredContext, statementsValues, conditionsValues, pc.supportedContextNames())
 	}
 
-	return pc.ParseStatementsWithContext(inferredContext, statements, false)
+	return pc.ParseStatementsWithContext(inferredContext, statements, useDefaultContext)
 }
 
 // ParseStatementsWithContext parses the given statements into [R] using the configured
