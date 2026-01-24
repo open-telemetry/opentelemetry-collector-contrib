@@ -269,7 +269,7 @@ func TestOIDCAuthenticationSucceededSingleIssuerMismatch(t *testing.T) {
 	p := newTestExtension(t, config)
 
 	err = p.Start(t.Context(), componenttest.NewNopHost())
-	require.NoError(t, err)
+	require.ErrorContains(t, err, "did not match")
 
 	srvAuth, ok := p.(extensionauth.Server)
 	require.True(t, ok)
@@ -537,7 +537,7 @@ func TestProviderNotReachable(t *testing.T) {
 	err := p.Start(t.Context(), componenttest.NewNopHost())
 
 	// verify
-	assert.NoError(t, err)
+	assert.Error(t, err)
 
 	err = p.Shutdown(t.Context())
 	assert.NoError(t, err)

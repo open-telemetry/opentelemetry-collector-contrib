@@ -115,6 +115,7 @@ func (m *metricNginxConnectionsAccepted) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNginxConnectionsAccepted(cfg MetricConfig) metricNginxConnectionsAccepted {
 	m := metricNginxConnectionsAccepted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -168,6 +169,7 @@ func (m *metricNginxConnectionsCurrent) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNginxConnectionsCurrent(cfg MetricConfig) metricNginxConnectionsCurrent {
 	m := metricNginxConnectionsCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -219,6 +221,7 @@ func (m *metricNginxConnectionsHandled) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNginxConnectionsHandled(cfg MetricConfig) metricNginxConnectionsHandled {
 	m := metricNginxConnectionsHandled{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -270,6 +273,7 @@ func (m *metricNginxRequests) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNginxRequests(cfg MetricConfig) metricNginxRequests {
 	m := metricNginxRequests{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
