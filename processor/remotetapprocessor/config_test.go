@@ -11,6 +11,6 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, "localhost:12001", cfg.Endpoint)
+	assert.Equal(t, "localhost:12001", cfg.NetAddr.Endpoint)
 	assert.EqualValues(t, 1, cfg.Limit)
 }
