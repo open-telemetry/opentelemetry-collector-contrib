@@ -24,7 +24,7 @@ repository:
 
   The actual name of the binary will depend on your platform. For example, on Linux x64, use `./bin/otelcontribcol_linux_amd64`.
 
-Replace `otel-config.yaml` with the appropriate configuration file as needed.
+Replace `otel-config.yaml` with the appropriate configuration file as needed. You may find example configurations in the main `opentelemetry-collector` repository too. 
 
 3. Verify that your changes are reflected in the contrib Collector's behavior by
    testing it against the provided configuration.
