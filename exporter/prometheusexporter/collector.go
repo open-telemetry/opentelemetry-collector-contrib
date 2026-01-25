@@ -41,6 +41,7 @@ type collector struct {
 
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
+	shutdownCh  chan struct{}
 }
 
 type metricFamily struct {
@@ -61,12 +62,31 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 		withoutScopeInfo: config.WithoutScopeInfo,
 		metricNamer:      configureMetricNamer(config),
 		labelNamer:       labelNamer,
+		shutdownCh:       make(chan struct{}),
 	}
 }
 
+// Start initiates the background cleanup loop
+func (c *collector) Start() {
+	go func() {
+		interval := c.metricExpiration
+		if interval == 0 {
+			interval = 5 * time.Minute
+		}
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-c.shutdownCh:
+				return
+			case <-ticker.C:
+				c.cleanupMetricFamilies()
+			}
+		}
+	}()
+}
+
 // normalizeNamespace builds and returns the namespace if specified in the config
-// If not specified, it returns an empty string
-// If building the namespace fails, it logs the error and returns an empty string
 func normalizeNamespace(configNamespace string, labelNamer otlptranslator.LabelNamer, logger *zap.Logger) string {
 	namespace := ""
 	if configNamespace != "" {
@@ -80,7 +100,7 @@ func normalizeNamespace(configNamespace string, labelNamer otlptranslator.LabelN
 	return namespace
 }
 
-// configureMetricNamer configures the MetricNamer based on the translation strategy or legacy configuration
+// configureMetricNamer configures the MetricNamer
 func configureMetricNamer(config *Config) otlptranslator.MetricNamer {
 	withSuffixes, utf8Allowed := getTranslationConfiguration(config)
 	return otlptranslator.MetricNamer{
@@ -90,7 +110,7 @@ func configureMetricNamer(config *Config) otlptranslator.MetricNamer {
 	}
 }
 
-// configureLabelNamer configures the LabelNamer based on the translation strategy or legacy configuration
+// configureLabelNamer configures the LabelNamer
 func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 	_, utf8Allowed := getTranslationConfiguration(config)
 	return otlptranslator.LabelNamer{
@@ -99,10 +119,7 @@ func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 	}
 }
 
-// getTranslationConfiguration returns the translation configuration based on the strategy or legacy settings
-// Returns (withSuffixes, allowUTF8)
 func getTranslationConfiguration(config *Config) (bool, bool) {
-	// If TranslationStrategy is explicitly set, use it (takes precedence)
 	if config.TranslationStrategy != "" {
 		switch config.TranslationStrategy {
 		case underscoreEscapingWithSuffixes:
@@ -114,18 +131,12 @@ func getTranslationConfiguration(config *Config) (bool, bool) {
 		case noTranslation:
 			return false, true
 		default:
-			// Fallback to default behavior, suffixes enabled, UTF-8 escaped to underscores.
 			return true, false
 		}
 	}
-
-	// If feature gate is enabled, ignore AddMetricSuffixes (for deprecation)
 	if disableAddMetricSuffixesFeatureGate.IsEnabled() {
-		// Default to UnderscoreEscapingWithSuffixes behavior when AddMetricSuffixes is deprecated
 		return true, false
 	}
-
-	// Fall back to legacy AddMetricSuffixes behavior, UTF-8 escaped to underscores.
 	return config.AddMetricSuffixes, false
 }
 
@@ -162,13 +173,8 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 	return result
 }
 
-// Describe is a no-op, because the collector dynamically allocates metrics.
-// https://github.com/prometheus/client_golang/blob/v1.9.0/prometheus/collector.go#L28-L40
 func (*collector) Describe(chan<- *prometheus.Desc) {}
 
-/*
-Processing
-*/
 func (c *collector) processMetrics(rm pmetric.ResourceMetrics) (n int) {
 	return c.accumulator.Accumulate(rm)
 }
@@ -192,8 +198,6 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 	return nil, errUnknownMetricType
 }
 
-// defaultZeroThreshold matches the remote-write translator's default for native histograms
-// when an explicit zero threshold is not provided in the datapoint.
 const (
 	defaultZeroThreshold = 1e-128
 	cbnhScale            = -53
@@ -207,7 +211,6 @@ func bucketsToNativeMap(buckets pmetric.ExponentialHistogramDataPointBuckets, sc
 	out := make(map[int]int64, counts.Len())
 	baseOffset := buckets.Offset()
 	for i := 0; i < counts.Len(); i++ {
-		// Effective bucket index after downscaling: ((offset + i) >> scaleDown) + 1
 		idx := (int32(i) + baseOffset) >> scaleDown
 		idx++
 		out[int(idx)] += int64(counts.At(i))
@@ -217,16 +220,12 @@ func bucketsToNativeMap(buckets pmetric.ExponentialHistogramDataPointBuckets, sc
 
 func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
 	dp := metric.ExponentialHistogram().DataPoints().At(0)
-
-	// Build metadata/labels first.
 	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_HISTOGRAM.Enum(), dp.Attributes(), resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
 	if err != nil {
 		return nil, err
 	}
 
 	schema := dp.Scale()
-
-	// TODO: implement custom bucket native histograms #43981
 	if schema == cbnhScale {
 		return nil, errors.New("custom bucket native histograms (CBNH) are still not implemented")
 	}
@@ -247,7 +246,6 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 		zeroThresh = defaultZeroThreshold
 	}
 
-	// Use created timestamp if start time is set (> 0), else zero value.
 	created := time.Time{}
 	if dp.StartTimestamp().AsTime().Unix() > 0 {
 		created = dp.StartTimestamp().AsTime()
@@ -290,7 +288,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 		return nil, nil, err
 	}
 
-	keys := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5) // +2 for job and instance labels, +3 for scope name, version and schema url
+	keys := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5)
 	values := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5)
 
 	var multiErrs error
@@ -391,7 +389,6 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map,
 	}
 
 	var exemplars []prometheus.Exemplar
-	// Prometheus currently only supports exporting counters
 	if metricType == prometheus.CounterValue {
 		exemplars = convertExemplars(ip.Exemplars())
 	}
@@ -420,15 +417,12 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map,
 }
 
 func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
-	// TODO: In the off chance that we have multiple points
-	// within the same metric, how should we handle them?
 	point := metric.Summary().DataPoints().At(0)
 
 	quantiles := make(map[float64]float64)
 	qv := point.QuantileValues()
 	for j := 0; j < qv.Len(); j++ {
 		qvj := qv.At(j)
-		// There should be EXACTLY one quantile value lest it is an invalid exposition.
 		quantiles[qvj.Quantile()] = qvj.Value()
 	}
 
@@ -510,7 +504,6 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prometheus.Metric, error) {
 	var lastErr error
 
-	// deduplicate resourceAttrs by job and instance
 	deduplicatedResourceAttrs := make([]pcommon.Map, 0, len(resourceAttrs))
 	seenResource := map[string]struct{}{}
 	for _, attrs := range resourceAttrs {
@@ -526,17 +519,13 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 
 	metrics := make([]prometheus.Metric, 0, len(deduplicatedResourceAttrs))
 	for _, rAttributes := range deduplicatedResourceAttrs {
-		// map ensures no duplicate label name
-		labels := make(map[string]string, rAttributes.Len()+2) // +2 for job and instance labels.
+		labels := make(map[string]string, rAttributes.Len()+2)
 
-		// Use resource attributes (other than those used for job+instance) as the
-		// metric labels for the target info metric
 		attributes := pcommon.NewMap()
 		rAttributes.CopyTo(attributes)
 		attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
 			switch k {
 			case string(conventions.ServiceNameKey), string(conventions.ServiceNamespaceKey), string(conventions.ServiceInstanceIDKey):
-				// Remove resource attributes used for job + instance
 				return true
 			default:
 				return false
@@ -560,11 +549,9 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 			return nil, multiErrs
 		}
 
-		// Map service.name + service.namespace to job
 		if job, ok := extractJob(rAttributes); ok {
 			labels[model.JobLabel] = job
 		}
-		// Map service.instance.id to instance
 		if instance, ok := extractInstance(rAttributes); ok {
 			labels[model.InstanceLabel] = instance
 		}
@@ -597,9 +584,6 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 	return metrics, lastErr
 }
 
-/*
-Reporting
-*/
 func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	c.logger.Debug("collect called")
 
@@ -627,7 +611,6 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- m
 		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
 	}
-	c.cleanupMetricFamilies()
 }
 
 func (c *collector) validateMetrics(name, description string, metricType *dto.MetricType) (help string, err error) {
@@ -673,4 +656,8 @@ func (c *collector) cleanupMetricFamilies() {
 		}
 		return true
 	})
+}
+
+func (c *collector) stop() {
+	close(c.shutdownCh)
 }
