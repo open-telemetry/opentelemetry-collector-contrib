@@ -1295,6 +1295,97 @@ func TestExtension(t *testing.T) {
 	assert.Equal(t, map[string]any{"foo": "bar"}, host.extension.cfg)
 }
 
+func TestExtension_StoppableEvaluator(t *testing.T) {
+	t.Run("on SetSamplingPolicy", func(t *testing.T) {
+		controller := newTestTSPController()
+		msp := new(consumertest.TracesSink)
+
+		cfg := Config{
+			DecisionWait: defaultTestDecisionWait,
+			NumTraces:    defaultNumTraces,
+			PolicyCfgs: []PolicyCfg{
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "extension",
+						Type: "my_extension",
+						ExtensionCfg: map[string]map[string]any{
+							"my_extension": {
+								"foo": "bar",
+							},
+						},
+					},
+				},
+			},
+			Options: []Option{
+				withTestController(controller),
+			},
+		}
+		p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+		require.NoError(t, err)
+
+		host := &extensionHost{}
+		require.NoError(t, p.Start(t.Context(), host))
+		defer func() {
+			require.NoError(t, p.Shutdown(t.Context()))
+		}()
+
+		// Evaluator has been created
+		require.Len(t, host.extension.evaluators, 1)
+		evaluator := host.extension.evaluators[0]
+
+		// Replace sampling policies
+		cfgs := []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{Name: "all", Type: AlwaysSample},
+			},
+		}
+		p.(*tailSamplingSpanProcessor).SetSamplingPolicy(cfgs)
+
+		controller.waitForTick()
+
+		assert.True(t, evaluator.stopCalled)
+	})
+
+	t.Run("on Shutdown", func(t *testing.T) {
+		controller := newTestTSPController()
+		msp := new(consumertest.TracesSink)
+
+		cfg := Config{
+			DecisionWait: defaultTestDecisionWait,
+			NumTraces:    defaultNumTraces,
+			PolicyCfgs: []PolicyCfg{
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "extension",
+						Type: "my_extension",
+						ExtensionCfg: map[string]map[string]any{
+							"my_extension": {
+								"foo": "bar",
+							},
+						},
+					},
+				},
+			},
+			Options: []Option{
+				withTestController(controller),
+			},
+		}
+		p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+		require.NoError(t, err)
+
+		host := &extensionHost{}
+		require.NoError(t, p.Start(t.Context(), host))
+
+		// Evaluator has been created
+		require.Len(t, host.extension.evaluators, 1)
+		evaluator := host.extension.evaluators[0]
+
+		require.NoError(t, p.Shutdown(t.Context()))
+
+		assert.True(t, evaluator.stopCalled)
+	})
+}
+
 type extensionHost struct {
 	extension *extension
 }
@@ -1311,6 +1402,7 @@ func (h *extensionHost) GetExtensions() map[component.ID]component.Component {
 type extension struct {
 	policyName string
 	cfg        map[string]any
+	evaluators []*evaluator
 }
 
 var _ samplingpolicy.Extension = &extension{}
@@ -1319,7 +1411,10 @@ var _ samplingpolicy.Extension = &extension{}
 func (e *extension) NewEvaluator(policyName string, cfg map[string]any) (samplingpolicy.Evaluator, error) {
 	e.policyName = policyName
 	e.cfg = cfg
-	return nil, nil
+
+	evaluator := &evaluator{}
+	e.evaluators = append(e.evaluators, evaluator)
+	return evaluator, nil
 }
 
 // Start implements component.Component.
@@ -1330,4 +1425,27 @@ func (*extension) Start(_ context.Context, _ component.Host) error {
 // Shutdown implements component.Component.
 func (*extension) Shutdown(_ context.Context) error {
 	return nil
+}
+
+type evaluator struct {
+	stopCalled bool
+}
+
+var (
+	_ samplingpolicy.Evaluator          = &evaluator{}
+	_ samplingpolicy.StoppableEvaluator = &evaluator{}
+)
+
+func (e *evaluator) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
+	if e.stopCalled {
+		panic("Evaluate called after Stop")
+	}
+	return samplingpolicy.Sampled, nil
+}
+
+func (e *evaluator) Stop() {
+	if e.stopCalled {
+		panic("Stop called twice")
+	}
+	e.stopCalled = true
 }

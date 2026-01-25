@@ -500,6 +500,11 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 			tsp.processTrace(trace.id, trace.rss, trace.spanCount, trace.rootSpan != nil)
 		}
 	case cmd := <-tsp.newPolicyChan:
+		for _, policy := range tsp.policies {
+			if evaluator, ok := policy.evaluator.(samplingpolicy.StoppableEvaluator); ok {
+				evaluator.Stop()
+			}
+		}
 		tsp.policies = cmd.policies
 		tsp.logger.Debug("New policies loaded", zap.Int("policies.len", len(tsp.policies)))
 	case maxTraceSize := <-tsp.newTraceSizeChan:
@@ -864,6 +869,13 @@ func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
 	if tsp.doneChan != nil {
 		<-tsp.doneChan
 	}
+
+	for _, policy := range tsp.policies {
+		if evaluator, ok := policy.evaluator.(samplingpolicy.StoppableEvaluator); ok {
+			evaluator.Stop()
+		}
+	}
+
 	return nil
 }
 
