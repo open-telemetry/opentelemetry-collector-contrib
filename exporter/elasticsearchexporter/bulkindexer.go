@@ -369,6 +369,7 @@ func flushBulkIndexer(
 			int64(1),
 			metric.WithAttributeSet(attribute.NewSet(append(defaultMetaAttrs,
 				withOutcome(outcome),
+				conventions.HTTPResponseStatusCode(resp.Status),
 				attribute.String("error.type", resp.Error.Type),
 			)...)),
 		)
