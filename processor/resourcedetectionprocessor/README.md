@@ -847,10 +847,34 @@ processors:
       fail_on_missing_metadata: true
 ```
 
+### Alibaba Cloud ECS
+
+Uses the [Alibaba Cloud metadata API](https://www.alibabacloud.com/help/en/ecs/user-guide/view-instance-metadata/?spm=a2c63.p38356.help-menu-25365.d_0_1_3_4_6.7d2848cfJpcLdU#393b14378evdm) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Alibaba Cloud ECS Detector Resource Attributes](./internal/alibabacloud/ecs/documentation.md).
+
+Vultr custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/alibabacloud_ecs:
+    detectors: ["alibabacloud_ecs"]
+```
+
+The Alibaba Cloud ECS detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/alibabacloud_ecs:
+    detectors: ["alibabacloud_ecs"]
+    alibabacloud_ecs:
+      fail_on_missing_metadata: true
+```
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibabacloud_ecs"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

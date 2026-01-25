@@ -257,6 +257,7 @@ func TestGetConfigFromType_AllDetectors(t *testing.T) {
 		{"Scaleway", "scaleway"},
 		{"Upcloud", "upcloud"},
 		{"Vultr", "vultr"},
+		{"AlibabaCloudECS", "alibabacloud_ecs"},
 	}
 
 	for _, tt := range tests {
@@ -296,4 +297,5 @@ func TestDetectorCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config.ScalewayConfig)
 	assert.NotNil(t, config.UpcloudConfig)
 	assert.NotNil(t, config.VultrConfig)
+	assert.NotNil(t, config.AlibabaCloudECSConfig)
 }
