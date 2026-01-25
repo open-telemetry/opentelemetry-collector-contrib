@@ -42,19 +42,6 @@ type resourceGroupKey struct {
 	region    string
 }
 
-// logRecordData holds the parsed data from a CloudWatch log event.
-type logRecordData struct {
-	id        string
-	timestamp int64
-	message   string
-}
-
-// groupedLogEvent pairs a resourceGroupKey with its corresponding logRecordData for processing.
-type groupedLogEvent struct {
-	key  resourceGroupKey
-	data logRecordData
-}
-
 // Unmarshaler for the CloudWatch Log JSON record format.
 type Unmarshaler struct {
 	logger    *zap.Logger
@@ -115,9 +102,8 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	// Events with different extracted fields should be in separate ResourceLogs.
 	// Events without extracted fields use the Owner value.
 
-	// Pre-allocate slice with exact length of all events and count unique keys in one pass.
-	groupedLogEvents := make([]groupedLogEvent, len(cwLog.LogEvents))
-	keyCounts := make(map[resourceGroupKey]int)
+	// Group event indices by key to avoid copying event data.
+	eventsByKey := make(map[resourceGroupKey][]int)
 	for i, event := range cwLog.LogEvents {
 		var key resourceGroupKey
 		if event.ExtractedFields != nil {
@@ -130,60 +116,43 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 		} else {
 			key.accountID = cwLog.Owner
 		}
-
-		groupedLogEvents[i] = groupedLogEvent{
-			key: key,
-			data: logRecordData{
-				id:        event.ID,
-				timestamp: event.Timestamp,
-				message:   event.Message,
-			},
-		}
-		// Count occurrences while creating grouped events.
-		keyCounts[key]++
+		eventsByKey[key] = append(eventsByKey[key], i)
 	}
 
-	// Create ResourceLogs and populate log records in a single pass.
-	resourceLogsMap := make(map[resourceGroupKey]plog.ResourceLogs)
-
-	for _, groupedEvent := range groupedLogEvents {
-		// Create ResourceLogs structure on first encounter of each key.
-		rl, exists := resourceLogsMap[groupedEvent.key]
-		if !exists {
-			rl = logs.ResourceLogs().AppendEmpty()
-			resourceAttrs := rl.Resource().Attributes()
-			resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
-			resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), groupedEvent.key.accountID)
-			if groupedEvent.key.region != "" {
-				resourceAttrs.PutStr(string(conventions.CloudRegionKey), groupedEvent.key.region)
-			}
-			resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
-			resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)
-			// Deprecated: [v0.121.0] Use `string(conventions.AWSLogGroupNamesKey)` instead
-			resourceAttrs.PutStr(attributeAWSCloudWatchLogGroupName, cwLog.LogGroup)
-			// Deprecated: [v0.121.0] Use `string(conventions.AWSLogStreamNamesKey)` instead
-			resourceAttrs.PutStr(attributeAWSCloudWatchLogStreamName, cwLog.LogStream)
-
-			sl := rl.ScopeLogs().AppendEmpty()
-			sl.Scope().SetName(metadata.ScopeName)
-			sl.Scope().SetVersion(u.buildInfo.Version)
-
-			// Pre-allocate LogRecords capacity to avoid reallocations.
-			logRecords := sl.LogRecords()
-			logRecords.EnsureCapacity(keyCounts[groupedEvent.key])
-
-			resourceLogsMap[groupedEvent.key] = rl
+	// Create ResourceLogs and populate log records with pre-allocation.
+	for key, eventIndices := range eventsByKey {
+		rl := logs.ResourceLogs().AppendEmpty()
+		resourceAttrs := rl.Resource().Attributes()
+		resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+		resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), key.accountID)
+		if key.region != "" {
+			resourceAttrs.PutStr(string(conventions.CloudRegionKey), key.region)
 		}
+		resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
+		resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)
+		// Deprecated: [v0.121.0] Use `string(conventions.AWSLogGroupNamesKey)` instead
+		resourceAttrs.PutStr(attributeAWSCloudWatchLogGroupName, cwLog.LogGroup)
+		// Deprecated: [v0.121.0] Use `string(conventions.AWSLogStreamNamesKey)` instead
+		resourceAttrs.PutStr(attributeAWSCloudWatchLogStreamName, cwLog.LogStream)
 
-		// Create and populate log record immediately.
-		// We always have exactly one ScopeLogs per ResourceLogs, so access it directly.
-		sl := resourceLogsMap[groupedEvent.key].ScopeLogs().At(0)
-		logRecord := sl.LogRecords().AppendEmpty()
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.Scope().SetName(metadata.ScopeName)
+		sl.Scope().SetVersion(u.buildInfo.Version)
 
-		// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
-		// but timestamp in cloudwatch logs are in milliseconds.
-		logRecord.SetTimestamp(pcommon.Timestamp(groupedEvent.data.timestamp * int64(time.Millisecond)))
-		logRecord.Body().SetStr(groupedEvent.data.message)
+		// Pre-allocate LogRecords capacity to avoid reallocations.
+		logRecords := sl.LogRecords()
+		logRecords.EnsureCapacity(len(eventIndices))
+
+		// Append log records using indices to access original events.
+		for _, idx := range eventIndices {
+			event := cwLog.LogEvents[idx]
+			logRecord := logRecords.AppendEmpty()
+
+			// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
+			// but timestamp in cloudwatch logs are in milliseconds.
+			logRecord.SetTimestamp(pcommon.Timestamp(event.Timestamp * int64(time.Millisecond)))
+			logRecord.Body().SetStr(event.Message)
+		}
 	}
 
 	return logs, nil
