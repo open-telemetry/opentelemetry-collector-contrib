@@ -102,7 +102,8 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	// Events with different extracted fields should be in separate ResourceLogs.
 	// Events without extracted fields use the Owner value.
 
-	// Group event indices by key to avoid copying event data.
+	// Group event indices by key to get the indices of the events that belong to the same resource group.
+	// This allows us append all the log records for a given resource group at once.
 	eventsByKey := make(map[resourceGroupKey][]int)
 	for i, event := range cwLog.LogEvents {
 		var key resourceGroupKey
