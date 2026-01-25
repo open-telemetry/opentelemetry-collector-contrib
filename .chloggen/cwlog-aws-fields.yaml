@@ -16,11 +16,11 @@ issues: [45631]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The unmarshaler now groups logs by account ID and region when extracted fields are present,
-  ensuring proper resource attribution in OpenTelemetry. Extracted fields are automatically mapped
-  to semantic conventions (`@aws.account` → `cloud.account.id`, `@aws.region` → `cloud.region`).
-  When extracted fields are absent, the unmarshaler falls back to using the `Owner` field,
-  maintaining backward compatibility.
+  CloudWatch Logs now supports extracted fields (`@aws.account` and `@aws.region`) that are automatically
+  added when using CloudWatch Logs centralization and enabling `emitSystemFields` in subscription filters.
+  This enhancement enables proper resource attribution in OpenTelemetry when processing logs from multiple
+  AWS accounts and regions, ensuring that logs are correctly grouped and tagged with their source account
+  and region information.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
