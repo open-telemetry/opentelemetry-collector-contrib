@@ -44,6 +44,10 @@ Authenticating using service principal requires configuration of the following a
   `  client_secret`
 - `storage_account_url:` Azure Storage Account url
 
+- `max_poll_events` (default = 100) Specifies the maximum number of events to retrieve in a single poll from the Event Hub.
+
+- `poll_rate` (default = 5) Specifies the maximum number of seconds to wait for additional events before returning fewer than `max_poll_events`.
+
 The service principal method also requires the [Storage Blob Data Contributor](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage#storage-blob-data-contributor) role on the logs and traces containers.
 
 ### Example configurations

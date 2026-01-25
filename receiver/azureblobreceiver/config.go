@@ -38,6 +38,10 @@ type Config struct {
 	Logs LogsConfig `mapstructure:"logs"`
 	// Traces related configurations
 	Traces TracesConfig `mapstructure:"traces"`
+	// PollRate specifies the maximum number of seconds to wait for additional events before returning fewer than `max_poll_events`
+	PollRate int `mapstructure:"poll_rate"`
+	// MaxPollEvents specifies the maximum number of events to retrieve in a single poll from the Event Hub.
+	MaxPollEvents int `mapstructure:"max_poll_events"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
