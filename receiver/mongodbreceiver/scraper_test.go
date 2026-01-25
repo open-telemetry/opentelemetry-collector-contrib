@@ -494,7 +494,7 @@ func TestReceiverMetricsDisabled(t *testing.T) {
 
 	scrapedMetrics, err := scraper.scrape(t.Context())
 	if err != nil {
-		require.Nil(t, err, "error scraping while no metrics are enabled")
+		require.NoError(t, err, "error scraping while no metrics are enabled")
 	}
 
 	require.Equal(t, 0, scrapedMetrics.MetricCount(), "no data should be scraped when all metrics are disabled")
@@ -576,16 +576,16 @@ func TestDependentMetricsWhenDisabled(t *testing.T) {
 			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
 			scraper.client = fc
 
-			scrapedMetrics, err := scraper.scrape(t.Context())
+			_, err = scraper.scrape(t.Context())
 			if err != nil {
-				require.Nil(t, err, "error scraping metrics")
+				require.NoError(t, err, "error scraping metrics")
 			}
 
 			// wait a few seconds, then scrape again so metrics that rely on previous values can be calculated
 			time.Sleep(2 * time.Second)
-			scrapedMetrics, err = scraper.scrape(t.Context())
+			scrapedMetrics, err := scraper.scrape(t.Context())
 			if err != nil {
-				require.Nil(t, err, "error scraping metrics")
+				require.NoError(t, err, "error scraping metrics")
 			}
 
 			expectedMetrics := tt.expectedMetricGen(t)
@@ -595,5 +595,4 @@ func TestDependentMetricsWhenDisabled(t *testing.T) {
 				pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
-
 }
