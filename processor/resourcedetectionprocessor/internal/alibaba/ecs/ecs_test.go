@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
-	ecsprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/alibabacloud/ecs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibabacloud/ecs/internal/metadata"
+	ecsprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/alibaba/ecs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs/internal/metadata"
 )
 
 type mockECSMetadata struct {

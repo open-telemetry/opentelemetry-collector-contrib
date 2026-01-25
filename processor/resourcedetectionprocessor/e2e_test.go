@@ -524,11 +524,11 @@ func TestE2EEC2Detector(t *testing.T) {
 	}, 3*time.Minute, 1*time.Second)
 }
 
-// TestE2EAlibabaCloudECSDetector tests the Alibana Cloud ECS detector by verifying that ECS metadata
+// TestE2EAlibabaECSDetector tests the Alibana Cloud ECS detector by verifying that ECS metadata
 // (like cloud.provider, cloud.region, host.id, etc.) is correctly detected and attached to metrics.
-func TestE2EAlibabaCloudECSDetector(t *testing.T) {
+func TestE2EAlibabaECSDetector(t *testing.T) {
 	var expected pmetric.Metrics
-	expectedFile := filepath.Join("testdata", "e2e", "alibabacloud_ecs", "expected.yaml")
+	expectedFile := filepath.Join("testdata", "e2e", "alibaba_ecs", "expected.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -540,7 +540,7 @@ func TestE2EAlibabaCloudECSDetector(t *testing.T) {
 	defer shutdownSink()
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "alibabacloud_ecs", "collector"), map[string]string{}, "")
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "alibaba_ecs", "collector"), map[string]string{}, "")
 
 	defer func() {
 		for _, obj := range collectorObjs {

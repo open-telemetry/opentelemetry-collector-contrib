@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibabacloud/ecs"
+package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs"
 
 import (
 	"context"
@@ -11,14 +11,14 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
-	ecsprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/alibabacloud/ecs"
+	ecsprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/alibaba/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibabacloud/ecs/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs/internal/metadata"
 )
 
 const (
 	// TypeStr is the detector type id.
-	TypeStr = "alibabacloud_ecs"
+	TypeStr = "alibaba_ecs"
 )
 
 var _ internal.Detector = (*Detector)(nil)

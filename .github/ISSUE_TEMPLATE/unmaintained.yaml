@@ -218,7 +218,7 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/akamai
-      - processor/resourcedetection/internal/alibabacloud/ecs
+      - processor/resourcedetection/internal/alibaba/ecs
       - processor/resourcedetection/internal/azure
       - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace

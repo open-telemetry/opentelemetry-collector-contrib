@@ -1,4 +1,4 @@
-type: alibabacloudecsdetector
+type: alibabaecsdetector
 
 status:
   class: processor

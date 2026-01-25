@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("alibabacloudecsdetector")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibabacloud/ecs"
+	Type      = component.MustNewType("alibabaecsdetector")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs"
 )
 
 const (

@@ -20,7 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
-	alibabacloudecs "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibabacloud/ecs"
+	alibabaecs "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
@@ -63,7 +63,7 @@ type factory struct {
 func NewFactory() processor.Factory {
 	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
 		akamai.TypeStr:           akamai.NewDetector,
-		alibabacloudecs.TypeStr:  alibabacloudecs.NewDetector,
+		alibabaecs.TypeStr:       alibabaecs.NewDetector,
 		aks.TypeStr:              aks.NewDetector,
 		azure.TypeStr:            azure.NewDetector,
 		consul.TypeStr:           consul.NewDetector,

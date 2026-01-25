@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/alibabacloud/ecs"
+package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/alibaba/ecs"
 
 import (
 	"context"

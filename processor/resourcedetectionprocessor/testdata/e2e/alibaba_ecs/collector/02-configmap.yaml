@@ -15,7 +15,7 @@ data:
         endpoint: 0.0.0.0:13133
     processors:
       resourcedetection:
-        detectors: [alibabacloud_ecs]
+        detectors: [alibaba_ecs]
         timeout: 2s
         override: false
     receivers:
