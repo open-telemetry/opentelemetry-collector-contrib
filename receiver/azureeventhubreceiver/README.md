@@ -155,7 +155,7 @@ and the OpenTelemetry attributes.
 
 | Azure                            | OpenTelemetry                          |
 |----------------------------------|----------------------------------------|
-| callerIpAddress (optional)       | net.sock.peer.addr (attribute)         |
+| callerIpAddress (optional)       | network.peer.address (attribute)       |
 | correlationId (optional)         | azure.correlation.id (attribute)       |
 | category (optional)              | azure.category (attribute)             |
 | durationMs (optional)            | azure.duration (attribute)             |
