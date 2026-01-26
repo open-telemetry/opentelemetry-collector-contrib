@@ -142,8 +142,8 @@ components:
         - awsfirehose
         - awss3
         - awsxray
+        - azure_event_hub
         - azureblob
-        - azureeventhub
         - azuremonitor
         - bigip
         - carbon

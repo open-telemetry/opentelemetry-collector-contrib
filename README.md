@@ -104,7 +104,6 @@ For more information about the approver role, see the [community repository](htt
 - [Bogdan Stancu](https://github.com/bogdan-st), Adobe
 - [Constança Manteigas](https://github.com/constanca-m), Elastic
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
-- [Florian Bacher](https://github.com/bacherfl), Dynatrace
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
@@ -140,6 +139,7 @@ For more information about the emeritus role, see the [community repository](htt
 - [Goutham Veeramachaneni](https://github.com/gouthamve)
 - [Punya Biswal](https://github.com/punya)
 - [Steve Flanders](https://github.com/flands)
+- [Florian Bacher](https://github.com/bacherfl), Dynatrace
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
 
