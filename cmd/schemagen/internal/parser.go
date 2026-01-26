@@ -361,10 +361,8 @@ func (p *Parser) parseSelector(selector *ast.SelectorExpr) (SchemaElement, error
 	fullTypeName := pkgName + "." + name
 
 	if path, ok := p.current.imports[pkgName]; ok {
-		if _, exists := p.config.Mappings[path]; exists {
-			pkgName = path
-			fullTypeName = pkgName + "." + name
-		} else {
+		_, exists := p.config.Mappings[path]
+		if !exists {
 			allowed := false
 			for _, allowedPath := range p.config.AllowedRefs {
 				if strings.HasPrefix(path, allowedPath) {
@@ -381,6 +379,8 @@ func (p *Parser) parseSelector(selector *ast.SelectorExpr) (SchemaElement, error
 			element.CustomElementType = fullID
 			return element, nil
 		}
+		pkgName = path
+		fullTypeName = pkgName + "." + name
 	}
 
 	if pkg, ok := p.config.Mappings[pkgName]; ok {
