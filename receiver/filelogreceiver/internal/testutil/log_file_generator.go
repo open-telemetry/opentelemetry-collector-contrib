@@ -40,12 +40,13 @@ func (g *LogFileGenerator) generateLogLines(numLines, lineLength int) (logLines 
 func (g *LogFileGenerator) GenerateLogFile(numLines int) (logFilePath string) {
 	f, err := os.CreateTemp(g.tb.TempDir(), "")
 	require.NoError(g.tb, err)
-	g.tb.Cleanup(func() { _ = f.Close() })
 	for range numLines {
 		_, err := f.Write(g.logLines[rand.IntN(len(g.logLines))])
 		require.NoError(g.tb, err)
 		_, err = f.WriteString("\n")
 		require.NoError(g.tb, err)
 	}
+	require.NoError(g.tb, f.Sync())
+	require.NoError(g.tb, f.Close())
 	return f.Name()
 }

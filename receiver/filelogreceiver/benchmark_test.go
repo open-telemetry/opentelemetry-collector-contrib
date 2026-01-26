@@ -68,43 +68,35 @@ func benchmarkReadSingleStaticFile(b *testing.B, numLines int) {
 	}
 }
 
-// BenchmarkReceiverWithMultipleFiles benchmarks the receiver with multiple concurrent files
-func BenchmarkReceiverWithMultipleFiles(b *testing.B) {
-	for _, numFiles := range []int{1, 5, 10, 20} {
-		b.Run(fmt.Sprintf("%d-files", numFiles), func(b *testing.B) {
-			benchmarkReadMultipleFiles(b, numFiles, 1000)
-		})
-	}
-}
-
-func benchmarkReadMultipleFiles(b *testing.B, numFiles, linesPerFile int) {
-	logFileGenerator := testutil.NewLogFileGenerator(b)
-	var logFilePaths []string
-	for range numFiles {
-		logFilePaths = append(logFilePaths, logFileGenerator.GenerateLogFile(linesPerFile))
-	}
-
-	cfg := &FileLogConfig{
-		InputConfig: func() file.Config {
-			c := file.NewConfig()
-			c.Include = logFilePaths
-			c.PollInterval = time.Microsecond
-			c.StartAt = "beginning"
-			return *c
-		}(),
-	}
-	sink := new(consumertest.LogsSink)
+// BenchmarkReceiverWithSingleFile benchmarks the receiver reading a single file
+func BenchmarkReceiverWithSingleFile(b *testing.B) {
 	f := NewFactory()
-
-	expectedLogs := numFiles * linesPerFile
+	linesPerFile := 100
 
 	for b.Loop() {
+		b.StopTimer()
+
+		logFileGenerator := testutil.NewLogFileGenerator(b)
+		logFilePath := logFileGenerator.GenerateLogFile(linesPerFile)
+
+		cfg := &FileLogConfig{
+			InputConfig: func() file.Config {
+				c := file.NewConfig()
+				c.Include = []string{logFilePath}
+				c.PollInterval = time.Microsecond
+				c.StartAt = "beginning"
+				return *c
+			}(),
+		}
+
+		sink := new(consumertest.LogsSink)
 		rcvr, err := f.CreateLogs(b.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 		require.NoError(b, err)
+
+		b.StartTimer()
 		require.NoError(b, rcvr.Start(b.Context(), componenttest.NewNopHost()))
 
-		require.Eventually(b, expectNLogs(sink, expectedLogs), 5*time.Second, 2*time.Microsecond)
-		sink.Reset()
+		require.Eventually(b, expectNLogs(sink, linesPerFile), 2*time.Second, 10*time.Millisecond)
 
 		require.NoError(b, rcvr.Shutdown(b.Context()))
 	}

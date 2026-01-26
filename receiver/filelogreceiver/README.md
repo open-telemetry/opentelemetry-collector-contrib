@@ -259,23 +259,6 @@ will also provide telemetry metrics for the state of the receiver's file consump
 Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_reading_files` metrics
 are provided.
 
-## Testing
-
-### Benchmarks
-
-Performance benchmarks are available for the logs signal:
-- Single file processing (1 to 100,000 lines)
-- Multiple concurrent file processing (1-20 files)
-- Receiver startup and shutdown
-- Log parsing with different emission modes
-
-**Latest benchmark results**: View the [benchmark workflow runs](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml) for performance metrics.
-
-To run benchmarks locally:
-```bash
-go test -bench=. -benchtime=1s
-```
-
 ## Feature Gates
 
 ### `filelog.decompressFingerprint`
