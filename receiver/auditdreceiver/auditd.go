@@ -9,8 +9,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"regexp"
-	"strconv"
+	"maps"
 	"strings"
 	"time"
 
@@ -28,7 +27,6 @@ import (
 )
 
 var (
-	PATTERN                = regexp.MustCompile(`audit\((\d+)\.(\d+):(\d+)\):`)
 	ErrorRuleAlreadyExists = "rule exists"
 )
 
@@ -48,43 +46,22 @@ func newAuditd(cfg *AuditdReceiverConfig, consumer consumer.Logs, settings recei
 	}, nil
 }
 
-func createLogs(ts time.Time, messageType auparse.AuditMessageType, messageID int64, messageData []byte) plog.Logs {
+func createLogs(message *auparse.AuditMessage, data map[string]string) plog.Logs {
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	logSlice := resourceLogs.ScopeLogs().AppendEmpty().LogRecords()
 	logRecord := logSlice.AppendEmpty()
 	logRecord.SetSeverityNumber(plog.SeverityNumberInfo)
 	logRecord.SetSeverityText(plog.SeverityNumberInfo.String())
-	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-	logRecord.Attributes().PutStr("type", messageType.String())
-	logRecord.Attributes().PutInt("id", messageID)
-	logRecord.Attributes().PutStr("data", string(messageData))
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(message.Timestamp))
+	for k, v := range maps.All(data) {
+		logRecord.Attributes().PutStr(k, v)
+	}
+	logRecord.Attributes().PutStr("type", message.RecordType.String())
+	logRecord.Attributes().PutInt("sequence", int64(message.Sequence))
+	logRecord.Attributes().PutStr("body", message.RawData)
 	logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return logs
-}
-
-func (aud *Auditd) parseMessageDetails(data []byte) (int64, int64, int64) {
-	if !PATTERN.Match(data) {
-		aud.logger.Info("got a message without timestamp", zap.String("message", string(data)))
-		return 0, 0, 0
-	}
-	groups := PATTERN.FindSubmatch(data)
-	s, err := strconv.ParseInt(string(groups[1]), 10, 64)
-	if err != nil {
-		aud.logger.Error("could not parse timestamp", zap.String("s", string(groups[1])), zap.Error(err))
-		s = 0
-	}
-	ns, err := strconv.ParseInt(string(groups[2]), 10, 64)
-	if err != nil {
-		aud.logger.Error("could not parse timestamp", zap.String("ns", string(groups[2])), zap.Error(err))
-		ns = 0
-	}
-	id, err := strconv.ParseInt(string(groups[3]), 10, 64)
-	if err != nil {
-		aud.logger.Error("could not parse id", zap.String("id", string(groups[3])), zap.Error(err))
-		id = 0
-	}
-	return s, ns, id
 }
 
 func (aud *Auditd) receive(ctx context.Context) {
@@ -101,14 +78,20 @@ func (aud *Auditd) receive(ctx context.Context) {
 			if err != nil {
 				aud.logger.Error("receive failed", zap.Error(err))
 			}
-			s, ns, id := aud.parseMessageDetails(rawEvent.Data)
-			ts := time.Unix(s, ns)
 			// Messages from 1100-2999 are valid audit messages.
 			if rawEvent.Type < auparse.AUDIT_USER_AUTH ||
 				rawEvent.Type > auparse.AUDIT_LAST_USER_MSG2 {
 				continue
 			}
-			logs := createLogs(ts, rawEvent.Type, id, rawEvent.Data)
+			message, err := auparse.Parse(rawEvent.Type, string(rawEvent.Data))
+			if err != nil {
+				aud.logger.Error("parsing failed", zap.Error(err))
+			}
+			d, err := message.Data()
+			if err != nil {
+				aud.logger.Error("parsing failed", zap.Error(err))
+			}
+			logs := createLogs(message, d)
 			aud.consumer.ConsumeLogs(ctx, logs)
 		}
 	}
