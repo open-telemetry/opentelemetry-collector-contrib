@@ -1357,14 +1357,6 @@ func (s *Supervisor) loadRemoteConfig() {
 	}
 }
 
-func (s *Supervisor) hasPersistedRemoteConfig() bool {
-	if !s.config.Capabilities.AcceptsRemoteConfig {
-		return false
-	}
-	_, err := os.Stat(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
-	return err == nil
-}
-
 // loadLastReceivedOwnTelemetryConfig loads the last received own telemetry config from file if the capability is supported.
 func (s *Supervisor) loadLastReceivedOwnTelemetryConfig() {
 	// If none of the own telemetry capabilities are supported, do nothing.
