@@ -56,7 +56,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 		},
 		rmCache: cache,
 		bodyBufferPool: &sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				// Pre-allocate 4KiB
 				return bytes.NewBuffer(make([]byte, 0, 4*1024))
 			},
