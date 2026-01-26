@@ -186,7 +186,7 @@ components:
         - macosunifiedlogging
         - memcached
         - mongodb
-        - mongodbatlas
+        - mongodb_atlas
         - mysql
         - namedpipe
         - netflow
