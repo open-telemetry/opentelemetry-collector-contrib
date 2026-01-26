@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -941,6 +943,7 @@ type syncIDBatcher struct {
 	openBatch idbatcher.Batch
 	batchPipe chan idbatcher.Batch
 	stopped   bool
+	currentID uint64
 }
 
 var _ idbatcher.Batcher = (*syncIDBatcher)(nil)
@@ -954,13 +957,29 @@ func newSyncIDBatcher() idbatcher.Batcher {
 	}
 }
 
-func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) {
+func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) uint64 {
 	s.Lock()
+	defer s.Unlock()
 	if s.stopped {
 		panic("cannot add to stopped batcher!")
 	}
 	s.openBatch[id] = struct{}{}
-	s.Unlock()
+	return s.currentID
+}
+
+// MoveToEarlierBatch is a noop for a sync batcher as there is only one pending batch.
+func (s *syncIDBatcher) MoveToEarlierBatch(_ pcommon.TraceID, currentBatch, _ uint64) uint64 {
+	s.Lock()
+	defer s.Unlock()
+	return currentBatch
+}
+
+func (s *syncIDBatcher) RemoveFromBatch(id pcommon.TraceID, batch uint64) {
+	s.Lock()
+	defer s.Unlock()
+	if batch == s.currentID {
+		delete(s.openBatch, id)
+	}
 }
 
 func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) {
@@ -977,6 +996,7 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 	if !s.stopped {
 		s.batchPipe <- s.openBatch
 		s.openBatch = idbatcher.Batch{}
+		s.currentID++
 	}
 	return firstBatch, true
 }
@@ -1161,6 +1181,44 @@ func TestDropLargeTraces(t *testing.T) {
 	allSampledTraces = nextConsumer.AllTraces()
 	// The sink will still contain the original trace.
 	assert.Len(t, allSampledTraces, 2)
+
+	// These traces should not count as dropped too early as we record a separate metric.
+	var md metricdata.ResourceMetrics
+	require.NoError(t, telem.reader.Collect(t.Context(), &md))
+
+	expectedTooEarly := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
+		Description: "Count of traces that needed to be dropped before the configured wait time [Development]",
+		Unit:        "{traces}",
+		Data: metricdata.Sum[int64]{
+			IsMonotonic: true,
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints: []metricdata.DataPoint[int64]{
+				{
+					Value: 0,
+				},
+			},
+		},
+	}
+	tooEarly := telem.getMetric(expectedTooEarly.Name, md)
+	metricdatatest.AssertEqual(t, expectedTooEarly, tooEarly, metricdatatest.IgnoreTimestamp())
+
+	expectedTooLarge := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_traces_dropped_too_large",
+		Description: "Count of traces that were dropped because they were too large [Development]",
+		Unit:        "{traces}",
+		Data: metricdata.Sum[int64]{
+			IsMonotonic: true,
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints: []metricdata.DataPoint[int64]{
+				{
+					Value: 1,
+				},
+			},
+		},
+	}
+	tooLarge := telem.getMetric(expectedTooLarge.Name, md)
+	metricdatatest.AssertEqual(t, expectedTooLarge, tooLarge, metricdatatest.IgnoreTimestamp())
 }
 
 // TestDeleteQueueCleared verifies that all in memory traces are removed from
