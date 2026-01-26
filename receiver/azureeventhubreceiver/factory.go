@@ -35,7 +35,7 @@ func NewFactory() receiver.Factory {
 		xreceiver.WithLogs(f.createLogsReceiver, metadata.LogsStability),
 		xreceiver.WithMetrics(f.createMetricsReceiver, metadata.MetricsStability),
 		xreceiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
-		xreceiver.WithDeprecatedTypeAlias(component.MustNewType("azureeventhubreceiver")),
+		xreceiver.WithDeprecatedTypeAlias(component.MustNewType("azureeventhub")),
 	)
 }
 
