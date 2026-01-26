@@ -41,6 +41,7 @@ func TestGenerateMetrics(t *testing.T) {
 	cfg.Insecure = true
 	cfg.SkipSettingGRPCLogger = true
 	cfg.NumMetrics = 6000
+	cfg.Batch = false
 	go func() {
 		err = metrics.Start(cfg)
 		assert.NoError(t, err)

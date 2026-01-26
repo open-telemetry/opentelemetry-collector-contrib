@@ -66,7 +66,7 @@ exporters:
     auth:
       authenticator: bearertokenauth
 
-  otlphttp/withauth:
+  otlp_http/withauth:
     endpoint: http://localhost:9000
     auth:
       authenticator: bearertokenauth/withscheme
@@ -77,5 +77,5 @@ service:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [otlp/withauth, otlphttp/withauth]
+      exporters: [otlp/withauth, otlp_http/withauth]
 ```

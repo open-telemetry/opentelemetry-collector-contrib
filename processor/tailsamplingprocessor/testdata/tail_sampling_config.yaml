@@ -96,6 +96,17 @@ tail_sampling:
           }
        },
       {
+        name: not-policy-1,
+        type: not,
+        not: {
+          not_sub_policy: {
+            name: test-not-policy-1,
+            type: latency,
+            latency: { threshold_ms: 1000 }
+          }
+        }
+      },
+      {
         name: composite-policy-1,
         type: composite,
         composite:
