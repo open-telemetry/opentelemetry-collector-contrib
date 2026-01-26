@@ -7,7 +7,7 @@ change_type: bug_fix
 component: mongodbreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Check if mongodb.flushes.rate metric is enabled before trying to collect it
+note: Check if metrics are enabled before collecting them to prevent errors when metrics are disabled.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [41465]
