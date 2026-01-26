@@ -672,7 +672,7 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 				},
 			},
 			factoryOptions: []FactoryOption{
-				WithProfileFunctions(DefaultProfileFunctions()),
+				WithProfileFunctions(DefaultProfileFunctionsNew()),
 				WithProfileFunctions([]ottl.Factory[*ottlprofile.TransformContext]{createTestFuncFactory[*ottlprofile.TransformContext]("TestProfileFunc")}),
 			},
 		},
@@ -685,7 +685,7 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 			},
 			wantErrorWith: `undefined function "TestProfileFunc"`,
 			factoryOptions: []FactoryOption{
-				WithProfileFunctions(DefaultProfileFunctions()),
+				WithProfileFunctions(DefaultProfileFunctionsNew()),
 			},
 		},
 		{

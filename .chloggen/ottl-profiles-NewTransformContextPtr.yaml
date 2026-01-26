@@ -19,6 +19,10 @@ subtext: |
   Change Expr/Parser/Getter/Setter and all ottl related funcs to accept pointers to avoid unnecessary copy of a large
   TransformContext(96B). Avoid allocating a new pcommon.Map every time a new context is created by using a Borrow/Return
   pattern and reuse objects between calls. Deprecated funcs are:
+  - `ottlprofile.NewTransformContext` in favor of `ottlprofile.NewTransformContextPtr`;
+  - `ottlprofilesample.NewTransformContext` in favor of `ottlprofilesample.NewTransformContextPtr`;
+  - `filterprocessor.DefaultProfileFunctions` in favor of `filterprocessor.DefaultProfileFunctionsNew`
+  - `transformprocessor.DefaultProfileFunctions` in favor of `transformprocessor.DefaultProfileFunctionsNew`
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
