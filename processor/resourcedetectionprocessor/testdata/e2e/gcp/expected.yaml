@@ -1,0 +1,131 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: cloud.account.id
+          value:
+            stringValue: test-project
+        - key: cloud.availability_zone
+          value:
+            stringValue: us-central1-b
+        - key: cloud.platform
+          value:
+            stringValue: gcp_compute_engine
+        - key: cloud.provider
+          value:
+            stringValue: gcp
+        - key: cloud.region
+          value:
+            stringValue: us-central1
+        - key: gcp.gce.instance.hostname
+          value:
+            stringValue: test-instance.c.test-project.internal
+        - key: gcp.gce.instance.name
+          value:
+            stringValue: test-instance
+        - key: gcp.gce.instance_group_manager.name
+          value:
+            stringValue: test-mig
+        - key: gcp.gce.instance_group_manager.zone
+          value:
+            stringValue: us-central1-b
+        - key: host.id
+          value:
+            stringValue: "9876543210"
+        - key: host.name
+          value:
+            stringValue: test-instance
+        - key: host.type
+          value:
+            stringValue: projects/123456789/machineTypes/e2-standard-2
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: Total seconds each logical CPU spent on each mode.
+            name: system.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: idle
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: interrupt
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: nice
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: softirq
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: steal
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: system
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: wait
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
