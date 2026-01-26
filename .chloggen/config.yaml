@@ -235,8 +235,8 @@ components:
     - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
+    - receiver/azure_event_hub
     - receiver/azureblob
-    - receiver/azureeventhub
     - receiver/azuremonitor
     - receiver/bigip
     - receiver/carbon
