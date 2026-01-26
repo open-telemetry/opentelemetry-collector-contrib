@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -164,6 +164,8 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 				setResourceAttribute(resource.Attributes(), key, val)
 			}
 			kp.addContainerAttributes(resource.Attributes(), pod)
+		} else {
+			kp.logger.Debug("unable to find pod based on identifier", zap.Any("value", podIdentifierValue))
 		}
 	}
 

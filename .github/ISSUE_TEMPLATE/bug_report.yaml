@@ -209,6 +209,7 @@ body:
       - processor/k8sattributes
       - processor/logdedup
       - processor/logstransform
+      - processor/lookup
       - processor/metricsgeneration
       - processor/metricstarttime
       - processor/metricstransform

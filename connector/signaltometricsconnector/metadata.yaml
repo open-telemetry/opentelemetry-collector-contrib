@@ -1,4 +1,6 @@
 type: signaltometrics
+display_name: Signal to Metrics Connector
+description: Signal to metrics connector produces metrics from all signal types (traces, logs, or metrics).
 
 status:
   class: connector

@@ -1,4 +1,5 @@
 type: coralogix
+display_name: Coralogix Exporter
 
 status:
   class: exporter

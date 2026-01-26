@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 
@@ -47,7 +48,10 @@ func TestExtension(t *testing.T) {
 			config: func(listenAt string) *Config {
 				return &Config{
 					Ingress: confighttp.ServerConfig{
-						Endpoint: listenAt,
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  listenAt,
+						},
 					},
 				}
 			},
@@ -72,7 +76,10 @@ func TestExtension(t *testing.T) {
 			config: func(listenAt string) *Config {
 				return &Config{
 					Ingress: confighttp.ServerConfig{
-						Endpoint: listenAt,
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  listenAt,
+						},
 					},
 					Egress: confighttp.ClientConfig{
 						Headers: configopaque.MapList{
@@ -98,7 +105,10 @@ func TestExtension(t *testing.T) {
 			config: func(listenAt string) *Config {
 				return &Config{
 					Ingress: confighttp.ServerConfig{
-						Endpoint: listenAt,
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  listenAt,
+						},
 					},
 					Egress: confighttp.ClientConfig{
 						Headers: configopaque.MapList{
@@ -122,7 +132,10 @@ func TestExtension(t *testing.T) {
 			config: func(listenAt string) *Config {
 				return &Config{
 					Ingress: confighttp.ServerConfig{
-						Endpoint: listenAt,
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  listenAt,
+						},
 					},
 					Egress: confighttp.ClientConfig{
 						Headers: configopaque.MapList{
@@ -143,8 +156,14 @@ func TestExtension(t *testing.T) {
 		},
 		{
 			name: "Invalid config - HTTP Client creation fails",
-			config: func(_ string) *Config {
+			config: func(listenAt string) *Config {
 				return &Config{
+					Ingress: confighttp.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  listenAt,
+						},
+					},
 					Egress: confighttp.ClientConfig{
 						Endpoint: "localhost:9090",
 						TLS: configtls.ClientConfig{
@@ -163,7 +182,10 @@ func TestExtension(t *testing.T) {
 			config: func(_ string) *Config {
 				return &Config{
 					Ingress: confighttp.ServerConfig{
-						Endpoint: "invalid", // to mock error setting up listener.
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  "invalid", // to mock error setting up listener.
+						},
 					},
 				}
 			},
