@@ -2308,6 +2308,246 @@ func TestExporterTraces(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("publish with dynamic document id", func(t *testing.T) {
+		t.Parallel()
+		exampleDocID := "abc123"
+		tableTests := []struct {
+			name          string
+			expectedDocID string // "" means the document ID will not be set
+			spanAttrs     map[string]any
+		}{
+			{
+				name:          "missing document id attribute should not set _id",
+				expectedDocID: "",
+			},
+			{
+				name:          "empty document id attribute should not set _id",
+				expectedDocID: "",
+				spanAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: "",
+				},
+			},
+			{
+				name:          "span attributes",
+				expectedDocID: exampleDocID,
+				spanAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: exampleDocID,
+				},
+			},
+		}
+
+		cfgs := map[string]func(*Config){
+			"async": func(cfg *Config) {
+				cfg.QueueBatchConfig.Get().WaitForResult = false
+				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
+			},
+			"sync": func(cfg *Config) {
+				cfg.QueueBatchConfig.Get().WaitForResult = true
+				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
+			},
+		}
+		for _, tt := range tableTests {
+			for cfgName, cfgFn := range cfgs {
+				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
+					t.Parallel()
+					rec := newBulkRecorder()
+					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+						rec.Record(docs)
+
+						if tt.expectedDocID == "" {
+							assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+						} else {
+							assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+						}
+
+						// Ensure the document id attribute is removed from the final document.
+						assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+						return itemsAllOK(docs)
+					})
+
+					exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+						cfg.Mapping.Mode = "otel"
+						cfg.TracesDynamicID.Enabled = true
+						cfgFn(cfg)
+					})
+					traces := newTracesWithAttributes(
+						tt.spanAttrs,
+						map[string]any{},
+						map[string]any{},
+					)
+					mustSendTraces(t, exporter, traces)
+
+					rec.WaitItems(1)
+				})
+			}
+		}
+	})
+
+	t.Run("publish with dynamic id", func(t *testing.T) {
+		t.Parallel()
+		exampleDocID := "example-doc-id-123"
+		tableTests := []struct {
+			name          string
+			expectedDocID string // "" means the document ID will not be set
+			recordAttrs   map[string]any
+		}{
+			{
+				name:          "missing document id attribute should not set _id",
+				expectedDocID: "",
+			},
+			{
+				name:          "empty document id attribute should not set _id",
+				expectedDocID: "",
+				recordAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: "",
+				},
+			},
+			{
+				name:          "span attributes",
+				expectedDocID: exampleDocID,
+				recordAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: exampleDocID,
+				},
+			},
+		}
+
+		cfgs := map[string]func(*Config){
+			"async": func(cfg *Config) {
+				cfg.QueueBatchConfig.Get().WaitForResult = false
+				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
+			},
+			"sync": func(cfg *Config) {
+				cfg.QueueBatchConfig.Get().WaitForResult = true
+				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
+			},
+		}
+		for _, tt := range tableTests {
+			for cfgName, cfgFn := range cfgs {
+				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
+					t.Parallel()
+					rec := newBulkRecorder()
+					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+						rec.Record(docs)
+
+						if tt.expectedDocID == "" {
+							assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+						} else {
+							assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+						}
+
+						// Ensure the document id attribute is removed from the final document.
+						assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+						return itemsAllOK(docs)
+					})
+
+					exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+						cfg.Mapping.Mode = "otel"
+						cfg.TracesDynamicID.Enabled = true
+						cfgFn(cfg)
+					})
+					traces := newTracesWithAttributes(
+						tt.recordAttrs,
+						map[string]any{},
+						map[string]any{},
+					)
+					mustSendTraces(t, exporter, traces)
+
+					rec.WaitItems(1)
+				})
+			}
+		}
+	})
+
+	t.Run("publish span events with dynamic id", func(t *testing.T) {
+		t.Parallel()
+		exampleDocID := "span-event-doc-id-456"
+		tableTests := []struct {
+			name          string
+			expectedDocID string
+			eventAttrs    map[string]any
+		}{
+			{
+				name:          "missing document id attribute should not set _id",
+				expectedDocID: "",
+			},
+			{
+				name:          "empty document id attribute should not set _id",
+				expectedDocID: "",
+				eventAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: "",
+				},
+			},
+			{
+				name:          "span event attributes",
+				expectedDocID: exampleDocID,
+				eventAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: exampleDocID,
+				},
+			},
+		}
+
+		cfgs := map[string]func(*Config){
+			"async": func(cfg *Config) {
+				cfg.QueueBatchConfig.Get().WaitForResult = false
+				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
+			},
+			"sync": func(cfg *Config) {
+				cfg.QueueBatchConfig.Get().WaitForResult = true
+				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
+			},
+		}
+		for _, tt := range tableTests {
+			for cfgName, cfgFn := range cfgs {
+				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
+					t.Parallel()
+					rec := newBulkRecorder()
+					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+						rec.Record(docs)
+						return itemsAllOK(docs)
+					})
+
+					exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+						cfg.Mapping.Mode = "otel"
+						cfg.TracesDynamicID.Enabled = true
+						cfgFn(cfg)
+					})
+					traces := newTracesWithAttributes(
+						map[string]any{},
+						map[string]any{},
+						map[string]any{},
+					)
+					spanEvent := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+					spanEvent.SetName("test_event")
+					fillAttributeMap(spanEvent.Attributes(), tt.eventAttrs)
+					mustSendTraces(t, exporter, traces)
+
+					// Wait for both span and span event
+					rec.WaitItems(2)
+
+					// Find the span event document
+					var spanEventDoc *itemRequest
+					for _, doc := range rec.Items() {
+						if result := gjson.GetBytes(doc.Document, "event_name"); result.Raw != "" {
+							spanEventDoc = &doc
+							break
+						}
+					}
+
+					require.NotNil(t, spanEventDoc, "span event document should be present")
+
+					if tt.expectedDocID == "" {
+						assert.NotContains(t, string(spanEventDoc.Action), "_id", "expected _id to not be set")
+					} else {
+						assert.Equal(t, tt.expectedDocID, actionJSONToID(t, spanEventDoc.Action), "expected _id to be set")
+					}
+
+					// Ensure the document id attribute is removed from the final document.
+					assert.NotContains(t, string(spanEventDoc.Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+				})
+			}
+		}
+	})
 }
 
 func TestExporter_DynamicMappingMode(t *testing.T) {
