@@ -101,7 +101,7 @@ var (
 
 // newReceiver creates the Splunk HEC receiver with the given configuration.
 func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, error) {
-	if config.Endpoint == "" {
+	if config.NetAddr.Endpoint == "" {
 		return nil, errEmptyEndpoint
 	}
 
@@ -122,7 +122,7 @@ func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, er
 		settings: settings,
 		config:   &config,
 		server: &http.Server{
-			Addr: config.Endpoint,
+			Addr: config.NetAddr.Endpoint,
 			// TODO: Evaluate what properties should be configurable, for now
 			//		set some hard-coded values.
 			ReadHeaderTimeout: defaultServerTimeout,
@@ -164,7 +164,7 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	// set up the listener
 	ln, err := r.config.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", r.config.NetAddr.Endpoint, err)
 	}
 
 	r.server, err = r.config.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, mx)

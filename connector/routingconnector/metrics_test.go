@@ -1216,3 +1216,112 @@ func TestMetricsForIgnoreError(t *testing.T) {
 	assert.Len(t, defaultSink.AllMetrics(), 1)
 	assert.Equal(t, pmetricutiltest.NewGauges("1", "2", "3", "4"), defaultSink.AllMetrics()[0])
 }
+
+func TestMetricsCopyAndMoveConfig(t *testing.T) {
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metrics0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
+	metrics1 := pipeline.NewIDWithName(pipeline.SignalMetrics, "1")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{metricsDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `attributes["value"] > 2.5`,
+				Pipelines: []pipeline.ID{metrics0},
+				Action:    Copy,
+			},
+			{
+				Statement: `route() where attributes["value"] > 3.0`,
+				Pipelines: []pipeline.ID{metrics1},
+				Action:    Move,
+			},
+			{
+				Statement: `route() where attributes["value"] == 1.0`,
+				Pipelines: []pipeline.ID{metricsDefault, metrics0},
+			},
+		},
+	}
+
+	var defaultSink, sink0, sink1 consumertest.MetricsSink
+
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+		metricsDefault: &defaultSink,
+		metrics0:       &sink0,
+		metrics1:       &sink1,
+	})
+
+	resetSinks := func() {
+		defaultSink.Reset()
+		sink0.Reset()
+		sink1.Reset()
+	}
+
+	factory := NewFactory()
+	conn, err := factory.CreateMetricsToMetrics(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Metrics),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, conn.Shutdown(t.Context()))
+	}()
+
+	t.Run("Metrics copied correctly", func(t *testing.T) {
+		resetSinks()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 2.6)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, conn.ConsumeMetrics(t.Context(), m))
+
+		assert.Len(t, defaultSink.AllMetrics(), 1)
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Empty(t, sink1.AllMetrics())
+	})
+
+	t.Run("Metrics moved correctly", func(t *testing.T) {
+		resetSinks()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 0)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, conn.ConsumeMetrics(t.Context(), m))
+
+		assert.Len(t, defaultSink.AllMetrics(), 1)
+		assert.Empty(t, sink0.AllMetrics())
+		assert.Empty(t, sink1.AllMetrics())
+	})
+
+	t.Run("Metrics copied & moved correctly", func(t *testing.T) {
+		resetSinks()
+
+		m := pmetric.NewMetrics()
+
+		rm := m.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutDouble("value", 4)
+		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("cpu")
+
+		require.NoError(t, conn.ConsumeMetrics(t.Context(), m))
+
+		assert.Empty(t, defaultSink.AllMetrics())
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Len(t, sink1.AllMetrics(), 1)
+	})
+}

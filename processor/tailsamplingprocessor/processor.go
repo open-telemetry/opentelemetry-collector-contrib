@@ -50,6 +50,7 @@ type traceData struct {
 
 	arrivalTime   time.Time
 	decisionTime  time.Time
+	bytes         uint64
 	finalDecision samplingpolicy.Decision
 	policyName    string
 	deleteElement *list.Element
@@ -74,13 +75,15 @@ type tailSamplingSpanProcessor struct {
 	recordPolicy        bool
 	sampleOnFirstMatch  bool
 	blockOnOverflow     bool
+	maxTraceSizeBytes   uint64
 
 	cfg  Config
 	host component.Host
 
-	newPolicyChan chan newPolicyCmd
-	workChan      chan []traceBatch
-	doneChan      chan struct{}
+	newPolicyChan    chan newPolicyCmd
+	newTraceSizeChan chan uint64
+	workChan         chan []traceBatch
+	doneChan         chan struct{}
 
 	// tickChan triggers ticks and responds on the provided channel when the tick is complete.
 	// this is used in tests to produce deterministic ticks.
@@ -122,11 +125,13 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		deleteTraceQueue:   list.New(),
 		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 		blockOnOverflow:    cfg.BlockOnOverflow,
+		maxTraceSizeBytes:  cfg.MaximumTraceSizeBytes,
 		// Similar to the id batcher, allow a batch per CPU to be buffered before blocking ConsumeTraces.
 		workChan: make(chan []traceBatch, runtime.NumCPU()),
-		// We need to buffer one new policy command so that external callers can
+		// We need to buffer one new policy command/size update so that external callers can
 		// queue up new policies without blocking on the ticker.
-		newPolicyChan: make(chan newPolicyCmd, 1),
+		newPolicyChan:    make(chan newPolicyCmd, 1),
+		newTraceSizeChan: make(chan uint64, 1),
 	}
 
 	for _, opt := range cfg.Options {
@@ -264,6 +269,10 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicies(host component.Host, 
 	return slices.Concat(dropPolicies, policies), nil
 }
 
+func (tsp *tailSamplingSpanProcessor) SetMaximumTraceSizeBytes(size uint64) {
+	tsp.newTraceSizeChan <- size
+}
+
 // traceBatch contains all spans from a single batch for a single trace.
 type traceBatch struct {
 	id        pcommon.TraceID
@@ -330,6 +339,8 @@ func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg, po
 		return getNewCompositePolicy(settings, &cfg.CompositeCfg, policyExtensions)
 	case And:
 		return getNewAndPolicy(settings, &cfg.AndCfg, policyExtensions)
+	case Not:
+		return getNewNotPolicy(settings, &cfg.NotCfg, policyExtensions)
 	case Drop:
 		return getNewDropPolicy(settings, &cfg.DropCfg, policyExtensions)
 	default:
@@ -491,6 +502,9 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 	case cmd := <-tsp.newPolicyChan:
 		tsp.policies = cmd.policies
 		tsp.logger.Debug("New policies loaded", zap.Int("policies.len", len(tsp.policies)))
+	case maxTraceSize := <-tsp.newTraceSizeChan:
+		tsp.maxTraceSizeBytes = maxTraceSize
+		tsp.logger.Debug("New maximum trace size loaded", zap.Uint64("size", maxTraceSize))
 	case <-tickChan:
 		tsp.samplingPolicyOnTick()
 	case tickChan := <-tsp.tickChan:
@@ -792,6 +806,18 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	}
 
 	finalDecision := actualData.finalDecision
+
+	marshaler := &ptrace.ProtoMarshaler{}
+	actualData.bytes += uint64(marshaler.ResourceSpansSize(rss))
+
+	if finalDecision == samplingpolicy.Unspecified &&
+		tsp.maxTraceSizeBytes > 0 &&
+		actualData.bytes > tsp.maxTraceSizeBytes {
+		tsp.telemetry.ProcessorTailSamplingTracesDroppedTooLarge.Add(tsp.ctx, 1)
+		actualData.finalDecision = samplingpolicy.NotSampled
+		tsp.releaseNotSampledTrace(id, "")
+		return
+	}
 
 	if finalDecision == samplingpolicy.Unspecified {
 		// If the final decision hasn't been made, add the new spans to the
