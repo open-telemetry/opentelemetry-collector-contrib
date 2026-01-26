@@ -34,7 +34,7 @@ This extension supports auto-detection and parsing of the following formats:
 Currently supported following Azure Metrics export formats:
 
 * export via Diagnostic Settings ([multi-dimensional metrics are not supported](https://learn.microsoft.com/en-us/azure/azure-monitor/platform/diagnostic-settings?tabs=portal#metrics-limitations))
-* export via Data Collection Rules (DCRs) ([dimensions and metric filtering are supported](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-metrics))
+* export via Data Collection Rules (DCRs) ([dimensions and metric filtering are supported](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-overview))
 
 ***time_formats (Optional)***
 
