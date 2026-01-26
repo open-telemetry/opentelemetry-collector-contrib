@@ -1,4 +1,7 @@
+display_name: Text Encoding Extension
 type: text_encoding
+
+description: The `text_encoding` extension is an encoding extension that can unmarshal and marshal logs.
 
 status:
   class: extension
