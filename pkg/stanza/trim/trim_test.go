@@ -57,21 +57,91 @@ func TestTrim(t *testing.T) {
 			expect:           nil,
 		},
 		{
+			name:             "trim trailing returns nil when given nil",
+			preserveLeading:  true,
+			preserveTrailing: false,
+			input:            nil,
+			expect:           nil,
+		},
+		{
 			name:             "trim leading returns []byte when given []byte",
 			preserveLeading:  false,
 			preserveTrailing: true,
 			input:            []byte{},
 			expect:           []byte{},
 		},
+		{
+			name:             "all whitespace becomes empty",
+			preserveLeading:  false,
+			preserveTrailing: false,
+			input:            []byte("   \t\r\n   "),
+			expect:           []byte{},
+		},
+		{
+			name:             "no whitespace remains unchanged",
+			preserveLeading:  false,
+			preserveTrailing: false,
+			input:            []byte("content"),
+			expect:           []byte("content"),
+		},
+		{
+			name:             "mixed whitespace types",
+			preserveLeading:  false,
+			preserveTrailing: false,
+			input:            []byte(" \t\r\ncontent \t\r\n"),
+			expect:           []byte("content"),
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			trimFunc := Config{
 				PreserveLeading:  tc.preserveLeading,
 				PreserveTrailing: tc.preserveTrailing,
 			}.Func()
 			assert.Equal(t, tc.expect, trimFunc(tc.input))
+		})
+	}
+}
+
+func TestIsSpace(t *testing.T) {
+	testCases := []struct {
+		name    string
+		b       byte
+		isSpace bool
+	}{
+		{
+			name:    "space",
+			b:       ' ',
+			isSpace: true,
+		},
+		{
+			name:    "newline",
+			b:       '\n',
+			isSpace: true,
+		},
+		{
+			name:    "tab",
+			b:       '\t',
+			isSpace: true,
+		},
+		{
+			name:    "carriage return",
+			b:       '\r',
+			isSpace: true,
+		},
+		{
+			name:    "not a space",
+			b:       '1',
+			isSpace: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.isSpace, isSpace(tc.b))
 		})
 	}
 }
