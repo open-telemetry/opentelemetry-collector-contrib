@@ -26,11 +26,12 @@ import (
 )
 
 type conversionEntry struct {
-	to                 string
-	preserveOriginal   bool
-	skip               bool
-	skipIfExists       bool
-	skipIfSourceExists string // Skip this conversion if the specified source attribute exists
+	to                    string
+	preserveOriginal      bool
+	skip                  bool
+	skipIfExists          bool
+	skipIfSourceExists    string
+	skipIfDocumentHasPath string
 }
 
 // resourceAttrsConversionMap contains conversions for resource-level attributes
@@ -214,7 +215,8 @@ func (ecsModeEncoder) encodeLog(
 		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
 		string(conventions.ExceptionTypeKey):        {to: "error.type"},
 		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
-		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+		string(conventions.HTTPResponseBodySizeKey):  {to: "http.response.encoded_body_size"},
+		string(conventions.ProcessExecutableNameKey): {skip: true, skipIfDocumentHasPath: "process.executable"},
 	}
 	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
@@ -545,11 +547,19 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 		// If ECS key is found for current k in conversion map, use it.
 		if c, exists := conversionMap[k]; exists {
 			if c.skip {
-				// Skip the conversion for this k.
+				// Check if there's a condition to skip
+				if c.skipIfDocumentHasPath != "" {
+					// Skip only if the document already has the specified path
+					if document.Get(c.skipIfDocumentHasPath) != nil {
+						continue
+					}
+					// Document doesn't have the path, so pass through as-is
+					document.AddAttribute(k, v)
+					continue
+				}
 				continue
 			}
 			if c.skipIfSourceExists != "" {
-				// Skip the conversion if the specified source attribute exists.
 				if _, exists := attrs.Get(c.skipIfSourceExists); exists {
 					continue
 				}

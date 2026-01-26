@@ -194,6 +194,17 @@ func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 	}
 }
 
+// Get retrieves a value from the document by its key.
+// Returns the value if found, nil otherwise.
+func (doc *Document) Get(key string) *Value {
+	for i := range doc.fields {
+		if doc.fields[i].key == key {
+			return &doc.fields[i].value
+		}
+	}
+	return nil
+}
+
 // AddEvents converts and adds span events to the document.
 func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
 	for _, e := range events.All() {
