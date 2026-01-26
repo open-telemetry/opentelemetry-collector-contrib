@@ -1416,7 +1416,7 @@ func TestEncodeLogECSModeProcessExecutableConflict(t *testing.T) {
 
 		process, ok := result["process"].(map[string]any)
 		require.True(t, ok, "process field should be present")
-		
+
 		// Path should win: process.executable should be the path
 		executable, isString := process["executable"].(string)
 		require.True(t, isString, "process.executable should be a string")
@@ -1463,7 +1463,7 @@ func TestEncodeLogECSModeProcessExecutableConflict(t *testing.T) {
 		// process.executable exists, it should pass through as-is
 		process, ok := result["process"].(map[string]any)
 		require.True(t, ok, "process field should be present")
-		
+
 		executable, ok := process["executable"].(map[string]any)
 		require.True(t, ok, "process.executable should be an object (from dedot)")
 		require.Equal(t, "ssh", executable["name"], "process.executable.name should pass through")
@@ -1505,7 +1505,7 @@ func TestEncodeLogECSModeProcessExecutableConflict(t *testing.T) {
 		// both will pass through and dedot will create nested object
 		process, ok := result["process"].(map[string]any)
 		require.True(t, ok, "process field should be present")
-		
+
 		executable, ok := process["executable"].(map[string]any)
 		require.True(t, ok, "process.executable should be an object")
 		require.Equal(t, "/usr/bin/ssh", executable["path"], "path should pass through")

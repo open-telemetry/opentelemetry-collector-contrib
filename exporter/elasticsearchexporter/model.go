@@ -210,11 +210,11 @@ func (ecsModeEncoder) encodeLog(
 
 	// Finally, try to map record-level attributes to ECS fields.
 	recordAttrsConversionMap := map[string]conversionEntry{
-		"event.name":                                {to: "event.action"},
-		string(conventions.ExceptionMessageKey):     {to: "error.message"},
-		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
-		string(conventions.ExceptionTypeKey):        {to: "error.type"},
-		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
+		"event.name":                                 {to: "event.action"},
+		string(conventions.ExceptionMessageKey):      {to: "error.message"},
+		string(conventions.ExceptionStacktraceKey):   {to: "error.stacktrace"},
+		string(conventions.ExceptionTypeKey):         {to: "error.type"},
+		string(conventionsv126.ExceptionEscapedKey):  {to: "event.error.exception.handled"},
 		string(conventions.HTTPResponseBodySizeKey):  {to: "http.response.encoded_body_size"},
 		string(conventions.ProcessExecutableNameKey): {skip: true, skipIfDocumentHasPath: "process.executable"},
 	}
