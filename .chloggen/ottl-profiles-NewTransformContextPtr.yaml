@@ -22,7 +22,9 @@ subtext: |
   - `ottlprofile.NewTransformContext` in favor of `ottlprofile.NewTransformContextPtr`;
   - `ottlprofilesample.NewTransformContext` in favor of `ottlprofilesample.NewTransformContextPtr`;
   - `filterprocessor.DefaultProfileFunctions` in favor of `filterprocessor.DefaultProfileFunctionsNew`
+  - `filterprocessor.WithProfileFunctions` in favor of `filterprocessor.WithProfileFunctionsNew`
   - `transformprocessor.DefaultProfileFunctions` in favor of `transformprocessor.DefaultProfileFunctionsNew`
+  - `transformprocessor.WithProfileFunctions` in favor of `transformprocessor.WithProfileFunctionsNew`
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
