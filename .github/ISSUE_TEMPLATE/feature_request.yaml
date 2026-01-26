@@ -240,7 +240,7 @@ body:
       - receiver/awss3
       - receiver/awsxray
       - receiver/azureblob
-      - receiver/azure_event_hub
+      - receiver/azureeventhub
       - receiver/azuremonitor
       - receiver/bigip
       - receiver/carbon
