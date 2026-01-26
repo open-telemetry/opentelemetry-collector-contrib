@@ -48,13 +48,13 @@ func (s *pprofScraper) scrape(_ context.Context) (pprofile.Profiles, error) {
 	result := pprofile.NewProfiles()
 
 	for _, match := range matches {
-		data, err := os.ReadFile(match)
+		reader, err := os.Open(match)
 		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to read file %s: %w", match, err))
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to open file %s: %w", match, err))
 			continue
 		}
 
-		pprofProfile, err := profile.ParseData(data)
+		pprofProfile, err := profile.Parse(reader)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse pprof data from %s: %w", match, err))
 			continue
