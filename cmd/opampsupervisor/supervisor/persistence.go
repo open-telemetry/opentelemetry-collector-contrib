@@ -77,11 +77,11 @@ func (p *persistentState) writeState() error {
 
 // loadOrCreatePersistentState attempts to load the persistent state from disk. If it doesn't
 // exist, a new persistent state file is created.
-func loadOrCreatePersistentState(file string, logger *zap.Logger) (*persistentState, error) {
+func loadOrCreatePersistentState(file string, instanceID string, logger *zap.Logger) (*persistentState, error) {
 	state, err := loadPersistentState(file, logger)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
-		return createNewPersistentState(file, logger)
+		return createNewPersistentState(file, instanceID, logger)
 	case err != nil:
 		return nil, err
 	default:
@@ -107,10 +107,16 @@ func loadPersistentState(file string, logger *zap.Logger) (*persistentState, err
 	return state, nil
 }
 
-func createNewPersistentState(file string, logger *zap.Logger) (*persistentState, error) {
-	id, err := uuid.NewV7()
+func createNewPersistentState(file string, instanceID string, logger *zap.Logger) (*persistentState, error) {
+	id, err := uuid.Parse(instanceID)
 	if err != nil {
-		return nil, err
+		if instanceID != "" {
+			logger.Error("Failed to parse instance_id, generating one automatically", zap.Error(err))
+		}
+		id, err = uuid.NewV7()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	p := &persistentState{
