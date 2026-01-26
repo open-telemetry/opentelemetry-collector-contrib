@@ -6,7 +6,6 @@ package pprofreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"runtime/pprof"
 	"testing"
 	"time"
@@ -33,8 +32,6 @@ func TestNewFactory_PprofConversion(t *testing.T) {
 		f, err := os.Create(pprofFile)
 		require.NoError(t, err)
 		defer f.Close()
-
-		runtime.SetCPUProfileRate(257)
 
 		err = pprof.StartCPUProfile(f)
 		require.NoError(t, err)
