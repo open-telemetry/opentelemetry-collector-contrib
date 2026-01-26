@@ -175,16 +175,13 @@ agent:
   # OpAmp extension will connect to
   opamp_server_port:
 
-  # Path to a fallback configuration file to use when the OpAMP server is
-  # unreachable. This must be a complete, standalone Collector configuration.
-  # The fallback config is intentionally not merged with config_files to ensure
+  # List of paths to fallback configuration files to use when the OpAMP server is
+  # unreachable. If more than one path is specified, they are merged in order.
+  # Together, these must be complete, standalone Collector configuration.
+  # The fallback configs are intentionally not merged with config_files to ensure
   # predictable fallback behavior.
-  fallback_config: /etc/otelcol/fallback.yaml
-
-  # How long to wait for the initial connection to the OpAMP server before
-  # switching to the fallback configuration. If not set or zero, startup
-  # fallback is disabled.
-  fallback_startup_timeout: 30s
+  fallback_configs:
+  - /etc/otelcol/fallback.yaml
 
 # Supervisor's internal telemetry settings.
 telemetry:
@@ -325,16 +322,15 @@ If more than one fallback configuration is specified, the Supervisor will merge 
 
 There is one scenario where the Supervisor will switch to the fallback configuration:
 
-**Startup Fallback**: If `fallback_startup_timeout` is set and the Supervisor cannot
-establish an initial connection to the OpAMP server within that duration, the Collector
-will be started with the fallback configuration specified in `fallback_config`. The
-default value for this timeout is 30 seconds. It'll only be used if `fallback_configs` is set.
+**Startup Fallback**: If `fallback_configs` is set and the Supervisor cannot
+establish an initial connection to the OpAMP server, the Collector
+will be started with the fallback configurations specified in `fallback_configs`.
 
 **Recovery**: When the connection to the OpAMP server is restored after using the
-fallback configuration, the Supervisor automatically switches back to the remote
+fallback configurations, the Supervisor automatically switches back to the remote
 configuration provided by the server.
 
-Note that the fallback configuration is intentionally a standalone configuration file
+Note that the fallback configurations are intentionally a standalone configuration files
 and is not merged with the `config_files` setting. This ensures predictable fallback
 behavior without dependencies on other configuration files. The OpAMP extension
 configuration is automatically added to maintain Supervisor-Collector communication.

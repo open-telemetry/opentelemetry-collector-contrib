@@ -228,10 +228,6 @@ type Agent struct {
 	// FallbackConfigs is an ordered list of fallback configuration files to use
 	// when the OpAMP server is unreachable. Configs are merged in order.
 	FallbackConfigs []string `mapstructure:"fallback_configs"`
-	// FallbackStartupTimeout is how long to wait for initial connection to the
-	// OpAMP server before using the fallback configuration. If not set or zero,
-	// fallback on startup is disabled.
-	FallbackStartupTimeout time.Duration `mapstructure:"fallback_startup_timeout"`
 }
 
 func (a Agent) Validate() error {
@@ -297,10 +293,6 @@ func (a Agent) validateFallbackConfigs() error {
 	}
 	if err := a.validateFallbackConfigsWithColBin(); err != nil {
 		return fmt.Errorf("could not validate fallback configs with agent::executable: %w", err)
-	}
-
-	if a.FallbackStartupTimeout < 0 {
-		return errors.New("agent::fallback_startup_timeout must be non-negative")
 	}
 
 	return nil
@@ -439,7 +431,6 @@ func DefaultSupervisor() Supervisor {
 			ConfigApplyTimeout:      5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
-			FallbackStartupTimeout:  30 * time.Second,
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{

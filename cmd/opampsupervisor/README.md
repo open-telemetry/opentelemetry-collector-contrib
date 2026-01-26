@@ -140,20 +140,19 @@ The following options can be configured under the `agent` section:
 ```yaml
 agent:
   executable: /path/to/collector
-  fallback_config: /path/to/fallback_config.yaml
-  fallback_startup_timeout: 30s
+  fallback_configs:
+  - /path/to/fallback_config.yaml
 ```
 
 | Option | Description |
 |--------|-------------|
 | `fallback_configs` | List of paths to fallback configuration files to use when the OpAMP server is unreachable. If more than one path is specified, they are merged in order. Together, these must be complete, standalone Collector configuration. |
-| `fallback_startup_timeout` | How long to wait for the initial connection to the OpAMP server before switching to the fallback configuration. The default value is `30s`. If set to zero, startup fallback configuration is disabled. |
 
 ### Behavior
 
-1. **Startup Fallback**: If `fallback_startup_timeout` is configured and the Supervisor cannot connect to the OpAMP server within that duration, the Collector will be started with the fallback configuration.
+1. **Startup Fallback**: If `fallback_configs` is configured and the Supervisor cannot connect to the OpAMP server, the Collector will be started with the fallback configurations.
 
-2. **Recovery**: When the connection to the OpAMP server is restored after using the fallback configuration, the Supervisor will automatically switch back to the remote configuration provided by the server.
+2. **Recovery**: When the connection to the OpAMP server is restored after using the fallback configurations, the Supervisor will automatically switch back to the remote configuration provided by the server.
 
 ### Important Notes
 
