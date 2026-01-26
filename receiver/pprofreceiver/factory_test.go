@@ -4,7 +4,6 @@
 package pprofreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pprofreceiver"
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -47,7 +46,7 @@ func TestNewFactory_PprofConversion(t *testing.T) {
 	for time.Since(start) < 200*time.Millisecond {
 		for i := range 100000 {
 			result += i * i
-			result = result % 1000000
+			result %= 1000000
 		}
 	}
 	_ = result
@@ -57,17 +56,17 @@ func TestNewFactory_PprofConversion(t *testing.T) {
 
 	fileInfo, err := os.Stat(pprofFile)
 	require.NoError(t, err)
-	require.Greater(t, fileInfo.Size(), int64(0), "pprof file should have content")
+	require.Positive(t, fileInfo.Size(), "pprof file should have content")
 
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Include = pprofFile
-	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+	cfg.CollectionInterval = 100 * time.Millisecond
 
 	sink := new(consumertest.ProfilesSink)
 	receiver, err := factory.(xreceiver.Factory).CreateProfiles(
-		context.Background(),
+		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		sink,
@@ -75,7 +74,7 @@ func TestNewFactory_PprofConversion(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, receiver)
 
-	err = receiver.Start(context.Background(), componenttest.NewNopHost())
+	err = receiver.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	assert.Eventually(t, func() bool {
@@ -117,6 +116,6 @@ func TestNewFactory_PprofConversion(t *testing.T) {
 	assert.True(t, foundProfile, "Expected at least one Profile")
 	assert.True(t, foundSample, "Expected at least one Sample in Profile")
 
-	err = receiver.Shutdown(context.Background())
+	err = receiver.Shutdown(t.Context())
 	require.NoError(t, err)
 }
