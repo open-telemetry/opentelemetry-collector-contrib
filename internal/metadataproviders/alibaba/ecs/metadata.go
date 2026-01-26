@@ -20,6 +20,7 @@ const (
 	tokenHeader        = "X-aliyun-ecs-metadata-token"             //nolint:gosec // not a credential, header name
 	defaultTokenTTL    = 21600
 	tokenRefreshBuffer = 5 * time.Minute
+	maxResponseSize    = 1 << 20 // 1 MB limit for metadata responses
 )
 
 // Metadata represents Alibaba Cloud ECS instance metadata.
@@ -81,11 +82,11 @@ func (c *metadataClient) getToken(ctx context.Context) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 		return "", fmt.Errorf("token request returned %d: %s", resp.StatusCode, string(body))
 	}
 
-	tokenBytes, err := io.ReadAll(resp.Body)
+	tokenBytes, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 	if err != nil {
 		return "", fmt.Errorf("failed to read token response: %w", err)
 	}
@@ -117,11 +118,11 @@ func (c *metadataClient) getMetadata(ctx context.Context, path string) (string, 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 		return "", fmt.Errorf("metadata %s returned %d: %s", path, resp.StatusCode, string(body))
 	}
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 	if err != nil {
 		return "", fmt.Errorf("failed to read metadata %s: %w", path, err)
 	}

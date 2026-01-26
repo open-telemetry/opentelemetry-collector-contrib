@@ -197,6 +197,39 @@ func TestTokenCaching(t *testing.T) {
 	require.Equal(t, 1, tokenRequestCount, "expected 1 token request due to caching")
 }
 
+func TestResponseSizeLimit(t *testing.T) {
+	// Create a response larger than maxResponseSize
+	oversizedResponse := strings.Repeat("x", maxResponseSize+1000)
+
+	doer := func(req *http.Request) (*http.Response, error) {
+		if req.URL.String() == tokenURL {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(oversizedResponse)),
+			}, nil
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("test-value")),
+		}, nil
+	}
+
+	p := &metadataClient{
+		client: &http.Client{
+			Timeout:   1 * time.Second,
+			Transport: roundTripperFunc(doer),
+		},
+	}
+
+	// The request should succeed, but the token will be truncated
+	// This validates that io.LimitReader is working and prevents memory exhaustion
+	_, err := p.Metadata(t.Context())
+	require.NoError(t, err)
+
+	// Verify the token was truncated to maxResponseSize
+	require.Len(t, p.token, maxResponseSize)
+}
+
 func TestTokenHeaderVerification(t *testing.T) {
 	doer := func(req *http.Request) (*http.Response, error) {
 		if req.URL.String() == tokenURL {
