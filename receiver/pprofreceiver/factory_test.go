@@ -6,6 +6,7 @@ package pprofreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"runtime/pprof"
 	"testing"
 	"time"
@@ -22,6 +23,10 @@ import (
 
 // TestNewFactory_PprofConversion tests that pprof CPU profiles are converted to OTel profiles
 func TestNewFactory_PprofConversion(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("Skipping test on %s", runtime.GOOS)
+	}
+
 	tempDir := t.TempDir()
 	pprofFile := filepath.Join(tempDir, "cpu.pprof")
 	t.Cleanup(func() {
