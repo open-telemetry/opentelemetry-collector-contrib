@@ -1309,7 +1309,7 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	s.loadLastReceivedOwnTelemetryConfig()
 
 	// compose the initial merged config
-	configChanged, err := s.composeMergedConfig(s.remoteConfig.Load())
+	_, err := s.composeMergedConfig(s.remoteConfig.Load())
 	if err != nil {
 		return fmt.Errorf("could not compose initial merged config: %w", err)
 	}
@@ -1317,13 +1317,6 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	// write the initial merged config to disk
 	if err := s.writeAgentConfig(); err != nil {
 		s.telemetrySettings.Logger.Error("Failed to write agent config.", zap.Error(err))
-	}
-
-	if configChanged {
-		select {
-		case s.hasNewConfig <- struct{}{}:
-		default:
-		}
 	}
 
 	return nil
@@ -1585,7 +1578,7 @@ func (s *Supervisor) loadAndWriteFallbackConfig() error {
 	s.telemetrySettings.Logger.Info("Switching to fallback configuration")
 
 	// Compose the fallback config
-	configChanged, err := s.composeFallbackConfig()
+	_, err := s.composeFallbackConfig()
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Failed to compose fallback config", zap.Error(err))
 		return err
@@ -1595,18 +1588,6 @@ func (s *Supervisor) loadAndWriteFallbackConfig() error {
 		return err
 	}
 
-	if !configChanged {
-		s.telemetrySettings.Logger.Debug("Fallback config is the same as current config")
-		return nil
-	}
-
-	// Signal that there's a new config to apply
-	select {
-	case s.hasNewConfig <- struct{}{}:
-		s.telemetrySettings.Logger.Debug("Signaled new fallback config to agent process")
-	default:
-		s.telemetrySettings.Logger.Debug("Config change already pending")
-	}
 	return nil
 }
 
