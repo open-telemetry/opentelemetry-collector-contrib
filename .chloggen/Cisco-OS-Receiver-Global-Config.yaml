@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/ciscoos
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add support for global scraper configuration with per-device overrides
+note: Add multi-device configuration with global scraper settings and improved config validation
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42647]
@@ -16,9 +16,9 @@ issues: [42647]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Global scrapers are now applied to all devices by default.
-  Per-device scraper overrides allow customizing metrics collection for individual devices.
-  All metrics are enabled by default when a scraper is specified without explicit metric toggles.
+  - Scrapers are configured globally and applied to all devices.
+  - Unknown configuration keys are now rejected to catch typos and mistakes.
+  - All metrics are enabled by default when a scraper is specified without explicit metric toggles.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

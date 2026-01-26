@@ -26,7 +26,6 @@ var scraperFactories = map[component.Type]scraper.Factory{
 	component.MustNewType("interfaces"): interfacesscraper.NewFactory(),
 }
 
-// NewFactory creates a factory for Cisco OS receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
@@ -59,11 +58,10 @@ func createMetricsReceiver(
 		return &nopMetricsReceiver{}, nil
 	}
 
-	// Create one metrics controller per device
 	var receivers []receiver.Metrics
 	for i, device := range conf.Devices {
-		if device.Host == "" || len(device.Scrapers) == 0 {
-			set.Logger.Warn("Skipping device with missing host or scrapers",
+		if device.Host == "" {
+			set.Logger.Warn("Skipping device with missing host",
 				zap.Int("device_index", i),
 				zap.String("device_name", device.Name))
 			continue
@@ -81,7 +79,7 @@ func createMetricsReceiver(
 		}
 
 		var scraperOptions []scraperhelper.ControllerOption
-		for scraperType, scraperCfg := range device.Scrapers {
+		for scraperType, scraperCfg := range conf.Scrapers {
 			factory, exists := scraperFactories[scraperType]
 			if !exists {
 				set.Logger.Warn("Unsupported scraper type",
@@ -140,7 +138,6 @@ type nopMetricsReceiver struct{}
 func (*nopMetricsReceiver) Start(_ context.Context, _ component.Host) error { return nil }
 func (*nopMetricsReceiver) Shutdown(_ context.Context) error                { return nil }
 
-// multiMetricsReceiver wraps multiple receivers for multi-device support.
 type multiMetricsReceiver struct {
 	receivers []receiver.Metrics
 }

@@ -40,10 +40,10 @@ func TestConfigValidate(t *testing.T) {
 							Username: "admin",
 							Password: configopaque.String("password"),
 						},
-						Scrapers: map[component.Type]component.Config{
-							component.MustNewType("system"): nil,
-						},
 					},
+				},
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
 			expectedErr: "",
@@ -64,10 +64,10 @@ func TestConfigValidate(t *testing.T) {
 							Username: "admin",
 							KeyFile:  "/path/to/key",
 						},
-						Scrapers: map[component.Type]component.Config{
-							component.MustNewType("system"): nil,
-						},
 					},
+				},
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
 			expectedErr: "",
@@ -89,10 +89,10 @@ func TestConfigValidate(t *testing.T) {
 							KeyFile:  "/path/to/key",
 							Password: configopaque.String("backup-password"),
 						},
-						Scrapers: map[component.Type]component.Config{
-							component.MustNewType("system"): nil,
-						},
 					},
+				},
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
 			expectedErr: "",
@@ -113,9 +113,6 @@ func TestConfigValidate(t *testing.T) {
 							Username: "admin",
 							Password: configopaque.String("password"),
 						},
-						Scrapers: map[component.Type]component.Config{
-							component.MustNewType("system"): nil,
-						},
 					},
 					{
 						Name: "device-2",
@@ -125,10 +122,10 @@ func TestConfigValidate(t *testing.T) {
 							Username: "admin",
 							Password: configopaque.String("password"),
 						},
-						Scrapers: map[component.Type]component.Config{
-							component.MustNewType("interfaces"): nil,
-						},
 					},
+				},
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
 			expectedErr: "",
@@ -141,8 +138,33 @@ func TestConfigValidate(t *testing.T) {
 					CollectionInterval: 60 * time.Second,
 				},
 				Devices: []DeviceConfig{},
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
+				},
 			},
 			expectedErr: "must specify at least one device",
+		},
+		{
+			name: "no scrapers configured",
+			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					Timeout:            30 * time.Second,
+					CollectionInterval: 60 * time.Second,
+				},
+				Devices: []DeviceConfig{
+					{
+						Name: "test-device",
+						Host: "192.168.1.1",
+						Port: 22,
+						Auth: connection.AuthConfig{
+							Username: "admin",
+							Password: configopaque.String("password"),
+						},
+					},
+				},
+				Scrapers: map[component.Type]component.Config{},
+			},
+			expectedErr: "must specify at least one scraper",
 		},
 		{
 			name: "empty device host",
@@ -160,10 +182,10 @@ func TestConfigValidate(t *testing.T) {
 							Username: "admin",
 							Password: configopaque.String("password"),
 						},
-						Scrapers: map[component.Type]component.Config{
-							component.MustNewType("system"): nil,
-						},
 					},
+				},
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
 			expectedErr: "devices[0].host cannot be empty",
@@ -184,10 +206,10 @@ func TestConfigValidate(t *testing.T) {
 							Username: "admin",
 							Password: configopaque.String("password"),
 						},
-						Scrapers: map[component.Type]component.Config{
-							component.MustNewType("system"): nil,
-						},
 					},
+				},
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
 			expectedErr: "devices[0].port cannot be empty",
@@ -208,10 +230,10 @@ func TestConfigValidate(t *testing.T) {
 							Username: "",
 							Password: configopaque.String("password"),
 						},
-						Scrapers: map[component.Type]component.Config{
-							component.MustNewType("system"): nil,
-						},
 					},
+				},
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
 			expectedErr: "devices[0].auth.username cannot be empty",
@@ -231,35 +253,13 @@ func TestConfigValidate(t *testing.T) {
 						Auth: connection.AuthConfig{
 							Username: "admin",
 						},
-						Scrapers: map[component.Type]component.Config{
-							component.MustNewType("system"): nil,
-						},
 					},
+				},
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("system"): nil,
 				},
 			},
 			expectedErr: "devices[0].auth.password or devices[0].auth.key_file must be provided",
-		},
-		{
-			name: "no scrapers configured for device",
-			config: &Config{
-				ControllerConfig: scraperhelper.ControllerConfig{
-					Timeout:            30 * time.Second,
-					CollectionInterval: 60 * time.Second,
-				},
-				Devices: []DeviceConfig{
-					{
-						Name: "test-device",
-						Host: "192.168.1.1",
-						Port: 22,
-						Auth: connection.AuthConfig{
-							Username: "admin",
-							Password: configopaque.String("password"),
-						},
-						Scrapers: map[component.Type]component.Config{},
-					},
-				},
-			},
-			expectedErr: "devices[0] must have at least one scraper",
 		},
 	}
 
@@ -288,23 +288,9 @@ func TestConfigUnmarshal(t *testing.T) {
 			configFile: "global_scrapers_only.yaml",
 			validateConfig: func(t *testing.T, cfg *Config) {
 				require.Len(t, cfg.Devices, 2)
-				// Both devices should inherit global scrapers
-				assert.Len(t, cfg.Devices[0].Scrapers, 2)
-				assert.Len(t, cfg.Devices[1].Scrapers, 2)
-				assert.Contains(t, cfg.Devices[0].Scrapers, component.MustNewType("system"))
-				assert.Contains(t, cfg.Devices[0].Scrapers, component.MustNewType("interfaces"))
-			},
-		},
-		{
-			name:       "per_device_override",
-			configFile: "per_device_override.yaml",
-			validateConfig: func(t *testing.T, cfg *Config) {
-				require.Len(t, cfg.Devices, 2)
-				// Device 1 uses global scrapers (2)
-				assert.Len(t, cfg.Devices[0].Scrapers, 2)
-				// Device 2 overrides with only system scraper (1)
-				assert.Len(t, cfg.Devices[1].Scrapers, 1)
-				assert.Contains(t, cfg.Devices[1].Scrapers, component.MustNewType("system"))
+				assert.Len(t, cfg.Scrapers, 2)
+				assert.Contains(t, cfg.Scrapers, component.MustNewType("system"))
+				assert.Contains(t, cfg.Scrapers, component.MustNewType("interfaces"))
 			},
 		},
 		{
@@ -312,14 +298,18 @@ func TestConfigUnmarshal(t *testing.T) {
 			configFile: "empty_scrapers_section.yaml",
 			validateConfig: func(t *testing.T, cfg *Config) {
 				require.Len(t, cfg.Devices, 1)
-				// Empty scrapers section means global scrapers are used
-				assert.Len(t, cfg.Devices[0].Scrapers, 1)
+				assert.Len(t, cfg.Scrapers, 1)
 			},
 		},
 		{
 			name:        "invalid_scraper_key",
 			configFile:  "invalid_scraper_key.yaml",
 			expectedErr: "invalid scraper key",
+		},
+		{
+			name:        "unknown_key",
+			configFile:  "unknown_key.yaml",
+			expectedErr: "unknown configuration key",
 		},
 	}
 
@@ -354,45 +344,6 @@ func TestConfigUnmarshalNil(t *testing.T) {
 	cfg := &Config{}
 	err := cfg.Unmarshal(nil)
 	require.NoError(t, err)
-}
-
-func TestCloneScraperConfigs(t *testing.T) {
-	// Test nil input
-	result := cloneScraperConfigs(nil)
-	assert.Nil(t, result)
-
-	// Test empty map
-	empty := make(map[component.Type]component.Config)
-	result = cloneScraperConfigs(empty)
-	assert.NotNil(t, result)
-	assert.Empty(t, result)
-
-	// Test with values
-	src := map[component.Type]component.Config{
-		component.MustNewType("system"): nil,
-	}
-	result = cloneScraperConfigs(src)
-	assert.Len(t, result, 1)
-	assert.Contains(t, result, component.MustNewType("system"))
-}
-
-func TestMergeScraperConfigs(t *testing.T) {
-	global := map[component.Type]component.Config{
-		component.MustNewType("system"):     nil,
-		component.MustNewType("interfaces"): nil,
-	}
-
-	// Test empty device scrapers - should return clone of global
-	result := mergeScraperConfigs(global, nil)
-	assert.Len(t, result, 2)
-
-	// Test device scrapers override
-	device := map[component.Type]component.Config{
-		component.MustNewType("system"): nil,
-	}
-	result = mergeScraperConfigs(global, device)
-	assert.Len(t, result, 1)
-	assert.Contains(t, result, component.MustNewType("system"))
 }
 
 func TestGetAvailableScraperTypes(t *testing.T) {

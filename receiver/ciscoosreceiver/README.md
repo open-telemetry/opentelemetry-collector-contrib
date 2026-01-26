@@ -16,14 +16,14 @@ The Cisco OS Receiver is a modular receiver that collects metrics from Cisco net
 
 ## Configuration
 
-The receiver uses a hierarchical configuration with global defaults and per-device settings:
+The receiver configuration includes:
 
 | Setting | Type | Required | Description |
 |---------|------|----------|-------------|
 | `collection_interval` | duration | No | How often to collect metrics (default: 60s) |
 | `timeout` | duration | No | SSH connection and command timeout (default: 10s) |
 | `devices` | list | Yes | List of Cisco devices to monitor |
-| `scrapers` | map | No | Global scraper configuration with metric toggles |
+| `scrapers` | map | Yes | Scraper configuration with metric toggles |
 
 ### Device Configuration
 
@@ -37,7 +37,6 @@ Each device in the `devices` list has the following settings:
 | `auth.username` | string | Yes | SSH username for authentication |
 | `auth.password` | string | No* | Password for authentication |
 | `auth.key_file` | string | No* | Path to SSH private key file |
-| `scrapers` | map | No | Per-device scraper override (uses global if not specified) |
 
 *At least one of `auth.password` or `auth.key_file` is required. Both can be provided for fallback authentication (key file is tried first).
 
@@ -52,7 +51,7 @@ Each device in the `devices` list has the following settings:
 
 ### Scrapers Configuration
 
-Global scrapers define which metrics to collect for all devices. Per-device scrapers can override the global settings.
+Scrapers define which metrics to collect from all devices.
 
 | Scraper | Description |
 |---------|-------------|
@@ -61,12 +60,7 @@ Global scrapers define which metrics to collect for all devices. Per-device scra
 
 **Metric Enable Behavior:**
 - If a scraper is specified without a `metrics` section, **all metrics for that scraper are enabled by default**
-- You only need to explicitly set `enabled: true` when overriding a metric that was disabled in the global config
 - Use `enabled: false` to disable specific metrics
-
-**Scraper Override Behavior:**
-- If a device has no `scrapers` section, it uses the global `scrapers` configuration
-- If a device has a `scrapers` section, only those scraper keys are used for that device
 
 ## Metrics Collected
 
@@ -108,7 +102,7 @@ receivers:
     collection_interval: 60s
     timeout: 30s
     
-    # Global scrapers applied to all devices (unless overridden)
+    # Scrapers applied to all devices
     # All metrics are enabled by default when scraper is specified
     scrapers:
       system:
@@ -139,53 +133,6 @@ receivers:
           username: "admin"
           key_file: "/home/user/.ssh/id_rsa"
           password: "backup-password"  # Fallback if key auth fails
-
-exporters:
-  debug:
-
-service:
-  pipelines:
-    metrics:
-      receivers: [ciscoos]
-      exporters: [debug]
-```
-
-### Per-Device Scraper Override
-
-```yaml
-receivers:
-  ciscoos:
-    collection_interval: 60s
-    timeout: 30s
-    
-    # Global scrapers - all metrics enabled by default
-    scrapers:
-      system:
-        metrics:
-      interfaces:
-        metrics:
-    
-    devices:
-      # Device 1: Uses global scrapers (system + interfaces, all metrics)
-      - name: "nexus-switch-01"
-        host: "192.168.1.10"
-        port: 22
-        auth:
-          username: "admin"
-          password: "password"
-      
-      # Device 2: Override - only system scraper, disable CPU metric
-      - name: "nexus-switch-02"
-        host: "192.168.1.11"
-        port: 22
-        auth:
-          username: "admin"
-          password: "password"
-        scrapers:
-          system:
-            metrics:
-              system.cpu.utilization:
-                enabled: false  # Disable CPU for this device
 
 exporters:
   debug:

@@ -1,0 +1,14 @@
+ciscoos:
+  collection_interval: 60s
+  timeout: 30s
+  unknown_key: "should_error"
+  scrapers:
+    system:
+      metrics:
+  devices:
+    - name: "test-device"
+      host: "192.168.1.1"
+      port: 22
+      auth:
+        username: "admin"
+        password: "password"
