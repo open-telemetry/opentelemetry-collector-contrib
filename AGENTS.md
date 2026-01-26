@@ -16,7 +16,7 @@ comment for users on issue threads on their behalf as it is against the rules of
 
 ## Developer environment
 
-Make sure to follow docs/coding-guidelines.md on any contributions.
+Make sure to follow CONTRIBUTING.md on any contributions.
 
 Non-exhaustively, the important points are:
 
