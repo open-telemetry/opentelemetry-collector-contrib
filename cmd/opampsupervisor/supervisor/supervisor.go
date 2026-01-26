@@ -1302,7 +1302,7 @@ func (s *Supervisor) composeAgentConfigFiles(incomingConfig *protobufs.AgentRemo
 // merging the last received remote config, last received own metrics config,
 // and any local configs.
 func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
-	if !s.initialOpampConnSuccess.Load() && !s.hasAgentConfigState() && s.config.Agent.FallbackEnabled() && !s.hasPersistedRemoteConfig() {
+	if s.config.Agent.FallbackEnabled() && !s.initialOpampConnSuccess.Load() && !s.hasAgentConfigState() {
 		err := s.loadAndWriteFallbackConfig()
 		if err != nil {
 			return fmt.Errorf("could not switch to fallback config: %w", err)
