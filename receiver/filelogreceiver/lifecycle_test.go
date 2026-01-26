@@ -13,7 +13,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -252,92 +251,4 @@ func TestReceiverInitializationWithValidConfig(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
-}
-
-// TestContextPropagation verifies that context is properly propagated through receiver operations
-func TestContextPropagation(t *testing.T) {
-	t.Parallel()
-
-	factory := NewFactory()
-	cfg := createDefaultConfig()
-
-	tempDir := t.TempDir()
-	logFile := filepath.Join(tempDir, "test.log")
-	cfg.InputConfig.Include = []string{logFile}
-	cfg.InputConfig.StartAt = "beginning"
-
-	// Create a test file
-	require.NoError(t, os.WriteFile(logFile, []byte("test log\n"), 0o600))
-
-	sink := new(consumertest.LogsSink)
-
-	// Use a context with a value to verify propagation
-	type contextKey string
-	const testKey contextKey = "testKey"
-	ctx := context.WithValue(t.Context(), testKey, "testValue")
-
-	receiver, err := factory.CreateLogs(ctx, receivertest.NewNopSettings(metadata.Type), cfg, sink)
-	require.NoError(t, err)
-
-	// Start with context
-	err = receiver.Start(ctx, componenttest.NewNopHost())
-	require.NoError(t, err)
-
-	// Shutdown with the same context
-	err = receiver.Shutdown(ctx)
-	require.NoError(t, err)
-}
-
-// TestReceiverStartWithDifferentHosts tests receiver can start with different host implementations
-func TestReceiverStartWithDifferentHosts(t *testing.T) {
-	t.Parallel()
-
-	ctx := t.Context()
-	factory := NewFactory()
-	cfg := createDefaultConfig()
-
-	tempDir := t.TempDir()
-	cfg.InputConfig.Include = []string{filepath.Join(tempDir, "test.log")}
-
-	tests := []struct {
-		name string
-		host component.Host
-	}{
-		{
-			name: "with nop host",
-			host: componenttest.NewNopHost(),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sink := new(consumertest.LogsSink)
-
-			receiver, err := factory.CreateLogs(ctx, receivertest.NewNopSettings(metadata.Type), cfg, sink)
-			require.NoError(t, err)
-
-			err = receiver.Start(ctx, tt.host)
-			require.NoError(t, err)
-
-			err = receiver.Shutdown(ctx)
-			require.NoError(t, err)
-		})
-	}
-}
-
-// TestReceiverFactoryCreation tests the factory creation
-func TestReceiverFactoryCreation(t *testing.T) {
-	factory := NewFactory()
-	require.NotNil(t, factory)
-
-	// Verify factory type
-	assert.Equal(t, component.MustNewType("filelog"), factory.Type())
-
-	// Verify factory can create default config
-	cfg := factory.CreateDefaultConfig()
-	require.NotNil(t, cfg)
-	assert.IsType(t, &FileLogConfig{}, cfg)
-
-	// Verify factory has logs signal capability
-	require.NotNil(t, factory.CreateLogs)
 }

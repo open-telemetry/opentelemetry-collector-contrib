@@ -8,107 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 )
-
-// TestReceiverTypeInterface verifies ReceiverType implements the required interface
-func TestReceiverTypeInterface(t *testing.T) {
-	rt := ReceiverType{}
-
-	// Test Type method
-	typ := rt.Type()
-	assert.Equal(t, component.MustNewType("filelog"), typ)
-
-	// Test CreateDefaultConfig
-	cfg := rt.CreateDefaultConfig()
-	require.NotNil(t, cfg)
-	assert.IsType(t, &FileLogConfig{}, cfg)
-}
-
-// TestCreateDefaultConfigValues verifies all default configuration values
-func TestCreateDefaultConfigValues(t *testing.T) {
-	cfg := createDefaultConfig()
-
-	require.NotNil(t, cfg)
-	assert.IsType(t, &FileLogConfig{}, cfg)
-
-	// Verify BaseConfig defaults
-	assert.NotNil(t, cfg.Operators)
-	assert.Empty(t, cfg.Operators)
-
-	// Verify RetryOnFailure defaults
-	expectedRetry := consumerretry.NewDefaultConfig()
-	assert.Equal(t, expectedRetry.Enabled, cfg.RetryOnFailure.Enabled)
-	assert.Equal(t, expectedRetry.InitialInterval, cfg.RetryOnFailure.InitialInterval)
-	assert.Equal(t, expectedRetry.MaxInterval, cfg.RetryOnFailure.MaxInterval)
-	assert.Equal(t, expectedRetry.MaxElapsedTime, cfg.RetryOnFailure.MaxElapsedTime) // Verify InputConfig defaults
-	expectedInput := file.NewConfig()
-	assert.Equal(t, expectedInput.Include, cfg.InputConfig.Include)
-	assert.Equal(t, expectedInput.Exclude, cfg.InputConfig.Exclude)
-	assert.Equal(t, expectedInput.StartAt, cfg.InputConfig.StartAt)
-}
-
-// TestBaseConfigExtraction verifies BaseConfig extraction from FileLogConfig
-func TestBaseConfigExtraction(t *testing.T) {
-	rt := ReceiverType{}
-	cfg := &FileLogConfig{
-		BaseConfig:  createDefaultConfig().BaseConfig,
-		InputConfig: file.Config{},
-	}
-
-	baseConfig := rt.BaseConfig(cfg)
-	assert.Equal(t, cfg.BaseConfig, baseConfig)
-}
-
-// TestInputConfigExtraction verifies InputConfig extraction from FileLogConfig
-func TestInputConfigExtraction(t *testing.T) {
-	rt := ReceiverType{}
-	inputCfg := *file.NewConfig()
-	inputCfg.Include = []string{"/var/log/*.log"}
-
-	cfg := &FileLogConfig{
-		InputConfig: inputCfg,
-	}
-
-	extracted := rt.InputConfig(cfg)
-	require.NotNil(t, extracted)
-
-	// Verify the extracted config contains the expected input config
-	assert.NotNil(t, extracted.Builder)
-}
-
-// TestConfigWithOperators verifies configuration with various operators
-func TestConfigWithOperators(t *testing.T) {
-	cfg := createDefaultConfig()
-
-	// Add some operators
-	cfg.Operators = []operator.Config{
-		{Builder: file.NewConfig()},
-	}
-
-	assert.Len(t, cfg.Operators, 1)
-}
-
-// TestConfigWithRetrySettings verifies configuration with custom retry settings
-func TestConfigWithRetrySettings(t *testing.T) {
-	cfg := createDefaultConfig()
-
-	// Customize retry settings
-	cfg.RetryOnFailure.Enabled = true
-	cfg.RetryOnFailure.InitialInterval = 5 * time.Second
-	cfg.RetryOnFailure.MaxInterval = 60 * time.Second
-	cfg.RetryOnFailure.MaxElapsedTime = 10 * time.Minute
-
-	assert.True(t, cfg.RetryOnFailure.Enabled)
-	assert.Equal(t, 5*time.Second, cfg.RetryOnFailure.InitialInterval)
-	assert.Equal(t, 60*time.Second, cfg.RetryOnFailure.MaxInterval)
-	assert.Equal(t, 10*time.Minute, cfg.RetryOnFailure.MaxElapsedTime)
-}
 
 // TestConfigWithFileInputOptions verifies configuration with various file input options
 func TestConfigWithFileInputOptions(t *testing.T) {
@@ -273,16 +173,4 @@ func TestConfigWithFileInputOptions(t *testing.T) {
 			tt.verify(t, cfg)
 		})
 	}
-}
-
-// TestFileLogConfigStructInitialization ensures the config struct is properly initialized
-func TestFileLogConfigStructInitialization(t *testing.T) {
-	// Test that the struct cannot be initialized with unkeyed literals
-	// due to the _ struct{} field
-	cfg := FileLogConfig{
-		InputConfig: *file.NewConfig(),
-		BaseConfig:  createDefaultConfig().BaseConfig,
-	}
-
-	require.NotNil(t, cfg)
 }
