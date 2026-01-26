@@ -79,6 +79,7 @@ type routingItem[C any] struct {
 	dataPointStatement *ottl.Statement[*ottldatapoint.TransformContext]
 	logStatement       *ottl.Statement[*ottllog.TransformContext]
 	statementContext   string
+	action             Action
 }
 
 func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.TelemetrySettings) error {
@@ -244,6 +245,7 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 				}
 				route.logStatement = statement
 			}
+			route.action = item.Action
 		} else {
 			var pipelineNames []string
 			for _, pipeline := range item.Pipelines {
