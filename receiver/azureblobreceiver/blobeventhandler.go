@@ -6,6 +6,7 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -52,9 +53,12 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 	hub, err := azeventhubs.NewConsumerClientFromConnectionString(
 		p.eventHubConnectionString,
 		"",
-		"",
+		"$Default",
 		&azeventhubs.ConsumerClientOptions{},
 	)
+	if err != nil {
+		return err
+	}
 
 	p.hub = hub
 
@@ -105,7 +109,7 @@ func (p *azureBlobEventHandler) ReceiveEvents(
 			time.Second*time.Duration(pollRate),
 		)
 		events, err := pc.ReceiveEvents(timeoutCtx, maxPollEvent, &azeventhubs.ReceiveEventsOptions{})
-		if err != nil {
+		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 			p.logger.Error(
 				"error receiving events from partition",
 				zap.String("partitionID", partitionID),
