@@ -213,7 +213,7 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
-	resp.WriteHeader(http.StatusCreated)
+	resp.WriteHeader(http.StatusOK)
 }
 
 type errorResponse struct {
