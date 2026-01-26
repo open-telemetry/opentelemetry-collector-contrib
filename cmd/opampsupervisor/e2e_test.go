@@ -306,7 +306,7 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 		"goos":        runtime.GOOS,
 		"goarch":      runtime.GOARCH,
 		"extension":   extension,
-		"storage_dir": strings.ReplaceAll(t.TempDir(), "\\", "\\\\"),
+		"storage_dir": escapePathStringForWin(t.TempDir()),
 	}
 
 	for key, val := range extraConfigData {
@@ -322,6 +322,17 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 	require.NoError(t, err)
 
 	return cfgFile
+}
+
+// escapePathStringForWin escapes Windows paths for YAML double-quoted strings.
+// Some test templates wrap storage.directory in double quotes, where backslashes
+// would be treated as escape prefixes (e.g., \U, \t), so we must escape them.
+// Non-Windows paths are returned unchanged.
+func escapePathStringForWin(path string) string {
+	if runtime.GOOS != "windows" {
+		return path
+	}
+	return strings.ReplaceAll(path, "\\", "\\\\")
 }
 
 // This test ensures the Supervisor config validation path can validate
@@ -659,7 +670,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 			extraConfigData := map[string]string{
 				"url":              server.addr,
 				"storage_dir":      storageDir,
-				"fallback_configs": strings.ReplaceAll(fallbackConfigPath, "\\", "\\\\"),
+				"fallback_configs": escapePathStringForWin(fallbackConfigPath),
 			}
 			if mode.UseHUPConfigReload {
 				extraConfigData["use_hup_config_reload"] = "true"
@@ -2824,7 +2835,7 @@ func TestSupervisorFallbackWhenNoPersistedConfig(t *testing.T) {
 		"url":              server.addr,
 		"storage_dir":      storageDir,
 		"local_config":     localConfigPath,
-		"fallback_configs": strings.ReplaceAll(fallbackConfigPath, "\\", "\\\\"),
+		"fallback_configs": escapePathStringForWin(fallbackConfigPath),
 	})
 
 	require.NoError(t, s.Start(t.Context()))
@@ -2889,7 +2900,7 @@ func TestSupervisorFallbackDisablesAfterFirstConnect(t *testing.T) {
 		"url":              server.addr,
 		"storage_dir":      storageDir,
 		"local_config":     localConfigPath,
-		"fallback_configs": strings.ReplaceAll(fallbackConfigPath, "\\", "\\\\"),
+		"fallback_configs": escapePathStringForWin(fallbackConfigPath),
 	})
 
 	require.NoError(t, s.Start(t.Context()))
