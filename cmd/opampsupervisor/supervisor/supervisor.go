@@ -684,6 +684,14 @@ func (s *Supervisor) startOpAMPClient() error {
 						s.telemetrySettings.Logger.Error("failed loading initial config", zap.Error(err))
 						return
 					}
+					if err := s.waitForAgentReady(); err != nil {
+						s.telemetrySettings.Logger.Debug("Agent not ready before config update; skipping signal", zap.Error(err))
+						return
+					}
+					select {
+					case s.hasNewConfig <- struct{}{}:
+					default:
+					}
 				}
 			},
 			OnConnectFailed: func(_ context.Context, err error) {
