@@ -675,10 +675,10 @@ func (s *Supervisor) startOpAMPClient() error {
 		RemoteConfigStatus: s.persistentState.GetLastRemoteConfigStatus(),
 		Callbacks: types.Callbacks{
 			OnConnect: func(context.Context) {
-				opampConnChanged := s.initialOpampConnSuccess.CompareAndSwap(false, true)
+				opampBackendConnected := s.initialOpampConnSuccess.CompareAndSwap(false, true)
 				s.telemetrySettings.Logger.Info("Connected to the OpAMP server.")
 
-				if opampConnChanged && s.config.Agent.FallbackEnabled() {
+				if s.config.Agent.FallbackEnabled() && opampBackendConnected {
 					err := s.loadAndWriteInitialMergedConfig()
 					if err != nil {
 						s.telemetrySettings.Logger.Error("failed loading initial config", zap.Error(err))
