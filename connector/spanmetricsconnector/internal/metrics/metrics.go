@@ -24,6 +24,7 @@ type HistogramMetrics interface {
 
 type Histogram interface {
 	Observe(value float64)
+	ObserveN(value float64, n uint64)
 	AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64)
 }
 
@@ -269,6 +270,15 @@ func (h *explicitHistogram) Observe(value float64) {
 	h.bucketCounts[index]++
 }
 
+func (h *explicitHistogram) ObserveN(value float64, n uint64) {
+	h.sum += value * float64(n)
+	h.count += n
+
+	// Binary search to find the value bucket index.
+	index := sort.SearchFloat64s(h.bounds, value)
+	h.bucketCounts[index] += n
+}
+
 func (h *explicitHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64) {
 	if h.exemplars.Len() >= h.maxExemplarCount {
 		return
@@ -281,6 +291,10 @@ func (h *explicitHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcommon.
 
 func (h *exponentialHistogram) Observe(value float64) {
 	h.histogram.Update(value)
+}
+
+func (h *exponentialHistogram) ObserveN(value float64, n uint64) {
+	h.histogram.UpdateByIncr(value, n)
 }
 
 func (h *exponentialHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64) {
