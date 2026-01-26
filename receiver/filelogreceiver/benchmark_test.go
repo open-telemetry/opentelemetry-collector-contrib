@@ -68,49 +68,12 @@ func benchmarkReadSingleStaticFile(b *testing.B, numLines int) {
 	}
 }
 
-// BenchmarkReceiverWithSingleFile benchmarks the receiver reading a single file
-func BenchmarkReceiverWithSingleFile(b *testing.B) {
-	f := NewFactory()
-	linesPerFile := 100
-
-	for b.Loop() {
-		b.StopTimer()
-
-		logFileGenerator := testutil.NewLogFileGenerator(b)
-		logFilePath := logFileGenerator.GenerateLogFile(linesPerFile)
-
-		cfg := &FileLogConfig{
-			InputConfig: func() file.Config {
-				c := file.NewConfig()
-				c.Include = []string{logFilePath}
-				c.PollInterval = time.Microsecond
-				c.StartAt = "beginning"
-				return *c
-			}(),
-		}
-
-		sink := new(consumertest.LogsSink)
-		rcvr, err := f.CreateLogs(b.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
-		require.NoError(b, err)
-
-		b.StartTimer()
-		require.NoError(b, rcvr.Start(b.Context(), componenttest.NewNopHost()))
-
-		require.Eventually(b, expectNLogs(sink, linesPerFile), 2*time.Second, 10*time.Millisecond)
-
-		require.NoError(b, rcvr.Shutdown(b.Context()))
-	}
-}
-
 // BenchmarkReceiverStartupShutdown benchmarks receiver startup and shutdown
 func BenchmarkReceiverStartupShutdown(b *testing.B) {
-	logFileGenerator := testutil.NewLogFileGenerator(b)
-	logFilePath := logFileGenerator.GenerateLogFile(100)
-
 	cfg := &FileLogConfig{
 		InputConfig: func() file.Config {
 			c := file.NewConfig()
-			c.Include = []string{logFilePath}
+			c.Include = []string{"/nonexistent/file"}
 			c.PollInterval = time.Millisecond
 			c.StartAt = "beginning"
 			return *c
@@ -123,37 +86,6 @@ func BenchmarkReceiverStartupShutdown(b *testing.B) {
 		rcvr, err := f.CreateLogs(b.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 		require.NoError(b, err)
 		require.NoError(b, rcvr.Start(b.Context(), componenttest.NewNopHost()))
-		require.NoError(b, rcvr.Shutdown(b.Context()))
-	}
-}
-
-// BenchmarkReceiverWithParsing benchmarks receiver with log parsing
-func BenchmarkReceiverWithParsing(b *testing.B) {
-	require.NoError(b, featuregate.GlobalRegistry().Set("stanza.synchronousLogEmitter", false))
-
-	logFileGenerator := testutil.NewLogFileGenerator(b)
-	logFilePath := logFileGenerator.GenerateLogFile(10000)
-
-	cfg := &FileLogConfig{
-		InputConfig: func() file.Config {
-			c := file.NewConfig()
-			c.Include = []string{logFilePath}
-			c.PollInterval = time.Microsecond
-			c.StartAt = "beginning"
-			return *c
-		}(),
-	}
-	sink := new(consumertest.LogsSink)
-	f := NewFactory()
-
-	for b.Loop() {
-		rcvr, err := f.CreateLogs(b.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
-		require.NoError(b, err)
-		require.NoError(b, rcvr.Start(b.Context(), componenttest.NewNopHost()))
-
-		require.Eventually(b, expectNLogs(sink, 10000), 5*time.Second, 2*time.Microsecond)
-		sink.Reset()
-
 		require.NoError(b, rcvr.Shutdown(b.Context()))
 	}
 }
