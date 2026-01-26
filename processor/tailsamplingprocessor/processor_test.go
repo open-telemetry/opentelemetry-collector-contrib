@@ -1343,7 +1343,7 @@ func TestExtension_StoppableEvaluator(t *testing.T) {
 
 		controller.waitForTick()
 
-		assert.True(t, evaluator.stopCalled)
+		assert.True(t, evaluator.stopCalled.Load())
 	})
 
 	t.Run("on Shutdown", func(t *testing.T) {
@@ -1382,7 +1382,7 @@ func TestExtension_StoppableEvaluator(t *testing.T) {
 
 		require.NoError(t, p.Shutdown(t.Context()))
 
-		assert.True(t, evaluator.stopCalled)
+		assert.True(t, evaluator.stopCalled.Load())
 	})
 }
 
@@ -1428,7 +1428,7 @@ func (*extension) Shutdown(_ context.Context) error {
 }
 
 type evaluator struct {
-	stopCalled bool
+	stopCalled atomic.Bool
 }
 
 var (
@@ -1437,15 +1437,14 @@ var (
 )
 
 func (e *evaluator) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
-	if e.stopCalled {
+	if e.stopCalled.Load() {
 		panic("Evaluate called after Stop")
 	}
 	return samplingpolicy.Sampled, nil
 }
 
 func (e *evaluator) Stop() {
-	if e.stopCalled {
+	if e.stopCalled.Swap(true) {
 		panic("Stop called twice")
 	}
-	e.stopCalled = true
 }
