@@ -836,10 +836,10 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError:   `error reading thread info for process "test" (pid 1): err8`,
 		},
 		{
-			name:          "Threads error",
+			name:          "Threads Error",
 			osFilter:      []string{"darwin", "windows"},
 			threadsError:  errors.New("err12"),
-			expectedError: `error reading threads info for process "test" (pid 1): err12`,
+			expectedError: `error reading context switch counts for process "test" (pid 1): err12`,
 		},
 		{
 			name:            "Context Switches Error",
@@ -1415,7 +1415,7 @@ func handleCountErrorMessageIfSupportedOnPlatform() string {
 
 func handleContextSwitchErrorMessageIfSupportedOnPlatform() string {
 	if runtime.GOOS == "linux" {
-		return `error reading context switch counts for process "test" (pid 1): err12;`
+		return `error reading context switch counts for process "test" (pid 1): err12; `
 	}
 	return ""
 }
