@@ -66,10 +66,11 @@ type tailSamplingSpanProcessor struct {
 	logger    *zap.Logger
 	tracer    trace.Tracer
 
-	deleteTraceQueue    *list.List
-	nextConsumer        consumer.Traces
-	policies            []*policy
-	policyNameAttrs     map[string]attribute.KeyValue // Pre-allocated attributes for policy names, this save millions of allocation
+	deleteTraceQueue *list.List
+	nextConsumer     consumer.Traces
+	policies         []*policy
+	// Pre-allocated attributes for policy names, this save allocated it for each span
+	policyNameAttrs     map[string]attribute.KeyValue
 	idToTrace           map[pcommon.TraceID]*traceData
 	tickerFrequency     time.Duration
 	decisionBatcher     idbatcher.Batcher
@@ -250,7 +251,9 @@ func (tsp *tailSamplingSpanProcessor) SetSamplingPolicy(cfgs []PolicyCfg) {
 func (tsp *tailSamplingSpanProcessor) updatePolicyNameAttrs() {
 	tsp.policyNameAttrs = make(map[string]attribute.KeyValue, len(tsp.policies))
 	for _, p := range tsp.policies {
-		tsp.policyNameAttrs[p.name] = policyNameKey.String(p.name)
+		if _, ok := tsp.policyNameAttrs[p.name]; !ok {
+			tsp.policyNameAttrs[p.name] = policyNameKey.String(p.name)
+		}
 	}
 }
 
@@ -342,17 +345,15 @@ var (
 	attrSampledFalse = metric.WithAttributes(attribute.String("sampled", "false"))
 
 	// Pre-allocated trace span attributes for decisions to reduce allocations
-	policyNameKey          = attribute.Key("policy.name")
-	decisionFinalKey       = attribute.Key("decision.final")
-	decisionPolicyKey      = attribute.Key("decision.policy")
-	spanAttrDecisionSampled    = decisionFinalKey.String(samplingpolicy.Sampled.String())
-	spanAttrDecisionNotSampled = decisionFinalKey.String(samplingpolicy.NotSampled.String())
-	spanAttrDecisionDropped    = decisionFinalKey.String(samplingpolicy.Dropped.String())
-	spanDecisionToAttribute    = map[samplingpolicy.Decision]attribute.KeyValue{
-		samplingpolicy.Sampled:    spanAttrDecisionSampled,
-		samplingpolicy.NotSampled: spanAttrDecisionNotSampled,
-		samplingpolicy.Dropped:    spanAttrDecisionDropped,
-	}
+	policyNameKey = attribute.Key("policy.name")
+	//decisionFinalKey key to represent final decision made
+	decisionFinalKey = attribute.Key("decision.final")
+	//decisionPolicyKey key to represent policy name
+	decisionPolicyKey = attribute.Key("decision.policy")
+	//policyDecisionKey key to represent individual policy decision
+	policyDecisionKey         = attribute.Key("policy.decision")
+	spanDecisionToAttribute   = telemetry.NewDecisionAttributes(decisionFinalKey)
+	policyDecisionToAttribute = telemetry.NewDecisionAttributes(policyDecisionKey)
 )
 
 type Option func(*tailSamplingSpanProcessor)
@@ -703,7 +704,6 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	}
 
 	if span.IsRecording() {
-		// don't add information by policy to avoid too big span
 		span.SetAttributes(
 			attribute.Int64("decisions.sampled", metrics.decisionSampled),
 			attribute.Int64("decisions.not_sampled", metrics.decisionNotSampled),
@@ -772,7 +772,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, id pcomm
 				attribute.Int64("policy.evaluation_us", evaluationDuration.Microseconds()),
 			}
 			if err == nil {
-				eventAttrs = append(eventAttrs, attribute.String("policy.decision", decision.String()))
+				eventAttrs = append(eventAttrs, policyDecisionToAttribute.Get(decision))
 			} else {
 				eventAttrs = append(eventAttrs, attribute.String("policy.error", err.Error()))
 			}
@@ -838,7 +838,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, id pcomm
 	}
 
 	if span.IsRecording() {
-		span.SetAttributes(spanDecisionToAttribute[finalDecision])
+		span.SetAttributes(spanDecisionToAttribute.Get(finalDecision))
 		if policyName := getPolicyName(sampledPolicy); policyName != "" {
 			span.SetAttributes(decisionPolicyKey.String(policyName))
 		}
