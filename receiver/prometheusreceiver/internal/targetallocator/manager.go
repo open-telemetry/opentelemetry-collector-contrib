@@ -145,6 +145,8 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 	copy(initialConfig, m.initialScrapeConfigs)
 
 	m.promCfg.ScrapeConfigs = initialConfig
+	convertClassicHistograms := true
+	alwaysScrapeClassic := false
 
 	for jobName, scrapeConfig := range scrapeConfigsResponse {
 		var httpSD promHTTP.SDConfig
@@ -176,6 +178,9 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 		if scrapeConfig.ScrapeFallbackProtocol == "" {
 			scrapeConfig.ScrapeFallbackProtocol = promconfig.PrometheusText0_0_4
 		}
+
+		scrapeConfig.ConvertClassicHistogramsToNHCB = &convertClassicHistograms
+		scrapeConfig.AlwaysScrapeClassicHistograms = &alwaysScrapeClassic
 
 		// Validate the scrape config and also fill in the defaults from the global config as needed.
 		err = scrapeConfig.Validate(m.promCfg.GlobalConfig)
