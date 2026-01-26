@@ -10,16 +10,16 @@ require (
 	go.opentelemetry.io/collector/component v1.50.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/component/componenttest v0.144.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/confmap v1.50.1-0.20260121161034-55399d4743af
-	go.opentelemetry.io/collector/consumer/consumertest v0.144.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.144.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/consumer/xconsumer v0.144.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/pdata/pprofile v0.144.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/receiver v1.50.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/receiver/receivertest v0.144.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/receiver/xreceiver v0.144.1-0.20260121161034-55399d4743af
-	go.opentelemetry.io/collector/scraper v0.144.0
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.144.0
-	go.opentelemetry.io/collector/scraper/scraperhelper/xscraperhelper v0.144.0
-	go.opentelemetry.io/collector/scraper/xscraper v0.144.0
+	go.opentelemetry.io/collector/scraper v0.144.1-0.20260121161034-55399d4743af
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.144.1-0.20260121161034-55399d4743af
+	go.opentelemetry.io/collector/scraper/scraperhelper/xscraperhelper v0.144.1-0.20260121161034-55399d4743af
+	go.opentelemetry.io/collector/scraper/xscraper v0.144.1-0.20260121161034-55399d4743af
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
