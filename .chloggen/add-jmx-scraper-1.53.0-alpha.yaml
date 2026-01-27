@@ -1,0 +1,4 @@
+change_type: enhancement
+component: receiver/jmx
+note: Add the JMX scraper version "1.53.0-alpha" to the supported jars hash list
+issues: [ 45571 ]
