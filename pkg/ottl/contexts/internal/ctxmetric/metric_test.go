@@ -141,7 +141,7 @@ func TestPathGetSetter(t *testing.T) {
 			require.NoError(t, err)
 
 			// Verify that setting an invalid type returns an error
-			if tt.path.Keys() == nil && !tt.skipSetterTypeCheck {
+			if !tt.skipSetterTypeCheck {
 				err = accessor.Set(t.Context(), newTestContext(metric), struct{}{})
 				require.Error(t, err)
 			}
