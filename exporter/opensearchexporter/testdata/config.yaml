@@ -113,3 +113,11 @@ opensearch/traces_index_time_format_invalid:
   traces_index: "otel-traces-%{service.name}"
   traces_index_fallback: "default-service"
   traces_index_time_format: "invalid_format!"
+
+opensearch/sending_queue_with_batch:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  logs_index: otel-logs
+  logs_index_time_format: "yyyy-MM-dd"
+  sending_queue:
+    batch:
