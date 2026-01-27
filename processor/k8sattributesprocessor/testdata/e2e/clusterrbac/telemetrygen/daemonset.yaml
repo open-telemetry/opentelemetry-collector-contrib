@@ -24,8 +24,10 @@ spec:
         - --otlp-endpoint={{ .OTLPEndpoint }}
         - --duration=36000s
         - --rate=1
+        - --batch=false
         - --otlp-attributes=service.name="test-{{ .DataType }}-daemonset"
         - --otlp-attributes=k8s.container.name="telemetrygen"
+        - --allow-export-failures
 {{- if eq .DataType "traces" }}
         - --status-code=
 {{- end }}
