@@ -1,4 +1,34 @@
+# Minimal dynamic configuration
 sentry:
-sentry/2:
-  dsn: https://key@host/path/42
-  environment: prod
+  url: https://sentry.io
+  org_slug: my-org
+  auth_token: test-auth-token-12345
+
+# Dynamic configuration with routing options
+sentry/with_routing:
+  url: https://sentry.io
+  org_slug: my-org
+  auth_token: test-auth-token-12345
+  auto_create_projects: true
+  routing:
+    project_from_attribute: service.name
+    attribute_to_project_mapping:
+      api-service: backend-api
+      web-service: frontend-web
+
+# Dynamic configuration with all options
+sentry/full:
+  url: https://sentry.example.com
+  org_slug: example-org
+  auth_token: full-test-token
+  timeout: 45s
+  auto_create_projects: true
+  http:
+    timeout: 20s
+    tls:
+      insecure: true
+  routing:
+    project_from_attribute: deployment.environment.name
+    attribute_to_project_mapping:
+      production: prod-project
+      staging: stage-project
