@@ -31,11 +31,11 @@ type consumerProvider[C any] func(...pipeline.ID) (C, error)
 // parameter C is expected to be one of: consumer.Traces, consumer.Metrics, or
 // consumer.Logs.
 type router[C any] struct {
-	resourceParser   ottl.Parser[ottlresource.TransformContext]
-	spanParser       ottl.Parser[ottlspan.TransformContext]
-	metricParser     ottl.Parser[ottlmetric.TransformContext]
-	dataPointParser  ottl.Parser[ottldatapoint.TransformContext]
-	logParser        ottl.Parser[ottllog.TransformContext]
+	resourceParser   ottl.Parser[*ottlresource.TransformContext]
+	spanParser       ottl.Parser[*ottlspan.TransformContext]
+	metricParser     ottl.Parser[*ottlmetric.TransformContext]
+	dataPointParser  ottl.Parser[*ottldatapoint.TransformContext]
+	logParser        ottl.Parser[*ottllog.TransformContext]
 	defaultConsumer  C
 	logger           *zap.Logger
 	routes           map[string]routingItem[C]
@@ -73,12 +73,13 @@ func newRouter[C any](
 type routingItem[C any] struct {
 	consumer           C
 	requestCondition   *requestCondition
-	resourceStatement  *ottl.Statement[ottlresource.TransformContext]
-	spanStatement      *ottl.Statement[ottlspan.TransformContext]
-	metricStatement    *ottl.Statement[ottlmetric.TransformContext]
-	dataPointStatement *ottl.Statement[ottldatapoint.TransformContext]
-	logStatement       *ottl.Statement[ottllog.TransformContext]
+	resourceStatement  *ottl.Statement[*ottlresource.TransformContext]
+	spanStatement      *ottl.Statement[*ottlspan.TransformContext]
+	metricStatement    *ottl.Statement[*ottlmetric.TransformContext]
+	dataPointStatement *ottl.Statement[*ottldatapoint.TransformContext]
+	logStatement       *ottl.Statement[*ottllog.TransformContext]
 	statementContext   string
+	action             Action
 }
 
 func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.TelemetrySettings) error {
@@ -101,7 +102,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	var errs error
 	if buildResource {
 		parser, err := ottlresource.NewParser(
-			standardFunctions[ottlresource.TransformContext](),
+			standardFunctions[*ottlresource.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -123,7 +124,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildMetric {
 		parser, err := ottlmetric.NewParser(
-			standardFunctions[ottlmetric.TransformContext](),
+			standardFunctions[*ottlmetric.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -134,7 +135,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildDataPoint {
 		parser, err := ottldatapoint.NewParser(
-			standardFunctions[ottldatapoint.TransformContext](),
+			standardFunctions[*ottldatapoint.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -145,7 +146,7 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 	}
 	if buildLog {
 		parser, err := ottllog.NewParser(
-			standardFunctions[ottllog.TransformContext](),
+			standardFunctions[*ottllog.TransformContext](),
 			settings,
 		)
 		if err == nil {
@@ -244,6 +245,7 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 				}
 				route.logStatement = statement
 			}
+			route.action = item.Action
 		} else {
 			var pipelineNames []string
 			for _, pipeline := range item.Pipelines {

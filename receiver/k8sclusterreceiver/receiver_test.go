@@ -19,15 +19,14 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
@@ -53,7 +52,7 @@ func TestReceiver(t *testing.T) {
 	}()
 
 	client := newFakeClientWithAllResources()
-	osQuotaClient := fakeQuota.NewSimpleClientset()
+	osQuotaClient := fakeQuota.NewClientset()
 	sink := new(consumertest.MetricsSink)
 
 	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, nil, component.MustNewID("foo"))
@@ -102,7 +101,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	}
 
 	client := newFakeClientWithAllResources()
-	osQuotaClient := fakeQuota.NewSimpleClientset()
+	osQuotaClient := fakeQuota.NewClientset()
 	sink := new(consumertest.MetricsSink)
 	tt := componenttest.NewTelemetry()
 	kr := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, nil, component.MustNewID("k8s_leader_elector"))
@@ -138,7 +137,7 @@ func TestNamespacedReceiver(t *testing.T) {
 	}()
 
 	client := newFakeClientWithAllResources()
-	osQuotaClient := fakeQuota.NewSimpleClientset()
+	osQuotaClient := fakeQuota.NewClientset()
 	sink := new(consumertest.MetricsSink)
 
 	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, []string{"test"}, component.MustNewID("foo"))
@@ -188,7 +187,7 @@ func TestNamespacedReceiverWithMultipleNamespaces(t *testing.T) {
 	}()
 
 	client := newFakeClientWithAllResources()
-	osQuotaClient := fakeQuota.NewSimpleClientset()
+	osQuotaClient := fakeQuota.NewClientset()
 	sink := new(consumertest.MetricsSink)
 
 	observedNamespaces := []string{"test-0", "test-1"}
@@ -217,7 +216,7 @@ func TestNamespacedReceiverWithMultipleNamespaces(t *testing.T) {
 
 		for i := 0; i < latestMetrics.Len(); i++ {
 			resource := latestMetrics.At(i).Resource()
-			gotNamespace, ok := resource.Attributes().Get(string(semconv.K8SNamespaceNameKey))
+			gotNamespace, ok := resource.Attributes().Get("k8s.namespace.name")
 			if ok {
 				gotNamespaces = append(gotNamespaces, gotNamespace.AsString())
 			}
@@ -258,7 +257,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	}()
 
 	client := newFakeClientWithAllResources()
-	osQuotaClient := fakeQuota.NewSimpleClientset()
+	osQuotaClient := fakeQuota.NewClientset()
 	sink := new(consumertest.MetricsSink)
 
 	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, nil, component.MustNewID("foo"))

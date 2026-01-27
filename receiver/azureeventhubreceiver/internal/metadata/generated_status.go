@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("azureeventhub")
+	Type      = component.MustNewType("azure_event_hub")
 	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 )
 

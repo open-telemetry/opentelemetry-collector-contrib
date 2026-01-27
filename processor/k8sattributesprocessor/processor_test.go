@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/xprocessor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.8.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -198,6 +197,25 @@ func newMultiTest(
 	m.mp = mp
 	m.lp = lp
 	m.pp = pp
+
+	// Register cleanup to shutdown all processors
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+		defer cancel()
+		if m.tp != nil {
+			_ = m.tp.Shutdown(ctx)
+		}
+		if m.mp != nil {
+			_ = m.mp.Shutdown(ctx)
+		}
+		if m.lp != nil {
+			_ = m.lp.Shutdown(ctx)
+		}
+		if m.pp != nil {
+			_ = m.pp.Shutdown(ctx)
+		}
+	})
+
 	return m
 }
 
@@ -332,7 +350,7 @@ func withPassthroughIP(passthroughIP string) generateResourceFunc {
 
 func withHostname(hostname string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().PutStr(string(conventions.HostNameKey), hostname)
+		res.Attributes().PutStr("host.name", hostname)
 	}
 }
 
@@ -344,19 +362,19 @@ func withPodUID(uid string) generateResourceFunc {
 
 func withContainerName(containerName string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().PutStr(string(conventions.K8SContainerNameKey), containerName)
+		res.Attributes().PutStr("k8s.container.name", containerName)
 	}
 }
 
 func withContainerID(id string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().PutStr(string(conventions.ContainerIDKey), id)
+		res.Attributes().PutStr("container.id", id)
 	}
 }
 
 func withContainerRunID(containerRunID string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().PutStr(string(conventions.K8SContainerRestartCountKey), containerRunID)
+		res.Attributes().PutStr("k8s.container.restart_count", containerRunID)
 	}
 }
 
@@ -429,7 +447,7 @@ func TestProcessorNoAttrs(t *testing.T) {
 		t,
 		NewFactory().CreateDefaultConfig(),
 		nil,
-		withExtractMetadata(string(conventions.K8SPodNameKey)),
+		withExtractMetadata("k8s.pod.name"),
 	)
 
 	ctx := client.NewContext(t.Context(), client.Info{
@@ -799,7 +817,7 @@ func TestAddNamespaceLabels(t *testing.T) {
 		t,
 		func() component.Config {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Extract.Metadata = []string{string(conventions.ServiceNamespaceKey)}
+			cfg.Extract.Metadata = []string{"service.namespace"}
 			cfg.Extract.Labels = []FieldExtractConfig{
 				{
 					From: kube.MetadataFromNamespace,
@@ -875,7 +893,7 @@ func TestServiceNamespaceAnnotationTakesPrecedence(t *testing.T) {
 		t,
 		func() component.Config {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Extract.Metadata = []string{string(conventions.ServiceNamespaceKey), "k8s.pod.ip"}
+			cfg.Extract.Metadata = []string{"service.namespace", "k8s.pod.ip"}
 			return cfg
 		}(),
 		nil,
@@ -903,7 +921,7 @@ func TestServiceNamespaceAnnotationTakesPrecedence(t *testing.T) {
 			Name:      "test-pod",
 			Namespace: "default",
 			Attributes: map[string]string{
-				string(conventions.ServiceNamespaceKey): "agent", // from resource.opentelemetry.io/service.namespace annotation
+				"service.namespace": "agent", // from resource.opentelemetry.io/service.namespace annotation
 			},
 		}
 	})
@@ -1109,12 +1127,12 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
-				string(conventions.K8SContainerNameKey):   "app",
-				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
-				string(conventions.ServiceInstanceIDKey):  "instance-1",
-				string(conventions.ServiceVersionKey):     "1.0.1",
+				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				"k8s.container.name":   "app",
+				"container.image.name": "test/app",
+				containerImageTag:      "1.0.1",
+				"service.instance.id":  "instance-1",
+				"service.version":      "1.0.1",
 			},
 		},
 		{
@@ -1147,11 +1165,11 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerID("767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd"),
 			},
 			wantAttrs: map[string]any{
-				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
-				string(conventions.ContainerIDKey):        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
-				string(conventions.K8SContainerNameKey):   "app",
-				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				"container.id":         "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
+				"k8s.container.name":   "app",
+				"container.image.name": "test/app",
+				containerImageTag:      "1.0.1",
 			},
 		},
 		{
@@ -1169,10 +1187,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				}
 				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
 					Attributes: map[string]string{
-						string(conventions.ServiceInstanceIDKey): "explicit-instance",
-						string(conventions.ServiceVersionKey):    "explicit-version",
-						string(conventions.ServiceNameKey):       "explicit-name",
-						string(conventions.ServiceNamespaceKey):  "explicit-ns",
+						"service.instance.id": "explicit-instance",
+						"service.version":     "explicit-version",
+						"service.name":        "explicit-name",
+						"service.namespace":   "explicit-ns",
 					},
 					Containers: kube.PodContainers{
 						ByID: map[string]*kube.Container{
@@ -1192,15 +1210,15 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerID("767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd"),
 			},
 			wantAttrs: map[string]any{
-				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
-				string(conventions.ContainerIDKey):        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
-				string(conventions.K8SContainerNameKey):   "app",
-				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
-				string(conventions.ServiceInstanceIDKey):  "explicit-instance",
-				string(conventions.ServiceVersionKey):     "explicit-version",
-				string(conventions.ServiceNameKey):        "explicit-name",
-				string(conventions.ServiceNamespaceKey):   "explicit-ns",
+				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				"container.id":         "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
+				"k8s.container.name":   "app",
+				"container.image.name": "test/app",
+				containerImageTag:      "1.0.1",
+				"service.instance.id":  "explicit-instance",
+				"service.version":      "explicit-version",
+				"service.name":         "explicit-name",
+				"service.namespace":    "explicit-ns",
 			},
 		},
 		{
@@ -1232,10 +1250,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
-				string(conventions.K8SContainerNameKey):   "app",
-				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				"k8s.container.name":   "app",
+				"container.image.name": "test/app",
+				containerImageTag:      "1.0.1",
 			},
 		},
 		{
@@ -1261,10 +1279,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("1"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                             "1.1.1.1",
-				string(conventions.K8SContainerNameKey):         "app",
-				string(conventions.K8SContainerRestartCountKey): "1",
-				string(conventions.ContainerIDKey):              "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e",
+				kube.K8sIPLabelName:           "1.1.1.1",
+				"k8s.container.name":          "app",
+				"k8s.container.restart_count": "1",
+				"container.id":                "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e",
 			},
 		},
 		{
@@ -1289,9 +1307,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                     "1.1.1.1",
-				string(conventions.K8SContainerNameKey): "app",
-				string(conventions.ContainerIDKey):      "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848",
+				kube.K8sIPLabelName:  "1.1.1.1",
+				"k8s.container.name": "app",
+				"container.id":       "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848",
 			},
 		},
 		{
@@ -1314,9 +1332,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                     "1.1.1.1",
-				string(conventions.K8SContainerNameKey): "app",
-				containerImageRepoDigests:               []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
+				kube.K8sIPLabelName:            "1.1.1.1",
+				"k8s.container.name":           "app",
+				"container.image.repo_digests": []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
 			},
 		},
 		{
@@ -1342,9 +1360,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("0"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                             "1.1.1.1",
-				string(conventions.K8SContainerNameKey):         "new-app",
-				string(conventions.K8SContainerRestartCountKey): "0",
+				kube.K8sIPLabelName:           "1.1.1.1",
+				"k8s.container.name":          "new-app",
+				"k8s.container.restart_count": "0",
 			},
 		},
 		{
@@ -1369,10 +1387,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("1"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                             "1.1.1.1",
-				string(conventions.K8SContainerNameKey):         "app",
-				string(conventions.K8SContainerRestartCountKey): "1",
-				string(conventions.ContainerImageNameKey):       "test/app",
+				kube.K8sIPLabelName:           "1.1.1.1",
+				"k8s.container.name":          "app",
+				"k8s.container.restart_count": "1",
+				"container.image.name":        "test/app",
 			},
 		},
 		{
@@ -1404,10 +1422,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
 			},
 			wantAttrs: map[string]any{
-				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
-				string(conventions.K8SContainerNameKey):   "app",
-				string(conventions.ContainerImageNameKey): "test/app",
-				string(conventions.ContainerImageTagKey):  "1.0.1",
+				"k8s.pod.uid":          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				"k8s.container.name":   "app",
+				"container.image.name": "test/app",
+				containerImageTag:      "1.0.1",
 			},
 		},
 		{
@@ -1444,7 +1462,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
 			},
 			wantAttrs: map[string]any{
-				string(conventions.K8SPodUIDKey): "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				"k8s.pod.uid": "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 			},
 		},
 	}
@@ -1456,10 +1474,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				NewFactory().CreateDefaultConfig(),
 				nil,
 				withExtractMetadata(
-					string(conventions.ServiceNamespaceKey),
-					string(conventions.ServiceNameKey),
-					string(conventions.ServiceVersionKey),
-					string(conventions.ServiceInstanceIDKey),
+					"service.namespace",
+					"service.name",
+					"service.version",
+					"service.instance.id",
 				),
 			)
 			m.kubernetesProcessorOperation(tt.op)
@@ -1541,7 +1559,7 @@ func TestMetricsProcessorHostname(t *testing.T) {
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
-		withExtractMetadata(string(conventions.K8SPodNameKey)),
+		withExtractMetadata("k8s.pod.name"),
 		withExtractKubernetesProcessorInto(&kp),
 		withExtractMetadata("k8s.pod.ip"),
 	)
@@ -1576,16 +1594,16 @@ func TestMetricsProcessorHostname(t *testing.T) {
 			name:     "invalid IP in hostname",
 			hostname: "invalid-ip",
 			expectedAttrs: map[string]string{
-				string(conventions.HostNameKey): "invalid-ip",
+				"host.name": "invalid-ip",
 			},
 		},
 		{
 			name:     "valid IP in hostname",
 			hostname: "3.3.3.3",
 			expectedAttrs: map[string]string{
-				string(conventions.HostNameKey): "3.3.3.3",
-				kube.K8sIPLabelName:             "3.3.3.3",
-				"kk":                            "vv",
+				"host.name":         "3.3.3.3",
+				kube.K8sIPLabelName: "3.3.3.3",
+				"kk":                "vv",
 			},
 		},
 	}
@@ -1613,7 +1631,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
-		withExtractMetadata(string(conventions.K8SPodNameKey)),
+		withExtractMetadata("k8s.pod.name"),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
@@ -1625,13 +1643,13 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 			Sources: []kube.AssociationSource{
 				{
 					From: "resource_attribute",
-					Name: string(conventions.HostNameKey),
+					Name: "host.name",
 				},
 			},
 		},
 	}
 
-	kc.Pods[newPodIdentifier("resource_attribute", string(conventions.HostNameKey), "invalid-ip")] = &kube.Pod{
+	kc.Pods[newPodIdentifier("resource_attribute", "host.name", "invalid-ip")] = &kube.Pod{
 		Name: "PodA",
 		Attributes: map[string]string{
 			"k":  "v",
@@ -1639,7 +1657,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 			"aa": "b",
 		},
 	}
-	kc.Pods[newPodIdentifier("resource_attribute", string(conventions.HostNameKey), "3.3.3.3")] = &kube.Pod{
+	kc.Pods[newPodIdentifier("resource_attribute", "host.name", "3.3.3.3")] = &kube.Pod{
 		Name: "PodA",
 		Attributes: map[string]string{
 			"kk": "vv",
@@ -1656,15 +1674,15 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 			name:     "invalid IP in hostname",
 			hostname: "invalid-ip",
 			expectedAttrs: map[string]string{
-				string(conventions.HostNameKey): "invalid-ip",
+				"host.name": "invalid-ip",
 			},
 		},
 		{
 			name:     "valid IP in hostname",
 			hostname: "3.3.3.3",
 			expectedAttrs: map[string]string{
-				string(conventions.HostNameKey): "3.3.3.3",
-				"kk":                            "vv",
+				"host.name": "3.3.3.3",
+				"kk":        "vv",
 			},
 		},
 	}
@@ -1745,6 +1763,226 @@ func TestStartStop(t *testing.T) {
 	assert.NoError(t, p.Shutdown(t.Context()))
 	time.Sleep(time.Millisecond * 500)
 	assert.True(t, controller.HasStopped())
+}
+
+// TestLifecycleWithValidConfiguration tests the component's initialization with a valid configuration
+// and ensures proper context propagation for all signal types (traces, metrics, logs, profiles)
+func TestLifecycleWithValidConfiguration(t *testing.T) {
+	tests := []struct {
+		name           string
+		configModifier func(*Config)
+	}{
+		{
+			name: "default configuration",
+			configModifier: func(_ *Config) {
+				// Use default config
+			},
+		},
+		{
+			name: "with custom metadata extraction",
+			configModifier: func(cfg *Config) {
+				cfg.Extract.Metadata = []string{
+					"k8s.pod.name",
+					"k8s.pod.uid",
+					"k8s.deployment.name",
+					"k8s.namespace.name",
+					"k8s.node.name",
+					"k8s.pod.start_time",
+				}
+			},
+		},
+		{
+			name: "with label extraction",
+			configModifier: func(cfg *Config) {
+				cfg.Extract.Labels = []FieldExtractConfig{
+					{
+						TagName: "app",
+						Key:     "app",
+						From:    "pod",
+					},
+				}
+			},
+		},
+		{
+			name: "with annotation extraction",
+			configModifier: func(cfg *Config) {
+				cfg.Extract.Annotations = []FieldExtractConfig{
+					{
+						TagName: "version",
+						Key:     "version",
+						From:    "pod",
+					},
+				}
+			},
+		},
+		{
+			name: "with pod association rules",
+			configModifier: func(cfg *Config) {
+				cfg.Association = []PodAssociationConfig{
+					{
+						Sources: []PodAssociationSourceConfig{
+							{
+								From: "resource_attribute",
+								Name: "k8s.pod.ip",
+							},
+						},
+					},
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test each signal type
+			t.Run("traces", func(t *testing.T) {
+				cfg := createDefaultConfig().(*Config)
+				tt.configModifier(cfg)
+
+				var kp *kubernetesprocessor
+				tp, err := newTracesProcessor(
+					cfg,
+					consumertest.NewNop(),
+					withExtractKubernetesProcessorInto(&kp),
+				)
+				require.NoError(t, err, "failed to create traces processor")
+				require.NotNil(t, tp, "traces processor should not be nil")
+
+				// Start the processor
+				ctx := t.Context()
+				err = tp.Start(ctx, componenttest.NewNopHost())
+				require.NoError(t, err, "failed to start traces processor")
+
+				// Verify processor is initialized
+				require.NotNil(t, kp, "kubernetes processor should be initialized")
+				require.NotNil(t, kp.kc, "kubernetes client should be initialized")
+
+				// Test context propagation by processing traces
+				traces := ptrace.NewTraces()
+				rs := traces.ResourceSpans().AppendEmpty()
+				rs.Resource().Attributes().PutStr("test.key", "test.value")
+				spans := rs.ScopeSpans().AppendEmpty().Spans()
+				span := spans.AppendEmpty()
+				span.SetName("test-span")
+
+				err = tp.ConsumeTraces(ctx, traces)
+				require.NoError(t, err, "failed to process traces")
+				require.Equal(t, 1, traces.ResourceSpans().Len(), "should have one resource span")
+
+				// Shutdown the processor
+				err = tp.Shutdown(ctx)
+				require.NoError(t, err, "failed to shutdown traces processor")
+			})
+
+			t.Run("metrics", func(t *testing.T) {
+				cfg := createDefaultConfig().(*Config)
+				tt.configModifier(cfg)
+
+				var kp *kubernetesprocessor
+				mp, err := newMetricsProcessor(
+					cfg,
+					consumertest.NewNop(),
+					withExtractKubernetesProcessorInto(&kp),
+				)
+				require.NoError(t, err, "failed to create metrics processor")
+				require.NotNil(t, mp, "metrics processor should not be nil")
+
+				// Start the processor
+				ctx := t.Context()
+				err = mp.Start(ctx, componenttest.NewNopHost())
+				require.NoError(t, err, "failed to start metrics processor")
+
+				// Verify processor is initialized
+				require.NotNil(t, kp, "kubernetes processor should be initialized")
+				require.NotNil(t, kp.kc, "kubernetes client should be initialized")
+
+				// Test context propagation by processing metrics
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("test.key", "test.value")
+
+				err = mp.ConsumeMetrics(ctx, metrics)
+				require.NoError(t, err, "failed to process metrics")
+				require.Equal(t, 1, metrics.ResourceMetrics().Len(), "should have one resource metric")
+
+				// Shutdown the processor
+				err = mp.Shutdown(ctx)
+				require.NoError(t, err, "failed to shutdown metrics processor")
+			})
+
+			t.Run("logs", func(t *testing.T) {
+				cfg := createDefaultConfig().(*Config)
+				tt.configModifier(cfg)
+
+				var kp *kubernetesprocessor
+				lp, err := newLogsProcessor(
+					cfg,
+					consumertest.NewNop(),
+					withExtractKubernetesProcessorInto(&kp),
+				)
+				require.NoError(t, err, "failed to create logs processor")
+				require.NotNil(t, lp, "logs processor should not be nil")
+
+				// Start the processor
+				ctx := t.Context()
+				err = lp.Start(ctx, componenttest.NewNopHost())
+				require.NoError(t, err, "failed to start logs processor")
+
+				// Verify processor is initialized
+				require.NotNil(t, kp, "kubernetes processor should be initialized")
+				require.NotNil(t, kp.kc, "kubernetes client should be initialized")
+
+				// Test context propagation by processing logs
+				logs := plog.NewLogs()
+				rl := logs.ResourceLogs().AppendEmpty()
+				rl.Resource().Attributes().PutStr("test.key", "test.value")
+
+				err = lp.ConsumeLogs(ctx, logs)
+				require.NoError(t, err, "failed to process logs")
+				require.Equal(t, 1, logs.ResourceLogs().Len(), "should have one resource log")
+
+				// Shutdown the processor
+				err = lp.Shutdown(ctx)
+				require.NoError(t, err, "failed to shutdown logs processor")
+			})
+
+			t.Run("profiles", func(t *testing.T) {
+				cfg := createDefaultConfig().(*Config)
+				tt.configModifier(cfg)
+
+				var kp *kubernetesprocessor
+				pp, err := newProfilesProcessor(
+					cfg,
+					consumertest.NewNop(),
+					withExtractKubernetesProcessorInto(&kp),
+				)
+				require.NoError(t, err, "failed to create profiles processor")
+				require.NotNil(t, pp, "profiles processor should not be nil")
+
+				// Start the processor
+				ctx := t.Context()
+				err = pp.Start(ctx, componenttest.NewNopHost())
+				require.NoError(t, err, "failed to start profiles processor")
+
+				// Verify processor is initialized
+				require.NotNil(t, kp, "kubernetes processor should be initialized")
+				require.NotNil(t, kp.kc, "kubernetes client should be initialized")
+
+				// Test context propagation by processing profiles
+				profiles := pprofile.NewProfiles()
+				rp := profiles.ResourceProfiles().AppendEmpty()
+				rp.Resource().Attributes().PutStr("test.key", "test.value")
+
+				err = pp.ConsumeProfiles(ctx, profiles)
+				require.NoError(t, err, "failed to process profiles")
+				require.Equal(t, 1, profiles.ResourceProfiles().Len(), "should have one resource profile")
+
+				// Shutdown the processor
+				err = pp.Shutdown(ctx)
+				require.NoError(t, err, "failed to shutdown profiles processor")
+			})
+		})
+	}
 }
 
 func assertResourceHasStringAttribute(t *testing.T, r pcommon.Resource, k, v string) {
@@ -1921,4 +2159,120 @@ func TestProcessorDoesNotSetPodIPWhenNotRequested(t *testing.T) {
 		assert.Equal(t, 1, res.Attributes().Len()) // only k8s.pod.name
 		assertResourceHasStringAttribute(t, res, "k8s.pod.name", "jw-pod")
 	})
+}
+
+func TestGetAttributesForPodsDeployment(t *testing.T) {
+	kc := &fakeClient{
+		Deployments: map[string]*kube.Deployment{
+			"deployment-123": {
+				Name: "test-deployment",
+				UID:  "deployment-123",
+				Attributes: map[string]string{
+					"k8s.deployment.name": "test-deployment",
+					"k8s.deployment.uid":  "deployment-123",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing deployment
+	attrs := p.getAttributesForPodsDeployment("deployment-123")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-deployment", attrs["k8s.deployment.name"])
+	assert.Equal(t, "deployment-123", attrs["k8s.deployment.uid"])
+
+	// Test getting attributes for non-existent deployment
+	attrs = p.getAttributesForPodsDeployment("non-existent")
+	assert.Nil(t, attrs)
+}
+
+func TestGetAttributesForPodsStatefulSet(t *testing.T) {
+	kc := &fakeClient{
+		StatefulSets: map[string]*kube.StatefulSet{
+			"statefulset-456": {
+				Name: "test-statefulset",
+				UID:  "statefulset-456",
+				Attributes: map[string]string{
+					"k8s.statefulset.name": "test-statefulset",
+					"k8s.statefulset.uid":  "statefulset-456",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing statefulset
+	attrs := p.getAttributesForPodsStatefulSet("statefulset-456")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-statefulset", attrs["k8s.statefulset.name"])
+	assert.Equal(t, "statefulset-456", attrs["k8s.statefulset.uid"])
+
+	// Test getting attributes for non-existent statefulset
+	attrs = p.getAttributesForPodsStatefulSet("non-existent")
+	assert.Nil(t, attrs)
+}
+
+func TestGetAttributesForPodsDaemonSet(t *testing.T) {
+	kc := &fakeClient{
+		DaemonSets: map[string]*kube.DaemonSet{
+			"daemonset-789": {
+				Name: "test-daemonset",
+				UID:  "daemonset-789",
+				Attributes: map[string]string{
+					"k8s.daemonset.name": "test-daemonset",
+					"k8s.daemonset.uid":  "daemonset-789",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing daemonset
+	attrs := p.getAttributesForPodsDaemonSet("daemonset-789")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-daemonset", attrs["k8s.daemonset.name"])
+	assert.Equal(t, "daemonset-789", attrs["k8s.daemonset.uid"])
+
+	// Test getting attributes for non-existent daemonset
+	attrs = p.getAttributesForPodsDaemonSet("non-existent")
+	assert.Nil(t, attrs)
+}
+
+func TestGetAttributesForPodsJob(t *testing.T) {
+	kc := &fakeClient{
+		Jobs: map[string]*kube.Job{
+			"job-abc": {
+				Name: "test-job",
+				UID:  "job-abc",
+				Attributes: map[string]string{
+					"k8s.job.name": "test-job",
+					"k8s.job.uid":  "job-abc",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing job
+	attrs := p.getAttributesForPodsJob("job-abc")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "test-job", attrs["k8s.job.name"])
+	assert.Equal(t, "job-abc", attrs["k8s.job.uid"])
+
+	// Test getting attributes for non-existent job
+	attrs = p.getAttributesForPodsJob("non-existent")
+	assert.Nil(t, attrs)
 }

@@ -68,35 +68,76 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		switch route.statementContext {
 		case "request":
 			if route.requestCondition.matchRequest(ctx) {
-				// all logs are routed
-				ld.MoveTo(matched)
+				switch route.action {
+				case Copy:
+					ld.CopyTo(matched)
+				default:
+					// all logs are routed
+					ld.MoveTo(matched)
+				}
 			}
 		case "", "resource":
-			plogutil.MoveResourcesIf(ld, matched,
-				func(rl plog.ResourceLogs) bool {
-					rtx := ottlresource.NewTransformContext(rl.Resource(), rl)
-					_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
-					// If error during statement evaluation consider it as not a match.
-					if err != nil {
-						errs = errors.Join(errs, err)
-						return false
-					}
-					return isMatch
-				},
-			)
+			switch route.action {
+			case Copy:
+				plogutil.CopyResourcesIf(ld, matched,
+					func(rl plog.ResourceLogs) bool {
+						rtx := ottlresource.NewTransformContextPtr(rl.Resource(), rl)
+						defer rtx.Close()
+						_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
+						// If error during statement evaluation consider it as not a match.
+						if err != nil {
+							errs = errors.Join(errs, err)
+							return false
+						}
+						return isMatch
+					},
+				)
+			default:
+				plogutil.MoveResourcesIf(ld, matched,
+					func(rl plog.ResourceLogs) bool {
+						rtx := ottlresource.NewTransformContextPtr(rl.Resource(), rl)
+						defer rtx.Close()
+						_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
+						// If error during statement evaluation consider it as not a match.
+						if err != nil {
+							errs = errors.Join(errs, err)
+							return false
+						}
+						return isMatch
+					},
+				)
+			}
 		case "log":
-			plogutil.MoveRecordsWithContextIf(ld, matched,
-				func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
-					ltx := ottllog.NewTransformContext(lr, sl.Scope(), rl.Resource(), sl, rl)
-					_, isMatch, err := route.logStatement.Execute(ctx, ltx)
-					// If error during statement evaluation consider it as not a match.
-					if err != nil {
-						errs = errors.Join(errs, err)
-						return false
-					}
-					return isMatch
-				},
-			)
+			switch route.action {
+			case Copy:
+				plogutil.CopyRecordsWithContextIf(ld, matched,
+					func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
+						ltx := ottllog.NewTransformContextPtr(rl, sl, lr)
+						defer ltx.Close()
+						_, isMatch, err := route.logStatement.Execute(ctx, ltx)
+						// If error during statement evaluation consider it as not a match.
+						if err != nil {
+							errs = errors.Join(errs, err)
+							return false
+						}
+						return isMatch
+					},
+				)
+			default:
+				plogutil.MoveRecordsWithContextIf(ld, matched,
+					func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
+						ltx := ottllog.NewTransformContextPtr(rl, sl, lr)
+						defer ltx.Close()
+						_, isMatch, err := route.logStatement.Execute(ctx, ltx)
+						// If error during statement evaluation consider it as not a match.
+						if err != nil {
+							errs = errors.Join(errs, err)
+							return false
+						}
+						return isMatch
+					},
+				)
+			}
 		}
 		if errs != nil && c.config.ErrorMode == ottl.PropagateError {
 			return errs

@@ -1,0 +1,26 @@
+mappings:
+  time:
+    Time:
+      schemaType: string
+      format: date-time
+    Duration:
+      schemaType: string
+      format: duration
+  component:
+    ID:
+      schemaType: string
+componentOverrides:
+  receiver/namedpipe:
+    configName: 'NamedPipeConfig'
+  receiver/filelog:
+    configName: 'FileLogConfig'
+  receiver/journald:
+    configName: 'JournaldConfig'
+  receiver/syslog:
+    configName: 'SysLogConfig'
+  receiver/tcplog:
+    configName: 'TCPLogConfig'
+  receiver/udplog:
+    configName: 'UDPLogConfig'
+  receiver/windowseventlog:
+    configName: 'WindowsLogConfig'

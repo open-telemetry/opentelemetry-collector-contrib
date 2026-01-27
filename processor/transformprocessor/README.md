@@ -8,8 +8,8 @@
 | Warnings      | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftransform%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftransform) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftransform%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftransform) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_transform)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_transform&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@evan-bradley](https://www.github.com/evan-bradley), [@edmocosta](https://www.github.com/edmocosta) \| Seeking more code owners! |
-| Emeritus      | [@anuraaga](https://www.github.com/anuraaga), [@kentquirk](https://www.github.com/kentquirk), [@bogdandrutu](https://www.github.com/bogdandrutu) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@evan-bradley](https://www.github.com/evan-bradley), [@edmocosta](https://www.github.com/edmocosta), [@bogdandrutu](https://www.github.com/bogdandrutu) \| Seeking more code owners! |
+| Emeritus      | [@anuraaga](https://www.github.com/anuraaga), [@kentquirk](https://www.github.com/kentquirk) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -271,6 +271,10 @@ In addition to the common OTTL functions, the processor defines its own function
 - [convert_exponential_histogram_to_histogram](#convert_exponential_histogram_to_histogram)
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
 - [merge_histogram_buckets](#merge_histogram_buckets)
+
+**Traces only functions**
+
+- [set_semconv_span_name](#set_semconv_span_name)
 
 ### convert_sum_to_gauge
 
@@ -649,6 +653,75 @@ Examples:
 # bounds: [0.1, 1.0]
 # counts: [5, 11, 1]
 ```
+
+### set_semconv_span_name
+
+`set_semconv_span_name(semconvVersion, Optional[originalSpanNameAttribute])`
+
+The `set_semconv_span_name()` function overwrites a span name using the OpenTelemetry semantic conventions for [HTTP](https://opentelemetry.io/docs/specs/semconv/http/http-spans/), [RPC](https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/), [messaging](https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/), and [database](https://opentelemetry.io/docs/specs/semconv/database/) spans. In other cases, the original `span.name` remains unchanged.
+
+The primary use case of the `set_semconv_span_name()` function is to address high-cardinality issues in span metrics when `span.name` doesn't comply with the OpenTelemetry requirement that span names be low cardinality such as `GET /product/12345`, `GET/product?id=12345`, or `SELECT * FROM product WHERE id=12345`.
+
+Parameters:
+
+* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, older semconv attributes are supported. `1.37.0` is currently the only supported version.
+* `originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the name derived from semantic conventions.
+
+Sanitization examples:
+
+* Span with high-cardinality name but recommended semantic convention attributes
+   * Incoming span:
+        ```
+        span.name: GET /api/v1/users/123 # /!\ high cardinality
+        span.kind: server
+        span.attributes
+           http.request.method: GET
+           http.route: /api/v1/users/{id}
+           url.path: /api/v1/users/123
+        ```
+   * Span name after applying `set_semconv_span_name("1.37.0")`: `GET /api/v1/users/{id}`
+   * No loss of information on `span.name` occurs because the recommended attribute `http.route` is present.
+* Span with high-cardinality name lacking recommended semantic convention attribute `http.route`
+    * Incoming span:
+         ```
+         span.name: GET /api/v1/users/123 # /!\ high cardinality
+         span.kind: server
+         span.attributes
+            http.request.method: GET
+            url.path: /api/v1/users/123
+         ```
+    * Span name after applying `set_semconv_span_name("1.37.0")`: `GET`
+    * Loss of information on `span.name` occurs because the recommended attribute `http.route` is missing.
+    Note that this loss of information is mitigated if the instrumentation produced attributes that contain the URL path like `url.path` or `url.full`.
+* Compliant span name is unchanged
+    * Incoming span:
+         ```
+         span.name: GET /api/v1/users/{id}
+         span.kind: server
+         span.attributes
+            http.request.method: GET
+            http.route: /api/v1/users/{id}
+            url.path: /api/v1/users/123
+         ```
+    * Span name after applying `set_semconv_span_name("1.37.0")`: `GET /api/v1/users/{id}`
+
+
+Backward compatibility: `set_semconv_span_name` will map the following attributes to their equivalents per the v1.37.0 semantic conventions:
+
+| v1.37.0 Attribute     | Older attribute        |
+|-----------------------|------------------------|
+| `http.request.method` | `http.method`          |
+| `rpc.method`          | `rpc.grpc.method`      |
+| `rpc.service`         | `rpc.grpc.service`     |
+| `db.system.name`      | `db.system`            |
+| `db.operation.name`   | `db.operation`         |
+| `db.collection.name`  | `db.name`              |
+
+Examples:
+
+- `set_semconv_span_name("1.37.0")`
+
+- `set_semconv_span_name("1.37.0", "original_span_name")`
 
 ## Examples
 

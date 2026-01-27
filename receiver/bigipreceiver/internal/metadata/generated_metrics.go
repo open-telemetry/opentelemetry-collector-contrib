@@ -282,6 +282,7 @@ func (m *metricBigipNodeAvailability) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipNodeAvailability(cfg MetricConfig) metricBigipNodeAvailability {
 	m := metricBigipNodeAvailability{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -333,6 +334,7 @@ func (m *metricBigipNodeConnectionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipNodeConnectionCount(cfg MetricConfig) metricBigipNodeConnectionCount {
 	m := metricBigipNodeConnectionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -386,6 +388,7 @@ func (m *metricBigipNodeDataTransmitted) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipNodeDataTransmitted(cfg MetricConfig) metricBigipNodeDataTransmitted {
 	m := metricBigipNodeDataTransmitted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -437,6 +440,7 @@ func (m *metricBigipNodeEnabled) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipNodeEnabled(cfg MetricConfig) metricBigipNodeEnabled {
 	m := metricBigipNodeEnabled{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -490,6 +494,7 @@ func (m *metricBigipNodePacketCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipNodePacketCount(cfg MetricConfig) metricBigipNodePacketCount {
 	m := metricBigipNodePacketCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -541,6 +546,7 @@ func (m *metricBigipNodeRequestCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipNodeRequestCount(cfg MetricConfig) metricBigipNodeRequestCount {
 	m := metricBigipNodeRequestCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -592,6 +598,7 @@ func (m *metricBigipNodeSessionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipNodeSessionCount(cfg MetricConfig) metricBigipNodeSessionCount {
 	m := metricBigipNodeSessionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -643,6 +650,7 @@ func (m *metricBigipPoolAvailability) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipPoolAvailability(cfg MetricConfig) metricBigipPoolAvailability {
 	m := metricBigipPoolAvailability{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -694,6 +702,7 @@ func (m *metricBigipPoolConnectionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipPoolConnectionCount(cfg MetricConfig) metricBigipPoolConnectionCount {
 	m := metricBigipPoolConnectionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -747,6 +756,7 @@ func (m *metricBigipPoolDataTransmitted) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipPoolDataTransmitted(cfg MetricConfig) metricBigipPoolDataTransmitted {
 	m := metricBigipPoolDataTransmitted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -798,6 +808,7 @@ func (m *metricBigipPoolEnabled) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipPoolEnabled(cfg MetricConfig) metricBigipPoolEnabled {
 	m := metricBigipPoolEnabled{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -851,6 +862,7 @@ func (m *metricBigipPoolMemberCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipPoolMemberCount(cfg MetricConfig) metricBigipPoolMemberCount {
 	m := metricBigipPoolMemberCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -904,6 +916,7 @@ func (m *metricBigipPoolPacketCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipPoolPacketCount(cfg MetricConfig) metricBigipPoolPacketCount {
 	m := metricBigipPoolPacketCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -955,6 +968,7 @@ func (m *metricBigipPoolRequestCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipPoolRequestCount(cfg MetricConfig) metricBigipPoolRequestCount {
 	m := metricBigipPoolRequestCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1006,6 +1020,7 @@ func (m *metricBigipPoolMemberAvailability) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipPoolMemberAvailability(cfg MetricConfig) metricBigipPoolMemberAvailability {
 	m := metricBigipPoolMemberAvailability{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1057,6 +1072,7 @@ func (m *metricBigipPoolMemberConnectionCount) emit(metrics pmetric.MetricSlice)
 
 func newMetricBigipPoolMemberConnectionCount(cfg MetricConfig) metricBigipPoolMemberConnectionCount {
 	m := metricBigipPoolMemberConnectionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1110,6 +1126,7 @@ func (m *metricBigipPoolMemberDataTransmitted) emit(metrics pmetric.MetricSlice)
 
 func newMetricBigipPoolMemberDataTransmitted(cfg MetricConfig) metricBigipPoolMemberDataTransmitted {
 	m := metricBigipPoolMemberDataTransmitted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1161,6 +1178,7 @@ func (m *metricBigipPoolMemberEnabled) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipPoolMemberEnabled(cfg MetricConfig) metricBigipPoolMemberEnabled {
 	m := metricBigipPoolMemberEnabled{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1214,6 +1232,7 @@ func (m *metricBigipPoolMemberPacketCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipPoolMemberPacketCount(cfg MetricConfig) metricBigipPoolMemberPacketCount {
 	m := metricBigipPoolMemberPacketCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1265,6 +1284,7 @@ func (m *metricBigipPoolMemberRequestCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipPoolMemberRequestCount(cfg MetricConfig) metricBigipPoolMemberRequestCount {
 	m := metricBigipPoolMemberRequestCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1316,6 +1336,7 @@ func (m *metricBigipPoolMemberSessionCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipPoolMemberSessionCount(cfg MetricConfig) metricBigipPoolMemberSessionCount {
 	m := metricBigipPoolMemberSessionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1367,6 +1388,7 @@ func (m *metricBigipVirtualServerAvailability) emit(metrics pmetric.MetricSlice)
 
 func newMetricBigipVirtualServerAvailability(cfg MetricConfig) metricBigipVirtualServerAvailability {
 	m := metricBigipVirtualServerAvailability{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1418,6 +1440,7 @@ func (m *metricBigipVirtualServerConnectionCount) emit(metrics pmetric.MetricSli
 
 func newMetricBigipVirtualServerConnectionCount(cfg MetricConfig) metricBigipVirtualServerConnectionCount {
 	m := metricBigipVirtualServerConnectionCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1471,6 +1494,7 @@ func (m *metricBigipVirtualServerDataTransmitted) emit(metrics pmetric.MetricSli
 
 func newMetricBigipVirtualServerDataTransmitted(cfg MetricConfig) metricBigipVirtualServerDataTransmitted {
 	m := metricBigipVirtualServerDataTransmitted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1522,6 +1546,7 @@ func (m *metricBigipVirtualServerEnabled) emit(metrics pmetric.MetricSlice) {
 
 func newMetricBigipVirtualServerEnabled(cfg MetricConfig) metricBigipVirtualServerEnabled {
 	m := metricBigipVirtualServerEnabled{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1575,6 +1600,7 @@ func (m *metricBigipVirtualServerPacketCount) emit(metrics pmetric.MetricSlice) 
 
 func newMetricBigipVirtualServerPacketCount(cfg MetricConfig) metricBigipVirtualServerPacketCount {
 	m := metricBigipVirtualServerPacketCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1626,6 +1652,7 @@ func (m *metricBigipVirtualServerRequestCount) emit(metrics pmetric.MetricSlice)
 
 func newMetricBigipVirtualServerRequestCount(cfg MetricConfig) metricBigipVirtualServerRequestCount {
 	m := metricBigipVirtualServerRequestCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

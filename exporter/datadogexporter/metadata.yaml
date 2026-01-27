@@ -1,4 +1,5 @@
 type: datadog
+display_name: Datadog Exporter
 
 status:
   class: exporter
@@ -6,8 +7,8 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, ankitpatel96, jade-guiton-dd, IbraheemA, jackgopack4]
-    emeritus: [gbbr]
+    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, ankitpatel96, jade-guiton-dd, IbraheemA]
+    emeritus: [gbbr, jackgopack4]
 
 tests:
   config:
