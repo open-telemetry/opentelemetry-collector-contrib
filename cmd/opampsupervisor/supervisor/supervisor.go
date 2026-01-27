@@ -1671,6 +1671,9 @@ func (s *Supervisor) runAgentProcess() {
 				if err := s.hupReloadAgent(); err != nil {
 					s.telemetrySettings.Logger.Error("Failed to HUP restart agent", zap.Error(err))
 					s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+					if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: err.Error()}); err != nil {
+						s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
+					}
 					continue
 				}
 			} else {
