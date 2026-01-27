@@ -6,7 +6,7 @@ status:
     alpha: [traces]
   distributions: [contrib]
   codeowners:
-    active: [portertech]
+    active: [portertech, csmarchbanks]
 
 telemetry:
   metrics:
