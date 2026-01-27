@@ -36,6 +36,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.144.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/extension/xextension v0.144.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/receiver/receivertest v0.144.1-0.20260121161034-55399d4743af
+	go.opentelemetry.io/collector/receiver/xreceiver v0.144.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/scraper v0.144.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.144.1-0.20260121161034-55399d4743af
 )
@@ -83,7 +84,6 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.50.1-0.20260121161034-55399d4743af // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.144.1-0.20260121161034-55399d4743af // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.144.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.144.1-0.20260121161034-55399d4743af // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
