@@ -219,7 +219,7 @@ func (ecsModeEncoder) encodeLog(
 	scopeAttrsConversionMap := map[string]conversionEntry{
 		// None at the moment
 	}
-	
+
 	recordAttrsConversionMap := map[string]conversionEntry{
 		"event.name":                                {to: "event.action"},
 		string(conventions.ExceptionMessageKey):     {to: "error.message"},
@@ -228,7 +228,7 @@ func (ecsModeEncoder) encodeLog(
 		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
-	
+
 	// Collect all ECS field paths from conversion maps to protect them from conflicts
 	protectedFields := collectECSFields(resourceAttrsConversionMap, scopeAttrsConversionMap, recordAttrsConversionMap)
 
@@ -477,10 +477,10 @@ func (ecsDataPointsEncoder) encodeMetrics(
 ) (map[string]string, error) {
 	dp0 := dataPoints[0]
 	var document objmodel.Document
-	
+
 	// Collect all ECS field paths from conversion maps to protect them from conflicts
 	protectedFields := collectECSFields(resourceAttrsConversionMap)
-	
+
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
@@ -494,7 +494,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 		}
 		document.AddAttribute(dp.Metric().Name(), value)
 	}
-	
+
 	err := document.SerializeWithProtectedFields(buf, true, protectedFields)
 
 	return document.DynamicTemplates(), err

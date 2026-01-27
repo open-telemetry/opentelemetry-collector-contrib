@@ -1230,7 +1230,6 @@ func TestMapLogAttributesToECS(t *testing.T) {
 
 func TestEncodeLogECSModeProcessExecutableConflict(t *testing.T) {
 	// Issue #37211: Test cross-level conflict where process.executable fields
-	// appear at both resource and record levels, causing JSON structure conflict
 	t.Run("cross_level_conflict_resource_path_record_name", func(t *testing.T) {
 		logs := plog.NewLogs()
 		resource := logs.ResourceLogs().AppendEmpty().Resource()
@@ -1471,7 +1470,6 @@ func TestEncodeLogECSModeProcessExecutableConflict(t *testing.T) {
 		require.Equal(t, "ssh", executable["name"], "name should pass through")
 	})
 
-	// Carson's general solution test: ANY process.executable.* should be handled
 	t.Run("general_solution_any_executable_subfield", func(t *testing.T) {
 		// This test verifies the GENERAL solution addresses Carson's concerns:
 		// 1. Not just process.executable.name, but ANY process.executable.foo
@@ -1491,10 +1489,10 @@ func TestEncodeLogECSModeProcessExecutableConflict(t *testing.T) {
 		// Record level has various process.executable.* sub-attributes
 		// These are NOT in the conversion map, so they pass through as-is
 		err = record.Attributes().FromRaw(map[string]any{
-			"process.executable.name":     "ssh",           // From original issue
-			"process.executable.foo":      "bar",           // Carson's concern: ANY subfield
-			"process.executable.custom":   "value",         // Another arbitrary subfield
-			"process.executable.version":  "8.0",           // Yet another one
+			"process.executable.name":    "ssh",   // From original issue
+			"process.executable.foo":     "bar",   // Carson's concern: ANY subfield
+			"process.executable.custom":  "value", // Another arbitrary subfield
+			"process.executable.version": "8.0",   // Yet another one
 		})
 		require.NoError(t, err)
 
