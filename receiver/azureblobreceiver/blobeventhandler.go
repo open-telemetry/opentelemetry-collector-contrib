@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	DEFAULT_POLL_RATE      = 5
-	DEFAULT_MAX_POLL_EVENT = 100
+	defaultPollRate      = 5
+	defaultMaxPollEvents = 100
 )
 
 type blobEventHandler interface {
@@ -68,13 +68,13 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 	}
 
 	for _, partitionID := range runtimeInfo.PartitionIDs {
-		go p.ReceiveEvents(ctx, hub, partitionID, p.newMessageHandler)
+		go p.receiveEvents(ctx, hub, partitionID, p.newMessageHandler)
 	}
 
 	return nil
 }
 
-func (p *azureBlobEventHandler) ReceiveEvents(
+func (p *azureBlobEventHandler) receiveEvents(
 	ctx context.Context,
 	client *azeventhubs.ConsumerClient,
 	partitionID string,
@@ -88,6 +88,21 @@ func (p *azureBlobEventHandler) ReceiveEvents(
 	})
 	if err != nil {
 		p.logger.Error("error creating partition client", zap.Error(err))
+		return
+	}
+	defer func() {
+		if closeErr := pc.Close(ctx); closeErr != nil {
+			p.logger.Error("error closing partition client", zap.Error(closeErr))
+		}
+	}()
+
+	pollRate := p.pollRate
+	if pollRate <= 0 {
+		pollRate = defaultPollRate
+	}
+	maxPollEvents := p.maxPollEvents
+	if maxPollEvents <= 0 {
+		maxPollEvents = defaultMaxPollEvents
 	}
 
 	for {
@@ -95,34 +110,27 @@ func (p *azureBlobEventHandler) ReceiveEvents(
 			return
 		}
 
-		pollRate := p.pollRate
-		if pollRate <= 0 {
-			pollRate = DEFAULT_POLL_RATE
-		}
-		maxPollEvent := p.maxPollEvents
-		if maxPollEvent <= 0 {
-			maxPollEvent = DEFAULT_MAX_POLL_EVENT
-		}
-
-		timeoutCtx, cancelCxt := context.WithTimeout(
+		timeoutCtx, cancelCtx := context.WithTimeout(
 			ctx,
 			time.Second*time.Duration(pollRate),
 		)
-		events, err := pc.ReceiveEvents(timeoutCtx, maxPollEvent, &azeventhubs.ReceiveEventsOptions{})
-		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
+		events, err := pc.ReceiveEvents(timeoutCtx, maxPollEvents, &azeventhubs.ReceiveEventsOptions{})
+		cancelCtx()
+
+		if err != nil && !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
 			p.logger.Error(
 				"error receiving events from partition",
 				zap.String("partitionID", partitionID),
 				zap.Error(err),
 			)
 		}
-		cancelCxt()
 
 		for _, event := range events {
-			handler(ctx, event)
+			if handlerErr := handler(ctx, event); handlerErr != nil {
+				p.logger.Error("error handling event", zap.String("partitionID", partitionID), zap.Error(handlerErr))
+			}
 		}
 	}
-
 }
 
 func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
