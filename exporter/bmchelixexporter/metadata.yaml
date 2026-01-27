@@ -1,4 +1,5 @@
 type: bmchelix
+display_name: BMC Helix Exporter
 
 status:
   class: exporter

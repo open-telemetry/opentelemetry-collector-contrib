@@ -15,7 +15,6 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
 	"google.golang.org/grpc/credentials"
 	grpcOAuth "google.golang.org/grpc/credentials/oauth"
 )
@@ -26,15 +25,20 @@ var (
 	_ extensionauth.GRPCClient = (*clientAuthenticator)(nil)
 )
 
+type TokenSourceConfiguration interface {
+	TokenSource(context.Context) oauth2.TokenSource
+	TokenEndpoint() string
+}
+
 // clientAuthenticator provides implementation for providing client authentication using OAuth2 client credentials
 // workflow for both gRPC and HTTP clients.
 type clientAuthenticator struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	clientCredentials *clientCredentialsConfig
-	logger            *zap.Logger
-	client            *http.Client
+	credentials TokenSourceConfiguration
+	logger      *zap.Logger
+	client      *http.Client
 }
 
 type errorWrappingTokenSource struct {
@@ -57,20 +61,26 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 	}
 	transport.TLSClientConfig = tlsCfg
 
+	var credentials TokenSourceConfiguration
+
+	switch cfg.GrantType {
+	case grantTypeJWTBearer:
+		credentials, err = newJwtGrantTypeConfig(cfg)
+		if err != nil {
+			return nil, err
+		}
+	case grantTypeClientCredentials, "":
+		credentials, err = newJwtGrantTypeConfig(cfg)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("unknown grant type %q", cfg.GrantType)
+	}
+
 	return &clientAuthenticator{
-		clientCredentials: &clientCredentialsConfig{
-			Config: clientcredentials.Config{
-				ClientID:       cfg.ClientID,
-				ClientSecret:   string(cfg.ClientSecret),
-				TokenURL:       cfg.TokenURL,
-				Scopes:         cfg.Scopes,
-				EndpointParams: cfg.EndpointParams,
-			},
-			ClientIDFile:     cfg.ClientIDFile,
-			ClientSecretFile: cfg.ClientSecretFile,
-			ExpiryBuffer:     cfg.ExpiryBuffer,
-		},
-		logger: logger,
+		credentials: credentials,
+		logger:      logger,
 		client: &http.Client{
 			Transport: transport,
 			Timeout:   cfg.Timeout,
@@ -94,8 +104,8 @@ func (o *clientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTr
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
 	return &oauth2.Transport{
 		Source: errorWrappingTokenSource{
-			ts:       o.clientCredentials.TokenSource(ctx),
-			tokenURL: o.clientCredentials.TokenURL,
+			ts:       o.credentials.TokenSource(ctx),
+			tokenURL: o.credentials.TokenEndpoint(),
 		},
 		Base: base,
 	}, nil
@@ -107,8 +117,8 @@ func (o *clientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
 	return grpcOAuth.TokenSource{
 		TokenSource: errorWrappingTokenSource{
-			ts:       o.clientCredentials.TokenSource(ctx),
-			tokenURL: o.clientCredentials.TokenURL,
+			ts:       o.credentials.TokenSource(ctx),
+			tokenURL: o.credentials.TokenEndpoint(),
 		},
 	}, nil
 }

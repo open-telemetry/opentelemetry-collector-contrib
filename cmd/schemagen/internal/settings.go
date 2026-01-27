@@ -15,25 +15,22 @@ const (
 	SettingsFileName = ".schemagen.yaml"
 )
 
-type Settings struct {
-	OutputFolder string         `yaml:"outputFolder"`
-	Refs         map[string]Ref `yaml:"refs"`
-	Mappings     Mappings       `yaml:"mappings"`
-}
-
-type Ref struct {
-	ID string `yaml:"id"`
-}
-
 type (
-	Mappings        map[string]PackagesMapping
-	PackagesMapping map[string]TypeDesc
+	Settings struct {
+		Mappings           Mappings           `yaml:"mappings"`
+		ComponentOverrides ComponentOverrides `yaml:"componentOverrides"`
+	}
+	Mappings           map[string]PackagesMapping
+	PackagesMapping    map[string]TypeDesc
+	ComponentOverrides map[string]ComponentOverride
+	ComponentOverride  struct {
+		ConfigName string `yaml:"configName"`
+	}
+	TypeDesc struct {
+		SchemaType SchemaType `yaml:"schemaType"`
+		Format     string     `yaml:"format"`
+	}
 )
-
-type TypeDesc struct {
-	SchemaType SchemaType `yaml:"schemaType"`
-	Format     string     `yaml:"format"`
-}
 
 func ReadSettingsFile() (*Settings, bool) {
 	dir, err := os.Getwd()
@@ -47,7 +44,6 @@ func ReadSettingsFile() (*Settings, bool) {
 			var s Settings
 			if err := yaml.Unmarshal(data, &s); err == nil {
 				fmt.Println("Settings file read from: ", candidate)
-				resolveOutputPath(&s, candidate)
 				return &s, true
 			}
 			fmt.Println("Warning: failed to parse config file:", candidate)
@@ -62,12 +58,4 @@ func ReadSettingsFile() (*Settings, bool) {
 	}
 
 	return nil, false
-}
-
-func resolveOutputPath(settings *Settings, settingsPath string) {
-	if settings.OutputFolder != "" {
-		if !filepath.IsAbs(settings.OutputFolder) {
-			settings.OutputFolder = filepath.Join(filepath.Dir(settingsPath), settings.OutputFolder)
-		}
-	}
 }
