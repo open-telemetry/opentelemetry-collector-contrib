@@ -35,13 +35,11 @@ func TestProcessorLookup(t *testing.T) {
 				Key:           "user.name",
 				FromAttribute: "user.id",
 				Default:       "Unknown User",
-				Action:        ActionUpsert,
 				Context:       ContextRecord,
 			},
 			{
 				Key:           "service.display_name",
 				FromAttribute: "service.name",
-				Action:        ActionInsert,
 				Context:       ContextResource,
 			},
 		},
@@ -114,110 +112,6 @@ func TestProcessorLookup(t *testing.T) {
 	assert.Equal(t, "Bob Smith", userName3.Str())
 }
 
-func TestProcessorActions(t *testing.T) {
-	// Create a mock source that always returns "found"
-	factory := NewFactoryWithOptions(WithSources(mockSourceFactory("found")))
-
-	tests := []struct {
-		name           string
-		action         Action
-		existingValue  string
-		expectedValue  string
-		expectModified bool
-	}{
-		{
-			name:           "insert on new attribute",
-			action:         ActionInsert,
-			existingValue:  "",
-			expectedValue:  "found",
-			expectModified: true,
-		},
-		{
-			name:           "insert on existing attribute - no change",
-			action:         ActionInsert,
-			existingValue:  "existing",
-			expectedValue:  "existing",
-			expectModified: false,
-		},
-		{
-			name:           "update on existing attribute",
-			action:         ActionUpdate,
-			existingValue:  "existing",
-			expectedValue:  "found",
-			expectModified: true,
-		},
-		{
-			name:           "update on new attribute - no change",
-			action:         ActionUpdate,
-			existingValue:  "",
-			expectedValue:  "",
-			expectModified: false,
-		},
-		{
-			name:           "upsert on new attribute",
-			action:         ActionUpsert,
-			existingValue:  "",
-			expectedValue:  "found",
-			expectModified: true,
-		},
-		{
-			name:           "upsert on existing attribute",
-			action:         ActionUpsert,
-			existingValue:  "existing",
-			expectedValue:  "found",
-			expectModified: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{
-				Source: SourceConfig{Type: "mock"},
-				Attributes: []AttributeConfig{
-					{
-						Key:           "result",
-						FromAttribute: "key",
-						Action:        tt.action,
-						Context:       ContextRecord,
-					},
-				},
-			}
-
-			sink := &consumertest.LogsSink{}
-			settings := processortest.NewNopSettings(metadata.Type)
-
-			proc, err := factory.CreateLogs(t.Context(), settings, cfg, sink)
-			require.NoError(t, err)
-
-			host := &testHost{}
-			require.NoError(t, proc.Start(t.Context(), host))
-			defer func() { _ = proc.Shutdown(t.Context()) }()
-
-			// Create test log
-			logs := plog.NewLogs()
-			rl := logs.ResourceLogs().AppendEmpty()
-			lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-			lr.Attributes().PutStr("key", "lookup-key")
-			if tt.existingValue != "" {
-				lr.Attributes().PutStr("result", tt.existingValue)
-			}
-
-			err = proc.ConsumeLogs(t.Context(), logs)
-			require.NoError(t, err)
-
-			processedLogs := sink.AllLogs()[0]
-			resultAttr, exists := processedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("result")
-
-			if tt.expectedValue == "" {
-				assert.False(t, exists, "result attribute should not exist")
-			} else {
-				assert.True(t, exists, "result attribute should exist")
-				assert.Equal(t, tt.expectedValue, resultAttr.Str())
-			}
-		})
-	}
-}
-
 func TestProcessorNoSourceAttribute(t *testing.T) {
 	factory := NewFactoryWithOptions(WithSources(mockSourceFactory("found")))
 
@@ -227,7 +121,6 @@ func TestProcessorNoSourceAttribute(t *testing.T) {
 			{
 				Key:           "result",
 				FromAttribute: "nonexistent",
-				Action:        ActionUpsert,
 				Context:       ContextRecord,
 			},
 		},
