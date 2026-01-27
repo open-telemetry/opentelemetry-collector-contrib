@@ -58,10 +58,12 @@ func (p *Parser) Parse() (*Schema, error) {
 	p.schema = CreateSchema()
 	p.processPackages(set, pkgs)
 
+	// select types to process
 	if err := p.feedProcessQueue(); err != nil {
 		return nil, err
 	}
 
+	// process types
 	if err := p.processTypes(); err != nil {
 		return nil, err
 	}
@@ -79,6 +81,7 @@ func (p *Parser) processPackages(set *token.FileSet, pkgs []*packages.Package) {
 
 func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast.CommentMap) {
 	target := p.types
+	// collect imports from current file, distinguish internal vs external
 	imports := make(map[string]string)
 	for _, imp := range file.Imports {
 		path, name := ParseImport(imp)
@@ -88,6 +91,7 @@ func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast
 		}
 		imports[name] = path
 	}
+	// collect exported type specs
 	for _, decl := range file.Decls {
 		genDecl, ok := decl.(*ast.GenDecl)
 		if !ok || genDecl.Tok != token.TYPE {
@@ -109,11 +113,12 @@ func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast
 
 func (p *Parser) feedProcessQueue() error {
 	configTypeName := p.config.ConfigType
+	// in component mode process only the config type initially
 	if p.config.Mode == Component {
 		if typeInfo, ok := p.types[configTypeName]; ok {
 			p.processQueue.PushBack(typeInfo)
 		}
-	} else {
+	} else { // in package mode process all exported types
 		for _, typeInfo := range p.types {
 			p.processQueue.PushBack(typeInfo)
 		}
@@ -126,16 +131,19 @@ func (p *Parser) feedProcessQueue() error {
 
 func (p *Parser) processTypes() error {
 	for p.processQueue.Len() > 0 {
+		// pick next type to process from the queue
 		item := p.processQueue.Front()
 		p.processQueue.Remove(item)
 
 		typeInfo, _ := item.Value.(*TypeInfo)
 		typeName := typeInfo.typeName
+		// skip already processed types
 		if typeInfo.processed {
 			continue
 		}
 		typeInfo.processed = true
 		p.current = typeInfo
+
 		schemaElement, err := p.parseType(typeInfo)
 		if err != nil {
 			return fmt.Errorf("parse type spec %s: %w", typeName, err)
@@ -151,6 +159,7 @@ func (p *Parser) processTypes() error {
 			}
 		}
 
+		// add parsed type to schema
 		if p.isConfigType(typeInfo) {
 			if obj, ok := schemaElement.(*ObjectSchemaElement); ok {
 				p.schema.ObjectSchemaElement = *obj
@@ -175,6 +184,7 @@ func (p *Parser) isConfigType(typeInfo *TypeInfo) bool {
 
 func (p *Parser) parseType(typeInfo *TypeInfo) (SchemaElement, error) {
 	typeSpec := typeInfo.spec
+	// skip non-struct types at the top level
 	switch typeSpec.Type.(type) {
 	case *ast.InterfaceType, *ast.FuncType:
 		// skip these types
@@ -363,14 +373,19 @@ func (p *Parser) parseSelector(selector *ast.SelectorExpr) (SchemaElement, error
 	if path, ok := p.current.imports[pkgName]; ok {
 		_, exists := p.config.Mappings[path]
 		if !exists {
-			allowed := false
-			for _, allowedPath := range p.config.AllowedRefs {
-				if strings.HasPrefix(path, allowedPath) {
-					allowed = true
-					break
+			// always allow internal packages
+			allowed := strings.HasPrefix(path, ".")
+			// otherwise check allowed refs
+			if !allowed {
+				for _, allowedPath := range p.config.AllowedRefs {
+					if strings.HasPrefix(path, allowedPath) {
+						allowed = true
+						break
+					}
 				}
 			}
 			fullID := fmt.Sprintf("%s.%s", path, strcase.ToSnake(name))
+			// if allowed - create ref, else create any with custom type
 			if allowed {
 				element := CreateRefField(fullID, "")
 				return element, nil
