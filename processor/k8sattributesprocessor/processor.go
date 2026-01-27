@@ -184,7 +184,6 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			}
 			kp.addContainerAttributes(resource.Attributes(), pod)
 		} else {
-			kp.logger.Debug("unable to find pod based on identifier", zap.Any("value", podIdentifierValue))
 			// Record failed pod association
 			kp.logger.Debug("pod not found", zap.Any("podIdentifier", podIdentifierValue))
 			if kp.telemetry != nil {
