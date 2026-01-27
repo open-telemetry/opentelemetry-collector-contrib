@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -23,6 +24,16 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			"testing_error",
 			&errorFunctionArguments{},
 			functionThatHasAnError,
+		),
+		createFactory[any](
+			"testing_pmapgetsetter",
+			&pMapGetSetterArguments{},
+			functionWithPMapGetSetter,
+		),
+		createFactory[any](
+			"testing_pslicegetsetter",
+			&pSliceGetSetterArguments{},
+			functionWithPSliceGetSetter,
 		),
 		createFactory[any](
 			"testing_getsetter",
@@ -107,6 +118,32 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							String: (ottltest.Strp("SHA256")),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "not accessor (pmap)",
+			inv: editor{
+				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							String: ottltest.Strp("not path"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "not accessor (pslice)",
+			inv: editor{
+				Function: "testing_pslicegetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							String: ottltest.Strp("not path"),
 						},
 					},
 				},
@@ -392,6 +429,54 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
+			name: "path parts not all used (pmap)",
+			inv: editor{
+				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+										{
+											Name: "not-used",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "path parts not all used (pslice)",
+			inv: editor{
+				Function: "testing_pslicegetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+										{
+											Name: "not-used",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "path parts not all used",
 			inv: editor{
 				Function: "testing_getsetter",
@@ -406,6 +491,64 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 										},
 										{
 											Name: "not-used",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Keys not allowed (pmap)",
+			inv: editor{
+				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+											Keys: []key{
+												{
+													String: ottltest.Strp("foo"),
+												},
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Keys not allowed (pslice)",
+			inv: editor{
+				Function: "testing_pslicegetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+											Keys: []key{
+												{
+													String: ottltest.Strp("foo"),
+												},
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
 										},
 									},
 								},
@@ -456,17 +599,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	p, _ := NewParser(
-		defaultFunctionsForTests(),
-		testParsePath[any],
-		componenttest.NewNopTelemetrySettings(),
-		WithEnumParser[any](testParseEnum),
-	)
-
 	tests := []struct {
-		name string
-		inv  editor
-		want any
+		name      string
+		inv       editor
+		want      any
+		wantError string
 	}{
 		{
 			name: "no arguments",
@@ -726,7 +863,13 @@ func Test_NewFunctionCall(t *testing.T) {
 							List: &list{
 								Values: []value{
 									{
-										String: ottltest.Strp("test"),
+										Literal: &mathExprLiteral{
+											Path: &path{
+												Fields: []field{
+													{Name: "dur1"},
+												},
+											},
+										},
 									},
 								},
 							},
@@ -745,7 +888,13 @@ func Test_NewFunctionCall(t *testing.T) {
 							List: &list{
 								Values: []value{
 									{
-										String: ottltest.Strp("test"),
+										Literal: &mathExprLiteral{
+											Path: &path{
+												Fields: []field{
+													{Name: "time1"},
+												},
+											},
+										},
 									},
 								},
 							},
@@ -764,7 +913,9 @@ func Test_NewFunctionCall(t *testing.T) {
 							List: &list{
 								Values: []value{
 									{
-										String: ottltest.Strp("1.1"),
+										Literal: &mathExprLiteral{
+											Float: ottltest.Floatp(1.1),
+										},
 									},
 									{
 										Literal: &mathExprLiteral{
@@ -807,6 +958,28 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "pmapgetsetter arg",
+			inv: editor{
+				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
 			name: "pmapgetter slice arg",
 			inv: editor{
 				Function: "testing_pmapgetter_slice",
@@ -832,6 +1005,76 @@ func Test_NewFunctionCall(t *testing.T) {
 												Fields: []field{
 													{
 														Name: "name",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "pslicegetsetter arg",
+			inv: editor{
+				Function: "testing_pslicegetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "pslicegetter slice arg",
+			inv: editor{
+				Function: "testing_pslicegetter_slice",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										List: &list{
+											Values: []value{
+												{
+													Literal: &mathExprLiteral{
+														Int: ottltest.Intp(1),
+													},
+												},
+												{
+													Literal: &mathExprLiteral{
+														Int: ottltest.Intp(2),
+													},
+												},
+											},
+										},
+									},
+									{
+										List: &list{
+											Values: []value{
+												{
+													Literal: &mathExprLiteral{
+														Int: ottltest.Intp(1),
+													},
+												},
+												{
+													Literal: &mathExprLiteral{
+														Int: ottltest.Intp(2),
 													},
 												},
 											},
@@ -1090,7 +1333,13 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							String: ottltest.Strp("test"),
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{Name: "dur1"},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -1103,7 +1352,13 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							String: ottltest.Strp("test"),
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{Name: "time1"},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -1154,12 +1409,14 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []argument{
 					{
 						Value: value{
-							String: ottltest.Strp("1.1"),
+							Literal: &mathExprLiteral{
+								Float: ottltest.Floatp(1.1),
+							},
 						},
 					},
 				},
 			},
-			want: nil,
+			want: "anything",
 		},
 		{
 			name: "floatlikegetter arg",
@@ -1199,13 +1456,13 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Value: value{
 							Literal: &mathExprLiteral{
-								Float: ottltest.Floatp(1.1),
+								Int: ottltest.Intp(1),
 							},
 						},
 					},
 				},
 			},
-			want: nil,
+			want: "anything",
 		},
 		{
 			name: "byteslicelikegetter arg",
@@ -1233,6 +1490,33 @@ func Test_NewFunctionCall(t *testing.T) {
 									Fields: []field{
 										{
 											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "pslicegetter arg",
+			inv: editor{
+				Function: "testing_pslicegetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							List: &list{
+								Values: []value{
+									{
+										Literal: &mathExprLiteral{
+											Int: ottltest.Intp(1),
+										},
+									},
+									{
+										Literal: &mathExprLiteral{
+											Int: ottltest.Intp(2),
 										},
 									},
 								},
@@ -1453,6 +1737,66 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "Complex Indexing (pmap)",
+			inv: editor{
+				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "attributes",
+											Keys: []key{
+												{
+													String: ottltest.Strp("foo"),
+												},
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "Complex Indexing (pslice)",
+			inv: editor{
+				Function: "testing_pslicegetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "attributes",
+											Keys: []key{
+												{
+													Int: ottltest.Intp(0),
+												},
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
 			name: "Complex Indexing",
 			inv: editor{
 				Function: "testing_getsetter",
@@ -1472,6 +1816,50 @@ func Test_NewFunctionCall(t *testing.T) {
 													String: ottltest.Strp("bar"),
 												},
 											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "path that allows keys but none have been specified (pmap)",
+			inv: editor{
+				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "attributes",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "path that allows keys but none have been specified (pslice)",
+			inv: editor{
+				Function: "testing_pslicegetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "attributes",
 										},
 									},
 								},
@@ -1505,14 +1893,30 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 	}
+
+	p, _ := NewParser(
+		defaultFunctionsForTests(),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	testMap := pcommon.NewMap()
+	testMap.PutStr("foo", "bar")
+
+	testSlice := pcommon.NewSlice()
+	testSlice.AppendEmpty().SetStr("test")
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fn, err := p.newFunctionCall(tt.inv)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
+			result, err := fn.Eval(t.Context(), nil)
 			if tt.want != nil {
-				result, _ := fn.Eval(t.Context(), nil)
 				assert.Equal(t, tt.want, result)
+			} else if tt.wantError != "" {
+				assert.ErrorContains(t, err, tt.wantError)
 			}
 		})
 	}
@@ -1728,6 +2132,16 @@ func functionWithPMapGetterSlice(getters []PMapGetter[any]) (ExprFunc[any], erro
 	}, nil
 }
 
+type pSliceGetterSliceArguments struct {
+	PSliceGetter []PSliceGetter[any]
+}
+
+func functionWithPSliceGetterSlice(getters []PSliceGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return len(getters), nil
+	}, nil
+}
+
 type stringLikeGetterSliceArguments struct {
 	StringLikeGetters []StringLikeGetter[any]
 }
@@ -1888,11 +2302,41 @@ func functionWithByteSliceLikeGetter(ByteSliceLikeGetter[any]) (ExprFunc[any], e
 	}, nil
 }
 
+type pMapGetSetterArguments struct {
+	PMapGetSetterArg PMapGetSetter[any]
+}
+
+func functionWithPMapGetSetter(PMapGetSetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return "anything", nil
+	}, nil
+}
+
 type pMapGetterArguments struct {
 	PMapArg PMapGetter[any]
 }
 
 func functionWithPMapGetter(PMapGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return "anything", nil
+	}, nil
+}
+
+type pSliceGetSetterArguments struct {
+	PSliceGetSetterArg PSliceGetSetter[any]
+}
+
+func functionWithPSliceGetSetter(PSliceGetSetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return "anything", nil
+	}, nil
+}
+
+type pSliceGetterArguments struct {
+	PSliceArg PSliceGetter[any]
+}
+
+func functionWithPSliceGetter(PSliceGetter[any]) (ExprFunc[any], error) {
 	return func(context.Context, any) (any, error) {
 		return "anything", nil
 	}, nil
@@ -2105,9 +2549,24 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			functionWithPMapGetterSlice,
 		),
 		createFactory[any](
+			"testing_pslicegetter_slice",
+			&pSliceGetterSliceArguments{},
+			functionWithPSliceGetterSlice,
+		),
+		createFactory[any](
 			"testing_setter",
 			&setterArguments{},
 			functionWithSetter,
+		),
+		createFactory[any](
+			"testing_pmapgetsetter",
+			&pMapGetSetterArguments{},
+			functionWithPMapGetSetter,
+		),
+		createFactory[any](
+			"testing_pslicegetsetter",
+			&pSliceGetSetterArguments{},
+			functionWithPSliceGetSetter,
 		),
 		createFactory[any](
 			"testing_getsetter",
@@ -2183,6 +2642,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_pmapgetter",
 			&pMapGetterArguments{},
 			functionWithPMapGetter,
+		),
+		createFactory[any](
+			"testing_pslicegetter",
+			&pSliceGetterArguments{},
+			functionWithPSliceGetter,
 		),
 		createFactory[any](
 			"testing_string",
@@ -2304,7 +2768,7 @@ func Test_basePath_isComplete(t *testing.T) {
 			if tt.expectedError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -2353,7 +2817,7 @@ func Test_basePath_NextWithIsComplete(t *testing.T) {
 			if tt.expectedError {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -2382,7 +2846,7 @@ func Test_newPath(t *testing.T) {
 	}
 
 	np, err := ps.newPath(&path{Fields: fields})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	p := Path[any](np)
 	assert.Equal(t, "body", p.Name())
 	assert.Nil(t, p.Keys())
@@ -2393,10 +2857,10 @@ func Test_newPath(t *testing.T) {
 	assert.Nil(t, p.Next())
 	assert.Len(t, p.Keys(), 1)
 	v, err := p.Keys()[0].String(t.Context(), struct{}{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "key", *v)
 	i, err := p.Keys()[0].Int(t.Context(), struct{}{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, i)
 }
 
@@ -2465,7 +2929,7 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 				assert.Error(t, err, tt.expectedError)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			p := Path[any](np)
 			contextParsedAsField := len(tt.pathContextNames) == 0 && tt.pathContext != ""
 			if contextParsedAsField {
@@ -2495,10 +2959,10 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 			assert.Nil(t, p.Next())
 			assert.Len(t, p.Keys(), 1)
 			v, err := p.Keys()[0].String(t.Context(), struct{}{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, "key", *v)
 			i, err := p.Keys()[0].Int(t.Context(), struct{}{})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Nil(t, i)
 		})
 	}
@@ -2509,7 +2973,7 @@ func Test_baseKey_String(t *testing.T) {
 		s: ottltest.Strp("test"),
 	}
 	s, err := bp.String(t.Context(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "test", *s)
 }
@@ -2519,7 +2983,7 @@ func Test_baseKey_Int(t *testing.T) {
 		i: ottltest.Intp(1),
 	}
 	i, err := bp.Int(t.Context(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, i)
 	assert.Equal(t, int64(1), *i)
 }
@@ -2545,11 +3009,32 @@ func Test_newKey(t *testing.T) {
 	assert.Len(t, ks, 2)
 
 	s, err := ks[0].String(t.Context(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "foo", *s)
 	s, err = ks[1].String(t.Context(), nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "bar", *s)
+}
+
+func Test_Optional_Get(t *testing.T) {
+	opt := NewTestingOptional[string]("foo")
+	assert.Equal(t, "foo", opt.Get())
+}
+
+func Test_Optional_IsEmpty(t *testing.T) {
+	setOpt := NewTestingOptional[string]("foo")
+	assert.False(t, setOpt.IsEmpty())
+
+	emptyOpt := Optional[any]{}
+	assert.True(t, emptyOpt.IsEmpty())
+}
+
+func Test_Optional_GetOr(t *testing.T) {
+	emptyOpt := Optional[string]{}
+	assert.Equal(t, "bar", emptyOpt.GetOr("bar"))
+
+	setOpt := NewTestingOptional[string]("foo")
+	assert.Equal(t, "foo", setOpt.GetOr("bar"))
 }

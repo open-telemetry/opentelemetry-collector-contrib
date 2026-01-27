@@ -229,11 +229,11 @@ type mockPoller struct {
 	closeErr error
 }
 
-func (m *mockPoller) SegmentsChan() <-chan udppoller.RawSegment {
+func (*mockPoller) SegmentsChan() <-chan udppoller.RawSegment {
 	return make(chan udppoller.RawSegment, 1)
 }
 
-func (m *mockPoller) Start(_ context.Context) {}
+func (*mockPoller) Start(context.Context) {}
 
 func (m *mockPoller) Close() error {
 	if m.closeErr != nil {
@@ -246,7 +246,7 @@ type mockProxy struct {
 	closeErr error
 }
 
-func (m *mockProxy) ListenAndServe() error {
+func (*mockProxy) ListenAndServe() error {
 	return errors.New("returning from ListenAndServe() always errors out")
 }
 
@@ -343,7 +343,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_spans",
-			Description: "Number of spans successfully pushed into the pipeline. [alpha]",
+			Description: "Number of spans successfully pushed into the pipeline. [Alpha]",
 			Unit:        "{spans}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -364,7 +364,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_spans",
-			Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
+			Description: "Number of spans that could not be pushed into the pipeline. [Alpha]",
 			Unit:        "{spans}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,

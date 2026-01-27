@@ -61,7 +61,7 @@ func WithDetails(err error, keyValues ...string) AgentError {
 	return NewError(err.Error(), "", keyValues...)
 }
 
-// Wrap adds context to the description for richer logs
+// Deprecated: [v0.143.0] use fmt.Errorf with %w.
 func Wrap(err error, context string) AgentError {
 	var agentErr AgentError
 	if errors.As(err, &agentErr) {
@@ -73,7 +73,7 @@ func Wrap(err error, context string) AgentError {
 }
 
 // NewError will create a new agent error.
-func NewError(description string, suggestion string, keyValues ...string) AgentError {
+func NewError(description, suggestion string, keyValues ...string) AgentError {
 	return AgentError{
 		Description: description,
 		Suggestion:  suggestion,

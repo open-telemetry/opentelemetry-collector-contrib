@@ -4,6 +4,7 @@
 package libhoneyevent // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
@@ -15,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -72,15 +74,64 @@ func (l *LibhoneyEvent) UnmarshalJSON(j []byte) error {
 	if err != nil {
 		return err
 	}
-	if tmp.MsgPackTimestamp.IsZero() && tmp.Time == "none" {
-		// neither timestamp was set. give it right now.
-		tmp.Time = tstr
-		tnow := time.Now()
-		tmp.MsgPackTimestamp = &tnow
+	if tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero() {
+		if tmp.Time == "none" {
+			tmp.Time = tstr
+			tnow := time.Now()
+			tmp.MsgPackTimestamp = &tnow
+		} else {
+			propertime := eventtime.GetEventTime(tmp.Time)
+			tmp.MsgPackTimestamp = &propertime
+		}
 	}
-	if tmp.MsgPackTimestamp.IsZero() {
-		propertime := eventtime.GetEventTime(tmp.Time)
-		tmp.MsgPackTimestamp = &propertime
+
+	*l = LibhoneyEvent(tmp)
+	return nil
+}
+
+// UnmarshalMsgpack overrides the unmarshall to make sure the MsgPackTimestamp is set
+func (l *LibhoneyEvent) UnmarshalMsgpack(data []byte) error {
+	type _libhoneyEvent LibhoneyEvent
+	tstr := eventtime.GetEventTimeDefaultString()
+	tzero := time.Time{}
+	tmp := _libhoneyEvent{Time: "none", MsgPackTimestamp: &tzero, Samplerate: 1}
+
+	// Use a temporary struct to avoid recursion
+	type tempEvent struct {
+		Samplerate       int            `msgpack:"samplerate"`
+		MsgPackTimestamp *time.Time     `msgpack:"time"`
+		Time             string         `msgpack:"-"` // Ignore during msgpack unmarshal
+		Data             map[string]any `msgpack:"data"`
+	}
+
+	var tmpEvent tempEvent
+	// First unmarshal into the temp struct
+	decoder := msgpack.NewDecoder(bytes.NewReader(data))
+	decoder.UseLooseInterfaceDecoding(true)
+	err := decoder.Decode(&tmpEvent)
+	if err != nil {
+		return err
+	}
+
+	// Copy fields to our tmp struct
+	tmp.Samplerate = tmpEvent.Samplerate
+	tmp.MsgPackTimestamp = tmpEvent.MsgPackTimestamp
+	tmp.Data = tmpEvent.Data
+
+	// Check if Time field exists in Data and extract it
+	if timeStr, ok := tmpEvent.Data["time"].(string); ok {
+		tmp.Time = timeStr
+	}
+
+	if tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero() {
+		if tmp.Time == "none" {
+			tmp.Time = tstr
+			tnow := time.Now()
+			tmp.MsgPackTimestamp = &tnow
+		} else {
+			propertime := eventtime.GetEventTime(tmp.Time)
+			tmp.MsgPackTimestamp = &propertime
+		}
 	}
 
 	*l = LibhoneyEvent(tmp)
@@ -104,18 +155,18 @@ func (l *LibhoneyEvent) SignalType(logger zap.Logger) string {
 				case "link":
 					return "span_link"
 				}
-				logger.Warn("invalid annotation type", zap.String("meta.annotation_type", atype.(string)))
+				logger.Debug("invalid annotation type", zap.String("meta.annotation_type", atype.(string)))
 				return "span"
 			}
 			return "span"
 		case "log":
 			return "log"
 		default:
-			logger.Warn("invalid meta.signal_type", zap.String("meta.signal_type", sig.(string)))
+			logger.Debug("invalid meta.signal_type", zap.String("meta.signal_type", sig.(string)))
 			return "log"
 		}
 	}
-	logger.Warn("missing meta.signal_type and meta.annotation_type")
+	logger.Debug("missing meta.signal_type and meta.annotation_type")
 	return "log"
 }
 
@@ -142,7 +193,7 @@ func (l *LibhoneyEvent) GetScope(fields FieldMapConfig, seen *ScopeHistory, serv
 			scopeLibraryVersion = scopeLibVer.(string)
 		}
 		newScope := SimpleScope{
-			ServiceName:    serviceName, // we only set the service name once. If the same library comes from multiple services in the same batch, we're in trouble.
+			ServiceName:    serviceName,
 			LibraryName:    scopeLibraryName.(string),
 			LibraryVersion: scopeLibraryVersion,
 			ScopeSpans:     ptrace.NewSpanSlice(),
@@ -151,7 +202,20 @@ func (l *LibhoneyEvent) GetScope(fields FieldMapConfig, seen *ScopeHistory, serv
 		seen.Scope[scopeKey] = newScope
 		return scopeKey, nil
 	}
-	return "libhoney.receiver", errors.New("library name not found")
+	// Create a per-service default scope instead of using a global default
+	defaultScopeKey := serviceName + "-libhoney.receiver"
+	if _, ok := seen.Scope[defaultScopeKey]; !ok {
+		// Create a default scope for this specific service
+		newScope := SimpleScope{
+			ServiceName:    serviceName,
+			LibraryName:    "libhoney.receiver",
+			LibraryVersion: "1.0.0",
+			ScopeSpans:     ptrace.NewSpanSlice(),
+			ScopeLogs:      plog.NewLogRecordSlice(),
+		}
+		seen.Scope[defaultScopeKey] = newScope
+	}
+	return defaultScopeKey, errors.New("library name not found")
 }
 
 func spanIDFrom(s string) trc.SpanID {
@@ -205,7 +269,23 @@ type ServiceHistory struct {
 
 // ToPLogRecord converts a LibhoneyEvent to a Pdata LogRecord
 func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *[]string, logger zap.Logger) error {
-	timeNs := l.MsgPackTimestamp.UnixNano()
+	// Handle cases where MsgPackTimestamp might be nil (e.g., JSON data from Refinery)
+	var timeNs int64
+	if l.MsgPackTimestamp != nil {
+		timeNs = l.MsgPackTimestamp.UnixNano()
+	} else {
+		// Parse time from Time field or use current time
+		if l.Time != "" {
+			parsedTime, err := time.Parse(time.RFC3339, l.Time)
+			if err == nil {
+				timeNs = parsedTime.UnixNano()
+			} else {
+				timeNs = time.Now().UnixNano()
+			}
+		} else {
+			timeNs = time.Now().UnixNano()
+		}
+	}
 	logger.Debug("processing log with", zap.Int64("timestamp", timeNs))
 	newLog.SetTimestamp(pcommon.Timestamp(timeNs))
 
@@ -251,7 +331,7 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 		case bool:
 			newLog.Attributes().PutBool(k, v)
 		default:
-			logger.Warn("Span data type issue", zap.Int64("timestamp", timeNs), zap.String("key", k))
+			logger.Debug("Span data type issue", zap.Int64("timestamp", timeNs), zap.String("key", k))
 		}
 	}
 	return nil
@@ -259,16 +339,20 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 
 // GetParentID returns the parent id from the event or an error if it's not found
 func (l *LibhoneyEvent) GetParentID(fieldName string) (trc.SpanID, error) {
-	if pid, ok := l.Data[fieldName]; ok {
+	if pid, ok := l.Data[fieldName]; ok && pid != nil {
 		pid := strings.ReplaceAll(pid.(string), "-", "")
 		pidByteArray, err := hex.DecodeString(pid)
-		if err == nil {
-			if len(pidByteArray) == 32 {
-				pidByteArray = pidByteArray[8:24]
-			} else if len(pidByteArray) >= 16 {
-				pidByteArray = pidByteArray[0:16]
+		if err == nil && len(pidByteArray) >= 8 {
+			// Extract 8 bytes for SpanID
+			var spanIDArray [8]byte
+			if len(pidByteArray) >= 16 {
+				// If it's a TraceID (16+ bytes), take the last 8 bytes as SpanID
+				copy(spanIDArray[:], pidByteArray[len(pidByteArray)-8:])
+			} else {
+				// If it's already 8 bytes, use as-is
+				copy(spanIDArray[:], pidByteArray[:8])
 			}
-			return trc.SpanID(pidByteArray), nil
+			return trc.SpanID(spanIDArray), nil
 		}
 		return trc.SpanID{}, errors.New("parent id is not a valid span id")
 	}
@@ -277,12 +361,30 @@ func (l *LibhoneyEvent) GetParentID(fieldName string) (trc.SpanID, error) {
 
 // ToPTraceSpan converts a LibhoneyEvent to a Pdata Span
 func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]string, cfg FieldMapConfig, logger zap.Logger) error {
-	timeNs := l.MsgPackTimestamp.UnixNano()
+	// Handle cases where MsgPackTimestamp might be nil (e.g., JSON data from Refinery)
+	var timeNs int64
+	if l.MsgPackTimestamp != nil {
+		timeNs = l.MsgPackTimestamp.UnixNano()
+	} else {
+		// Parse time from Time field or use current time
+		if l.Time != "" {
+			parsedTime, err := time.Parse(time.RFC3339, l.Time)
+			if err == nil {
+				timeNs = parsedTime.UnixNano()
+			} else {
+				timeNs = time.Now().UnixNano()
+			}
+		} else {
+			timeNs = time.Now().UnixNano()
+		}
+	}
 	logger.Debug("processing trace with", zap.Int64("timestamp", timeNs))
 
-	var parentID trc.SpanID
 	if pid, ok := l.Data[cfg.Attributes.ParentID]; ok {
-		parentID = spanIDFrom(pid.(string))
+		parentID, err := l.GetParentID(cfg.Attributes.ParentID)
+		if err != nil {
+			parentID = spanIDFrom(pid.(string))
+		}
 		newSpan.SetParentSpanID(pcommon.SpanID(parentID))
 	}
 
@@ -293,38 +395,36 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 			break
 		}
 	}
-	endTimestamp := timeNs + (int64(durationMs) * 1000000)
+	endTimestamp := timeNs + int64(durationMs*1000000)
 
 	if tid, ok := l.Data[cfg.Attributes.TraceID]; ok {
 		tid := strings.ReplaceAll(tid.(string), "-", "")
 		tidByteArray, err := hex.DecodeString(tid)
-		if err == nil {
-			if len(tidByteArray) >= 32 {
-				tidByteArray = tidByteArray[0:32]
-			}
-			newSpan.SetTraceID(pcommon.TraceID(tidByteArray))
+		if err == nil && len(tidByteArray) == 16 {
+			// Convert slice to [16]byte array
+			var traceIDArray [16]byte
+			copy(traceIDArray[:], tidByteArray)
+			newSpan.SetTraceID(pcommon.TraceID(traceIDArray))
 		} else {
 			newSpan.SetTraceID(pcommon.TraceID(traceIDFrom(tid)))
 		}
 	} else {
-		newSpan.SetTraceID(pcommon.TraceID(generateAnID(32)))
+		newSpan.SetTraceID(pcommon.TraceID(generateAnID(16)))
 	}
 
 	if sid, ok := l.Data[cfg.Attributes.SpanID]; ok {
 		sid := strings.ReplaceAll(sid.(string), "-", "")
 		sidByteArray, err := hex.DecodeString(sid)
-		if err == nil {
-			if len(sidByteArray) == 32 {
-				sidByteArray = sidByteArray[8:24]
-			} else if len(sidByteArray) >= 16 {
-				sidByteArray = sidByteArray[0:16]
-			}
-			newSpan.SetSpanID(pcommon.SpanID(sidByteArray))
+		if err == nil && len(sidByteArray) == 8 {
+			// Convert slice to [8]byte array
+			var spanIDArray [8]byte
+			copy(spanIDArray[:], sidByteArray)
+			newSpan.SetSpanID(pcommon.SpanID(spanIDArray))
 		} else {
 			newSpan.SetSpanID(pcommon.SpanID(spanIDFrom(sid)))
 		}
 	} else {
-		newSpan.SetSpanID(pcommon.SpanID(generateAnID(16)))
+		newSpan.SetSpanID(pcommon.SpanID(generateAnID(8)))
 	}
 
 	newSpan.SetStartTimestamp(pcommon.Timestamp(timeNs))
@@ -378,7 +478,7 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 		case bool:
 			newSpan.Attributes().PutBool(k, v)
 		default:
-			logger.Warn("Span data type issue", zap.String("trace.trace_id", newSpan.TraceID().String()), zap.String("trace.span_id", newSpan.SpanID().String()), zap.String("key", k))
+			logger.Debug("Span data type issue", zap.String("trace.trace_id", newSpan.TraceID().String()), zap.String("trace.span_id", newSpan.SpanID().String()), zap.String("key", k))
 		}
 	}
 	return nil

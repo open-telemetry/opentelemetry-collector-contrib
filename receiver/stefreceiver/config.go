@@ -13,8 +13,11 @@ import (
 type Config struct {
 	configgrpc.ServerConfig `mapstructure:",squash"`
 	AckInterval             time.Duration `mapstructure:"ack_interval"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
-func (c *Config) Validate() error {
+func (*Config) Validate() error {
 	return nil
 }

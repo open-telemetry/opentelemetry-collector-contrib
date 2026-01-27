@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/api"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/api"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/credentials"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/metadata"
 )
 
@@ -372,7 +372,96 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	require.NoError(t, se.Shutdown(t.Context()))
 	require.FileExists(t, credsPath)
 
-	require.EqualValues(t, 2, atomic.LoadInt32(&reqCount))
+	// Depending on timing, the periodic heartbeat can result in more than
+	// two requests being made. Testing that at least two requests were made
+	// should be sufficient to satisfy this test.
+	require.GreaterOrEqual(t, atomic.LoadInt32(&reqCount), int32(2))
+}
+
+func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
+	t.Parallel()
+
+	getServer := func() *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, req *http.Request) {
+				switch req.URL.Path {
+				case heartbeatURL:
+					w.WriteHeader(http.StatusNoContent)
+				case metadataURL:
+					w.WriteHeader(http.StatusOK)
+				default:
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+			}))
+	}
+
+	getConfig := func(url string) *Config {
+		cfg := createDefaultConfig().(*Config)
+		cfg.CollectorName = "collector_name"
+		cfg.APIBaseURL = url
+		cfg.Credentials.InstallationToken = "dummy_install_token"
+		return cfg
+	}
+
+	logger, err := zap.NewDevelopment()
+	require.NoError(t, err)
+
+	dir := t.TempDir()
+	t.Logf("Using dir: %s", dir)
+
+	store, err := credentials.NewLocalFsStore(
+		credentials.WithCredentialsDirectory(dir),
+		credentials.WithLogger(logger),
+	)
+	require.NoError(t, err)
+
+	srv := getServer()
+	t.Cleanup(func() { srv.Close() })
+
+	cfg := getConfig(srv.URL)
+	cfg.CollectorCredentialsDirectory = dir
+
+	hashKey := createHashKey(cfg)
+
+	require.NoError(t,
+		store.Store(hashKey, credentials.CollectorCredentials{
+			CollectorName: "collector_name",
+			Credentials: api.OpenRegisterResponsePayload{
+				CollectorCredentialID:  "collectorId",
+				CollectorCredentialKey: "collectorKey",
+				CollectorID:            "id",
+			},
+		}),
+	)
+
+	se, err := newSumologicExtension(cfg, logger, component.NewID(metadata.Type), "1.0.0")
+	require.NoError(t, err)
+
+	fileName, err := credentials.HashKeyToFilename(hashKey)
+	require.NoError(t, err)
+	credsPath := path.Join(dir, fileName)
+	// Credentials file exists before starting the extension because we created
+	// it directly via store.Store()
+	require.FileExists(t, credsPath)
+
+	require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, se.Shutdown(t.Context()))
+	require.FileExists(t, credsPath)
+	hashKeyV2 := createHashKeyV2(cfg)
+	v2Creds, _ := store.Get(hashKeyV2)
+
+	fileName, err = credentials.HashKeyToFilename(hashKeyV2)
+	require.NoError(t, err)
+	credsPath = path.Join(dir, fileName)
+	require.Equal(t, credentials.CollectorCredentials{
+		CollectorName: "collector_name",
+		Credentials: api.OpenRegisterResponsePayload{
+			CollectorCredentialID:  "collectorId",
+			CollectorCredentialKey: "collectorKey",
+			CollectorID:            "id",
+		},
+	}, v2Creds)
+	require.FileExists(t, credsPath)
 }
 
 func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T) {
@@ -1515,6 +1604,8 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
+
+	se.host = componenttest.NewNopHost()
 
 	httpClient, err := se.getHTTPClient(t.Context(), se.conf.ClientConfig, api.OpenRegisterResponsePayload{})
 	require.NoError(t, err)

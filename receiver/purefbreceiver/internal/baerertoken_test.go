@@ -35,7 +35,7 @@ func TestBearerToken(t *testing.T) {
 		},
 	}
 
-	cfgAuth := configauth.Authentication{
+	cfgAuth := configauth.Config{
 		AuthenticatorID: baComponentName,
 	}
 

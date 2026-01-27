@@ -151,7 +151,7 @@ func (r *mockZipkinReporter) Send(span zipkinmodel.SpanModel) {
 	r.batch = append(r.batch, &span)
 }
 
-func (r *mockZipkinReporter) Close() error {
+func (*mockZipkinReporter) Close() error {
 	return nil
 }
 

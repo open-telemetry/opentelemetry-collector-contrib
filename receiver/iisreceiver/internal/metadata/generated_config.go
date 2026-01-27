@@ -47,10 +47,10 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		IisApplicationPoolState: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		IisApplicationPoolUptime: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		IisConnectionActive: MetricConfig{
 			Enabled: true,

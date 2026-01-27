@@ -17,4 +17,7 @@ const (
 
 	// IndexAttributeName is the attribute name used to specify the index to which the document should be routed.
 	IndexAttributeName = "elasticsearch.index"
+
+	// MappingModeAttributeName is the scope attribute name used to override the mapping mode.
+	MappingModeAttributeName = "elastic.mapping.mode"
 )

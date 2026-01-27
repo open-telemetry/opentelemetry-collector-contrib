@@ -19,18 +19,26 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func createPods(t *testing.T, client *fake.Clientset, numPods int) []*corev1.Pod {
+func createPods(t *testing.T, client *fake.Clientset, numPods int, distinctNamespaces bool) []*corev1.Pod {
 	out := make([]*corev1.Pod, 0, numPods)
-	for i := 0; i < numPods; i++ {
+	for i := range numPods {
 		p := &corev1.Pod{
 			ObjectMeta: v1.ObjectMeta{
 				UID:       types.UID("pod" + strconv.Itoa(i)),
 				Name:      strconv.Itoa(i),
 				Namespace: "test",
 			},
+			Spec: corev1.PodSpec{
+				NodeName: "test-node",
+			},
+		}
+
+		if distinctNamespaces {
+			p.Namespace = fmt.Sprintf("test-%d", i)
 		}
 
 		createdPod, err := client.CoreV1().Pods(p.Namespace).Create(t.Context(), p, v1.CreateOptions{})
+
 		require.NoError(t, err, "error creating node")
 		out = append(out, createdPod)
 		time.Sleep(2 * time.Millisecond)
@@ -39,7 +47,7 @@ func createPods(t *testing.T, client *fake.Clientset, numPods int) []*corev1.Pod
 }
 
 func deletePods(t *testing.T, client *fake.Clientset, numPods int) {
-	for i := 0; i < numPods; i++ {
+	for i := range numPods {
 		err := client.CoreV1().Pods("test").Delete(t.Context(), strconv.Itoa(i), v1.DeleteOptions{})
 		require.NoError(t, err, "error creating node")
 	}
@@ -48,7 +56,7 @@ func deletePods(t *testing.T, client *fake.Clientset, numPods int) {
 }
 
 func createNodes(t *testing.T, client *fake.Clientset, numNodes int) {
-	for i := 0; i < numNodes; i++ {
+	for i := range numNodes {
 		n := &corev1.Node{
 			ObjectMeta: v1.ObjectMeta{
 				UID:  types.UID("node" + strconv.Itoa(i)),
@@ -63,7 +71,7 @@ func createNodes(t *testing.T, client *fake.Clientset, numNodes int) {
 }
 
 func createClusterQuota(t *testing.T, client *fakeQuota.Clientset, numQuotas int) {
-	for i := 0; i < numQuotas; i++ {
+	for i := range numQuotas {
 		q := &quotav1.ClusterResourceQuota{
 			ObjectMeta: v1.ObjectMeta{
 				Name: fmt.Sprintf("test-clusterquota-%d", i),

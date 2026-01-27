@@ -89,5 +89,4 @@ config:
     pipelines:
       metrics:
         receivers: [k8s_cluster]
-        processors: [batch]
         exporters: [debug]

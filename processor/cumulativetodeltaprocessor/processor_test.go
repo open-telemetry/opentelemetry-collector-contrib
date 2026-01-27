@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -74,8 +75,8 @@ type testHistogramMetric struct {
 func (tm testHistogramMetric) addToMetrics(ms pmetric.MetricSlice, now time.Time) {
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
-		hist := m.SetEmptyHistogram()
 		m.SetName(name)
+		hist := m.SetEmptyHistogram()
 
 		if tm.isCumulative[i] {
 			hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1204,11 +1205,11 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			}
 			assert.NotNil(t, mgp)
 			assert.NoError(t, err)
-			caps := mgp.Capabilities()
 
+			caps := mgp.Capabilities()
 			assert.True(t, caps.MutatesData)
 			ctx := t.Context()
-			require.NoError(t, mgp.Start(ctx, nil))
+			require.NoError(t, mgp.Start(ctx, componenttest.NewNopHost()))
 
 			cErr := mgp.ConsumeMetrics(t.Context(), test.inMetrics)
 			assert.NoError(t, cErr)
@@ -1386,8 +1387,7 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	reset()
 	assert.NoError(b, p.ConsumeMetrics(b.Context(), metrics))
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		reset()
 		assert.NoError(b, p.ConsumeMetrics(b.Context(), metrics))
 	}

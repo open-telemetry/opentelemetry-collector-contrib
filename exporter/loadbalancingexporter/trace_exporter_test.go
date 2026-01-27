@@ -18,13 +18,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
@@ -634,7 +634,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 
 	cfg := &Config{
 		Resolver: ResolverSettings{
-			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
+			DNS: configoptional.Some(DNSResolver{Hostname: "service-1", Port: ""}),
 		},
 	}
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
@@ -726,7 +726,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	waitWG.Wait()
 }
 
-func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
+func benchConsumeTraces(b *testing.B, endpointsCount, tracesCount int) {
 	ts, tb := getTelemetryAssets(b)
 	sink := new(consumertest.TracesSink)
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
@@ -734,13 +734,13 @@ func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
 	}
 
 	endpoints := []string{}
-	for i := 0; i < endpointsCount; i++ {
+	for i := range endpointsCount {
 		endpoints = append(endpoints, fmt.Sprintf("endpoint-%d", i))
 	}
 
 	config := &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: endpoints},
+			Static: configoptional.Some(StaticResolver{Hostnames: endpoints}),
 		},
 	}
 
@@ -759,16 +759,14 @@ func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
 
 	trace1 := ptrace.NewTraces()
 	trace2 := ptrace.NewTraces()
-	for i := 0; i < endpointsCount; i++ {
+	for i := range endpointsCount {
 		for j := 0; j < tracesCount/endpointsCount; j++ {
 			appendSimpleTraceWithID(trace2.ResourceSpans().AppendEmpty(), [16]byte{1, 2, 6, byte(i)})
 		}
 	}
 	td := mergeTraces(trace1, trace2)
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err = p.ConsumeTraces(b.Context(), td)
 		require.NoError(b, err)
 	}
@@ -831,15 +829,15 @@ func simpleTracesWithServiceName() ptrace.Traces {
 	traces.ResourceSpans().EnsureCapacity(1)
 
 	rspans := traces.ResourceSpans().AppendEmpty()
-	rspans.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-1")
+	rspans.Resource().Attributes().PutStr("service.name", "service-name-1")
 	rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
 
 	bspans := traces.ResourceSpans().AppendEmpty()
-	bspans.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-2")
+	bspans.Resource().Attributes().PutStr("service.name", "service-name-2")
 	bspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
 
 	aspans := traces.ResourceSpans().AppendEmpty()
-	aspans.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-3")
+	aspans.Resource().Attributes().PutStr("service.name", "service-name-3")
 	aspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 5})
 
 	return traces
@@ -849,10 +847,10 @@ func twoServicesWithSameTraceID() ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(2)
 	rs1 := traces.ResourceSpans().AppendEmpty()
-	rs1.Resource().Attributes().PutStr(conventions.AttributeServiceName, "ad-service-1")
+	rs1.Resource().Attributes().PutStr("service.name", "ad-service-1")
 	appendSimpleTraceWithID(rs1, [16]byte{1, 2, 3, 4})
 	rs2 := traces.ResourceSpans().AppendEmpty()
-	rs2.Resource().Attributes().PutStr(conventions.AttributeServiceName, "get-recommendations-7")
+	rs2.Resource().Attributes().PutStr("service.name", "get-recommendations-7")
 	appendSimpleTraceWithID(rs2, [16]byte{1, 2, 3, 4})
 	return traces
 }
@@ -864,7 +862,7 @@ func appendSimpleTraceWithID(dest ptrace.ResourceSpans, id pcommon.TraceID) {
 func simpleConfig() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
 		},
 	}
 }
@@ -872,7 +870,7 @@ func simpleConfig() *Config {
 func serviceBasedRoutingConfig() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}}),
 		},
 		RoutingKey: "service",
 	}
@@ -900,7 +898,7 @@ func (e *mockTracesExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func (e *mockTracesExporter) Capabilities() consumer.Capabilities {
+func (*mockTracesExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

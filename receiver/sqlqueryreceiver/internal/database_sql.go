@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 )
 
-func NewPool(opener sqlquery.SQLOpenerFunc, driver string, dsn string, maxOpenConns int) interface {
+func NewPool(opener sqlquery.SQLOpenerFunc, driver, dsn string, maxOpenConns int) interface {
 	DB() (*sql.DB, error)
 } {
 	return &sqlPool{

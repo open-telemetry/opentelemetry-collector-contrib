@@ -7,6 +7,7 @@
 |               | [beta]: metrics   |
 | Distributions | [core], [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fhostmetrics%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fhostmetrics) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fhostmetrics%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fhostmetrics) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_hostmetrics)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_hostmetrics&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@braydonk](https://www.github.com/braydonk) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -22,8 +23,8 @@ used when the collector is deployed as an agent.
 
 ## Getting Started
 
-The collection interval, root path, and the categories of metrics to be scraped can be
-configured:
+The collection interval, root path, the categories of metrics, and individual
+metrics to be scraped can be configured:
 
 ```yaml
 hostmetrics:
@@ -32,6 +33,12 @@ hostmetrics:
   root_path: <string>
   scrapers:
     <scraper1>:
+      metrics:
+        <metric1>:
+          enabled: true
+        <metric2>:
+          enabled: false
+        ...
     <scraper2>:
     ...
 ```
@@ -40,15 +47,16 @@ The available scrapers are:
 
 | Scraper      | Supported OSs                | Description                                            |
 | ------------ | ---------------------------- | ------------------------------------------------------ |
-| [cpu]        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
-| [disk]       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
+| [cpu]        | All                          | CPU utilization metrics                                |
+| [disk]       | All                          | Disk I/O metrics                                       |
 | [load]       | All                          | CPU load metrics                                       |
 | [filesystem] | All                          | File System utilization metrics                        |
 | [memory]     | All                          | Memory utilization metrics                             |
 | [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
+| [nfs]        | Linux                        | NFS server and client metrics                          |
 | [paging]     | All                          | Paging/Swap space utilization and I/O metrics          |
-| [processes]  | Linux, Mac                   | Process count metrics                                  |
-| [process]    | Linux, Windows, Mac          | Per process CPU, Memory, and Disk I/O metrics          |
+| [processes]  | Linux, Mac, FreeBSD, OpenBSD | Process count metrics                                  |
+| [process]    | Linux, Windows, Mac, FreeBSD | Per process CPU, Memory, and Disk I/O metrics          |
 | [system]     | Linux, Windows, Mac          | Miscellaneous system metrics                           |
 
 [cpu]: ./internal/scraper/cpuscraper/documentation.md
@@ -57,14 +65,13 @@ The available scrapers are:
 [load]: ./internal/scraper/loadscraper/documentation.md
 [memory]: ./internal/scraper/memoryscraper/documentation.md
 [network]: ./internal/scraper/networkscraper/documentation.md
+[nfs]: ./internal/scraper/nfsscraper/documentation.md
 [paging]: ./internal/scraper/pagingscraper/documentation.md
 [processes]: ./internal/scraper/processesscraper/documentation.md
 [process]: ./internal/scraper/processscraper/documentation.md
 [system]: ./internal/scraper/systemscraper/documentation.md
 
 ### Notes
-
-<sup>[1]</sup> Not supported on Mac when compiled without cgo which is the default.
 
 Several scrapers support additional configuration:
 

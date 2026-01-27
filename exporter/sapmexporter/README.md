@@ -8,6 +8,7 @@
 |                      | [Migration Note]: use OTLP exporter   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fsapm%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fsapm) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fsapm%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fsapm) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_sapm)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_sapm&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@atoulme](https://www.github.com/atoulme) |
 
 [deprecated]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#deprecated
@@ -59,8 +60,7 @@ export traces. Exporter can make as many requests in parallel as the number of w
 that this will likely be removed in future in favour of processors handling parallel exporting.
 - `access_token_passthrough`: (default = `true`) Whether to use `"com.splunk.signalfx.access_token"`
 trace resource attribute, if any, as SFx access token.  In either case this attribute will be deleted
-during final translation.  Intended to be used in tandem with identical configuration option for
-[SAPM receiver](../../receiver/sapmreceiver/README.md) to preserve trace origin.
+during final translation.  
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
 - `log_detailed_response` (default = `false`): Option to log detailed response from Splunk APM.
 In addition to setting this option to `true`, debug logging at the Collector level needs to be enabled.

@@ -10,9 +10,12 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	metricnoop "go.opentelemetry.io/otel/metric/noop"
+	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -44,6 +47,7 @@ func createDefaultConfig() component.Config {
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},
+		QueueSettings: configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
 	}
 }
 
@@ -55,12 +59,17 @@ func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 }
 
 func buildExporterSettings(typ component.Type, params exporter.Settings, endpoint string) exporter.Settings {
-	// Override child exporter ID to segregate metrics from loadbalancing top level
-	childName := fmt.Sprintf("%s_%s", params.ID, endpoint)
-	params.ID = component.NewIDWithName(typ, childName)
-	// Add "endpoint" attribute to child exporter logger to segregate logs from loadbalancing top level
+	if name := params.ID.Name(); name != "" {
+		params.ID = component.NewIDWithName(typ, name)
+	} else {
+		params.ID = component.NewID(typ)
+	}
+	telemetry := params.TelemetrySettings
+	telemetry.MeterProvider = metricnoop.NewMeterProvider()
+	telemetry.TracerProvider = tracenoop.NewTracerProvider()
 	params.Logger = params.Logger.With(zap.String(zapEndpointKey, endpoint))
-
+	telemetry.Logger = params.Logger
+	params.TelemetrySettings = telemetry
 	return params
 }
 
@@ -68,7 +77,7 @@ func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config
 	if cfg.TimeoutSettings.Timeout > 0 {
 		options = append(options, exporterhelper.WithTimeout(cfg.TimeoutSettings))
 	}
-	if cfg.QueueSettings.Enabled {
+	if cfg.QueueSettings.HasValue() {
 		options = append(options, exporterhelper.WithQueue(cfg.QueueSettings))
 	}
 	if cfg.Enabled {

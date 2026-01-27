@@ -28,6 +28,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for apache metrics.
 type MetricsConfig struct {
+	ApacheConnectionsAsync   MetricConfig `mapstructure:"apache.connections.async"`
 	ApacheCPULoad            MetricConfig `mapstructure:"apache.cpu.load"`
 	ApacheCPUTime            MetricConfig `mapstructure:"apache.cpu.time"`
 	ApacheCurrentConnections MetricConfig `mapstructure:"apache.current_connections"`
@@ -44,6 +45,9 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		ApacheConnectionsAsync: MetricConfig{
+			Enabled: true,
+		},
 		ApacheCPULoad: MetricConfig{
 			Enabled: true,
 		},

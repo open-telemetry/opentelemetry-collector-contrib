@@ -41,22 +41,22 @@ func keyValFromFloatMap(m map[string]float64) *keyVal {
 }
 
 // mergeKeyVal will merge source in target
-func mergeKeyVal(target *keyVal, source *keyVal) {
+func mergeKeyVal(target, source *keyVal) {
 	for el := source.Oldest(); el != nil; el = el.Next() {
 		target.Set(el.Key, el.Value)
 	}
 }
 
 // mergeKeyValWithPrefix will merge source in target, adding a prefix to each key being merged in
-func mergeKeyValWithPrefix(target *keyVal, source *keyVal, prefix string) {
+func mergeKeyValWithPrefix(target, source *keyVal, prefix string) {
 	for el := source.Oldest(); el != nil; el = el.Next() {
 		target.Set(fmt.Sprintf("%s%s", prefix, el.Key), el.Value)
 	}
 }
 
 // keyValAdd adds a key + value string pair to kv
-func keyValAdd(kv *keyVal, key string, value string) {
-	if len(value) > 0 {
+func keyValAdd(kv *keyVal, key, value string) {
+	if value != "" {
 		kv.Set(key, value)
 	}
 }
@@ -75,12 +75,19 @@ func keyValToInterfaceSlice(kv *keyVal) []any {
 }
 
 // logToKeyVal represents a Log object as keyVal
-func logToKeyVal(l faroTypes.Log) *keyVal {
+func logToKeyVal(l *faroTypes.Log) *keyVal {
 	kv := newKeyVal()
+
+	// default to info level, prioritize log level if set
+	level := string(faroTypes.LogLevelInfo)
+	if l.LogLevel != "" {
+		level = string(l.LogLevel)
+	}
+
 	keyValAdd(kv, faroTimestamp, l.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
 	keyValAdd(kv, faroKind, string(faroTypes.KindLog))
+	keyValAdd(kv, faroLogLevel, level)
 	keyValAdd(kv, faroLogMessage, l.Message)
-	keyValAdd(kv, faroLogLevel, string(l.LogLevel))
 	mergeKeyValWithPrefix(kv, keyValFromMap(l.Context), faroContextPrefix)
 	mergeKeyVal(kv, traceToKeyVal(l.Trace))
 	mergeKeyVal(kv, actionToKeyVal(l.Action))
@@ -88,10 +95,11 @@ func logToKeyVal(l faroTypes.Log) *keyVal {
 }
 
 // exceptionToKeyVal represents an Exception object as keyVal
-func exceptionToKeyVal(e faroTypes.Exception) *keyVal {
+func exceptionToKeyVal(e *faroTypes.Exception) *keyVal {
 	kv := newKeyVal()
 	keyValAdd(kv, faroTimestamp, e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
 	keyValAdd(kv, faroKind, string(faroTypes.KindException))
+	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelError))
 	keyValAdd(kv, faroExceptionType, e.Type)
 	keyValAdd(kv, faroExceptionValue, e.Value)
 	keyValAdd(kv, faroExceptionStacktrace, exceptionToString(e))
@@ -102,36 +110,38 @@ func exceptionToKeyVal(e faroTypes.Exception) *keyVal {
 }
 
 // exceptionMessage string is concatenating of the Exception.Type and Exception.Value
-func exceptionMessage(e faroTypes.Exception) string {
+func exceptionMessage(e *faroTypes.Exception) string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Value)
 }
 
 // exceptionToString is the string representation of an Exception
-func exceptionToString(e faroTypes.Exception) string {
-	stacktrace := exceptionMessage(e)
+func exceptionToString(e *faroTypes.Exception) string {
+	var stacktrace strings.Builder
+	stacktrace.WriteString(exceptionMessage(e))
 	if e.Stacktrace != nil {
-		for _, frame := range e.Stacktrace.Frames {
-			stacktrace += frameToString(frame)
+		for i := range e.Stacktrace.Frames {
+			stacktrace.WriteString(frameToString(&e.Stacktrace.Frames[i]))
 		}
 	}
-	return stacktrace
+	return stacktrace.String()
 }
 
 // frameToString function converts a Frame into a human readable string
-func frameToString(frame faroTypes.Frame) string {
+func frameToString(frame *faroTypes.Frame) string {
 	module := ""
-	if len(frame.Module) > 0 {
+	if frame.Module != "" {
 		module = frame.Module + "|"
 	}
 	return fmt.Sprintf("\n  at %s (%s%s:%v:%v)", frame.Function, module, frame.Filename, frame.Lineno, frame.Colno)
 }
 
 // measurementToKeyVal representation of the measurement object
-func measurementToKeyVal(m faroTypes.Measurement) *keyVal {
+func measurementToKeyVal(m *faroTypes.Measurement) *keyVal {
 	kv := newKeyVal()
 
 	keyValAdd(kv, faroTimestamp, m.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
 	keyValAdd(kv, faroKind, string(faroTypes.KindMeasurement))
+	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelInfo))
 	keyValAdd(kv, faroMeasurementType, m.Type)
 	mergeKeyValWithPrefix(kv, keyValFromMap(m.Context), faroContextPrefix)
 
@@ -141,9 +151,7 @@ func measurementToKeyVal(m faroTypes.Measurement) *keyVal {
 	mergeKeyVal(kv, traceToKeyVal(m.Trace))
 
 	values := make(map[string]float64, len(m.Values))
-	for key, value := range m.Values {
-		values[key] = value
-	}
+	maps.Copy(values, m.Values)
 
 	mergeKeyValWithPrefix(kv, keyValFromFloatMap(values), faroMeasurementValuePrefix)
 	mergeKeyVal(kv, actionToKeyVal(m.Action))
@@ -151,10 +159,11 @@ func measurementToKeyVal(m faroTypes.Measurement) *keyVal {
 }
 
 // eventToKeyVal produces key -> value representation of Event metadata
-func eventToKeyVal(e faroTypes.Event) *keyVal {
+func eventToKeyVal(e *faroTypes.Event) *keyVal {
 	kv := newKeyVal()
 	keyValAdd(kv, faroTimestamp, e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
 	keyValAdd(kv, faroKind, string(faroTypes.KindEvent))
+	keyValAdd(kv, faroLogLevel, string(faroTypes.LogLevelInfo))
 	keyValAdd(kv, faroEventName, e.Name)
 	keyValAdd(kv, faroEventDomain, e.Domain)
 	if e.Attributes != nil {

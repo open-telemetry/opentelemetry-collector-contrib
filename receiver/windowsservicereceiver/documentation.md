@@ -19,13 +19,13 @@ Gauge value containing service status as an integer value.
 Gauge values map to service status as follows: 0 - Failed to retrieve service status, 1 - Stopped, 2 - Start Pending, 3 - Stop Pending, 4 - Service Running, 5 - Continue Pending, 6 - Pause Pending, 7 - Service Paused
 
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {status} | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {status} | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| name | The name of the windows Service being reported. | Any Str |
-| startup_mode | Startup mode of Windows Service | Str: ``boot_start``, ``system_start``, ``auto_start``, ``demand_start``, ``disabled`` |
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| name | The name of the windows Service being reported. | Any Str | Recommended |
+| startup_mode | Startup mode of Windows Service | Str: ``boot_start``, ``system_start``, ``auto_start``, ``demand_start``, ``disabled`` | Recommended |

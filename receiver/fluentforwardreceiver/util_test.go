@@ -8,9 +8,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-// Log is a convenience struct for constructing logs for tests.
+// log is a convenience struct for constructing logs for tests.
 // See Logs for rationale.
-type Log struct {
+type log struct {
 	Timestamp  int64
 	Body       pcommon.Value
 	Attributes map[string]any
@@ -20,7 +20,7 @@ type Log struct {
 // relatively easy to read and write declaratively compared to the highly
 // imperative and verbose method of using pdata directly.
 // Attributes are sorted by key name.
-func logConstructor(recs ...Log) plog.Logs {
+func logConstructor(recs ...log) plog.Logs {
 	out := plog.NewLogs()
 	logSlice := out.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	logSlice.EnsureCapacity(len(recs))

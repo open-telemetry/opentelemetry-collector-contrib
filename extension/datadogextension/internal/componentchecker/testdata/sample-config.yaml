@@ -1,0 +1,57 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu:
+      memory:
+      disk:
+      load:
+      network:
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 4000
+    spike_limit_mib: 800
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlphttp:
+    endpoint: "http://localhost:4318"
+    sending_queue:
+      batch:
+
+extensions:
+  health_check:
+    endpoint: "0.0.0.0:13133"
+  pprof:
+    endpoint: "0.0.0.0:17777"
+
+connectors:
+  datadog/connector:
+
+service:
+  telemetry:
+    logs:
+      level: "info"
+    metrics:
+      level: "detailed"
+  extensions: [health_check, pprof]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter]
+      exporters: [debug, otlphttp, datadog/connector]
+    metrics:
+      receivers: [otlp, hostmetrics, datadog/connector]
+      processors: [memory_limiter]
+      exporters: [debug, otlphttp]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter]
+      exporters: [debug, otlphttp]

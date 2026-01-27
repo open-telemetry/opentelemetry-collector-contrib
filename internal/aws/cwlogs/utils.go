@@ -9,7 +9,7 @@ import (
 )
 
 // Added function to check if value is an accepted number of log retention days
-func ValidateRetentionValue(input int64) error {
+func ValidateRetentionValue(input int32) error {
 	switch input {
 	case
 		0,
@@ -40,7 +40,7 @@ func ValidateRetentionValue(input int64) error {
 }
 
 // Check if the tags input is valid
-func ValidateTagsInput(input map[string]*string) error {
+func ValidateTagsInput(input map[string]string) error {
 	if input != nil && len(input) < 1 {
 		return errors.New("invalid amount of items. Please input at least 1 tag or remove the tag field")
 	}
@@ -54,14 +54,14 @@ func ValidateTagsInput(input map[string]*string) error {
 		if len(key) < 1 || len(key) > 128 {
 			return errors.New("key - " + key + " has an invalid length. Please use keys with a length of 1 to 128 characters")
 		}
-		if len(*value) < 1 || len(*value) > 256 {
-			return errors.New("value - " + *value + " has an invalid length. Please use values with a length of 1 to 256 characters")
+		if len(value) < 1 || len(value) > 256 {
+			return errors.New("value - " + value + " has an invalid length. Please use values with a length of 1 to 256 characters")
 		}
 		if !validKeyPattern.MatchString(key) {
 			return errors.New("key - " + key + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`)
 		}
-		if !validValuePattern.MatchString(*value) {
-			return errors.New("value - " + *value + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
+		if !validValuePattern.MatchString(value) {
+			return errors.New("value - " + value + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`)
 		}
 	}
 

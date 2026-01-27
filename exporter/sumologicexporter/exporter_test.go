@@ -14,8 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -80,7 +82,7 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 	})
 
 	cfg.Endpoint = testServer.URL
-	cfg.Auth = nil
+	cfg.Auth = configoptional.None[configauth.Config]()
 
 	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -238,7 +240,7 @@ func TestPartiallyFailed(t *testing.T) {
 func TestInvalidHTTPClient(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "test_endpoint"
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			MinVersion: "invalid",
 		},
@@ -352,22 +354,6 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 }
 
 func TestAllMetricsOTLP(t *testing.T) {
-	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
-		func(_ http.ResponseWriter, req *http.Request) {
-			body := extractBody(t, req)
-
-			md, err := (&pmetric.ProtoUnmarshaler{}).UnmarshalMetrics([]byte(body))
-			assert.NoError(t, err)
-			assert.NotNil(t, md)
-
-			//nolint:lll
-			expected := "\nf\n/\n\x14\n\x04test\x12\f\n\ntest_value\n\x17\n\x05test2\x12\x0e\n\fsecond_value\x123\n\x00\x12/\n\x10test.metric.data\x1a\x05bytes:\x14\n\x12\x19\x00\x12\x94\v\xd1\x00H\x161\xa48\x00\x00\x00\x00\x00\x00\n\xc2\x01\n\x0e\n\f\n\x03foo\x12\x05\n\x03bar\x12\xaf\x01\n\x00\x12\xaa\x01\n\x11gauge_metric_name*\x94\x01\nH\x19\x80GX\xef\xdb4Q\x161|\x00\x00\x00\x00\x00\x00\x00:\x17\n\vremote_name\x12\b\n\x06156920:\x1b\n\x03url\x12\x14\n\x12http://example_url\nH\x19\x80\x11\xf3*\xdc4Q\x161\xf5\x00\x00\x00\x00\x00\x00\x00:\x17\n\vremote_name\x12\b\n\x06156955:\x1b\n\x03url\x12\x14\n\x12http://another_url"
-			assert.Equal(t, expected, body)
-			assert.Equal(t, "application/x-protobuf", req.Header.Get("Content-Type"))
-		},
-	})
-	test.exp.config.MetricFormat = OTLPMetricFormat
-
 	metricSum, attrsSum := exampleIntMetric()
 	metricGauge, attrsGauge := exampleIntGaugeMetric()
 	metrics := metricPairToMetrics(
@@ -381,6 +367,21 @@ func TestAllMetricsOTLP(t *testing.T) {
 		},
 	)
 
+	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
+		func(_ http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+
+			md, err := (&pmetric.ProtoUnmarshaler{}).UnmarshalMetrics([]byte(body))
+			assert.NoError(t, err)
+			assert.NotNil(t, md)
+
+			// Need to check with read only bit, because metricPairToMetrics marks metrics as read only.
+			md.MarkReadOnly()
+			assert.Equal(t, metrics, md)
+			assert.Equal(t, "application/x-protobuf", req.Header.Get("Content-Type"))
+		},
+	})
+	test.exp.config.MetricFormat = OTLPMetricFormat
 	err := test.exp.pushMetricsData(t.Context(), metrics)
 	assert.NoError(t, err)
 }
@@ -497,7 +498,7 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 		config := createDefaultConfig().(*Config)
 		config.MetricFormat = PrometheusFormat
 		config.LogFormat = TextFormat
-		config.Auth = nil
+		config.Auth = configoptional.None[configauth.Config]()
 		config.Compression = configcompression.TypeGzip
 		return config
 	}
@@ -516,10 +517,9 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 		require.NoError(b, exp.shutdown(b.Context()))
 	}()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		wg := sync.WaitGroup{}
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			wg.Add(1)
 			go func() {
 				logs := logRecordsToLogs(exampleNLogs(128))

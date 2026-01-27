@@ -1,0 +1,30 @@
+type: upclouddetector
+
+status:
+  class: processor
+  stability:
+    alpha: [traces, metrics, logs, profiles]
+  codeowners:
+    active: [dashpole, paulojmdias]
+
+resource_attributes:
+  cloud.provider:
+    description: The cloud.provider
+    enabled: true
+    type: string
+  cloud.region:
+    description: The cloud region
+    type: string
+    enabled: true
+  host.id:
+    description: The host.id
+    type: string
+    enabled: true
+  host.name:
+    description: The hostname
+    type: string
+    enabled: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

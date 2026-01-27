@@ -12,3 +12,7 @@ status:
 
 tests:
   config:
+  goleak:
+    ignore:
+      top:
+        - "sync.runtime_notifyListWait"

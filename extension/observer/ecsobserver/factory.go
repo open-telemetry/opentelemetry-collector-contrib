@@ -28,9 +28,9 @@ func createDefaultConfig() component.Config {
 	return &cfg
 }
 
-func createExtension(_ context.Context, params extension.Settings, cfg component.Config) (extension.Extension, error) {
+func createExtension(ctx context.Context, params extension.Settings, cfg component.Config) (extension.Extension, error) {
 	sdCfg := cfg.(*Config)
-	fetcher, err := newTaskFetcherFromConfig(*sdCfg, params.Logger)
+	fetcher, err := newTaskFetcherFromConfig(ctx, *sdCfg, params.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("init fetcher failed: %w", err)
 	}

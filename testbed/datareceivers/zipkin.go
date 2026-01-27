@@ -55,6 +55,6 @@ func (zr *zipkinDataReceiver) GenConfigYAMLStr() string {
     format: json`, zr.Port)
 }
 
-func (zr *zipkinDataReceiver) ProtocolName() string {
+func (*zipkinDataReceiver) ProtocolName() string {
 	return "zipkin"
 }

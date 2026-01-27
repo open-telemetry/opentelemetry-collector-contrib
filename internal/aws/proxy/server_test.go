@@ -15,7 +15,10 @@ import (
 	"testing"
 	"time"
 
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
 	"github.com/aws/aws-sdk-go/aws"
+	//nolint:staticcheck // SA1019: WIP in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36699
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -133,7 +136,7 @@ func TestHandlerNilBodyIsOk(t *testing.T) {
 
 	handler := srv.(*http.Server).Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
-		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", nil)
+		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", http.NoBody)
 	rec := httptest.NewRecorder()
 	handler(rec, req)
 
@@ -241,6 +244,6 @@ func (m *mockReadCloser) Read(_ []byte) (n int, err error) {
 	return 0, nil
 }
 
-func (m *mockReadCloser) Close() error {
+func (*mockReadCloser) Close() error {
 	return nil
 }

@@ -92,7 +92,7 @@ func TestMoveSpansWithContextIf(t *testing.T) {
 	}{
 		{
 			name: "move_none",
-			moveIf: func(_ ptrace.ResourceSpans, _ ptrace.ScopeSpans, _ ptrace.Span) bool {
+			moveIf: func(ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span) bool {
 				return false
 			},
 			from:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
@@ -102,7 +102,7 @@ func TestMoveSpansWithContextIf(t *testing.T) {
 		},
 		{
 			name: "move_all",
-			moveIf: func(_ ptrace.ResourceSpans, _ ptrace.ScopeSpans, _ ptrace.Span) bool {
+			moveIf: func(ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span) bool {
 				return true
 			},
 			from:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
@@ -267,7 +267,7 @@ func TestMoveSpansWithContextIf(t *testing.T) {
 
 func BenchmarkMoveResourcesIfTraces(b *testing.B) {
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		from := ptraceutiltest.NewTraces("AB", "CD", "EF", "GH")
 		to := ptrace.NewTraces()
 		ptraceutil.MoveResourcesIf(from, to, func(ptrace.ResourceSpans) bool {

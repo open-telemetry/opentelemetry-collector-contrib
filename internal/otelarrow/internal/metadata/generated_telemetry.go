@@ -7,11 +7,10 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -103,13 +102,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.OtelarrowAdmissionInFlightBytes, err = builder.meter.Int64ObservableUpDownCounter(
 		"otelcol_otelarrow_admission_in_flight_bytes",
-		metric.WithDescription("Number of bytes that have started processing but are not finished."),
+		metric.WithDescription("Number of bytes that have started processing but are not finished. [Development]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.OtelarrowAdmissionWaitingBytes, err = builder.meter.Int64ObservableUpDownCounter(
 		"otelcol_otelarrow_admission_waiting_bytes",
-		metric.WithDescription("Number of items waiting to start processing."),
+		metric.WithDescription("Number of items waiting to start processing. [Development]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)

@@ -37,7 +37,7 @@ func (u *brokerTraceMoveUnmarshallerV1) unmarshal(message *inboundMessage) (ptra
 
 // unmarshalToSpanData will consume an solaceMessage and unmarshal it into a SpanData.
 // Returns an error if one occurred.
-func (u *brokerTraceMoveUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*move_v1.SpanData, error) {
+func (*brokerTraceMoveUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*move_v1.SpanData, error) {
 	data := message.GetData()
 	if len(data) == 0 {
 		return nil, errEmptyPayload
@@ -65,11 +65,11 @@ func (u *brokerTraceMoveUnmarshallerV1) populateTraces(spanData *move_v1.SpanDat
 	u.mapClientSpanData(spanData, clientSpan)
 }
 
-func (u *brokerTraceMoveUnmarshallerV1) mapResourceSpanAttributes(spanData *move_v1.SpanData, attrMap pcommon.Map) {
+func (*brokerTraceMoveUnmarshallerV1) mapResourceSpanAttributes(spanData *move_v1.SpanData, attrMap pcommon.Map) {
 	setResourceSpanAttributes(attrMap, spanData.RouterName, spanData.SolosVersion, spanData.MessageVpnName)
 }
 
-func (u *brokerTraceMoveUnmarshallerV1) mapMoveSpanTracingInfo(spanData *move_v1.SpanData, span ptrace.Span) {
+func (*brokerTraceMoveUnmarshallerV1) mapMoveSpanTracingInfo(spanData *move_v1.SpanData, span ptrace.Span) {
 	// hard coded to internal span
 	// SPAN_KIND_CONSUMER == 1
 	span.SetKind(ptrace.SpanKindInternal)
@@ -123,7 +123,7 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 
 	// map the replication group ID for the move span
 	rgmid := rgmidToString(moveSpan.ReplicationGroupMessageId, u.metricAttrs, u.telemetryBuilder, u.logger)
-	if len(rgmid) > 0 {
+	if rgmid != "" {
 		attributes.PutStr(replicationGroupMessageIDAttrKey, rgmid)
 	}
 

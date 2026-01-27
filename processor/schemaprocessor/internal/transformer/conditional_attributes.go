@@ -19,7 +19,7 @@ type MetricDataPointAttributes struct {
 	ConditionalAttributeChange migrate.ConditionalAttributeSet
 }
 
-func (o MetricDataPointAttributes) IsMigrator() {}
+func (MetricDataPointAttributes) IsMigrator() {}
 
 func (o MetricDataPointAttributes) Do(ss migrate.StateSelector, metric pmetric.Metric) error {
 	// todo(ankit) handle MetricTypeEmpty
@@ -73,7 +73,7 @@ type SpanConditionalAttributes struct {
 	Migrator migrate.ConditionalAttributeSet
 }
 
-func (o SpanConditionalAttributes) IsMigrator() {}
+func (SpanConditionalAttributes) IsMigrator() {}
 
 func (o SpanConditionalAttributes) Do(ss migrate.StateSelector, span ptrace.Span) error {
 	return o.Migrator.Do(ss, span.Attributes(), span.Name())

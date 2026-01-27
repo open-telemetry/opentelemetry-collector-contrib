@@ -1350,7 +1350,7 @@ func newCloudNamespaceConfig(addCloudNamespace bool) *Config {
 	config.TranslateAttributes = false
 	config.TranslateTelegrafAttributes = false
 	config.TranslateDockerMetrics = false
-	config.NestAttributes = &NestingProcessorConfig{
+	config.NestAttributes = NestingProcessorConfig{
 		Enabled: false,
 	}
 	return config
@@ -1362,7 +1362,7 @@ func newTranslateAttributesConfig(translateAttributes bool) *Config {
 	config.TranslateAttributes = translateAttributes
 	config.TranslateTelegrafAttributes = false
 	config.TranslateDockerMetrics = false
-	config.NestAttributes = &NestingProcessorConfig{
+	config.NestAttributes = NestingProcessorConfig{
 		Enabled: false,
 	}
 	return config
@@ -1374,7 +1374,7 @@ func newTranslateTelegrafAttributesConfig(translateTelegrafAttributes bool) *Con
 	config.TranslateAttributes = false
 	config.TranslateTelegrafAttributes = translateTelegrafAttributes
 	config.TranslateDockerMetrics = false
-	config.NestAttributes = &NestingProcessorConfig{
+	config.NestAttributes = NestingProcessorConfig{
 		Enabled: false,
 	}
 	return config
@@ -1386,7 +1386,7 @@ func newTranslateDockerMetricsConfig(translateDockerMetrics bool) *Config {
 	config.TranslateAttributes = false
 	config.TranslateTelegrafAttributes = false
 	config.TranslateDockerMetrics = translateDockerMetrics
-	config.NestAttributes = &NestingProcessorConfig{
+	config.NestAttributes = NestingProcessorConfig{
 		Enabled: false,
 	}
 	return config
@@ -1398,7 +1398,7 @@ func newNestAttributesConfig(separator string, enabled bool) *Config {
 	config.TranslateAttributes = false
 	config.TranslateTelegrafAttributes = false
 	config.TranslateDockerMetrics = false
-	config.NestAttributes = &NestingProcessorConfig{
+	config.NestAttributes = NestingProcessorConfig{
 		Separator: separator,
 		Enabled:   enabled,
 	}
@@ -1421,10 +1421,10 @@ func newLogFieldsConversionConfig() *Config {
 	config.TranslateAttributes = false
 	config.TranslateTelegrafAttributes = false
 	config.TranslateDockerMetrics = false
-	config.NestAttributes = &NestingProcessorConfig{
+	config.NestAttributes = NestingProcessorConfig{
 		Enabled: false,
 	}
-	config.LogFieldsAttributes = &logFieldAttributesConfig{
+	config.LogFieldsAttributes = logFieldAttributesConfig{
 		&logFieldAttribute{Enabled: true, Name: "definitely_not_default_name"},
 		&logFieldAttribute{Enabled: true, Name: SeverityTextAttributeName},
 		&logFieldAttribute{Enabled: true, Name: SpanIDAttributeName},

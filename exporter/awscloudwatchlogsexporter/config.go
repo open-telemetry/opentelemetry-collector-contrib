@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -42,7 +43,7 @@ type Config struct {
 	Tags map[string]*string `mapstructure:"tags,omitempty"`
 
 	// Queue settings frm the exporterhelper
-	QueueSettings exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	awsutil.AWSSessionSettings `mapstructure:",squash"`
 
@@ -69,9 +70,17 @@ func (config *Config) Validate() error {
 		return errors.New("'log_stream_name' must be set")
 	}
 
+	if isPatternValid, invalidPattern := (isPatternValid(config.LogGroupName)); !isPatternValid {
+		return errors.New("'log_group_name' has an invalid pattern between curly brackets: " + invalidPattern)
+	}
+	if isPatternValid, invalidPattern := (isPatternValid(config.LogStreamName)); !isPatternValid {
+		return errors.New("'log_stream_name'  has an invalid pattern between curly brackets: " + invalidPattern)
+	}
+
 	if err := config.QueueSettings.Validate(); err != nil {
 		return err
 	}
+
 	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
 		return retErr
 	}

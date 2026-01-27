@@ -49,7 +49,7 @@ func TestStartAndShutdownLocalFile(t *testing.T) {
 func TestRemote(t *testing.T) {
 	for _, tc := range []struct {
 		name                          string
-		remoteClientHeaderConfig      map[string]configopaque.String
+		remoteClientHeaderConfig      configopaque.MapList
 		performedClientCallCount      int
 		expectedOutboundGrpcCallCount int
 		reloadInterval                time.Duration
@@ -63,9 +63,9 @@ func TestRemote(t *testing.T) {
 			name:                          "configured header additions",
 			performedClientCallCount:      3,
 			expectedOutboundGrpcCallCount: 3,
-			remoteClientHeaderConfig: map[string]configopaque.String{
-				"testheadername":    "testheadervalue",
-				"anotherheadername": "anotherheadervalue",
+			remoteClientHeaderConfig: configopaque.MapList{
+				{Name: "testheadername", Value: "testheadervalue"},
+				{Name: "anotherheadername", Value: "anotherheadervalue"},
 			},
 		},
 		{
@@ -73,8 +73,8 @@ func TestRemote(t *testing.T) {
 			reloadInterval:                time.Minute * 5,
 			performedClientCallCount:      3,
 			expectedOutboundGrpcCallCount: 1,
-			remoteClientHeaderConfig: map[string]configopaque.String{
-				"somecoolheader": "some-more-coverage-whynot",
+			remoteClientHeaderConfig: configopaque.MapList{
+				{Name: "somecoolheader", Value: "some-more-coverage-whynot"},
 			},
 		},
 	} {
@@ -102,7 +102,7 @@ func TestRemote(t *testing.T) {
 			cfg.Source.ReloadInterval = tc.reloadInterval
 			cfg.Source.Remote = &configgrpc.ClientConfig{
 				Endpoint: fmt.Sprintf("127.0.0.1:%d", lis.Addr().(*net.TCPAddr).Port),
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: true, // test only
 				},
 				WaitForReady: true,
@@ -135,7 +135,7 @@ func TestRemote(t *testing.T) {
 				}, singleCall.params)
 				md, ok := metadata.FromIncomingContext(singleCall.ctx)
 				assert.True(t, ok)
-				for expectedHeaderName, expectedHeaderValue := range tc.remoteClientHeaderConfig {
+				for expectedHeaderName, expectedHeaderValue := range tc.remoteClientHeaderConfig.Iter {
 					assert.Equal(t, []string{string(expectedHeaderValue)}, md.Get(expectedHeaderName))
 				}
 			}

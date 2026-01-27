@@ -65,6 +65,6 @@ func (sr *SFxMetricsDataReceiver) GenConfigYAMLStr() string {
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (sr *SFxMetricsDataReceiver) ProtocolName() string {
+func (*SFxMetricsDataReceiver) ProtocolName() string {
 	return "signalfx"
 }

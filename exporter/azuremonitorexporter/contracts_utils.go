@@ -6,7 +6,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon" // Applies resource attributes values to data properties
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 const (
@@ -26,21 +26,49 @@ func applyResourcesToDataProperties(dataProperties map[string]string, resourceAt
 func applyCloudTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map) {
 	// Extract key service.* labels from the Resource labels and construct CloudRole and CloudRoleInstance envelope tags
 	// https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/resource/semantic_conventions
-	if serviceName, serviceNameExists := resourceAttributes.Get(conventions.AttributeServiceName); serviceNameExists {
+	if serviceName, serviceNameExists := resourceAttributes.Get(string(conventions.ServiceNameKey)); serviceNameExists {
 		cloudRole := serviceName.Str()
 
-		if serviceNamespace, serviceNamespaceExists := resourceAttributes.Get(conventions.AttributeServiceNamespace); serviceNamespaceExists {
+		if serviceNamespace, serviceNamespaceExists := resourceAttributes.Get(string(conventions.ServiceNamespaceKey)); serviceNamespaceExists {
 			cloudRole = serviceNamespace.Str() + "." + cloudRole
 		}
 
 		envelope.Tags[contracts.CloudRole] = cloudRole
 	}
 
-	if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstanceID); exists {
+	if serviceInstance, exists := resourceAttributes.Get(string(conventions.ServiceInstanceIDKey)); exists {
 		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.Str()
 	}
 
 	envelope.Tags[contracts.InternalSdkVersion] = getCollectorVersion()
+}
+
+// Sets ai.application.* tags on the envelope
+func applyApplicationTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map) {
+	if serviceVersion, serviceVersionExists := resourceAttributes.Get(string(conventions.ServiceVersionKey)); serviceVersionExists {
+		envelope.Tags[contracts.ApplicationVersion] = serviceVersion.Str()
+	}
+}
+
+// Sets ai.device.* tags on the envelope
+func applyDeviceTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map) {
+	if osName, osNameExists := resourceAttributes.Get(string(conventions.OSNameKey)); osNameExists {
+		deviceOs := osName.Str()
+
+		if osVersion, osVersionExists := resourceAttributes.Get(string(conventions.OSVersionKey)); osVersionExists {
+			deviceOs = deviceOs + " " + osVersion.Str()
+		}
+
+		envelope.Tags[contracts.DeviceOSVersion] = deviceOs
+	}
+
+	if manufacturer, manufacturerExists := resourceAttributes.Get(string(conventions.DeviceManufacturerKey)); manufacturerExists {
+		envelope.Tags[contracts.DeviceModel] = manufacturer.Str()
+	}
+
+	if deviceType, deviceTypeExists := resourceAttributes.Get(string(conventions.DeviceModelIdentifierKey)); deviceTypeExists {
+		envelope.Tags[contracts.DeviceType] = deviceType.Str()
+	}
 }
 
 // Applies internal sdk version tag on the envelope

@@ -67,7 +67,7 @@ type customTraceMarshaler struct {
 	encoding string
 }
 
-func (c *customTraceMarshaler) Marshal(ptrace.Traces, string) ([]*pulsar.ProducerMessage, error) {
+func (*customTraceMarshaler) Marshal(ptrace.Traces, string) ([]*pulsar.ProducerMessage, error) {
 	return nil, errors.New("unsupported encoding")
 }
 
@@ -90,24 +90,24 @@ func (c *mockProducer) Name() string {
 	return c.name
 }
 
-func (c *mockProducer) Send(context.Context, *pulsar.ProducerMessage) (pulsar.MessageID, error) {
+func (*mockProducer) Send(context.Context, *pulsar.ProducerMessage) (pulsar.MessageID, error) {
 	return nil, nil
 }
 
-func (c *mockProducer) SendAsync(context.Context, *pulsar.ProducerMessage, func(pulsar.MessageID, *pulsar.ProducerMessage, error)) {
+func (*mockProducer) SendAsync(context.Context, *pulsar.ProducerMessage, func(pulsar.MessageID, *pulsar.ProducerMessage, error)) {
 }
 
-func (c *mockProducer) LastSequenceID() int64 {
+func (*mockProducer) LastSequenceID() int64 {
 	return 1
 }
 
-func (c *mockProducer) Flush() error {
+func (*mockProducer) Flush() error {
 	return nil
 }
 
-func (c *mockProducer) FlushWithCtx(context.Context) error {
+func (*mockProducer) FlushWithCtx(context.Context) error {
 	return nil
 }
 
-func (c *mockProducer) Close() {
+func (*mockProducer) Close() {
 }

@@ -57,6 +57,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		InputOperator:           inputOperator,
 		toBody:                  toBody,
 		includeFileRecordNumber: c.IncludeFileRecordNumber,
+		includeFileRecordOffset: c.IncludeFileRecordOffset,
 	}
 
 	input.fileConsumer, err = c.Config.Build(set, input.emitBatch)

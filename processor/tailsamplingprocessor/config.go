@@ -33,6 +33,8 @@ const (
 	Composite PolicyType = "composite"
 	// And allows defining a And policy, combining the other policies in one
 	And PolicyType = "and"
+	// Drop allows defining a Drop policy, combining one or more policies to drop traces.
+	Drop PolicyType = "drop"
 	// SpanCount sample traces that are have more spans per Trace than a given threshold.
 	SpanCount PolicyType = "span_count"
 	// TraceState sample traces with specified values by the given key
@@ -43,6 +45,8 @@ const (
 	// OTTLCondition sample traces which match user provided OpenTelemetry Transformation Language
 	// conditions.
 	OTTLCondition PolicyType = "ottl_condition"
+	// BytesLimiting allows all traces until the specified byte limits are satisfied.
+	BytesLimiting PolicyType = "bytes_limiting"
 )
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
@@ -64,6 +68,8 @@ type sharedPolicyCfg struct {
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
+	// Configs for bytes limiting filter sampling policy evaluator.
+	BytesLimitingCfg BytesLimitingCfg `mapstructure:"bytes_limiting"`
 	// Configs for span count filter sampling policy evaluator.
 	SpanCountCfg SpanCountCfg `mapstructure:"span_count"`
 	// Configs for defining trace_state policy
@@ -72,6 +78,8 @@ type sharedPolicyCfg struct {
 	BooleanAttributeCfg BooleanAttributeCfg `mapstructure:"boolean_attribute"`
 	// Configs for OTTL condition filter sampling policy evaluator
 	OTTLConditionCfg OTTLConditionCfg `mapstructure:"ottl_condition"`
+	// Configs for any extensions that are used.
+	ExtensionCfg map[string]map[string]any `mapstructure:",remain"`
 }
 
 // CompositeSubPolicyCfg holds the common configuration to all policies under composite policy.
@@ -98,6 +106,15 @@ type TraceStateCfg struct {
 // AndCfg holds the common configuration to all and policies.
 type AndCfg struct {
 	SubPolicyCfg []AndSubPolicyCfg `mapstructure:"and_sub_policy"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// DropCfg holds the common configuration to all policies under drop policy.
+type DropCfg struct {
+	SubPolicyCfg []AndSubPolicyCfg `mapstructure:"drop_sub_policy"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // CompositeCfg holds the configurable settings to create a composite
@@ -113,6 +130,8 @@ type CompositeCfg struct {
 type RateAllocationCfg struct {
 	Policy  string `mapstructure:"policy"`
 	Percent int64  `mapstructure:"percent"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // PolicyCfg holds the common configuration to all policies.
@@ -123,6 +142,8 @@ type PolicyCfg struct {
 	CompositeCfg CompositeCfg `mapstructure:"composite"`
 	// Configs for defining and policy
 	AndCfg AndCfg `mapstructure:"and"`
+	// Configs for defining drop policy
+	DropCfg DropCfg `mapstructure:"drop"`
 }
 
 // LatencyCfg holds the configurable settings to create a latency filter sampling policy
@@ -131,7 +152,9 @@ type LatencyCfg struct {
 	// Lower bound in milliseconds. Retaining original name for compatibility
 	ThresholdMs int64 `mapstructure:"threshold_ms"`
 	// Upper bound in milliseconds.
-	UpperThresholdmsMs int64 `mapstructure:"upper_threshold_ms"`
+	UpperThresholdMs int64 `mapstructure:"upper_threshold_ms"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NumericAttributeCfg holds the configurable settings to create a numeric attribute filter
@@ -159,12 +182,16 @@ type ProbabilisticCfg struct {
 	// SamplingPercentage is the percentage rate at which traces are going to be sampled. Defaults to zero, i.e.: no sample.
 	// Values greater or equal 100 are treated as "sample all traces".
 	SamplingPercentage float64 `mapstructure:"sampling_percentage"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // StatusCodeCfg holds the configurable settings to create a status code filter sampling
 // policy evaluator.
 type StatusCodeCfg struct {
 	StatusCodes []string `mapstructure:"status_codes"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // StringAttributeCfg holds the configurable settings to create a string attribute filter
@@ -192,6 +219,19 @@ type StringAttributeCfg struct {
 type RateLimitingCfg struct {
 	// SpansPerSecond sets the limit on the maximum number of spans that can be processed each second.
 	SpansPerSecond int64 `mapstructure:"spans_per_second"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// BytesLimitingCfg holds the configurable settings to create a bytes limiting
+// sampling policy evaluator using a token bucket algorithm.
+type BytesLimitingCfg struct {
+	// BytesPerSecond sets the limit on the maximum number of bytes that can be processed each second.
+	BytesPerSecond int64 `mapstructure:"bytes_per_second"`
+	// BurstCapacity sets the maximum burst capacity in bytes. If not specified, defaults to 2x BytesPerSecond.
+	// This allows for short bursts of traffic above the sustained rate. It also acts as a
+	// limit for individual trace sizes, a single trace larger than the burst size will not pass.
+	BurstCapacity int64 `mapstructure:"burst_capacity"`
 }
 
 // SpanCountCfg holds the configurable settings to create a Span Count filter sampling
@@ -200,6 +240,8 @@ type SpanCountCfg struct {
 	// Minimum number of spans in a Trace
 	MinSpans int32 `mapstructure:"min_spans"`
 	MaxSpans int32 `mapstructure:"max_spans"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // BooleanAttributeCfg holds the configurable settings to create a boolean attribute filter
@@ -222,6 +264,8 @@ type OTTLConditionCfg struct {
 	ErrorMode           ottl.ErrorMode `mapstructure:"error_mode"`
 	SpanConditions      []string       `mapstructure:"span"`
 	SpanEventConditions []string       `mapstructure:"spanevent"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type DecisionCacheConfig struct {
@@ -235,6 +279,8 @@ type DecisionCacheConfig struct {
 	// For effective use, this value should be at least an order of magnitude greater than Config.NumTraces.
 	// If left as default 0, a no-op DecisionCache will be used.
 	NonSampledCacheSize int `mapstructure:"non_sampled_cache_size"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config holds the configuration for tail-based sampling.
@@ -245,6 +291,9 @@ type Config struct {
 	// NumTraces is the number of traces kept on memory. Typically most of the data
 	// of a trace is released after a sampling decision is taken.
 	NumTraces uint64 `mapstructure:"num_traces"`
+	// BlockOnOverflow determines the behavior when the component's NumTraces limit is reached.
+	// If true, the component will wait for space; otherwise, old traces will be evicted to make space.
+	BlockOnOverflow bool `mapstructure:"block_on_overflow"`
 	// ExpectedNewTracesPerSec sets the expected number of new traces sending to the tail sampling processor
 	// per second. This helps with allocating data structures with closer to actual usage size.
 	ExpectedNewTracesPerSec uint64 `mapstructure:"expected_new_traces_per_sec"`
@@ -255,4 +304,9 @@ type Config struct {
 	DecisionCache DecisionCacheConfig `mapstructure:"decision_cache"`
 	// Options allows for additional configuration of the tail-based sampling processor in code.
 	Options []Option `mapstructure:"-"`
+	// Make decision as soon as a policy matches
+	SampleOnFirstMatch bool `mapstructure:"sample_on_first_match"`
+	// DropPendingTracesOnShutdown will drop all traces that are part of batches that have not yet reached the decision
+	// wait when the processor is shutdown.
+	DropPendingTracesOnShutdown bool `mapstructure:"drop_pending_traces_on_shutdown"`
 }

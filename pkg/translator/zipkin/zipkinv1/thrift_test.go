@@ -15,14 +15,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	zipkin "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinthriftconverter"
 )
 
 // compareTraces compares got to want while ignoring order. Both are modified in place.
-func compareTraces(t *testing.T, want ptrace.Traces, got ptrace.Traces) {
+func compareTraces(t *testing.T, want, got ptrace.Traces) {
 	require.Equal(t, mapperTraces(t, want), mapperTraces(t, got))
 }
 
@@ -30,7 +29,7 @@ func mapperTraces(t *testing.T, td ptrace.Traces) map[string]map[string]ptrace.S
 	ret := map[string]map[string]ptrace.Span{}
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
-		service, found := rs.Resource().Attributes().Get(conventions.AttributeServiceName)
+		service, found := rs.Resource().Attributes().Get("service.name")
 		require.True(t, found)
 		sps, ok := ret[service.Str()]
 		if !ok {
@@ -71,10 +70,10 @@ func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
 	require.Equal(t, 2, reqs.ResourceSpans().Len(), "Invalid trace service requests count")
 
 	// First span didn't have a host/endpoint to give service name, use the local component.
-	gotFirst, found := reqs.ResourceSpans().At(0).Resource().Attributes().Get(conventions.AttributeServiceName)
+	gotFirst, found := reqs.ResourceSpans().At(0).Resource().Attributes().Get("service.name")
 	require.True(t, found)
 
-	gotSecond, found := reqs.ResourceSpans().At(1).Resource().Attributes().Get(conventions.AttributeServiceName)
+	gotSecond, found := reqs.ResourceSpans().At(1).Resource().Attributes().Get("service.name")
 	require.True(t, found)
 
 	if gotFirst.AsString() == "myLocalComponent" {
@@ -108,7 +107,7 @@ func BenchmarkV1ThriftToOCProto(b *testing.B) {
 	err = json.Unmarshal(blob, &ztSpans)
 	require.NoError(b, err, "Failed to unmarshal json into zipkin v1 thrift")
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		_, err = thriftBatchToTraces(ztSpans)
 		require.NoError(b, err)
 	}
@@ -126,7 +125,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 		{
 			name: "too large code for OC",
 			haveTags: []*zipkincore.BinaryAnnotation{{
-				Key:            conventions.OtelStatusCode,
+				Key:            "otel.status_code",
 				Value:          uint64ToBytes(math.MaxInt64),
 				AnnotationType: zipkincore.AnnotationType_I64,
 			}},
@@ -178,7 +177,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 		{
 			name: "only status.message tag",
 			haveTags: []*zipkincore.BinaryAnnotation{{
-				Key:            conventions.OtelStatusDescription,
+				Key:            "otel.status_description",
 				Value:          []byte("Forbidden"),
 				AnnotationType: zipkincore.AnnotationType_STRING,
 			}},
@@ -189,12 +188,12 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			name: "both status.code and status.message",
 			haveTags: []*zipkincore.BinaryAnnotation{
 				{
-					Key:            conventions.OtelStatusCode,
+					Key:            "otel.status_code",
 					Value:          uint32ToBytes(2),
 					AnnotationType: zipkincore.AnnotationType_I32,
 				},
 				{
-					Key:            conventions.OtelStatusDescription,
+					Key:            "otel.status_description",
 					Value:          []byte("Forbidden"),
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
@@ -224,7 +223,7 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			},
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
-				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutInt("http.status_code", 404)
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
@@ -250,19 +249,19 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 				{
-					Key:            conventions.OtelStatusCode,
+					Key:            "otel.status_code",
 					Value:          uint32ToBytes(2),
 					AnnotationType: zipkincore.AnnotationType_I32,
 				},
 				{
-					Key:            conventions.OtelStatusDescription,
+					Key:            "otel.status_description",
 					Value:          []byte("Forbidden"),
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 			},
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
-				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutInt("http.status_code", 404)
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
@@ -288,14 +287,14 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 				{
-					Key:            conventions.OtelStatusCode,
+					Key:            "otel.status_code",
 					Value:          uint32ToBytes(2),
 					AnnotationType: zipkincore.AnnotationType_I32,
 				},
 			},
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
-				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutInt("http.status_code", 404)
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
@@ -319,14 +318,14 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 				{
-					Key:            conventions.OtelStatusDescription,
+					Key:            "otel.status_description",
 					Value:          []byte("Forbidden"),
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 			},
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
-				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutInt("http.status_code", 404)
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
@@ -385,19 +384,19 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 				{
-					Key:            conventions.OtelStatusDescription,
+					Key:            "otel.status_description",
 					Value:          []byte("Forbidden"),
 					AnnotationType: zipkincore.AnnotationType_STRING,
 				},
 				{
-					Key:            conventions.OtelStatusCode,
+					Key:            "otel.status_code",
 					Value:          uint32ToBytes(1),
 					AnnotationType: zipkincore.AnnotationType_I32,
 				},
 			},
 			wantAttributes: func() pcommon.Map {
 				ret := pcommon.NewMap()
-				ret.PutInt(conventions.AttributeHTTPStatusCode, 404)
+				ret.PutInt("http.status_code", 404)
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),

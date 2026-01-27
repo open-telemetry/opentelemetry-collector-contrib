@@ -8,6 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
 )
 
 var _ encoding.TextUnmarshaler = (*HashFunction)(nil)
@@ -46,6 +49,10 @@ type Config struct {
 	// without being changed or removed.
 	IgnoredKeys []string `mapstructure:"ignored_keys"`
 
+	// RedactAllTypes of attributes, including those that are not string, by converting to a string representation.
+	// By default only string values are redacted.
+	RedactAllTypes bool `mapstructure:"redact_all_types"`
+
 	// BlockedValues is a list of regular expressions for blocking values of
 	// allowed span attributes. Values that match are masked.
 	BlockedValues []string `mapstructure:"blocked_values"`
@@ -54,12 +61,18 @@ type Config struct {
 	// blocked span attributes. Values that match are not masked.
 	AllowedValues []string `mapstructure:"allowed_values"`
 
+	// DBSanitizer is a flag to enable database query sanitization.
+	DBSanitizer db.DBSanitizerConfig `mapstructure:"db_sanitizer"`
+
 	// Summary controls the verbosity level of the diagnostic attributes that
 	// the processor adds to the spans when it redacts or masks other
 	// attributes. In some contexts a list of redacted attributes leaks
 	// information, while it is valuable when integrating and testing a new
 	// configuration. Possible values are `debug`, `info`, and `silent`.
 	Summary string `mapstructure:"summary"`
+
+	// URLSanitization is a flag to sanitize URLs by removing UUIDs, timestamps, and other non-essential information
+	URLSanitization url.URLSanitizationConfig `mapstructure:"url_sanitizer"`
 }
 
 func (u HashFunction) String() string {

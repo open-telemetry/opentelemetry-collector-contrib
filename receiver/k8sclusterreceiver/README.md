@@ -7,6 +7,7 @@
 |               | [beta]: metrics   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8scluster%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fk8scluster) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8scluster%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fk8scluster) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_k8s_cluster)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_k8s_cluster&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@povilasv](https://www.github.com/povilasv), [@ChrsMark](https://www.github.com/ChrsMark) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -53,20 +54,32 @@ by the cluster. Currently supported versions are `kubernetes` and `openshift`. S
 the value to `openshift` enables OpenShift specific metrics in addition to standard
 kubernetes ones.
 - `allocatable_types_to_report` (default = `[]`): An array of allocatable resource types this receiver should report.
-The following allocatable resource types are available.
+The following allocatable resource types are available (see Node Allocatable in [Kubernetes docs](https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable)):
   - cpu
   - memory
   - ephemeral-storage
-  - storage
+  - pods
+
+When enabled, this setting produces the following node-level metrics (one per selected type):
+
+| allocatable type | metric name                      | unit     | type  | value type |
+| ---------------- | -------------------------------- | -------- | ----- | ---------- |
+| cpu              | k8s.node.allocatable_cpu         | {cpu}    | Gauge | Double     |
+| memory           | k8s.node.allocatable_memory      | By       | Gauge | Double     |
+| ephemeral-storage| k8s.node.allocatable_ephemeral_storage | By | Gauge | Double     |
+| pods             | k8s.node.allocatable_pods        | {pod}    | Gauge | Int        |
+
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
-- `namespace`: Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed. 
+- `namespace` (deprecated, use `namespaces` instead): Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed.
+- `namespaces`: Allows to observe resources for a list of given namespaces. If this option is set, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed, as those are cluster-scoped resources.
 
 Example:
 
 ```yaml
   k8s_cluster:
     auth_type: kubeConfig
+    k8s_leader_elector: <reference k8s leader elector extension>
     node_conditions_to_report: [Ready, MemoryPressure]
     allocatable_types_to_report: [cpu, memory]
     metrics:
@@ -79,6 +92,16 @@ Example:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+### k8s_leader_elector
+Provide name of the k8s leader elector extension defined in config. This allows multiple instances of k8s cluster
+receiver to be executed on a cluster. At a given time only the pod which has the is active.
+
+```yaml
+    k8s_cluster:
+        k8s_leader_elector: k8s_leader_elector
+...
+```
 
 ### node_conditions_to_report
 
@@ -95,6 +118,7 @@ k8s_cluster:
     - MemoryPressure
 ...
 ```
+
 
 ### metadata_exporters
 
@@ -272,8 +296,8 @@ subjects:
 EOF
 ```
 
-As an alternative to setting up a `ClusterRole`/`ClusterRoleBinding`, it is also possible to limit the observed resources to a
-particular namespace by setting the `namespace` option of the receiver. This allows the collector to only rely on `Roles`/`RoleBindings`, 
+As an alternative to setting up a `ClusterRole`/`ClusterRoleBinding`, it is also possible to limit the observed resources to a list of
+particular namespaces by setting the `namespaces` option of the receiver. This allows the collector to only rely on `Roles`/`RoleBindings`, 
 instead of granting the collector cluster-wide read access to resources.
 Note however, that in this case the following resources will not be observed by the `k8sclusterreceiver`:
 
@@ -281,10 +305,12 @@ Note however, that in this case the following resources will not be observed by 
 - `Namespaces`
 - `ClusterResourceQuotas`
 
-To use this approach, use the commands below to create the required `Role` and `RoleBinding`:
+To use this approach, use the commands below to create the required `Role` and `RoleBinding` for each of the namespaces the collector should observe:
 
 ```bash
 <<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
 metadata:
   name: otelcontribcol
   labels:
@@ -299,6 +325,7 @@ rules:
       - pods/status
       - replicationcontrollers
       - replicationcontrollers/status
+      - resourcequotas
       - services
     verbs:
       - get
@@ -416,7 +443,7 @@ Example:
 Add the following rules to your ClusterRole:
 
 ```yaml
-- apigroups:
+- apiGroups:
   - quota.openshift.io
   resources:
   - clusterresourcequotas

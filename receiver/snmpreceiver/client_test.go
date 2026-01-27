@@ -203,7 +203,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "No OIDs does nothing",
 			testFunc: func(t *testing.T) {
-				var expectedSNMPData []SNMPData
+				var expectedSNMPData []snmpData
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				client := &snmpClient{
 					logger: zap.NewNop(),
@@ -237,7 +237,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client timeout failures tries to reset connection",
 			testFunc: func(t *testing.T) {
-				var expectedSNMPData []SNMPData
+				var expectedSNMPData []snmpData
 				getError := errors.New("request timeout (after 0 retries)")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("Get", []string{"1"}).Return(nil, getError)
@@ -283,7 +283,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client partial failures still return successes",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{
+				expectedSNMPData := []snmpData{
 					{
 						oid:       "2",
 						value:     int64(1),
@@ -368,7 +368,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "Large amount of OIDs handled in chunks",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{
+				expectedSNMPData := []snmpData{
 					{
 						oid:       "1",
 						value:     int64(1),
@@ -428,7 +428,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client float data type properly converted",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{
+				expectedSNMPData := []snmpData{
 					{
 						oid:       "1",
 						value:     1.0,
@@ -526,7 +526,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client string data type properly converted",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{
+				expectedSNMPData := []snmpData{
 					{
 						oid:       "1",
 						value:     "test",
@@ -645,7 +645,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client partial failures still returns successes",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{
+				expectedSNMPData := []snmpData{
 					{
 						columnOID: "2",
 						oid:       "2.1",
@@ -726,7 +726,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "Return multiple good values",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{
+				expectedSNMPData := []snmpData{
 					{
 						columnOID: "1",
 						oid:       "1.1",
@@ -790,7 +790,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client float data type properly converted",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{
+				expectedSNMPData := []snmpData{
 					{
 						columnOID: "1",
 						oid:       "1.1",
@@ -885,7 +885,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client string data type properly converted",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{
+				expectedSNMPData := []snmpData{
 					{
 						columnOID: "1",
 						oid:       "1.1",
@@ -914,7 +914,7 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client v1 uses normal Walk function",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{
+				expectedSNMPData := []snmpData{
 					{
 						columnOID: "1",
 						oid:       "1.1",

@@ -7,32 +7,33 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/log"
 )
 
 // Start starts the metric telemetry generator
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
+	logger, err := log.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}
 
 	logger.Info("starting the metrics generator with configuration", zap.Any("config", cfg))
 
-	if err = run(cfg, exporterFactory(cfg, logger), logger); err != nil {
+	if err := run(cfg, exporterFactory(cfg, logger), logger); err != nil {
 		return err
 	}
 
@@ -45,7 +46,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 		return err
 	}
 
-	if c.TotalDuration > 0 {
+	if c.TotalDuration.Duration() > 0 || c.TotalDuration.IsInf() {
 		c.NumMetrics = 0
 	}
 
@@ -58,7 +59,10 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 	}
 
 	wg := sync.WaitGroup{}
-	res := resource.NewWithAttributes(semconv.SchemaURL, c.GetAttributes()...)
+	res := resource.NewWithAttributes(conventions.SchemaURL, c.GetAttributes()...)
+
+	tb := newTimeBox(c.EnforceUniqueTimeseries, c.UniqueTimelimit)
+	defer tb.shutdown()
 
 	running := &atomic.Bool{}
 	running.Store(true)
@@ -67,6 +71,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 		wg.Add(1)
 		w := worker{
 			numMetrics:             c.NumMetrics,
+			enforceUnique:          c.EnforceUniqueTimeseries,
 			metricName:             c.MetricName,
 			metricType:             c.MetricType,
 			aggregationTemporality: c.AggregationTemporality,
@@ -78,6 +83,9 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			logger:                 logger.With(zap.Int("worker", i)),
 			index:                  i,
 			clock:                  &realClock{},
+			loadSize:               c.LoadSize,
+			rand:                   rand.New(rand.NewPCG(uint64(time.Now().UnixNano()+int64(i)), 0)),
+			allowFailures:          c.AllowExportFailures,
 		}
 		exp, err := expF()
 		if err != nil {
@@ -92,10 +100,10 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			}
 		}()
 
-		go w.simulateMetrics(res, exp, c.GetTelemetryAttributes())
+		go w.simulateMetrics(res, exp, c.GetTelemetryAttributes(), tb)
 	}
-	if c.TotalDuration > 0 {
-		time.Sleep(c.TotalDuration)
+	if c.TotalDuration.Duration() > 0 && !c.TotalDuration.IsInf() {
+		time.Sleep(c.TotalDuration.Duration())
 		running.Store(false)
 	}
 	wg.Wait()

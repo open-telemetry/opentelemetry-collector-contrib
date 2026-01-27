@@ -49,7 +49,7 @@ func newApacheScraper(
 }
 
 func (r *apacheScraper) start(ctx context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(ctx, host, r.settings)
+	httpClient, err := r.cfg.ToClient(ctx, host.GetExtensions(), r.settings)
 	if err != nil {
 		return err
 	}
@@ -76,6 +76,12 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			addPartialIfError(errs, r.mb.RecordApacheUptimeDataPoint(now, metricValue))
 		case "ConnsTotal":
 			addPartialIfError(errs, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue))
+		case "ConnsAsyncWriting":
+			addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, metricValue, metadata.AttributeConnectionStateWriting))
+		case "ConnsAsyncKeepAlive":
+			addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, metricValue, metadata.AttributeConnectionStateKeepalive))
+		case "ConnsAsyncClosing":
+			addPartialIfError(errs, r.mb.RecordApacheConnectionsAsyncDataPoint(now, metricValue, metadata.AttributeConnectionStateClosing))
 		case "BusyWorkers":
 			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateBusy))
 		case "IdleWorkers":
@@ -159,13 +165,12 @@ func (r *apacheScraper) GetStats() (string, error) {
 func parseStats(resp string) map[string]string {
 	metrics := make(map[string]string)
 
-	fields := strings.Split(resp, "\n")
-	for _, field := range fields {
-		index := strings.Index(field, ": ")
-		if index == -1 {
+	for field := range strings.SplitSeq(resp, "\n") {
+		key, value, found := strings.Cut(field, ": ")
+		if !found {
 			continue
 		}
-		metrics[field[:index]] = field[index+2:]
+		metrics[key] = value
 	}
 	return metrics
 }

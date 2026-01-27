@@ -21,22 +21,19 @@ type MetricsBuilders struct {
 type CPUMetrics struct {
 	Time               RecordDoubleDataPointFunc
 	Usage              RecordDoubleDataPointFunc
-	Utilization        RecordDoubleDataPointFunc
 	NodeUtilization    RecordDoubleDataPointFunc
 	LimitUtilization   RecordDoubleDataPointFunc
 	RequestUtilization RecordDoubleDataPointFunc
 }
 
 var NodeCPUMetrics = CPUMetrics{
-	Time:        (*MetricsBuilder).RecordK8sNodeCPUTimeDataPoint,
-	Usage:       (*MetricsBuilder).RecordK8sNodeCPUUsageDataPoint,
-	Utilization: (*MetricsBuilder).RecordK8sNodeCPUUtilizationDataPoint,
+	Time:  (*MetricsBuilder).RecordK8sNodeCPUTimeDataPoint,
+	Usage: (*MetricsBuilder).RecordK8sNodeCPUUsageDataPoint,
 }
 
 var PodCPUMetrics = CPUMetrics{
 	Time:               (*MetricsBuilder).RecordK8sPodCPUTimeDataPoint,
 	Usage:              (*MetricsBuilder).RecordK8sPodCPUUsageDataPoint,
-	Utilization:        (*MetricsBuilder).RecordK8sPodCPUUtilizationDataPoint,
 	NodeUtilization:    (*MetricsBuilder).RecordK8sPodCPUNodeUtilizationDataPoint,
 	LimitUtilization:   (*MetricsBuilder).RecordK8sPodCPULimitUtilizationDataPoint,
 	RequestUtilization: (*MetricsBuilder).RecordK8sPodCPURequestUtilizationDataPoint,
@@ -45,7 +42,6 @@ var PodCPUMetrics = CPUMetrics{
 var ContainerCPUMetrics = CPUMetrics{
 	Time:               (*MetricsBuilder).RecordContainerCPUTimeDataPoint,
 	Usage:              (*MetricsBuilder).RecordContainerCPUUsageDataPoint,
-	Utilization:        (*MetricsBuilder).RecordContainerCPUUtilizationDataPoint,
 	NodeUtilization:    (*MetricsBuilder).RecordK8sContainerCPUNodeUtilizationDataPoint,
 	LimitUtilization:   (*MetricsBuilder).RecordK8sContainerCPULimitUtilizationDataPoint,
 	RequestUtilization: (*MetricsBuilder).RecordK8sContainerCPURequestUtilizationDataPoint,
@@ -138,6 +134,7 @@ var PodNetworkMetrics = NetworkMetrics{
 type VolumeMetrics struct {
 	Available  RecordIntDataPointFunc
 	Capacity   RecordIntDataPointFunc
+	Used       RecordIntDataPointFunc
 	Inodes     RecordIntDataPointFunc
 	InodesFree RecordIntDataPointFunc
 	InodesUsed RecordIntDataPointFunc
@@ -146,6 +143,7 @@ type VolumeMetrics struct {
 var K8sVolumeMetrics = VolumeMetrics{
 	Available:  (*MetricsBuilder).RecordK8sVolumeAvailableDataPoint,
 	Capacity:   (*MetricsBuilder).RecordK8sVolumeCapacityDataPoint,
+	Used:       (*MetricsBuilder).RecordK8sPodVolumeUsageDataPoint,
 	Inodes:     (*MetricsBuilder).RecordK8sVolumeInodesDataPoint,
 	InodesFree: (*MetricsBuilder).RecordK8sVolumeInodesFreeDataPoint,
 	InodesUsed: (*MetricsBuilder).RecordK8sVolumeInodesUsedDataPoint,

@@ -21,7 +21,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -72,10 +74,10 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 	default:
 		cfg.Compression = configcompression.TypeGzip
 	}
-	cfg.Auth = nil
+	cfg.Auth = configoptional.None[configauth.Config]()
 	httpSettings := cfg.ClientConfig
 	host := componenttest.NewNopHost()
-	client, err := httpSettings.ToClient(t.Context(), host, componenttest.NewNopTelemetrySettings())
+	client, err := httpSettings.ToClient(t.Context(), host.GetExtensions(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	if err != nil {
 		return nil
@@ -145,7 +147,7 @@ func exampleTwoLogs() []plog.LogRecord {
 
 func exampleNLogs(n int) []plog.LogRecord {
 	buffer := make([]plog.LogRecord, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		buffer[i] = plog.NewLogRecord()
 		buffer[i].Body().SetStr("Example log")
 	}
@@ -802,11 +804,23 @@ func TestSendLogsUnexpectedFormat(t *testing.T) {
 }
 
 func TestSendLogsOTLP(t *testing.T) {
+	l := plog.NewLogs()
+	ls := l.ResourceLogs().AppendEmpty()
+
+	logRecords := exampleTwoLogs()
+	for i := range logRecords {
+		logRecords[i].MoveTo(ls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
+	}
+
 	test := prepareSenderTest(t, NoCompression, []func(w http.ResponseWriter, req *http.Request){
 		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
-			//nolint:lll
-			assert.Equal(t, "\n\x84\x01\n\x00\x12;\n\x00\x127*\r\n\vExample log2\x10\n\x04key1\x12\b\n\x06value12\x10\n\x04key2\x12\b\n\x06value2J\x00R\x00\x12C\n\x00\x12?*\x15\n\x13Another example log2\x10\n\x04key1\x12\b\n\x06value12\x10\n\x04key2\x12\b\n\x06value2J\x00R\x00", body)
+
+			ld, err := (&plog.ProtoUnmarshaler{}).UnmarshalLogs([]byte(body))
+			assert.NoError(t, err)
+			// Need to check with read only bit, because we do the same on line 845.
+			ld.MarkReadOnly()
+			assert.Equal(t, l, ld)
 
 			assert.Equal(t, "otelcol", req.Header.Get("X-Sumo-Client"))
 			assert.Equal(t, "application/x-protobuf", req.Header.Get("Content-Type"))
@@ -828,16 +842,7 @@ func TestSendLogsOTLP(t *testing.T) {
 
 	test.s.config.LogFormat = "otlp"
 
-	l := plog.NewLogs()
-	ls := l.ResourceLogs().AppendEmpty()
-
-	logRecords := exampleTwoLogs()
-	for i := 0; i < len(logRecords); i++ {
-		logRecords[i].MoveTo(ls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
-	}
-
 	l.MarkReadOnly()
-
 	assert.NoError(t, test.s.sendOTLPLogs(t.Context(), l))
 	assert.EqualValues(t, 1, *test.reqCounter)
 }
@@ -1087,7 +1092,6 @@ func TestSendMetrics(t *testing.T) {
 		metricSum, metricGauge,
 	)
 	metrics.MarkReadOnly()
-
 	_, errs := test.s.sendNonOTLPMetrics(t.Context(), metrics)
 	assert.Empty(t, errs)
 }

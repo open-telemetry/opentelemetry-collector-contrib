@@ -10,40 +10,49 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
 type datadogReceiver struct {
-	address string
-	config  *Config
-	params  receiver.Settings
+	address            string
+	config             *Config
+	params             receiver.Settings
+	intakeReverseProxy *httputil.ReverseProxy
 
 	nextTracesConsumer  consumer.Traces
 	nextMetricsConsumer consumer.Metrics
+	nextLogsConsumer    consumer.Logs
 
 	metricsTranslator *translator.MetricsTranslator
 	statsTranslator   *translator.StatsTranslator
 
 	server    *http.Server
 	tReceiver *receiverhelper.ObsReport
+
+	traceIDCache *lru.Cache[uint64, pcommon.TraceID]
 }
 
 // Endpoint specifies an API endpoint definition.
-type Endpoint struct {
+type endpoint struct {
 	// Pattern specifies the API pattern, as registered by the HTTP handler.
 	Pattern string
 
@@ -52,8 +61,8 @@ type Endpoint struct {
 }
 
 // getEndpoints specifies the list of endpoints registered for the trace-agent API.
-func (ddr *datadogReceiver) getEndpoints() []Endpoint {
-	endpoints := []Endpoint{
+func (ddr *datadogReceiver) getEndpoints() []endpoint {
+	endpoints := []endpoint{
 		{
 			Pattern: "/",
 			Handler: func(w http.ResponseWriter, _ *http.Request) {
@@ -63,7 +72,7 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 	}
 
 	if ddr.nextTracesConsumer != nil {
-		endpoints = append(endpoints, []Endpoint{
+		endpoints = append(endpoints, []endpoint{
 			{
 				Pattern: "/v0.3/traces",
 				Handler: ddr.handleTraces,
@@ -88,7 +97,7 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 	}
 
 	if ddr.nextMetricsConsumer != nil {
-		endpoints = append(endpoints, []Endpoint{
+		endpoints = append(endpoints, []endpoint{
 			{
 				Pattern: "/api/v1/series",
 				Handler: ddr.handleV1Series,
@@ -114,6 +123,12 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 				Handler: ddr.handleIntake,
 			},
 			{
+				// the datadog agent is configured to use a trailing slash in some places:
+				// https://github.com/DataDog/datadog-agent/blob/7.64.3/comp/forwarder/defaultforwarder/endpoints/endpoints.go#L18
+				Pattern: "/intake/",
+				Handler: ddr.handleIntake,
+			},
+			{
 				Pattern: "/api/v1/distribution_points",
 				Handler: ddr.handleDistributionPoints,
 			},
@@ -124,9 +139,18 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 		}...)
 	}
 
+	if ddr.nextLogsConsumer != nil {
+		endpoints = append(endpoints, []endpoint{
+			{
+				Pattern: "/api/v2/logs",
+				Handler: ddr.handleLogs,
+			},
+		}...)
+	}
+
 	infoResponse, _ := ddr.buildInfoResponse(endpoints)
 
-	endpoints = append(endpoints, Endpoint{
+	endpoints = append(endpoints, endpoint{
 		Pattern: "/info",
 		Handler: func(w http.ResponseWriter, r *http.Request) { ddr.handleInfo(w, r, infoResponse) },
 	})
@@ -134,21 +158,55 @@ func (ddr *datadogReceiver) getEndpoints() []Endpoint {
 	return endpoints
 }
 
-func newDataDogReceiver(config *Config, params receiver.Settings) (component.Component, error) {
+func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Settings) (component.Component, error) {
 	instance, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err
 	}
 
+	var cache *lru.Cache[uint64, pcommon.TraceID]
+	if FullTraceIDFeatureGate.IsEnabled() {
+		cache, err = lru.NewWithEvict(config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
+			params.Logger.Debug("evicting datadog trace id from cache", zap.Uint64("id", k))
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create traceID cache: %w", err)
+		}
+	}
+
+	var intakeReverseProxy *httputil.ReverseProxy
+	if config.Intake.Behavior == configIntakeBehaviorProxy {
+		datadogSite := config.Intake.Proxy.API.Site
+		if datadogSite == "" {
+			datadogSite = defaultConfigIntakeProxyAPISite
+		}
+		intakeReverseProxy = &httputil.ReverseProxy{
+			Director: createIntakeReverseProxyDirector(datadogSite, string(config.Intake.Proxy.API.Key)),
+		}
+		if config.Intake.Proxy.API.FailOnInvalidKey {
+			apiClient := clientutil.CreateAPIClient(
+				params.BuildInfo,
+				fmt.Sprintf("https://api.%s", datadogSite),
+				confighttp.NewDefaultClientConfig(),
+			)
+			err := clientutil.ValidateAPIKey(ctx, string(config.Intake.Proxy.API.Key), params.Logger, apiClient)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return &datadogReceiver{
-		params: params,
-		config: config,
+		params:             params,
+		config:             config,
+		intakeReverseProxy: intakeReverseProxy,
 		server: &http.Server{
 			ReadTimeout: config.ReadTimeout,
 		},
 		tReceiver:         instance,
 		metricsTranslator: translator.NewMetricsTranslator(params.BuildInfo),
 		statsTranslator:   translator.NewStatsTranslator(),
+		traceIDCache:      cache,
 	}, nil
 }
 
@@ -163,7 +221,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	var err error
 	ddr.server, err = ddr.config.ToServer(
 		ctx,
-		host,
+		host.GetExtensions(),
 		ddr.params.TelemetrySettings,
 		ddmux,
 	)
@@ -189,7 +247,7 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 	return ddr.server.Shutdown(ctx)
 }
 
-func (ddr *datadogReceiver) buildInfoResponse(endpoints []Endpoint) ([]byte, error) {
+func (ddr *datadogReceiver) buildInfoResponse(endpoints []endpoint) ([]byte, error) {
 	var endpointPaths []string
 	for _, e := range endpoints {
 		endpointPaths = append(endpointPaths, e.Pattern)
@@ -214,6 +272,71 @@ func (ddr *datadogReceiver) handleInfo(w http.ResponseWriter, _ *http.Request, i
 	}
 }
 
+func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request) {
+	if req.ContentLength == 0 { // Ping mechanism of Datadog SDK perform http request with empty body when GET /info not implemented.
+		http.Error(w, "Fake featuresdiscovery", http.StatusBadRequest) // The response code should be different of 404 to be considered ok by Datadog SDK.
+		return
+	}
+	obsCtx := ddr.tReceiver.StartLogsOp(req.Context())
+	var (
+		logCount int
+		err      error
+	)
+	defer func(logCount *int) {
+		ddr.tReceiver.EndLogsOp(obsCtx, "datadog", *logCount, err)
+	}(&logCount)
+
+	if req.Method != http.MethodPost {
+		http.Error(w, "method not allowed, supported: [POST]", http.StatusMethodNotAllowed)
+		return
+	}
+
+	switch contentType := req.Header.Get("Content-Type"); contentType {
+	case "application/json":
+		buf := translator.GetBuffer()
+		defer translator.PutBuffer(buf)
+		if _, err = io.Copy(buf, req.Body); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			ddr.params.Logger.Error(err.Error())
+			return
+		}
+
+		// try parsing as array first, then single record
+		var ddLogs []*translator.DatadogLogPayload
+
+		if err = json.Unmarshal(buf.Bytes(), &ddLogs); err != nil {
+			// now try parsing as a single record
+			var ddLog *translator.DatadogLogPayload
+			if err = json.Unmarshal(buf.Bytes(), &ddLog); err != nil {
+				http.Error(w, "unable to unmarshal logs", http.StatusBadRequest)
+				ddr.params.Logger.Error("unable to unmarshal logs", zap.Error(err))
+				return
+			}
+			ddLogs = append(ddLogs, ddLog)
+		}
+
+		plogs := translator.ToPlog(ddLogs)
+
+		logCount = plogs.LogRecordCount()
+		err = ddr.nextLogsConsumer.ConsumeLogs(obsCtx, plogs)
+		if err != nil {
+			errorutil.HTTPError(w, err)
+			ddr.params.Logger.Error("log consumer errored out", zap.Error(err))
+			return
+		}
+	default:
+		http.Error(w, fmt.Sprintf("unsupported media type '%s', supported: [application/json]", contentType), http.StatusUnsupportedMediaType)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	response := map[string]any{
+		"errors": []string{},
+	}
+	_ = json.NewEncoder(w).Encode(response)
+}
+
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
 	if req.ContentLength == 0 { // Ping mechanism of Datadog SDK perform http request with empty body when GET /info not implemented.
 		http.Error(w, "Fake featuresdiscovery", http.StatusBadRequest) // The response code should be different of 404 to be considered ok by Datadog SDK.
@@ -234,8 +357,12 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		return
 	}
 	for _, ddTrace := range ddTraces {
-		otelTraces := translator.ToTraces(ddTrace, req)
-		spanCount = otelTraces.SpanCount()
+		otelTraces, err := translator.ToTraces(ddr.params.Logger, ddTrace, req, ddr.traceIDCache)
+		if err != nil {
+			ddr.params.Logger.Error("Error converting traces", zap.Error(err))
+			continue
+		}
+		spanCount += otelTraces.SpanCount()
 		err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 		if err != nil {
 			errorutil.HTTPError(w, err)
@@ -415,16 +542,11 @@ func (ddr *datadogReceiver) handleSketches(w http.ResponseWriter, req *http.Requ
 
 // handleIntake handles operational calls made by the agent to submit host tags and other metadata to the backend.
 func (ddr *datadogReceiver) handleIntake(w http.ResponseWriter, req *http.Request) {
-	obsCtx := ddr.tReceiver.StartMetricsOp(req.Context())
-	var err error
-	var metricsCount int
-	defer func(metricsCount *int) {
-		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
-	}(&metricsCount)
-
-	err = errors.New("intake endpoint not implemented")
-	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
-	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
+	if ddr.intakeReverseProxy == nil {
+		http.Error(w, "intake endpoint not enabled", http.StatusMethodNotAllowed)
+	} else {
+		ddr.intakeReverseProxy.ServeHTTP(w, req)
+	}
 }
 
 // handleDistributionPoints handles the distribution points endpoint https://docs.datadoghq.com/api/latest/metrics/#submit-distribution-points
@@ -477,4 +599,22 @@ func (ddr *datadogReceiver) handleStats(w http.ResponseWriter, req *http.Request
 	}
 
 	_, _ = w.Write([]byte("OK"))
+}
+
+func createIntakeReverseProxyDirector(site, key string) func(*http.Request) {
+	host := fmt.Sprintf("api.%s", site)
+	query := fmt.Sprintf("api_key=%s", key)
+	return func(req *http.Request) {
+		req.URL.Scheme = "https"
+		req.URL.Host = host
+		// we want to use our own API key for all calls
+		req.Header.Set("Dd-Api-Key", key)
+		// intake puts the API key in the query string as well
+		req.URL.RawQuery = query
+		// Technically, the JSON body of the `/intake` request contains the API key as well
+		// (it's the top-level `apiKey` field of the payload JSON object),
+		// but it appears as though the value of that field does not matter,
+		// at least when it comes to matching the actual `DD-API-KEY` we set in the header above.
+		// So, to avoid a bunch of extra expensive work in the collector, we don't touch the body.
+	}
 }

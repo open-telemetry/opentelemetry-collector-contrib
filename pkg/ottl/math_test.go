@@ -62,7 +62,7 @@ func threePointOne[K any]() (ExprFunc[K], error) {
 	}, nil
 }
 
-func testTime[K any](time string, format string) (ExprFunc[K], error) {
+func testTime[K any](time, format string) (ExprFunc[K], error) {
 	loc, err := timeutils.GetLocation(nil, &format)
 	if err != nil {
 		return nil, err
@@ -245,13 +245,13 @@ func Test_evaluateMathExpression(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			parsed, err := mathParser.ParseString("", tt.input)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			getter, err := p.evaluateMathExpression(parsed.MathExpression)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			result, err := getter.Get(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.expected, result)
 		})
@@ -579,10 +579,10 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 				}
 			} else {
 				parsed, err := mathParser.ParseString("", tt.input)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
 				getter, err := p.evaluateMathExpression(parsed.MathExpression)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 
 				result, err := getter.Get(t.Context(), nil)
 				assert.Nil(t, result)
@@ -1148,10 +1148,10 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		getter, err := p.evaluateMathExpression(tt.mathExpr)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		result, err := getter.Get(t.Context(), nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, tt.expected, result)
 	}
 }

@@ -28,7 +28,7 @@ type mockCompositeReader struct {
 	mock.Mock
 }
 
-func (r *mockCompositeReader) Name() string {
+func (*mockCompositeReader) Name() string {
 	return "mockCompositeReader"
 }
 
@@ -37,7 +37,7 @@ func (r *mockCompositeReader) Read(ctx context.Context) ([]*metadata.MetricsData
 	return args.Get(0).([]*metadata.MetricsDataPoint), args.Error(1)
 }
 
-func (r *mockCompositeReader) Shutdown() {
+func (*mockCompositeReader) Shutdown() {
 	// Do nothing
 }
 
@@ -51,7 +51,7 @@ func newMetricsBuilder(throwErrorOnShutdown bool) metadata.MetricsBuilder {
 	}
 }
 
-func (b *metricsBuilder) Build([]*metadata.MetricsDataPoint) (pmetric.Metrics, error) {
+func (*metricsBuilder) Build([]*metadata.MetricsDataPoint) (pmetric.Metrics, error) {
 	return pmetric.NewMetrics(), nil
 }
 

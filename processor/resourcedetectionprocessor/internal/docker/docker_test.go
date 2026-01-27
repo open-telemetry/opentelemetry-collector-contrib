@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
 )
@@ -42,12 +41,12 @@ func TestDetect(t *testing.T) {
 	detector.(*Detector).provider = md
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		conventions.AttributeHostName: "hostname",
-		conventions.AttributeOSType:   "darwin",
+		"host.name": "hostname",
+		"os.type":   "darwin",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())

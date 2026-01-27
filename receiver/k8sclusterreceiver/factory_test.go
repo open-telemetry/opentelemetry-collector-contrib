@@ -90,10 +90,10 @@ func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {
 	rcvr, ok := r.(*kubernetesReceiver)
 	require.True(t, ok)
 	rcvr.resourceWatcher.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
-		return fake.NewSimpleClientset(), nil
+		return fake.NewClientset(), nil
 	}
 	rcvr.resourceWatcher.makeOpenShiftQuotaClient = func(_ k8sconfig.APIConfig) (quotaclientset.Interface, error) {
-		return fakeQuota.NewSimpleClientset(), nil
+		return fakeQuota.NewClientset(), nil
 	}
 	return rcvr
 }
@@ -107,10 +107,10 @@ func newNopHostWithExporters() component.Host {
 	return &nopHostWithExporters{Host: newNopHost()}
 }
 
-func (n *nopHostWithExporters) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+func (*nopHostWithExporters) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return map[pipeline.Signal]map[component.ID]component.Component{
 		pipeline.SignalMetrics: {
-			component.MustNewIDWithName("nop", "withoutmetadata"): MockExporter{},
+			component.MustNewIDWithName("nop", "withoutmetadata"): mockExporter{},
 			component.MustNewIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
 		},
 	}

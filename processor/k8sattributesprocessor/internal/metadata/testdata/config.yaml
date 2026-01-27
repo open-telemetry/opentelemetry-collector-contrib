@@ -15,6 +15,8 @@ all_set:
       enabled: true
     k8s.cronjob.name:
       enabled: true
+    k8s.cronjob.uid:
+      enabled: true
     k8s.daemonset.name:
       enabled: true
     k8s.daemonset.uid:
@@ -50,6 +52,14 @@ all_set:
     k8s.statefulset.name:
       enabled: true
     k8s.statefulset.uid:
+      enabled: true
+    service.instance.id:
+      enabled: true
+    service.name:
+      enabled: true
+    service.namespace:
+      enabled: true
+    service.version:
       enabled: true
 none_set:
   resource_attributes:
@@ -67,6 +77,8 @@ none_set:
       enabled: false
     k8s.cronjob.name:
       enabled: false
+    k8s.cronjob.uid:
+      enabled: false
     k8s.daemonset.name:
       enabled: false
     k8s.daemonset.uid:
@@ -102,4 +114,12 @@ none_set:
     k8s.statefulset.name:
       enabled: false
     k8s.statefulset.uid:
+      enabled: false
+    service.instance.id:
+      enabled: false
+    service.name:
+      enabled: false
+    service.namespace:
+      enabled: false
+    service.version:
       enabled: false

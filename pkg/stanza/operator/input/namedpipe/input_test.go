@@ -150,3 +150,60 @@ func TestPipeWrites(t *testing.T) {
 		}
 	}
 }
+
+// TestPipeHasDataAtStartup will test if the receiver can consume from a named
+// pipe that has buffered data before startup.
+func TestPipeHasDataAtStartup(t *testing.T) {
+	fake := testutil.NewFakeOutput(t)
+
+	conf := NewConfig()
+	conf.Path = filename(t)
+	conf.Permissions = 0o666
+	conf.OutputIDs = []string{fake.ID()}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := conf.Build(set)
+	require.NoError(t, err)
+	ops := []operator.Operator{op, fake}
+
+	// create pipe
+	require.NoError(t, unix.Mkfifo(conf.Path, conf.Permissions))
+
+	pipe, err := os.OpenFile(conf.Path, os.O_RDWR|os.O_APPEND, os.ModeNamedPipe)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, pipe.Close())
+	}()
+
+	logs := []string{"log1\n", "log2\n"}
+
+	for _, log := range logs {
+		_, err = pipe.WriteString(log)
+		require.NoError(t, err)
+	}
+
+	p, err := pipeline.NewDirectedPipeline(ops)
+	require.NoError(t, err)
+
+	// start receiver
+	require.NoError(t, p.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, p.Stop())
+	}()
+
+	for _, log := range logs {
+		expect := &entry.Entry{
+			Body: strings.TrimSpace(log),
+		}
+
+		select {
+		case e := <-fake.Received:
+			obs := time.Now()
+			expect.ObservedTimestamp = obs
+			e.ObservedTimestamp = obs
+			require.Equal(t, expect, e)
+		case <-time.After(time.Second):
+			t.Fatal("timed-out waiting for log entry")
+		}
+	}
+}

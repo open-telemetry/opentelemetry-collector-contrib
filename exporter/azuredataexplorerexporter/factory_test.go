@@ -121,7 +121,7 @@ func TestCreateLogsWhenIngestEmpty(t *testing.T) {
 
 	params := exportertest.NewNopSettings(metadata.Type)
 	// Load the #3 which has empty
-	// exporter, err := factory.CreateLogs(t.Context(), params, cfg)
+	// exporter, err := factory.CreateLogs(context.Background(), params, cfg)
 	assert.Panics(t, func() { _, _ = factory.CreateLogs(t.Context(), params, cfg) })
 }
 

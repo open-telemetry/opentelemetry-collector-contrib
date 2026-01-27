@@ -4,21 +4,55 @@
 package transformprocessor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
+
+func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
+	t.Helper()
+	for _, f := range DefaultLogFunctionsNew() {
+		assert.Contains(t, config.logFunctions, f.Name(), "missing log function %v", f.Name())
+	}
+	for _, f := range DefaultDataPointFunctionsNew() {
+		assert.Contains(t, config.dataPointFunctions, f.Name(), "missing data point function %v", f.Name())
+	}
+	for _, f := range DefaultMetricFunctionsNew() {
+		assert.Contains(t, config.metricFunctions, f.Name(), "missing metric function %v", f.Name())
+	}
+	for _, f := range DefaultSpanFunctionsNew() {
+		assert.Contains(t, config.spanFunctions, f.Name(), "missing span function %v", f.Name())
+	}
+	for _, f := range DefaultSpanEventFunctionsNew() {
+		assert.Contains(t, config.spanEventFunctions, f.Name(), "missing span event function %v", f.Name())
+	}
+	for _, f := range DefaultProfileFunctions() {
+		assert.Contains(t, config.profileFunctions, f.Name(), "missing profile function %v", f.Name())
+	}
+}
 
 func TestFactory_Type(t *testing.T) {
 	factory := NewFactory()
@@ -28,20 +62,22 @@ func TestFactory_Type(t *testing.T) {
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, &Config{
-		ErrorMode:        ottl.PropagateError,
-		TraceStatements:  []common.ContextStatements{},
-		MetricStatements: []common.ContextStatements{},
-		LogStatements:    []common.ContextStatements{},
+	assert.EqualExportedValues(t, &Config{
+		ErrorMode:         ottl.PropagateError,
+		TraceStatements:   []common.ContextStatements{},
+		MetricStatements:  []common.ContextStatements{},
+		LogStatements:     []common.ContextStatements{},
+		ProfileStatements: []common.ContextStatements{},
 	}, cfg)
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestFactoryCreateProcessor_Empty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	err := xconfmap.Validate(cfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestFactoryCreateTraces_InvalidActions(t *testing.T) {
@@ -55,7 +91,7 @@ func TestFactoryCreateTraces_InvalidActions(t *testing.T) {
 		},
 	}
 	ap, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, ap)
 }
 
@@ -69,13 +105,12 @@ func TestFactoryCreateTraces(t *testing.T) {
 			Context: "span",
 			Statements: []string{
 				`set(attributes["test"], "pass") where name == "operationA"`,
-				`set(attributes["test error mode"], ParseJSON(1)) where name == "operationA"`,
+				`set(attributes["test error mode"], ParseJSON("1")) where name == "operationA"`,
 			},
 		},
 	}
 	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	assert.NotNil(t, tp)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	td := ptrace.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -85,7 +120,7 @@ func TestFactoryCreateTraces(t *testing.T) {
 	assert.False(t, ok)
 
 	err = tp.ConsumeTraces(t.Context(), td)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	val, ok := span.Attributes().Get("test")
 	assert.True(t, ok)
@@ -118,13 +153,12 @@ func TestFactoryCreateMetrics(t *testing.T) {
 			Context: "datapoint",
 			Statements: []string{
 				`set(attributes["test"], "pass") where metric.name == "operationA"`,
-				`set(attributes["test error mode"], ParseJSON(1)) where metric.name == "operationA"`,
+				`set(attributes["test error mode"], ParseJSON("1")) where metric.name == "operationA"`,
 			},
 		},
 	}
 	metricsProcessor, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	assert.NotNil(t, metricsProcessor)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	metrics := pmetric.NewMetrics()
 	metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
@@ -134,7 +168,7 @@ func TestFactoryCreateMetrics(t *testing.T) {
 	assert.False(t, ok)
 
 	err = metricsProcessor.ConsumeMetrics(t.Context(), metrics)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	val, ok := metric.Sum().DataPoints().At(0).Attributes().Get("test")
 	assert.True(t, ok)
@@ -151,13 +185,12 @@ func TestFactoryCreateLogs(t *testing.T) {
 			Context: "log",
 			Statements: []string{
 				`set(attributes["test"], "pass") where body == "operationA"`,
-				`set(attributes["test error mode"], ParseJSON(1)) where body == "operationA"`,
+				`set(attributes["test error mode"], ParseJSON("1")) where body == "operationA"`,
 			},
 		},
 	}
 	lp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
-	assert.NotNil(t, lp)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	ld := plog.NewLogs()
 	log := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -167,7 +200,7 @@ func TestFactoryCreateLogs(t *testing.T) {
 	assert.False(t, ok)
 
 	err = lp.ConsumeLogs(t.Context(), ld)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	val, ok := log.Attributes().Get("test")
 	assert.True(t, ok)
@@ -185,6 +218,21 @@ func TestFactoryCreateLogs_InvalidActions(t *testing.T) {
 		},
 	}
 	ap, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	assert.Error(t, err)
+	assert.Nil(t, ap)
+}
+
+func TestFactoryCreateProfiles_InvalidActions(t *testing.T) {
+	factory := NewFactory().(xprocessor.Factory)
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.ProfileStatements = []common.ContextStatements{
+		{
+			Context:    "profile",
+			Statements: []string{`set(123`},
+		},
+	}
+	ap, err := factory.CreateProfiles(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, ap)
 }
@@ -256,17 +304,107 @@ func TestFactoryCreateLogProcessor(t *testing.T) {
 			}
 			lp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, lp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			ld := tt.createLogs()
 
 			err = lp.ConsumeLogs(t.Context(), ld)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exLd := tt.createLogs()
 			tt.want(exLd)
 
 			assert.Equal(t, exLd, ld)
+		})
+	}
+}
+
+func basicProfiles() pprofiletest.Profiles {
+	r := pcommon.NewResource()
+	r.Attributes().PutStr("host.name", "localhost")
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("scope-name")
+
+	return pprofiletest.Profiles{
+		ResourceProfiles: []pprofiletest.ResourceProfile{
+			{
+				Resource: r,
+				ScopeProfiles: []pprofiletest.ScopeProfile{
+					{
+						Scope: scope,
+						Profiles: []pprofiletest.Profile{
+							{
+								OriginalPayloadFormat: "operationA",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func TestFactoryCreateProfileProcessor(t *testing.T) {
+	tests := []struct {
+		name           string
+		conditions     []string
+		statements     []string
+		want           func() pprofile.Profiles
+		createProfiles func() pprofile.Profiles
+	}{
+		{
+			name:       "create profiles processor and pass profile context with a global condition that meets the specified condition",
+			conditions: []string{`original_payload_format == "operationA"`},
+			statements: []string{`set(attributes["test"], "pass")`},
+			want: func() pprofile.Profiles {
+				p := basicProfiles()
+				p.ResourceProfiles[0].ScopeProfiles[0].Profiles[0].Attributes = []pprofiletest.Attribute{{Key: "test", Value: "pass"}}
+				return p.Transform()
+			},
+			createProfiles: basicProfiles().Transform,
+		},
+		{
+			name:       "create profiles processor and pass profile context with a statement condition that meets the specified condition",
+			conditions: []string{`original_payload_format == "operationB"`},
+			statements: []string{`set(attributes["test"], "pass")`},
+			want: func() pprofile.Profiles {
+				return basicProfiles().Transform()
+			},
+			createProfiles: basicProfiles().Transform,
+		},
+		{
+			name:           "create profiles processor and pass profile context with a global condition that fails the specified condition",
+			conditions:     []string{`original_payload_format == "operationB"`},
+			statements:     []string{`set(attributes["test"], "pass")`},
+			want:           basicProfiles().Transform,
+			createProfiles: basicProfiles().Transform,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory().(xprocessor.Factory)
+			cfg := factory.CreateDefaultConfig()
+			oCfg := cfg.(*Config)
+			oCfg.ErrorMode = ottl.IgnoreError
+			oCfg.ProfileStatements = []common.ContextStatements{
+				{
+					Context:    "profile",
+					Conditions: tt.conditions,
+					Statements: tt.statements,
+				},
+			}
+			lp, err := factory.CreateProfiles(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			assert.NotNil(t, lp)
+			require.NoError(t, err)
+
+			pd := tt.createProfiles()
+
+			err = lp.ConsumeProfiles(t.Context(), pd)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.want(), pd)
 		})
 	}
 }
@@ -333,12 +471,12 @@ func TestFactoryCreateResourceProcessor(t *testing.T) {
 			}
 			lp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, lp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			ld := tt.createLogs()
 
 			err = lp.ConsumeLogs(t.Context(), ld)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exLd := tt.createLogs()
 			tt.want(exLd)
@@ -410,12 +548,12 @@ func TestFactoryCreateScopeProcessor(t *testing.T) {
 			}
 			lp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, lp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			ld := tt.createLogs()
 
 			err = lp.ConsumeLogs(t.Context(), ld)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exLd := tt.createLogs()
 			tt.want(exLd)
@@ -492,12 +630,12 @@ func TestFactoryCreateMetricProcessor(t *testing.T) {
 			}
 			mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, mp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			td := tt.createMetrics()
 
 			err = mp.ConsumeMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := tt.createMetrics()
 			tt.want(exTd)
@@ -577,12 +715,12 @@ func TestFactoryCreateDataPointProcessor(t *testing.T) {
 			}
 			mp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, mp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			td := tt.createMetrics()
 
 			err = mp.ConsumeMetrics(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := tt.createMetrics()
 			tt.want(exTd)
@@ -658,12 +796,12 @@ func TestFactoryCreateSpanProcessor(t *testing.T) {
 			}
 			mp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, mp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			td := tt.createTraces()
 
 			err = mp.ConsumeTraces(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := tt.createTraces()
 			tt.want(exTd)
@@ -738,17 +876,467 @@ func TestFactoryCreateSpanEventProcessor(t *testing.T) {
 			}
 			mp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			assert.NotNil(t, mp)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			td := tt.createTraces()
 
 			err = mp.ConsumeTraces(t.Context(), td)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			exTd := tt.createTraces()
 			tt.want(exTd)
 
 			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func createTestFuncFactory[K any](name string) ottl.Factory[K] {
+	type TestFuncArguments[K any] struct{}
+	createFunc := func(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+		return func(_ context.Context, _ K) (any, error) {
+			return nil, nil
+		}, nil
+	}
+	return ottl.NewFactory(name, &TestFuncArguments[K]{}, createFunc)
+}
+
+func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
+	type testCase struct {
+		name           string
+		statements     []common.ContextStatements
+		factoryOptions []FactoryOption
+		wantErrorWith  string
+	}
+
+	tests := []testCase{
+		{
+			name: "with span functions : statement with added span func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("span"),
+					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithSpanFunctionsNew(DefaultSpanFunctionsNew()),
+				WithSpanFunctionsNew([]ottl.Factory[*ottlspan.TransformContext]{createTestFuncFactory[*ottlspan.TransformContext]("TestSpanFunc")}),
+				WithSpanEventFunctionsNew(DefaultSpanEventFunctionsNew()),
+			},
+		},
+		{
+			name: "with span functions : statement with missing span func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("span"),
+					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
+				},
+			},
+			wantErrorWith: `undefined function "TestSpanFunc"`,
+			factoryOptions: []FactoryOption{
+				WithSpanFunctionsNew(DefaultSpanFunctionsNew()),
+				WithSpanEventFunctionsNew(DefaultSpanEventFunctionsNew()),
+			},
+		},
+		{
+			name: "with span functions : only custom functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("span"),
+					Statements: []string{`testSpanFunc()`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithSpanFunctionsNew([]ottl.Factory[*ottlspan.TransformContext]{createTestFuncFactory[*ottlspan.TransformContext]("testSpanFunc")}),
+			},
+		},
+		{
+			name: "with span functions : missing default functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("span"),
+					Statements: []string{`set(attributes["test"], "TestSpanFunc()")`},
+				},
+			},
+			wantErrorWith: `undefined function "set"`,
+			factoryOptions: []FactoryOption{
+				WithSpanFunctionsNew([]ottl.Factory[*ottlspan.TransformContext]{createTestFuncFactory[*ottlspan.TransformContext]("TestSpanFunc")}),
+			},
+		},
+		{
+			name: "with span event functions : statement with added span event func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("spanevent"),
+					Statements: []string{`set(cache["attr"], TestSpanEventFunc())`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithSpanFunctionsNew(DefaultSpanFunctionsNew()),
+				WithSpanEventFunctionsNew(DefaultSpanEventFunctionsNew()),
+				WithSpanEventFunctionsNew([]ottl.Factory[*ottlspanevent.TransformContext]{createTestFuncFactory[*ottlspanevent.TransformContext]("TestSpanEventFunc")}),
+			},
+		},
+		{
+			name: "with span event functions : statement with missing span event func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("spanevent"),
+					Statements: []string{`set(cache["attr"], TestSpanEventFunc())`},
+				},
+			},
+			wantErrorWith: `undefined function "TestSpanEventFunc"`,
+			factoryOptions: []FactoryOption{
+				WithSpanFunctionsNew(DefaultSpanFunctionsNew()),
+				WithSpanEventFunctionsNew(DefaultSpanEventFunctionsNew()),
+			},
+		},
+		{
+			name: "with span event functions : only custom functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("spanevent"),
+					Statements: []string{`testSpanEventFunc()`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithSpanEventFunctionsNew([]ottl.Factory[*ottlspanevent.TransformContext]{createTestFuncFactory[*ottlspanevent.TransformContext]("testSpanEventFunc")}),
+			},
+		},
+		{
+			name: "with span event functions : missing default functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("spanevent"),
+					Statements: []string{`set(attributes["test"], "TestSpanEventFunc()")`},
+				},
+			},
+			wantErrorWith: `undefined function "set"`,
+			factoryOptions: []FactoryOption{
+				WithSpanEventFunctionsNew([]ottl.Factory[*ottlspanevent.TransformContext]{createTestFuncFactory[*ottlspanevent.TransformContext]("TestSpanEventFunc")}),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactoryWithOptions(tt.factoryOptions...)
+			cfg := factory.CreateDefaultConfig()
+			oCfg := cfg.(*Config)
+			oCfg.ErrorMode = ottl.IgnoreError
+			oCfg.TraceStatements = tt.statements
+
+			_, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
+	type testCase struct {
+		name           string
+		statements     []common.ContextStatements
+		factoryOptions []FactoryOption
+		wantErrorWith  string
+	}
+
+	tests := []testCase{
+		{
+			name: "with log functions : statement with added log func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("log"),
+					Statements: []string{`set(cache["attr"], TestLogFunc())`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithLogFunctionsNew(DefaultLogFunctionsNew()),
+				WithLogFunctionsNew([]ottl.Factory[*ottllog.TransformContext]{createTestFuncFactory[*ottllog.TransformContext]("TestLogFunc")}),
+			},
+		},
+		{
+			name: "with log functions : statement with missing log func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("log"),
+					Statements: []string{`set(cache["attr"], TestLogFunc())`},
+				},
+			},
+			wantErrorWith: `undefined function "TestLogFunc"`,
+			factoryOptions: []FactoryOption{
+				WithLogFunctionsNew(DefaultLogFunctionsNew()),
+			},
+		},
+		{
+			name: "with log functions : only custom functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("log"),
+					Statements: []string{`testLogFunc()`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithLogFunctionsNew([]ottl.Factory[*ottllog.TransformContext]{createTestFuncFactory[*ottllog.TransformContext]("testLogFunc")}),
+			},
+		},
+		{
+			name: "with log functions : missing default functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("log"),
+					Statements: []string{`set(cache["attr"], TestLogFunc())`},
+				},
+			},
+			wantErrorWith: `undefined function "set"`,
+			factoryOptions: []FactoryOption{
+				WithLogFunctionsNew([]ottl.Factory[*ottllog.TransformContext]{createTestFuncFactory[*ottllog.TransformContext]("TestLogFunc")}),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactoryWithOptions(tt.factoryOptions...)
+			cfg := factory.CreateDefaultConfig()
+			oCfg := cfg.(*Config)
+			oCfg.ErrorMode = ottl.IgnoreError
+			oCfg.LogStatements = tt.statements
+
+			_, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
+	type testCase struct {
+		name           string
+		statements     []common.ContextStatements
+		factoryOptions []FactoryOption
+		wantErrorWith  string
+	}
+
+	tests := []testCase{
+		{
+			name: "with metric functions : statement with added metric func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("metric"),
+					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithMetricFunctionsNew(DefaultMetricFunctionsNew()),
+				WithMetricFunctionsNew([]ottl.Factory[*ottlmetric.TransformContext]{createTestFuncFactory[*ottlmetric.TransformContext]("TestMetricFunc")}),
+				WithDataPointFunctionsNew(DefaultDataPointFunctionsNew()),
+			},
+		},
+		{
+			name: "with metric functions : statement with missing metric func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("metric"),
+					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
+				},
+			},
+			wantErrorWith: `undefined function "TestMetricFunc"`,
+			factoryOptions: []FactoryOption{
+				WithMetricFunctionsNew(DefaultMetricFunctionsNew()),
+				WithDataPointFunctionsNew(DefaultDataPointFunctionsNew()),
+			},
+		},
+		{
+			name: "with metric functions : only custom functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("metric"),
+					Statements: []string{`testMetricFunc()`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithMetricFunctionsNew([]ottl.Factory[*ottlmetric.TransformContext]{createTestFuncFactory[*ottlmetric.TransformContext]("testMetricFunc")}),
+			},
+		},
+		{
+			name: "with metric functions : missing default functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("metric"),
+					Statements: []string{`set(description, "TestMetricFunc()")`},
+				},
+			},
+			wantErrorWith: `undefined function "set"`,
+			factoryOptions: []FactoryOption{
+				WithMetricFunctionsNew([]ottl.Factory[*ottlmetric.TransformContext]{createTestFuncFactory[*ottlmetric.TransformContext]("TestMetricFunc")}),
+			},
+		},
+		{
+			name: "with datapoint functions : statement with added datapoint func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("datapoint"),
+					Statements: []string{`set(cache["attr"], TestDataPointFunc())`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithMetricFunctionsNew(DefaultMetricFunctionsNew()),
+				WithDataPointFunctionsNew(DefaultDataPointFunctionsNew()),
+				WithDataPointFunctionsNew([]ottl.Factory[*ottldatapoint.TransformContext]{createTestFuncFactory[*ottldatapoint.TransformContext]("TestDataPointFunc")}),
+			},
+		},
+		{
+			name: "with datapoint functions : statement with missing datapoint func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("datapoint"),
+					Statements: []string{`set(cache["attr"], TestDataPointFunc())`},
+				},
+			},
+			wantErrorWith: `undefined function "TestDataPointFunc"`,
+			factoryOptions: []FactoryOption{
+				WithMetricFunctionsNew(DefaultMetricFunctionsNew()),
+				WithDataPointFunctionsNew(DefaultDataPointFunctionsNew()),
+			},
+		},
+		{
+			name: "with datapoint functions : only custom functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("datapoint"),
+					Statements: []string{`testDataPointFunc()`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithDataPointFunctionsNew([]ottl.Factory[*ottldatapoint.TransformContext]{createTestFuncFactory[*ottldatapoint.TransformContext]("testDataPointFunc")}),
+			},
+		},
+		{
+			name: "with datapoint functions : missing default functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("datapoint"),
+					Statements: []string{`set(attributes["test"], "TestDataPointFunc()")`},
+				},
+			},
+			wantErrorWith: `undefined function "set"`,
+			factoryOptions: []FactoryOption{
+				WithDataPointFunctionsNew([]ottl.Factory[*ottldatapoint.TransformContext]{createTestFuncFactory[*ottldatapoint.TransformContext]("TestDataPointFunc")}),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactoryWithOptions(tt.factoryOptions...)
+			cfg := factory.CreateDefaultConfig()
+			oCfg := cfg.(*Config)
+			oCfg.ErrorMode = ottl.IgnoreError
+			oCfg.MetricStatements = tt.statements
+
+			_, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
+	type testCase struct {
+		name           string
+		statements     []common.ContextStatements
+		factoryOptions []FactoryOption
+		wantErrorWith  string
+	}
+
+	tests := []testCase{
+		{
+			name: "with profile functions : statement with added profile func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("profile"),
+					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithProfileFunctions(DefaultProfileFunctions()),
+				WithProfileFunctions([]ottl.Factory[ottlprofile.TransformContext]{createTestFuncFactory[ottlprofile.TransformContext]("TestProfileFunc")}),
+			},
+		},
+		{
+			name: "with profile functions : statement with missing profile func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("profile"),
+					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
+				},
+			},
+			wantErrorWith: `undefined function "TestProfileFunc"`,
+			factoryOptions: []FactoryOption{
+				WithProfileFunctions(DefaultProfileFunctions()),
+			},
+		},
+		{
+			name: "with profile functions : only custom functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("profile"),
+					Statements: []string{`testProfileFunc()`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithProfileFunctions([]ottl.Factory[ottlprofile.TransformContext]{createTestFuncFactory[ottlprofile.TransformContext]("testProfileFunc")}),
+			},
+		},
+		{
+			name: "with profile functions : missing default functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("profile"),
+					Statements: []string{`set(attributes["test"], TestProfileFunc())`},
+				},
+			},
+			wantErrorWith: `undefined function "set"`,
+			factoryOptions: []FactoryOption{
+				WithProfileFunctions([]ottl.Factory[ottlprofile.TransformContext]{createTestFuncFactory[ottlprofile.TransformContext]("TestProfileFunc")}),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactoryWithOptions(tt.factoryOptions...)
+			cfg := factory.CreateDefaultConfig()
+			oCfg := cfg.(*Config)
+			oCfg.ErrorMode = ottl.IgnoreError
+			oCfg.ProfileStatements = tt.statements
+
+			_, err := factory.(xprocessor.Factory).CreateProfiles(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }

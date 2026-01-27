@@ -57,16 +57,21 @@ type eventRecord struct {
 	NextStartTime *time.Time `mapstructure:"next_start_time"`
 }
 
-func newEventsReceiver(settings rcvr.Settings, c *Config, consumer consumer.Logs) *eventsReceiver {
+func newEventsReceiver(settings rcvr.Settings, c *Config, consumer consumer.Logs) (*eventsReceiver, error) {
+	client, err := internal.NewMongoDBAtlasClient(c.BaseURL, c.PublicKey, string(c.PrivateKey), c.BackOffConfig, settings.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MongoDB Atlas client for events receiver: %w", err)
+	}
+
 	r := &eventsReceiver{
-		client:        internal.NewMongoDBAtlasClient(c.PublicKey, string(c.PrivateKey), c.BackOffConfig, settings.Logger),
+		client:        client,
 		cfg:           c,
 		logger:        settings.Logger,
 		consumer:      consumer,
-		pollInterval:  c.Events.PollInterval,
+		pollInterval:  c.Events.Get().PollInterval,
 		wg:            &sync.WaitGroup{},
-		maxPages:      int(c.Events.MaxPages),
-		pageSize:      int(c.Events.PageSize),
+		maxPages:      int(c.Events.Get().MaxPages),
+		pageSize:      int(c.Events.Get().PageSize),
 		storageClient: storage.NewNopClient(),
 	}
 
@@ -82,7 +87,7 @@ func newEventsReceiver(settings rcvr.Settings, c *Config, consumer consumer.Logs
 		r.pollInterval = time.Minute
 	}
 
-	return r
+	return r, nil
 }
 
 func (er *eventsReceiver) Start(ctx context.Context, _ component.Host, storageClient storage.Client) error {
@@ -101,8 +106,7 @@ func (er *eventsReceiver) Shutdown(ctx context.Context) error {
 	er.wg.Wait()
 
 	var err []error
-	err = append(err, er.client.Shutdown())
-	err = append(err, er.checkpoint(ctx))
+	err = append(err, er.client.Shutdown(), er.checkpoint(ctx))
 
 	return errors.Join(err...)
 }
@@ -134,7 +138,7 @@ func (er *eventsReceiver) pollEvents(ctx context.Context) error {
 	}
 	et := time.Now()
 
-	for _, pc := range er.cfg.Events.Projects {
+	for _, pc := range er.cfg.Events.Get().Projects {
 		project, err := er.client.GetProject(ctx, pc.Name)
 		if err != nil {
 			er.logger.Error("error retrieving project information for "+pc.Name+":", zap.Error(err))
@@ -143,7 +147,7 @@ func (er *eventsReceiver) pollEvents(ctx context.Context) error {
 		er.pollProject(ctx, project, pc, st, et)
 	}
 
-	for _, pc := range er.cfg.Events.Organizations {
+	for _, pc := range er.cfg.Events.Get().Organizations {
 		org, err := er.client.GetOrganization(ctx, pc.ID)
 		if err != nil {
 			er.logger.Error("error retrieving org information for "+pc.ID+":", zap.Error(err))
@@ -160,7 +164,7 @@ func (er *eventsReceiver) pollProject(ctx context.Context, project *mongodbatlas
 	for pageN := 1; pageN <= er.maxPages; pageN++ {
 		opts := &internal.GetEventsOptions{
 			PageNum:    pageN,
-			EventTypes: er.cfg.Events.Types,
+			EventTypes: er.cfg.Events.Get().Types,
 			MaxDate:    now,
 			MinDate:    startTime,
 		}
@@ -191,7 +195,7 @@ func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organiz
 	for pageN := 1; pageN <= er.maxPages; pageN++ {
 		opts := &internal.GetEventsOptions{
 			PageNum:    pageN,
-			EventTypes: er.cfg.Events.Types,
+			EventTypes: er.cfg.Events.Get().Types,
 			MaxDate:    now,
 			MinDate:    startTime,
 		}

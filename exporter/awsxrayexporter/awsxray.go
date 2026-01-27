@@ -67,12 +67,7 @@ func newTracesExporter(
 			}
 
 			for offset := 0; offset < len(documents); offset += maxSegmentsPerPut {
-				var nextOffset int
-				if offset+maxSegmentsPerPut > len(documents) {
-					nextOffset = len(documents)
-				} else {
-					nextOffset = offset + maxSegmentsPerPut
-				}
+				nextOffset := min(offset+maxSegmentsPerPut, len(documents))
 				input := xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents[offset:nextOffset]}
 				logger.Debug("request: " + input.String())
 				output, localErr := xrayClient.PutTraceSegments(&input)

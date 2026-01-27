@@ -17,30 +17,30 @@ import (
 )
 
 var testMetadata = map[string]scrape.MetricMetadata{
-	"counter_test":    {Metric: "counter_test", Type: model.MetricTypeCounter, Help: "", Unit: ""},
-	"counter_test2":   {Metric: "counter_test2", Type: model.MetricTypeCounter, Help: "", Unit: ""},
-	"gauge_test":      {Metric: "gauge_test", Type: model.MetricTypeGauge, Help: "", Unit: ""},
-	"gauge_test2":     {Metric: "gauge_test2", Type: model.MetricTypeGauge, Help: "", Unit: ""},
-	"hist_test":       {Metric: "hist_test", Type: model.MetricTypeHistogram, Help: "", Unit: ""},
-	"hist_test2":      {Metric: "hist_test2", Type: model.MetricTypeHistogram, Help: "", Unit: ""},
-	"ghist_test":      {Metric: "ghist_test", Type: model.MetricTypeGaugeHistogram, Help: "", Unit: ""},
-	"summary_test":    {Metric: "summary_test", Type: model.MetricTypeSummary, Help: "", Unit: ""},
-	"summary_test2":   {Metric: "summary_test2", Type: model.MetricTypeSummary, Help: "", Unit: ""},
-	"unknown_test":    {Metric: "unknown_test", Type: model.MetricTypeUnknown, Help: "", Unit: ""},
-	"poor_name":       {Metric: "poor_name", Type: model.MetricTypeGauge, Help: "", Unit: ""},
-	"poor_name_count": {Metric: "poor_name_count", Type: model.MetricTypeCounter, Help: "", Unit: ""},
-	"scrape_foo":      {Metric: "scrape_foo", Type: model.MetricTypeCounter, Help: "", Unit: ""},
+	"counter_test":    {MetricFamily: "counter_test", Type: model.MetricTypeCounter, Help: "", Unit: ""},
+	"counter_test2":   {MetricFamily: "counter_test2", Type: model.MetricTypeCounter, Help: "", Unit: ""},
+	"gauge_test":      {MetricFamily: "gauge_test", Type: model.MetricTypeGauge, Help: "", Unit: ""},
+	"gauge_test2":     {MetricFamily: "gauge_test2", Type: model.MetricTypeGauge, Help: "", Unit: ""},
+	"hist_test":       {MetricFamily: "hist_test", Type: model.MetricTypeHistogram, Help: "", Unit: ""},
+	"hist_test2":      {MetricFamily: "hist_test2", Type: model.MetricTypeHistogram, Help: "", Unit: ""},
+	"ghist_test":      {MetricFamily: "ghist_test", Type: model.MetricTypeGaugeHistogram, Help: "", Unit: ""},
+	"summary_test":    {MetricFamily: "summary_test", Type: model.MetricTypeSummary, Help: "", Unit: ""},
+	"summary_test2":   {MetricFamily: "summary_test2", Type: model.MetricTypeSummary, Help: "", Unit: ""},
+	"unknown_test":    {MetricFamily: "unknown_test", Type: model.MetricTypeUnknown, Help: "", Unit: ""},
+	"poor_name":       {MetricFamily: "poor_name", Type: model.MetricTypeGauge, Help: "", Unit: ""},
+	"poor_name_count": {MetricFamily: "poor_name_count", Type: model.MetricTypeCounter, Help: "", Unit: ""},
+	"scrape_foo":      {MetricFamily: "scrape_foo", Type: model.MetricTypeCounter, Help: "", Unit: ""},
 	"example_process_start_time_seconds": {
-		Metric: "example_process_start_time_seconds",
-		Type:   model.MetricTypeGauge, Help: "", Unit: "",
+		MetricFamily: "example_process_start_time_seconds",
+		Type:         model.MetricTypeGauge, Help: "", Unit: "",
 	},
 	"process_start_time_seconds": {
-		Metric: "process_start_time_seconds",
-		Type:   model.MetricTypeGauge, Help: "", Unit: "",
+		MetricFamily: "process_start_time_seconds",
+		Type:         model.MetricTypeGauge, Help: "", Unit: "",
 	},
 	"subprocess_start_time_seconds": {
-		Metric: "subprocess_start_time_seconds",
-		Type:   model.MetricTypeGauge, Help: "", Unit: "",
+		MetricFamily: "subprocess_start_time_seconds",
+		Type:         model.MetricTypeGauge, Help: "", Unit: "",
 	},
 }
 
@@ -59,6 +59,7 @@ func TestConvToMetricType(t *testing.T) {
 	tests := []struct {
 		name          string
 		mtype         model.MetricType
+		isExponential bool
 		want          pmetric.MetricType
 		wantMonotonic bool
 	}{
@@ -84,6 +85,13 @@ func TestConvToMetricType(t *testing.T) {
 			name:          "model.histogram",
 			mtype:         model.MetricTypeHistogram,
 			want:          pmetric.MetricTypeHistogram,
+			wantMonotonic: true,
+		},
+		{
+			name:          "model.histogram",
+			mtype:         model.MetricTypeHistogram,
+			isExponential: true,
+			want:          pmetric.MetricTypeExponentialHistogram,
 			wantMonotonic: true,
 		},
 		{
@@ -114,7 +122,7 @@ func TestConvToMetricType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, monotonic := convToMetricType(tt.mtype)
+			got, monotonic := convToMetricType(tt.mtype, tt.isExponential)
 			require.Equal(t, got.String(), tt.want.String())
 			require.Equal(t, tt.wantMonotonic, monotonic)
 		})

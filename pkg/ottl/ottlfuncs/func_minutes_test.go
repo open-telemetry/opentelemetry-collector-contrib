@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -22,7 +23,7 @@ func Test_Minutes(t *testing.T) {
 		{
 			name: "100 minutes",
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.ParseDuration("100m")
 				},
 			},
@@ -31,7 +32,7 @@ func Test_Minutes(t *testing.T) {
 		{
 			name: "1 hour",
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.ParseDuration("1h")
 				},
 			},
@@ -40,7 +41,7 @@ func Test_Minutes(t *testing.T) {
 		{
 			name: "234 milliseconds",
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.ParseDuration("234ms")
 				},
 			},
@@ -49,7 +50,7 @@ func Test_Minutes(t *testing.T) {
 		{
 			name: "1 hour 40 mins 3 seconds 30 milliseconds 100 microseconds 1 nanosecond",
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return time.ParseDuration("1h40m3s30ms100us1ns")
 				},
 			},
@@ -59,9 +60,9 @@ func Test_Minutes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := Minutes(tt.duration)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

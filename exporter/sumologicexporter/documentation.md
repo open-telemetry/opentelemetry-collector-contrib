@@ -8,32 +8,32 @@ The following telemetry is emitted by this component.
 
 ### otelcol_exporter_requests_bytes
 
-Total size of requests (in bytes)
+Total size of requests (in bytes) [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| By | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| By | Sum | Int | true | Development |
 
 ### otelcol_exporter_requests_duration
 
-Duration of HTTP requests (in milliseconds)
+Duration of HTTP requests (in milliseconds) [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| ms | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| ms | Sum | Int | true | Development |
 
 ### otelcol_exporter_requests_records
 
-Total size of requests (in number of records)
+Total size of requests (in number of records) [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {records} | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {records} | Sum | Int | true | Development |
 
 ### otelcol_exporter_requests_sent
 
-Number of requests
+Number of requests [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |

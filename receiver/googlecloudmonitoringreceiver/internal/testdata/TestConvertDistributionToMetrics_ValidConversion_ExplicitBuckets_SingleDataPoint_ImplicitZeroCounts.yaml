@@ -1,0 +1,24 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - bucketCounts:
+                    - "5"
+                    - "11"
+                    - "20"
+                    - "0"
+                    - "0"
+                    - "0"
+                  count: "36"
+                  explicitBounds:
+                    - 0
+                    - 50
+                    - 100
+                    - 150
+                    - 200
+                  startTimeUnixNano: "13000000000"
+                  timeUnixNano: "73000000000"
+        scope: {}

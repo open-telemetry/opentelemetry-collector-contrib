@@ -340,20 +340,20 @@ func BenchmarkFileRead(b *testing.B) {
 	_, err := temp.WriteString(temp.Name() + "\n")
 	require.NoError(b, err)
 	// Write half the content before starting the benchmark
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		_, err := temp.WriteString(string(filetest.TokenWithLength(999)) + "\n")
 		require.NoError(b, err)
 	}
 
 	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
 	counter := atomic.Int64{}
-	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64) error {
+	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
 		counter.Add(int64(len(tokens)))
 		return nil
 	})
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for i := 0; b.Loop(); i++ {
 		file, err := os.OpenFile(temp.Name(), os.O_CREATE|os.O_RDWR, 0o600)
 		require.NoError(b, err)
 		fp, err := f.NewFingerprint(file)

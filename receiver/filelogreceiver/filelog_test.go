@@ -185,7 +185,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	}()
 	require.NoError(t, err)
 
-	for i := 0; i < numLogs; i++ {
+	for i := range numLogs {
 		if (i+1)%maxLinesPerFile == 0 {
 			if rt.copyTruncate {
 				// Recreate the backup file
@@ -367,7 +367,7 @@ func (g *fileLogGenerator) Stop() {
 
 func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
 	id := receivertest.UniqueIDAttrVal(strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10))
-	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id,
+	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id, //nolint:gocritic //sprintfQuotedString for JSON
 		receivertest.UniqueIDAttrName, id)
 	_, err := g.tmpFile.WriteString(logLine + "\n")
 	require.NoError(g.t, err)

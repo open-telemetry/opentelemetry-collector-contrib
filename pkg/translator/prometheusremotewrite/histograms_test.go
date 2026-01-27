@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/prompb"
+	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type expectedBucketLayout struct {
@@ -386,7 +386,7 @@ func BenchmarkConvertBucketLayout(b *testing.B) {
 	for _, scenario := range scenarios {
 		buckets := pmetric.NewExponentialHistogramDataPointBuckets()
 		buckets.SetOffset(0)
-		for i := 0; i < 1000; i++ {
+		for i := range 1000 {
 			if i%(scenario.gap+1) == 0 {
 				buckets.BucketCounts().Append(10)
 			} else {
@@ -394,7 +394,7 @@ func BenchmarkConvertBucketLayout(b *testing.B) {
 			}
 		}
 		b.Run(fmt.Sprintf("gap %d", scenario.gap), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				convertBucketsLayout(buckets, 0)
 			}
 		})
@@ -738,12 +738,15 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
 
-			converter := newPrometheusConverter()
+			converter := newPrometheusConverter(Settings{})
+			metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: true}
+			metricName, err := metricNamer.Build(prom.TranslatorMetricFromOtelMetric(metric))
+			require.NoError(t, err)
 			require.NoError(t, converter.addExponentialHistogramDataPoints(
 				metric.ExponentialHistogram().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
-				prometheustranslator.BuildCompliantName(metric, "", true),
+				metricName,
 			))
 
 			assert.Equal(t, tt.wantSeries(), converter.unique)

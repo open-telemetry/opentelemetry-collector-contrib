@@ -46,7 +46,7 @@ func newLogsExporter(_ context.Context, cfg component.Config, set exporter.Setti
 }
 
 func (e *logExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.ToClient(ctx, host, e.settings)
+	client, err := e.config.ToClient(ctx, host.GetExtensions(), e.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %w", err)
 	}
@@ -87,8 +87,9 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 					resourceMapperMap[key] = value.AsRaw()
 				}
 
-				e.settings.Logger.Debug("Sending log data", zap.String("body", log.Body().Str()), zap.Any("resourcemap", resourceMapperMap), zap.Any("metadatamap", logMetadataMap))
-				payload = append(payload, translator.ConvertToLMLogInput(log.Body().AsRaw(), timestampFromLogRecord(log).String(), resourceMapperMap, logMetadataMap))
+				loglevel := log.SeverityNumber().String()
+				e.settings.Logger.Debug("Sending log data", zap.String("body", log.Body().Str()), zap.Any("resourcemap", resourceMapperMap), zap.Any("metadatamap", logMetadataMap), zap.String("loglevel", loglevel))
+				payload = append(payload, translator.ConvertToLMLogInput(log.Body().AsRaw(), loglevel, timestampFromLogRecord(log).String(), resourceMapperMap, logMetadataMap))
 			}
 		}
 	}
@@ -104,10 +105,11 @@ func (e *logExporter) shutdown(_ context.Context) error {
 }
 
 func buildLogIngestOpts(config *Config, client *http.Client) []lmsdklogs.Option {
+	authHeader, _ := config.Headers.Get("Authorization")
 	authParams := utils.AuthParams{
 		AccessID:    config.APIToken.AccessID,
 		AccessKey:   string(config.APIToken.AccessKey),
-		BearerToken: string(config.Headers["Authorization"]),
+		BearerToken: string(authHeader),
 	}
 
 	opts := []lmsdklogs.Option{

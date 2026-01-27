@@ -11,12 +11,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"regexp"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -33,8 +33,8 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/api"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/api"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/credentials"
 )
 
 type SumologicExtension struct {
@@ -62,10 +62,11 @@ type SumologicExtension struct {
 	stickySessionCookieLock sync.RWMutex
 	stickySessionCookie     string
 
-	closeChan chan struct{}
-	closeOnce sync.Once
-	backOff   *backoff.ExponentialBackOff
-	id        component.ID
+	closeChan            chan struct{}
+	closeOnce            sync.Once
+	backOff              *backoff.ExponentialBackOff
+	id                   component.ID
+	collectorCredentials credentials.CollectorCredentials
 }
 
 const (
@@ -130,7 +131,16 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 	var (
 		collectorName string
 		hashKey       = createHashKey(conf)
+		hashKeyV2     = createHashKeyV2(conf)
 	)
+
+	_, err = credentialsStore.Get(hashKeyV2)
+	if err != nil {
+		logger.Info("credentials not found, trying legacy credentials", zap.Error(err))
+	} else {
+		logger.Debug("v2 credentials found")
+		hashKey = hashKeyV2
+	}
 	if conf.CollectorName == "" {
 		// If collector name is not set by the user, check if the collector was restarted
 		// and that we can reuse collector name save in credentials store.
@@ -179,6 +189,13 @@ func createHashKey(conf *Config) string {
 	)
 }
 
+func createHashKeyV2(conf *Config) string {
+	return fmt.Sprintf("%s%s",
+		conf.Credentials.InstallationToken,
+		strings.TrimSuffix(conf.APIBaseURL, "/"),
+	)
+}
+
 func (se *SumologicExtension) Start(ctx context.Context, host component.Host) error {
 	var err error
 	se.host = host
@@ -192,11 +209,13 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 	}
 
 	colCreds, err := se.getCredentials(ctx)
+	se.collectorCredentials = colCreds
 	if err != nil {
 		return err
 	}
 
-	if err = se.injectCredentials(ctx, colCreds); err != nil {
+	err = se.injectCredentials(ctx, colCreds)
+	if err != nil {
 		return err
 	}
 
@@ -218,9 +237,20 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 	return nil
 }
 
-// Shutdown is invoked during service shutdown.
 func (se *SumologicExtension) Shutdown(ctx context.Context) error {
 	se.closeOnce.Do(func() { close(se.closeChan) })
+
+	hashKeyV2 := createHashKeyV2(se.conf)
+	_, err := se.credentialsStore.Get(hashKeyV2)
+	se.logger.Debug("Shutting down Sumo Logic extension migrating to hashkeyV2 ")
+	if err != nil {
+		se.logger.Warn("Failed to get collector v2 credentials on shutdown, migrating to v2", zap.Error(err))
+		err := se.credentialsStore.Store(hashKeyV2, se.collectorCredentials)
+		if err != nil {
+			se.logger.Warn("Failed to migrate collector credentials to v2 on shutdown", zap.Error(err))
+		}
+	}
+
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -304,7 +334,7 @@ func (se *SumologicExtension) getHTTPClient(
 ) (*http.Client, error) {
 	httpClient, err := httpClientSettings.ToClient(
 		ctx,
-		se.host,
+		se.host.GetExtensions(),
 		componenttest.NewNopTelemetrySettings(),
 	)
 	if err != nil {
@@ -429,7 +459,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	}
 
 	var buff bytes.Buffer
-	if err = json.NewEncoder(&buff).Encode(api.OpenRegisterRequestPayload{
+	err = json.NewEncoder(&buff).Encode(api.OpenRegisterRequestPayload{
 		CollectorName: collectorName,
 		Description:   se.conf.CollectorDescription,
 		Category:      se.conf.CollectorCategory,
@@ -438,7 +468,8 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 		Ephemeral:     se.conf.Ephemeral,
 		Clobber:       se.conf.Clobber,
 		TimeZone:      se.conf.TimeZone,
-	}); err != nil {
+	})
+	if err != nil {
 		return credentials.CollectorCredentials{}, err
 	}
 
@@ -634,12 +665,12 @@ var (
 	errUnauthorizedMetadata  = errors.New("metadata update unauthorized")
 )
 
-type ErrorAPI struct {
+type errorAPI struct {
 	status int
 	body   string
 }
 
-func (e ErrorAPI) Error() string {
+func (e errorAPI) Error() string {
 	return fmt.Sprintf("API error (status code: %d): %s", e.status, e.body)
 }
 
@@ -648,7 +679,7 @@ func (se *SumologicExtension) sendHeartbeatWithHTTPClient(ctx context.Context, h
 	if err != nil {
 		return fmt.Errorf("unable to parse heartbeat URL %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("unable to create HTTP request %w", err)
 	}
@@ -672,7 +703,7 @@ func (se *SumologicExtension) sendHeartbeatWithHTTPClient(ctx context.Context, h
 		}
 
 		return fmt.Errorf("collector heartbeat request failed: %w",
-			ErrorAPI{
+			errorAPI{
 				status: res.StatusCode,
 				body:   buff.String(),
 			},
@@ -736,23 +767,22 @@ func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 
 	processes, err := process.Processes()
 	if err != nil {
-		return pl, err
+		return pl, fmt.Errorf("process discovery failed: %w", err)
 	}
 
 	for _, v := range processes {
 		e, err := v.Name()
 		if err != nil {
-			if runtime.GOOS == "windows" {
-				// On Windows, if we can't get a process name, it is likely a zombie process, assume that and skip them.
-				se.logger.Warn(
-					"Failed to get executable name, it is likely a zombie process, skipping it",
-					zap.Int32("pid", v.Pid),
-					zap.Error(err))
-				continue
-			}
-
-			return nil, fmt.Errorf("Error getting executable name: %w", err)
+			// If we can't get a process name, it may be a zombie process.
+			// We do not want to error out here, as it's not worth disrupting
+			// the startup process of the collector.
+			se.logger.Warn(
+				"process discovery: failed to get executable name (is it a zombie?)",
+				zap.Int32("pid", v.Pid),
+				zap.Error(err))
+			continue
 		}
+
 		e = strings.ToLower(e)
 
 		if a, i := sumoAppProcesses[e]; i {
@@ -768,7 +798,11 @@ func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 		if e == "java" {
 			cmdline, err := v.Cmdline()
 			if err != nil {
-				return nil, fmt.Errorf("error getting executable name for PID %d: %w", v.Pid, err)
+				se.logger.Warn(
+					"process discovery: failed to get process arguments",
+					zap.Int32("pid", v.Pid),
+					zap.Error(err))
+				continue
 			}
 
 			switch {
@@ -832,12 +866,10 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 		}
 	}
 
-	for k, v := range se.conf.CollectorFields {
-		td[k] = v
-	}
+	maps.Copy(td, se.conf.CollectorFields)
 
 	var buff bytes.Buffer
-	if err = json.NewEncoder(&buff).Encode(api.OpenMetadataRequestPayload{
+	err = json.NewEncoder(&buff).Encode(api.OpenMetadataRequestPayload{
 		HostDetails: api.OpenMetadataHostDetails{
 			Name:        hostname,
 			OsName:      info.OS,
@@ -851,7 +883,8 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			HostIPAddress: ip,
 		},
 		TagDetails: td,
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
@@ -887,7 +920,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			zap.String("body", buff.String()))
 
 		return fmt.Errorf("collector metadata request failed: %w",
-			ErrorAPI{
+			errorAPI{
 				status: res.StatusCode,
 				body:   buff.String(),
 			},
@@ -1066,7 +1099,7 @@ func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func addCollectorCredentials(req *http.Request, collectorCredentialID string, collectorCredentialKey string) {
+func addCollectorCredentials(req *http.Request, collectorCredentialID, collectorCredentialKey string) {
 	token := base64.StdEncoding.EncodeToString(
 		[]byte(collectorCredentialID + ":" + collectorCredentialKey),
 	)

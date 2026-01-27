@@ -11,11 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
@@ -46,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				Splitting:  SplittingStrategyLine,
 				HealthPath: "/bar",
 				Ack:        Ack{Path: "/services/collector/ack"},
-				HecToOtelAttrs: splunk.HecToOtelAttrs{
+				HecToOtelAttrs: translator.HecToOtelAttrs{
 					Source:     "file.name",
 					SourceType: "foobar",
 					Index:      "myindex",
@@ -59,12 +61,12 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:8088",
-					TLSSetting: &configtls.ServerConfig{
+					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "/test.crt",
 							KeyFile:  "/test.key",
 						},
-					},
+					}),
 				},
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: false,
@@ -73,7 +75,7 @@ func TestLoadConfig(t *testing.T) {
 				Splitting:  SplittingStrategyLine,
 				HealthPath: "/services/collector/health",
 				Ack:        Ack{Path: "/services/collector/ack"},
-				HecToOtelAttrs: splunk.HecToOtelAttrs{
+				HecToOtelAttrs: translator.HecToOtelAttrs{
 					Source:     "com.splunk.source",
 					SourceType: "com.splunk.sourcetype",
 					Index:      "com.splunk.index",

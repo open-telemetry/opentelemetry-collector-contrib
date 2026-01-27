@@ -10,12 +10,28 @@ SELECT
     COALESCE(query_id::TEXT, '') AS query_id,
     COALESCE(pid::TEXT, '') AS pid,
     COALESCE(application_name::TEXT, '') AS application_name,
+    EXTRACT(EPOCH FROM query_start) AS _query_start_timestamp,
     state,
-    query
+    query,
+    CASE
+    WHEN state = 'active' THEN
+        EXTRACT(EPOCH FROM (clock_timestamp() - query_start)) * 1e3
+    WHEN state IN ('idle','idle in transaction','idle in transaction (aborted)')
+        AND state_change IS NOT NULL THEN
+        EXTRACT(EPOCH FROM (state_change - query_start)) * 1e3
+    ELSE
+        NULL
+    END AS duration_ms
 FROM pg_stat_activity
 WHERE     
     coalesce(
       TRIM(query), 
       ''
     ) != ''
+    AND NOT (
+
+      query_start < TO_TIMESTAMP(123440.111)
+      AND state = 'idle'
+    )   
 LIMIT 30;
+

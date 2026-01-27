@@ -36,7 +36,7 @@ func (rc *logsRecordConsumer) ConsumeLogs(_ context.Context, logs plog.Logs) err
 	return nil
 }
 
-func (rc *logsRecordConsumer) Capabilities() consumer.Capabilities {
+func (*logsRecordConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -56,6 +56,10 @@ func TestLogsReceiver_Start(t *testing.T) {
 		},
 		"WithExtensionEncoding": {
 			encoding:            "otlp_logs",
+			wantUnmarshalerType: plogUnmarshalerExtension{},
+		},
+		"WithExtensionEncodingNamed": {
+			encoding:            "otlp_logs/name",
 			wantUnmarshalerType: plogUnmarshalerExtension{},
 		},
 		"WithDeprecatedRecordType": {
@@ -90,8 +94,9 @@ func TestLogsReceiver_Start(t *testing.T) {
 
 			host := hostWithExtensions{
 				extensions: map[component.ID]component.Component{
-					component.MustNewID("otlp_logs"):    plogUnmarshalerExtension{},
-					component.MustNewID("otlp_metrics"): pmetricUnmarshalerExtension{},
+					component.MustNewID("otlp_logs"):                 plogUnmarshalerExtension{},
+					component.MustNewIDWithName("otlp_logs", "name"): plogUnmarshalerExtension{},
+					component.MustNewID("otlp_metrics"):              pmetricUnmarshalerExtension{},
 				},
 			}
 

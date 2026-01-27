@@ -84,7 +84,7 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 	return &traceExporter, nil
 }
 
-func (e *traceExporterImp) Capabilities() consumer.Capabilities {
+func (*traceExporterImp) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

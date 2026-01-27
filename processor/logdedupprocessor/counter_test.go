@@ -94,7 +94,7 @@ func Test_logAggregatorReset(t *testing.T) {
 	require.NoError(t, err)
 
 	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		resource := pcommon.NewResource()
 		resource.Attributes().PutInt("i", int64(i))
 		key := getResourceKey(resource)
@@ -135,10 +135,8 @@ func Test_logAggregatorExport(t *testing.T) {
 
 	scope := pcommon.NewInstrumentationScope()
 
-	logRecord := generateTestLogRecord(t, "body string")
-
 	// Add logRecord
-	aggregator.Add(resource, scope, logRecord)
+	aggregator.Add(resource, scope, generateTestLogRecord(t, "body string"))
 
 	exportedLogs := aggregator.Export(t.Context())
 	require.Equal(t, 1, exportedLogs.LogRecordCount())
@@ -156,15 +154,17 @@ func Test_logAggregatorExport(t *testing.T) {
 	require.Equal(t, 1, sl.LogRecords().Len())
 	actualLogRecord := sl.LogRecords().At(0)
 
+	expectedLogRecord := generateTestLogRecord(t, "body string")
+
 	// Check logRecord
-	require.Equal(t, logRecord.Body().AsString(), actualLogRecord.Body().AsString())
-	require.Equal(t, logRecord.SeverityNumber(), actualLogRecord.SeverityNumber())
-	require.Equal(t, logRecord.SeverityText(), actualLogRecord.SeverityText())
+	require.Equal(t, expectedLogRecord.Body().AsString(), actualLogRecord.Body().AsString())
+	require.Equal(t, expectedLogRecord.SeverityNumber(), actualLogRecord.SeverityNumber())
+	require.Equal(t, expectedLogRecord.SeverityText(), actualLogRecord.SeverityText())
 	require.Equal(t, expectedTimestamp.UnixMilli(), actualLogRecord.ObservedTimestamp().AsTime().UnixMilli())
 	require.Equal(t, expectedTimestamp.UnixMilli(), actualLogRecord.Timestamp().AsTime().UnixMilli())
 
 	actualRawAttrs := actualLogRecord.Attributes().AsRaw()
-	for key, val := range logRecord.Attributes().AsRaw() {
+	for key, val := range expectedLogRecord.Attributes().AsRaw() {
 		actualVal, ok := actualRawAttrs[key]
 		require.True(t, ok)
 		require.Equal(t, val, actualVal)
@@ -285,12 +285,44 @@ func Test_getLogKey(t *testing.T) {
 				)
 				expectedMulti := pdatautil.Hash64(
 					pdatautil.WithString(dedupValue),
-					pdatautil.WithString(dedupValue),
+					pdatautil.WithString(dedupValue), //nolint:gocritic // Intentional: testing multi-key deduplication with same value
 				)
 
 				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
 				require.Equal(t, expected, getLogKey(logRecord, []string{"attributes.dedup_key"}))
 				require.Equal(t, expectedMulti, getLogKey(logRecord, []string{"body.dedup_key", "attributes.dedup_key"}))
+			},
+		},
+		{
+			desc: "getLogKey hashes full message if dedup key is body-based and no body was provided",
+			testFunc: func(t *testing.T) {
+				logRecord := plog.NewLogRecord()
+				logRecord.Attributes().PutStr("str", "attr str")
+
+				expected := pdatautil.Hash64(
+					pdatautil.WithMap(logRecord.Attributes()),
+					pdatautil.WithValue(logRecord.Body()),
+					pdatautil.WithString(logRecord.SeverityNumber().String()),
+					pdatautil.WithString(logRecord.SeverityText()),
+				)
+
+				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
+			},
+		},
+		{
+			desc: "getLogKey hashes full message if dedup key is body-based and body is not map type",
+			testFunc: func(t *testing.T) {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("hello, this is a message body string")
+
+				expected := pdatautil.Hash64(
+					pdatautil.WithMap(logRecord.Attributes()),
+					pdatautil.WithValue(logRecord.Body()),
+					pdatautil.WithString(logRecord.SeverityNumber().String()),
+					pdatautil.WithString(logRecord.SeverityText()),
+				)
+
+				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
 			},
 		},
 	}

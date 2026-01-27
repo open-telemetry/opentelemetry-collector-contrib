@@ -6,10 +6,9 @@ package translator
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -21,7 +20,7 @@ func TestAddAWSToResource(t *testing.T) {
 	}{
 		"WithNil": {
 			want: map[string]any{
-				conventions.AttributeCloudProvider: "unknown",
+				"cloud.provider": "unknown",
 			},
 		},
 		"WithCloudWatchLogs": {
@@ -38,12 +37,12 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
-				conventions.AttributeAWSLogGroupARNs: []any{
+				"cloud.provider": "aws",
+				"aws.log.group.arns": []any{
 					"arn:aws:logs:<region>:<account>:log-group:<log-group-1>:*",
 					"arn:aws:logs:<region>:<account>:log-group:<log-group-2>:*",
 				},
-				conventions.AttributeAWSLogGroupNames: []any{"<log-group-1>", "<log-group-2>"},
+				"aws.log.group.names": []any{"<log-group-1>", "<log-group-2>"},
 			},
 		},
 		"WithEC2": {
@@ -56,11 +55,11 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderAWS,
-				conventions.AttributeCloudAvailabilityZone: "<ec2-az>",
-				conventions.AttributeHostID:                "<instance-id>",
-				conventions.AttributeHostType:              "<instance-size>",
-				conventions.AttributeHostImageID:           "<ami>",
+				"cloud.provider":          "aws",
+				"cloud.availability_zone": "<ec2-az>",
+				"host.id":                 "<instance-id>",
+				"host.type":               "<instance-size>",
+				"host.image.id":           "<ami>",
 			},
 		},
 		"WithECS": {
@@ -72,10 +71,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderAWS,
-				conventions.AttributeCloudAvailabilityZone: "<ecs-az>",
-				conventions.AttributeContainerName:         "<container-name>",
-				conventions.AttributeContainerID:           "<ecs-container-id>",
+				"cloud.provider":          "aws",
+				"cloud.availability_zone": "<ecs-az>",
+				"container.name":          "<container-name>",
+				"container.id":            "<ecs-container-id>",
 			},
 		},
 		"WithEKS": {
@@ -87,10 +86,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAWS,
-				conventions.AttributeK8SPodName:     "<pod>",
-				conventions.AttributeK8SClusterName: "<cluster-name>",
-				conventions.AttributeContainerID:    "<eks-container-id>",
+				"cloud.provider":   "aws",
+				"k8s.pod.name":     "<pod>",
+				"k8s.cluster.name": "<cluster-name>",
+				"container.id":     "<eks-container-id>",
 			},
 		},
 		"WithBeanstalk": {
@@ -102,10 +101,10 @@ func TestAddAWSToResource(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				conventions.AttributeCloudProvider:     conventions.AttributeCloudProviderAWS,
-				conventions.AttributeServiceNamespace:  "<environment>",
-				conventions.AttributeServiceInstanceID: "1",
-				conventions.AttributeServiceVersion:    "<version-label>",
+				"cloud.provider":      "aws",
+				"service.namespace":   "<environment>",
+				"service.instance.id": "1",
+				"service.version":     "<version-label>",
 			},
 		},
 	}

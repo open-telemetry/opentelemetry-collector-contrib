@@ -54,6 +54,9 @@ var MetricsInfo = metricsInfo{
 	SplunkIndexerRawWriteTime: metricInfo{
 		Name: "splunk.indexer.raw.write.time",
 	},
+	SplunkIndexerRollingrestartStatus: metricInfo{
+		Name: "splunk.indexer.rollingrestart.status",
+	},
 	SplunkIndexerThroughput: metricInfo{
 		Name: "splunk.indexer.throughput",
 	},
@@ -84,6 +87,9 @@ var MetricsInfo = metricsInfo{
 	SplunkKvstoreStatus: metricInfo{
 		Name: "splunk.kvstore.status",
 	},
+	SplunkLicenseExpirationSecondsRemaining: metricInfo{
+		Name: "splunk.license.expiration.seconds_remaining",
+	},
 	SplunkLicenseIndexUsage: metricInfo{
 		Name: "splunk.license.index.usage",
 	},
@@ -102,6 +108,18 @@ var MetricsInfo = metricsInfo{
 	SplunkSchedulerCompletionRatio: metricInfo{
 		Name: "splunk.scheduler.completion.ratio",
 	},
+	SplunkSearchDuration: metricInfo{
+		Name: "splunk.search.duration",
+	},
+	SplunkSearchInitiation: metricInfo{
+		Name: "splunk.search.initiation",
+	},
+	SplunkSearchStatus: metricInfo{
+		Name: "splunk.search.status",
+	},
+	SplunkSearchSuccess: metricInfo{
+		Name: "splunk.search.success",
+	},
 	SplunkServerIntrospectionQueuesCurrent: metricInfo{
 		Name: "splunk.server.introspection.queues.current",
 	},
@@ -111,11 +129,20 @@ var MetricsInfo = metricsInfo{
 	SplunkServerSearchartifactsAdhoc: metricInfo{
 		Name: "splunk.server.searchartifacts.adhoc",
 	},
+	SplunkServerSearchartifactsAdhocSize: metricInfo{
+		Name: "splunk.server.searchartifacts.adhoc.size",
+	},
 	SplunkServerSearchartifactsCompleted: metricInfo{
 		Name: "splunk.server.searchartifacts.completed",
 	},
+	SplunkServerSearchartifactsCompletedSize: metricInfo{
+		Name: "splunk.server.searchartifacts.completed.size",
+	},
 	SplunkServerSearchartifactsIncomplete: metricInfo{
 		Name: "splunk.server.searchartifacts.incomplete",
+	},
+	SplunkServerSearchartifactsIncompleteSize: metricInfo{
+		Name: "splunk.server.searchartifacts.incomplete.size",
 	},
 	SplunkServerSearchartifactsInvalid: metricInfo{
 		Name: "splunk.server.searchartifacts.invalid",
@@ -131,6 +158,9 @@ var MetricsInfo = metricsInfo{
 	},
 	SplunkServerSearchartifactsScheduled: metricInfo{
 		Name: "splunk.server.searchartifacts.scheduled",
+	},
+	SplunkServerSearchartifactsScheduledSize: metricInfo{
+		Name: "splunk.server.searchartifacts.scheduled.size",
 	},
 	SplunkTypingQueueRatio: metricInfo{
 		Name: "splunk.typing.queue.ratio",
@@ -152,6 +182,7 @@ type metricsInfo struct {
 	SplunkIndexerCPUTime                        metricInfo
 	SplunkIndexerQueueRatio                     metricInfo
 	SplunkIndexerRawWriteTime                   metricInfo
+	SplunkIndexerRollingrestartStatus           metricInfo
 	SplunkIndexerThroughput                     metricInfo
 	SplunkIndexesAvgSize                        metricInfo
 	SplunkIndexesAvgUsage                       metricInfo
@@ -162,22 +193,31 @@ type metricsInfo struct {
 	SplunkKvstoreBackupStatus                   metricInfo
 	SplunkKvstoreReplicationStatus              metricInfo
 	SplunkKvstoreStatus                         metricInfo
+	SplunkLicenseExpirationSecondsRemaining     metricInfo
 	SplunkLicenseIndexUsage                     metricInfo
 	SplunkParseQueueRatio                       metricInfo
 	SplunkPipelineSetCount                      metricInfo
 	SplunkSchedulerAvgExecutionLatency          metricInfo
 	SplunkSchedulerAvgRunTime                   metricInfo
 	SplunkSchedulerCompletionRatio              metricInfo
+	SplunkSearchDuration                        metricInfo
+	SplunkSearchInitiation                      metricInfo
+	SplunkSearchStatus                          metricInfo
+	SplunkSearchSuccess                         metricInfo
 	SplunkServerIntrospectionQueuesCurrent      metricInfo
 	SplunkServerIntrospectionQueuesCurrentBytes metricInfo
 	SplunkServerSearchartifactsAdhoc            metricInfo
+	SplunkServerSearchartifactsAdhocSize        metricInfo
 	SplunkServerSearchartifactsCompleted        metricInfo
+	SplunkServerSearchartifactsCompletedSize    metricInfo
 	SplunkServerSearchartifactsIncomplete       metricInfo
+	SplunkServerSearchartifactsIncompleteSize   metricInfo
 	SplunkServerSearchartifactsInvalid          metricInfo
 	SplunkServerSearchartifactsJobCacheCount    metricInfo
 	SplunkServerSearchartifactsJobCacheSize     metricInfo
 	SplunkServerSearchartifactsSavedsearches    metricInfo
 	SplunkServerSearchartifactsScheduled        metricInfo
+	SplunkServerSearchartifactsScheduledSize    metricInfo
 	SplunkTypingQueueRatio                      metricInfo
 }
 
@@ -932,6 +972,60 @@ func newMetricSplunkIndexerRawWriteTime(cfg MetricConfig) metricSplunkIndexerRaw
 	return m
 }
 
+type metricSplunkIndexerRollingrestartStatus struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.indexer.rollingrestart.status metric with initial data.
+func (m *metricSplunkIndexerRollingrestartStatus) init() {
+	m.data.SetName("splunk.indexer.rollingrestart.status")
+	m.data.SetDescription("The status of a rolling restart.")
+	m.data.SetUnit("{status}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkIndexerRollingrestartStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSearchableRestartAttributeValue bool, splunkRollingorrestartAttributeValue bool, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutBool("splunk.searchable.restart", splunkSearchableRestartAttributeValue)
+	dp.Attributes().PutBool("splunk.rollingorrestart", splunkRollingorrestartAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkIndexerRollingrestartStatus) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkIndexerRollingrestartStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkIndexerRollingrestartStatus(cfg MetricConfig) metricSplunkIndexerRollingrestartStatus {
+	m := metricSplunkIndexerRollingrestartStatus{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSplunkIndexerThroughput struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1464,6 +1558,61 @@ func newMetricSplunkKvstoreStatus(cfg MetricConfig) metricSplunkKvstoreStatus {
 	return m
 }
 
+type metricSplunkLicenseExpirationSecondsRemaining struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.license.expiration.seconds_remaining metric with initial data.
+func (m *metricSplunkLicenseExpirationSecondsRemaining) init() {
+	m.data.SetName("splunk.license.expiration.seconds_remaining")
+	m.data.SetDescription("Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.")
+	m.data.SetUnit("{seconds}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkLicenseExpirationSecondsRemaining) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkLicenseStatusAttributeValue string, splunkLicenseLabelAttributeValue string, splunkLicenseTypeAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.license.status", splunkLicenseStatusAttributeValue)
+	dp.Attributes().PutStr("splunk.license.label", splunkLicenseLabelAttributeValue)
+	dp.Attributes().PutStr("splunk.license.type", splunkLicenseTypeAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkLicenseExpirationSecondsRemaining) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkLicenseExpirationSecondsRemaining) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkLicenseExpirationSecondsRemaining(cfg MetricConfig) metricSplunkLicenseExpirationSecondsRemaining {
+	m := metricSplunkLicenseExpirationSecondsRemaining{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSplunkLicenseIndexUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1782,6 +1931,215 @@ func newMetricSplunkSchedulerCompletionRatio(cfg MetricConfig) metricSplunkSched
 	return m
 }
 
+type metricSplunkSearchDuration struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.search.duration metric with initial data.
+func (m *metricSplunkSearchDuration) init() {
+	m.data.SetName("splunk.search.duration")
+	m.data.SetDescription("Gauge tracking the duration in seconds of the last search probe call.")
+	m.data.SetUnit("{status}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkSearchDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkSearchDuration) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkSearchDuration) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkSearchDuration(cfg MetricConfig) metricSplunkSearchDuration {
+	m := metricSplunkSearchDuration{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkSearchInitiation struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.search.initiation metric with initial data.
+func (m *metricSplunkSearchInitiation) init() {
+	m.data.SetName("splunk.search.initiation")
+	m.data.SetDescription("Gauge tracking whether the last search probe successfully initiated a search.")
+	m.data.SetUnit("{status}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkSearchInitiation) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkSearchInitiation) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkSearchInitiation) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkSearchInitiation(cfg MetricConfig) metricSplunkSearchInitiation {
+	m := metricSplunkSearchInitiation{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkSearchStatus struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.search.status metric with initial data.
+func (m *metricSplunkSearchStatus) init() {
+	m.data.SetName("splunk.search.status")
+	m.data.SetDescription("Gauge tracking the dispatch status of the last search probe.")
+	m.data.SetUnit("{status}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkSearchStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSearchStateAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.search.state", splunkSearchStateAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkSearchStatus) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkSearchStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkSearchStatus(cfg MetricConfig) metricSplunkSearchStatus {
+	m := metricSplunkSearchStatus{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkSearchSuccess struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.search.success metric with initial data.
+func (m *metricSplunkSearchSuccess) init() {
+	m.data.SetName("splunk.search.success")
+	m.data.SetDescription("Gauge tracking whether the last search probe call was successful with the dispatch state 'DONE'.")
+	m.data.SetUnit("{status}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkSearchSuccess) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkSearchSuccess) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkSearchSuccess) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkSearchSuccess(cfg MetricConfig) metricSplunkSearchSuccess {
+	m := metricSplunkSearchSuccess{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSplunkServerIntrospectionQueuesCurrent struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1941,6 +2299,59 @@ func newMetricSplunkServerSearchartifactsAdhoc(cfg MetricConfig) metricSplunkSer
 	return m
 }
 
+type metricSplunkServerSearchartifactsAdhocSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.searchartifacts.adhoc.size metric with initial data.
+func (m *metricSplunkServerSearchartifactsAdhocSize) init() {
+	m.data.SetName("splunk.server.searchartifacts.adhoc.size")
+	m.data.SetDescription("Gauge total size (MB) of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.")
+	m.data.SetUnit("{search_artifacts}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerSearchartifactsAdhocSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerSearchartifactsAdhocSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerSearchartifactsAdhocSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerSearchartifactsAdhocSize(cfg MetricConfig) metricSplunkServerSearchartifactsAdhocSize {
+	m := metricSplunkServerSearchartifactsAdhocSize{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSplunkServerSearchartifactsCompleted struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1994,6 +2405,59 @@ func newMetricSplunkServerSearchartifactsCompleted(cfg MetricConfig) metricSplun
 	return m
 }
 
+type metricSplunkServerSearchartifactsCompletedSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.searchartifacts.completed.size metric with initial data.
+func (m *metricSplunkServerSearchartifactsCompletedSize) init() {
+	m.data.SetName("splunk.server.searchartifacts.completed.size")
+	m.data.SetDescription("Gauge total size (MB) of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.")
+	m.data.SetUnit("{search_artifacts}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerSearchartifactsCompletedSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerSearchartifactsCompletedSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerSearchartifactsCompletedSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerSearchartifactsCompletedSize(cfg MetricConfig) metricSplunkServerSearchartifactsCompletedSize {
+	m := metricSplunkServerSearchartifactsCompletedSize{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSplunkServerSearchartifactsIncomplete struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2040,6 +2504,59 @@ func (m *metricSplunkServerSearchartifactsIncomplete) emit(metrics pmetric.Metri
 
 func newMetricSplunkServerSearchartifactsIncomplete(cfg MetricConfig) metricSplunkServerSearchartifactsIncomplete {
 	m := metricSplunkServerSearchartifactsIncomplete{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkServerSearchartifactsIncompleteSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.searchartifacts.incomplete.size metric with initial data.
+func (m *metricSplunkServerSearchartifactsIncompleteSize) init() {
+	m.data.SetName("splunk.server.searchartifacts.incomplete.size")
+	m.data.SetDescription("Gauge total size (MB) of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.")
+	m.data.SetUnit("{search_artifacts}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerSearchartifactsIncompleteSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerSearchartifactsIncompleteSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerSearchartifactsIncompleteSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerSearchartifactsIncompleteSize(cfg MetricConfig) metricSplunkServerSearchartifactsIncompleteSize {
+	m := metricSplunkServerSearchartifactsIncompleteSize{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2313,6 +2830,59 @@ func newMetricSplunkServerSearchartifactsScheduled(cfg MetricConfig) metricSplun
 	return m
 }
 
+type metricSplunkServerSearchartifactsScheduledSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.searchartifacts.scheduled.size metric with initial data.
+func (m *metricSplunkServerSearchartifactsScheduledSize) init() {
+	m.data.SetName("splunk.server.searchartifacts.scheduled.size")
+	m.data.SetDescription("Gauge total size (MB) of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.")
+	m.data.SetUnit("{search_artifacts}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerSearchartifactsScheduledSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerSearchartifactsScheduledSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerSearchartifactsScheduledSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerSearchartifactsScheduledSize(cfg MetricConfig) metricSplunkServerSearchartifactsScheduledSize {
+	m := metricSplunkServerSearchartifactsScheduledSize{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSplunkTypingQueueRatio struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2388,6 +2958,7 @@ type MetricsBuilder struct {
 	metricSplunkIndexerCPUTime                        metricSplunkIndexerCPUTime
 	metricSplunkIndexerQueueRatio                     metricSplunkIndexerQueueRatio
 	metricSplunkIndexerRawWriteTime                   metricSplunkIndexerRawWriteTime
+	metricSplunkIndexerRollingrestartStatus           metricSplunkIndexerRollingrestartStatus
 	metricSplunkIndexerThroughput                     metricSplunkIndexerThroughput
 	metricSplunkIndexesAvgSize                        metricSplunkIndexesAvgSize
 	metricSplunkIndexesAvgUsage                       metricSplunkIndexesAvgUsage
@@ -2398,22 +2969,31 @@ type MetricsBuilder struct {
 	metricSplunkKvstoreBackupStatus                   metricSplunkKvstoreBackupStatus
 	metricSplunkKvstoreReplicationStatus              metricSplunkKvstoreReplicationStatus
 	metricSplunkKvstoreStatus                         metricSplunkKvstoreStatus
+	metricSplunkLicenseExpirationSecondsRemaining     metricSplunkLicenseExpirationSecondsRemaining
 	metricSplunkLicenseIndexUsage                     metricSplunkLicenseIndexUsage
 	metricSplunkParseQueueRatio                       metricSplunkParseQueueRatio
 	metricSplunkPipelineSetCount                      metricSplunkPipelineSetCount
 	metricSplunkSchedulerAvgExecutionLatency          metricSplunkSchedulerAvgExecutionLatency
 	metricSplunkSchedulerAvgRunTime                   metricSplunkSchedulerAvgRunTime
 	metricSplunkSchedulerCompletionRatio              metricSplunkSchedulerCompletionRatio
+	metricSplunkSearchDuration                        metricSplunkSearchDuration
+	metricSplunkSearchInitiation                      metricSplunkSearchInitiation
+	metricSplunkSearchStatus                          metricSplunkSearchStatus
+	metricSplunkSearchSuccess                         metricSplunkSearchSuccess
 	metricSplunkServerIntrospectionQueuesCurrent      metricSplunkServerIntrospectionQueuesCurrent
 	metricSplunkServerIntrospectionQueuesCurrentBytes metricSplunkServerIntrospectionQueuesCurrentBytes
 	metricSplunkServerSearchartifactsAdhoc            metricSplunkServerSearchartifactsAdhoc
+	metricSplunkServerSearchartifactsAdhocSize        metricSplunkServerSearchartifactsAdhocSize
 	metricSplunkServerSearchartifactsCompleted        metricSplunkServerSearchartifactsCompleted
+	metricSplunkServerSearchartifactsCompletedSize    metricSplunkServerSearchartifactsCompletedSize
 	metricSplunkServerSearchartifactsIncomplete       metricSplunkServerSearchartifactsIncomplete
+	metricSplunkServerSearchartifactsIncompleteSize   metricSplunkServerSearchartifactsIncompleteSize
 	metricSplunkServerSearchartifactsInvalid          metricSplunkServerSearchartifactsInvalid
 	metricSplunkServerSearchartifactsJobCacheCount    metricSplunkServerSearchartifactsJobCacheCount
 	metricSplunkServerSearchartifactsJobCacheSize     metricSplunkServerSearchartifactsJobCacheSize
 	metricSplunkServerSearchartifactsSavedsearches    metricSplunkServerSearchartifactsSavedsearches
 	metricSplunkServerSearchartifactsScheduled        metricSplunkServerSearchartifactsScheduled
+	metricSplunkServerSearchartifactsScheduledSize    metricSplunkServerSearchartifactsScheduledSize
 	metricSplunkTypingQueueRatio                      metricSplunkTypingQueueRatio
 }
 
@@ -2454,6 +3034,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSplunkIndexerCPUTime:                        newMetricSplunkIndexerCPUTime(mbc.Metrics.SplunkIndexerCPUTime),
 		metricSplunkIndexerQueueRatio:                     newMetricSplunkIndexerQueueRatio(mbc.Metrics.SplunkIndexerQueueRatio),
 		metricSplunkIndexerRawWriteTime:                   newMetricSplunkIndexerRawWriteTime(mbc.Metrics.SplunkIndexerRawWriteTime),
+		metricSplunkIndexerRollingrestartStatus:           newMetricSplunkIndexerRollingrestartStatus(mbc.Metrics.SplunkIndexerRollingrestartStatus),
 		metricSplunkIndexerThroughput:                     newMetricSplunkIndexerThroughput(mbc.Metrics.SplunkIndexerThroughput),
 		metricSplunkIndexesAvgSize:                        newMetricSplunkIndexesAvgSize(mbc.Metrics.SplunkIndexesAvgSize),
 		metricSplunkIndexesAvgUsage:                       newMetricSplunkIndexesAvgUsage(mbc.Metrics.SplunkIndexesAvgUsage),
@@ -2464,22 +3045,31 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSplunkKvstoreBackupStatus:                   newMetricSplunkKvstoreBackupStatus(mbc.Metrics.SplunkKvstoreBackupStatus),
 		metricSplunkKvstoreReplicationStatus:              newMetricSplunkKvstoreReplicationStatus(mbc.Metrics.SplunkKvstoreReplicationStatus),
 		metricSplunkKvstoreStatus:                         newMetricSplunkKvstoreStatus(mbc.Metrics.SplunkKvstoreStatus),
+		metricSplunkLicenseExpirationSecondsRemaining:     newMetricSplunkLicenseExpirationSecondsRemaining(mbc.Metrics.SplunkLicenseExpirationSecondsRemaining),
 		metricSplunkLicenseIndexUsage:                     newMetricSplunkLicenseIndexUsage(mbc.Metrics.SplunkLicenseIndexUsage),
 		metricSplunkParseQueueRatio:                       newMetricSplunkParseQueueRatio(mbc.Metrics.SplunkParseQueueRatio),
 		metricSplunkPipelineSetCount:                      newMetricSplunkPipelineSetCount(mbc.Metrics.SplunkPipelineSetCount),
 		metricSplunkSchedulerAvgExecutionLatency:          newMetricSplunkSchedulerAvgExecutionLatency(mbc.Metrics.SplunkSchedulerAvgExecutionLatency),
 		metricSplunkSchedulerAvgRunTime:                   newMetricSplunkSchedulerAvgRunTime(mbc.Metrics.SplunkSchedulerAvgRunTime),
 		metricSplunkSchedulerCompletionRatio:              newMetricSplunkSchedulerCompletionRatio(mbc.Metrics.SplunkSchedulerCompletionRatio),
+		metricSplunkSearchDuration:                        newMetricSplunkSearchDuration(mbc.Metrics.SplunkSearchDuration),
+		metricSplunkSearchInitiation:                      newMetricSplunkSearchInitiation(mbc.Metrics.SplunkSearchInitiation),
+		metricSplunkSearchStatus:                          newMetricSplunkSearchStatus(mbc.Metrics.SplunkSearchStatus),
+		metricSplunkSearchSuccess:                         newMetricSplunkSearchSuccess(mbc.Metrics.SplunkSearchSuccess),
 		metricSplunkServerIntrospectionQueuesCurrent:      newMetricSplunkServerIntrospectionQueuesCurrent(mbc.Metrics.SplunkServerIntrospectionQueuesCurrent),
 		metricSplunkServerIntrospectionQueuesCurrentBytes: newMetricSplunkServerIntrospectionQueuesCurrentBytes(mbc.Metrics.SplunkServerIntrospectionQueuesCurrentBytes),
 		metricSplunkServerSearchartifactsAdhoc:            newMetricSplunkServerSearchartifactsAdhoc(mbc.Metrics.SplunkServerSearchartifactsAdhoc),
+		metricSplunkServerSearchartifactsAdhocSize:        newMetricSplunkServerSearchartifactsAdhocSize(mbc.Metrics.SplunkServerSearchartifactsAdhocSize),
 		metricSplunkServerSearchartifactsCompleted:        newMetricSplunkServerSearchartifactsCompleted(mbc.Metrics.SplunkServerSearchartifactsCompleted),
+		metricSplunkServerSearchartifactsCompletedSize:    newMetricSplunkServerSearchartifactsCompletedSize(mbc.Metrics.SplunkServerSearchartifactsCompletedSize),
 		metricSplunkServerSearchartifactsIncomplete:       newMetricSplunkServerSearchartifactsIncomplete(mbc.Metrics.SplunkServerSearchartifactsIncomplete),
+		metricSplunkServerSearchartifactsIncompleteSize:   newMetricSplunkServerSearchartifactsIncompleteSize(mbc.Metrics.SplunkServerSearchartifactsIncompleteSize),
 		metricSplunkServerSearchartifactsInvalid:          newMetricSplunkServerSearchartifactsInvalid(mbc.Metrics.SplunkServerSearchartifactsInvalid),
 		metricSplunkServerSearchartifactsJobCacheCount:    newMetricSplunkServerSearchartifactsJobCacheCount(mbc.Metrics.SplunkServerSearchartifactsJobCacheCount),
 		metricSplunkServerSearchartifactsJobCacheSize:     newMetricSplunkServerSearchartifactsJobCacheSize(mbc.Metrics.SplunkServerSearchartifactsJobCacheSize),
 		metricSplunkServerSearchartifactsSavedsearches:    newMetricSplunkServerSearchartifactsSavedsearches(mbc.Metrics.SplunkServerSearchartifactsSavedsearches),
 		metricSplunkServerSearchartifactsScheduled:        newMetricSplunkServerSearchartifactsScheduled(mbc.Metrics.SplunkServerSearchartifactsScheduled),
+		metricSplunkServerSearchartifactsScheduledSize:    newMetricSplunkServerSearchartifactsScheduledSize(mbc.Metrics.SplunkServerSearchartifactsScheduledSize),
 		metricSplunkTypingQueueRatio:                      newMetricSplunkTypingQueueRatio(mbc.Metrics.SplunkTypingQueueRatio),
 	}
 
@@ -2560,6 +3150,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSplunkIndexerCPUTime.emit(ils.Metrics())
 	mb.metricSplunkIndexerQueueRatio.emit(ils.Metrics())
 	mb.metricSplunkIndexerRawWriteTime.emit(ils.Metrics())
+	mb.metricSplunkIndexerRollingrestartStatus.emit(ils.Metrics())
 	mb.metricSplunkIndexerThroughput.emit(ils.Metrics())
 	mb.metricSplunkIndexesAvgSize.emit(ils.Metrics())
 	mb.metricSplunkIndexesAvgUsage.emit(ils.Metrics())
@@ -2570,22 +3161,31 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSplunkKvstoreBackupStatus.emit(ils.Metrics())
 	mb.metricSplunkKvstoreReplicationStatus.emit(ils.Metrics())
 	mb.metricSplunkKvstoreStatus.emit(ils.Metrics())
+	mb.metricSplunkLicenseExpirationSecondsRemaining.emit(ils.Metrics())
 	mb.metricSplunkLicenseIndexUsage.emit(ils.Metrics())
 	mb.metricSplunkParseQueueRatio.emit(ils.Metrics())
 	mb.metricSplunkPipelineSetCount.emit(ils.Metrics())
 	mb.metricSplunkSchedulerAvgExecutionLatency.emit(ils.Metrics())
 	mb.metricSplunkSchedulerAvgRunTime.emit(ils.Metrics())
 	mb.metricSplunkSchedulerCompletionRatio.emit(ils.Metrics())
+	mb.metricSplunkSearchDuration.emit(ils.Metrics())
+	mb.metricSplunkSearchInitiation.emit(ils.Metrics())
+	mb.metricSplunkSearchStatus.emit(ils.Metrics())
+	mb.metricSplunkSearchSuccess.emit(ils.Metrics())
 	mb.metricSplunkServerIntrospectionQueuesCurrent.emit(ils.Metrics())
 	mb.metricSplunkServerIntrospectionQueuesCurrentBytes.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsAdhoc.emit(ils.Metrics())
+	mb.metricSplunkServerSearchartifactsAdhocSize.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsCompleted.emit(ils.Metrics())
+	mb.metricSplunkServerSearchartifactsCompletedSize.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsIncomplete.emit(ils.Metrics())
+	mb.metricSplunkServerSearchartifactsIncompleteSize.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsInvalid.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsJobCacheCount.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsJobCacheSize.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsSavedsearches.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsScheduled.emit(ils.Metrics())
+	mb.metricSplunkServerSearchartifactsScheduledSize.emit(ils.Metrics())
 	mb.metricSplunkTypingQueueRatio.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -2678,6 +3278,11 @@ func (mb *MetricsBuilder) RecordSplunkIndexerRawWriteTimeDataPoint(ts pcommon.Ti
 	mb.metricSplunkIndexerRawWriteTime.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
+// RecordSplunkIndexerRollingrestartStatusDataPoint adds a data point to splunk.indexer.rollingrestart.status metric.
+func (mb *MetricsBuilder) RecordSplunkIndexerRollingrestartStatusDataPoint(ts pcommon.Timestamp, val int64, splunkSearchableRestartAttributeValue bool, splunkRollingorrestartAttributeValue bool, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkIndexerRollingrestartStatus.recordDataPoint(mb.startTime, ts, val, splunkSearchableRestartAttributeValue, splunkRollingorrestartAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+}
+
 // RecordSplunkIndexerThroughputDataPoint adds a data point to splunk.indexer.throughput metric.
 func (mb *MetricsBuilder) RecordSplunkIndexerThroughputDataPoint(ts pcommon.Timestamp, val float64, splunkIndexerStatusAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	mb.metricSplunkIndexerThroughput.recordDataPoint(mb.startTime, ts, val, splunkIndexerStatusAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
@@ -2728,6 +3333,11 @@ func (mb *MetricsBuilder) RecordSplunkKvstoreStatusDataPoint(ts pcommon.Timestam
 	mb.metricSplunkKvstoreStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStorageEngineAttributeValue, splunkKvstoreExternalAttributeValue, splunkKvstoreStatusValueAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
+// RecordSplunkLicenseExpirationSecondsRemainingDataPoint adds a data point to splunk.license.expiration.seconds_remaining metric.
+func (mb *MetricsBuilder) RecordSplunkLicenseExpirationSecondsRemainingDataPoint(ts pcommon.Timestamp, val int64, splunkLicenseStatusAttributeValue string, splunkLicenseLabelAttributeValue string, splunkLicenseTypeAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkLicenseExpirationSecondsRemaining.recordDataPoint(mb.startTime, ts, val, splunkLicenseStatusAttributeValue, splunkLicenseLabelAttributeValue, splunkLicenseTypeAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+}
+
 // RecordSplunkLicenseIndexUsageDataPoint adds a data point to splunk.license.index.usage metric.
 func (mb *MetricsBuilder) RecordSplunkLicenseIndexUsageDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	mb.metricSplunkLicenseIndexUsage.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
@@ -2758,6 +3368,26 @@ func (mb *MetricsBuilder) RecordSplunkSchedulerCompletionRatioDataPoint(ts pcomm
 	mb.metricSplunkSchedulerCompletionRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
+// RecordSplunkSearchDurationDataPoint adds a data point to splunk.search.duration metric.
+func (mb *MetricsBuilder) RecordSplunkSearchDurationDataPoint(ts pcommon.Timestamp, val float64, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkSearchDuration.recordDataPoint(mb.startTime, ts, val, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+}
+
+// RecordSplunkSearchInitiationDataPoint adds a data point to splunk.search.initiation metric.
+func (mb *MetricsBuilder) RecordSplunkSearchInitiationDataPoint(ts pcommon.Timestamp, val int64, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkSearchInitiation.recordDataPoint(mb.startTime, ts, val, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+}
+
+// RecordSplunkSearchStatusDataPoint adds a data point to splunk.search.status metric.
+func (mb *MetricsBuilder) RecordSplunkSearchStatusDataPoint(ts pcommon.Timestamp, val int64, splunkSearchStateAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkSearchStatus.recordDataPoint(mb.startTime, ts, val, splunkSearchStateAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+}
+
+// RecordSplunkSearchSuccessDataPoint adds a data point to splunk.search.success metric.
+func (mb *MetricsBuilder) RecordSplunkSearchSuccessDataPoint(ts pcommon.Timestamp, val int64, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkSearchSuccess.recordDataPoint(mb.startTime, ts, val, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+}
+
 // RecordSplunkServerIntrospectionQueuesCurrentDataPoint adds a data point to splunk.server.introspection.queues.current metric.
 func (mb *MetricsBuilder) RecordSplunkServerIntrospectionQueuesCurrentDataPoint(ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	mb.metricSplunkServerIntrospectionQueuesCurrent.recordDataPoint(mb.startTime, ts, val, splunkQueueNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
@@ -2773,14 +3403,29 @@ func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsAdhocDataPoint(ts pco
 	mb.metricSplunkServerSearchartifactsAdhoc.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
+// RecordSplunkServerSearchartifactsAdhocSizeDataPoint adds a data point to splunk.server.searchartifacts.adhoc.size metric.
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsAdhocSizeDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsAdhocSize.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+}
+
 // RecordSplunkServerSearchartifactsCompletedDataPoint adds a data point to splunk.server.searchartifacts.completed metric.
 func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsCompletedDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	mb.metricSplunkServerSearchartifactsCompleted.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
+// RecordSplunkServerSearchartifactsCompletedSizeDataPoint adds a data point to splunk.server.searchartifacts.completed.size metric.
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsCompletedSizeDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsCompletedSize.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+}
+
 // RecordSplunkServerSearchartifactsIncompleteDataPoint adds a data point to splunk.server.searchartifacts.incomplete metric.
 func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsIncompleteDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	mb.metricSplunkServerSearchartifactsIncomplete.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+}
+
+// RecordSplunkServerSearchartifactsIncompleteSizeDataPoint adds a data point to splunk.server.searchartifacts.incomplete.size metric.
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsIncompleteSizeDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsIncompleteSize.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkServerSearchartifactsInvalidDataPoint adds a data point to splunk.server.searchartifacts.invalid metric.
@@ -2806,6 +3451,11 @@ func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsSavedsearchesDataPoin
 // RecordSplunkServerSearchartifactsScheduledDataPoint adds a data point to splunk.server.searchartifacts.scheduled metric.
 func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsScheduledDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	mb.metricSplunkServerSearchartifactsScheduled.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+}
+
+// RecordSplunkServerSearchartifactsScheduledSizeDataPoint adds a data point to splunk.server.searchartifacts.scheduled.size metric.
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsScheduledSizeDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsScheduledSize.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkTypingQueueRatioDataPoint adds a data point to splunk.typing.queue.ratio metric.

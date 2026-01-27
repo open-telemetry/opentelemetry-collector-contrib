@@ -311,7 +311,7 @@ func TestLogToCWLog(t *testing.T) {
 				return
 			}
 			// Do not test generated time since it is time.Now()
-			assert.Equal(t, tt.want.InputLogEvent, got.InputLogEvent)
+			assert.Equal(t, *tt.want.InputLogEvent, *got.InputLogEvent)
 			assert.Equal(t, tt.want.LogStreamName, got.LogStreamName)
 			assert.Equal(t, tt.want.LogGroupName, got.LogGroupName)
 		})
@@ -324,7 +324,7 @@ func BenchmarkLogToCWLog(b *testing.B) {
 	resource := testResource()
 	log := testLogRecord()
 	scope := testScope()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := logToCWLog(attrsValue(resource.Attributes()), scope, log, &Config{})
 		if err != nil {
 			b.Errorf("logToCWLog() failed %v", err)

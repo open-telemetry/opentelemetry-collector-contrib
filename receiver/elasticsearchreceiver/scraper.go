@@ -55,7 +55,7 @@ func newElasticSearchScraper(
 
 func (r *elasticsearchScraper) start(ctx context.Context, host component.Host) (err error) {
 	r.client, err = newElasticsearchClient(ctx, r.settings, *r.cfg, host)
-	return
+	return err
 }
 
 func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
@@ -110,7 +110,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		return
 	}
 
-	for id, info := range nodeStats.Nodes {
+	for id := range nodeStats.Nodes {
+		info := nodeStats.Nodes[id]
 		r.mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(now, info.Indices.FieldDataCache.MemorySizeInBy, metadata.AttributeCacheNameFielddata)
 		r.mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(now, info.Indices.QueryCache.MemorySizeInBy, metadata.AttributeCacheNameQuery)
 

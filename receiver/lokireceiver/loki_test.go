@@ -7,10 +7,13 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"context"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -36,7 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver/internal/metadata"
 )
 
-func sendToCollector(endpoint string, contentType string, contentEncoding string, body []byte) error {
+func sendToCollector(endpoint, contentType, contentEncoding string, body []byte) error {
 	var buf bytes.Buffer
 
 	switch contentEncoding {
@@ -105,8 +108,12 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
+	ctx := t.Context()
+
+	require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, lr.Shutdown(context.WithoutCancel(ctx)))
+	})
 
 	conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -129,8 +136,12 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
-	require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
+	ctx := t.Context()
+
+	require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, lr.Shutdown(context.WithoutCancel(ctx)))
+	})
 
 	return addr, sink
 }
@@ -161,7 +172,7 @@ func TestSendingProtobufPushRequestToHTTPEndpoint(t *testing.T) {
 					},
 				},
 			},
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -207,7 +218,7 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			contentEncoding: "",
 			contentType:     jsonContentType,
 			body:            []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ], [ "1676888497000000000", "logline 2" ]]}]}`),
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -230,7 +241,7 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			contentEncoding: "snappy",
 			contentType:     jsonContentType,
 			body:            []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ], [ "1676888497000000000", "logline 2" ]]}]}`),
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -253,7 +264,7 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			contentEncoding: "gzip",
 			contentType:     jsonContentType,
 			body:            []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ], [ "1676888497000000000", "logline 2" ]]}]}`),
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -276,7 +287,7 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			contentEncoding: "deflate",
 			contentType:     jsonContentType,
 			body:            []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ], [ "1676888497000000000", "logline 2" ]]}]}`),
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -340,7 +351,7 @@ func TestSendingPushRequestToGRPCEndpoint(t *testing.T) {
 					},
 				},
 			},
-			expected: generateLogs([]Log{
+			expected: generateLogs([]logRecord{
 				{
 					Timestamp: 1676888496000000000,
 					Attributes: map[string]any{
@@ -406,8 +417,12 @@ func TestExpectedStatus(t *testing.T) {
 			lr, err := newLokiReceiver(config, consumer, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
 
-			require.NoError(t, lr.Start(t.Context(), componenttest.NewNopHost()))
-			t.Cleanup(func() { require.NoError(t, lr.Shutdown(t.Context())) })
+			ctx := t.Context()
+
+			require.NoError(t, lr.Start(ctx, componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, lr.Shutdown(ctx))
+			}()
 			conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			require.NoError(t, err)
 			defer conn.Close()
@@ -437,13 +452,52 @@ func TestExpectedStatus(t *testing.T) {
 	}
 }
 
-type Log struct {
+func TestNewLokiReceiver_SupportedContentTypeWithCharset(t *testing.T) {
+	jsonPayload := `{
+		"streams": [
+			{
+				"stream": {
+					"job": "test"
+				},
+				"values": [
+					["1752000000000000000", "This is a log line"]
+				]
+			}
+		]
+	}`
+
+	cfg := &Config{
+		Protocols: Protocols{
+			HTTP: &confighttp.ServerConfig{
+				Endpoint: "localhost:0",
+			},
+		},
+	}
+	consumer := consumertest.NewNop()
+	settings := receivertest.NewNopSettings(metadata.Type)
+	receiver, err := newLokiReceiver(cfg, consumer, settings)
+	require.NoError(t, err)
+	require.NotNil(t, receiver)
+
+	req := httptest.NewRequest(http.MethodPost, "/loki/api/v1/push", strings.NewReader(jsonPayload))
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	w := httptest.NewRecorder()
+
+	receiver.httpMux.ServeHTTP(w, req)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+
+	require.Equal(t, 204, resp.StatusCode)
+}
+
+type logRecord struct {
 	Timestamp  int64
 	Body       pcommon.Value
 	Attributes map[string]any
 }
 
-func generateLogs(logs []Log) plog.Logs {
+func generateLogs(logs []logRecord) plog.Logs {
 	ld := plog.NewLogs()
 	logSlice := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 

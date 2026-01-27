@@ -4,7 +4,7 @@ scope_name: otelcol/cfgardenobserver
 status:
   class: extension
   stability:
-    development: [extension]
+    alpha: [extension]
   codeowners:
     active: [crobert-1, jriguera]
     emeritus: [m1rp, cemdk]

@@ -4,6 +4,7 @@
 package receivercreator
 
 import (
+	"maps"
 	"strings"
 	"testing"
 
@@ -82,9 +83,12 @@ func TestNewEnhancingConsumer(t *testing.T) {
 				metrics: &consumertest.MetricsSink{},
 				traces:  &consumertest.TracesSink{},
 				attrs: map[string]string{
-					"k8s.pod.uid":        "uid-1",
-					"k8s.pod.name":       "pod-1",
-					"k8s.namespace.name": "default",
+					"k8s.pod.uid":          "uid-1",
+					"k8s.pod.name":         "pod-1",
+					"k8s.namespace.name":   "default",
+					"k8s.container.name":   "container-1",
+					"container.id":         "container-id-1",
+					"container.image.name": "redis:latest",
 				},
 			},
 		},
@@ -139,9 +143,7 @@ func TestNewEnhancingConsumer(t *testing.T) {
 			args: args{
 				resources: func() resourceAttributes {
 					res := map[observer.EndpointType]map[string]string{observer.PodType: {}}
-					for k, v := range cfg.ResourceAttributes[observer.PodType] {
-						res[observer.PodType][k] = v
-					}
+					maps.Copy(res[observer.PodType], cfg.ResourceAttributes[observer.PodType])
 					res[observer.PodType]["duplicate.resource.attribute"] = "pod.value"
 					res[observer.PodType]["delete.me"] = "pod.value"
 					return res

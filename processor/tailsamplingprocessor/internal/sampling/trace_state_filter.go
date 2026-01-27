@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	tracesdk "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 type traceStateFilter struct {
@@ -19,11 +21,11 @@ type traceStateFilter struct {
 	matcher func(string) bool
 }
 
-var _ PolicyEvaluator = (*traceStateFilter)(nil)
+var _ samplingpolicy.Evaluator = (*traceStateFilter)(nil)
 
 // NewTraceStateFilter creates a policy evaluator that samples all traces with
 // the given value by the specific key in the trace_state.
-func NewTraceStateFilter(settings component.TelemetrySettings, key string, values []string) PolicyEvaluator {
+func NewTraceStateFilter(settings component.TelemetrySettings, key string, values []string) samplingpolicy.Evaluator {
 	// initialize the exact value map
 	valuesMap := make(map[string]struct{})
 	for _, value := range values {
@@ -43,9 +45,7 @@ func NewTraceStateFilter(settings component.TelemetrySettings, key string, value
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (tsf *traceStateFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
-	trace.Lock()
-	defer trace.Unlock()
+func (tsf *traceStateFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	batches := trace.ReceivedBatches
 
 	return hasSpanWithCondition(batches, func(span ptrace.Span) bool {

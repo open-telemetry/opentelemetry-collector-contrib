@@ -403,7 +403,7 @@ func TestTranslateSeriesV2(t *testing.T) {
 				v, exists := result.ResourceMetrics().At(0).Resource().Attributes().Get("host.name")
 				require.True(t, exists)
 				require.Equal(t, "Host1", v.AsString())
-				v, exists = result.ResourceMetrics().At(0).Resource().Attributes().Get("deployment.environment")
+				v, exists = result.ResourceMetrics().At(0).Resource().Attributes().Get("deployment.environment.name")
 				require.True(t, exists)
 				require.Equal(t, "tag1", v.AsString())
 				v, exists = result.ResourceMetrics().At(0).Resource().Attributes().Get("service.version")

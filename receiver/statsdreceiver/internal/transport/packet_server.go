@@ -55,7 +55,7 @@ func (u *packetServer) ListenAndServe(
 }
 
 // handlePacket is helper that parses the buffer and split it line by line to be parsed upstream.
-func (u *packetServer) handlePacket(
+func (*packetServer) handlePacket(
 	numBytes int,
 	data []byte,
 	addr net.Addr,

@@ -70,14 +70,6 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
 
-	if rCfg.AccessTokenPassthrough {
-		params.Logger.Warn(
-			"access_token_passthrough is deprecated. " +
-				"Please enable include_metadata in the receiver and add " +
-				"`metadata_keys: [X-Sf-Token]` to the batch processor",
-		)
-	}
-
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
@@ -103,14 +95,6 @@ func createLogsReceiver(
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	rCfg := cfg.(*Config)
-
-	if rCfg.AccessTokenPassthrough {
-		params.Logger.Warn(
-			"access_token_passthrough is deprecated. " +
-				"Please enable include_metadata in the receiver and add " +
-				"`metadata_keys: [X-Sf-Token]` to the batch processor",
-		)
-	}
 
 	receiverLock.Lock()
 	r := receivers[rCfg]

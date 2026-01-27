@@ -173,8 +173,8 @@ func TestUnmarshalWriterConfig(t *testing.T) {
 				}(),
 			},
 			{
-				Name:      "invalid",
-				ExpectErr: true,
+				Name:               "invalid",
+				ExpectUnmarshalErr: true,
 			},
 		},
 	}.Run(t)

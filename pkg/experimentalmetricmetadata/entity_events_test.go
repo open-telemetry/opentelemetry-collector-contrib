@@ -44,11 +44,13 @@ func Test_Entity_Delete(t *testing.T) {
 
 	event := slice.AppendEmpty()
 	event.ID().PutStr("k8s.node.uid", "abc")
-	event.SetEntityDelete()
+	deleteEvent := event.SetEntityDelete()
+	deleteEvent.SetEntityType("k8s.node")
 
 	actual := slice.At(0)
 
 	assert.Equal(t, EventTypeDelete, actual.EventType())
+	assert.Equal(t, "k8s.node", event.EntityDeleteDetails().EntityType())
 	v, ok := actual.ID().Get("k8s.node.uid")
 	assert.True(t, ok)
 	assert.Equal(t, "abc", v.Str())
@@ -75,7 +77,8 @@ func Test_EntityEventsSlice_ConvertAndMoveToLogs(t *testing.T) {
 
 	event = slice.AppendEmpty()
 	event.ID().PutStr("k8s.node.uid", "abc")
-	event.SetEntityDelete()
+	deleteEvent := event.SetEntityDelete()
+	deleteEvent.SetEntityType("k8s.node")
 
 	// Convert to logs.
 	logs := slice.ConvertAndMoveToLogs()
@@ -112,6 +115,7 @@ func Test_EntityEventsSlice_ConvertAndMoveToLogs(t *testing.T) {
 	assert.Equal(
 		t, map[string]any{
 			semconvOtelEntityEventName: semconvEventEntityEventDelete,
+			semconvOtelEntityType:      "k8s.node",
 			semconvOtelEntityID:        map[string]any{"k8s.node.uid": "abc"},
 		}, attrs,
 	)

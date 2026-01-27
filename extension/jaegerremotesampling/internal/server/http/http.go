@@ -56,7 +56,7 @@ func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.ServerCo
 
 func (h *SamplingHTTPServer) Start(ctx context.Context, host component.Host) error {
 	var err error
-	h.srv, err = h.settings.ToServer(ctx, host, h.telemetry, h.mux)
+	h.srv, err = h.settings.ToServer(ctx, host.GetExtensions(), h.telemetry, h.mux)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (h *SamplingHTTPServer) Shutdown(ctx context.Context) error {
 
 func (h *SamplingHTTPServer) samplingStrategyHandler(rw http.ResponseWriter, r *http.Request) {
 	svc := r.URL.Query().Get("service")
-	if len(svc) == 0 {
+	if svc == "" {
 		err := errors.New("'service' parameter must be provided")
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return

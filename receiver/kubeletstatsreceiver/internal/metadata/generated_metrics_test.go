@@ -62,18 +62,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if tt.metricsSet == testDataSetDefault || tt.metricsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `container.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric container.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.metricsSet == testDataSetDefault || tt.metricsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `k8s.node.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.metricsSet == testDataSetDefault || tt.metricsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `k8s.pod.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -84,12 +72,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerCPUTimeDataPoint(ts, 1)
 
-			allMetricsCount++
-			mb.RecordContainerCPUUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
+			mb.RecordContainerCPUUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -152,12 +137,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sNodeCPUTimeDataPoint(ts, 1)
 
-			allMetricsCount++
-			mb.RecordK8sNodeCPUUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordK8sNodeCPUUtilizationDataPoint(ts, 1)
+			mb.RecordK8sNodeCPUUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -213,12 +195,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sPodCPUTimeDataPoint(ts, 1)
 
-			allMetricsCount++
-			mb.RecordK8sPodCPUUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordK8sPodCPUUtilizationDataPoint(ts, 1)
+			mb.RecordK8sPodCPUUsageDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordK8sPodCPULimitUtilizationDataPoint(ts, 1)
@@ -281,6 +260,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordK8sPodUptimeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPodVolumeUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -361,18 +343,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window", ms.At(i).Description())
 					assert.Equal(t, "{cpu}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "container.cpu.utilization":
-					assert.False(t, validatedMetrics["container.cpu.utilization"], "Found a duplicate in the metrics slice: container.cpu.utilization")
-					validatedMetrics["container.cpu.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container CPU utilization", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -598,18 +568,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.node.cpu.utilization":
-					assert.False(t, validatedMetrics["k8s.node.cpu.utilization"], "Found a duplicate in the metrics slice: k8s.node.cpu.utilization")
-					validatedMetrics["k8s.node.cpu.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Node CPU utilization", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "k8s.node.filesystem.available":
 					assert.False(t, validatedMetrics["k8s.node.filesystem.available"], "Found a duplicate in the metrics slice: k8s.node.filesystem.available")
 					validatedMetrics["k8s.node.filesystem.available"] = true
@@ -805,18 +763,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window", ms.At(i).Description())
 					assert.Equal(t, "{cpu}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.pod.cpu.utilization":
-					assert.False(t, validatedMetrics["k8s.pod.cpu.utilization"], "Found a duplicate in the metrics slice: k8s.pod.cpu.utilization")
-					validatedMetrics["k8s.pod.cpu.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod CPU utilization", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1038,6 +984,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "The time since the pod started", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.volume.usage":
+					assert.False(t, validatedMetrics["k8s.pod.volume.usage"], "Found a duplicate in the metrics slice: k8s.pod.volume.usage")
+					validatedMetrics["k8s.pod.volume.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of used bytes in the pod volume.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

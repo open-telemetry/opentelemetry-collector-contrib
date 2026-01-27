@@ -3,7 +3,7 @@
 package cluster
 
 import (
-	aerospike "github.com/aerospike/aerospike-client-go/v7"
+	aerospike "github.com/aerospike/aerospike-client-go/v8"
 	mock "github.com/stretchr/testify/mock"
 )
 

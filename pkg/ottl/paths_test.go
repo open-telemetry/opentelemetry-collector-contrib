@@ -448,3 +448,32 @@ func Test_getBooleanExpressionPaths(t *testing.T) {
 	paths := getBooleanExpressionPaths(c)
 	require.Equal(t, expected, paths)
 }
+
+func Test_getValuePaths(t *testing.T) {
+	expected := []path{
+		{
+			Pos: lexer.Position{
+				Offset: 0,
+				Line:   1,
+				Column: 1,
+			},
+			Context: "honey",
+			Fields:  []field{{Name: "bear"}},
+		},
+		{
+			Pos: lexer.Position{
+				Offset: 14,
+				Line:   1,
+				Column: 15,
+			},
+			Context: "foo",
+			Fields:  []field{{Name: "bar"}},
+		},
+	}
+
+	c, err := parseValueExpression("honey.bear + (foo.bar * 3)")
+	require.NoError(t, err)
+
+	paths := getValuePaths(c)
+	require.Equal(t, expected, paths)
+}

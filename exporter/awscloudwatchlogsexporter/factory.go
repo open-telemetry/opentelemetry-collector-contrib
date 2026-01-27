@@ -12,6 +12,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -35,14 +36,14 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings:      queueSettings,
+		QueueSettings:      configoptional.Some(queueSettings),
 	}
 }
 
-func createLogsExporter(_ context.Context, params exporter.Settings, config component.Config) (exporter.Logs, error) {
+func createLogsExporter(ctx context.Context, params exporter.Settings, config component.Config) (exporter.Logs, error) {
 	expConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration type; can't cast to awscloudwatchlogsexporter.Config")
 	}
-	return newCwLogsExporter(expConfig, params)
+	return newCwLogsExporter(ctx, expConfig, params)
 }

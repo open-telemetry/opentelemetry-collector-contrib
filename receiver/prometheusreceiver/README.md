@@ -6,7 +6,8 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [core], [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fprometheus%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fprometheus) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fprometheus%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fprometheus) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_prometheus)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_prometheus&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens), [@krajorama](https://www.github.com/krajorama) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
@@ -20,10 +21,10 @@ Receives metric data in [Prometheus](https://prometheus.io/) format. See the
 ## ⚠️ Warning
 
 Note: This component is currently work in progress. It has several limitations
-and please don't use it if the following limitations is a concern:
+and please don't use it if the following limitations are a concern:
 
 * Collector cannot auto-scale the scraping yet when multiple replicas of the
-  collector is run. 
+  collector are run. 
 * When running multiple replicas of the collector with the same config, it will
   scrape the targets multiple times.
 * Users need to configure each replica with different scraping configuration
@@ -58,55 +59,7 @@ you must escape them using `$$`.
 prometheus --config.file=prom.yaml
 ```
 
-**Feature gates**:
-
-- `receiver.prometheusreceiver.UseCreatedMetric`: Start time for Summary, Histogram 
-  and Sum metrics can be retrieved from `_created` metrics. Currently, this behaviour
-  is disabled by default. To enable it, use the following feature gate option:
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
-```
-- `receiver.prometheusreceiver.UseCollectorStartTimeFallback`:  enables using
-  the collector start time as the metric start time if the
-  process_start_time_seconds metric yields no result (for example if targets
-  expose no process_start_time_seconds metric). This is useful when the collector
-  start time is a good approximation of the process start time - for example in
-  serverless workloads when the collector is deployed as a sidecar. To enable it,
-  use the following feature gate option:
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.UseCollectorStartTimeFallback"
-```
-- `receiver.prometheusreceiver.EnableNativeHistograms`: process and turn native histogram metrics into OpenTelemetry exponential histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms"
-```
-
-- `receiver.prometheusreceiver.RemoveLegacyResourceAttributes`: Remove `net.host.name`, `net.host.port`, and `http.scheme` resource attributes, which are redundant with the new `server.address`, `server.port`, and `url.scheme` attributes.
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.RemoveLegacyResourceAttributes"
-```
-
-- `receiver.prometheusreceiver.RemoveStartTimeAdjustment`: If enabled, the prometheus receiver no longer sets the start timestamp of metrics if it is not known. Use the `metricstarttime` processor instead if you need this functionality.
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment"
-```
-
-- `report_extra_scrape_metrics`: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`
-
-You can copy and paste that same configuration under:
-
-```yaml
-receivers:
-  prometheus:
-    config:
-```
-
-For example:
+You can copy and paste that same configuration under the `config` attribute:
 
 ```yaml
 receivers:
@@ -133,17 +86,14 @@ receivers:
 The prometheus receiver also supports additional top-level options:
 
 - **trim_metric_suffixes**: [**Experimental**] When set to true, this enables trimming unit and some counter type suffixes from metric names. For example, it would cause `singing_duration_seconds_total` to be trimmed to `singing_duration`. This can be useful when trying to restore the original metric names used in OpenTelemetry instrumentation. Defaults to false.
-- **use_start_time_metric**: When set to true, this enables retrieving the start time of all counter metrics from the process_start_time_seconds metric. This is only correct if all counters on that endpoint started after the process start time, and the process is the only actor exporting the metric after the process started. It should not be used in "exporters" which export counters that may have started before the process itself. Use only if you know what you are doing, as this may result in incorrect rate calculations. Defaults to false.
-- **start_time_metric_regex**: The regular expression for the start time metric, and is only applied when use_start_time_metric is enabled.  Defaults to process_start_time_seconds.
+- **report_extra_scrape_metrics**: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`. Deprecated; use the feature gate `receiver.prometheusreceiver.EnableReportExtraScrapeMetrics` instead.
 
-For example,
+Example configuration:
 
 ```yaml
 receivers:
     prometheus:
       trim_metric_suffixes: true
-      use_start_time_metric: true
-      start_time_metric_regex: foo_bar_.*
       config:
         scrape_configs:
           - job_name: 'otel-collector'
@@ -152,20 +102,90 @@ receivers:
               - targets: ['0.0.0.0:8888']
 ```
 
+## Complete Configuration Example
+
+The following example demonstrates a complete end-to-end configuration showing how to use the Prometheus receiver with processors and exporters in a service pipeline:
+
+```yaml
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'my-service'
+          scrape_interval: 5s
+          static_configs:
+            - targets: ['localhost:9090']
+          # Filter metrics to keep only those matching the regex pattern
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: 'http_request_duration_seconds.*'
+              action: keep
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1000
+  resource:
+    attributes:
+      # Note: service.name is automatically set by the prometheus receiver from job_name
+      - key: deployment.environment
+        value: production
+        action: upsert
+
+exporters:
+  otlp:
+    endpoint: otel-collector:4317
+    tls:
+      insecure: true
+  prometheusremotewrite:
+    endpoint: https://prometheus:9090/api/v1/write
+
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      processors: [resource, batch]
+      exporters: [otlp, prometheusremotewrite]
+```
+
+This configuration:
+- Scrapes metrics from a service running on `localhost:9090` every 5 seconds
+- Filters metrics to keep only those matching `http_request_duration_seconds.*` using `metric_relabel_configs`
+- Adds resource attributes (`deployment.environment`) to all metrics (note: `service.name` is automatically set from the job name)
+- Batches metrics before exporting to improve efficiency when multiple scrapes occur
+- Exports metrics to both an OTLP endpoint and Prometheus remote write endpoint
+
 ## Prometheus native histograms
 
-Native histograms are an experimental [feature](https://prometheus.io/docs/prometheus/latest/feature_flags/#native-histograms) of Prometheus.
+Native histograms are a data type in Prometheus, for more information see the [specification](https://prometheus.io/docs/specs/native_histograms/).
 
-To start scraping native histograms, set `config.global.scrape_protocols` to `[ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]`
-in the receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
+The Prometheus receiver automatically converts native histograms to OpenTelemetry exponential histograms. To enable scraping and ingestion of native histograms, you need to configure two things in your Prometheus scrape config:
 
-To enable converting native histograms to OpenTelemetry exponential histograms, enable the feature gate `receiver.prometheusreceiver.EnableNativeHistograms`.
-The feature is considered experimental.
+1. **Enable native histogram scraping**: Set `scrape_native_histograms: true` (globally or per-job)
+2. **Use the protobuf scrape protocol**: Include `PrometheusProto` in `scrape_protocols` (required until Prometheus supports native histograms over text formats)
 
-This feature applies to the most common integer counter histograms, gauge histograms are dropped.
+```yaml
+receivers:
+  prometheus:
+    config:
+      global:
+        # Required: Include PrometheusProto to scrape native histograms
+        scrape_protocols: [ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]
+        # Enable native histogram scraping globally
+        scrape_native_histograms: true
+      scrape_configs:
+        - job_name: 'my-app'
+          # Per-job setting takes precedence over global
+          # scrape_native_histograms: true
+          static_configs:
+            - targets: ['localhost:8080']
+```
+
+
+This feature applies to the most common integer counter histograms; gauge histograms are dropped.
 In case a metric has both the conventional (aka classic) buckets and also native histogram buckets, only the native histogram buckets will be
 taken into account to create the corresponding exponential histogram. To scrape the classic buckets instead use the
-[scrape option](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) `scrape_classic_histograms`.
+[scrape option](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) `always_scrape_classic_histograms`.
 
 ## OpenTelemetry Operator
 Additional to this static job definitions this receiver allows to query a list of jobs from the 
@@ -224,4 +244,30 @@ The API server hosts the same paths as the Prometheus agent-mode API. These incl
 
 More info about querying `/api/v1/` and the data format that is returned can be found in the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/api/).
 
+
+## Feature gates
+
+- `receiver.prometheusreceiver.EnableReportExtraScrapeMetrics`: Extra Prometheus scrape metrics 
+  can be reported by setting this feature gate option. This replaces the deprecated
+  `report_extra_scrape_metrics` configuration flag:
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.EnableReportExtraScrapeMetrics"
+```
+
+- `receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig`: When enabled, the
+  `report_extra_scrape_metrics` configuration option is ignored, and extra scrape metrics are
+  controlled solely by the `EnableReportExtraScrapeMetrics` feature gate. The intention is
+  to have extra scrape metrics all the time in the future:
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig"
+```
+
+- `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion`: Enables the Prometheus feature flag [created-timestamps-zero-injection](https://prometheus.io/docs/prometheus/latest/feature_flags/#created-timestamps-zero-injection). Currently, this behaviour is disabled by default due to worse CPU performance with higher metric volumes. To enable it, use the following feature gate option:
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion"
+```
+- `receiver.prometheusreceiver.EnableNativeHistograms` (Stable, enabled by default): Converts scraped native histogram metrics into OpenTelemetry exponential histograms. **Note:** You still need to configure `scrape_native_histograms: true` in your Prometheus scrape config to actually scrape native histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
 

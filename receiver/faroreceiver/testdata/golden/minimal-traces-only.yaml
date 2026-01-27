@@ -1,0 +1,26 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: example.com
+        - key: service.version
+          value:
+            stringValue: "1.0.0"
+        - key: deployment.environment
+          value:
+            stringValue: prod
+        - key: telemetry.sdk.name
+          value:
+            stringValue: "@grafana/faro-core"
+        - key: telemetry.sdk.version
+          value:
+            stringValue: "1.0.0"
+    scopeSpans:
+      - spans:
+          - name: test-span
+            kind: 1
+            traceId: "00000000000000000000000000000000"
+            spanId: "0000000000000000"
+            startTimeUnixNano: "0"
+            endTimeUnixNano: "0"

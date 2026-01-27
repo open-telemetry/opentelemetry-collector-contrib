@@ -19,9 +19,6 @@ receivers:
 exporters:
   debug:
 
-processors:
-  batch:
-
 extensions:
   health_check:
   pprof:
@@ -35,5 +32,4 @@ service:
   pipelines:
     traces:
       receivers: [kafka]
-      processors: [batch]
       exporters: [debug]

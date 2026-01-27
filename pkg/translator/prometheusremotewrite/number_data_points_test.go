@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -51,15 +52,15 @@ func TestPrometheusConverter_addGaugeNumberDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverter()
+			converter := newPrometheusConverter(Settings{})
 
-			converter.addGaugeNumberDataPoints(
+			err := converter.addGaugeNumberDataPoints(
 				metric.Gauge().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
 			)
-
+			require.NoError(t, err)
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
 		})
@@ -217,16 +218,16 @@ func TestPrometheusConverter_addSumNumberDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverter()
+			converter := newPrometheusConverter(Settings{})
 
-			converter.addSumNumberDataPoints(
+			err := converter.addSumNumberDataPoints(
 				metric.Sum().DataPoints(),
 				pcommon.NewResource(),
 				metric,
 				Settings{},
 				metric.Name(),
 			)
-
+			require.NoError(t, err)
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
 		})

@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package tracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 
 import (
+	"os"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 )
 
@@ -17,5 +19,8 @@ func (t *fileTracker) EndConsume() (filesClosed int) {
 	t.previousPollFiles = t.currentPollFiles
 	filesClosed = t.ClosePreviousFiles()
 	t.currentPollFiles = fileset.New[*reader.Reader](t.maxBatchFiles)
-	return
+
+	t.unmatchedFiles = make([]*os.File, 0)
+	t.unmatchedFps = make([]*fingerprint.Fingerprint, 0)
+	return filesClosed
 }

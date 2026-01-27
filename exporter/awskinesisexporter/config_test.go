@@ -8,11 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -35,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
-				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 				Encoding: Encoding{
@@ -61,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				Encoding: Encoding{
 					Name:        "otlp-proto",
 					Compression: "none",
@@ -96,4 +97,19 @@ func TestLoadConfig(t *testing.T) {
 func TestConfigCheck(t *testing.T) {
 	cfg := (NewFactory()).CreateDefaultConfig()
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+}
+
+func TestValidate(t *testing.T) {
+	cfg := &Config{
+		QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
+			NumConsumers: -1,
+		}),
+	}
+	err := cfg.Validate()
+	assert.ErrorContains(t, err, "queue settings has invalid configuration",
+		"Validate() error = %v, wantErr %v", err, "queue settings has invalid configuration")
+
+	cfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
+	err = cfg.Validate()
+	assert.NoError(t, err, "Validate() error = %v, wantNoErr", err)
 }

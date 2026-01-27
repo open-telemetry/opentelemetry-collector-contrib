@@ -1,7 +1,9 @@
 k8sobjects:
+  include_initial_state: false
   objects:
     - name: pods
       mode: pull
+      interval: 1h
       label_selector: environment in (production),tier in (frontend)
       field_selector: status.phase=Running
     - name: events
@@ -10,12 +12,15 @@ k8sobjects:
       namespaces: [default]
       exclude_watch_type: [DELETED]
 k8sobjects/pull_with_resource:
+  include_initial_state: false
   objects:
     - name: pods
       mode: pull
+      interval: 1h
       resource_version: "1"
     - name: events
       mode: pull
+      interval: 1h
 k8sobjects/watch_with_resource:
   objects:
     - name: events
@@ -27,12 +32,34 @@ k8sobjects/watch_with_resource:
       group: events.k8s.io
       namespaces: [default]
       resource_version: "2"
+k8sobjects/watch_with_initial_state:
+  include_initial_state: true
+  objects:
+    - name: pods
+      mode: watch
+      namespaces: [default]
+    - name: events
+      mode: watch
+      group: events.k8s.io
+      namespaces: [default]
+k8sobjects/watch_without_initial_state:
+  include_initial_state: false
+  objects:
+    - name: events
+      mode: watch
+      group: events.k8s.io
+      namespaces: [default]
 k8sobjects/invalid_resource:
   objects:
     - name: fake_resource
       mode: watch
 k8sobjects/exclude_deleted_with_pull:
+  include_initial_state: false
   objects:
     - name: events
       mode: pull
       exclude_watch_type: [DELETED]
+k8sobjects/invalid_mode:
+  objects:
+    - name: pods
+      mode: invalid_mode

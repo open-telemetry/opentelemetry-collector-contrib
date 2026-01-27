@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -189,15 +188,15 @@ func TestScrape(t *testing.T) {
 // resource attributes defined by the process scraper metadata.yaml/Process Semantic Conventions.
 func assertValidProcessResourceAttributes(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
 	requiredResourceAttributes := []string{
-		conventions.AttributeProcessPID,
+		"process.pid",
 	}
 	permissibleResourceAttributes := []string{
-		conventions.AttributeProcessPID,
-		conventions.AttributeProcessExecutableName,
-		conventions.AttributeProcessExecutablePath,
-		conventions.AttributeProcessCommand,
-		conventions.AttributeProcessCommandLine,
-		conventions.AttributeProcessOwner,
+		"process.pid",
+		"process.executable.name",
+		"process.executable.path",
+		"process.command",
+		"process.command_line",
+		"process.owner",
 		"process.parent_pid", // TODO: use this from conventions when it is available
 	}
 	for i := 0; i < resourceMetrics.Len(); i++ {
@@ -419,7 +418,7 @@ type processHandlesMock struct {
 	handles []*processHandleMock
 }
 
-func (p *processHandlesMock) Pid(int) int32 {
+func (*processHandlesMock) Pid(int) int32 {
 	return 1
 }
 
@@ -705,7 +704,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			assert.Equal(t, len(test.expectedNames), md.ResourceMetrics().Len())
 			for i, expectedName := range test.expectedNames {
 				rm := md.ResourceMetrics().At(i)
-				name, _ := rm.Resource().Attributes().Get(conventions.AttributeProcessExecutableName)
+				name, _ := rm.Resource().Attributes().Get("process.executable.name")
 				assert.Equal(t, expectedName, name.Str())
 			}
 		})
@@ -769,14 +768,6 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 						`error reading process name for pid 1: executable path is empty`
 				}
 				return `error reading process executable for pid 1: err1`
-			}(),
-		},
-		{
-			name:        "Cgroup Error",
-			osFilter:    []string{"darwin", "windows"},
-			cgroupError: errors.New("err1"),
-			expectedError: func() string {
-				return `error reading process cgroup for pid 1: err1`
 			}(),
 		},
 		{
@@ -873,9 +864,11 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			numThreadsError:     errors.New("err8"),
 			numCtxSwitchesError: errors.New("err9"),
 			numFDsError:         errors.New("err10"),
+			cgroupError:         errors.New("err11"),
 			handleCountError:    handleCountErrorIfSupportedOnPlatform(),
 			rlimitError:         errors.New("err-rlimit"),
-			expectedError: `error reading command for process "test" (pid 1): err2; ` +
+			expectedError: handleCGroupErrorMessageIfSupportedOnPlatform() +
+				`error reading command for process "test" (pid 1): err2; ` +
 				`error reading username for process "test" (pid 1): err3; ` +
 				`error reading create time for process "test" (pid 1): err4; ` +
 				`error reading cpu times for process "test" (pid 1): err5; ` +
@@ -965,7 +958,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				executableError = test.cmdlineError
 			}
 
-			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.handleCountError, test.rlimitError, test.cgroupError, test.createTimeError)
+			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.handleCountError, test.rlimitError, test.createTimeError)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
@@ -973,7 +966,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
 			if isPartial {
-				expectedFailures := getExpectedScrapeFailures(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.handleCountError, test.rlimitError, test.cgroupError, test.createTimeError)
+				expectedFailures := getExpectedScrapeFailures(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.handleCountError, test.rlimitError, test.createTimeError)
 				var scraperErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &scraperErr)
 				assert.Equal(t, expectedFailures, scraperErr.Failed)
@@ -982,11 +975,8 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, cgroupError, uptimeError error) (int, int) {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, uptimeError error) (int, int) {
 	if runtime.GOOS == "windows" && exeError != nil {
-		return 0, 0
-	}
-	if runtime.GOOS == "linux" && cgroupError != nil {
 		return 0, 0
 	}
 
@@ -1007,6 +997,7 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	if diskError == nil && runtime.GOOS != "darwin" {
 		expectedLen += diskMetricsLen
 	}
+
 	if pageFaultsError == nil && runtime.GOOS != "darwin" {
 		expectedLen += pagingMetricsLen
 	}
@@ -1035,18 +1026,15 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	return 1, expectedLen
 }
 
-func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, handleCountError, rlimitError, cgroupError, uptimeError error) int {
+func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, uptimeError error) int {
 	if runtime.GOOS == "windows" && exeError != nil {
 		return 2
-	}
-	if runtime.GOOS == "linux" && cgroupError != nil {
-		return 1
 	}
 
 	if nameError != nil || exeError != nil {
 		return 1
 	}
-	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, cgroupError, uptimeError)
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, uptimeError)
 
 	// excluding unsupported metrics from darwin 'metricsLen'
 	if runtime.GOOS == "darwin" {
@@ -1239,7 +1227,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 
 type ProcessReadError struct{}
 
-func (m *ProcessReadError) Error() string {
+func (*ProcessReadError) Error() string {
 	return "unable to read data"
 }
 
@@ -1383,10 +1371,16 @@ func handleCountErrorIfSupportedOnPlatform() error {
 	return nil
 }
 
+func handleCGroupErrorMessageIfSupportedOnPlatform() string {
+	if runtime.GOOS == "linux" {
+		return `error reading process cgroup for pid 1: err11; `
+	}
+	return ``
+}
+
 func handleCountErrorMessageIfSupportedOnPlatform() string {
 	if handleCountErr := handleCountErrorIfSupportedOnPlatform(); handleCountErr != nil {
 		return fmt.Errorf("error reading handle count for process \"test\" (pid 1): %w; ", handleCountErr).Error()
 	}
-
 	return ""
 }

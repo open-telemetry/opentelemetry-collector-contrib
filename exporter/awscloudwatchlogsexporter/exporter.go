@@ -126,7 +126,7 @@ func (e *cwlExporter) start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *cwlExporter) shutdown(_ context.Context) error {
+func (*cwlExporter) shutdown(_ context.Context) error {
 	return nil
 }
 
@@ -189,8 +189,8 @@ type cwLogBody struct {
 func logToCWLog(resourceAttrs map[string]any, scope pcommon.InstrumentationScope, log plog.LogRecord, config *Config) (*cwlogs.Event, error) {
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
-	logGroupName := config.LogGroupName
-	logStreamName := config.LogStreamName
+	// Replace loggroup and logstream with resource attribute
+	logGroupName, logStreamName, _ := getLogInfo(resourceAttrs, config)
 
 	var bodyJSON []byte
 	var err error

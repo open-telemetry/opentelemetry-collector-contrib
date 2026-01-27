@@ -21,7 +21,7 @@ type CPUMetricExtractor struct {
 	rateCalculator awsmetrics.MetricCalculator
 }
 
-func (c *CPUMetricExtractor) HasValue(info *cInfo.ContainerInfo) bool {
+func (*CPUMetricExtractor) HasValue(info *cInfo.ContainerInfo) bool {
 	return info.Spec.HasCpu
 }
 

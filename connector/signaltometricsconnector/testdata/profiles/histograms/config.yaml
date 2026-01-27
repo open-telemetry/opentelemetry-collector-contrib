@@ -1,0 +1,45 @@
+signaltometrics:
+  profiles:
+    - name: total.profiles.histogram
+      description: Profiles as histogram with duration
+      histogram:
+        count: "1"
+        value: duration_unix_nano
+        buckets: [1, 10, 50, 100, 200]
+    - name: total.profiles.resource.foo.histogram
+      description: Profiles with resource attribute foo as histogram with duration
+      include_resource_attributes:
+        - key: resource.foo
+      histogram:
+        count: "1"
+        value: duration_unix_nano
+        buckets: [1, 10, 50, 100, 200]
+    - name: profiles.foo.histogram
+      description: Count total number of profiles as per profile.foo attribute as histogram with duration
+      attributes:
+        - key: profile.foo
+      histogram:
+        count: "1"
+        value: duration_unix_nano
+        buckets: [1, 10, 50, 100, 200]
+    - name: profiles.bar.histogram
+      description: Count total number of profiles as per profiles.bar attribute as histogram with duration
+      conditions: # Will evaluate to true
+        - resource.attributes["404.attribute"] != nil
+        - resource.attributes["resource.foo"] != nil
+      attributes:
+        - key: profiles.bar
+      histogram:
+        count: "1"
+        value: duration_unix_nano
+        buckets: [1, 10, 50, 100, 200]
+    - name: ignored.histogram
+      description: Will be ignored due to conditions evaluating to false
+      conditions: # Will evaluate to false
+        - resource.attributes["404.attribute"] != nil
+      attributes:
+        - key: profiles.bar
+      histogram:
+        count: "2"
+        value: duration_unix_nano
+        buckets: [1, 50, 200]

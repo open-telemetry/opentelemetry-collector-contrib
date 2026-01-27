@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/metadata"
 )
 
@@ -31,10 +32,21 @@ func TestLoadConfig(t *testing.T) {
 				AllowedKeys:        []string{"description", "group", "id", "name"},
 				IgnoredKeys:        []string{"safe_attribute"},
 				BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
-				BlockedKeyPatterns: []string{".*token.*", ".*api_key.*"},
+				BlockedKeyPatterns: []string{".*(token|api_key).*"},
 				HashFunction:       MD5,
 				AllowedValues:      []string{".+@mycompany.com"},
 				Summary:            debug,
+				DBSanitizer: db.DBSanitizerConfig{
+					SQLConfig: db.SQLConfig{
+						Enabled: false,
+					},
+					RedisConfig: db.RedisConfig{
+						Enabled: false,
+					},
+					MongoConfig: db.MongoConfig{
+						Enabled: false,
+					},
+				},
 			},
 		},
 		{

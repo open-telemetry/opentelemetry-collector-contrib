@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -61,12 +62,12 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					NumConsumers: 2,
-					QueueSize:    10,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-				},
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.NumConsumers = 2
+					queue.QueueSize = 10
+					return queue
+				}()),
 			},
 		},
 	}
@@ -112,10 +113,9 @@ func TestInvalidConfig(t *testing.T) {
 
 	invalid = Config{
 		Endpoint: "abcd1234",
-		QueueSettings: exporterhelper.QueueBatchConfig{
-			Enabled:   true,
+		QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
 			QueueSize: -1,
-		},
+		}),
 	}
 
 	require.Error(t, xconfmap.Validate(invalid))

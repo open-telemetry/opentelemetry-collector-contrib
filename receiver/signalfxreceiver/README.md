@@ -6,6 +6,7 @@
 | Stability     | [beta]: metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsignalfx%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsignalfx) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsignalfx%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsignalfx) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_signalfx)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_signalfx&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -32,13 +33,6 @@ The following settings are required:
 
 The following settings are optional:
 
-- `access_token_passthrough`: (default = `false`) Whether to preserve incoming
-  access token (`X-Sf-Token` header value) as
-  `"com.splunk.signalfx.access_token"` metric resource attribute.  Should only be
-  used in tandem with identical configuration option for [SignalFx
-  exporter](../../exporter/signalfxexporter/README.md) to preserve datapoint
-  origin.  Usage of any other exporter in a metric pipeline with this configuration
-  option enabled will reveal all organization access tokens contained in this attribute.
 - `tls_settings` (no default): This is an optional object used to specify if
   TLS should be used for incoming connections. Both `key_file` and `cert_file`
   are required to support incoming TLS connections.
@@ -51,7 +45,6 @@ Example:
 receivers:
   signalfx:
   signalfx/advanced:
-    access_token_passthrough: true
     tls:
       cert_file: /test.crt
       key_file: /test.key
@@ -67,10 +60,14 @@ service:
   pipelines:
     metrics:
       receivers: [signalfx]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [signalfx]
     logs:
       receivers: [signalfx]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [signalfx]
 ```
+## Access token passthrough
+
+Access token passthrough is no longer supported, to achieve similar behavior configure your collector
+to use the `headers_setter` extension to pass the access token. 

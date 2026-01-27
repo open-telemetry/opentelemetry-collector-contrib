@@ -1,0 +1,150 @@
+resourceProfiles:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeProfiles:
+      - profiles:
+          - attributeIndices: [0, 1]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 10000
+          - attributeIndices: [0, 2]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 10000
+          - attributeIndices: [3]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+          - attributeIndices: []
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 100
+        scope: {}
+
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeProfiles:
+      - profiles:
+          - attributeIndices: [0, 1]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 10000
+          - attributeIndices: [0, 2]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 10000
+          - attributeIndices: [3]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+          - attributeIndices: []
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 100
+        scope: {}
+
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: notfoo
+    scopeProfiles:
+      - profiles:
+          - attributeIndices: [0, 1]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 10000
+          - attributeIndices: [0, 2]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 10000
+          - attributeIndices: [3]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+          - attributeIndices: []
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 100
+        scope: {}
+
+  - resource: {}
+    scopeProfiles:
+      - profiles:
+          - attributeIndices: [0, 1]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 10000
+          - attributeIndices: [0, 2]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 10000
+          - attributeIndices: [3]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+          - attributeIndices: []
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 100
+        scope: {}
+dictionary:
+  attributeTable:
+    - keyStrindex: 1
+      value:
+        stringValue: foo
+    - keyStrindex: 2
+      value:
+        stringValue: bar
+    - keyStrindex: 2
+      value:
+        stringValue: notbar
+    - keyStrindex: 1
+      value:
+        stringValue: notfoo
+  stringTable:
+    - count
+    - profile.required
+    - profile.optional
+  stackTable:
+    - {}

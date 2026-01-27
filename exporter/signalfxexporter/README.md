@@ -6,6 +6,7 @@
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fsignalfx%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fsignalfx) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fsignalfx%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fsignalfx) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_signalfx)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_signalfx&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@crobert-1](https://www.github.com/crobert-1) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -25,13 +26,13 @@ The following configuration options are required:
 
 - `access_token` (no default): The access token is the [authentication token
   provided by Splunk Observability
-  Cloud](https://docs.splunk.com/observability/en/admin/authentication/authentication-tokens/manage-usage.html).
+  Cloud](https://help.splunk.com/en/splunk-observability-cloud/administer/authentication-and-security/authentication-tokens/manage-usage-with-access-tokens).
   The access token can be obtained from the web app.
 - Either `realm` or both `api_url` and `ingest_url`. Both `api_url` and
   `ingest_url` take precedence over `realm`.
   - `realm` (no default): SignalFx realm where the data will be received.
   - `api_url` (no default): Destination to which [properties and
-    tags](https://docs.splunk.com/observability/en/metrics-and-metadata/metrics-finder-metadata-catalog.html)
+    tags](https://help.splunk.com/en/splunk-observability-cloud/data-tools/metric-finder-and-metadata-catalogue)
     are sent. If `realm` is set, this option is derived and will be
     `https://api.{realm}.signalfx.com`. If a value is explicitly set, the
     value of `realm` will not be used in determining `api_url`. The explicit
@@ -99,8 +100,14 @@ The following configuration options can also be configured:
   IMPORTANT: Host metadata synchronization relies on `resourcedetection`
   processor. If this option is enabled make sure that `resourcedetection`
   processor is enabled in the pipeline with one of the cloud provider detectors
-  or environment variable detector setting a unique value to `host.name` attribute
+  or environment variable detector setting a unique value to `host.id` attribute
   within your k8s cluster. And keep `override=true` in resourcedetection config.
+- `root_path`: Used by the host metadata to identify the root filesystem.
+  This is needed when running in a containerized environment and the host root
+  filesystem is not `/`. Example: if the root filesystem is mounted under `/hostfs`, set
+  `root_path` to `/hostfs`.
+  Note: all components using `root_path` must have the same value; this currently applies
+  to hostmetrics receiver and signalfx exporter.
 - `exclude_properties`: A list of property filters to limit dimension update content.
   Property filters can contain any number of the following fields, supporting (negated)
   string literals, re2 `/regex/`, and [glob](https://github.com/gobwas/glob) syntax values:
@@ -121,6 +128,7 @@ The following configuration options can also be configured:
   - `max_conns_per_host` (default = 20): The maximum total number of connections the client can keep open per host.
   - `idle_conn_timeout` (default = 30s): The maximum amount of time an idle connection will remain open before closing itself.
   - `timeout` (default = 10s): Amount of time to wait for the dimension HTTP request to complete.
+  - `drop_tags` (default = false): Flag that indicates whether to drop the tags from the metadata sent to Splunk Observability Cloud by the exporter.
 - `nonalphanumeric_dimension_chars`: (default = `"_-."`) A string of characters 
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
@@ -263,6 +271,8 @@ exporters:
     realm: us1
     timeout: 5s
     max_idle_conns: 80
+    sending_queue:
+      batch:
 ```
 
 > :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
@@ -272,11 +282,11 @@ service:
   pipelines:
     metrics:
       receivers: [signalfx]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [signalfx]
     logs:
       receivers: [signalfx]
-      processors: [memory_limiter, batch]
+      processors: [memory_limiter]
       exporters: [signalfx]
     traces:
       receivers: [zipkin]

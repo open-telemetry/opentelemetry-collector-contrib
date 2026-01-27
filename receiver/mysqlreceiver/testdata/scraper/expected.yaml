@@ -127,6 +127,13 @@ resourceMetrics:
                         stringValue: misc
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+                - asInt: "235"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of bytes in the InnoDB buffer pool.
             name: mysql.buffer_pool.usage
@@ -683,6 +690,13 @@ resourceMetrics:
                         stringValue: writes
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+                - asInt: "256"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: fsyncs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of mysqlx connections.
@@ -817,6 +831,15 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
+          - description: InnoDB page size.
+            name: mysql.page_size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "260"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
           - description: The number of times each type of prepared statement command has been issued.
             name: mysql.prepared_statements
             sum:
@@ -1759,3 +1782,4 @@ resourceMetrics:
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
           version: latest
+        

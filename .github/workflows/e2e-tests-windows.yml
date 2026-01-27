@@ -11,7 +11,11 @@ on:
   pull_request:
     paths-ignore:
       - "**/README.md"
+    types: [opened, synchronize, reopened, labeled]
   merge_group:
+
+permissions:
+  contents: read
 
 env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
@@ -19,133 +23,111 @@ env:
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
 jobs:
-  windows-file-changed:
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-        with:
-          fetch-depth: 0
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - name: Did windows files changed
-        run: echo "changed=$(./.github/workflows/scripts/is_changed_file_windows.sh )" >> "$GITHUB_OUTPUT"
-      - run: echo $(./.github/workflows/scripts/is_changed_file_windows.sh ${{ github.event.pull_request.base.sha }} ${{ github.sha }} )
-
   collector-build:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest]
+        os: [windows-latest, windows-11-arm]
     runs-on: ${{ matrix.os }}
-    needs: [windows-file-changed]
-    if: ${{ github.actor != 'dependabot[bot]' && ((contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') || needs.windows-file-changed.outputs.changed == 'true') }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+      - uses: actions/setup-go@v6
+        id: go-setup
         with:
           go-version: "1.24.11"
-          cache: false
-      - name: Cache Go
-        id: go-mod-cache
-        timeout-minutes: 25
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
-        with:
-          path: |
-            ~\go\pkg\mod
-            ~\AppData\Local\go-build
-          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+          cache-dependency-path: "**/*.sum"
       - name: Install dependencies
-        if: steps.go-mod-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
       - name: Generate otelcontribcol files
         run: make genotelcontribcol
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        uses: actions/upload-artifact@v6
         with:
-          name: collector-binary
+          name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: ./bin/*
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   supervisor-test:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, windows-2025]
+        os: [windows-2025, windows-11-arm]
     runs-on: ${{ matrix.os }}
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    env:
+      # The gcc installed on the Windows arm64 runner doesn't ship native ARM libraries so we need to disable CGO.
+      CGO_ENABLED: ${{ matrix.os == 'windows-11-arm' && '0' || '' }}
     needs: [collector-build]
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+      - uses: actions/setup-go@v6
+        id: go-setup
         with:
           go-version: "1.24.11"
-          cache: false
-      - name: Cache Go
-        id: go-mod-cache
-        timeout-minutes: 25
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
-        with:
-          path: |
-            ~\go\pkg\mod
-            ~\AppData\Local\go-build
-          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+          cache-dependency-path: "**/*.sum"
       - name: Install dependencies
-        if: steps.go-mod-cache.outputs.cache-hit != 'true'
+        if: steps.go-setup.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
       - name: Download Collector Binary
-        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+        uses: actions/download-artifact@v7
         with:
-          name: collector-binary
+          name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: bin/
       - name: Run opampsupervisor e2e tests
         run: |
           cd cmd/opampsupervisor
           go test -v --tags=e2e
+      - run: ./.github/workflows/scripts/check-disk-space.sh
 
   windows-supervisor-service-test:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, windows-2025]
+        os: [windows-2025, windows-11-arm]
     runs-on: ${{ matrix.os }}
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     needs: [collector-build]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - name: Setup Go
-        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+      - uses: actions/setup-go@v6
+        id: go-setup
         with:
           go-version: "1.24.11"
-          cache: false
-      - name: Cache Go
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
-        env:
-          cache-name: cache-go-modules
-        with:
-          path: |
-            ~\go\pkg\mod
-            ~\AppData\Local\go-build
-          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+          cache-dependency-path: "**/*.sum"
+      - name: Install dependencies
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-setup.outputs.cache-hit != 'true'
+        run: make install-tools
       - name: Ensure required ports in the dynamic range are available
         run: |
           & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
       - name: Download Collector Binary
-        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          name: collector-binary
+          name: collector-binary-${{ matrix.os == 'windows-11-arm' && 'arm64' || 'amd64' }}
           path: bin/
       - name: Build supervisor
         run: cd cmd/opampsupervisor; go build
       - name: Install supervisor as a service
         run: |
-          New-Service -Name "opampsupervisor" -StartupType "Manual" -BinaryPathName "${PWD}\cmd\opampsupervisor --config ${PWD}\cmd\opampsupervisor\supervisor\testdata\supervisor_windows_service_test_config.yaml\"
+          New-Service -Name "opampsupervisor" -StartupType "Manual" -BinaryPathName "`"${PWD}\cmd\opampsupervisor`" --config `"${PWD}\cmd\opampsupervisor\supervisor\testdata\supervisor_windows_service_test_config.yaml`""
           eventcreate.exe /t information /id 1 /l application /d "Creating event provider for 'opampsupervisor'" /so opampsupervisor
       - name: Test supervisor service
         working-directory: ${{ github.workspace }}/cmd/opampsupervisor
@@ -156,3 +138,4 @@ jobs:
         run: |
           Remove-Service opampsupervisor
           Remove-Item HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Application\opampsupervisor
+      - run: ./.github/workflows/scripts/check-disk-space.sh

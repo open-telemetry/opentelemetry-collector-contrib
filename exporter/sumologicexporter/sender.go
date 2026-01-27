@@ -182,7 +182,8 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, reader *counti
 		return err
 	}
 
-	if err = s.addRequestHeaders(req, pipeline, flds); err != nil {
+	err = s.addRequestHeaders(req, pipeline, flds)
+	if err != nil {
 		return err
 	}
 
@@ -247,13 +248,13 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 		}
 
 		l := s.logger.With(zap.String("status", resp.Status))
-		if len(rResponse.ID) > 0 {
+		if rResponse.ID != "" {
 			l = l.With(zap.String("id", rResponse.ID))
 		}
-		if len(rResponse.Code) > 0 {
+		if rResponse.Code != "" {
 			l = l.With(zap.String("code", rResponse.Code))
 		}
-		if len(rResponse.Message) > 0 {
+		if rResponse.Message != "" {
 			l = l.With(zap.String("message", rResponse.Message))
 		}
 		l.Warn("There was an issue sending data")
@@ -289,13 +290,13 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 			fmt.Sprintf("status: %s", resp.Status),
 		}
 
-		if len(rResponse.ID) > 0 {
+		if rResponse.ID != "" {
 			errMsgs = append(errMsgs, fmt.Sprintf("id: %s", rResponse.ID))
 		}
-		if len(rResponse.Code) > 0 {
+		if rResponse.Code != "" {
 			errMsgs = append(errMsgs, fmt.Sprintf("code: %s", rResponse.Code))
 		}
-		if len(rResponse.Message) > 0 {
+		if rResponse.Message != "" {
 			errMsgs = append(errMsgs, fmt.Sprintf("message: %s", rResponse.Message))
 		}
 		if len(rResponse.Errors) > 0 {
@@ -336,12 +337,12 @@ func (s *sender) createRequest(ctx context.Context, pipeline PipelineType, data 
 }
 
 // logToText converts LogRecord to a plain text line, returns it and error eventually
-func (s *sender) logToText(record plog.LogRecord) string {
+func (*sender) logToText(record plog.LogRecord) string {
 	return record.Body().AsString()
 }
 
 // logToJSON converts LogRecord to a json line, returns it and error eventually
-func (s *sender) logToJSON(record plog.LogRecord) (string, error) {
+func (*sender) logToJSON(record plog.LogRecord) (string, error) {
 	recordCopy := plog.NewLogRecord()
 	record.CopyTo(recordCopy)
 
@@ -366,7 +367,7 @@ func isEmptyAttributeValue(att pcommon.Value) bool {
 	case pcommon.ValueTypeEmpty:
 		return true
 	case pcommon.ValueTypeStr:
-		return len(att.Str()) == 0
+		return att.Str() == ""
 	case pcommon.ValueTypeSlice:
 		return att.Slice().Len() == 0
 	case pcommon.ValueTypeMap:

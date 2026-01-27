@@ -78,7 +78,7 @@ func newTranslateTelegrafMetricsProcessor(shouldTranslate bool) *translateTelegr
 	}
 }
 
-func (proc *translateTelegrafMetricsProcessor) processLogs(_ plog.Logs) error {
+func (*translateTelegrafMetricsProcessor) processLogs(plog.Logs) error {
 	// No-op, this subprocessor doesn't process logs.
 	return nil
 }
@@ -103,7 +103,7 @@ func (proc *translateTelegrafMetricsProcessor) processMetrics(metrics pmetric.Me
 	return nil
 }
 
-func (proc *translateTelegrafMetricsProcessor) processTraces(_ ptrace.Traces) error {
+func (*translateTelegrafMetricsProcessor) processTraces(ptrace.Traces) error {
 	// No-op, this subprocessor doesn't process traces.
 	return nil
 }

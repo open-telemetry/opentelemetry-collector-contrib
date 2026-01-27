@@ -52,7 +52,7 @@ func TestHostMetrics(t *testing.T) {
 				rm := metrics.ResourceMetrics()
 				metric := rm.At(0).ScopeMetrics().At(0).Metrics().At(0)
 				assert.Equal(t, hostInfoMetric, metric.Name())
-				for i := 0; i < count; i++ {
+				for i := range count {
 					dp := metric.Gauge().DataPoints().At(i)
 					val, ok := dp.Attributes().Get(hostIdentifierAttr)
 					assert.Assert(t, ok)

@@ -8,20 +8,59 @@ import (
 	"testing"
 	"time"
 
-	pb "cloud.google.com/go/pubsub/apiv1/pubsubpb"
-	"cloud.google.com/go/pubsub/pstest"
+	pb "cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
+	"cloud.google.com/go/pubsub/v2/pstest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/testdata"
 )
+
+func createTraceExport() []byte {
+	out := ptrace.NewTraces()
+	resources := out.ResourceSpans()
+	resource := resources.AppendEmpty()
+	libs := resource.ScopeSpans()
+	spans := libs.AppendEmpty().Spans()
+	span := spans.AppendEmpty()
+	span.SetName("test")
+	marshaler := ptrace.ProtoMarshaler{}
+	data, _ := marshaler.MarshalTraces(out)
+	return data
+}
+
+func createMetricExport() []byte {
+	out := pmetric.NewMetrics()
+	resources := out.ResourceMetrics()
+	resource := resources.AppendEmpty()
+	libs := resource.ScopeMetrics()
+	metrics := libs.AppendEmpty().Metrics()
+	metric := metrics.AppendEmpty()
+	metric.SetName("test")
+	marshaler := pmetric.ProtoMarshaler{}
+	data, _ := marshaler.MarshalMetrics(out)
+	return data
+}
+
+func createLogExport() []byte {
+	out := plog.NewLogs()
+	resources := out.ResourceLogs()
+	resource := resources.AppendEmpty()
+	libs := resource.ScopeLogs()
+	logs := libs.AppendEmpty()
+	logs.LogRecords().AppendEmpty()
+	marshaler := plog.ProtoMarshaler{}
+	data, _ := marshaler.MarshalLogs(out)
+	return data
+}
 
 func createBaseReceiver() (*pstest.Server, *pubsubReceiver) {
 	srv := pstest.NewServer()
@@ -142,7 +181,7 @@ func TestReceiver(t *testing.T) {
 
 	// Test an OTLP trace message
 	traceSink.Reset()
-	srv.Publish("projects/my-project/topics/otlp", testdata.CreateTraceExport(), map[string]string{
+	srv.Publish("projects/my-project/topics/otlp", createTraceExport(), map[string]string{
 		"ce-type":      "org.opentelemetry.otlp.traces.v1",
 		"content-type": "application/protobuf",
 	})
@@ -152,7 +191,7 @@ func TestReceiver(t *testing.T) {
 
 	// Test an OTLP metric message
 	metricSink.Reset()
-	srv.Publish("projects/my-project/topics/otlp", testdata.CreateMetricExport(), map[string]string{
+	srv.Publish("projects/my-project/topics/otlp", createMetricExport(), map[string]string{
 		"ce-type":      "org.opentelemetry.otlp.metrics.v1",
 		"content-type": "application/protobuf",
 	})
@@ -162,18 +201,9 @@ func TestReceiver(t *testing.T) {
 
 	// Test an OTLP log message
 	logSink.Reset()
-	srv.Publish("projects/my-project/topics/otlp", testdata.CreateLogExport(), map[string]string{
+	srv.Publish("projects/my-project/topics/otlp", createLogExport(), map[string]string{
 		"ce-type":      "org.opentelemetry.otlp.logs.v1",
 		"content-type": "application/protobuf",
-	})
-	assert.Eventually(t, func() bool {
-		return len(logSink.AllLogs()) == 1
-	}, time.Second, 10*time.Millisecond)
-
-	// Test a plain log message
-	logSink.Reset()
-	srv.Publish("projects/my-project/topics/otlp", testdata.CreateTextExport(), map[string]string{
-		"content-type": "text/plain",
 	})
 	assert.Eventually(t, func() bool {
 		return len(logSink.AllLogs()) == 1
@@ -274,6 +304,32 @@ func TestEncodingNotFound(t *testing.T) {
 	receiver.tracesConsumer = consumertest.NewNop()
 	receiver.config.Encoding = "foo"
 	assert.ErrorContains(t, receiver.Start(ctx, fakeHost{}), "extension \"foo\" not found")
+}
+
+func TestEncodingRemovedRawText(t *testing.T) {
+	ctx := t.Context()
+	srv, receiver := createBaseReceiver()
+	defer func() {
+		assert.NoError(t, srv.Close())
+		assert.NoError(t, receiver.Shutdown(ctx))
+	}()
+
+	receiver.logsConsumer = consumertest.NewNop()
+	receiver.config.Encoding = "raw_text"
+	assert.ErrorContains(t, receiver.Start(ctx, fakeHost{}), "build-in raw_text encoding is removed since v0.132.0")
+}
+
+func TestEncodingRemovedCloudLogging(t *testing.T) {
+	ctx := t.Context()
+	srv, receiver := createBaseReceiver()
+	defer func() {
+		assert.NoError(t, srv.Close())
+		assert.NoError(t, receiver.Shutdown(ctx))
+	}()
+
+	receiver.logsConsumer = consumertest.NewNop()
+	receiver.config.Encoding = "cloud_logging"
+	assert.ErrorContains(t, receiver.Start(ctx, fakeHost{}), "build-in cloud_logging encoding is removed since v0.132.0")
 }
 
 func TestEncodingExtension(t *testing.T) {

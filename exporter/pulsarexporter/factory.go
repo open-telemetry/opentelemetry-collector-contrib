@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -61,7 +62,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		Endpoint:        defaultBroker,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:                   "",
@@ -87,9 +88,6 @@ func (f *pulsarExporterFactory) createTracesExporter(
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
-	}
-	if oCfg.Encoding == "otlp_json" {
-		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 	exp, err := newTracesExporter(oCfg, set, f.tracesMarshalers)
 	if err != nil {
@@ -119,9 +117,6 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
-	if oCfg.Encoding == "otlp_json" {
-		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
-	}
 	exp, err := newMetricsExporter(oCfg, set, f.metricsMarshalers)
 	if err != nil {
 		return nil, err
@@ -149,9 +144,6 @@ func (f *pulsarExporterFactory) createLogsExporter(
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
-	}
-	if oCfg.Encoding == "otlp_json" {
-		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 	exp, err := newLogsExporter(oCfg, set, f.logsMarshalers)
 	if err != nil {

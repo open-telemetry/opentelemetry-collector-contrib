@@ -9,6 +9,29 @@ resourceMetrics:
             stringValue: "8080"
     scopeMetrics:
       - metrics:
+          - description: The number of connections in different asynchronous states reported by Apache's server-status.
+            gauge:
+              dataPoints:
+              - asInt: "2"
+                attributes:
+                - key: connection_state
+                  value:
+                    stringValue: writing
+                timeUnixNano: "1000000"
+              - asInt: "1"
+                attributes:
+                - key: connection_state
+                  value:
+                    stringValue: keepalive
+                timeUnixNano: "1000000"
+              - asInt: "1"
+                attributes:
+                - key: connection_state
+                  value:
+                    stringValue: closing
+                timeUnixNano: "1000000"
+            name: apache.connections.async
+            unit: '{connections}'  
           - description: Current load of the CPU.
             gauge:
               dataPoints:

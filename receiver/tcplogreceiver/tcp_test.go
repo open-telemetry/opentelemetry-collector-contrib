@@ -41,7 +41,7 @@ func testTCP(t *testing.T, cfg *TCPLogConfig) {
 	conn, err = net.Dial("tcp", "127.0.0.1:29018")
 	require.NoError(t, err)
 
-	for i := 0; i < numLogs; i++ {
+	for i := range numLogs {
 		msg := fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d\n", i, i)
 		_, err = conn.Write([]byte(msg))
 		require.NoError(t, err)
@@ -55,7 +55,7 @@ func testTCP(t *testing.T, cfg *TCPLogConfig) {
 	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
 	logs := resourceLogs.ScopeLogs().At(0).LogRecords()
 
-	for i := 0; i < numLogs; i++ {
+	for i := range numLogs {
 		log := logs.At(i)
 
 		msg := log.Body()

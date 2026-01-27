@@ -36,7 +36,7 @@ func newMetricsConnector(set connector.Settings, config component.Config, metric
 }
 
 // Capabilities implements the consumer interface.
-func (c *connectorMetrics) Capabilities() consumer.Capabilities {
+func (*connectorMetrics) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

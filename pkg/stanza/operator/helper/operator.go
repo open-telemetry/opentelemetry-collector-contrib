@@ -77,6 +77,8 @@ type BasicOperator struct {
 	OperatorID   string
 	OperatorType string
 	set          component.TelemetrySettings
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ID will return the operator id.
@@ -98,11 +100,11 @@ func (p *BasicOperator) Logger() *zap.Logger {
 }
 
 // Start will start the operator.
-func (p *BasicOperator) Start(_ operator.Persister) error {
+func (*BasicOperator) Start(operator.Persister) error {
 	return nil
 }
 
 // Stop will stop the operator.
-func (p *BasicOperator) Stop() error {
+func (*BasicOperator) Stop() error {
 	return nil
 }

@@ -7,6 +7,7 @@
 |               | [beta]: traces, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Felasticsearch%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Felasticsearch) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Felasticsearch%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Felasticsearch) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_elasticsearch)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_elasticsearch&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@JaredTan95](https://www.github.com/JaredTan95), [@carsonip](https://www.github.com/carsonip), [@lahsivjar](https://www.github.com/lahsivjar) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -16,7 +17,7 @@
 
 This exporter supports sending logs, metrics, traces and profiles to [Elasticsearch](https://www.elastic.co/elasticsearch).
 
-The Exporter is API-compatible with Elasticsearch 7.17.x and 8.x. Certain features of the exporter,
+The Exporter is API-compatible with Elasticsearch 7.17.x, 8.x, and 9.x. Certain features of the exporter,
 such as the `otel` mapping mode, may require newer versions of Elasticsearch. Limited effort will
 be made to support EOL versions of Elasticsearch -- see https://www.elastic.co/support/eol.
 
@@ -63,11 +64,9 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: [batch]
       exporters: [elasticsearch]
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [elasticsearch]
 ```
 
@@ -81,38 +80,26 @@ As a consequence of supporting [confighttp], the Elasticsearch exporter also sup
 The Elasticsearch exporter sets `timeout` (HTTP request timeout) to 90s by default.
 All other defaults are as defined by [confighttp].
 
-### Queuing
+### Queuing and batching
 
-The Elasticsearch exporter supports the common [`sending_queue` settings][exporterhelper]. However, the sending queue is currently disabled by default.
+The Elasticsearch exporter supports the common [`sending_queue` settings][exporterhelper] which
+supports both queueing and batching. The default sending queue is configured to do async batching
+with the following configuration:
 
-### Batching
+```yaml
+sending_queue:
+  enabled: true
+  sizer: requests
+  num_consumers: 10
+  queue_size: 10
+  batch:
+    flush_timeout: 10s
+    min_size: 1e+6 // 1MB
+    max_size: 5e+6 // 5MB
+    sizer: bytes
+```
 
-> [!WARNING]
-> The `batcher` config is experimental and may change without notice.
-
-The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/internal/queue_sender.go).
-
-- `batcher`:
-  - `enabled` (default=unset): Enable batching of requests into 1 or more bulk requests. On a batcher flush, it is possible for a batched request to be translated to more than 1 bulk request due to `flush::bytes`.
-  - `sizer` (default=items): Unit of `min_size` and `max_size`. Currently supports only "items", in the future will also support "bytes".
-  - `min_size` (default=5000): Minimum batch size to be exported to Elasticsearch, measured in units according to `batcher::sizer`.
-  - `max_size` (default=0): Maximum batch size to be exported to Elasticsearch, measured in units according to `batcher::sizer`. To limit bulk request size, configure `flush::bytes` instead. :warning: It is recommended to keep `max_size` as 0 as a non-zero value may lead to broken metrics grouping and indexing rejections.
-  - `flush_timeout` (default=30s): Maximum time of the oldest item spent inside the batcher buffer, aka "max age of batcher buffer". A batcher flush will happen regardless of the size of content in batcher buffer.
-
-By default, the exporter will perform its own buffering and batching, as configured through the
-`flush` config, and `batcher` will be unused. By setting `batcher::enabled` to either `true` or
-`false`, the exporter will not perform any of its own buffering or batching, and the `flush::interval` config
-will be ignored.
-In a future release when the `batcher` config is stable, and has feature parity
-with the exporter's existing `flush` config, it will be enabled by default.
-
-Using the common `batcher` functionality provides several benefits over the default behavior:
- - Combined with a persistent queue, or no queue at all, `batcher` enables at least once delivery.
-   With the default behavior, the exporter will accept data and process it asynchronously,
-   which interacts poorly with queuing.
- - By ensuring the exporter makes requests to Elasticsearch synchronously,
-   client metadata can be passed through to Elasticsearch requests,
-   e.g. by using the [`headers_setter` extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/headerssetterextension/README.md).
+The default configurations are chosen to be closer to the defaults with the exporter's previous inbuilt batching feature. The [`exporterhelper` documentation][exporterhelper] provides more details on the `sending_queue` settings.
 
 ### Elasticsearch document routing
 
@@ -124,8 +111,11 @@ where `data_stream.type` is `logs` for log records, `metrics` for data points, a
 In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`) can be dynamically set from attributes.
 The resulting documents will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
    1. `data_stream.dataset` or `data_stream.namespace` in attributes (precedence: log record / data point / span attribute > scope attribute > resource attribute)
-   2. Otherwise, if scope name matches regex `/receiver/(\w*receiver)`, `data_stream.dataset` will be capture group #1
-   3. Otherwise, `data_stream.dataset` falls back to `generic` and `data_stream.namespace` falls back to `default`. 
+   2. Otherwise, if a scope attribute with the name `encoding.format` exists and contains a string value, `data_stream.dataset` will be set to this value. 
+
+      Note that while enabled by default, this behaviour is considered experimental. Some encoding extensions set this field (e.g. [awslogsencodingextension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/awslogsencodingextension)), but it is not yet part of Semantic Conventions. There is the potential that the name of this routing field evolves as the [discussion progresses in SemConv](https://github.com/open-telemetry/semantic-conventions/issues/2854). 
+   3. Otherwise, if scope name matches regex `/receiver/(\w*receiver)` or `/connector/(\w*connector)`, `data_stream.dataset` will be capture group #1
+   4. Otherwise, `data_stream.dataset` falls back to `generic` and `data_stream.namespace` falls back to `default`. 
 
 [^3]: See additional handling in [Document routing exceptions for OTel data mode](#document-routing-exceptions-for-otel-data-mode)
 
@@ -189,8 +179,12 @@ The mapping mode can also be controlled via the client metadata key `X-Elastic-M
 e.g. via HTTP headers, gRPC metadata. This will override the configured `mapping::mode`.
 It is possible to restrict which mapping modes may be requested by configuring
 `mapping::allowed_modes`, which defaults to all mapping modes. Keep in mind that not all
-processors or exporter configurations will maintain client
-metadata.
+processors or exporter configurations will maintain client metadata.
+
+Finally, the mapping mode can be controlled via the scope attribute `elastic.mapping.mode`.
+If specified, this takes precedence over the `X-Elastic-Mapping-Mode` client metadata.
+If any scope has an invalid mapping mode, the exporter will reject the entire batch.
+The attribute will be excluded from the final document.
 
 See below for a description of each mapping mode.
 
@@ -301,10 +295,10 @@ This can be configured through the following settings:
 The Elasticsearch exporter uses the [Elasticsearch Bulk API] for indexing documents.
 The behaviour of this bulk indexing can be configured with the following settings:
 
-- `num_workers` (default=runtime.NumCPU()): Number of workers publishing bulk requests concurrently.
-- `flush`: Event bulk indexer buffer flush settings
-  - `bytes` (default=5000000): Write buffer flush size limit before compression. A bulk request will be sent immediately when its buffer exceeds this limit. This value should be much lower than [Elasticsearch's `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
-  - `interval` (default=30s): Write buffer flush time limit.
+- `num_workers` (DEPRECATED, use `sending_queue::num_consumers` instead): This config is deprecated and will be used to configure `sending_queue::num_consumers` if `sending_queue::num_consumers` is not explicitly defined. Number of workers publishing bulk requests concurrently.
+- `flush` (DEPRECATED, use `sending_queue` instead): This config is deprecated and will be used to configure different options for `sending_queue` if `sending_queue` options are not explicitly defined. Event bulk indexer buffer flush settings
+  - `bytes` (DEPRECATED, use `sending_queue::batch::max_size` instead): This config is deprecated and will be used to configure `sending_queue::batch::max_size` if `sending_queue::batch::max_size` is not explicitly defined. See the `sending_queue::batch::max_size` for more details.
+  - `interval` (DEPRECATED, use `sending_queue::batch::flush_timeout` instead): This config is deprecated and will be used to configure `sending_queue::batch::flush_timeout` if `sending_queue::batch::flush_timeout` is not explicitly defined. See the `sending_queue::batch::flush_timeout` for more details.
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
   - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
@@ -312,9 +306,29 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
   - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
+- `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [`exporterhelper` docs][exporterhelper].
+  - `enabled` (default=true): Enable queueing and batching behaviour.
+  - `num_consumers` (default=10): Number of consumers that dequeue batches.
+  - `wait_for_result` (default=false): If `true`, blocks incoming requests until processed.
+  - `block_on_overflow` (default=false): If `true`, blocks the request until the queue has space.
+  - `sizer` (default=requests): Measure queueing by requests.
+  - `queue_size` (default=10): Maximum size the queue can accept.
+  - `batch`:
+    - `flush_timeout` (default=10s): Time after which batch is exported irrespective of other settings.
+    - `sizer` (default=bytes): Size batches by bytes. Note that bytes here are based on the pdata model and not on the NDJSON docs that will constitute the bulk indexer requests. To address this discrepancy, the bulk indexers could also flush when their size exceeds the configured max_size due to size of pdata model being smaller than their corresponding NDJSON encoding.
+    - `min_size` (default=1MB): Min size of the batch.
+    - `max_size` (default=5MB): Max size of the batch. This value should be much lower than [Elasticsearch's `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
 
-> [!NOTE]
-> The `flush::interval` config will be ignored when `batcher::enabled` config is explicitly set to `true` or `false`.
+#### Bulk indexing error response
+
+With Elasticsearch 8.18+, a new [query parameter `include_source_on_error`](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk#operation-bulk-include_source_on_error)
+allows users to receive the source document in the error response, if there were any parsing errors in the bulk request.
+In the exporter, the equivalent configuration is also named `include_source_on_error`.
+
+- `include_source_on_error`:
+  - `true`: Enables bulk index responses to include source document on error. Requires Elasticsearch 8.18+. WARNING: the exporter may log error responses containing request payload, causing potential sensitive data to be exposed in logs.
+  - `false`: Disables including source document on bulk index error responses.  Requires Elasticsearch 8.18+.
+  - `null` (default): Backward-compatible option for older Elasticsearch versions. By default, the error reason is discarded from bulk index responses entirely, i.e. only error type is returned.
 
 ### Elasticsearch node discovery
 
@@ -340,6 +354,21 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
   - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_failed_docs_input` (default=false): Include the input (action line and document line) causing indexing error under `input` field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_failed_docs_input_rate_limit` (default="1s"): Rate limiting of logs emitted by `log_failed_docs_input` config, e.g. "1s" means roughly 1 log line per second. A zero or negative value disables rate limiting.
+
+### Metadata keys
+
+Metadata keys are a list of client metadata keys that the exporter uses to partition batches
+when `sending_queue` is enabled with batching support and enrich internal telemetry.
+
+⚠️ This is experimental and may change at any time.
+
+- `metadata_keys` (optional): List of metadata keys that will be used to partition the data
+into batches if [sending_queue][exporterhelper] is enabled with batching support. With
+batching enabled only these metadata keys are guaranteed to be propagated. The keys will also
+be used to enrich the exporter's internal telemetry if defined. The keys are extracted from
+the client metadata available via the context and added to the internal telemetry as attributes.
+
+NOTE: The metadata keys are converted to lower case as key lookups for client metadata is case insensitive. This means that the metric produced by internal telemetry will also have the attribute in lower case.
 
 ## Exporting metrics
 
@@ -389,44 +418,80 @@ exporters:
 
 `elasticsearchexporter` follows ECS mapping defined here: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model-appendix.md#elastic-common-schema
 
-When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for resource-level attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
+When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for resource-level and record-level (log or trace) attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
 
-If the target ECS field name is specified as an empty string (""), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
+If the target ECS field name is specified as an empty string (`""`), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
 
 When "Preserved" is true, the attribute will be preserved in the payload and duplicated as mapped to its ECS equivalent.
 
-| Semantic Convention Name | ECS Name                    | Preserve |
-|--------------------------|-----------------------------|----------|
-| cloud.platform           | cloud.service.name          | false    |
-| container.image.tags     | container.image.tag         | false    |
-| deployment.environment   | service.environment         | false    |
-| host.arch                | host.architecture           | false    |
-| host.name                | host.hostname               | true     |
-| k8s.cluster.name         | orchestrator.cluster.name   | false    |
-| k8s.container.name       | kubernetes.container.name   | false    |
-| k8s.cronjob.name         | kubernetes.cronjob.name     | false    |
-| k8s.daemonset.name       | kubernetes.daemonset.name   | false    |
-| k8s.deployment.name      | kubernetes.deployment.name  | false    |
-| k8s.job.name             | kubernetes.job.name         | false    |
-| k8s.namespace.name       | kubernetes.namespace        | false    |
-| k8s.node.name            | kubernetes.node.name        | false    |
-| k8s.pod.name             | kubernetes.pod.name         | false    |
-| k8s.pod.uid              | kubernetes.pod.uid          | false    |
-| k8s.replicaset.name      | kubernetes.replicaset.name  | false    |
-| k8s.statefulset.name     | kubernetes.statefulset.name | false    |
-| os.description           | host.os.full                | false    |
-| os.name                  | host.os.name                | false    |
-| os.type                  | host.os.platform            | false    |
-| os.version               | host.os.version             | false    |
-| process.executable.path  | process.executable          | false    |
-| process.runtime.name     | service.runtime.name        | false    |
-| process.runtime.version  | service.runtime.version     | false    |
-| service.instance.id      | service.node.name           | false    |
-| telemetry.distro.name    | ""                          | false    |
-| telemetry.distro.version | ""                          | false    |
-| telemetry.sdk.language   | ""                          | false    |
-| telemetry.sdk.name       | ""                          | false    |
-| telemetry.sdk.version    | ""                          | false    |
+When more than one SemConv attribute maps to the same ECS attribute, the converter will map all attributes to the same ECS name.
+This is mean to support backwards compatibility for SemConv attributes that have been renamed/deprecated. 
+The value of the last-mapped attribute will take precedence.
+
+### Resource attribute mapping
+
+| Semantic Convention Name    | ECS Name                    | Preserve | Skip if exists |
+|-----------------------------|-----------------------------|----------|----------------|
+| client.address              | client.ip                   | false    | false          |
+| cloud.platform              | cloud.service.name          | false    | false          |
+| container.image.tags        | container.image.tag         | false    | false          |
+| deployment.environment      | service.environment         | false    | false          |
+| deployment.environment.name | service.environment         | false    | false          |
+| faas.instance               | faas.id                     | false    | false          |
+| faas.trigger                | faas.trigger.type           | false    | false          |
+| host.arch                   | host.architecture           | false    | false          |
+| host.hostname               | host.hostname               | true     | true           |
+| k8s.cluster.name            | orchestrator.cluster.name   | false    | false          |
+| k8s.container.name          | kubernetes.container.name   | false    | false          |
+| k8s.cronjob.name            | kubernetes.cronjob.name     | false    | false          |
+| k8s.daemonset.name          | kubernetes.daemonset.name   | false    | false          |
+| k8s.deployment.name         | kubernetes.deployment.name  | false    | false          |
+| k8s.job.name                | kubernetes.job.name         | false    | false          |
+| k8s.namespace.name          | kubernetes.namespace        | false    | false          |
+| k8s.node.name               | kubernetes.node.name        | false    | false          |
+| k8s.pod.name                | kubernetes.pod.name         | false    | false          |
+| k8s.pod.uid                 | kubernetes.pod.uid          | false    | false          |
+| k8s.replicaset.name         | kubernetes.replicaset.name  | false    | false          |
+| k8s.statefulset.name        | kubernetes.statefulset.name | false    | false          |
+| os.description              | host.os.full                | false    | false          |
+| os.name                     | host.os.name                | false    | false          |
+| os.type                     | host.os.platform            | false    | false          |
+| os.version                  | host.os.version             | false    | false          |
+| process.command_line        | process.args                | false    | false          |
+| process.executable.name     | process.title               | false    | false          |
+| process.executable.path     | process.executable          | false    | false          |
+| process.parent.pid          | process.parent.pid          | false    | false          |
+| process.runtime.name        | service.runtime.name        | false    | false          |
+| process.runtime.version     | service.runtime.version     | false    | false          |
+| service.instance.id         | service.node.name           | false    | false          |
+| source.address              | source.ip                   | false    | false          |
+| telemetry.distro.name       | ""                          | false    | false          |
+| telemetry.distro.version    | ""                          | false    | false          |
+| telemetry.sdk.language      | ""                          | false    | false          |
+| telemetry.sdk.name          | ""                          | false    | false          |
+| telemetry.sdk.version       | ""                          | false    | false          |
+
+### Log record attribute mapping
+
+| Semantic Convention Name | ECS Name                        | Preserve |
+|--------------------------|---------------------------------|----------|
+| event.name               | event.action                    | false    |
+| exception.message        | error.message                   | false    |
+| exception.stacktrace     | error.stacktrace                | false    |
+| exception.type           | error.type                      | false    |
+| exception.escaped        | event.error.exception.handled   | false    |
+| http.response.body.size  | http.response.encoded_body_size | false    |
+
+### Span attribute mapping
+
+| Semantic Convention Name   | ECS Name                                                  | Preserve |
+|----------------------------|-----------------------------------------------------------|----------|
+| messaging.operation.name   | span.action                                               | false    |
+| db.system                  | span.db.type                                              | false    |
+| db.namespace               | span.db.instance                                          | false    |
+| db.query.text              | span.db.statement                                         | false    |
+| http.response.body.size    | http.response.encoded_body_size                           | false    |
+
 
 ### Compound Mapping
 
@@ -453,6 +518,10 @@ These values are all valid:
 
 Takes the value of `telemetry.distro.version` or `telemetry.sdk.version`. If both telemetry.distro.version and telemetry.sdk.version are present, telemetry.distro.version takes precedence.
 
+#### `host.name` and `host.hostname`
+
+Maintains the SemConv Value `host.name` as ECS Value `host.name` and maps it to ECS Value `host.hostname`, if this does not already exist.
+
 #### `host.os.type`
 
 Maps values of `os.type` in the following manner:
@@ -478,6 +547,11 @@ Otherwise, it is mapped to an empty string ("").
 #### `@timestamp`
 
 In case the record contains `timestamp`, this value is used. Otherwise, the `observed timestamp` is used.
+
+### `messaging.destination.name`
+
+Maps to `span.message.queue.name` for regular spans, but to `transaction.message.queue.name` when the `processor.event` attribute equals "transaction".
+This attribute is only applicable at the trace level. 
 
 ## Setting a document id dynamically
 
@@ -513,8 +587,11 @@ The dimensions are mostly made up of resource attributes, scope attributes, scop
 
 The exporter can only group metrics with the same dimensions into the same document if they arrive in the same batch.
 To ensure metrics are not dropped even if they arrive in different batches in the exporter, the exporter adds a fingerprint of the metric names to the document in the `otel` mapping mode.
-Note that you'll need to be on a minimum version of Elasticsearch in order for this to take effect 8.16.5, 8.17.3, 8.19.0, 9.0.0.
-If you are on an earlier version, either update your Elasticsearch cluster or install this custom component template:
+Note that this functionality requires both
+- minimum Elasticsearch Exporter version 0.121.0
+- minimum Elasticsearch version 8.17.6, 8.18.1, 8.19.0, 9.0.1, or 9.1.0
+
+If you are on an earlier version of Elasticsearch, either update your cluster or install this custom component template:
 
 ```shell
 PUT _component_template/metrics-otel@custom
@@ -531,6 +608,8 @@ PUT _component_template/metrics-otel@custom
   }
 }
 ```
+
+After installing this component template, if you've previously ingested data, you'll need to wait until the old index of the time series data stream reaches its `end_time`. This can take up to 30 minutes by default. See [time series index look-ahead time](https://www.elastic.co/docs/reference/elasticsearch/index-settings/time-series) for more information.
 
 While in most situations, this error is just a sign that Elasticsearch's duplicate detection is working as intended, the data may be classified as a duplicate while it was not.
 This implies data is lost.
@@ -550,10 +629,41 @@ This gives the exporter the opportunity to group all related metrics into the sa
 Symptom: bulk indexer logs an error that indicates "bulk indexer flush error" with bulk request returning HTTP 400 and an error type of `illegal_argument_exception`, similar to the following.
 
 ```
-error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error        {"otelcol.component.id": "elasticsearch", "otelcol.component.kind": "Exporter", "otelcol.signal": "logs", "error": "flush failed (400): {\"error\":{\"type\":\"illegal_argument_exception\",\"caused_by\":{}}}"}
+error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error
+{
+  "otelcol.component.id": "elasticsearch",
+  "otelcol.component.kind": "Exporter",
+  "otelcol.signal": "logs",
+  "error": "flush failed (400): {\"error\":{\"type\":\"illegal_argument_exception\",\"caused_by\":{}}}"
+}
 ```
 
 This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) sending to Elasticsearch version < 8.12.
 
 To resolve this, it is recommended to upgrade your Elasticsearch to 8.12+, ideally 8.16+.
 Alternatively, try other mapping modes, but the document structure will be different.
+
+### "dropping cumulative temporality histogram" and "dropping cumulative temporality exponential histogram"
+
+Symptom: `elasticsearchexporter` logs a warning `dropping cumulative temporarily histogram` similar to:
+
+```
+warn    elasticsearchexporter@v0.132.0/exporter.go:340  validation errors
+{
+  "resource": {
+    "service.instance.id": "33ffe7e8-e944-4f92-8fce-9094f4b61d1d",
+    "service.name": "./elastic-agent",
+    "service.version": "9.1.5"
+  },
+  "otelcol.component.id": "elasticsearch/otel",
+  "otelcol.component.kind": "exporter",
+  "otelcol.signal": "metrics",
+  "error": "dropping cumulative temporality histogram \"http.client.request.duration\""
+}
+```
+
+This issue occurs because Elasticsearch does not support **cumulative temporality** for histograms.
+As a workaround, you can either:
+- Export histogram metrics using **delta temporality**, or
+- Apply a `cumulativetodelta` processor.
+For more details, see [Metrics data ingestion](https://www.elastic.co/docs/reference/opentelemetry/compatibility/limitations#metrics-data-ingestion).

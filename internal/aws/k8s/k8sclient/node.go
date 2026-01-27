@@ -212,14 +212,13 @@ func (c *nodeClient) refresh() {
 
 		failed := false
 
-	Loop:
 		for _, condition := range node.Conditions {
 			if _, ok := failedNodeConditions[condition.Type]; ok {
 				// match the failedNodeConditions type we care about
 				if condition.Status != v1.ConditionFalse {
 					// if this is not false, i.e. true or unknown
 					failed = true
-					break Loop
+					break
 				}
 			}
 		}

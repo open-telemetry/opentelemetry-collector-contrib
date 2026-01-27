@@ -29,6 +29,7 @@ type Config struct {
 	HealthPath                 string                   `mapstructure:"health_path"`                   // path for health check api. Default is /health_check
 	RequiredHeader             RequiredHeader           `mapstructure:"required_header"`               // optional setting to set a required header for all requests to have
 	SplitLogsAtNewLine         bool                     `mapstructure:"split_logs_at_newline"`         // optional setting to split logs into multiple log records
+	SplitLogsAtJSONBoundary    bool                     `mapstructure:"split_logs_at_json_boundary"`   // optional setting to split logs at JSON object boundaries
 	ConvertHeadersToAttributes bool                     `mapstructure:"convert_headers_to_attributes"` // optional to convert all headers to attributes
 	HeaderAttributeRegex       string                   `mapstructure:"header_attribute_regex"`        // optional to convert headers matching a regex to log attributes
 }
@@ -71,8 +72,18 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	// Set default MaxRequestBodySize if not configured
+	if cfg.MaxRequestBodySize == 0 {
+		cfg.MaxRequestBodySize = int64(20 * 1024 * 1024) // 20MiB
+		// to match default value http://github.com/open-telemetry/opentelemetry-collector/blob/release/v0.139.x/config/confighttp/server.go#L31
+	}
+
 	if (cfg.RequiredHeader.Key != "" && cfg.RequiredHeader.Value == "") || (cfg.RequiredHeader.Value != "" && cfg.RequiredHeader.Key == "") {
 		errs = multierr.Append(errs, errRequiredHeader)
+	}
+
+	if cfg.SplitLogsAtNewLine && cfg.SplitLogsAtJSONBoundary {
+		errs = multierr.Append(errs, errors.New("split_logs_at_new_line and split_logs_at_json_boundary cannot be enabled at the same time"))
 	}
 
 	if cfg.HeaderAttributeRegex != "" {
@@ -84,4 +95,8 @@ func (cfg *Config) Validate() error {
 	}
 
 	return errs
+}
+
+func (cfg *Config) ShouldSplitLogsAtJSONBoundary() bool {
+	return cfg.SplitLogsAtJSONBoundary
 }

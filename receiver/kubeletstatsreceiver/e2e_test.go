@@ -6,6 +6,7 @@
 package kubeletstatsreceiver
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -14,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -25,6 +28,19 @@ import (
 )
 
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
+
+// getOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
+func getOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
+	if opt.HasValue() {
+		return opt.Get()
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	require.NoError(t, empty.Unmarshal(opt))
+	val := opt.Get()
+	require.NotNil(t, "Expected a default value to be set for %T", val)
+	return val
+}
 
 func TestE2E(t *testing.T) {
 	var expected pmetric.Metrics
@@ -67,14 +83,12 @@ func TestE2E(t *testing.T) {
 func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
-	cfg.HTTP = nil
-	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
-
-	rcvr, err := f.CreateMetrics(t.Context(), receivertest.NewNopSettings(f.Type()), cfg, mc)
+	getOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
+	rcvr, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, mc)
 	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	return func() {
-		assert.NoError(t, rcvr.Shutdown(t.Context()))
+		assert.NoError(t, rcvr.Shutdown(context.Background()))
 	}
 }
 

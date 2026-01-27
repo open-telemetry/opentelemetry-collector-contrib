@@ -70,6 +70,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordApacheConnectionsAsyncDataPoint(ts, "1", AttributeConnectionStateWriting)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordApacheCPULoadDataPoint(ts, "1")
 
 			defaultMetricsCount++
@@ -141,6 +145,21 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "apache.connections.async":
+					assert.False(t, validatedMetrics["apache.connections.async"], "Found a duplicate in the metrics slice: apache.connections.async")
+					validatedMetrics["apache.connections.async"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of connections in different asynchronous states reported by Apache's server-status.", ms.At(i).Description())
+					assert.Equal(t, "{connections}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("connection_state")
+					assert.True(t, ok)
+					assert.Equal(t, "writing", attrVal.Str())
 				case "apache.cpu.load":
 					assert.False(t, validatedMetrics["apache.cpu.load"], "Found a duplicate in the metrics slice: apache.cpu.load")
 					validatedMetrics["apache.cpu.load"] = true

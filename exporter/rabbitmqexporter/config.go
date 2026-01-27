@@ -38,6 +38,8 @@ type RoutingConfig struct {
 
 type AuthConfig struct {
 	Plain PlainAuth `mapstructure:"plain"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type PlainAuth struct {

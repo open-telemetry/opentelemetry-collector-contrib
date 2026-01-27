@@ -31,7 +31,7 @@ func Test_mapToAdxLog(t *testing.T) {
 		logRecordFn     func() plog.LogRecord // function that generates the logs
 		logResourceFn   func() pcommon.Resource
 		logScopeFn      func() pcommon.InstrumentationScope
-		expectedAdxLogs []*AdxLog
+		expectedAdxLogs []*adxLog
 	}{
 		{
 			name: "valid",
@@ -49,7 +49,7 @@ func Test_mapToAdxLog(t *testing.T) {
 			},
 			logResourceFn: newDummyResource,
 			logScopeFn:    newScopeWithData,
-			expectedAdxLogs: []*AdxLog{
+			expectedAdxLogs: []*adxLog{
 				{
 					Timestamp:          tstr,
 					ObservedTimestamp:  tstr,
@@ -78,7 +78,7 @@ func Test_mapToAdxLog(t *testing.T) {
 			},
 			logResourceFn: newDummyResource,
 			logScopeFn:    newScopeWithData,
-			expectedAdxLogs: []*AdxLog{
+			expectedAdxLogs: []*adxLog{
 				{
 					Timestamp:          tstr,
 					ObservedTimestamp:  tstr,
@@ -106,7 +106,7 @@ func Test_mapToAdxLog(t *testing.T) {
 			},
 			logResourceFn: newDummyResource,
 			logScopeFn:    newScopeWithData,
-			expectedAdxLogs: []*AdxLog{
+			expectedAdxLogs: []*adxLog{
 				{
 					Timestamp:          tstr,
 					ObservedTimestamp:  tstr,
@@ -140,7 +140,7 @@ func Test_mapToAdxLog(t *testing.T) {
 			},
 			logResourceFn: newDummyResource,
 			logScopeFn:    newScopeWithData,
-			expectedAdxLogs: []*AdxLog{
+			expectedAdxLogs: []*adxLog{
 				{
 					Timestamp:          tstr,
 					ObservedTimestamp:  tstr,
@@ -163,7 +163,7 @@ func Test_mapToAdxLog(t *testing.T) {
 			},
 			logResourceFn: pcommon.NewResource,
 			logScopeFn:    pcommon.NewInstrumentationScope,
-			expectedAdxLogs: []*AdxLog{
+			expectedAdxLogs: []*adxLog{
 				{
 					Timestamp:          defaultTime,
 					ObservedTimestamp:  defaultTime,

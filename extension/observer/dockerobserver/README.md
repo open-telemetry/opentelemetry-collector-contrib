@@ -6,6 +6,7 @@
 | Stability     | [beta]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fdockerobserver%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fdockerobserver) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fdockerobserver%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fdockerobserver) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_docker_observer)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_docker_observer&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@MovieStoreGuy](https://www.github.com/MovieStoreGuy) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -16,7 +17,7 @@ The Docker observer extension is a [Receiver Creator](../../../receiver/receiver
 container endpoints discovered through the Docker API. Only containers that are in the state of `Running` and not `Paused` will emit endpoints.
 This observer watches the Docker engine's stream of events to dynamically create, update, and remove endpoints as events are processed.
 
-Requires Docker API Version 1.24+.
+Requires Docker API Version 1.44+.
 
 The collector will need permissions to access the Docker Engine API, specifically it will need
 read access to the Docker socket (default `unix:///var/run/docker.sock` on non-Windows and `npipe:////./pipe/docker_engine` on Windows).
@@ -31,8 +32,8 @@ extensions:
     endpoint: my/path/to/docker.sock
     # list of container image names to exclude
     excluded_images: ['redis', 'another_image_name']
-    # client API version, default to 1.24
-    api_version: "1.25"
+    # client API version, default to 1.44
+    api_version: "1.44"
     # max amount of time to wait for a response from Docker API , default to 5s
     timeout: 15s
 
@@ -65,7 +66,7 @@ default: `5s`
 
 The client API version. Make sure you input it as a string instead of a float (e.g. `"1.4"` instead of `1.4`).
 
-default: `"1.24"`
+default: `"1.44"`
 
 ### `excluded_images`
 

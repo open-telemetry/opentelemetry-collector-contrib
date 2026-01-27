@@ -23,7 +23,7 @@ import (
 //	Merge(cleanedMetrics, mdB)
 //
 // That said, this will do a large amount of memory copying
-func Merge(mdA pmetric.Metrics, mdB pmetric.Metrics) pmetric.Metrics {
+func Merge(mdA, mdB pmetric.Metrics) pmetric.Metrics {
 outer:
 	for i := 0; i < mdB.ResourceMetrics().Len(); i++ {
 		rmB := mdB.ResourceMetrics().At(i)
@@ -48,7 +48,7 @@ outer:
 	return mdA
 }
 
-func mergeResourceMetrics(resourceID identity.Resource, rmA pmetric.ResourceMetrics, rmB pmetric.ResourceMetrics) pmetric.ResourceMetrics {
+func mergeResourceMetrics(resourceID identity.Resource, rmA, rmB pmetric.ResourceMetrics) pmetric.ResourceMetrics {
 outer:
 	for i := 0; i < rmB.ScopeMetrics().Len(); i++ {
 		smB := rmB.ScopeMetrics().At(i)
@@ -73,7 +73,7 @@ outer:
 	return rmA
 }
 
-func mergeScopeMetrics(scopeID identity.Scope, smA pmetric.ScopeMetrics, smB pmetric.ScopeMetrics) pmetric.ScopeMetrics {
+func mergeScopeMetrics(scopeID identity.Scope, smA, smB pmetric.ScopeMetrics) pmetric.ScopeMetrics {
 outer:
 	for i := 0; i < smB.Metrics().Len(); i++ {
 		mB := smB.Metrics().At(i)
@@ -111,7 +111,7 @@ outer:
 	return smA
 }
 
-func mergeDataPoints[DPS dataPointSlice[DP], DP dataPoint[DP]](dataPointsA DPS, dataPointsB DPS) DPS {
+func mergeDataPoints[DPS dataPointSlice[DP], DP dataPoint[DP]](dataPointsA, dataPointsB DPS) DPS {
 	// Append all the datapoints from B to A
 	for i := 0; i < dataPointsB.Len(); i++ {
 		dpB := dataPointsB.At(i)

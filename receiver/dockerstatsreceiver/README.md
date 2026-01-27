@@ -7,6 +7,7 @@
 | Unsupported Platforms | darwin, windows |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fdockerstats%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fdockerstats) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fdockerstats%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fdockerstats) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_docker_stats)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_docker_stats&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jamesmoessis](https://www.github.com/jamesmoessis) |
 | Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
@@ -19,13 +20,13 @@ all desired running containers on a configured interval.  These stats are for co
 resource usage of cpu, memory, network, and the
 [blkio controller](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
-> :information_source: Requires Docker API version 1.22+ and only Linux is supported.
+> :information_source: Requires Docker API version 1.25+
 
 ## Configuration
 
 The following settings are optional:
 
-- `endpoint` (default = `unix:///var/run/docker.sock`): Address to reach the desired Docker daemon.
+- `endpoint` (default = `unix:///var/run/docker.sock` (Linux) , default = `npipe:////./pipe/docker_engine` (Windows) ): Address to reach the desired Docker daemon.
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
@@ -41,7 +42,7 @@ only unmatched container image names should be excluded.
     - Globs are non-regex items (e.g. `/items/`) containing any of the following: `*[]{}?`.  Negations are supported:
     `!my*container` will exclude all containers whose image name doesn't match the blob `my*container`.
 - `timeout` (default = `5s`): The request timeout for any docker daemon query.
-- `api_version` (default = `"1.25"`): The Docker client API version (must be 1.25+). Must be input as a string, not a float (e.g. `"1.40"` instead of `1.40`). [Docker API versions](https://docs.docker.com/engine/api/).
+- `api_version` (default = `"1.44"`): The Docker client API version (must be 1.25+). Must be input as a string, not a float (e.g. `"1.40"` instead of `1.40`). [Docker API versions](https://docs.docker.com/engine/api/).
 - `metrics` (defaults at [./documentation.md](./documentation.md)): Enables/disables individual metrics. See [./documentation.md](./documentation.md) for full detail.
 
 Example:
@@ -52,7 +53,7 @@ receivers:
     endpoint: http://example.com/
     collection_interval: 2s
     timeout: 20s
-    api_version: "1.24"
+    api_version: "1.25"
     container_labels_to_metric_labels:
       my.container.label: my-metric-label
       my.other.container.label: my-other-metric-label

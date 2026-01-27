@@ -13,12 +13,12 @@ resourceMetrics:
                         stringValue: 127.0.0.1:9999
                     - key: error.code
                       value:
-                        stringValue: "dial tcp 127.0.0.1:9999: connect: connection refused"
+                        stringValue: "connection_refused"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               aggregationTemporality: AGGREGATION_TEMPORALITY_CUMULATIVE
               isMonotonic: true
-            unit: "{error}"
+            unit: "{errors}"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver
           version: latest

@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -38,14 +39,14 @@ func TestStartAndShutdown(t *testing.T) {
 			desc: "valid config",
 			getConfig: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Events = &EventsConfig{
+				cfg.Events = configoptional.Some(EventsConfig{
 					Projects: []*ProjectConfig{
 						{
 							Name: testProjectName,
 						},
 					},
 					PollInterval: time.Minute,
-				}
+				})
 				return cfg
 			},
 		},
@@ -53,7 +54,8 @@ func TestStartAndShutdown(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
 			sink := &consumertest.LogsSink{}
-			r := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), tc.getConfig(), sink)
+			r, e := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), tc.getConfig(), sink)
+			require.NoError(t, e)
 			err := r.Start(t.Context(), componenttest.NewNopHost(), storage.NewNopClient())
 			if tc.expectedStartErr != nil {
 				require.ErrorContains(t, err, tc.expectedStartErr.Error())
@@ -72,15 +74,18 @@ func TestStartAndShutdown(t *testing.T) {
 
 func TestContextDone(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Events = &EventsConfig{
+	cfg.Events = configoptional.Some(EventsConfig{
 		Projects: []*ProjectConfig{
 			{
 				Name: testProjectName,
 			},
 		},
-	}
+	})
 	sink := &consumertest.LogsSink{}
-	r := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	r, er := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	if er != nil {
+		t.Fatalf("failed to create receiver: %v", er)
+	}
 	r.pollInterval = 500 * time.Millisecond
 	mClient := &mockEventsClient{}
 	mClient.setupMock(t)
@@ -101,7 +106,7 @@ func TestContextDone(t *testing.T) {
 
 func TestPoll(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Events = &EventsConfig{
+	cfg.Events = configoptional.Some(EventsConfig{
 		Projects: []*ProjectConfig{
 			{
 				Name: testProjectName,
@@ -113,10 +118,11 @@ func TestPoll(t *testing.T) {
 			},
 		},
 		PollInterval: time.Second,
-	}
+	})
 
 	sink := &consumertest.LogsSink{}
-	r := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	r, e := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, e)
 	mClient := &mockEventsClient{}
 	mClient.setupMock(t)
 	r.client = mClient
@@ -146,7 +152,7 @@ func TestPoll(t *testing.T) {
 
 func TestProjectGetFailure(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Events = &EventsConfig{
+	cfg.Events = configoptional.Some(EventsConfig{
 		Projects: []*ProjectConfig{
 			{
 				Name: "fake-project",
@@ -158,10 +164,11 @@ func TestProjectGetFailure(t *testing.T) {
 			},
 		},
 		PollInterval: time.Second,
-	}
+	})
 
 	sink := &consumertest.LogsSink{}
-	r := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	r, e := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, e)
 	mClient := &mockEventsClient{}
 	mClient.On("GetProject", mock.Anything, "fake-project").Return(nil, fmt.Errorf("unable to get project: %d", http.StatusUnauthorized))
 	mClient.On("GetOrganization", mock.Anything, "fake-org").Return(nil, fmt.Errorf("unable to get org: %d", http.StatusUnauthorized))
@@ -202,7 +209,7 @@ func (mec *mockEventsClient) setupGetOrganization() {
 	}, nil)
 }
 
-func (mec *mockEventsClient) loadTestEvents(t *testing.T, filename string) []*mongodbatlas.Event {
+func (*mockEventsClient) loadTestEvents(t *testing.T, filename string) []*mongodbatlas.Event {
 	testEvents := filepath.Join("testdata", "events", "sample-payloads", filename)
 	eventBytes, err := os.ReadFile(testEvents)
 	require.NoError(t, err)
@@ -238,6 +245,6 @@ func (mec *mockEventsClient) GetOrganizationEvents(ctx context.Context, oID stri
 	return args.Get(0).([]*mongodbatlas.Event), args.Bool(1), args.Error(2)
 }
 
-func (mec *mockEventsClient) Shutdown() error {
+func (*mockEventsClient) Shutdown() error {
 	return nil
 }

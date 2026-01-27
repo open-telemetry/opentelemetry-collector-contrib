@@ -3,6 +3,8 @@ kind: DaemonSet
 metadata:
   name: {{ .Name }}-{{ .DataType }}-daemonset
   namespace: e2ek8sattribute-clusterrbac
+  annotations:
+    workload: daemonset-annotation
 spec:
   selector:
     matchLabels:

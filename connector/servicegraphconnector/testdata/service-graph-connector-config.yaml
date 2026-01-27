@@ -13,7 +13,7 @@ connectors:
     store:
       ttl: 1s
       max_items: 10
-    database_name_attribute: db.name
+    database_name_attributes: [db.name]
 
 service:
   pipelines:

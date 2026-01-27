@@ -1,0 +1,47 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - attributes:
+                    - key: key1
+                      value:
+                        stringValue: value1
+                    - key: key2
+                      value:
+                        stringValue: value2
+                  bucketCounts:
+                    - "5"
+                    - "10"
+                    - "15"
+                    - "11"
+                  count: "41"
+                  exemplars:
+                    - asDouble: 15.5
+                      filteredAttributes:
+                        - key: type.googleapis.com/google.monitoring.v3.DroppedLabels
+                          value:
+                            kvlistValue:
+                              values:
+                                - key: dropped_key_1
+                                  value:
+                                    stringValue: dropped value 1
+                                - key: dropped_key_2
+                                  value:
+                                    stringValue: dropped value 2
+                      spanId: abcdef1234567890
+                      timeUnixNano: "22000000000"
+                      traceId: 1234567890abcdef1234567890abcdef
+                    - asDouble: 23.3
+                      spanId: ""
+                      timeUnixNano: "33000000000"
+                      traceId: ""
+                  explicitBounds:
+                    - 11.1
+                    - 22.2
+                    - 33.3
+                  startTimeUnixNano: "13000000000"
+                  timeUnixNano: "73000000000"
+        scope: {}

@@ -118,7 +118,7 @@ func TestLogs(t *testing.T) {
 			expected: generateLogs(map[string]string{
 				"node":     nodeID.String(),
 				"log_name": "test-log-name",
-			}, []Log{
+			}, []log{
 				{
 					Timestamp: ts,
 					Attributes: map[string]any{
@@ -144,7 +144,7 @@ func TestLogs(t *testing.T) {
 			expected: generateLogs(map[string]string{
 				"node":     nodeID.String(),
 				"log_name": "test-log-name",
-			}, []Log{
+			}, []log{
 				{
 					Timestamp: ts,
 					Attributes: map[string]any{
@@ -164,7 +164,9 @@ func TestLogs(t *testing.T) {
 
 			require.Eventually(t, func() bool {
 				gotLogs := sink.AllLogs()
-
+				if len(gotLogs) <= i {
+					return false
+				}
 				err := plogtest.CompareLogs(tt.expected, gotLogs[i], plogtest.IgnoreObservedTimestamp())
 				if err == nil {
 					return true
@@ -176,13 +178,13 @@ func TestLogs(t *testing.T) {
 	}
 }
 
-type Log struct {
+type log struct {
 	Timestamp  int64
 	Body       string
 	Attributes map[string]any
 }
 
-func generateLogs(resourceAttrs map[string]string, logs []Log) plog.Logs {
+func generateLogs(resourceAttrs map[string]string, logs []log) plog.Logs {
 	ld := plog.NewLogs()
 	rls := ld.ResourceLogs().AppendEmpty()
 	for k, v := range resourceAttrs {

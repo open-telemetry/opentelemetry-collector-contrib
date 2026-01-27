@@ -47,7 +47,7 @@ type dnsResolver struct {
 	endpoints         []string
 	onChangeCallbacks []func([]string)
 
-	stopCh             chan (struct{})
+	stopCh             chan struct{}
 	updateLock         sync.Mutex
 	shutdownWg         sync.WaitGroup
 	changeCallbackLock sync.RWMutex
@@ -66,7 +66,7 @@ func newDNSResolver(
 	timeout time.Duration,
 	tb *metadata.TelemetryBuilder,
 ) (*dnsResolver, error) {
-	if len(hostname) == 0 {
+	if hostname == "" {
 		return nil, errNoHostname
 	}
 	if interval == 0 {

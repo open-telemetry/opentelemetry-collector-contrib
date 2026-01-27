@@ -9,7 +9,7 @@ import (
 
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 // Config defines configuration for docker observer
@@ -20,7 +20,7 @@ type Config struct {
 }
 
 func (config *Config) Validate() (errs error) {
-	if len(config.TopicRegex) == 0 {
+	if config.TopicRegex == "" {
 		errs = multierr.Append(errs, errors.New("topic_regex must be specified"))
 	}
 	if config.TopicsSyncInterval <= 0 {

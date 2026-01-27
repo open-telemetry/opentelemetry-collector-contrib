@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -24,7 +25,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter/internal/metadata"
 )
 
-var metricsAppToken = uuid.NewString()
+var (
+	metricsAppToken = uuid.NewString()
+	logsAppToken    = uuid.NewString()
+)
 
 // NewFactory creates a factory for the Sematext metrics exporter.
 func NewFactory() exporter.Factory {
@@ -40,11 +44,11 @@ func createDefaultConfig() component.Config {
 	cfg := &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Timeout: 5 * time.Second,
-			Headers: map[string]configopaque.String{
-				"User-Agent": "OpenTelemetry -> Sematext",
+			Headers: configopaque.MapList{
+				{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
 			},
 		},
-		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		MetricsConfig: MetricsConfig{
 			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
 			PayloadMaxLines: 1_000,

@@ -6,7 +6,9 @@
 | Stability     | [alpha]: profiles   |
 |               | [beta]: traces, metrics, logs   |
 | Distributions | [contrib] |
+| Warnings      | [Authentication issues in v0.127.0](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fcoralogix%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fcoralogix) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fcoralogix%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fcoralogix) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_coralogix)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_coralogix&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@povilasv](https://www.github.com/povilasv), [@iblancasa](https://www.github.com/iblancasa), [@douglascamata](https://www.github.com/douglascamata) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -32,6 +34,9 @@ exporters:
     # Your Coralogix private key is sensitive
     private_key: "xxx"
 
+    # (Optional) Protocol to use for communication: "grpc" (default) or "http"
+    protocol: "grpc"
+
     # (Optional) Ordered list of Resource attributes that are used for Coralogix
     # AppName and SubSystem values. The first non-empty Resource attribute is used.
     # Example: application_name_attributes: ["k8s.namespace.name", "service.namespace"]
@@ -41,7 +46,7 @@ exporters:
     subsystem_name_attributes:
     - "service.name"
 
-    # Traces, Metrics and Logs emitted by this OpenTelemetry exporter 
+    # Traces, Metrics and Logs emitted by this OpenTelemetry exporter
     # are tagged in Coralogix with the default application and subsystem constants.
     application_name: "MyBusinessEnvironment"
     subsystem_name: "MyBusinessSystem"
@@ -50,11 +55,48 @@ exporters:
     sending_queue:
       sizer: bytes
       batch:
-        min_size: 4194304 
+        min_size: 4194304
         max_size: 8388608
 
     # (Optional) Timeout is the timeout for every attempt to send data to the backend.
     timeout: 30s
+```
+
+### Transport Protocol
+
+The Coralogix exporter supports two transport protocols:
+- **gRPC** (default): Uses gRPC for efficient binary communication
+- **HTTP**: Uses HTTP with protobuf encoding, useful for proxy support or environments where gRPC is restricted
+
+To use HTTP protocol:
+```yaml
+exporters:
+  coralogix:
+    protocol: "http"
+    domain: "coralogix.com"
+```
+
+#### Using HTTP Protocol with Proxy
+
+When using HTTP protocol, you can configure proxy settings:
+
+```yaml
+exporters:
+  coralogix:
+    protocol: "http"
+    domain: "coralogix.com"
+    private_key: "xxx"
+    application_name: "MyApp"
+    subsystem_name: "MySubsystem"
+    domain_settings:
+      proxy_url: "http://proxy.example.com:8080"
+      timeout: 30s
+```
+
+**Notes**:
+- Proxy support (`proxy_url`) is only available when using the HTTP protocol. gRPC protocol does not support this setting.
+- Signal-specific settings (logs, traces, metrics) take precedence over `domain_settings`.
+- **The profiles signal is not supported when using HTTP protocol**. Use gRPC protocol (default) if you need to send profiles data.
 ```
 
 ### Compression
@@ -68,7 +110,7 @@ exporters:
       compression: "zstd"
 ```
 
-### v0.76.0 Coralogix Domain 
+### v0.76.0 Coralogix Domain
 
 Since v0.76.0 you can specify Coralogix domain in the configuration file instead of specifying different endpoints for traces, metrics and logs. For example, the configuration below, can be replaced with domain field:
 
@@ -91,33 +133,20 @@ exporters:
     domain: "coralogix.com"
 ```
 
-### Coralogix's Domain 
+### Coralogix's Domain
 
-Depending on your region, you might need to use a different domain. Here are the available domains:
+Depending on your region and, you might need to use a different domain. For an up-to-date list of domains, please refer to [the official Coralogix's Domain documentation](https://coralogix.com/docs/user-guides/account-management/account-settings/coralogix-domain/#domains).
 
-| Region  | Domain                  |
-|---------|-------------------------|
-| USA1    | `coralogix.us`          |
-| USA2    | `cx498.coralogix.com`   |
-| APAC1   | `coralogix.in`          |
-| APAC2   | `coralogixsg.com`       |
-| APAC3   | `ap3.coralogix.com`     |
-| EUROPE1 | `coralogix.com`         |
-| EUROPE2 | `eu2.coralogix.com`     |
+Additionally, Coralogix supports AWS PrivateLink, which provides private connectivity between virtual private clouds (VPCs), supported AWS services, and your on-premises networks without exposing your traffic to the public internet. For an up-to-date list of AWS PrivateLink domains, please refer to [Coralogix's official AWS PrivateLink documentation](https://coralogix.com/docs/integrations/aws/aws-privatelink/aws-privatelink/#privatelink-endpoints).
 
-Additionally, Coralogix supports AWS PrivateLink, which provides private connectivity between virtual private clouds (VPCs), supported AWS services, and your on-premises networks without exposing your traffic to the public internet.
+To automatically use the PrivateLink endpoint that corresponds to the configured domain, you can set the `private_link` configuration field to `true`. For example:
 
-Here are available AWS PrivateLink domains:
-
-| Region  | Domain                                              |
-|---------|-----------------------------------------------------|
-| USA1    | `private.coralogix.com`                             |
-| USA2    | `ingress.private.cx498-aws-us-west-2.coralogix.com` |
-| APAC1   | `private.coralogix.in`                              |
-| APAC2   | `private.coralogixsg.com`                           |
-| EUROPE1 | `private.coralogix.com`                             |
-| EUROPE2 | `private.eu2.coralogix.com`                         |
-Learn more about [AWS PrivateLink in the documentation page](https://coralogix.com/docs/coralogix-amazon-web-services-aws-privatelink-endpoints/).
+```yaml
+exporters:
+  coralogix:
+    domain: "eu2.coralogix.com"
+    private_link: true
+```
 
 ### Application and SubSystem attributes
 
@@ -323,6 +352,28 @@ service:
       receivers: [filelog/nginx, filelog/access-log]
       exporters: [coralogix]
 ```
+
+## Warnings
+### Authentication issues in v0.127.0
+
+Version 0.127.0 introduced a regression in the Coralogix exporter. As a consequence, it requires an updated authentication configuration to ensure proper telemetry data transmission to Coralogix. If you're using this version, please modify your configuration to include the authentication headers as shown below:
+
+```yaml
+coralogix:
+  traces:
+    headers:
+      "Authorization": "Bearer ${env:CORALOGIX_PRIVATE_KEY}"
+  metrics:
+    headers:
+      "Authorization": "Bearer ${env:CORALOGIX_PRIVATE_KEY}"
+  logs:
+    headers:
+      "Authorization": "Bearer ${env:CORALOGIX_PRIVATE_KEY}"
+```
+
+This configuration ensures proper authentication with the Coralogix backend.
+Prior versions (v0.126.0 and earlier) and subsequent versions (v0.128.0 and later) are not affected by this authentication issue.
+
 
 ### Need help?
 

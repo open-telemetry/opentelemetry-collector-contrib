@@ -1,7 +1,9 @@
 resourceLogs:
   - resource: {}
     scopeLogs:
-      - scope: {}
+      - scope:
+          name: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
+          version: latest
         logRecords:
           - observedTimeUnixNano: "1696614774196349063"
             body:

@@ -4,7 +4,7 @@
 package maxmind
 
 import (
-	"net"
+	"net/netip"
 	"os"
 	"runtime"
 	"testing"
@@ -31,9 +31,6 @@ func TestInvalidNewProvider(t *testing.T) {
 
 // TestProviderLocation asserts that the MaxMind provider adds the geo location data given an IP.
 func TestProviderLocation(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38961")
-	}
 	tmpDBfiles := testdata.GenerateLocalDB(t, "./testdata")
 	defer os.RemoveAll(tmpDBfiles)
 
@@ -42,30 +39,25 @@ func TestProviderLocation(t *testing.T) {
 	tests := []struct {
 		name               string
 		testDatabase       string
-		sourceIP           net.IP
+		sourceIP           netip.Addr
 		expectedAttributes attribute.Set
 		expectedErrMsg     string
 	}{
 		{
-			name:           "nil IP address",
-			testDatabase:   "GeoIP2-City-Test.mmdb",
-			expectedErrMsg: "IP passed to Lookup cannot be nil",
-		},
-		{
 			name:           "unsupported database type",
-			sourceIP:       net.IPv4(0, 0, 0, 0),
+			sourceIP:       netip.AddrFrom4([4]byte{0, 0, 0, 0}),
 			testDatabase:   "GeoIP2-ISP-Test.mmdb",
 			expectedErrMsg: "unsupported geo IP database type type: GeoIP2-ISP",
 		},
 		{
 			name:           "no IP metadata in database",
-			sourceIP:       net.IPv4(0, 0, 0, 0),
+			sourceIP:       netip.AddrFrom4([4]byte{0, 0, 0, 0}),
 			testDatabase:   "GeoIP2-City-Test.mmdb",
 			expectedErrMsg: "no geo IP metadata found",
 		},
 		{
 			name:         "all attributes should be present for IPv4 using GeoLite2-City database",
-			sourceIP:     net.IPv4(1, 2, 3, 4),
+			sourceIP:     netip.AddrFrom4([4]byte{1, 2, 3, 4}),
 			testDatabase: "GeoLite2-City-Test.mmdb",
 			expectedAttributes: attribute.NewSet([]attribute.KeyValue{
 				attribute.String(conventions.AttributeGeoCityName, "Boxford"),
@@ -83,7 +75,7 @@ func TestProviderLocation(t *testing.T) {
 		},
 		{
 			name:         "subset attributes for IPv6 IP using GeoIP2-City database",
-			sourceIP:     net.ParseIP("2001:220::"),
+			sourceIP:     netip.MustParseAddr("2001:220::"),
 			testDatabase: "GeoIP2-City-Test.mmdb",
 			expectedAttributes: attribute.NewSet([]attribute.KeyValue{
 				attribute.String(conventions.AttributeGeoContinentCode, "AS"),
@@ -107,10 +99,12 @@ func TestProviderLocation(t *testing.T) {
 			actualAttributes, err := provider.Location(t.Context(), tt.sourceIP)
 			if tt.expectedErrMsg != "" {
 				assert.EqualError(t, err, tt.expectedErrMsg)
+				assert.NoError(t, provider.Close(t.Context()))
 				return
 			}
 
 			assert.True(t, tt.expectedAttributes.Equals(&actualAttributes))
+			assert.NoError(t, provider.Close(t.Context()))
 		})
 	}
 }

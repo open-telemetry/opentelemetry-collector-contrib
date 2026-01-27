@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Name }}-{{ .DataType}}-cronjob
+  namespace: e2ek8sattribute-clusterrbac
+  annotations:
+    workload: cronjob-annotation
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          annotations:
+            workload: cronjob
+          labels:
+            app: {{ .Name }}-{{ .DataType }}-cronjob
+        spec:
+          containers:
+          - command:
+            - /telemetrygen
+            - {{ .DataType }}
+            - --otlp-insecure
+            - --otlp-endpoint={{ .OTLPEndpoint }}
+            - --rate=1
+            - --duration=36000s
+            - --otlp-attributes=service.name="test-{{ .DataType }}-cronjob"
+            - --otlp-attributes=k8s.container.name="telemetrygen"
+    {{- if eq .DataType "traces" }}
+            - --status-code=
+    {{- end }}
+            image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+            name: telemetrygen
+          restartPolicy: OnFailure

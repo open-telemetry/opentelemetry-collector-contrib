@@ -34,54 +34,54 @@ var mockClient = new(MockClient)
 
 type mockK8sClient struct{}
 
-func (m *mockK8sClient) GetClientSet() kubernetes.Interface {
-	return fake.NewSimpleClientset()
+func (*mockK8sClient) GetClientSet() kubernetes.Interface {
+	return fake.NewClientset()
 }
 
-func (m *mockK8sClient) GetEpClient() k8sclient.EpClient {
+func (*mockK8sClient) GetEpClient() k8sclient.EpClient {
 	return mockClient
 }
 
-func (m *mockK8sClient) GetNodeClient() k8sclient.NodeClient {
+func (*mockK8sClient) GetNodeClient() k8sclient.NodeClient {
 	return mockClient
 }
 
-func (m *mockK8sClient) GetPodClient() k8sclient.PodClient {
+func (*mockK8sClient) GetPodClient() k8sclient.PodClient {
 	return mockClient
 }
 
-func (m *mockK8sClient) GetDeploymentClient() k8sclient.DeploymentClient {
+func (*mockK8sClient) GetDeploymentClient() k8sclient.DeploymentClient {
 	return mockClient
 }
 
-func (m *mockK8sClient) GetDaemonSetClient() k8sclient.DaemonSetClient {
+func (*mockK8sClient) GetDaemonSetClient() k8sclient.DaemonSetClient {
 	return mockClient
 }
 
-func (m *mockK8sClient) GetStatefulSetClient() k8sclient.StatefulSetClient {
+func (*mockK8sClient) GetStatefulSetClient() k8sclient.StatefulSetClient {
 	return mockClient
 }
 
-func (m *mockK8sClient) GetReplicaSetClient() k8sclient.ReplicaSetClient {
+func (*mockK8sClient) GetReplicaSetClient() k8sclient.ReplicaSetClient {
 	return mockClient
 }
 
-func (m *mockK8sClient) GetPersistentVolumeClaimClient() k8sclient.PersistentVolumeClaimClient {
+func (*mockK8sClient) GetPersistentVolumeClaimClient() k8sclient.PersistentVolumeClaimClient {
 	return mockClient
 }
 
-func (m *mockK8sClient) GetPersistentVolumeClient() k8sclient.PersistentVolumeClient {
+func (*mockK8sClient) GetPersistentVolumeClient() k8sclient.PersistentVolumeClient {
 	return mockClient
 }
 
-func (m *mockK8sClient) GetIngressClient() k8sclient.IngressClient {
+func (*mockK8sClient) GetIngressClient() k8sclient.IngressClient {
 	return mockClient
 }
 
-func (m *mockK8sClient) ShutdownNodeClient() {
+func (*mockK8sClient) ShutdownNodeClient() {
 }
 
-func (m *mockK8sClient) ShutdownPodClient() {
+func (*mockK8sClient) ShutdownPodClient() {
 }
 
 func (m *mockK8sClient) ShutdownDeploymentClient() {
@@ -201,15 +201,15 @@ func (client *MockClient) GetIngressMetrics() *k8sclient.IngressMetrics {
 
 type mockEventBroadcaster struct{}
 
-func (m *mockEventBroadcaster) StartRecordingToSink(_ record.EventSink) watch.Interface {
+func (*mockEventBroadcaster) StartRecordingToSink(_ record.EventSink) watch.Interface {
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) StartLogging(_ func(format string, args ...any)) watch.Interface {
+func (*mockEventBroadcaster) StartLogging(_ func(format string, args ...any)) watch.Interface {
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) NewRecorder(_ *runtime.Scheme, _ v1.EventSource) record.EventRecorderLogger {
+func (*mockEventBroadcaster) NewRecorder(_ *runtime.Scheme, _ v1.EventSource) record.EventRecorderLogger {
 	return record.NewFakeRecorder(100)
 }
 
@@ -255,7 +255,7 @@ func assertMetricValueEqual(t *testing.T, m pmetric.Metrics, metricName string, 
 
 type mockClusterNameProvider struct{}
 
-func (m mockClusterNameProvider) GetClusterName() string {
+func (mockClusterNameProvider) GetClusterName() string {
 	return "cluster-name"
 }
 

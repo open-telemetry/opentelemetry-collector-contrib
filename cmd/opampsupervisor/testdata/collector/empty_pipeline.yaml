@@ -1,0 +1,9 @@
+extensions:
+  health_check:
+    endpoint: "localhost:13133"
+
+service:
+  extensions: [health_check]
+  telemetry:
+    logs:
+      level: debug

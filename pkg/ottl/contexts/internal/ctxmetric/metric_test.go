@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -19,6 +21,9 @@ func TestPathGetSetter(t *testing.T) {
 
 	newMetric := pmetric.NewMetric()
 	newMetric.SetName("new name")
+
+	newMetadata := pcommon.NewMap()
+	newMetadata.PutStr("new_k", "new_v")
 
 	newDataPoints := pmetric.NewNumberDataPointSlice()
 	dataPoint := newDataPoints.AppendEmpty()
@@ -107,20 +112,31 @@ func TestPathGetSetter(t *testing.T) {
 				newDataPoints.CopyTo(metric.Sum().DataPoints())
 			},
 		},
+		{
+			name: "metric metadata",
+			path: &pathtest.Path[*testContext]{
+				N: "metadata",
+			},
+			orig:   pcommon.NewMap(),
+			newVal: newMetadata,
+			modified: func(metric pmetric.Metric) {
+				newMetadata.CopyTo(metric.Metadata())
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			accessor, err := ctxmetric.PathGetSetter(tt.path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			metric := createTelemetry()
 
 			got, err := accessor.Get(t.Context(), newTestContext(metric))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(t.Context(), newTestContext(metric), tt.newVal)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			expectedMetric := createTelemetry()
 			tt.modified(expectedMetric)

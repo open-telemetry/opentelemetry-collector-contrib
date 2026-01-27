@@ -11,16 +11,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 
@@ -37,6 +38,8 @@ func TestConnectorWithTraces(t *testing.T) {
 		"sum",
 		"histograms",
 		"exponential_histograms",
+		"metric_identity",
+		"gauge",
 	}
 
 	ctx, cancel := context.WithCancel(t.Context())
@@ -69,6 +72,7 @@ func TestConnectorWithMetrics(t *testing.T) {
 		"sum",
 		"histograms",
 		"exponential_histograms",
+		"gauge",
 	}
 
 	ctx, cancel := context.WithCancel(t.Context())
@@ -101,6 +105,8 @@ func TestConnectorWithLogs(t *testing.T) {
 		"sum",
 		"histograms",
 		"exponential_histograms",
+		"metric_identity",
+		"gauge",
 	}
 
 	ctx, cancel := context.WithCancel(t.Context())
@@ -128,6 +134,40 @@ func TestConnectorWithLogs(t *testing.T) {
 	}
 }
 
+func TestConnectorWithProfiles(t *testing.T) {
+	testCases := []string{
+		"sum",
+		"histograms",
+		"exponential_histograms",
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	for _, tc := range testCases {
+		t.Run(tc, func(t *testing.T) {
+			profileTestDataDir := filepath.Join(testDataDir, "profiles")
+			inputProfiles, err := golden.ReadProfiles(filepath.Join(profileTestDataDir, "profiles.yaml"))
+			require.NoError(t, err)
+
+			next := &consumertest.MetricsSink{}
+			tcTestDataDir := filepath.Join(profileTestDataDir, tc)
+			factory, settings, cfg := setupConnector(t, tcTestDataDir)
+			connector, err := factory.CreateProfilesToMetrics(ctx, settings, cfg, next)
+			require.NoError(t, err)
+			require.IsType(t, &signalToMetrics{}, connector)
+
+			require.NoError(t, connector.ConsumeProfiles(ctx, inputProfiles))
+			require.Len(t, next.AllMetrics(), 1)
+
+			expectedMetrics, err := golden.ReadMetrics(filepath.Join(tcTestDataDir, "output.yaml"))
+			require.NoError(t, err)
+
+			assertAggregatedMetrics(t, expectedMetrics, next.AllMetrics()[0])
+		})
+	}
+}
+
 func BenchmarkConnectorWithTraces(b *testing.B) {
 	factory := NewFactory()
 	settings := connectortest.NewNopSettings(metadata.Type)
@@ -146,8 +186,8 @@ func BenchmarkConnectorWithTraces(b *testing.B) {
 	require.NoError(b, err)
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		if err := connector.ConsumeTraces(b.Context(), inputTraces); err != nil {
 			b.Fatal(err)
 		}
@@ -172,8 +212,8 @@ func BenchmarkConnectorWithMetrics(b *testing.B) {
 	require.NoError(b, err)
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		if err := connector.ConsumeMetrics(b.Context(), inputMetrics); err != nil {
 			b.Fatal(err)
 		}
@@ -198,8 +238,8 @@ func BenchmarkConnectorWithLogs(b *testing.B) {
 	require.NoError(b, err)
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		if err := connector.ConsumeLogs(b.Context(), inputLogs); err != nil {
 			b.Fatal(err)
 		}
@@ -230,10 +270,10 @@ func testMetricInfo(b *testing.B) []config.MetricInfo {
 					Key: "http.response.status_code",
 				},
 			},
-			Histogram: &config.Histogram{
+			Histogram: configoptional.Some(config.Histogram{
 				Buckets: []float64{2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000},
 				Value:   "1.4",
-			},
+			}),
 		},
 		{
 			Name:        "test.exphistogram",
@@ -253,10 +293,10 @@ func testMetricInfo(b *testing.B) []config.MetricInfo {
 					Key: "http.response.status_code",
 				},
 			},
-			ExponentialHistogram: &config.ExponentialHistogram{
+			ExponentialHistogram: configoptional.Some(config.ExponentialHistogram{
 				Value:   "2.4",
 				MaxSize: 160,
-			},
+			}),
 		},
 		{
 			Name:        "test.sum",
@@ -276,16 +316,16 @@ func testMetricInfo(b *testing.B) []config.MetricInfo {
 					Key: "http.response.status_code",
 				},
 			},
-			Sum: &config.Sum{
+			Sum: configoptional.Some(config.Sum{
 				Value: "5.4",
-			},
+			}),
 		},
 	}
 }
 
 func setupConnector(
 	t *testing.T, testFilePath string,
-) (connector.Factory, connector.Settings, component.Config) {
+) (xconnector.Factory, connector.Settings, component.Config) {
 	t.Helper()
 	factory := NewFactory()
 	settings := connectortest.NewNopSettings(metadata.Type)
@@ -300,16 +340,16 @@ func setupConnector(
 	require.NoError(t, sub.Unmarshal(&cfg))
 	require.NoError(t, xconfmap.Validate(cfg))
 
-	return factory, settings, cfg
+	return factory.(xconnector.Factory), settings, cfg
 }
 
 func telemetryResource(t *testing.T) pcommon.Resource {
 	t.Helper()
 
 	r := pcommon.NewResource()
-	r.Attributes().PutStr(semconv.AttributeServiceInstanceID, "627cc493-f310-47de-96bd-71410b7dec09")
-	r.Attributes().PutStr(semconv.AttributeServiceName, "signaltometrics")
-	r.Attributes().PutStr(semconv.AttributeServiceNamespace, "test")
+	r.Attributes().PutStr("service.instance.id", "627cc493-f310-47de-96bd-71410b7dec09")
+	r.Attributes().PutStr("service.name", "signaltometrics")
+	r.Attributes().PutStr("service.namespace", "test")
 	return r
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -41,6 +42,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbExecutions:                            MetricConfig{Enabled: true},
 					OracledbHardParses:                            MetricConfig{Enabled: true},
 					OracledbLogicalReads:                          MetricConfig{Enabled: true},
+					OracledbLogons:                                MetricConfig{Enabled: true},
 					OracledbParallelOperationsDowngraded1To25Pct:  MetricConfig{Enabled: true},
 					OracledbParallelOperationsDowngraded25To50Pct: MetricConfig{Enabled: true},
 					OracledbParallelOperationsDowngraded50To75Pct: MetricConfig{Enabled: true},
@@ -68,7 +70,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbUserRollbacks:                         MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					HostName:             ResourceAttributeConfig{Enabled: true},
 					OracledbInstanceName: ResourceAttributeConfig{Enabled: true},
+					ServiceInstanceID:    ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -92,6 +96,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbExecutions:                            MetricConfig{Enabled: false},
 					OracledbHardParses:                            MetricConfig{Enabled: false},
 					OracledbLogicalReads:                          MetricConfig{Enabled: false},
+					OracledbLogons:                                MetricConfig{Enabled: false},
 					OracledbParallelOperationsDowngraded1To25Pct:  MetricConfig{Enabled: false},
 					OracledbParallelOperationsDowngraded25To50Pct: MetricConfig{Enabled: false},
 					OracledbParallelOperationsDowngraded50To75Pct: MetricConfig{Enabled: false},
@@ -119,7 +124,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbUserRollbacks:                         MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					HostName:             ResourceAttributeConfig{Enabled: false},
 					OracledbInstanceName: ResourceAttributeConfig{Enabled: false},
+					ServiceInstanceID:    ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -139,7 +146,17 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
+	return cfg
+}
+
+func loadLogsBuilderConfig(t *testing.T, name string) LogsBuilderConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultLogsBuilderConfig()
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 
@@ -155,13 +172,17 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				HostName:             ResourceAttributeConfig{Enabled: true},
 				OracledbInstanceName: ResourceAttributeConfig{Enabled: true},
+				ServiceInstanceID:    ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				HostName:             ResourceAttributeConfig{Enabled: false},
 				OracledbInstanceName: ResourceAttributeConfig{Enabled: false},
+				ServiceInstanceID:    ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

@@ -49,7 +49,7 @@ type ec2Tags struct {
 
 type ec2TagsOption func(*ec2Tags)
 
-func newEC2Tags(ctx context.Context, session *session.Session, instanceID string, region string, containerOrchestrator string,
+func newEC2Tags(ctx context.Context, session *session.Session, instanceID, region, containerOrchestrator string,
 	refreshInterval time.Duration, logger *zap.Logger, configurer *awsmiddleware.Configurer, options ...ec2TagsOption,
 ) ec2TagsProvider {
 	et := &ec2Tags{

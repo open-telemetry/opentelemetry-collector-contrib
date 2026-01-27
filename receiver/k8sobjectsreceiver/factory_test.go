@@ -26,6 +26,8 @@ func TestDefaultConfig(t *testing.T) {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
+		ErrorMode:           PropagateError,
+		IncludeInitialState: false,
 	}, rCfg)
 }
 

@@ -65,7 +65,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTcpcheckErrorDataPoint(ts, 1, "tcpcheck.endpoint-val", "error.code-val")
+			mb.RecordTcpcheckErrorDataPoint(ts, 1, "tcpcheck.endpoint-val", AttributeErrorCodeConnectionRefused)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -114,7 +114,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Records errors occurring during TCP check.", ms.At(i).Description())
-					assert.Equal(t, "{error}", ms.At(i).Unit())
+					assert.Equal(t, "{errors}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -127,7 +127,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "tcpcheck.endpoint-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("error.code")
 					assert.True(t, ok)
-					assert.Equal(t, "error.code-val", attrVal.Str())
+					assert.Equal(t, "connection_refused", attrVal.Str())
 				case "tcpcheck.status":
 					assert.False(t, validatedMetrics["tcpcheck.status"], "Found a duplicate in the metrics slice: tcpcheck.status")
 					validatedMetrics["tcpcheck.status"] = true

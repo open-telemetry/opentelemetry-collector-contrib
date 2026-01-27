@@ -6,6 +6,7 @@
 | Stability     | [beta]: traces, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Flogzio%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Flogzio) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Flogzio%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Flogzio) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_logzio)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_logzio&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@yotamloe](https://www.github.com/yotamloe) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -35,7 +36,7 @@ Logz.io exporter is utilizing opentelemetry [exporter helper](https://github.com
 - `timeout`: Time to wait per individual attempt to send data to a backend. default = 30s
 
 #### Tracing example:
-* We recommend using `batch` processor. Batching helps better compress the data and reduce the number of outgoing connections required to transmit the data.
+* We recommend using `sending_queue::batch` option. Batching helps better compress the data and reduce the number of outgoing connections required to transmit the data.
 
 ```yaml
 receivers:
@@ -55,10 +56,6 @@ receivers:
         endpoint: "0.0.0.0:14250"
       thrift_http:
         endpoint: "0.0.0.0:14268"
-processors:
-  batch:
-    send_batch_size: 10000
-    timeout: 1s
 exporters:
   logzio/traces:
     account_token: "LOGZIOtraceTOKEN"
@@ -67,14 +64,13 @@ service:
   pipelines:
     traces:
       receivers: [ otlp,jaeger ]
-      processors: [ batch ]
       exporters: [ logzio/traces ]
   telemetry:
     logs:
       level: "debug"
 ```
 #### Logs example:
-* We recommend using `batch` processor. Batching helps better compress the data and reduce the number of outgoing connections required to transmit the data.
+* We recommend using `sending_queue::batch` option. Batching helps better compress the data and reduce the number of outgoing connections required to transmit the data.
 * We recommend adding `type` attribute to classify your log records
 * We recommend adding `resourcedetection` processor to add metadata to your log records
 
@@ -91,9 +87,6 @@ receivers:
     attributes:
       type: <<your-logzio-type>>
 processors:
-  batch:
-    send_batch_size: 10000
-    timeout: 1s
   resourcedetection/system:
     detectors: [ "system" ]
     system:
@@ -106,7 +99,7 @@ service:
   pipelines:
     logs:
       receivers: [filelog]
-      processors: [ resourcedetection/system, batch ]
+      processors: [ resourcedetection/system ]
       exporters: [logzio/logs]
   telemetry:
     logs:
@@ -149,17 +142,11 @@ exporters:
     endpoint: "https://listener.logz.io:8053"
     headers:
       Authorization: "Bearer LOGZIOprometheusTOKEN"
-
-processors:
-  batch:
-    send_batch_size: 10000
-    timeout: 1s
     
 service:
   pipelines:
     traces:
       receivers: [jaeger]
-      processors: [batch]
       exporters: [logzio/traces]
 
     metrics:

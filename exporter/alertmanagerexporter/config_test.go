@@ -8,12 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -59,21 +60,21 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
-					Sizer:        exporterhelper.RequestSizerTypeRequests,
-					NumConsumers: 2,
-					QueueSize:    10,
-				},
+				QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.NumConsumers = 2
+					queue.QueueSize = 10
+					return configoptional.Some(queue)
+				}(),
 				ClientConfig: func() confighttp.ClientConfig {
 					client := confighttp.NewDefaultClientConfig()
-					client.Headers = map[string]configopaque.String{
-						"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
-						"header1":                "234",
-						"another":                "somevalue",
+					client.Headers = configopaque.MapList{
+						{Name: "another", Value: "somevalue"},
+						{Name: "can you have a . here?", Value: "F0000000-0000-0000-0000-000000000000"},
+						{Name: "header1", Value: "234"},
 					}
 					client.Endpoint = "a.new.alertmanager.target:9093"
-					client.TLSSetting = configtls.ClientConfig{
+					client.TLS = configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "/var/lib/mycert.pem",
 						},

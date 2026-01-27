@@ -10,8 +10,22 @@ status:
 
 telemetry:
   metrics:
+    receiver.googlecloudpubsub.encoding_error:
+      enabled: true
+      stability:
+        level: development
+      description: Number of times a message couldn't be decoded by the configured encoder
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      extended_documentation: |
+        The receiver reads messages from Google Cloud Pub/Sub and tries to decode the message using the configured
+        encoder. Each time a message fails to decoded the counter is increased.
     receiver.googlecloudpubsub.stream_restarts:
       enabled: true
+      stability:
+        level: development
       description: Number of times the stream (re)starts due to a Pub/Sub servers connection close
       unit: "1"
       sum:
@@ -33,4 +47,3 @@ tests:
     ignore:
       # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
       top: go.opencensus.io/stats/view.(*worker).start
-

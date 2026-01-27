@@ -6,6 +6,7 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Frabbitmq%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Frabbitmq) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Frabbitmq%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Frabbitmq) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_rabbitmq)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_rabbitmq&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@VenuEmmadi](https://www.github.com/VenuEmmadi) |
 | Emeritus      | [@cpheps](https://www.github.com/cpheps) |
 
@@ -15,7 +16,6 @@
 
 This receiver fetches stats from a RabbitMQ node using the [RabbitMQ Management Plugin](https://www.rabbitmq.com/management.html).
 
-> :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
 ## Prerequisites
 
 This receiver supports RabbitMQ versions `3.8` and `3.9`.
@@ -45,7 +45,7 @@ receivers:
     username: otelu
     password: ${env:RABBITMQ_PASSWORD}
     collection_interval: 10s
-     metrics:  # Enable node metrics by explicitly setting them to true
+    metrics:  # Enable node metrics by explicitly setting them to true
       rabbitmq.node.disk_free:
         enabled: true
       rabbitmq.node.disk_free_limit:

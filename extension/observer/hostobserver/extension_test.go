@@ -248,7 +248,7 @@ type mockNotifier struct {
 	endpointsMap map[observer.EndpointID]observer.Endpoint
 }
 
-func (m mockNotifier) ID() observer.NotifyID {
+func (mockNotifier) ID() observer.NotifyID {
 	return "mockNotifier"
 }
 

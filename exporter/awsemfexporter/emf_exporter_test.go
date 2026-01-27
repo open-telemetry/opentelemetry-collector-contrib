@@ -289,7 +289,6 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
-
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
@@ -327,7 +326,6 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	})
 	require.Error(t, exp.pushMetricsData(ctx, md)) // this returns  Permanent error: UnrecognizedClientException: The security token included in the request is invalid.
 	require.NoError(t, exp.shutdown(ctx))
-
 	pusherMap, ok := exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  expCfg.LogGroupName,
 		LogStreamName: expCfg.LogStreamName,
@@ -428,7 +426,8 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	params := exportertest.NewNopSettings(metadata.Type)
 	params.Logger = zap.New(obs)
 
-	exp, err := newEmfExporter(expCfg, params)
+	ctx := t.Context()
+	exp, err := newEmfExporter(ctx, expCfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 	err = expCfg.Validate()

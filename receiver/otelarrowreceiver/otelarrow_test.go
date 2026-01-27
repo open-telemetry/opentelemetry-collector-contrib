@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	arrowpb "github.com/open-telemetry/otel-arrow/go/api/experimental/arrow/v1"
+	arrowRecord "github.com/open-telemetry/otel-arrow/go/pkg/otel/arrow_record"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -111,7 +112,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 	ocr := newGRPCReceiver(t, addr, tt.NewTelemetrySettings(), sink, nil)
 	require.NotNil(t, ocr)
 	require.NoError(t, ocr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(t.Context())) })
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) }) //nolint:usetesting
 
 	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -141,7 +142,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_spans",
-			Description: "Number of spans successfully pushed into the pipeline. [alpha]",
+			Description: "Number of spans successfully pushed into the pipeline. [Alpha]",
 			Unit:        "{spans}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -162,7 +163,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_spans",
-			Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
+			Description: "Number of spans that could not be pushed into the pipeline. [Alpha]",
 			Unit:        "{spans}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -187,11 +188,11 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLSSetting: &configtls.ServerConfig{
+				TLS: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "willfail",
 					},
-				},
+				}),
 			},
 		},
 	}
@@ -237,7 +238,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 
 	require.NotNil(t, ocr)
 	require.NoError(t, ocr.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(t.Context())) })
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) }) //nolint:usetesting
 
 	cc, err = grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -355,12 +356,14 @@ func TestOTelArrowShutdown(t *testing.T) {
 			// Create OTelArrow receiver
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
-				ServerParameters: &configgrpc.KeepaliveServerParameters{},
-			}
+			cfg.GRPC.Keepalive = configoptional.Some(configgrpc.KeepaliveServerConfig{
+				ServerParameters: configoptional.None[configgrpc.KeepaliveServerParameters](),
+			})
 			if !cooperative {
-				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAge = time.Second
-				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAgeGrace = 5 * time.Second
+				cfg.GRPC.Keepalive.Get().ServerParameters = configoptional.Some(configgrpc.KeepaliveServerParameters{
+					MaxConnectionAge:      time.Second,
+					MaxConnectionAgeGrace: 5 * time.Second,
+				})
 			}
 			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 			set := receivertest.NewNopSettings(componentmetadata.Type)
@@ -505,7 +508,7 @@ func (esc *errOrSinkConsumer) SetConsumeError(err error) {
 	esc.consumeError = err
 }
 
-func (esc *errOrSinkConsumer) Capabilities() consumer.Capabilities {
+func (*errOrSinkConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -609,7 +612,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 
 	// Repeatedly send traces via arrow. Set the expected traces
 	// metadata to receive.
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		td := testdata.GenerateTraces(2)
 		expectTraces = append(expectTraces, td)
 
@@ -692,9 +695,9 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	cfg.GRPC.Auth = &configauth.Authentication{
+	cfg.GRPC.Auth = configoptional.Some(configauth.Config{
 		AuthenticatorID: authID,
-	}
+	})
 	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
@@ -730,7 +733,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	producer := arrowRecord.NewProducer()
 
 	// Repeatedly send traces via arrow. Expect an auth error.
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		td := testdata.GenerateTraces(2)
 
 		batch, err := producer.BatchArrowRecordsFromTraces(td)
@@ -781,7 +784,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(numStreams)
 
-	for j := 0; j < numStreams; j++ {
+	for range numStreams {
 		go func() {
 			defer wg.Done()
 
@@ -795,7 +798,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 
 			// Repeatedly send traces via arrow. Set the expected traces
 			// metadata to receive.
-			for i := 0; i < itemsPerStream; i++ {
+			for i := range itemsPerStream {
 				td := testdata.GenerateTraces(2)
 
 				headerBuf.Reset()
@@ -838,7 +841,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 		counts[val]++
 	}
 
-	for i := 0; i < itemsPerStream; i++ {
+	for i := range itemsPerStream {
 		require.Equal(t, numStreams, counts[i])
 	}
 }
@@ -855,9 +858,7 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
-		ServerParameters: &configgrpc.KeepaliveServerParameters{},
-	}
+	cfg.GRPC.Keepalive = configoptional.None[configgrpc.KeepaliveServerConfig]()
 	// No keepalive parameters are set
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	set := receivertest.NewNopSettings(componentmetadata.Type)

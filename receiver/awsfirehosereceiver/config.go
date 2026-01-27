@@ -16,7 +16,7 @@ var errRecordTypeEncodingSet = errors.New("record_type must not be set when enco
 type Config struct {
 	// ServerConfig is used to set up the Firehose delivery
 	// endpoint. The Firehose delivery stream expects an HTTPS
-	// endpoint, so TLSSettings must be used to enable that.
+	// endpoint, so TLSs must be used to enable that.
 	confighttp.ServerConfig `mapstructure:",squash"`
 	// Encoding identifies the encoding of records received from
 	// Firehose. Defaults to telemetry-specific encodings: "cwlog"

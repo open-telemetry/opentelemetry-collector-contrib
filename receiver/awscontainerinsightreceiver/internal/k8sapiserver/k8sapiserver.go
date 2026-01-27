@@ -290,7 +290,7 @@ func (k *K8sAPIServer) getServiceMetrics(clusterName, timestampNs string) []pmet
 			attributes[ci.NodeNameKey] = k.nodeName
 		}
 		attributes[ci.SourcesKey] = "[\"apiserver\"]"
-		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"service_name\":\"%s\"}",
+		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"service_name\":\"%s\"}", //nolint:gocritic //sprintfQuotedString for JSON
 			service.Namespace, service.ServiceName)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		metrics = append(metrics, md)

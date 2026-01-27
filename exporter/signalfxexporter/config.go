@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -20,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -59,7 +61,7 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	confighttp.ClientConfig   `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
@@ -77,7 +79,7 @@ type Config struct {
 
 	// ingest_tls needs to be set if the exporter's IngestURL is pointing to a signalfx receiver
 	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
-	IngestTLSSettings configtls.ClientConfig `mapstructure:"ingest_tls,omitempty"`
+	IngestTLSs configtls.ClientConfig `mapstructure:"ingest_tls,omitempty"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
 	// value takes precedence over the value of Realm
@@ -85,7 +87,7 @@ type Config struct {
 
 	// api_tls needs to be set if the exporter's APIURL is pointing to a httpforwarder extension
 	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
-	APITLSSettings configtls.ClientConfig `mapstructure:"api_tls,omitempty"`
+	APITLSs configtls.ClientConfig `mapstructure:"api_tls,omitempty"`
 
 	// Whether to log datapoints dispatched to Splunk Observability Cloud
 	LogDataPoints bool `mapstructure:"log_data_points"`
@@ -114,6 +116,9 @@ type Config struct {
 	//            And keep `override=true` in resourcedetection config.
 	SyncHostMetadata bool `mapstructure:"sync_host_metadata"`
 
+	// RootPath is the host's root directory used when syncing metadata; applies to linux only.
+	RootPath string `mapstructure:"root_path"`
+
 	// ExcludeMetrics defines dpfilter.MetricFilters that will determine metrics to be
 	// excluded from sending to SignalFx backend. If translations enabled with
 	// TranslationRules options, the exclusion will be applied on translated metrics.
@@ -127,6 +132,11 @@ type Config struct {
 	// ExcludeProperties defines dpfilter.PropertyFilters to prevent inclusion of
 	// properties to include with dimension updates to the SignalFx backend.
 	ExcludeProperties []dpfilters.PropertyFilter `mapstructure:"exclude_properties"`
+
+	// DefaultProperties defines a set of properties to be added to any dimension
+	// updates to the Splunk Observability backend. Any explicit property value
+	// takes precedence over those defaults.
+	DefaultProperties map[string]string `mapstructure:"default_properties"`
 
 	// Correlation configuration for syncing traces service and environment to metrics.
 	Correlation *correlation.Config `mapstructure:"correlation"`
@@ -152,6 +162,7 @@ type DimensionClientConfig struct {
 	MaxConnsPerHost     int           `mapstructure:"max_conns_per_host"`
 	IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
 	Timeout             time.Duration `mapstructure:"timeout"`
+	DropTags            bool          `mapstructure:"drop_tags"`
 }
 
 func (cfg *Config) getMetricTranslator(done chan struct{}) (*translation.MetricTranslator, error) {
@@ -224,6 +235,17 @@ func (cfg *Config) Validate() error {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 
+	if cfg.SyncHostMetadata {
+		if err := gopsutilenv.ValidateRootPath(cfg.RootPath); err != nil {
+			return fmt.Errorf("invalid root_path: %w", err)
+		}
+	}
+
+	for k, v := range cfg.DefaultProperties {
+		if v == "" {
+			return fmt.Errorf(`"default_properties" contains an empty value under key %q`, k)
+		}
+	}
 	return nil
 }
 

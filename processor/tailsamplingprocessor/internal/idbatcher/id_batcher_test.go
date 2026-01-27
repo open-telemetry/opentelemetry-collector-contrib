@@ -49,18 +49,27 @@ func TestMinBufferedChannels(t *testing.T) {
 func BenchmarkConcurrentEnqueue(b *testing.B) {
 	ids := generateSequentialIDs(1)
 	batcher, err := New(10, 100, uint64(4*runtime.NumCPU()))
-	defer batcher.Stop()
 	require.NoError(b, err, "Failed to create Batcher")
 
 	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
+	var wg sync.WaitGroup
+	defer func() {
+		batcher.Stop()
+		wg.Wait()
+		ticker.Stop()
+	}()
 	ticked := &atomic.Int64{}
 	received := &atomic.Int64{}
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for range ticker.C {
-			batch, _ := batcher.CloseCurrentAndTakeFirstBatch()
+			batch, more := batcher.CloseCurrentAndTakeFirstBatch()
 			ticked.Add(1)
 			received.Add(int64(len(batch)))
+			if !more {
+				return
+			}
 		}
 	}()
 
@@ -105,7 +114,7 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9126
 	concurrencyLimiter := make(chan struct{}, 128)
 	defer close(concurrencyLimiter)
-	for i := 0; i < len(ids); i++ {
+	for i := range ids {
 		wg.Add(1)
 		concurrencyLimiter <- struct{}{}
 		go func(id pcommon.TraceID) {
@@ -136,14 +145,14 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 		idSeen[id] = true
 	}
 
-	for i := 0; i < len(ids); i++ {
+	for i := range ids {
 		require.True(t, idSeen[ids[i]], "want id %v but id was not seen", ids[i])
 	}
 }
 
 func generateSequentialIDs(numIDs uint64) []pcommon.TraceID {
 	ids := make([]pcommon.TraceID, numIDs)
-	for i := uint64(0); i < numIDs; i++ {
+	for i := range numIDs {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], 0)
 		binary.BigEndian.PutUint64(traceID[8:], i)

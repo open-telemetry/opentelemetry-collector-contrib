@@ -66,8 +66,8 @@ func TestAggregation(t *testing.T) {
 			err = mgp.ConsumeMetrics(ctx, md)
 			require.NoError(t, err)
 
-			require.IsType(t, &Processor{}, mgp)
-			processor := mgp.(*Processor)
+			require.IsType(t, &intervalProcessor{}, mgp)
+			processor := mgp.(*intervalProcessor)
 
 			// Pretend we hit the interval timer and call export
 			processor.exportMetrics()

@@ -226,7 +226,7 @@ func TestLogsSampling(t *testing.T) {
 			require.NoError(t, err)
 			logs := plog.NewLogs()
 			lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
-			for i := 0; i < 100; i++ {
+			for i := range 100 {
 				record := lr.AppendEmpty()
 				record.SetTimestamp(pcommon.Timestamp(time.Unix(1649400860, 0).Unix()))
 				record.SetSeverityNumber(plog.SeverityNumberDebug)
@@ -436,7 +436,7 @@ func TestLogsSamplingState(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(fmt.Sprint(tt.name), func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
 			cfg := &Config{}
 			if tt.cfg != nil {
@@ -461,7 +461,7 @@ func TestLogsSamplingState(t *testing.T) {
 			err = tsp.ConsumeLogs(t.Context(), logs)
 			require.NoError(t, err)
 
-			if len(tt.log) == 0 {
+			if tt.log == "" {
 				require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
 				require.Empty(t, tt.log)
 			} else {

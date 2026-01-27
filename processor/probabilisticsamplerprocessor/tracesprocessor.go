@@ -148,7 +148,7 @@ func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, sa
 	return rnd, tsc, err
 }
 
-func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
+func (*consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
 	rnd := newMissingRandomnessMethod()
 	tsc, err := newTracestateCarrier(s)
 	if err != nil {
@@ -163,7 +163,7 @@ func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (random
 	return rnd, tsc, err
 }
 
-func (th *neverSampler) randomnessFromSpan(span ptrace.Span) (randomnessNamer, samplingCarrier, error) {
+func (*neverSampler) randomnessFromSpan(span ptrace.Span) (randomnessNamer, samplingCarrier, error) {
 	// We return a fake randomness value, since it will not be used.
 	// This avoids a consistency check error for missing randomness.
 	tsc, err := newTracestateCarrier(span)
@@ -198,7 +198,7 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 	return td, nil
 }
 
-func (tp *traceProcessor) priorityFunc(s ptrace.Span, rnd randomnessNamer, threshold sampling.Threshold) (randomnessNamer, sampling.Threshold) {
+func (*traceProcessor) priorityFunc(s ptrace.Span, rnd randomnessNamer, threshold sampling.Threshold) (randomnessNamer, sampling.Threshold) {
 	switch parseSpanSamplingPriority(s) {
 	case doNotSampleSpan:
 		// OpenTracing mentions this as a "hint". We take a stronger

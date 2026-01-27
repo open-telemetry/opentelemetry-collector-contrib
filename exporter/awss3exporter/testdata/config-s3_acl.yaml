@@ -7,10 +7,10 @@ exporters:
         region: 'us-east-1'
         s3_bucket: 'foo'
         s3_prefix: 'bar'
-        s3_partition: 'minute'
+        s3_partition_format: 'year=%Y/month=%m/day=%d/hour=%H/minute=%M'
         endpoint: "http://endpoint.com"
         storage_class: "STANDARD"
-        acl: "bucket-owner-full-control"
+        acl: "bucket-owner-read"
 
 processors:
   nop:

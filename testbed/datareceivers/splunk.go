@@ -64,6 +64,6 @@ func (sr *SplunkHECDataReceiver) GenConfigYAMLStr() string {
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (sr *SplunkHECDataReceiver) ProtocolName() string {
+func (*SplunkHECDataReceiver) ProtocolName() string {
 	return "splunk_hec"
 }

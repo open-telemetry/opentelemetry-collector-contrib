@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
@@ -61,7 +62,7 @@ func TestCreateTracesBadConfigNoAuth(t *testing.T) {
 func TestCreateTracesBadConfigIncompleteAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "some-queue"
-	cfg.Auth = Authentication{PlainText: &SaslPlainTextConfig{Username: "someUsername"}} // missing password
+	cfg.Auth = Authentication{PlainText: configoptional.Some(SaslPlainTextConfig{Username: "someUsername"})} // missing password
 	factory := NewFactory()
 	_, err := factory.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingPlainTextParams, err)

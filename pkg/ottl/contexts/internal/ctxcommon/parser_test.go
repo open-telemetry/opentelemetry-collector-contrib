@@ -32,7 +32,7 @@ func TestNewParser(t *testing.T) {
 		enumParser,
 	)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, ottl.Parser[testContext]{}, parser)
 }
 
@@ -55,7 +55,7 @@ func TestNewParserWithOptions(t *testing.T) {
 		customOption,
 	)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, ottl.Parser[testContext]{}, parser)
 }
 
@@ -189,7 +189,7 @@ func TestPathExpressionParser(t *testing.T) {
 			if tt.wantErr {
 				assert.Error(t, err)
 				if tt.errContains != "" {
-					assert.Contains(t, err.Error(), tt.errContains)
+					assert.ErrorContains(t, err, tt.errContains)
 				}
 				return
 			}
@@ -240,7 +240,7 @@ func (p testPath) Next() ottl.Path[testContext] {
 	return p.nextPath
 }
 
-func (p testPath) Keys() []ottl.Key[testContext] {
+func (testPath) Keys() []ottl.Key[testContext] {
 	return nil
 }
 
@@ -255,10 +255,10 @@ type testGetSetter struct {
 	value any
 }
 
-func (m *testGetSetter) Get(_ context.Context, _ testContext) (any, error) {
+func (m *testGetSetter) Get(context.Context, testContext) (any, error) {
 	return m.value, nil
 }
 
-func (m *testGetSetter) Set(_ context.Context, _ testContext, _ any) error {
+func (*testGetSetter) Set(context.Context, testContext, any) error {
 	return nil
 }

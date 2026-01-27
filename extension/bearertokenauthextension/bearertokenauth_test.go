@@ -25,7 +25,7 @@ func TestPerRPCAuth(t *testing.T) {
 	// test meta data is properly
 	bauth := newBearerTokenAuth(cfg, nil)
 	assert.NotNil(t, bauth)
-	perRPCAuth := &PerRPCAuth{auth: bauth}
+	perRPCAuth := &perRPCAuth{auth: bauth}
 	md, err := perRPCAuth.GetRequestMetadata(t.Context())
 	assert.NoError(t, err)
 	expectedMetadata := map[string]string{
@@ -40,7 +40,7 @@ func TestPerRPCAuth(t *testing.T) {
 
 type mockRoundTripper struct{}
 
-func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (*mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp := &http.Response{StatusCode: http.StatusOK, Header: map[string][]string{}}
 	for k, v := range req.Header {
 		resp.Header.Set(k, v[0])
@@ -132,7 +132,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.True(t, credential.RequireTransportSecurity())
 
 	// change file content once
-	assert.NoError(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0o600))
+	assert.NoError(t, os.WriteFile(bauth.filename, fmt.Appendf(nil, "%stest", token), 0o600))
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(t.Context())
@@ -182,7 +182,7 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
 
 	// change file content once
-	assert.NoError(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0o600))
+	assert.NoError(t, os.WriteFile(bauth.filename, fmt.Appendf(nil, "%stest", token), 0o600))
 	time.Sleep(5 * time.Second)
 
 	tokenNew, err := os.ReadFile(bauth.filename)

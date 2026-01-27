@@ -13,6 +13,7 @@
 | k8s.cluster.uid | Gives cluster uid identified with kube-system namespace | Any Str | false |
 | k8s.container.name | The name of the Container in a Pod template. Requires container.id. | Any Str | false |
 | k8s.cronjob.name | The name of the CronJob. | Any Str | false |
+| k8s.cronjob.uid | The uid of the CronJob. | Any Str | false |
 | k8s.daemonset.name | The name of the DaemonSet. | Any Str | false |
 | k8s.daemonset.uid | The UID of the DaemonSet. | Any Str | false |
 | k8s.deployment.name | The name of the Deployment. | Any Str | true |
@@ -31,6 +32,10 @@
 | k8s.replicaset.uid | The UID of the ReplicaSet. | Any Str | false |
 | k8s.statefulset.name | The name of the StatefulSet. | Any Str | false |
 | k8s.statefulset.uid | The UID of the StatefulSet. | Any Str | false |
+| service.instance.id | The instance ID of the service. | Any Str | false |
+| service.name | The name of the service. | Any Str | false |
+| service.namespace | The namespace of the service. | Any Str | false |
+| service.version | The version of the service. | Any Str | false |
 
 ## Internal Telemetry
 
@@ -38,112 +43,112 @@ The following telemetry is emitted by this component.
 
 ### otelcol_otelsvc_k8s_ip_lookup_miss
 
-Number of times pod by IP lookup failed.
+Number of times pod by IP lookup failed. [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_otelsvc_k8s_namespace_added
 
-Number of namespace add events received
+Number of namespace add events received [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_otelsvc_k8s_namespace_deleted
 
-Number of namespace delete events received
+Number of namespace delete events received [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_otelsvc_k8s_namespace_updated
 
-Number of namespace update events received
+Number of namespace update events received [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_otelsvc_k8s_node_added
 
-Number of node add events received
+Number of node add events received [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_otelsvc_k8s_node_deleted
 
-Number of node delete events received
+Number of node delete events received [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_otelsvc_k8s_node_updated
 
-Number of node update events received
+Number of node update events received [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_otelsvc_k8s_pod_added
 
-Number of pod add events received
+Number of pod add events received [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_otelsvc_k8s_pod_deleted
 
-Number of pod delete events received
+Number of pod delete events received [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_otelsvc_k8s_pod_table_size
 
-Size of table containing pod info
+Size of table containing pod info [Development]
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
 
 ### otelcol_otelsvc_k8s_pod_updated
 
-Number of pod update events received
+Number of pod update events received [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_otelsvc_k8s_replicaset_added
 
-Number of ReplicaSet add events received
+Number of ReplicaSet add events received [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_otelsvc_k8s_replicaset_deleted
 
-Number of ReplicaSet delete events received
+Number of ReplicaSet delete events received [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
 
 ### otelcol_otelsvc_k8s_replicaset_updated
 
-Number of ReplicaSet update events received
+Number of ReplicaSet update events received [Development]
 
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |

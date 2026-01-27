@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
@@ -79,6 +80,23 @@ func getLogsMarshaler(encoding string, host component.Host) (marshaler.LogsMarsh
 	return nil, fmt.Errorf("unrecognized logs encoding %q", encoding)
 }
 
+func getProfilesMarshaler(encoding string, host component.Host) (marshaler.ProfilesMarshaler, error) {
+	if m, err := loadEncodingExtension[pprofile.Marshaler](host, encoding, "profiles"); err != nil {
+		if !errors.Is(err, errUnknownEncodingExtension) {
+			return nil, err
+		}
+	} else {
+		return marshaler.NewPdataProfilesMarshaler(m), nil
+	}
+	switch encoding {
+	case "otlp_proto":
+		return marshaler.NewPdataProfilesMarshaler(&pprofile.ProtoMarshaler{}), nil
+	case "otlp_json":
+		return marshaler.NewPdataProfilesMarshaler(&pprofile.JSONMarshaler{}), nil
+	}
+	return nil, fmt.Errorf("unrecognized profiles encoding %q", encoding)
+}
+
 // loadEncodingExtension tries to load an available extension for the given encoding.
 func loadEncodingExtension[T any](host component.Host, encoding, signalType string) (T, error) {
 	var zero T
@@ -97,12 +115,11 @@ func loadEncodingExtension[T any](host component.Host, encoding, signalType stri
 	return marshaler, nil
 }
 
-// encodingToComponentID converts an encoding string to a component ID using the given encoding as type.
+// encodingToComponentID attempts to parse the encoding string as a component ID.
 func encodingToComponentID(encoding string) (*component.ID, error) {
-	componentType, err := component.NewType(encoding)
-	if err != nil {
-		return nil, fmt.Errorf("invalid component type: %w", err)
+	var id component.ID
+	if err := id.UnmarshalText([]byte(encoding)); err != nil {
+		return nil, fmt.Errorf("invalid component ID: %w", err)
 	}
-	id := component.NewID(componentType)
 	return &id, nil
 }

@@ -74,16 +74,48 @@ type TransformerOperator struct {
 }
 
 // CanProcess will always return true for a transformer operator.
-func (t *TransformerOperator) CanProcess() bool {
+func (*TransformerOperator) CanProcess() bool {
 	return true
 }
 
-func (t *TransformerOperator) ProcessBatchWith(ctx context.Context, entries []*entry.Entry, process ProcessFunction) error {
+func (*TransformerOperator) ProcessBatchWith(ctx context.Context, entries []*entry.Entry, process ProcessFunction) error {
 	var errs error
 	for i := range entries {
 		errs = multierr.Append(errs, process(ctx, entries[i]))
 	}
 	return errs
+}
+
+func (t *TransformerOperator) ProcessBatchWithTransform(ctx context.Context, entries []*entry.Entry, transform TransformFunction) error {
+	transformedEntries := make([]*entry.Entry, 0, len(entries))
+	write := func(_ context.Context, ent *entry.Entry) error {
+		transformedEntries = append(transformedEntries, ent)
+		return nil
+	}
+	var errs []error
+	for _, ent := range entries {
+		skip, err := t.Skip(ctx, ent)
+		if err != nil {
+			errs = append(errs, t.HandleEntryErrorWithWrite(ctx, ent, err, write))
+			continue
+		}
+		if skip {
+			// Write the entry without transforming
+			_ = write(ctx, ent)
+			continue
+		}
+
+		if err = transform(ent); err != nil {
+			errs = append(errs, t.HandleEntryErrorWithWrite(ctx, ent, err, write))
+			continue
+		}
+
+		// Write the transformed entry
+		_ = write(ctx, ent)
+	}
+
+	errs = append(errs, t.WriteBatch(ctx, transformedEntries))
+	return errors.Join(errs...)
 }
 
 // ProcessWith will process an entry with a transform function.
@@ -105,6 +137,10 @@ func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entr
 
 // HandleEntryError will handle an entry error using the on_error strategy.
 func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry.Entry, err error) error {
+	return t.HandleEntryErrorWithWrite(ctx, entry, err, t.Write)
+}
+
+func (t *TransformerOperator) HandleEntryErrorWithWrite(ctx context.Context, entry *entry.Entry, err error, write WriteFunction) error {
 	if entry == nil {
 		return errors.New("got a nil entry, this should not happen and is potentially a bug")
 	}
@@ -118,7 +154,7 @@ func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry
 		t.Logger().Error("Failed to process entry", zapAttributes(entry, t.OnError, err)...)
 	}
 	if t.OnError == SendOnError || t.OnError == SendOnErrorQuiet {
-		if writeErr := t.Write(ctx, entry); writeErr != nil {
+		if writeErr := write(ctx, entry); writeErr != nil {
 			err = fmt.Errorf("failed to send entry after error: %w", writeErr)
 		}
 	}
@@ -144,9 +180,10 @@ func (t *TransformerOperator) Skip(_ context.Context, entry *entry.Entry) (bool,
 
 func zapAttributes(entry *entry.Entry, action string, err error) []zap.Field {
 	logFields := make([]zap.Field, 0, 3+len(entry.Attributes))
-	logFields = append(logFields, zap.Error(err))
-	logFields = append(logFields, zap.String("action", action))
-	logFields = append(logFields, zap.Time("entry.timestamp", entry.Timestamp))
+	logFields = append(logFields,
+		zap.Error(err),
+		zap.String("action", action),
+		zap.Time("entry.timestamp", entry.Timestamp))
 	for attrName, attrValue := range entry.Attributes {
 		logFields = append(logFields, zap.Any(attrName, attrValue))
 	}

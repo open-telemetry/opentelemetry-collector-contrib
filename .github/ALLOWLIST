@@ -22,7 +22,6 @@ config/confighttp
 
 # Start deprecated components list
 
-processor/routingprocessor/
 
 
 # End deprecated components list
@@ -31,18 +30,8 @@ processor/routingprocessor/
 
 # Start unmaintained components list
 
-exporter/carbonexporter
-exporter/kineticaexporter
-exporter/opensearchexporter
-extension/observer/ecstaskobserver
-receiver/awscloudwatchmetricsreceiver
+receiver/bigipreceiver
 receiver/carbonreceiver
-receiver/couchdbreceiver
-receiver/elasticsearchreceiver
-receiver/memcachedreceiver
-receiver/mysqlreceiver
-receiver/postgresqlreceiver
-receiver/zookeeperreceiver
-scraper/zookeeperscraper
+receiver/k8slogreceiver
 
 # End unmaintained components list

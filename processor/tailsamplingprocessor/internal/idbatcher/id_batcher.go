@@ -77,7 +77,7 @@ func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batche
 	// CloseCurrentAndTakeFirstBatch on a timer and want to delay the processing of the first
 	// batch with actual data. This way there is no need for accounting on the client side and
 	// a single timer can be started immediately.
-	for i := uint64(0); i < numBatches; i++ {
+	for range numBatches {
 		batches <- nil
 	}
 
@@ -111,7 +111,7 @@ func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 	if readBatch, ok := <-b.batches; ok {
 		b.stopLock.RLock()
 		if !b.stopped {
-			nextBatch := make(Batch, 0, b.newBatchesInitialCapacity)
+			nextBatch := make(Batch, 0, max(b.newBatchesInitialCapacity, uint64(len(readBatch))))
 			b.cbMutex.Lock()
 			b.batches <- b.currentBatch
 			b.currentBatch = nextBatch

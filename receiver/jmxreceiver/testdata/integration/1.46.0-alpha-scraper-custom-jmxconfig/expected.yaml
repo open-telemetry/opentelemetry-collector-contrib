@@ -1,0 +1,65 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: myattr
+          value:
+            stringValue: myvalue
+        - key: myotherattr
+          value:
+            stringValue: myothervalue
+        - key: service.name
+          value:
+            stringValue: unknown_service:java
+        - key: telemetry.sdk.language
+          value:
+            stringValue: java
+        - key: telemetry.sdk.name
+          value:
+            stringValue: opentelemetry
+        - key: telemetry.sdk.version
+          value:
+            stringValue: 1.49.0
+    scopeMetrics:
+      - metrics:
+          - description: The number of items queued
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: processorType
+                      value:
+                        stringValue: BatchSpanProcessor
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: queueSize
+            unit: "1"
+        scope:
+          name: io.opentelemetry.sdk.trace
+      - metrics:
+          - description: The number of items queued
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: processorType
+                      value:
+                        stringValue: BatchLogRecordProcessor
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: queueSize
+            unit: "1"
+        scope:
+          name: io.opentelemetry.sdk.logs
+      - metrics:
+          - description: Number of hint messages written to this node since [re]start
+            name: cassandra.storage.total_hints.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{hint}'
+        scope:
+          name: io.opentelemetry.jmx

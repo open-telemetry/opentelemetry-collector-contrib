@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -43,7 +42,7 @@ func generateTraceData(serviceName, spanName string, attrs map[string]any) ptrac
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
-		rs.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName)
+		rs.Resource().Attributes().PutStr("service.name", serviceName)
 	}
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(spanName)
@@ -506,7 +505,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 		td := generateTraceData(tt.serviceName, tt.name, tt.inputAttributes)
 
 		b.Run(tt.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				assert.NoError(b, tp.ConsumeTraces(b.Context(), td))
 			}
 		})

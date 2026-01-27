@@ -6,6 +6,7 @@ package marshaler // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -37,4 +38,9 @@ type MetricsMarshaler interface {
 // LogsMarshaler marshals a plog.Logs into one or more Messages.
 type LogsMarshaler interface {
 	MarshalLogs(logs plog.Logs) ([]Message, error)
+}
+
+// ProfilesMarshaler marshals a pprofile.Profiles into one or more Messages.
+type ProfilesMarshaler interface {
+	MarshalProfiles(profiles pprofile.Profiles) ([]Message, error)
 }

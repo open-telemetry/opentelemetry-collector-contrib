@@ -1,0 +1,15 @@
+sqlquery:
+  collection_interval: 10s
+  driver: postgres
+  host: localhost
+  port: 5432
+  database: mydb
+  username: me
+  password: s3cr3t
+  queries:
+    - sql: "select * from test_logs where log_id > ?"
+      tracking_start_value: "10"
+      tracking_column: log_id
+      logs:
+        - body_column: log_body
+          attribute_columns: ["log_attribute_1", "log_attribute_2"]

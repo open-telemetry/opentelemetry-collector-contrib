@@ -53,7 +53,7 @@ resourceMetrics:
                         stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_incommingmessages_average
+            name: azure_incomingmessages_average
             unit: u
           - gauge:
               dataPoints:
@@ -76,7 +76,7 @@ resourceMetrics:
                         stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_incommingmessages_count
+            name: azure_incomingmessages_count
             unit: u
           - gauge:
               dataPoints:
@@ -99,7 +99,7 @@ resourceMetrics:
                         stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_incommingmessages_maximum
+            name: azure_incomingmessages_maximum
             unit: u
           - gauge:
               dataPoints:
@@ -122,7 +122,7 @@ resourceMetrics:
                         stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_incommingmessages_minimum
+            name: azure_incomingmessages_minimum
             unit: u
           - gauge:
               dataPoints:
@@ -145,7 +145,7 @@ resourceMetrics:
                         stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_incommingmessages_total
+            name: azure_incomingmessages_total
             unit: u
           - gauge:
               dataPoints:
@@ -168,7 +168,7 @@ resourceMetrics:
                         stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_transferedbytes_maximum
+            name: azure_transferredbytes_maximum
             unit: u
           - gauge:
               dataPoints:
@@ -191,7 +191,7 @@ resourceMetrics:
                         stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_transferedbytes_minimum
+            name: azure_transferredbytes_minimum
             unit: u
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver

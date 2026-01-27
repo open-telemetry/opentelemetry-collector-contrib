@@ -21,7 +21,7 @@ type DiskIOMetricExtractor struct {
 	rateCalculator awsmetrics.MetricCalculator
 }
 
-func (d *DiskIOMetricExtractor) HasValue(info *cInfo.ContainerInfo) bool {
+func (*DiskIOMetricExtractor) HasValue(info *cInfo.ContainerInfo) bool {
 	return info.Spec.HasDiskIo
 }
 
@@ -37,7 +37,7 @@ func (d *DiskIOMetricExtractor) GetValue(info *cInfo.ContainerInfo, _ CPUMemInfo
 	return metrics
 }
 
-func (d *DiskIOMetricExtractor) extractIoMetrics(curStatsSet []cInfo.PerDiskStats, namePrefix string, containerType string, infoName string, curTime time.Time) []*stores.CIMetricImpl {
+func (d *DiskIOMetricExtractor) extractIoMetrics(curStatsSet []cInfo.PerDiskStats, namePrefix, containerType, infoName string, curTime time.Time) []*stores.CIMetricImpl {
 	var metrics []*stores.CIMetricImpl
 	expectedKey := []string{ci.DiskIOAsync, ci.DiskIOSync, ci.DiskIORead, ci.DiskIOWrite, ci.DiskIOTotal}
 	for _, cur := range curStatsSet {

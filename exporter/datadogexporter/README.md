@@ -6,8 +6,9 @@
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fdatadog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fdatadog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fdatadog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fdatadog) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_datadog)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_datadog&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@dineshg13](https://www.github.com/dineshg13), [@liustanley](https://www.github.com/liustanley), [@songy23](https://www.github.com/songy23), [@mackjmr](https://www.github.com/mackjmr), [@ankitpatel96](https://www.github.com/ankitpatel96), [@jade-guiton-dd](https://www.github.com/jade-guiton-dd), [@IbraheemA](https://www.github.com/IbraheemA) |
-| Emeritus      | [@gbbr](https://www.github.com/gbbr) |
+| Emeritus      | [@gbbr](https://www.github.com/gbbr), [@jackgopack4](https://www.github.com/jackgopack4) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -18,7 +19,7 @@
 > The Datadog Exporter now skips APM stats computation by default. It is recommended to only use the [Datadog Connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/datadogconnector) in order to compute APM stats.
 > To temporarily revert to the previous behavior, disable the `exporter.datadogexporter.DisableAPMStats` feature gate. Example: `otelcol --config=config.yaml --feature-gates=-exporter.datadogexporter.DisableAPMStats`
 
-Find the full configs of Datadog exporter and their usage in [collector.yaml](./examples/collector.yaml). More example configs can be found in the [official documentation](https://docs.datadoghq.com/opentelemetry/collector_exporter/configuration/).
+Find the full configs of Datadog exporter and their usage in [collector.yaml](./examples/collector.yaml). More example configs can be found in the [official documentation](https://docs.datadoghq.com/opentelemetry/setup/collector_exporter/).
 
 ## FAQs
 
@@ -26,7 +27,22 @@ Find the full configs of Datadog exporter and their usage in [collector.yaml](./
 
 This error indicates the payload size sent by the Datadog exporter exceeds the size limit (see previous examples https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16834, https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17566).
 
-This is usually caused by the pipeline batching too many telemetry data before sending to the Datadog exporter. To fix that, try lowering `send_batch_size` and `send_batch_max_size` in your batchprocessor config. You might want to have a separate batch processor dedicated for datadog exporter if other exporters expect a larger batch size, e.g.
+This is usually caused by the pipeline batching too many telemetry data before sending to the Datadog API intake. To fix that, prefer using the Datadog exporter `sending_queue::batch` section instead of the batch processor:
+
+```yaml
+exporters:
+  datadog:
+    api:
+      key: ${env:DD_API_KEY}
+    sending_queue:
+      batch:
+        min_size: 10
+        max_size: 100
+        flush_timeout: 10s
+```
+
+
+If you are using the batch processor instead, try lowering `send_batch_size` and `send_batch_max_size` in your config. You might want to have a separate batch processor dedicated for datadog exporter if other exporters expect a larger batch size, e.g.
 ```
 processors:
   batch:  # To be used by other exporters
@@ -52,11 +68,7 @@ The exact values for `send_batch_size` and `send_batch_max_size` depends on your
 
 ### Fall back to the Zorkian metric client with feature gate
 
-Since [v0.69.0](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.69.0), the Datadog exporter has switched to use the native metric client `datadog-api-client-go` for metric export instead of Zorkian client by default. While `datadog-api-client-go` fixed several issues that are present in Zorkian client, there is a performance regression with it compared to Zorkian client especially under high metric volume. If you observe memory or throughput issues in the Datadog exporter with `datadog-api-client-go`, you can configure the Datadog exporter to fall back to the Zorkian client by disabling the feature gate `exporter.datadogexporter.metricexportnativeclient`, e.g.
-```
-otelcol --config=config.yaml --feature-gates=-exporter.datadogexporter.metricexportnativeclient
-```
-Note that we are currently migrating the Datadog metrics exporter to use the metrics serializer instead. The feature flag `exporter.datadogexporter.metricexportnativeclient` will be deprecated and eventually removed in the future, following the [feature lifecycle](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#feature-lifecycle).
+Support for Zorkian is now deprecated, please use the metrics export serializer. See https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.122.0 and #37930 for more info about Metrics Export Serializer.
 
 ### Remap OTel’s service.name attribute to service for logs
 
@@ -84,3 +96,9 @@ processors:
         statements:
           - set(attributes["datadog.log.source"], "otel")
 ```
+
+### My Collector K8s pod is getting rebooted on startup when I don't manually set a hostname under `exporters::datadog::hostname`
+
+This is due to a bug with underlying hostname detection blocking the `health_check` extension from responding to liveness/readiness probes on startup. To fix, either set `hostname_detection_timeout` to be less than the pod/daemonset `livenessProbe: failureThreshold * periodSeconds` so that the timeout for hostname detection on startup takes less time than the control plane waits before restarting the pod, or leave `hostname_detection_timeout` at the default `25s` value and double-check the `livenessProbe` and `readinessProbe` settings and ensure that the control plane will in fact wait long enough for startup to complete before restarting the pod.
+
+Hostname detection is currently required to initialize the Datadog Exporter, unless a hostname is specified manually under `hostname`.

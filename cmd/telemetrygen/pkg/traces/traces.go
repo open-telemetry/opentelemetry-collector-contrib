@@ -20,15 +20,16 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/log"
 )
 
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
+	logger, err := log.CreateLogger(cfg.SkipSettingGRPCLogger)
 	if err != nil {
 		return err
 	}
@@ -83,7 +84,7 @@ func Start(cfg *Config) error {
 	attributes = append(attributes, cfg.GetAttributes()...)
 
 	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
+		sdktrace.WithResource(resource.NewWithAttributes(conventions.SchemaURL, attributes...)),
 	)
 
 	if cfg.Batch {
@@ -106,7 +107,7 @@ func run(c *Config, logger *zap.Logger) error {
 		return err
 	}
 
-	if c.TotalDuration > 0 {
+	if c.TotalDuration.Duration() > 0 || c.TotalDuration.IsInf() {
 		c.NumTraces = 0
 	}
 
@@ -152,12 +153,15 @@ func run(c *Config, logger *zap.Logger) error {
 			logger:           logger.With(zap.Int("worker", i)),
 			loadSize:         c.LoadSize,
 			spanDuration:     c.SpanDuration,
+			allowFailures:    c.AllowExportFailures,
+			numSpanLinks:     c.NumSpanLinks,
+			spanContexts:     make([]trace.SpanContext, 0),
 		}
 
 		go w.simulateTraces(telemetryAttributes)
 	}
-	if c.TotalDuration > 0 {
-		time.Sleep(c.TotalDuration)
+	if c.TotalDuration.Duration() > 0 && !c.TotalDuration.IsInf() {
+		time.Sleep(c.TotalDuration.Duration())
 		running.Store(false)
 	}
 	wg.Wait()

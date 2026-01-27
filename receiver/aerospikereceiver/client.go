@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v7"
+	as "github.com/aerospike/aerospike-client-go/v8"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
@@ -199,7 +199,7 @@ func mapNodeInfoFunc(nodes []cluster.Node, nodeF nodeFunc, policy *as.InfoPolicy
 			name := nd.GetName()
 			metrics, err := nodeF(nd, policy)
 			if err != nil {
-				logger.Errorf("mapNodeInfoFunc err: %w", err)
+				logger.Errorf("mapNodeInfoFunc err: %v", err)
 			}
 
 			ns := nodeStats{
@@ -278,8 +278,8 @@ func allNamespaceInfo(n cluster.Node, policy *as.InfoPolicy) (metricsMap, error)
 
 func parseStats(defaultKey, s, sep string) metricsMap {
 	stats := make(metricsMap, strings.Count(s, sep)+1)
-	s2 := strings.Split(s, sep)
-	for _, s := range s2 {
+	s2 := strings.SplitSeq(s, sep)
+	for s := range s2 {
 		list := strings.SplitN(s, "=", 2)
 		switch len(list) {
 		case 0:

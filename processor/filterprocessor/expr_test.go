@@ -113,7 +113,7 @@ func assertFiltered(t *testing.T, lm pcommon.Map) {
 	}
 }
 
-func filterMetrics(t *testing.T, include []string, exclude []string, mds []pmetric.Metrics) []pmetric.Metrics {
+func filterMetrics(t *testing.T, include, exclude []string, mds []pmetric.Metrics) []pmetric.Metrics {
 	proc, next := testProcessor(t, include, exclude)
 	for _, md := range mds {
 		err := proc.ConsumeMetrics(t.Context(), md)
@@ -122,7 +122,7 @@ func filterMetrics(t *testing.T, include []string, exclude []string, mds []pmetr
 	return next.AllMetrics()
 }
 
-func testProcessor(t *testing.T, include []string, exclude []string) (processor.Metrics, *consumertest.MetricsSink) {
+func testProcessor(t *testing.T, include, exclude []string) (processor.Metrics, *consumertest.MetricsSink) {
 	factory := NewFactory()
 	cfg := exprConfig(factory, include, exclude)
 	ctx := t.Context()
@@ -138,7 +138,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (processor.
 	return proc, next
 }
 
-func exprConfig(factory processor.Factory, include []string, exclude []string) component.Config {
+func exprConfig(factory processor.Factory, include, exclude []string) component.Config {
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
 	pCfg.Metrics = MetricFilters{}
@@ -159,7 +159,7 @@ func exprConfig(factory processor.Factory, include []string, exclude []string) c
 
 func testDataSlice(size int, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) []pmetric.Metrics {
 	var out []pmetric.Metrics
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		out = append(out, testData(fmt.Sprintf("p%d_", i), size, mdType, mvType))
 	}
 	return out

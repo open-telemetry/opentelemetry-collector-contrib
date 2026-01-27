@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
@@ -110,9 +109,9 @@ func TestUnmarshal_SingleRecord(t *testing.T) {
 	// Check one resource attribute to check things are wired up.
 	// Remaining resource attributes are checked in TestSetResourceAttributes.
 	res := rm.Resource()
-	cloudProvider, ok := res.Attributes().Get(conventions.AttributeCloudProvider)
+	cloudProvider, ok := res.Attributes().Get("cloud.provider")
 	require.True(t, ok)
-	assert.Equal(t, conventions.AttributeCloudProviderAWS, cloudProvider.Str())
+	assert.Equal(t, "aws", cloudProvider.Str())
 	require.Equal(t, 1, rm.ScopeMetrics().Len())
 	sm := rm.ScopeMetrics().At(0)
 	assert.Equal(t, metadata.ScopeName, sm.Scope().Name())
@@ -130,13 +129,22 @@ func TestUnmarshal_SingleRecord(t *testing.T) {
 	assert.Equal(t, pcommon.Timestamp(1611929698000000000), dp.Timestamp())
 	assert.Equal(t, uint64(3), dp.Count())
 	assert.Equal(t, 20.0, dp.Sum())
-	require.Equal(t, 2, dp.QuantileValues().Len())
+	require.Equal(t, 4, dp.QuantileValues().Len())
+	dp.QuantileValues().Sort(func(a, b pmetric.SummaryDataPointValueAtQuantile) bool {
+		return a.Quantile() < b.Quantile()
+	})
 	q0 := dp.QuantileValues().At(0)
 	q1 := dp.QuantileValues().At(1)
+	q2 := dp.QuantileValues().At(2)
+	q3 := dp.QuantileValues().At(3)
 	assert.Equal(t, 0.0, q0.Quantile()) // min
 	assert.Equal(t, 0.0, q0.Value())
-	assert.Equal(t, 1.0, q1.Quantile()) // max
-	assert.Equal(t, 18.0, q1.Value())
+	assert.Equal(t, 0.9, q1.Quantile()) // p90
+	assert.Equal(t, 16.0, q1.Value())
+	assert.Equal(t, 0.99, q2.Quantile()) // p99
+	assert.Equal(t, 17.0, q2.Value())
+	assert.Equal(t, 1.0, q3.Quantile()) // max
+	assert.Equal(t, 18.0, q3.Value())
 }
 
 func TestSetDataPointAttributes(t *testing.T) {
@@ -147,8 +155,8 @@ func TestSetDataPointAttributes(t *testing.T) {
 		},
 	}
 	want := map[string]any{
-		conventions.AttributeServiceInstanceID: testInstanceID,
-		"CustomDimension":                      "whatever",
+		"service.instance.id": testInstanceID,
+		"CustomDimension":     "whatever",
 	}
 
 	dp := pmetric.NewSummaryDataPoint()
@@ -165,21 +173,21 @@ func TestSetResourceAttributes(t *testing.T) {
 			namespace: "AWS/EC2",
 			want: map[string]any{
 				attributeAWSCloudWatchMetricStreamName: testStreamName,
-				conventions.AttributeCloudAccountID:    testAccountID,
-				conventions.AttributeCloudRegion:       testRegion,
-				conventions.AttributeCloudProvider:     conventions.AttributeCloudProviderAWS,
-				conventions.AttributeServiceName:       "EC2",
-				conventions.AttributeServiceNamespace:  "AWS",
+				"cloud.account.id":                     testAccountID,
+				"cloud.region":                         testRegion,
+				"cloud.provider":                       "aws",
+				"service.name":                         "EC2",
+				"service.namespace":                    "AWS",
 			},
 		},
 		"WithCustomNamespace": {
 			namespace: "CustomNamespace",
 			want: map[string]any{
 				attributeAWSCloudWatchMetricStreamName: testStreamName,
-				conventions.AttributeCloudAccountID:    testAccountID,
-				conventions.AttributeCloudRegion:       testRegion,
-				conventions.AttributeCloudProvider:     conventions.AttributeCloudProviderAWS,
-				conventions.AttributeServiceName:       "CustomNamespace",
+				"cloud.account.id":                     testAccountID,
+				"cloud.region":                         testRegion,
+				"cloud.provider":                       "aws",
+				"service.name":                         "CustomNamespace",
 			},
 		},
 	}

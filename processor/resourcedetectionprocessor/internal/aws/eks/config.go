@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+	NodeFromEnvVar     string                            `mapstructure:"node_from_env_var"`
 }
 
 func CreateDefaultConfig() Config {

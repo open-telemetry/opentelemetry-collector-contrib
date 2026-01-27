@@ -3,10 +3,7 @@ type: text_encoding
 status:
   class: extension
   stability:
-    development: [extension]
-  distributions: []
+    beta: [extension]
+  distributions: [contrib]
   codeowners:
     active: [MovieStoreGuy, atoulme]
-
-tests:
-  config:

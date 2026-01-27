@@ -1,14 +1,14 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
 
-go 1.24.11
+go 1.24.0
 
 require (
 	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20250519142056-97a2f5e08ffa
 	github.com/aws/aws-sdk-go v1.55.6
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
-	golang.org/x/net v0.39.0
+	go.uber.org/zap v1.27.1
+	golang.org/x/net v0.44.0
 )
 
 require (
@@ -19,7 +19,7 @@ require (
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
+	golang.org/x/text v0.29.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

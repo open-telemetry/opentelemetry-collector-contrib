@@ -6,6 +6,7 @@
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fbmchelix%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fbmchelix) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fbmchelix%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fbmchelix) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_bmchelix)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_bmchelix&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@bertysentry](https://www.github.com/bertysentry), [@NassimBtk](https://www.github.com/NassimBtk), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -28,6 +29,8 @@ exporters:
   bmchelix/helix1:
     endpoint: https://company.onbmc.com
     api_key: <api-key>
+    sending_queue:
+      batch:
 ```
 
 ### Optional Settings
@@ -49,6 +52,8 @@ exporters:
     endpoint: https://company.onbmc.com
     api_key: <api-key>
     timeout: 20s
+    sending_queue:
+      batch:
     retry_on_failure:
       enabled: true
       initial_interval: 5s
@@ -70,7 +75,7 @@ To ensure metrics are correctly populated in BMC Helix, the following attributes
 
 To ensure the necessary attributes are present, it is recommended to leverage the [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) with [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl), and include it in the configuration of the telemetry pipeline.
 
-The minimal pipeline most often looks like: `OTEL metrics --> (batch/memory limit) --> transform processor --> bmchelix exporter`.
+The minimal pipeline most often looks like: `OTEL metrics --> (memory limit) --> transform processor --> bmchelix exporter`.
 
 ### Transformer Example for Hardware Metrics
 

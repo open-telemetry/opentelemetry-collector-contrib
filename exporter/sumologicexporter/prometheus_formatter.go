@@ -32,7 +32,7 @@ const (
 )
 
 func newPrometheusFormatter() prometheusFormatter {
-	sanitNameRegex := regexp.MustCompile(`[^0-9a-zA-Z\./_:\-]`)
+	sanitNameRegex := regexp.MustCompile(`[^0-9a-zA-Z./_:\-]`)
 
 	return prometheusFormatter{
 		sanitNameRegex: sanitNameRegex,
@@ -43,7 +43,7 @@ func newPrometheusFormatter() prometheusFormatter {
 }
 
 // PrometheusLabels returns all attributes as sanitized prometheus labels string
-func (f *prometheusFormatter) tags2String(attr pcommon.Map, labels pcommon.Map) prometheusTags {
+func (f *prometheusFormatter) tags2String(attr, labels pcommon.Map) prometheusTags {
 	attrsPlusLabelsLen := attr.Len() + labels.Len()
 	if attrsPlusLabelsLen == 0 {
 		return ""
@@ -219,22 +219,22 @@ func (f *prometheusFormatter) numberDataPointValueLine(name string, dp pmetric.N
 }
 
 // sumMetric returns _sum suffixed metric name
-func (f *prometheusFormatter) sumMetric(name string) string {
+func (*prometheusFormatter) sumMetric(name string) string {
 	return fmt.Sprintf("%s_sum", name)
 }
 
 // countMetric returns _count suffixed metric name
-func (f *prometheusFormatter) countMetric(name string) string {
+func (*prometheusFormatter) countMetric(name string) string {
 	return fmt.Sprintf("%s_count", name)
 }
 
 // bucketMetric returns _bucket suffixed metric name
-func (f *prometheusFormatter) bucketMetric(name string) string {
+func (*prometheusFormatter) bucketMetric(name string) string {
 	return fmt.Sprintf("%s_bucket", name)
 }
 
 // mergeAttributes gets two pcommon.Maps and returns new which contains values from both of them
-func (f *prometheusFormatter) mergeAttributes(attributes pcommon.Map, additionalAttributes pcommon.Map) pcommon.Map {
+func (*prometheusFormatter) mergeAttributes(attributes, additionalAttributes pcommon.Map) pcommon.Map {
 	mergedAttributes := pcommon.NewMap()
 	mergedAttributes.EnsureCapacity(attributes.Len() + additionalAttributes.Len())
 

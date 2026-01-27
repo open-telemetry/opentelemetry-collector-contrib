@@ -1,0 +1,26 @@
+{
+  "awsAccountId": "111122223333",
+  "digestStartTime": "2025-10-21T00:00:00Z",
+  "digestEndTime": "2025-10-21T01:00:00Z",
+  "digestS3Bucket": "amzn-s3-demo-bucket",
+  "digestS3Object": "AWSLogs/111122223333/CloudTrail-Digest/us-east-1/2025/10/21/digest.json.gz",
+  "digestPublicKeyFingerprint": "31e8b5433410dfb61a9dc45cc65b22ff",
+  "digestSignatureAlgorithm": "SHA256withRSA",
+  "newestEventTime": "2025-10-21T00:59:58Z",
+  "oldestEventTime": "2025-10-21T00:00:01Z",
+  "previousDigestS3Bucket": "amzn-s3-demo-bucket",
+  "previousDigestS3Object": "AWSLogs/123456789012/CloudTrail-Digest/us-east-1/2025/10/21/digest-previous.json.gz",
+  "previousDigestHashValue": "97fb791cf91ffc440d274f8190dbdd9aa09c34432aba82739df18b6d3c13df2d",
+  "previousDigestHashAlgorithm": "SHA-256",
+  "previousDigestSignature": "hash-of-previous-digest",
+  "logFiles": [
+    {
+      "s3Bucket": "amzn-s3-demo-bucket",
+      "s3Object": "AWSLogs/123456789012/CloudTrail/us-east-1/2025/10/21/obj1.json.gz",
+      "hashValue": "7aab8a1f04f32adf1113c9acdd894f10a2b5fa4039fcb4dd1cbd40b13e482b8a",
+      "hashAlgorithm": "SHA-256",
+      "newestEventTime": "2025-10-21TT00:52:27Z",
+      "oldestEventTime": "2025-10-21TT00:42:27Z"
+    }
+  ]
+}

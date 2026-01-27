@@ -6,6 +6,7 @@
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fhttpcheck%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fhttpcheck) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fhttpcheck%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fhttpcheck) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_httpcheck)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_httpcheck&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@codeboten](https://www.github.com/codeboten), [@VenuEmmadi](https://www.github.com/VenuEmmadi) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -25,6 +26,8 @@ httpcheck.status{http.status_class:4xx, http.status_code:200,...} = 0
 httpcheck.status{http.status_class:5xx, http.status_code:200,...} = 0
 ```
 
+For HTTPS endpoints, the receiver can collect TLS certificate metrics including the time remaining until certificate expiry. This allows monitoring of certificate expiration alongside HTTP availability. Note that TLS certificate metrics are disabled by default and must be explicitly enabled in the metrics configuration.
+
 ## Configuration
 
 The following configuration settings are available:
@@ -38,8 +41,140 @@ Each target has the following properties:
 - `endpoint` (optional): A single URL to be monitored.
 - `endpoints` (optional): A list of URLs to be monitored.
 - `method` (optional, default: `GET`): The HTTP method used to call the endpoint or endpoints.
+- `body` (optional): Request body content for POST, PUT, PATCH, and other methods.
 
 At least one of `endpoint` or `endpoints` must be specified. Additionally, each target supports the client configuration options of [confighttp].
+
+### Optional Metrics
+
+The receiver provides optional metrics that are disabled by default and can be enabled in the configuration:
+
+#### TLS Certificate Monitoring
+
+For HTTPS endpoints, TLS certificate metrics can be enabled:
+
+```yaml
+receivers:
+  httpcheck:
+    metrics:
+      httpcheck.tls.cert_remaining:
+        enabled: true
+```
+
+#### Timing Breakdown Metrics
+
+For detailed performance analysis, timing breakdown metrics are available:
+
+```yaml
+receivers:
+  httpcheck:
+    metrics:
+      httpcheck.dns.lookup.duration:
+        enabled: true
+      httpcheck.client.connection.duration:
+        enabled: true
+      httpcheck.tls.handshake.duration:
+        enabled: true
+      httpcheck.client.request.duration:
+        enabled: true
+      httpcheck.request.duration:
+        enabled: true
+      httpcheck.response.duration:
+        enabled: true
+```
+
+These metrics provide detailed timing information for different phases of the HTTP request:
+- `dns.lookup.duration`: Time spent performing DNS lookup
+- `client.connection.duration`: Time spent establishing TCP connection
+- `tls.handshake.duration`: Time spent performing TLS handshake (HTTPS only)
+- `client.request.duration`: Time spent sending the HTTP request
+- `response.duration`: Time spent receiving the HTTP response
+
+#### Response Validation Metrics
+
+For API monitoring and health checks, response validation metrics are available:
+
+```yaml
+receivers:
+  httpcheck:
+    metrics:
+      httpcheck.validation.passed:
+        enabled: true
+      httpcheck.validation.failed:
+        enabled: true
+      httpcheck.response.size:
+        enabled: true
+```
+
+These metrics track validation results with `validation.type` attribute indicating the validation type (contains, json_path, size, regex).
+
+### Request Body Support
+
+The receiver supports sending request bodies for POST, PUT, PATCH, and other HTTP methods:
+
+```yaml
+receivers:
+  httpcheck:
+    targets:
+      # POST with JSON body
+      - endpoint: "https://api.example.com/users"
+        method: "POST"
+        body: '{"name": "John Doe", "email": "john@example.com"}'
+        
+      # PUT with form data
+      - endpoint: "https://api.example.com/profile"
+        method: "PUT"
+        body: "name=John&email=john@example.com"
+        
+      # PATCH with custom Content-Type
+      - endpoint: "https://api.example.com/settings"
+        method: "PATCH"
+        body: '{"theme": "dark"}'
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer token123"
+```
+
+**Content-Type Auto-Detection:**
+- JSON bodies (starting with `{` or `[`): `application/json`
+- Form data (containing `=`): `application/x-www-form-urlencoded`
+- Other content: `text/plain`
+- Custom headers override auto-detection
+
+### Response Validation
+
+The receiver supports response body validation for API monitoring:
+
+```yaml
+receivers:
+  httpcheck:
+    targets:
+      - endpoint: "https://api.example.com/health"
+        validations:
+          # String matching
+          - contains: "healthy"
+          - not_contains: "error"
+          
+          # JSON path validation using gjson syntax
+          - json_path: "$.status"
+            equals: "ok"
+          - json_path: "$.services[*].status"
+            equals: "up"
+          
+          # Response size validation (bytes)
+          - max_size: 1024
+          - min_size: 10
+          
+          # Regex validation
+          - regex: "^HTTP/[0-9.]+ 200"
+```
+
+**Validation Types:**
+- `contains` / `not_contains`: String matching
+- `json_path` + `equals`: JSON path queries using [gjson syntax](https://github.com/tidwall/gjson)
+- `max_size` / `min_size`: Response body size limits
+- `regex`: Regular expression matching
+
 
 ### Example Configuration
 
@@ -47,6 +182,26 @@ At least one of `endpoint` or `endpoints` must be specified. Additionally, each 
 receivers:
   httpcheck:
     collection_interval: 30s
+    # Optional: Enable timing breakdown metrics
+    metrics:
+      httpcheck.dns.lookup.duration:
+        enabled: true
+      httpcheck.client.connection.duration:
+        enabled: true
+      httpcheck.tls.handshake.duration:
+        enabled: true
+      httpcheck.client.request.duration:
+        enabled: true
+      httpcheck.response.duration:
+        enabled: true
+      httpcheck.tls.cert_remaining:
+        enabled: true
+      httpcheck.validation.passed:
+        enabled: true
+      httpcheck.validation.failed:
+        enabled: true
+      httpcheck.response.size:
+        enabled: true
     targets:
       - method: "GET"
         endpoints:
@@ -61,11 +216,16 @@ receivers:
         endpoint: "http://localhost:8080/hello"
         headers:
           Authorization: "Bearer <your_bearer_token>"
-processors:
-  batch:
-    send_batch_max_size: 1000
-    send_batch_size: 100
-    timeout: 10s
+      - method: "POST"
+        endpoint: "https://api.example.com/users"
+        body: '{"name": "Test User", "email": "test@example.com"}'
+      - method: "GET"
+        endpoint: "https://api.example.com/health"
+        validations:
+          - contains: "healthy"
+          - json_path: "$.status"
+            equals: "ok"
+          - max_size: 1024
 exporters:
   debug:
     verbosity: detailed
@@ -73,7 +233,6 @@ service:
   pipelines:
     metrics:
       receivers: [httpcheck]
-      processors: [batch]
       exporters: [debug]
 ```
 

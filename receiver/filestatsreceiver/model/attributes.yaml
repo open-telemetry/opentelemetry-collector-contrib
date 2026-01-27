@@ -1,0 +1,27 @@
+groups:
+  - id: resource.attributes
+    type: attribute_group
+    brief: Resource attributes
+    attributes:
+      - id: file.name
+        brief: The name of the file
+        type: string
+        stability: beta
+        examples: [ "myapp.log", "passwords.txt", "server.jar" ]
+      - id: file.path
+        brief: The absolute path of the file
+        type: string
+        stability: beta
+        examples:
+          - /var/log/app.log
+          - /etc/passwd
+        requirement_level: opt_in
+  - id: metric.attributes
+    type: attribute_group
+    brief: Metric attributes
+    attributes:
+      - id: file.permissions
+        type: string
+        brief: the permissions associated with the file, using an octal format.
+        stability: beta
+        examples: [ "0644", "0440" ]

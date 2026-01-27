@@ -35,7 +35,9 @@ func createLogsReceiver(
 func createDefaultConfig() component.Config {
 	return &Config{
 		Logs: LogsConfig{
-			TimestampField: defaultTimestampField,
+			TimestampField:  defaultTimestampField,
+			TimestampFormat: defaultTimestampFormat,
+			Separator:       defaultSeparator,
 		},
 	}
 }

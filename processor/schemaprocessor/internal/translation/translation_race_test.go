@@ -23,7 +23,7 @@ func TestRaceTranslationSpanChanges(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating translator")
 
 	fixture.ParallelRaceCompute(t, 10, func() error {
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			v := &Version{1, 0, 0}
 			spans := NewExampleSpans(t, *v)
 			for i := 0; i < spans.ResourceSpans().Len(); i++ {
@@ -54,7 +54,7 @@ func TestRaceTranslationMetricChanges(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating translator")
 
 	fixture.ParallelRaceCompute(t, 10, func() error {
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			spans := NewExampleSpans(t, Version{1, 0, 0})
 			for i := 0; i < spans.ResourceSpans().Len(); i++ {
 				rSpan := spans.ResourceSpans().At(i)
@@ -86,7 +86,7 @@ func TestRaceTranslationLogChanges(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating translator")
 
 	fixture.ParallelRaceCompute(t, 10, func() error {
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			metrics := NewExampleMetrics(t, Version{1, 0, 0})
 			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 				rMetrics := metrics.ResourceMetrics().At(i)

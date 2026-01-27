@@ -43,16 +43,15 @@ func TestFactory(t *testing.T) {
 						InitialDelay:       time.Second,
 					},
 					TopQueryCollection: TopQueryCollection{
-						Enabled:             false,
-						LookbackTime:        uint(2 * 10),
 						MaxQuerySampleCount: 1000,
 						TopQueryCount:       200,
+						CollectionInterval:  time.Minute,
 					},
 					QuerySample: QuerySample{
-						Enabled:         false,
 						MaxRowsPerQuery: 100,
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+					LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
@@ -201,7 +200,7 @@ func TestFactory(t *testing.T) {
 				require.Empty(t, sqlScrapers)
 
 				cfg.InstanceName = "instanceName"
-				cfg.TopQueryCollection.Enabled = true
+				cfg.Events.DbServerTopQuery.Enabled = true
 				scrapers, err = setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
@@ -263,8 +262,7 @@ func TestSetupQueries(t *testing.T) {
 
 	metricsMetadata, ok := metadata["metrics"].(map[string]any)
 	require.True(t, ok)
-	require.Len(t, metricsMetadata, 45,
-		"Every time metrics are added or removed, the function `setupQueries` must "+
-			"be modified to properly account for the change. Please update `setupQueries` and then, "+
-			"and only then, update the expected metric count here.")
+	require.Len(t, metricsMetadata, 50, "Every time metrics are added or removed, the function `setupQueries` must "+
+		"be modified to properly account for the change. Please update `setupQueries` and then, "+
+		"and only then, update the expected metric count here.")
 }

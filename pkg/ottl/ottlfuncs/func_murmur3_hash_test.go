@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -73,11 +74,11 @@ func Test_CreateMurmur3HashFunc(t *testing.T) {
 	exprFunc, err = factory.CreateFunction(
 		fCtx, &Murmur3HashArguments[any]{
 			Target: ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return "Hello World", nil
 				},
 			},
 		})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 }

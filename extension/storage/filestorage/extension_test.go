@@ -61,28 +61,28 @@ func TestExtensionIntegrity(t *testing.T) {
 		myBytes := []byte(n.Name())
 
 		// Set my values
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			err := c.Set(ctx, keys[i], myBytes)
 			require.NoError(t, err)
 		}
 
 		// Repeatedly thrash client
-		for j := 0; j < 100; j++ {
+		for range 100 {
 			// Make sure my values are still mine
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				v, err := c.Get(ctx, keys[i])
 				require.NoError(t, err)
 				require.Equal(t, myBytes, v)
 			}
 
 			// Delete my values
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				err := c.Delete(ctx, keys[i])
 				require.NoError(t, err)
 			}
 
 			// Reset my values
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				err := c.Set(ctx, keys[i], myBytes)
 				require.NoError(t, err)
 			}
@@ -364,7 +364,7 @@ func TestCompaction(t *testing.T) {
 	require.Less(t, stats.Size(), newStats.Size())
 
 	// remove data from database
-	for i = 0; i < numEntries; i++ {
+	for i = range numEntries {
 		key = fmt.Sprintf("key_%d", i)
 		err = c.Delete(ctx, key)
 		require.NoError(t, err)
@@ -609,5 +609,84 @@ func TestDirectoryCreation(t *testing.T) {
 				tt.validate(t, config)
 			}
 		})
+	}
+}
+
+func TestRecreate(t *testing.T) {
+	ctx := t.Context()
+	temp := t.TempDir()
+	f := NewFactory()
+
+	config := f.CreateDefaultConfig().(*Config)
+	config.Directory = temp
+
+	// step 1: create an extension with default config and write some data
+	{
+		ext, err := f.Create(ctx, extensiontest.NewNopSettings(f.Type()), config)
+		require.NoError(t, err)
+		require.NotNil(t, ext)
+
+		se, ok := ext.(storage.Extension)
+		require.True(t, ok)
+
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		require.NoError(t, err)
+		require.NotNil(t, client)
+
+		// write the data and make sure it is set in the subsequent get.
+		require.NoError(t, client.Set(ctx, "key", []byte("val")))
+		val, err := client.Get(ctx, "key")
+		require.Equal(t, val, []byte("val"))
+		require.NoError(t, err)
+
+		// close the extension
+		require.NoError(t, client.Close(ctx))
+		require.NoError(t, ext.Shutdown(ctx))
+	}
+
+	// step 2: re-create the extension to make sure that the data is therw
+	{
+		ext, err := f.Create(ctx, extensiontest.NewNopSettings(f.Type()), config)
+		require.NoError(t, err)
+		require.NotNil(t, ext)
+		se, ok := ext.(storage.Extension)
+		require.True(t, ok)
+
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		require.NoError(t, err)
+		require.NotNil(t, client)
+
+		// make sure that the data exists from the previous pass.
+		val, err := client.Get(ctx, "key")
+		require.Equal(t, val, []byte("val"))
+		require.NoError(t, err)
+
+		// close the extension
+		require.NoError(t, client.Close(ctx))
+		require.NoError(t, ext.Shutdown(ctx))
+	}
+
+	// step 3: re-create the extension, but with Recreate=true and make sure that the data still exists
+	// (since recreate now only happens on panic, not always when recreate=true)
+	{
+		config.Recreate = true
+		ext, err := f.Create(ctx, extensiontest.NewNopSettings(f.Type()), config)
+		require.NoError(t, err)
+		require.NotNil(t, ext)
+		se, ok := ext.(storage.Extension)
+		require.True(t, ok)
+
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		require.NoError(t, err)
+		require.NotNil(t, client)
+
+		// The data should still exist since no panic occurred
+		val, err := client.Get(ctx, "key")
+		require.Equal(t, val, []byte("val"))
+		require.NoError(t, err)
+
+		// close the extension
+		require.NoError(t, client.Close(ctx))
+		require.NoError(t, ext.Shutdown(ctx))
 	}
 }

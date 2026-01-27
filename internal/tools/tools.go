@@ -17,6 +17,7 @@ import (
 	_ "github.com/google/addlicense"
 	_ "github.com/jcchavezs/porto/cmd/porto"
 	_ "github.com/jstemmer/go-junit-report"
+	_ "github.com/rhysd/actionlint/cmd/actionlint"
 	_ "go.opentelemetry.io/build-tools/checkapi"
 	_ "go.opentelemetry.io/build-tools/checkfile"
 	_ "go.opentelemetry.io/build-tools/chloggen"
@@ -27,7 +28,11 @@ import (
 	_ "go.opentelemetry.io/collector/cmd/builder"
 	_ "go.opentelemetry.io/collector/cmd/mdatagen"
 	_ "golang.org/x/tools/cmd/goimports"
+	_ "golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize"
 	_ "golang.org/x/vuln/cmd/govulncheck"
 	_ "gotest.tools/gotestsum"
 	_ "mvdan.cc/gofumpt"
+
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen"
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen"
 )

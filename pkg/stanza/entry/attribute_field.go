@@ -7,11 +7,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 )
 
 // AttributeField is the path to an entry attribute
 type AttributeField struct {
 	Keys []string
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewAttributeField will creat a new attribute field from a key
@@ -19,9 +22,11 @@ func NewAttributeField(keys ...string) Field {
 	if keys == nil {
 		keys = []string{}
 	}
-	return Field{AttributeField{
-		Keys: keys,
-	}}
+	return Field{
+		FieldInterface: AttributeField{
+			Keys: keys,
+		},
+	}
 }
 
 // Parent returns the parent of the current field.
@@ -32,7 +37,7 @@ func (f AttributeField) Parent() AttributeField {
 	}
 
 	keys := f.Keys[:len(f.Keys)-1]
-	return AttributeField{keys}
+	return AttributeField{Keys: keys}
 }
 
 // Child returns a child of the current field using the given key.
@@ -40,7 +45,7 @@ func (f AttributeField) Child(key string) AttributeField {
 	child := make([]string, len(f.Keys), len(f.Keys)+1)
 	copy(child, f.Keys)
 	child = append(child, key)
-	return AttributeField{child}
+	return AttributeField{Keys: child}
 }
 
 // IsRoot returns a boolean indicating if this is a root level field.
@@ -120,9 +125,7 @@ func (f AttributeField) Merge(entry *Entry, mapValues map[string]any) {
 		currentMap = getNestedMap(currentMap, key)
 	}
 
-	for key, value := range mapValues {
-		currentMap[key] = value
-	}
+	maps.Copy(currentMap, mapValues)
 }
 
 // Delete removes a value from an entry's attributes using the field.
@@ -179,7 +182,7 @@ func (f *AttributeField) UnmarshalJSON(raw []byte) error {
 		return fmt.Errorf("must start with 'attributes': %s", value)
 	}
 
-	*f = AttributeField{keys[1:]}
+	*f = AttributeField{Keys: keys[1:]}
 	return nil
 }
 
@@ -199,7 +202,7 @@ func (f *AttributeField) UnmarshalYAML(unmarshal func(any) error) error {
 		return fmt.Errorf("must start with 'attributes': %s", value)
 	}
 
-	*f = AttributeField{keys[1:]}
+	*f = AttributeField{Keys: keys[1:]}
 	return nil
 }
 
@@ -214,6 +217,6 @@ func (f *AttributeField) UnmarshalText(text []byte) error {
 		return fmt.Errorf("must start with 'attributes': %s", text)
 	}
 
-	*f = AttributeField{keys[1:]}
+	*f = AttributeField{Keys: keys[1:]}
 	return nil
 }

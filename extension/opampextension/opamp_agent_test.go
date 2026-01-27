@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
 
@@ -52,9 +52,9 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
-	set.Resource.Attributes().PutStr(semconv.AttributeServiceName, "otelcol-distro")
-	set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, "distro.0")
-	set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, "f8999bc1-4c9b-4619-9bae-7f009d2411ec")
+	set.Resource.Attributes().PutStr("service.name", "otelcol-distro")
+	set.Resource.Attributes().PutStr("service.version", "distro.0")
+	set.Resource.Attributes().PutStr("service.instance.id", "f8999bc1-4c9b-4619-9bae-7f009d2411ec")
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 	assert.Equal(t, "otelcol-distro", o.agentType)
@@ -71,6 +71,8 @@ func TestCreateAgentDescription(t *testing.T) {
 	serviceName := "otelcol-distrot"
 	serviceVersion := "distro.0"
 	serviceInstanceUUID := "f8999bc1-4c9b-4619-9bae-7f009d2411ec"
+	extraResourceAttrKey := "hello"
+	extraResourceAttrValue := "world"
 
 	testCases := []struct {
 		name string
@@ -83,15 +85,15 @@ func TestCreateAgentDescription(t *testing.T) {
 			cfg:  func(_ *Config) {},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
-					stringKeyValue(semconv.AttributeServiceName, serviceName),
-					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+					stringKeyValue("service.instance.id", serviceInstanceUUID),
+					stringKeyValue("service.name", serviceName),
+					stringKeyValue("service.version", serviceVersion),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
-					stringKeyValue(semconv.AttributeHostName, hostname),
-					stringKeyValue(semconv.AttributeOSDescription, description),
-					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+					stringKeyValue("host.arch", runtime.GOARCH),
+					stringKeyValue("host.name", hostname),
+					stringKeyValue("os.description", description),
+					stringKeyValue("os.type", runtime.GOOS),
 				},
 			},
 		},
@@ -99,23 +101,23 @@ func TestCreateAgentDescription(t *testing.T) {
 			name: "Extra attributes specified",
 			cfg: func(c *Config) {
 				c.AgentDescription.NonIdentifyingAttributes = map[string]string{
-					"env":                       "prod",
-					semconv.AttributeK8SPodName: "my-very-cool-pod",
+					"env":          "prod",
+					"k8s.pod.name": "my-very-cool-pod",
 				}
 			},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
-					stringKeyValue(semconv.AttributeServiceName, serviceName),
-					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+					stringKeyValue("service.instance.id", serviceInstanceUUID),
+					stringKeyValue("service.name", serviceName),
+					stringKeyValue("service.version", serviceVersion),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue("env", "prod"),
-					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
-					stringKeyValue(semconv.AttributeHostName, hostname),
-					stringKeyValue(semconv.AttributeK8SPodName, "my-very-cool-pod"),
-					stringKeyValue(semconv.AttributeOSDescription, description),
-					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+					stringKeyValue("host.arch", runtime.GOARCH),
+					stringKeyValue("host.name", hostname),
+					stringKeyValue("k8s.pod.name", "my-very-cool-pod"),
+					stringKeyValue("os.description", description),
+					stringKeyValue("os.type", runtime.GOOS),
 				},
 			},
 		},
@@ -123,20 +125,40 @@ func TestCreateAgentDescription(t *testing.T) {
 			name: "Extra attributes override",
 			cfg: func(c *Config) {
 				c.AgentDescription.NonIdentifyingAttributes = map[string]string{
-					semconv.AttributeHostName: "override-host",
+					"host.name": "override-host",
 				}
 			},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
-					stringKeyValue(semconv.AttributeServiceName, serviceName),
-					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+					stringKeyValue("service.instance.id", serviceInstanceUUID),
+					stringKeyValue("service.name", serviceName),
+					stringKeyValue("service.version", serviceVersion),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
-					stringKeyValue(semconv.AttributeHostName, "override-host"),
-					stringKeyValue(semconv.AttributeOSDescription, description),
-					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+					stringKeyValue("host.arch", runtime.GOARCH),
+					stringKeyValue("host.name", "override-host"),
+					stringKeyValue("os.description", description),
+					stringKeyValue("os.type", runtime.GOOS),
+				},
+			},
+		},
+		{
+			name: "Set IncludeResourceAttributes",
+			cfg: func(c *Config) {
+				c.AgentDescription.IncludeResourceAttributes = true
+			},
+			expected: &protobufs.AgentDescription{
+				IdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue("service.instance.id", serviceInstanceUUID),
+					stringKeyValue("service.name", serviceName),
+					stringKeyValue("service.version", serviceVersion),
+				},
+				NonIdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue(extraResourceAttrKey, extraResourceAttrValue),
+					stringKeyValue("host.arch", runtime.GOARCH),
+					stringKeyValue("host.name", hostname),
+					stringKeyValue("os.description", description),
+					stringKeyValue("os.type", runtime.GOOS),
 				},
 			},
 		},
@@ -148,9 +170,10 @@ func TestCreateAgentDescription(t *testing.T) {
 			tc.cfg(cfg)
 
 			set := extensiontest.NewNopSettings(extensiontest.NopType)
-			set.Resource.Attributes().PutStr(semconv.AttributeServiceName, serviceName)
-			set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, serviceVersion)
-			set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, serviceInstanceUUID)
+			set.Resource.Attributes().PutStr("service.name", serviceName)
+			set.Resource.Attributes().PutStr("service.version", serviceVersion)
+			set.Resource.Attributes().PutStr("service.instance.id", serviceInstanceUUID)
+			set.Resource.Attributes().PutStr(extraResourceAttrKey, extraResourceAttrValue)
 
 			o, err := newOpampAgent(cfg, set)
 			require.NoError(t, err)
@@ -252,11 +275,11 @@ func newAvailableComponentsHost(t *testing.T) component.Host {
 	}
 }
 
-func (ach *availableComponentsHost) GetFactory(component.Kind, component.Type) component.Factory {
+func (*availableComponentsHost) GetFactory(component.Kind, component.Type) component.Factory {
 	return nil
 }
 
-func (ach *availableComponentsHost) GetExtensions() map[component.ID]component.Component {
+func (*availableComponentsHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
@@ -522,7 +545,7 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 
 	assert.NoError(t, o.Start(t.Context(), componenttest.NewNopHost()))
 
-	traces := testhelpers.NewPipelineMetadata("traces")
+	traces := testhelpers.NewPipelineMetadata(pipeline.SignalTraces)
 
 	// StatusStarting will be sent immediately.
 	for _, id := range traces.InstanceIDs() {
@@ -778,19 +801,23 @@ type mockOpAMPClient struct {
 	setHealthFunc func(health *protobufs.ComponentHealth) error
 }
 
-func (m mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
+func (mockOpAMPClient) SetCapabilities(*protobufs.AgentCapabilities) error {
 	return nil
 }
 
-func (m mockOpAMPClient) Stop(_ context.Context) error {
+func (mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
 	return nil
 }
 
-func (m mockOpAMPClient) SetAgentDescription(_ *protobufs.AgentDescription) error {
+func (mockOpAMPClient) Stop(_ context.Context) error {
 	return nil
 }
 
-func (m mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
+func (mockOpAMPClient) SetAgentDescription(_ *protobufs.AgentDescription) error {
+	return nil
+}
+
+func (mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
 	return nil
 }
 
@@ -798,33 +825,33 @@ func (m mockOpAMPClient) SetHealth(health *protobufs.ComponentHealth) error {
 	return m.setHealthFunc(health)
 }
 
-func (m mockOpAMPClient) UpdateEffectiveConfig(_ context.Context) error {
+func (mockOpAMPClient) UpdateEffectiveConfig(context.Context) error {
 	return nil
 }
 
-func (m mockOpAMPClient) SetRemoteConfigStatus(_ *protobufs.RemoteConfigStatus) error {
+func (mockOpAMPClient) SetRemoteConfigStatus(*protobufs.RemoteConfigStatus) error {
 	return nil
 }
 
-func (m mockOpAMPClient) SetPackageStatuses(_ *protobufs.PackageStatuses) error {
+func (mockOpAMPClient) SetPackageStatuses(*protobufs.PackageStatuses) error {
 	return nil
 }
 
-func (m mockOpAMPClient) RequestConnectionSettings(_ *protobufs.ConnectionSettingsRequest) error {
+func (mockOpAMPClient) RequestConnectionSettings(*protobufs.ConnectionSettingsRequest) error {
 	return nil
 }
 
-func (m mockOpAMPClient) SetCustomCapabilities(_ *protobufs.CustomCapabilities) error {
+func (mockOpAMPClient) SetCustomCapabilities(*protobufs.CustomCapabilities) error {
 	return nil
 }
 
-func (m mockOpAMPClient) SendCustomMessage(_ *protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error) {
+func (mockOpAMPClient) SendCustomMessage(*protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error) {
 	return nil, nil
 }
 
-func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
+func (mockOpAMPClient) SetFlags(protobufs.AgentToServerFlags) {}
 
-func (m mockOpAMPClient) SetAvailableComponents(_ *protobufs.AvailableComponents) error {
+func (mockOpAMPClient) SetAvailableComponents(*protobufs.AvailableComponents) error {
 	return nil
 }
 

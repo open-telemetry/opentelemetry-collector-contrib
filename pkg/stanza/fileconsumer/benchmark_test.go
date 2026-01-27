@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -156,7 +157,7 @@ func BenchmarkFileInput(b *testing.B) {
 	// and to reduce the amount of syscalls in the benchmark.
 	uniqueLines := 10
 	severalLines := ""
-	for i := 0; i < uniqueLines; i++ {
+	for range uniqueLines {
 		severalLines += string(filetest.TokenWithLength(999)) + "\n"
 	}
 
@@ -189,7 +190,7 @@ func BenchmarkFileInput(b *testing.B) {
 			cfg.PollInterval = time.Microsecond
 
 			doneChan := make(chan bool, len(files))
-			callback := func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64) error {
+			callback := func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
 				if len(tokens) > 0 && len(tokens[len(tokens)-1]) == 0 {
 					doneChan <- true
 				}
@@ -275,9 +276,9 @@ func BenchmarkConsumeFiles(b *testing.B) {
 	// to avoid measuring the time it takes to generate them
 	// and to reduce the amount of syscalls in the benchmark.
 	uniqueLines := 10
-	severalLines := ""
-	for i := 0; i < uniqueLines; i++ {
-		severalLines += string(filetest.TokenWithLength(999)) + "\n"
+	var severalLines strings.Builder
+	for range uniqueLines {
+		severalLines.WriteString(string(filetest.TokenWithLength(999)) + "\n")
 	}
 
 	for _, bench := range cases {
@@ -294,8 +295,8 @@ func BenchmarkConsumeFiles(b *testing.B) {
 				// Initialize the file to ensure a unique fingerprint
 				_, err := f.WriteString(f.Name() + "\n")
 				require.NoError(b, err)
-				for i := 0; i < b.N; i++ {
-					_, err := f.WriteString(severalLines)
+				for b.Loop() {
+					_, err := f.WriteString(severalLines.String())
 					require.NoError(b, err)
 				}
 				require.NoError(b, f.Sync())
@@ -311,7 +312,7 @@ func BenchmarkConsumeFiles(b *testing.B) {
 
 			doneChan := make(chan bool, len(files))
 			numTokens := &atomic.Int64{}
-			callback := func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64) error {
+			callback := func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
 				if numTokens.Add(int64(len(tokens))) == int64(len(files)*(b.N*uniqueLines+1)) {
 					close(doneChan)
 				}

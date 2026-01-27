@@ -7,6 +7,7 @@
 |               | [alpha]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fgithub%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fgithub) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fgithub%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fgithub) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_github)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_github&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@adrielp](https://www.github.com/adrielp), [@crobert-1](https://www.github.com/crobert-1), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -23,6 +24,7 @@
   - [Receiver Configuration](#receiver-configuration)
   - [Configuring Service Name](#configuring-service-name)
   - [Configuration a GitHub App](#configuration-a-github-app)
+  - [Custom Properties as Resource Attributes](#custom-properties-as-resource-attributes)
 
 ## Overview
 
@@ -75,6 +77,8 @@ receivers:
                         enabled: true
                 github_org: <myfancyorg> 
                 search_query: "org:<myfancyorg> topic:<o11yalltheway>" # Recommended optional query override, defaults to "{org,user}:<github_org>"
+                concurrency_limit: 50  # Optional: (default: 50)
+                merged_pr_lookback_days: 30 # Optional: (default: 30)
                 endpoint: "https://selfmanagedenterpriseserver.com" # Optional
                 auth:
                     authenticator: bearertokenauth/github
@@ -94,6 +98,10 @@ service:
 `endpoint` (optional): Set this only when using a self-managed GitHub instance (e.g., `https://selfmanagedenterpriseserver.com` -- SHOULD NOT include `api` subdomain or `/graphql` context path).
 
 `search_query` (optional): A filter to narrow down repositories. Defaults to `org:<github_org>` (or `user:<username>`). For example, use `repo:<org>/<repo>` to target a specific repository. Any valid GitHub search syntax is allowed.
+
+`concurrency_limit` (optional): Maximum number of concurrent repository processing goroutines. Defaults to `50` to stay under GitHub's 100 concurrent request limit. Set to `0` for unlimited concurrency (not recommended for >100 repositories).
+
+`merged_pr_lookback_days` (optional):  Number of days to query back in time when fetching merged pull requests. Defaults to 30. Set to `0` to fetch all merged PRs.
 
 `metrics` (optional): Enable or disable metrics scraping. See the [metrics documentation](./documentation.md) for details.
 
@@ -137,6 +145,11 @@ action][run] and [otel-cli][otcli]. The key is generating IDs in the same way
 that this GitHub receiver does. The [trace_event_handling.go][tr] file contains
 the `new*ID` functions that generate deterministic IDs.
 
+**IMPORTANT** - Workflow Job names MUST be unique in each workflow for
+deterministic span IDs to not conflict with eachother. GitHub does not enforce
+this behavior, but when linting a workflow, warns that there are duplicate job
+names.
+
 ### Receiver Configuration
 
 **IMPORTANT** - Ensure your WebHook endpoint is secured with a secret and a Web
@@ -152,6 +165,7 @@ The WebHook configuration exposes the following settings:
 * `service_name`: (optional) - The service name for the traces. See the
 [Configuring Service Name](#configuring-service-name) section for more
 information.
+* `include_span_events`: (default = `false`) - When set to `true`, attaches the raw webhook event JSON as a span event. The workflow run event is attached to the workflow run span, and the workflow job event is attached to the job span.
 
 The WebHook configuration block also accepts all the [confighttp][cfghttp]
 settings.
@@ -166,8 +180,12 @@ receivers:
             path: /events
             health_path: /health
             secret: ${env:SECRET_STRING_VAR}
+            service_name: github-actions  # single logical CI service (See Configuring Service Name section below)
             required_headers:
                 WAF-Header: "value"
+        scrapers: # The validation expects at least a dummy scraper config
+            scraper:
+                github_org: open-telemetry
 ```
 
 For tracing, all configuration is set under the `webhook` key. The full set
@@ -177,24 +195,63 @@ of exposed configuration values can be found in [`config.go`](./config.go).
 
 The `service_name` option in the WebHook configuration can be used to set a
 pre-defined `service.name` resource attribute for all traces emitted by the
-receiver. This takes priority over the internal generation of the
-`service.name`. In this configuration, it would be important to create a GitHub
-receiver per GitHub app configured for the set of repositories that match your
-`service.name`.
+receiver. This value should represent the **logical service producing telemetry**
+(as defined by OpenTelemetry resource semantics), not individual repositories or
+components. For CI/CD usage, a typical choice is a single service such as
+`github-actions` (optionally paired with `service.namespace` for ownership and
+uniqueness).
 
-However, a more efficient approach would be to leverage the default generation
-of `service.name` by configuring [Custom Properties][cp] in each GitHub
-repository. To do that simply add a `service_name` key with the desired value in
-each repository and all events sent to the GitHub receiver will properly
-associate with that `service.name`. Alternatively, the `service_name` will be
-derived from the repository name.
+If you choose to set `service_name` explicitly, consider running a separate
+GitHub receiver (and/or GitHub App) for each distinct service that you want to
+model.
 
-The precedence for setting the `service.name` resource attribute is as follows:
+If you do not set `service_name`, the receiver supports deriving it from
+repository metadata. You can configure [Custom Properties][cp] in each GitHub
+repository by adding a `service_name` key; all events from that repository will
+then carry the specified `service.name`. If no custom property is found, the
+receiver will derive `service.name` from the repository name.
 
-1. `service_name` configuration in the WebHook configuration.
-2. `service_name` key in the repository's Custom Properties per repository.
+> **Note:** Deriving `service.name` from repositories is a convenience and may
+> be sufficient for small setups. In larger organizations, mapping repositories
+> directly to `service.name` often leads to many pseudo-services and can make
+> cross-repository analysis harder. Prefer an explicit CI service name when
+> modeling your pipelines as a platform service.
+
+**Precedence for setting `service.name`:**
+
+1. `service_name` in the WebHook configuration.
+2. `service_name` key in the repository’s Custom Properties.
 3. `service_name` derived from the repository name.
-4. `service.name` set to `unknown_service` per the semantic conventions as a fall back.
+4. `service.name` defaults to `unknown_service` per the semantic conventions.
+
+### Span Events
+
+When `include_span_events` is enabled, the receiver attaches the raw GitHub webhook event JSON as a span event to the corresponding span:
+
+- **Workflow Run events**: Attached as a span event named `github.workflow_run.event` to the root workflow run span
+- **Workflow Job events**: Attached as a span event named `github.workflow_job.event` to the job span
+
+The raw event is stored in the `event.payload` attribute as a JSON string. This allows for detailed inspection of the complete webhook payload, including fields that may not be mapped to span attributes.
+
+**Note**: The raw event payload can be large (typically 5-50KB). Consider the impact on storage and performance before enabling this feature in production environments.
+
+An example configuration with span events enabled:
+
+```yaml
+receivers:
+    github:
+        webhook:
+            endpoint: localhost:19418
+            path: /events
+            health_path: /health
+            secret: ${env:SECRET_STRING_VAR}
+            required_headers:
+                WAF-Header: "value"
+            include_span_events: true
+        scrapers: # The validation expects at least a dummy scraper config
+            scraper:
+                github_org: open-telemetry
+```
 
 ### Configuring A GitHub App
 
@@ -214,3 +271,83 @@ create a GitHub App. During the subscription phase, subscribe to `workflow_run` 
 [run]: https://github.com/krzko/run-with-telemetry
 [otcli]: https://github.com/equinix-labs/otel-cli
 [tr]: ./trace_event_handling.go
+
+### Custom Properties as Resource Attributes
+
+The GitHub receiver supports adding custom properties from GitHub repositories as resource attributes in your telemetry data. This allows users to enrich traces and events with additional metadata specific to each repository.
+
+#### How It Works
+
+When a GitHub webhook event is received, the receiver extracts all custom properties from the repository and adds them as resource attributes with the prefix `github.repository.custom_properties`.
+
+For example, if your repository has these custom properties:
+
+```
+classification: public
+service-tier: critical
+slack-support-channel: #observability-alerts
+team-name: observability-engineering
+```
+
+They will be added as resource attributes:
+
+```
+github.repository.custom_properties.classification: "public"
+github.repository.custom_properties.service_tier: "critical"
+github.repository.custom_properties.slack_support_channel: "#observability-alerts"
+github.repository.custom_properties.team_name: "observability-engineering"
+```
+
+#### Key Formatting
+
+To ensure consistency with OpenTelemetry naming conventions, all custom property keys are converted to snake_case format using the following rules:
+
+1. Hyphens, spaces, and dots are replaced with underscores
+2. Special characters like `$` and `#` are replaced with `_dollar_` and `_hash_`
+3. CamelCase and PascalCase are converted to snake_case by inserting underscores before uppercase letters
+4. Multiple consecutive underscores are replaced with a single underscore
+
+Examples of key transformations:
+
+| Original Key | Transformed Key |
+|--------------|----------------|
+| `teamName` | `team_name` |
+| `API-Key` | `api_key` |
+| `Service.Level` | `service_level` |
+| `$Cost` | `_dollar_cost` |
+| `#Priority` | `_hash_priority` |
+
+**Note**:
+The `service_name` custom property is handled specially and is not added as a resource attribute with the prefix. Instead, it's used to set the `service.name` resource attribute directly, as described in the [Configuring Service Name](#configuring-service-name) section.
+
+## Migration Notes
+
+### Semantic Conventions v1.37.0 Upgrade
+
+The GitHub receiver has been updated to use OpenTelemetry semantic conventions v1.37.0. This brings standardization improvements and better alignment with the broader OpenTelemetry ecosystem.
+
+#### Breaking Changes
+
+**Resource Attributes:**
+- `organization.name` → `vcs.owner.name` - The resource attribute for organization/owner name has been standardized
+- `vcs.vendor.name` → `vcs.provider.name` - The VCS provider attribute has been standardized
+
+**Trace Attributes:**
+- `vcs.ref.head.type` → `vcs.ref.type` - Some trace attributes now use standardized naming
+
+#### What This Means for Users
+
+**For Dashboard and Alerting Users:**
+- Update your queries and dashboards to use the new attribute names
+- Old attribute names are no longer emitted starting with this version
+- The schema URL in telemetry data now references OpenTelemetry schemas v1.37.0
+
+**For Configuration Users:**
+- No configuration changes are required
+- All existing receiver configurations continue to work unchanged
+
+**Migration Timeline:**
+- **Before upgrading:** Update downstream systems (dashboards, alerts, queries) to use new attribute names
+- **After upgrading:** Verify that telemetry data is flowing correctly with the new attributes
+
+For the complete list of semantic convention changes, see the [OpenTelemetry semantic conventions v1.37.0 documentation](https://opentelemetry.io/docs/specs/semconv/).

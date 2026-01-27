@@ -9,36 +9,38 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
 type spanCount struct {
 	logger   *zap.Logger
-	minSpans int32
-	maxSpans int32
+	minSpans int64
+	maxSpans int64
 }
 
-var _ PolicyEvaluator = (*spanCount)(nil)
+var _ samplingpolicy.Evaluator = (*spanCount)(nil)
 
 // NewSpanCount creates a policy evaluator sampling traces with more than one span per trace
-func NewSpanCount(settings component.TelemetrySettings, minSpans, maxSpans int32) PolicyEvaluator {
+func NewSpanCount(settings component.TelemetrySettings, minSpans, maxSpans int32) samplingpolicy.Evaluator {
 	return &spanCount{
 		logger:   settings.Logger,
-		minSpans: minSpans,
-		maxSpans: maxSpans,
+		minSpans: int64(minSpans),
+		maxSpans: int64(maxSpans),
 	}
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (c *spanCount) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *TraceData) (Decision, error) {
+func (c *spanCount) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	c.logger.Debug("Evaluating spans counts in filter")
 
-	spanCount := int(traceData.SpanCount.Load())
+	spanCount := traceData.SpanCount
 	switch {
-	case c.maxSpans == 0 && spanCount >= int(c.minSpans):
-		return Sampled, nil
-	case spanCount >= int(c.minSpans) && spanCount <= int(c.maxSpans):
-		return Sampled, nil
+	case c.maxSpans == 0 && spanCount >= c.minSpans:
+		return samplingpolicy.Sampled, nil
+	case spanCount >= c.minSpans && spanCount <= c.maxSpans:
+		return samplingpolicy.Sampled, nil
 	default:
-		return NotSampled, nil
+		return samplingpolicy.NotSampled, nil
 	}
 }

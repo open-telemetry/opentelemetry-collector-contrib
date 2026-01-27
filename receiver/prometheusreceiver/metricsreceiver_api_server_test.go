@@ -9,10 +9,8 @@ import (
 	"io"
 	"net/http"
 	"testing"
-	"time"
 
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	api_v1 "github.com/prometheus/prometheus/web/api/v1"
 	"github.com/stretchr/testify/assert"
@@ -20,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
@@ -45,7 +44,9 @@ func TestPrometheusAPIServer(t *testing.T) {
 				{code: 200, data: metricSet, useOpenMetrics: false},
 			},
 			normalizedName: false,
-			validateFunc:   verifyMetrics,
+			validateFunc: func(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
+				verifyMetrics(t, td, result, false)
+			},
 		},
 	}
 
@@ -60,15 +61,16 @@ func TestPrometheusAPIServer(t *testing.T) {
 		defer mp.Close()
 
 		require.NoError(t, err)
-		receiver := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
+		receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
 			PrometheusConfig: cfg,
-			APIServer: &APIServer{
+			APIServer: APIServer{
 				Enabled: true,
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: endpoint,
 				},
 			},
 		}, new(consumertest.MetricsSink))
+		require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
 		endpointsToReceivers[endpoint] = receiver
 
 		require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
@@ -133,7 +135,8 @@ func testTargets(t *testing.T, endpoint string) {
 	assert.NoError(t, err)
 	assert.NotNil(t, targets)
 	assert.NotNil(t, targets.Active)
-	for _, target := range targets.Active {
+	for i := range targets.Active {
+		target := targets.Active[i]
 		assert.NotNil(t, target)
 		assert.NotEmpty(t, target.DiscoveredLabels)
 		assert.NotEmpty(t, target.Labels)
@@ -169,27 +172,18 @@ func testPrometheusConfig(t *testing.T, endpoint string, receiver *pReceiver) {
 	assert.NoError(t, err)
 	assert.NotNil(t, prometheusConfig)
 
-	// Modify the Prometheus config
-	newScrapeInterval := model.Duration(30 * time.Second)
-	receiver.cfg.PrometheusConfig.GlobalConfig.ScrapeInterval = newScrapeInterval
-	receiver.cfg.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval = newScrapeInterval
+	// Verify that the configuration contains expected elements
+	assert.NotNil(t, prometheusConfig.GlobalConfig)
+	assert.NotEmpty(t, prometheusConfig.ScrapeConfigs)
 
-	// Call the API again and check if the change exists in the returned config
-	newPrometheusConfigResponse, err := callAPI(endpoint, "/status/config")
-	assert.NoError(t, err)
-	var newPrometheusConfigResult v1.ConfigResult
-	err = json.Unmarshal([]byte(newPrometheusConfigResponse.Data), &newPrometheusConfigResult)
-	assert.NoError(t, err)
-	assert.NotNil(t, newPrometheusConfigResult)
-	assert.NotNil(t, newPrometheusConfigResult.YAML)
-	newPrometheusConfig, err := config.Load(newPrometheusConfigResult.YAML, nil)
-	assert.NoError(t, err)
-	assert.NotNil(t, newPrometheusConfig)
-	assert.Equal(t, newScrapeInterval, newPrometheusConfig.GlobalConfig.ScrapeInterval)
-	assert.Equal(t, newScrapeInterval, newPrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
+	// Verify that the returned config matches the receiver's current config
+	assert.Equal(t, receiver.cfg.PrometheusConfig.GlobalConfig.ScrapeInterval, prometheusConfig.GlobalConfig.ScrapeInterval)
+	assert.Len(t, prometheusConfig.ScrapeConfigs, len(receiver.cfg.PrometheusConfig.ScrapeConfigs))
 
-	// Ensure the new config is different from the old one
-	assert.NotEqual(t, prometheusConfig, newPrometheusConfig)
+	// Verify that the first scrape config has the expected job name
+	if len(prometheusConfig.ScrapeConfigs) > 0 {
+		assert.Equal(t, "target1", prometheusConfig.ScrapeConfigs[0].JobName)
+	}
 }
 
 func testRuntimeInfo(t *testing.T, endpoint string) {

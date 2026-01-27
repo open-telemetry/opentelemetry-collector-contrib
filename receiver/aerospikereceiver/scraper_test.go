@@ -20,7 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/mocks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/mocks"
 )
 
 func TestNewAerospikeReceiver_BadEndpoint(t *testing.T) {
