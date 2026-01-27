@@ -104,6 +104,7 @@ Operators that support batching:
 - `retain`
 - `scope_name`
 - `severity`
+- `syslog`
 - `timestamp`
 - `trace_parser`
 - `unquote`
@@ -115,7 +116,6 @@ Operators that do not support batching:
 - `csv_parser`
 - `filter`
 - `router`
-- `syslog`
 
 ### FAQ
 
