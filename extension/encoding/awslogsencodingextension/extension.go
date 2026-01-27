@@ -56,8 +56,8 @@ func init() {
 }
 
 var (
-	_ encoding.LogsUnmarshalerExtension     = (*encodingExtension)(nil)
-	_ encoding.LogsStreamUnmarshalExtension = (*encodingExtension)(nil)
+	_ encoding.LogsUnmarshalerExtension       = (*encodingExtension)(nil)
+	_ encoding.LogsStreamUnmarshalerExtension = (*encodingExtension)(nil)
 )
 
 type encodingExtension struct {
@@ -192,8 +192,8 @@ func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return logs, nil
 }
 
-func (e *encodingExtension) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
-	return e.unmarshaler.GetStreamUnmarshaler(reader, options...)
+func (e *encodingExtension) NewStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
+	return e.unmarshaler.NewStreamUnmarshaler(reader, options...)
 }
 
 func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, error) {

@@ -239,12 +239,12 @@ func TestGetStreamUnmarshaler(t *testing.T) {
 	require.NoError(t, err)
 
 	// Flush after every log for testing purposes
-	streamer := s3Unmarshaler.GetStreamUnmarshaler(bytes.NewReader(data), encoding.WithFlushItems(1))
+	streamer := s3Unmarshaler.NewStreamUnmarshaler(bytes.NewReader(data), encoding.WithFlushItems(1))
 
 	var i int
 	for {
 		var logs plog.Logs
-		logs, err = streamer(t.Context())
+		logs, err = streamer.UnmarshalBatch(t.Context())
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -261,6 +261,6 @@ func TestGetStreamUnmarshaler(t *testing.T) {
 	}
 
 	// expect EOF after all logs are read
-	_, err = streamer(t.Context())
+	_, err = streamer.UnmarshalBatch(t.Context())
 	require.ErrorIs(t, err, io.EOF)
 }

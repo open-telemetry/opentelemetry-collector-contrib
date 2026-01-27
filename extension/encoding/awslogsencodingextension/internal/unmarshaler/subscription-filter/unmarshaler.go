@@ -63,7 +63,8 @@ func NewSubscriptionFilterUnmarshaler(buildInfo component.BuildInfo) unmarshaler
 // log stream. Logs are assumed to be gzip-compressed as specified at
 // https://docs.aws.amazon.com/firehose/latest/dev/writing-with-cloudwatch-logs.html.
 func (f *subscriptionFilterUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	logs, err := f.GetStreamUnmarshaler(reader)(context.Background())
+	streamUnmarshaler := f.NewStreamUnmarshaler(reader)
+	logs, err := streamUnmarshaler.UnmarshalBatch(context.Background())
 	if err != nil {
 		//nolint:errorlint
 		if err == io.EOF {
@@ -77,11 +78,10 @@ func (f *subscriptionFilterUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog
 	return logs, nil
 }
 
-func (f *subscriptionFilterUnmarshaler) GetStreamUnmarshaler(reader io.Reader, _ ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
+func (f *subscriptionFilterUnmarshaler) NewStreamUnmarshaler(reader io.Reader, _ ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
 	// Note - no real streaming as CloudWatch Logs subscription filter events are small in size
-
 	var complete bool
-	return func(_ context.Context) (plog.Logs, error) {
+	return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 		if complete {
 			return plog.NewLogs(), io.EOF
 		}
@@ -102,7 +102,7 @@ func (f *subscriptionFilterUnmarshaler) GetStreamUnmarshaler(reader io.Reader, _
 
 		complete = true
 		return f.createLogs(cwLog), nil
-	}
+	})
 }
 
 // createLogs create plog.Logs from the cloudwatchLog

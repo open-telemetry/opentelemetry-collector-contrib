@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	_ encoding.MetricsUnmarshalerExtension     = (*encodingExtension)(nil)
-	_ encoding.MetricsStreamUnmarshalExtension = (*encodingExtension)(nil)
+	_ encoding.MetricsUnmarshalerExtension       = (*encodingExtension)(nil)
+	_ encoding.MetricsStreamUnmarshalerExtension = (*encodingExtension)(nil)
 )
 
 type encodingExtension struct {
@@ -63,16 +63,16 @@ func (e *encodingExtension) UnmarshalMetrics(record []byte) (pmetric.Metrics, er
 	return metrics, nil
 }
 
-// GetStreamUnmarshaler fulfills the contract, however, does not implement true streaming.
+// NewStreamUnmarshaler fulfills the streaming contract, however, does not implement true streaming.
 // TODO : consider streaming implementations for extensions
-func (e *encodingExtension) GetStreamUnmarshaler(reader io.Reader, _ ...encoding.StreamUnmarshalOption) encoding.StreamIterator[pmetric.Metrics] {
+func (e *encodingExtension) NewStreamUnmarshaler(reader io.Reader, _ ...encoding.StreamUnmarshalOption) encoding.MetricsStreamUnmarshaler {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return nil
 	}
 
 	metrics, err := e.UnmarshalMetrics(data)
-	return func(_ context.Context) (pmetric.Metrics, error) {
+	return encoding.NewMetricsStreamUnmarshalerFunc(func(_ context.Context) (pmetric.Metrics, error) {
 		return metrics, err
-	}
+	})
 }

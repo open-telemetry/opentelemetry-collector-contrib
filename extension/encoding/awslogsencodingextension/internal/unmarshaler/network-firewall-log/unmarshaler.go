@@ -100,7 +100,8 @@ type networkFirewallLog struct {
 }
 
 func (n *networkFirewallLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	logs, err := n.GetStreamUnmarshaler(reader)(context.Background())
+	streamUnmarshaler := n.NewStreamUnmarshaler(reader)
+	logs, err := streamUnmarshaler.UnmarshalBatch(context.Background())
 	if err != nil {
 		//nolint:errorlint
 		if err == io.EOF {
@@ -114,10 +115,9 @@ func (n *networkFirewallLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog
 	return logs, nil
 }
 
-func (n *networkFirewallLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
+func (n *networkFirewallLogUnmarshaler) NewStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
 	scannerHelper := encoding.NewStreamScannerHelper(reader, options...)
-
-	return func(ctx context.Context) (plog.Logs, error) {
+	return encoding.NewLogsStreamUnmarshalerFunc(func(ctx context.Context) (plog.Logs, error) {
 		logs := plog.NewLogs()
 
 		resourceLogs := logs.ResourceLogs().AppendEmpty()
@@ -193,7 +193,7 @@ func (n *networkFirewallLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, o
 			return logs, io.EOF
 		}
 		return logs, nil
-	}
+	})
 }
 
 func setResourceAttributes(resourceLogs plog.ResourceLogs, firewallName, availabilityZone string) error {

@@ -5,7 +5,11 @@ package encoding // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"bufio"
+	"context"
 	"io"
+
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // StreamUnmarshalOptions configures the behavior of stream unmarshaling.
@@ -145,4 +149,34 @@ func (sh *StreamBatchHelper) ShouldFlush() bool {
 func (sh *StreamBatchHelper) Reset() {
 	sh.currentBytes = 0
 	sh.currentItems = 0
+}
+
+// LogsStreamUnmarshalerFunc is a helper to implement LogsStreamUnmarshaler interface with a wrapper function.
+type LogsStreamUnmarshalerFunc struct {
+	batchUnmarshal func(context.Context) (plog.Logs, error)
+}
+
+func NewLogsStreamUnmarshalerFunc(batchUnmarshal func(context.Context) (plog.Logs, error)) *LogsStreamUnmarshalerFunc {
+	return &LogsStreamUnmarshalerFunc{
+		batchUnmarshal: batchUnmarshal,
+	}
+}
+
+func (l *LogsStreamUnmarshalerFunc) UnmarshalBatch(ctx context.Context) (plog.Logs, error) {
+	return l.batchUnmarshal(ctx)
+}
+
+// MetricsStreamUnmarshalerFunc is a helper to implement MetricsStreamUnmarshaler interface with a wrapper function.
+type MetricsStreamUnmarshalerFunc struct {
+	batchUnmarshal func(context.Context) (pmetric.Metrics, error)
+}
+
+func NewMetricsStreamUnmarshalerFunc(batchUnmarshal func(context.Context) (pmetric.Metrics, error)) *MetricsStreamUnmarshalerFunc {
+	return &MetricsStreamUnmarshalerFunc{
+		batchUnmarshal: batchUnmarshal,
+	}
+}
+
+func (m *MetricsStreamUnmarshalerFunc) UnmarshalBatch(ctx context.Context) (pmetric.Metrics, error) {
+	return m.batchUnmarshal(ctx)
 }

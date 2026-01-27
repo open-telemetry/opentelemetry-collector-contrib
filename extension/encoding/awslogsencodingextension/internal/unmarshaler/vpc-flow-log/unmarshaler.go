@@ -94,7 +94,8 @@ func NewVPCFlowLogUnmarshaler(
 func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
 	switch v.cfg.FileFormat {
 	case constants.FileFormatPlainText:
-		logs, err := v.GetStreamUnmarshaler(reader)(context.Background())
+		streamUnmarshaler := v.NewStreamUnmarshaler(reader)
+		logs, err := streamUnmarshaler.UnmarshalBatch(context.Background())
 		if err != nil {
 			//nolint:errorlint
 			if err == io.EOF {
@@ -115,11 +116,11 @@ func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, e
 	}
 }
 
-func (v *vpcFlowLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
+func (v *vpcFlowLogUnmarshaler) NewStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
 	if v.cfg.FileFormat == constants.FileFormatParquet {
-		return func(_ context.Context) (plog.Logs, error) {
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, errors.New("streaming parquet VPC flow logs is not yet implemented")
-		}
+		})
 	}
 
 	// use buffered reader for efficiency and to avoid any size restrictions
@@ -127,9 +128,9 @@ func (v *vpcFlowLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options .
 
 	firstByte, err := bufReader.Peek(1)
 	if err != nil {
-		return func(_ context.Context) (plog.Logs, error) {
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, fmt.Errorf("failed to read first byte: %w", err)
-		}
+		})
 	}
 
 	if firstByte[0] == '{' {
@@ -138,27 +139,27 @@ func (v *vpcFlowLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options .
 		var cwLogs plog.Logs
 		cwLogs, err = v.fromCloudWatch(v.cfg.parsedFormat, bufReader)
 		if err != nil {
-			return func(_ context.Context) (plog.Logs, error) {
+			return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 				return plog.Logs{}, err
-			}
+			})
 		}
 
-		return func(_ context.Context) (plog.Logs, error) {
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 			return cwLogs, io.EOF
-		}
+		})
 	}
 
 	line, err := bufReader.ReadString('\n')
 	if err != nil {
-		return func(_ context.Context) (plog.Logs, error) {
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, fmt.Errorf("failed to read first line of VPC logs from S3: %w", err)
-		}
+		})
 	}
 
 	fields := strings.Fields(line)
 	batchHelper := encoding.NewStreamBatchHelper(options...)
 
-	return func(ctx context.Context) (plog.Logs, error) {
+	return encoding.NewLogsStreamUnmarshalerFunc(func(ctx context.Context) (plog.Logs, error) {
 		logs, resourceLogs, scopeLogs := v.createLogs()
 
 		var isEOF bool
@@ -199,7 +200,7 @@ func (v *vpcFlowLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options .
 		}
 
 		return logs, nil
-	}
+	})
 }
 
 func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.Logs, error) {

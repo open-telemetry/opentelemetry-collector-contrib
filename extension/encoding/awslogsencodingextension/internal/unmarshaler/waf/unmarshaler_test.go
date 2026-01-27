@@ -93,11 +93,11 @@ func TestGetStreamUnmarshaler(t *testing.T) {
 
 	wafUnmarshaler := NewWAFLogUnmarshaler(component.BuildInfo{})
 	// Flush after every log for testing purposes
-	streamer := wafUnmarshaler.GetStreamUnmarshaler(input, encoding.WithFlushItems(1))
+	streamer := wafUnmarshaler.NewStreamUnmarshaler(input, encoding.WithFlushItems(1))
 
 	var i int
 	for {
-		logs, err := streamer(t.Context())
+		logs, err := streamer.UnmarshalBatch(t.Context())
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -113,7 +113,7 @@ func TestGetStreamUnmarshaler(t *testing.T) {
 	}
 
 	// expect EOF after all logs are read
-	_, err := streamer(t.Context())
+	_, err := streamer.UnmarshalBatch(t.Context())
 	require.ErrorIs(t, err, io.EOF)
 }
 

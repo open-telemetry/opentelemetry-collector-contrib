@@ -150,7 +150,8 @@ func NewCloudTrailLogUnmarshaler(buildInfo component.BuildInfo, uIDFeatureEnable
 }
 
 func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	logs, err := u.GetStreamUnmarshaler(reader)(context.Background())
+	streamUnmarshaler := u.NewStreamUnmarshaler(reader)
+	logs, err := streamUnmarshaler.UnmarshalBatch(context.Background())
 	if err != nil {
 		//nolint:errorlint
 		if err == io.EOF {
@@ -164,24 +165,24 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 	return logs, nil
 }
 
-func (u *CloudTrailLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
+func (u *CloudTrailLogUnmarshaler) NewStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
 	bufferedReader := bufio.NewReaderSize(reader, readerBufferSize)
 
 	// Peek into the first 64 bytes to determine the type of CloudTrail log
 	peekBytes, err := bufferedReader.Peek(64)
 	if err != nil {
 		if !errors.Is(err, io.EOF) {
-			return func(_ context.Context) (plog.Logs, error) {
+			return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 				return plog.Logs{}, fmt.Errorf("failed to peek into CloudTrail log: %w", err)
-			}
+			})
 		}
 	}
 
 	firstKey, err := extractFirstKey(peekBytes)
 	if err != nil {
-		return func(_ context.Context) (plog.Logs, error) {
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, fmt.Errorf("failed to extract the first JSON key: %w", err)
-		}
+		})
 	}
 
 	decoder := gojson.NewDecoder(bufferedReader)
@@ -195,45 +196,49 @@ func (u *CloudTrailLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, option
 	// Note - Digest files are relatively small and has fields at root level.
 	var cloudTrailDigest CloudTrailDigest
 	if err = decoder.Decode(&cloudTrailDigest); err != nil {
-		return func(_ context.Context) (plog.Logs, error) {
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as a CloudTrail digest: %w", err)
-		}
+		})
 	}
 
 	record, err := u.processDigestRecord(cloudTrailDigest)
-	return func(_ context.Context) (plog.Logs, error) {
-		return record, err
-	}
+	return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
+		if err != nil {
+			return plog.Logs{}, err
+		}
+
+		return record, io.EOF
+	})
 }
 
 // processRecords is specialized in processing CloudTrail log records with streaming support
 // Implementation works with a gojson.Decoder to efficiently stream through potentially large log files.
-func (u *CloudTrailLogUnmarshaler) processRecords(decoder *gojson.Decoder, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
+func (u *CloudTrailLogUnmarshaler) processRecords(decoder *gojson.Decoder, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
 	// Check opening bracket
 	if token, err := decoder.Token(); err != nil || token != gojson.Delim('{') {
-		return func(_ context.Context) (plog.Logs, error) {
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, fmt.Errorf("expected '{': %w", err)
-		}
+		})
 	}
 
 	// Move to Records array
 	if _, err := decoder.Token(); err != nil {
-		return func(_ context.Context) (plog.Logs, error) {
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, fmt.Errorf("expected 'Records' key: %w", err)
-		}
+		})
 	}
 
 	// Check for array opening
 	if token, err := decoder.Token(); err != nil || token != gojson.Delim('[') {
-		return func(_ context.Context) (plog.Logs, error) {
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, fmt.Errorf("expected '[': %w", err)
-		}
+		})
 	}
 
 	init := true
 	batchHelper := encoding.NewStreamBatchHelper(options...)
 
-	return func(ctx context.Context) (plog.Logs, error) {
+	return encoding.NewLogsStreamUnmarshalerFunc(func(ctx context.Context) (plog.Logs, error) {
 		logs := plog.NewLogs()
 		resourceLogs := logs.ResourceLogs().AppendEmpty()
 		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
@@ -279,7 +284,7 @@ func (u *CloudTrailLogUnmarshaler) processRecords(decoder *gojson.Decoder, optio
 		}
 
 		return logs, io.EOF
-	}
+	})
 }
 
 // processDigestRecord is specialized in processing CloudTrail digest records

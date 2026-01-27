@@ -48,7 +48,8 @@ type resourceAttributes struct {
 }
 
 func (s *s3AccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	logs, err := s.GetStreamUnmarshaler(reader)(context.Background())
+	streamUnmarshaler := s.NewStreamUnmarshaler(reader)
+	logs, err := streamUnmarshaler.UnmarshalBatch(context.Background())
 	if err != nil {
 		//nolint:errorlint
 		if err == io.EOF {
@@ -61,10 +62,9 @@ func (s *s3AccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, 
 	return logs, nil
 }
 
-func (s *s3AccessLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
+func (s *s3AccessLogUnmarshaler) NewStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
 	scannerHelper := encoding.NewStreamScannerHelper(reader, options...)
-
-	return func(ctx context.Context) (plog.Logs, error) {
+	return encoding.NewLogsStreamUnmarshalerFunc(func(ctx context.Context) (plog.Logs, error) {
 		logs, resourceLogs, scopeLogs := s.createLogs()
 		resourceAttr := &resourceAttributes{}
 
@@ -99,7 +99,7 @@ func (s *s3AccessLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options 
 			return logs, io.EOF
 		}
 		return logs, nil
-	}
+	})
 }
 
 // createLogs with the expected fields for the scope logs

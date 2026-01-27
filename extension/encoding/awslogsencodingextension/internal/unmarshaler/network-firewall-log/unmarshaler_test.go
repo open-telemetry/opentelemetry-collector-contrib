@@ -119,12 +119,12 @@ func TestGetStreamUnmarshaler(t *testing.T) {
 	networkUnmarshal := NewNetworkFirewallLogUnmarshaler(component.BuildInfo{})
 
 	// Flush after every log for testing purposes
-	streamer := networkUnmarshal.GetStreamUnmarshaler(reader, encoding.WithFlushItems(1))
+	streamer := networkUnmarshal.NewStreamUnmarshaler(reader, encoding.WithFlushItems(1))
 
 	var i int
 	for {
 		var logs plog.Logs
-		logs, err = streamer(t.Context())
+		logs, err = streamer.UnmarshalBatch(t.Context())
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -141,7 +141,7 @@ func TestGetStreamUnmarshaler(t *testing.T) {
 	}
 
 	// expect EOF after all logs are read
-	_, err = streamer(t.Context())
+	_, err = streamer.UnmarshalBatch(t.Context())
 	require.ErrorIs(t, err, io.EOF)
 }
 

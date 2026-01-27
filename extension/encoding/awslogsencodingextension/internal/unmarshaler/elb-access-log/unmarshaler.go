@@ -42,7 +42,8 @@ type resourceAttributes struct {
 // UnmarshalAWSLogs processes all logs from the provided reader
 func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
 	// Read all logs from stream reader
-	logs, err := f.GetStreamUnmarshaler(reader)(context.Background())
+	streamUnmarshaler := f.NewStreamUnmarshaler(reader)
+	logs, err := streamUnmarshaler.UnmarshalBatch(context.Background())
 	if err != nil {
 		//nolint:errorlint
 		if err == io.EOF {
@@ -56,26 +57,26 @@ func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs,
 	return logs, nil
 }
 
-// GetStreamUnmarshaler returns a LogsStreamer that processes ELB access logs from the provided reader
-func (f *elbAccessLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
+// NewStreamUnmarshaler returns a LogsStreamer that processes ELB access logs from the provided reader
+func (f *elbAccessLogUnmarshaler) NewStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
 	bufReader := bufio.NewReader(reader)
 	syntax, err := peekAndGetSyntax(bufReader)
 	if err != nil {
-		return func(_ context.Context) (plog.Logs, error) {
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, err
-		}
+		})
 	}
 
 	if syntax == controlMessage {
 		f.logger.Info("ELB Control message received")
-		return func(_ context.Context) (plog.Logs, error) {
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
 			return plog.Logs{}, nil
-		}
+		})
 	}
 
 	scannerHelper := encoding.NewStreamScannerHelper(bufReader, options...)
 
-	return func(ctx context.Context) (plog.Logs, error) {
+	return encoding.NewLogsStreamUnmarshalerFunc(func(ctx context.Context) (plog.Logs, error) {
 		logs, resourceLogs, scopeLogs := f.createLogs()
 		resourceAttr := &resourceAttributes{}
 
@@ -133,7 +134,7 @@ func (f *elbAccessLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options
 			return logs, io.EOF
 		}
 		return logs, nil
-	}
+	})
 }
 
 // createLogs with the expected fields for the scope logs

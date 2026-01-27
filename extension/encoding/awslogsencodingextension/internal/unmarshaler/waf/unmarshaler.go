@@ -63,7 +63,8 @@ func NewWAFLogUnmarshaler(buildInfo component.BuildInfo) unmarshaler.AWSUnmarsha
 }
 
 func (w *wafLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	logs, err := w.GetStreamUnmarshaler(reader)(context.Background())
+	streamUnmarshaler := w.NewStreamUnmarshaler(reader)
+	logs, err := streamUnmarshaler.UnmarshalBatch(context.Background())
 	if err != nil {
 		//nolint:errorlint
 		if err == io.EOF {
@@ -76,12 +77,11 @@ func (w *wafLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error
 	return logs, nil
 }
 
-func (w *wafLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs] {
+func (w *wafLogUnmarshaler) NewStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
 	scannerHelper := encoding.NewStreamScannerHelper(reader, options...)
 
 	var sharedWebACLID string
-
-	return func(ctx context.Context) (plog.Logs, error) {
+	return encoding.NewLogsStreamUnmarshalerFunc(func(ctx context.Context) (plog.Logs, error) {
 		logs := plog.NewLogs()
 
 		resourceLogs := logs.ResourceLogs().AppendEmpty()
@@ -146,7 +146,7 @@ func (w *wafLogUnmarshaler) GetStreamUnmarshaler(reader io.Reader, options ...en
 		}
 
 		return logs, nil
-	}
+	})
 }
 
 func (*wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {

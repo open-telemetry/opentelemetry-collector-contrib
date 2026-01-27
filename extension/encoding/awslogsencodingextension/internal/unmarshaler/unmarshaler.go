@@ -13,5 +13,5 @@ import (
 
 type AWSUnmarshaler interface {
 	UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error)
-	GetStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.StreamIterator[plog.Logs]
+	NewStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler
 }

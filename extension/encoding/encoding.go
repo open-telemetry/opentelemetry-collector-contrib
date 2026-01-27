@@ -14,9 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// StreamIterator defines a function that returns from a stream.
-type StreamIterator[T any] func(context.Context) (T, error)
-
 // LogsMarshalerExtension is an extension that marshals logs.
 type LogsMarshalerExtension interface {
 	extension.Extension
@@ -29,10 +26,17 @@ type LogsUnmarshalerExtension interface {
 	plog.Unmarshaler
 }
 
-// LogsStreamUnmarshalExtension is an extension that unmarshals logs from a stream.
-type LogsStreamUnmarshalExtension interface {
+// LogsStreamUnmarshaler unmarshals logs from a stream, returning one batch per call.
+// UnmarshalBatch is expected to be called iteratively to read all derived plog.Logs batches from the stream.
+// io.EOF is returned when there are no more batches to read.
+type LogsStreamUnmarshaler interface {
+	UnmarshalBatch(context.Context) (plog.Logs, error)
+}
+
+// LogsStreamUnmarshalerExtension is an extension that unmarshals logs from a stream.
+type LogsStreamUnmarshalerExtension interface {
 	extension.Extension
-	GetStreamUnmarshaler(reader io.Reader, options ...StreamUnmarshalOption) StreamIterator[plog.Logs]
+	NewStreamUnmarshaler(reader io.Reader, options ...StreamUnmarshalOption) LogsStreamUnmarshaler
 }
 
 // MetricsMarshalerExtension is an extension that marshals metrics.
@@ -47,10 +51,17 @@ type MetricsUnmarshalerExtension interface {
 	pmetric.Unmarshaler
 }
 
-// MetricsStreamUnmarshalExtension is an extension that unmarshals metrics from a stream.
-type MetricsStreamUnmarshalExtension interface {
+// MetricsStreamUnmarshaler unmarshals metrics from a stream, returning one batch per call.
+// UnmarshalBatch is expected to be called iteratively to read all derived pmetric.Metrics batches from the stream.
+// io.EOF is returned when there are no more batches to read.
+type MetricsStreamUnmarshaler interface {
+	UnmarshalBatch(context.Context) (pmetric.Metrics, error)
+}
+
+// MetricsStreamUnmarshalerExtension is an extension that unmarshals metrics from a stream.
+type MetricsStreamUnmarshalerExtension interface {
 	extension.Extension
-	GetStreamUnmarshaler(reader io.Reader, options ...StreamUnmarshalOption) StreamIterator[pmetric.Metrics]
+	NewStreamUnmarshaler(reader io.Reader, options ...StreamUnmarshalOption) MetricsStreamUnmarshaler
 }
 
 // TracesMarshalerExtension is an extension that marshals traces.

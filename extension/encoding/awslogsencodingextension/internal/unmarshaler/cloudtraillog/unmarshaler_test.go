@@ -137,11 +137,11 @@ func TestGetStreamUnmarshaler(t *testing.T) {
 
 	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
 	// Flush after every log for testing purposes
-	streamer := unmarshaler.GetStreamUnmarshaler(content, encoding.WithFlushItems(1))
+	streamer := unmarshaler.NewStreamUnmarshaler(content, encoding.WithFlushItems(1))
 
 	var i int
 	for {
-		logs, err := streamer(t.Context())
+		logs, err := streamer.UnmarshalBatch(t.Context())
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -157,7 +157,7 @@ func TestGetStreamUnmarshaler(t *testing.T) {
 	}
 
 	// expect EOF after all logs are read
-	_, err := streamer(t.Context())
+	_, err := streamer.UnmarshalBatch(t.Context())
 	require.ErrorIs(t, err, io.EOF)
 }
 
