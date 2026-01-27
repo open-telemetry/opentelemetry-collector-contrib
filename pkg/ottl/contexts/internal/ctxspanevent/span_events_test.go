@@ -94,8 +94,8 @@ func TestPathGetSetter(t *testing.T) {
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
-			orig:                refSpanEvent.Attributes(),
-			newVal:              newAttrs,
+			orig:   refSpanEvent.Attributes(),
+			newVal: newAttrs,
 			modified: func(spanEvent ptrace.SpanEvent) {
 				newAttrs.CopyTo(spanEvent.Attributes())
 			},
@@ -105,8 +105,8 @@ func TestPathGetSetter(t *testing.T) {
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
-			orig:                refSpanEvent.Attributes(),
-			newVal:              newAttrs.AsRaw(),
+			orig:   refSpanEvent.Attributes(),
+			newVal: newAttrs.AsRaw(),
 			modified: func(spanEvent ptrace.SpanEvent) {
 				_ = spanEvent.Attributes().FromRaw(newAttrs.AsRaw())
 			},
@@ -424,10 +424,8 @@ func TestPathGetSetter(t *testing.T) {
 			require.NoError(t, err)
 
 			// Verify that setting an invalid type returns an error
-			if tt.path.Keys() == nil {
-				err = accessor.Set(t.Context(), tCtx, struct{}{})
-				require.Error(t, err)
-			}
+			err = accessor.Set(t.Context(), tCtx, struct{}{})
+			require.Error(t, err)
 
 			exSpanEvent := createTelemetry()
 			tt.modified(exSpanEvent)
