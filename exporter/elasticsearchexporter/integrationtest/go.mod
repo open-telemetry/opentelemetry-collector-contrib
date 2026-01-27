@@ -152,7 +152,7 @@ require (
 	github.com/valyala/fastjson v1.6.7 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	github.com/zeebo/xxh3 v1.0.2 // indirect
+	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.elastic.co/apm/module/apmelasticsearch/v2 v2.7.2 // indirect
 	go.elastic.co/apm/module/apmhttp/v2 v2.7.2 // indirect
 	go.elastic.co/apm/v2 v2.7.2 // indirect

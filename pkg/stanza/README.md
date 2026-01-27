@@ -97,6 +97,7 @@ Operators that support batching:
 - `json_parser`
 - `key_value_parser`
 - `move`
+- `recombine`
 - `regex_parser`
 - `regex_replace`
 - `remove`
@@ -113,7 +114,6 @@ Operators that do not support batching:
 - `container`
 - `csv_parser`
 - `filter`
-- `recombine`
 - `router`
 - `syslog`
 
