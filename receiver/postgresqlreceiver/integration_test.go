@@ -273,7 +273,9 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	_, err = db.Exec("Select * from test2 where id = 67")
 	assert.NoError(t, err)
 
-	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30, 60*time.Second)
+	collectionInterval := 60 * time.Second
+	ns.lastExecutionTimestamp = ns.lastExecutionTimestamp.Add(-collectionInterval)
+	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30, collectionInterval)
 	assert.NoError(t, err)
 	logRecords = secondTimeTopQueryPLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	found = false
