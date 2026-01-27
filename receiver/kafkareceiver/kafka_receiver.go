@@ -346,11 +346,11 @@ func (h *profilesHandler) consumeData(ctx context.Context, data pprofile.Profile
 }
 
 func (h *profilesHandler) startObsReport(ctx context.Context) context.Context {
-	return h.obsrecv.StartTracesOp(ctx)
+	return h.obsrecv.StartProfilesOp(ctx)
 }
 
 func (h *profilesHandler) endObsReport(ctx context.Context, n int, err error) {
-	h.obsrecv.EndTracesOp(ctx, h.encoding, n, err)
+	h.obsrecv.EndProfilesOp(ctx, h.encoding, n, err)
 }
 
 func (*profilesHandler) getResources(data pprofile.Profiles) iter.Seq[pcommon.Resource] {

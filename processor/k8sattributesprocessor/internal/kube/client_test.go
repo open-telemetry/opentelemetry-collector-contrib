@@ -853,6 +853,13 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "nodeUID",
+			rules: ExtractionRules{
+				NodeUID: true,
+			},
+			attributes: map[string]string{},
+		},
+		{
 			name: "labels",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{
@@ -1081,6 +1088,11 @@ func TestExtractionRules(t *testing.T) {
 			maps.Copy(podCopy.Annotations, tc.additionalAnnotations)
 			maps.Copy(podCopy.Labels, tc.additionalLabels)
 			transformedPod := removeUnnecessaryPodData(podCopy, c.Rules)
+
+			if tc.rules.Node || tc.rules.NodeUID {
+				assert.Equal(t, podCopy.Spec.NodeName, transformedPod.Spec.NodeName, "NodeName should be preserved when Node or NodeUID rule is enabled")
+			}
+
 			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
 			c.handleReplicaSetAdd(transformedReplicaset)
 			c.handlePodAdd(transformedPod)

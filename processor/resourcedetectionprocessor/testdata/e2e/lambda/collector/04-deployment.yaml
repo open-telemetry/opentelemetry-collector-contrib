@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Name }}
+    spec:
+      serviceAccountName: {{ .Name }}-sa
+      containers:
+        - name: otelcol
+          image: otelcontribcol:latest
+          imagePullPolicy: Never
+          env:
+            - name: AWS_REGION
+              value: "us-west-2"
+            - name: AWS_LAMBDA_FUNCTION_NAME
+              value: "test-lambda-function"
+            - name: AWS_LAMBDA_FUNCTION_VERSION
+              value: "$LATEST"
+            - name: AWS_LAMBDA_FUNCTION_MEMORY_SIZE
+              value: "512"
+            - name: AWS_LAMBDA_LOG_GROUP_NAME
+              value: "/aws/lambda/test-lambda-function"
+            - name: AWS_LAMBDA_LOG_STREAM_NAME
+              value: "2024/01/15/[$LATEST]abc123def456789"
+          args:
+            - "--config=/conf/relay"
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Name }}-config
+            items:
+              - key: relay
+                path: relay
