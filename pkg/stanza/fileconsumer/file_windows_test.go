@@ -6,6 +6,7 @@
 package fileconsumer
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -158,4 +159,56 @@ func TestOpenFileWithShareDeleteRename(t *testing.T) {
 	// Verify the new path exists
 	_, err = os.Stat(renamedPath)
 	require.NoError(t, err, "Renamed file should exist")
+}
+
+// TestReadAfterFileDeleted verifies behavior when reading from a file
+// that was deleted while open. The entire file should remain readable
+// through EOF since FILE_SHARE_DELETE allows deletion while the handle
+// remains valid.
+func TestReadAfterFileDeleted(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "test.log")
+
+	// Write initial content
+	err := os.WriteFile(filePath, []byte("line1\nline2\nline3\n"), 0o600)
+	require.NoError(t, err)
+
+	// Open with FILE_SHARE_DELETE
+	file, err := openFile(filePath)
+	require.NoError(t, err)
+	defer file.Close()
+
+	// Read first line
+	buf := make([]byte, 6)
+	_, err = file.Read(buf)
+	require.NoError(t, err)
+	require.Equal(t, "line1\n", string(buf))
+
+	// Delete the file while open
+	err = os.Remove(filePath)
+	require.NoError(t, err)
+
+	// Verify the file is no longer visible on the filesystem
+	_, err = os.Stat(filePath)
+	require.True(t, os.IsNotExist(err), "File should not exist after deletion")
+
+	// Continue reading - should still work since handle is still valid
+	buf = make([]byte, 6)
+	n, err := file.Read(buf)
+	require.NoError(t, err)
+	require.Equal(t, 6, n)
+	require.Equal(t, "line2\n", string(buf))
+
+	// Read third line
+	buf = make([]byte, 6)
+	n, err = file.Read(buf)
+	require.NoError(t, err)
+	require.Equal(t, 6, n)
+	require.Equal(t, "line3\n", string(buf))
+
+	// Verify EOF is reached normally
+	_, err = file.Read(buf)
+	require.ErrorIs(t, err, io.EOF, "Should reach EOF after reading all content")
 }

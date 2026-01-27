@@ -7,6 +7,7 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,12 +50,12 @@ func normalizePath(path string) (string, bool) {
 // other processes to delete or rename the file while it's open.
 func openFile(path string) (*os.File, error) {
 	if path == "" {
-		return nil, syscall.ERROR_FILE_NOT_FOUND
+		return nil, &fs.PathError{Op: "open", Path: path, Err: syscall.ENOENT}
 	}
 
 	pathp, err := syscall.UTF16PtrFromString(path)
 	if err != nil {
-		return nil, err
+		return nil, &fs.PathError{Op: "open", Path: path, Err: err}
 	}
 
 	access := uint32(syscall.GENERIC_READ)
@@ -64,7 +65,11 @@ func openFile(path string) (*os.File, error) {
 
 	handle, err := syscall.CreateFile(pathp, access, sharemode, nil, createmode, flags, 0)
 	if err != nil {
-		return nil, err
+		return nil, &fs.PathError{Op: "open", Path: path, Err: err}
+	}
+
+	if handle == syscall.InvalidHandle {
+		return nil, &fs.PathError{Op: "open", Path: path, Err: syscall.EINVAL}
 	}
 
 	return os.NewFile(uintptr(handle), path), nil
