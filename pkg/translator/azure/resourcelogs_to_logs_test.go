@@ -52,7 +52,7 @@ var maximumLogRecord1 = func() plog.LogRecord {
 	lr.Attributes().PutStr(azureResultSignature, "Signature")
 	lr.Attributes().PutStr(azureResultDescription, "Description")
 	lr.Attributes().PutInt(azureDuration, 1234)
-	lr.Attributes().PutStr("net.sock.peer.addr", "127.0.0.1")
+	lr.Attributes().PutStr("network.peer.address", "127.0.0.1")
 	lr.Attributes().PutStr("cloud.region", "ukso")
 	lr.Attributes().PutStr("cloud.provider", "azure")
 
@@ -86,7 +86,7 @@ var maximumLogRecord2 = func() []plog.LogRecord {
 	lr.Attributes().PutStr(azureResultSignature, "Signature")
 	lr.Attributes().PutStr(azureResultDescription, "Description")
 	lr.Attributes().PutInt(azureDuration, 4321)
-	lr.Attributes().PutStr("net.sock.peer.addr", "127.0.0.1")
+	lr.Attributes().PutStr("network.peer.address", "127.0.0.1")
 	lr.Attributes().PutStr("cloud.region", "ukso")
 	lr.Attributes().PutStr("cloud.provider", "azure")
 
@@ -112,7 +112,7 @@ var maximumLogRecord2 = func() []plog.LogRecord {
 	lr2.Attributes().PutStr(azureResultSignature, "Signature")
 	lr2.Attributes().PutStr(azureResultDescription, "Description")
 	lr2.Attributes().PutInt(azureDuration, 321)
-	lr2.Attributes().PutStr("net.sock.peer.addr", "127.0.0.1")
+	lr2.Attributes().PutStr("network.peer.address", "127.0.0.1")
 	lr2.Attributes().PutStr("cloud.region", "ukso")
 	lr2.Attributes().PutStr("cloud.provider", "azure")
 
@@ -141,7 +141,7 @@ var badLevelLogRecord = func() plog.LogRecord {
 	lr.Attributes().PutStr(azureCorrelationID, guid)
 	lr.Attributes().PutStr(azureResultType, "Succeeded")
 	lr.Attributes().PutInt(azureDuration, 243)
-	lr.Attributes().PutStr("net.sock.peer.addr", "13.14.15.16")
+	lr.Attributes().PutStr("network.peer.address", "13.14.15.16")
 	lr.Attributes().PutStr("cloud.region", "West US")
 	lr.Attributes().PutStr("cloud.provider", "azure")
 
@@ -364,7 +364,7 @@ func TestExtractRawAttributes(t *testing.T) {
 				azureResultSignature:   "result.signature",
 				azureResultDescription: "result.description",
 				azureDuration:          int64(1234),
-				"net.sock.peer.addr":   "127.0.0.1",
+				"network.peer.address": "127.0.0.1",
 				azureIdentity:          "someone",
 				"cloud.region":         "location",
 				"cloud.provider":       "azure",
