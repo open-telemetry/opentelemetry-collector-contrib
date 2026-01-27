@@ -188,13 +188,9 @@ func convertLogConditions(pc *ottl.ParserCollection[parsedLogConditions], condit
 }
 
 // ParseContextConditions parses the given ContextConditions and returns a LogsConsumer.
-// It supports two configuration styles:
-//
-// Advanced style: the context is explicitly specified.
-//
-// Flat style: the context is empty and each condition is parsed independently.
-// Conditions are then aggregated by their inferred context (resource, scope, log).
-// The processor level error mode is used for all conditions.
+// For undefined context, each condition is parsed independently.
+// Conditions are then grouped by their inferred context (resource, scope, log).
+// The conditions group's error mode takes precedence over the processor-level error mode.
 func (lpc *LogParserCollection) ParseContextConditions(contextConditions ContextConditions) (LogsConsumer, error) {
 	pc := ottl.ParserCollection[parsedLogConditions](*lpc)
 
