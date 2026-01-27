@@ -7,7 +7,7 @@ change_type: enhancement
 component: cmd/opampsupervisor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add feature to use a fallback config for the Collector when unable to connect to the OpAMP backend
+note: Start the Collector with a fallback config when cannot talk to the OpAMP backend
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44368]
@@ -16,9 +16,12 @@ issues: [44368]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The Supervisor now supports switching to a fallback configuration when it cannot connect 
-  to the OpAMP backend at startup. The amount of time it will wait until applying the fallback
-  configuration is controlled by the `fallback_startup_timeout` configuration option.
+  The Supervisor now starts with a fallback configuration when it cannot connect 
+  to the OpAMP backend at startup and there's no previous configuration state persisted.
+  The regular configuration is restored When the OpAMP backend is healthy again and the 
+  Supervisor connects to it.
+
+  If a previous configuration state is persisted, it will be used to start the Collector.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
