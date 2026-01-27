@@ -814,6 +814,15 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 
 	// Verify the collector is not running by checking the healthcheck endpoint fails consistently
 	// Start the server and wait for the supervisor to connect
+	time.Sleep(250 * time.Millisecond)
+	_, err := http.DefaultClient.Get("http://localhost:12345")
+
+	if runtime.GOOS != "windows" {
+		require.ErrorContains(t, err, "connection refused")
+	} else {
+		require.ErrorContains(t, err, "No connection could be made")
+	}
+
 	server.start()
 
 	// Verify supervisor connects to server
