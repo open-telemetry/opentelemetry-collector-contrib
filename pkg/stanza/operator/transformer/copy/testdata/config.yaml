@@ -30,3 +30,8 @@ invalid_missing_to:
   from: body.nothing
 invalid_missing_to_and_from:
   type: copy
+on_error_drop:
+  type: copy
+  from: body.key
+  to: body.key2
+  on_error: drop

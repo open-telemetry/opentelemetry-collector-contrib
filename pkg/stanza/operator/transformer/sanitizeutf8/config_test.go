@@ -31,6 +31,16 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
+				Name:               "on_error_drop",
+				ExpectUnmarshalErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Field = entry.NewBodyField()
+					cfg.OnError = "drop"
+					return cfg
+				}(),
+			},
+			{
 				Name:               "sanitize_utf8_with_invalid_field",
 				ExpectUnmarshalErr: true,
 			},

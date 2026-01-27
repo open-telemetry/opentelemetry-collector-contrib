@@ -16,3 +16,7 @@ unquote_single_attribute:
 unquote_single_resource:
   type: unquote
   field: resource.key
+on_error_drop:
+  type: unquote
+  field: body.key
+  on_error: drop
