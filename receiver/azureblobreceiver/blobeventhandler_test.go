@@ -71,3 +71,23 @@ func getBlobEventHandler(tb testing.TB, blobClient blobClient) *azureBlobEventHa
 	)
 	return blobEventHandler
 }
+
+func TestNewBlobEventHandlerWithExplicitPollSettings(t *testing.T) {
+	blobClient := newMockBlobClient()
+	maxPollEvents := 50
+	pollRate := 10
+
+	blobEventHandler := newBlobEventHandler(
+		eventHubString,
+		logsContainerName,
+		tracesContainerName,
+		blobClient,
+		maxPollEvents,
+		pollRate,
+		zaptest.NewLogger(t),
+	)
+
+	require.NotNil(t, blobEventHandler)
+	assert.Equal(t, maxPollEvents, blobEventHandler.maxPollEvents)
+	assert.Equal(t, pollRate, blobEventHandler.pollRate)
+}
