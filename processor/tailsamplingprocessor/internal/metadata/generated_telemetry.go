@@ -38,6 +38,7 @@ type TelemetryBuilder struct {
 	ProcessorTailSamplingSamplingTraceDroppedTooEarly   metric.Int64Counter
 	ProcessorTailSamplingSamplingTraceRemovalAge        metric.Int64Histogram
 	ProcessorTailSamplingSamplingTracesOnMemory         metric.Int64Gauge
+	ProcessorTailSamplingTracesDroppedTooLarge          metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -145,6 +146,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorTailSamplingSamplingTracesOnMemory, err = builder.meter.Int64Gauge(
 		"otelcol_processor_tail_sampling_sampling_traces_on_memory",
 		metric.WithDescription("Tracks the number of traces current on memory [Development]"),
+		metric.WithUnit("{traces}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorTailSamplingTracesDroppedTooLarge, err = builder.meter.Int64Counter(
+		"otelcol_processor_tail_sampling_traces_dropped_too_large",
+		metric.WithDescription("Count of traces that were dropped because they were too large [Development]"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
