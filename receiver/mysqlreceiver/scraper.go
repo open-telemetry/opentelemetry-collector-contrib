@@ -698,18 +698,23 @@ func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timesta
 			m.logger.Error("Failed to obfuscate query", zap.Error(err))
 		}
 
+		var obfuscatedPlan = "NONE"
+		var queryPlanHash = "NONE"
 		queryPlan := m.sqlclient.explainQuery(q.querySampleText, q.schemaName, m.logger)
-		hasher := sha256.New()
-		hasher.Write([]byte(queryPlan))
-		queryPlanHash := hex.EncodeToString(hasher.Sum(nil))
-		var obfuscatedPlan string
-		var ok bool
-		if obfuscatedPlan, ok = m.queryPlanCache.Get(q.schemaName + "-" + q.digest); !ok {
-			obfuscatedPlan, err = m.obfuscator.obfuscatePlan(queryPlan)
-			if err != nil {
-				m.logger.Error("Failed to obfuscate query plan", zap.Error(err), zap.String("query plan hash", queryPlanHash))
+		if queryPlan == "" {
+			m.logger.Warn("Empty query plan received", zap.String("schema", q.schemaName), zap.String("digest", q.digest))
+		} else {
+			hasher := sha256.New()
+			hasher.Write([]byte(queryPlan))
+			queryPlanHash = hex.EncodeToString(hasher.Sum(nil))
+			var ok bool
+			if obfuscatedPlan, ok = m.queryPlanCache.Get(q.schemaName + "-" + q.digest); !ok {
+				obfuscatedPlan, err = m.obfuscator.obfuscatePlan(queryPlan)
+				if err != nil {
+					m.logger.Error("Failed to obfuscate query plan", zap.Error(err), zap.String("query plan hash", queryPlanHash))
+				}
+				m.queryPlanCache.Add(q.schemaName+"-"+q.digest, obfuscatedPlan)
 			}
-			m.queryPlanCache.Add(q.schemaName+"-"+q.digest, obfuscatedPlan)
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
