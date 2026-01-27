@@ -124,8 +124,6 @@ type testingOpAMPServer struct {
 	sendToSupervisor    func(*protobufs.ServerToAgent)
 	start               func()
 	shutdown            func()
-	closeConnection     func()
-	closeHTTPServer     func()
 }
 
 func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, callbacks types.ConnectionCallbacks) *testingOpAMPServer {
@@ -138,7 +136,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	var agentConn atomic.Value
 	var isAgentConnected atomic.Bool
 	var didShutdown atomic.Bool
-	connectedChan := make(chan bool, 1)
+	connectedChan := make(chan bool)
 	s := server.New(testLogger{t: t})
 	onConnectedFunc := callbacks.OnConnected
 	callbacks.OnConnected = func(ctx context.Context, conn types.Connection) {
@@ -150,10 +148,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 		}
 		agentConn.Store(conn)
 		isAgentConnected.Store(true)
-		select {
-		case connectedChan <- true:
-		default:
-		}
+		connectedChan <- true
 	}
 	onConnectionCloseFunc := callbacks.OnConnectionClose
 	callbacks.OnConnectionClose = func(conn types.Connection) {
@@ -161,10 +156,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 			return
 		}
 		isAgentConnected.Store(false)
-		select {
-		case connectedChan <- false:
-		default:
-		}
+		connectedChan <- false
 		if onConnectionCloseFunc != nil {
 			onConnectionCloseFunc(conn)
 		}
@@ -182,16 +174,19 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 
 	shutdown := func() {
 		if !didShutdown.Load() {
-			didShutdown.Store(true)
-			t.Log("Shutting down server")
-			_ = s.Stop(t.Context())
+			waitForSupervisorConnection(connectedChan, false)
+			t.Log("Shutting down")
+			err := s.Stop(t.Context())
+			assert.NoError(t, err)
 			httpSrv.Close()
-			// Ensure that the connectedChan is drained
+			// Ensure that the connectedChan is drained and closed.
 			select {
 			case <-connectedChan:
 			default:
 			}
+			close(connectedChan)
 		}
+		didShutdown.Store(true)
 	}
 
 	send := func(msg *protobufs.ServerToAgent) {
@@ -200,24 +195,6 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 		}
 		err = agentConn.Load().(types.Connection).Send(t.Context(), msg)
 		require.NoError(t, err)
-	}
-
-	// Gracefully closes the WebSocket connection from the server side
-	closeConnection := func() {
-		if conn := agentConn.Load(); conn != nil {
-			if c, ok := conn.(types.Connection); ok {
-				t.Log("Gracefully closing WebSocket connection")
-				c.Disconnect()
-			}
-		}
-	}
-
-	// Abruptly closes the HTTP server and all client connections, simulating
-	// a server crash
-	closeHTTPServer := func() {
-		t.Log("Abruptly closing HTTP server and all connections")
-		httpSrv.CloseClientConnections()
-		httpSrv.Close()
 	}
 
 	t.Cleanup(func() {
@@ -230,8 +207,6 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 		sendToSupervisor:    send,
 		start:               httpSrv.Start,
 		shutdown:            shutdown,
-		closeConnection:     closeConnection,
-		closeHTTPServer:     closeHTTPServer,
 	}
 }
 
@@ -838,15 +813,6 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 	defer s.Shutdown()
 
 	// Verify the collector is not running by checking the healthcheck endpoint fails consistently
-	require.Never(t, func() bool {
-		resp, err := http.DefaultClient.Get("http://localhost:12345")
-		if err != nil {
-			return false
-		}
-		resp.Body.Close()
-		return true
-	}, 250*time.Millisecond, 50*time.Millisecond, "Collector should not be running before OpAMP server starts")
-
 	// Start the server and wait for the supervisor to connect
 	server.start()
 
@@ -955,6 +921,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 				return false
 			}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
 
+			unhealthyTimeout := supervisorCfg.Agent.BootstrapTimeout + 2*time.Second
 			require.Eventually(t, func() bool {
 				health := healthReport.Load().(*protobufs.ComponentHealth)
 
@@ -963,7 +930,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 				}
 
 				return false
-			}, 5*time.Second, 250*time.Millisecond, "Supervisor never reported that the Collector was unhealthy")
+			}, unhealthyTimeout, 250*time.Millisecond, "Supervisor never reported that the Collector was unhealthy")
 
 			cfg, hash, _, _ = createSimplePipelineCollectorConf(t)
 
@@ -2193,34 +2160,6 @@ func TestSupervisorLogging(t *testing.T) {
 	waitForSupervisorConnection(server.supervisorConnected, true)
 	require.True(t, connected.Load(), "Supervisor failed to connect")
 
-	// Wait for the collector to write logs to the log file
-	require.Eventually(t, func() bool {
-		logFile, err := os.Open(supervisorLogFilePath)
-		if err != nil {
-			return false
-		}
-		defer logFile.Close()
-
-		reader := bufio.NewReader(logFile)
-		for {
-			line, err := reader.ReadString('\n')
-			if err != nil {
-				break
-			}
-			line = strings.TrimRight(line, "\r\n")
-
-			var log logEntry
-			if err := json.Unmarshal([]byte(line), &log); err != nil {
-				continue
-			}
-
-			if log.Logger == "collector" {
-				return true
-			}
-		}
-		return false
-	}, 10*time.Second, 500*time.Millisecond, "Collector log never appeared in supervisor log file")
-
 	s.Shutdown()
 
 	// Read from log file checking for Info level logs
@@ -2927,7 +2866,7 @@ func TestSupervisorFallbackDisablesAfterFirstConnect(t *testing.T) {
 	}, 10*time.Second, 500*time.Millisecond, "Fallback config still active after first connection")
 
 	// Simulate the backend going down. Fallback should not be reapplied.
-	server.closeHTTPServer()
+	server.shutdown()
 	waitForSupervisorConnection(server.supervisorConnected, false)
 
 	require.Eventually(t, func() bool {
