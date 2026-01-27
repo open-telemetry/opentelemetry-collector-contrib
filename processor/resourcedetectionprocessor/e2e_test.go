@@ -1161,6 +1161,7 @@ func TestE2EKubeadmDetector(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
 	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "kubeadm", "collector"), map[string]string{}, "")
@@ -1172,7 +1173,7 @@ func TestE2EKubeadmDetector(t *testing.T) {
 	}()
 
 	wantEntries := 10
-	waitForData(t, wantEntries, metricsConsumer)
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
 
 	// Uncomment to regenerate golden file
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
