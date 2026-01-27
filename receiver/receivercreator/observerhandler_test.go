@@ -668,6 +668,35 @@ func TestOnChange(t *testing.T) {
 			expectKept: true,
 		},
 		{
+			// Key regression test: When endpoint is auto-discovered (not user-specified)
+			// and labels change without affecting any referenced attributes,
+			// the receiver should NOT restart. This tests that the resolvedDiscoveredConfig
+			// is correctly stored and compared (not mutated by mergeTemplatedAndDiscoveredConfigs).
+			name:               "auto-discovered endpoint with irrelevant label change - keep receiver",
+			templateConfig:     userConfigMap{"int_field": 12345}, // No endpoint - will be auto-discovered
+			resourceAttributes: map[string]any{},                  // no custom attrs referencing labels
+			modifyEndpoint: func(e observer.Endpoint) observer.Endpoint {
+				port := e.Details.(*observer.Port)
+				newPod := port.Pod
+				newPod.Labels = map[string]string{
+					"app":         "redis",
+					"region":      "west-1",
+					"environment": "production", // NEW irrelevant label
+				}
+				e.Details = &observer.Port{
+					Name:           port.Name,
+					Pod:            newPod,
+					Port:           port.Port,
+					Transport:      port.Transport,
+					ContainerName:  port.ContainerName,
+					ContainerID:    port.ContainerID,
+					ContainerImage: port.ContainerImage,
+				}
+				return e
+			},
+			expectKept: true,
+		},
+		{
 			// When endpoint type changes such that the template's rule no longer matches,
 			// the receiver should be removed (not restarted). Rule is `type == "port"`.
 			name:           "rule no longer matches - remove receiver",
@@ -853,8 +882,8 @@ func TestOnChangeNewTemplateMatches(t *testing.T) {
 //   - User config: What the user specifies in their template (may contain backtick expressions)
 //   - Discovered config: Auto-populated when user doesn't set "endpoint" (uses endpoint.Target)
 //
-// The discovered config includes a marker flag (tmpSetEndpointConfigKey) so the runner
-// knows to validate whether the receiver actually supports an "endpoint" field.
+// The endpointAutoSet return value tells the runner whether the endpoint was auto-populated,
+// so it can validate whether the receiver actually supports an "endpoint" field.
 func TestResolveConfig(t *testing.T) {
 	tests := []struct {
 		name                     string
@@ -864,7 +893,7 @@ func TestResolveConfig(t *testing.T) {
 		expectError              string // empty string means success expected
 		expectUserEndpoint       string // expected endpoint in user config (empty if not expected)
 		expectDiscoveredEndpoint string // expected endpoint in discovered config (empty if not expected)
-		expectDiscoveredMarker   bool   // whether tmpSetEndpointConfigKey should be present
+		expectEndpointAutoSet    bool   // whether endpoint was auto-discovered
 	}{
 		{
 			name:           "user template config expansion error",
@@ -887,7 +916,7 @@ func TestResolveConfig(t *testing.T) {
 			endpointTarget:           "192.168.1.1:8080",
 			expectUserEndpoint:       "192.168.1.1:8080",
 			expectDiscoveredEndpoint: "", // Empty - user set endpoint, nothing auto-discovered
-			expectDiscoveredMarker:   false,
+			expectEndpointAutoSet:    false,
 		},
 		{
 			name:                     "auto-discovered endpoint goes into discovered config",
@@ -896,7 +925,7 @@ func TestResolveConfig(t *testing.T) {
 			endpointTarget:           "192.168.1.1:8080",
 			expectUserEndpoint:       "", // Empty - user didn't set endpoint
 			expectDiscoveredEndpoint: "192.168.1.1:8080",
-			expectDiscoveredMarker:   true, // Marker tells runner this was auto-discovered
+			expectEndpointAutoSet:    true, // Tells runner this was auto-discovered
 		},
 	}
 
@@ -912,7 +941,7 @@ func TestResolveConfig(t *testing.T) {
 			}
 			endpoint := observer.Endpoint{ID: "test-1", Target: tt.endpointTarget}
 
-			userConfig, discoveredConfig, err := handler.resolveConfig(template, tt.env, endpoint)
+			userConfig, discoveredConfig, endpointAutoSet, err := handler.resolveConfig(template, tt.env, endpoint)
 
 			if tt.expectError != "" {
 				require.Error(t, err)
@@ -936,10 +965,8 @@ func TestResolveConfig(t *testing.T) {
 				assert.Empty(t, discoveredConfig)
 			}
 
-			// Check marker flag
-			if tt.expectDiscoveredMarker {
-				assert.Contains(t, discoveredConfig, tmpSetEndpointConfigKey)
-			}
+			// Check endpointAutoSet flag
+			assert.Equal(t, tt.expectEndpointAutoSet, endpointAutoSet)
 		})
 	}
 }
@@ -1199,9 +1226,10 @@ type mockRunner struct {
 func (r *mockRunner) start(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
+	endpointAutoSet bool,
 	consumer *enhancingConsumer,
 ) (component.Component, error) {
-	r.startedComponent, r.lastError = r.receiverRunner.start(receiver, discoveredConfig, consumer)
+	r.startedComponent, r.lastError = r.receiverRunner.start(receiver, discoveredConfig, endpointAutoSet, consumer)
 	return r.startedComponent, r.lastError
 }
 

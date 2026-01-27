@@ -18,13 +18,6 @@ import (
 
 var _ observer.Notify = (*observerHandler)(nil)
 
-const (
-	// tmpSetEndpointConfigKey denotes the observerHandler (not the user) has set an "endpoint" target field
-	// in resolved configuration. Used to determine if the field should be removed when the created receiver
-	// doesn't expose such a field.
-	tmpSetEndpointConfigKey = "<tmp.receiver.creator.automatically.set.endpoint.field>"
-)
-
 // observerHandler manages endpoint change notifications.
 type observerHandler struct {
 	sync.Mutex
@@ -170,7 +163,7 @@ func (obs *observerHandler) handleEndpointChange(e observer.Endpoint) {
 		}
 
 		// Resolve the new config
-		resolvedConfig, resolvedDiscoveredConfig, err := obs.resolveConfig(template, env, e)
+		resolvedConfig, resolvedDiscoveredConfig, _, err := obs.resolveConfig(template, env, e)
 		if err != nil {
 			obs.params.Logger.Error("unable to resolve config for change comparison, removing receiver",
 				zap.String("receiver", entry.id.String()), zap.Error(err))
@@ -202,6 +195,15 @@ func (obs *observerHandler) handleEndpointChange(e observer.Endpoint) {
 			obs.params.Logger.Info("restarting receiver (config changed)",
 				zap.String("receiver", entry.id.String()),
 				zap.String("endpoint_id", string(e.ID)))
+			// Debug: show what changed
+			obs.params.Logger.Debug("config comparison details",
+				zap.String("receiver", entry.id.String()),
+				zap.Any("stored_resolvedConfig", entry.resolvedConfig),
+				zap.Any("new_resolvedConfig", resolvedConfig),
+				zap.Any("stored_discoveredConfig", entry.resolvedDiscoveredConfig),
+				zap.Any("new_discoveredConfig", resolvedDiscoveredConfig),
+				zap.Any("stored_resourceAttrs", entry.computedResourceAttrs),
+				zap.Any("new_resourceAttrs", computedAttrs))
 			entriesToRestart = append(entriesToRestart, restartEntry{
 				oldEntry: entry,
 				template: template,
@@ -275,20 +277,21 @@ func (obs *observerHandler) buildReceiverResourceAttrs(template receiverTemplate
 // It returns two configs that are later merged by the runner:
 //   - resolvedUserConfig: the user's template config with backtick expressions expanded
 //   - resolvedDiscoveredConfig: auto-discovered values from the endpoint (e.g., endpoint target)
+//   - endpointAutoSet: true if we auto-populated the endpoint field (user didn't set it)
 //
 // These are kept separate so the runner can validate whether auto-discovered fields
 // (like "endpoint") are actually supported by the receiver before merging them.
-func (*observerHandler) resolveConfig(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) (resolvedUserConfig, resolvedDiscoveredConfig userConfigMap, err error) {
+func (*observerHandler) resolveConfig(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) (resolvedUserConfig, resolvedDiscoveredConfig userConfigMap, endpointAutoSet bool, err error) {
 	resolvedUserConfig, err = expandConfig(template.config, env)
 	if err != nil {
-		return nil, nil, fmt.Errorf("expanding user template config: %w", err)
+		return nil, nil, false, fmt.Errorf("expanding user template config: %w", err)
 	}
 
 	// Build the "discovered" config which contains values derived from the endpoint
 	// rather than from the user's template. Currently this is just the endpoint target.
 	//
 	// If the user didn't explicitly set an "endpoint" field in their config, we auto-populate
-	// it from the discovered endpoint's Target. The tmpSetEndpointConfigKey flag tells
+	// it from the discovered endpoint's Target. The endpointAutoSet return value tells
 	// mergeTemplatedAndDiscoveredConfigs (in runner.go) that we auto-set this value, so it
 	// can validate whether the receiver actually supports an "endpoint" config field and
 	// remove it if not (avoiding "unknown field" errors for receivers without that field).
@@ -296,9 +299,10 @@ func (*observerHandler) resolveConfig(template receiverTemplate, env observer.En
 	// Caveat: If a receiver has an optional "endpoint" field that's mutually exclusive with
 	// another field (e.g., "url"), users must explicitly set endpoint: "" to prevent auto-discovery.
 	discoveredCfg := userConfigMap{}
+	endpointAutoSet = false
 	if _, ok := resolvedUserConfig[endpointConfigKey]; !ok {
 		discoveredCfg[endpointConfigKey] = e.Target
-		discoveredCfg[tmpSetEndpointConfigKey] = struct{}{}
+		endpointAutoSet = true
 	}
 
 	// We expand discoveredCfg even though it typically contains just e.Target (a plain
@@ -307,10 +311,10 @@ func (*observerHandler) resolveConfig(template receiverTemplate, env observer.En
 	// which would need expansion. Contrib observers never do this, but we handle it anyway.
 	resolvedDiscoveredConfig, err = expandConfig(discoveredCfg, env)
 	if err != nil {
-		return nil, nil, fmt.Errorf("expanding discovered config: %w", err)
+		return nil, nil, false, fmt.Errorf("expanding discovered config: %w", err)
 	}
 
-	return resolvedUserConfig, resolvedDiscoveredConfig, nil
+	return resolvedUserConfig, resolvedDiscoveredConfig, endpointAutoSet, nil
 }
 
 // receiverStartedCallback is called when a new receiver is about to be started.
@@ -397,7 +401,7 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		zap.String("endpoint_id", string(e.ID)),
 		zap.Any("config", template.config))
 
-	resolvedConfig, resolvedDiscoveredConfig, err := obs.resolveConfig(template, env, e)
+	resolvedConfig, resolvedDiscoveredConfig, endpointAutoSet, err := obs.resolveConfig(template, env, e)
 	if err != nil {
 		obs.params.Logger.Error("unable to resolve receiver config", zap.String("receiver", template.id.String()), zap.Error(err))
 		return
@@ -442,13 +446,20 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 			endpointID: e.ID,
 		},
 		resolvedDiscoveredConfig,
+		endpointAutoSet,
 		consumer,
 	); err != nil {
 		obs.params.Logger.Error("failed to start receiver", zap.String("receiver", template.id.String()), zap.Error(err))
 		return
 	}
 
-	// Store the computed resource attrs so we can compare them on endpoint changes
+	// Store the computed resource attrs so we can compare them on endpoint changes.
+	obs.params.Logger.Debug("storing receiver entry",
+		zap.String("receiver", template.id.String()),
+		zap.String("endpoint_id", string(e.ID)),
+		zap.Any("resolvedConfig", resolvedConfig),
+		zap.Any("resolvedDiscoveredConfig", resolvedDiscoveredConfig),
+		zap.Any("computedResourceAttrs", consumer.attrs))
 	obs.receiversByEndpointID.Put(e.ID, receiverEntry{
 		receiver:                 receiver,
 		id:                       template.id,
