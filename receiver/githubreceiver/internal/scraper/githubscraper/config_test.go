@@ -27,6 +27,13 @@ func TestConfig(t *testing.T) {
 		ClientConfig:         clientConfig,
 		ConcurrencyLimit:     50,
 		MergedPRLookbackDays: 30,
+		RetryOnFailure: RetryConfig{
+			Enabled: true,
+		},
+		ProactiveRetry: ProactiveRetryConfig{
+			Enabled:   true,
+			Threshold: 100,
+		},
 	}
 
 	assert.Equal(t, expectedConfig, defaultConfig)
@@ -82,6 +89,42 @@ func TestConfigValidate(t *testing.T) {
 				MergedPRLookbackDays: -5,
 			},
 			wantErr: true,
+		},
+		{
+			name: "valid config with retry settings",
+			config: Config{
+				ConcurrencyLimit: 50,
+				RetryOnFailure: RetryConfig{
+					Enabled: true,
+				},
+				ProactiveRetry: ProactiveRetryConfig{
+					Enabled:   true,
+					Threshold: 100,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid config with negative threshold",
+			config: Config{
+				ConcurrencyLimit: 50,
+				ProactiveRetry: ProactiveRetryConfig{
+					Enabled:   true,
+					Threshold: -10,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid config with zero threshold",
+			config: Config{
+				ConcurrencyLimit: 50,
+				ProactiveRetry: ProactiveRetryConfig{
+					Enabled:   true,
+					Threshold: 0,
+				},
+			},
+			wantErr: false,
 		},
 	}
 

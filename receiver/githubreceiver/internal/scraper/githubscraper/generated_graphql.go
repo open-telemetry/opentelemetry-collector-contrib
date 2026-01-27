@@ -1020,13 +1020,97 @@ type checkLoginOrganization struct {
 // GetLogin returns checkLoginOrganization.Login, and is useful for accessing the field via an interface.
 func (v *checkLoginOrganization) GetLogin() string { return v.Login }
 
+// checkLoginRateLimit includes the requested fields of the GraphQL type RateLimit.
+// The GraphQL type's documentation follows.
+//
+// Represents the client's rate limit.
+type checkLoginRateLimit struct {
+	rateLimitInfo `json:"-"`
+}
+
+// GetCost returns checkLoginRateLimit.Cost, and is useful for accessing the field via an interface.
+func (v *checkLoginRateLimit) GetCost() int { return v.rateLimitInfo.Cost }
+
+// GetLimit returns checkLoginRateLimit.Limit, and is useful for accessing the field via an interface.
+func (v *checkLoginRateLimit) GetLimit() int { return v.rateLimitInfo.Limit }
+
+// GetRemaining returns checkLoginRateLimit.Remaining, and is useful for accessing the field via an interface.
+func (v *checkLoginRateLimit) GetRemaining() int { return v.rateLimitInfo.Remaining }
+
+// GetResetAt returns checkLoginRateLimit.ResetAt, and is useful for accessing the field via an interface.
+func (v *checkLoginRateLimit) GetResetAt() time.Time { return v.rateLimitInfo.ResetAt }
+
+// GetUsed returns checkLoginRateLimit.Used, and is useful for accessing the field via an interface.
+func (v *checkLoginRateLimit) GetUsed() int { return v.rateLimitInfo.Used }
+
+func (v *checkLoginRateLimit) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*checkLoginRateLimit
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.checkLoginRateLimit = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.rateLimitInfo)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalcheckLoginRateLimit struct {
+	Cost int `json:"cost"`
+
+	Limit int `json:"limit"`
+
+	Remaining int `json:"remaining"`
+
+	ResetAt time.Time `json:"resetAt"`
+
+	Used int `json:"used"`
+}
+
+func (v *checkLoginRateLimit) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *checkLoginRateLimit) __premarshalJSON() (*__premarshalcheckLoginRateLimit, error) {
+	var retval __premarshalcheckLoginRateLimit
+
+	retval.Cost = v.rateLimitInfo.Cost
+	retval.Limit = v.rateLimitInfo.Limit
+	retval.Remaining = v.rateLimitInfo.Remaining
+	retval.ResetAt = v.rateLimitInfo.ResetAt
+	retval.Used = v.rateLimitInfo.Used
+	return &retval, nil
+}
+
 // checkLoginResponse is returned by checkLogin on success.
 type checkLoginResponse struct {
+	// The client's rate limit information.
+	RateLimit checkLoginRateLimit `json:"rateLimit"`
 	// Lookup a user by login.
 	User checkLoginUser `json:"user"`
 	// Lookup a organization by login.
 	Organization checkLoginOrganization `json:"organization"`
 }
+
+// GetRateLimit returns checkLoginResponse.RateLimit, and is useful for accessing the field via an interface.
+func (v *checkLoginResponse) GetRateLimit() checkLoginRateLimit { return v.RateLimit }
 
 // GetUser returns checkLoginResponse.User, and is useful for accessing the field via an interface.
 func (v *checkLoginResponse) GetUser() checkLoginUser { return v.User }
@@ -1045,6 +1129,85 @@ type checkLoginUser struct {
 
 // GetLogin returns checkLoginUser.Login, and is useful for accessing the field via an interface.
 func (v *checkLoginUser) GetLogin() string { return v.Login }
+
+// getBranchDataRateLimit includes the requested fields of the GraphQL type RateLimit.
+// The GraphQL type's documentation follows.
+//
+// Represents the client's rate limit.
+type getBranchDataRateLimit struct {
+	rateLimitInfo `json:"-"`
+}
+
+// GetCost returns getBranchDataRateLimit.Cost, and is useful for accessing the field via an interface.
+func (v *getBranchDataRateLimit) GetCost() int { return v.rateLimitInfo.Cost }
+
+// GetLimit returns getBranchDataRateLimit.Limit, and is useful for accessing the field via an interface.
+func (v *getBranchDataRateLimit) GetLimit() int { return v.rateLimitInfo.Limit }
+
+// GetRemaining returns getBranchDataRateLimit.Remaining, and is useful for accessing the field via an interface.
+func (v *getBranchDataRateLimit) GetRemaining() int { return v.rateLimitInfo.Remaining }
+
+// GetResetAt returns getBranchDataRateLimit.ResetAt, and is useful for accessing the field via an interface.
+func (v *getBranchDataRateLimit) GetResetAt() time.Time { return v.rateLimitInfo.ResetAt }
+
+// GetUsed returns getBranchDataRateLimit.Used, and is useful for accessing the field via an interface.
+func (v *getBranchDataRateLimit) GetUsed() int { return v.rateLimitInfo.Used }
+
+func (v *getBranchDataRateLimit) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getBranchDataRateLimit
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getBranchDataRateLimit = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.rateLimitInfo)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetBranchDataRateLimit struct {
+	Cost int `json:"cost"`
+
+	Limit int `json:"limit"`
+
+	Remaining int `json:"remaining"`
+
+	ResetAt time.Time `json:"resetAt"`
+
+	Used int `json:"used"`
+}
+
+func (v *getBranchDataRateLimit) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getBranchDataRateLimit) __premarshalJSON() (*__premarshalgetBranchDataRateLimit, error) {
+	var retval __premarshalgetBranchDataRateLimit
+
+	retval.Cost = v.rateLimitInfo.Cost
+	retval.Limit = v.rateLimitInfo.Limit
+	retval.Remaining = v.rateLimitInfo.Remaining
+	retval.ResetAt = v.rateLimitInfo.ResetAt
+	retval.Used = v.rateLimitInfo.Used
+	return &retval, nil
+}
 
 // getBranchDataRepository includes the requested fields of the GraphQL type Repository.
 // The GraphQL type's documentation follows.
@@ -1103,12 +1266,96 @@ func (v *getBranchDataRepositoryRefsRefConnectionPageInfo) GetHasNextPage() bool
 
 // getBranchDataResponse is returned by getBranchData on success.
 type getBranchDataResponse struct {
+	// The client's rate limit information.
+	RateLimit getBranchDataRateLimit `json:"rateLimit"`
 	// Lookup a given repository by the owner and repository name.
 	Repository getBranchDataRepository `json:"repository"`
 }
 
+// GetRateLimit returns getBranchDataResponse.RateLimit, and is useful for accessing the field via an interface.
+func (v *getBranchDataResponse) GetRateLimit() getBranchDataRateLimit { return v.RateLimit }
+
 // GetRepository returns getBranchDataResponse.Repository, and is useful for accessing the field via an interface.
 func (v *getBranchDataResponse) GetRepository() getBranchDataRepository { return v.Repository }
+
+// getCommitDataRateLimit includes the requested fields of the GraphQL type RateLimit.
+// The GraphQL type's documentation follows.
+//
+// Represents the client's rate limit.
+type getCommitDataRateLimit struct {
+	rateLimitInfo `json:"-"`
+}
+
+// GetCost returns getCommitDataRateLimit.Cost, and is useful for accessing the field via an interface.
+func (v *getCommitDataRateLimit) GetCost() int { return v.rateLimitInfo.Cost }
+
+// GetLimit returns getCommitDataRateLimit.Limit, and is useful for accessing the field via an interface.
+func (v *getCommitDataRateLimit) GetLimit() int { return v.rateLimitInfo.Limit }
+
+// GetRemaining returns getCommitDataRateLimit.Remaining, and is useful for accessing the field via an interface.
+func (v *getCommitDataRateLimit) GetRemaining() int { return v.rateLimitInfo.Remaining }
+
+// GetResetAt returns getCommitDataRateLimit.ResetAt, and is useful for accessing the field via an interface.
+func (v *getCommitDataRateLimit) GetResetAt() time.Time { return v.rateLimitInfo.ResetAt }
+
+// GetUsed returns getCommitDataRateLimit.Used, and is useful for accessing the field via an interface.
+func (v *getCommitDataRateLimit) GetUsed() int { return v.rateLimitInfo.Used }
+
+func (v *getCommitDataRateLimit) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getCommitDataRateLimit
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getCommitDataRateLimit = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.rateLimitInfo)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetCommitDataRateLimit struct {
+	Cost int `json:"cost"`
+
+	Limit int `json:"limit"`
+
+	Remaining int `json:"remaining"`
+
+	ResetAt time.Time `json:"resetAt"`
+
+	Used int `json:"used"`
+}
+
+func (v *getCommitDataRateLimit) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getCommitDataRateLimit) __premarshalJSON() (*__premarshalgetCommitDataRateLimit, error) {
+	var retval __premarshalgetCommitDataRateLimit
+
+	retval.Cost = v.rateLimitInfo.Cost
+	retval.Limit = v.rateLimitInfo.Limit
+	retval.Remaining = v.rateLimitInfo.Remaining
+	retval.ResetAt = v.rateLimitInfo.ResetAt
+	retval.Used = v.rateLimitInfo.Used
+	return &retval, nil
+}
 
 // getCommitDataRepository includes the requested fields of the GraphQL type Repository.
 // The GraphQL type's documentation follows.
@@ -1136,12 +1383,96 @@ func (v *getCommitDataRepositoryRefsRefConnection) GetNodes() []BranchHistory { 
 
 // getCommitDataResponse is returned by getCommitData on success.
 type getCommitDataResponse struct {
+	// The client's rate limit information.
+	RateLimit getCommitDataRateLimit `json:"rateLimit"`
 	// Lookup a given repository by the owner and repository name.
 	Repository getCommitDataRepository `json:"repository"`
 }
 
+// GetRateLimit returns getCommitDataResponse.RateLimit, and is useful for accessing the field via an interface.
+func (v *getCommitDataResponse) GetRateLimit() getCommitDataRateLimit { return v.RateLimit }
+
 // GetRepository returns getCommitDataResponse.Repository, and is useful for accessing the field via an interface.
 func (v *getCommitDataResponse) GetRepository() getCommitDataRepository { return v.Repository }
+
+// getMergedPullRequestDataRateLimit includes the requested fields of the GraphQL type RateLimit.
+// The GraphQL type's documentation follows.
+//
+// Represents the client's rate limit.
+type getMergedPullRequestDataRateLimit struct {
+	rateLimitInfo `json:"-"`
+}
+
+// GetCost returns getMergedPullRequestDataRateLimit.Cost, and is useful for accessing the field via an interface.
+func (v *getMergedPullRequestDataRateLimit) GetCost() int { return v.rateLimitInfo.Cost }
+
+// GetLimit returns getMergedPullRequestDataRateLimit.Limit, and is useful for accessing the field via an interface.
+func (v *getMergedPullRequestDataRateLimit) GetLimit() int { return v.rateLimitInfo.Limit }
+
+// GetRemaining returns getMergedPullRequestDataRateLimit.Remaining, and is useful for accessing the field via an interface.
+func (v *getMergedPullRequestDataRateLimit) GetRemaining() int { return v.rateLimitInfo.Remaining }
+
+// GetResetAt returns getMergedPullRequestDataRateLimit.ResetAt, and is useful for accessing the field via an interface.
+func (v *getMergedPullRequestDataRateLimit) GetResetAt() time.Time { return v.rateLimitInfo.ResetAt }
+
+// GetUsed returns getMergedPullRequestDataRateLimit.Used, and is useful for accessing the field via an interface.
+func (v *getMergedPullRequestDataRateLimit) GetUsed() int { return v.rateLimitInfo.Used }
+
+func (v *getMergedPullRequestDataRateLimit) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getMergedPullRequestDataRateLimit
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getMergedPullRequestDataRateLimit = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.rateLimitInfo)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetMergedPullRequestDataRateLimit struct {
+	Cost int `json:"cost"`
+
+	Limit int `json:"limit"`
+
+	Remaining int `json:"remaining"`
+
+	ResetAt time.Time `json:"resetAt"`
+
+	Used int `json:"used"`
+}
+
+func (v *getMergedPullRequestDataRateLimit) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getMergedPullRequestDataRateLimit) __premarshalJSON() (*__premarshalgetMergedPullRequestDataRateLimit, error) {
+	var retval __premarshalgetMergedPullRequestDataRateLimit
+
+	retval.Cost = v.rateLimitInfo.Cost
+	retval.Limit = v.rateLimitInfo.Limit
+	retval.Remaining = v.rateLimitInfo.Remaining
+	retval.ResetAt = v.rateLimitInfo.ResetAt
+	retval.Used = v.rateLimitInfo.Used
+	return &retval, nil
+}
 
 // getMergedPullRequestDataRepository includes the requested fields of the GraphQL type Repository.
 // The GraphQL type's documentation follows.
@@ -1201,13 +1532,99 @@ func (v *getMergedPullRequestDataRepositoryPullRequestsPullRequestConnectionPage
 
 // getMergedPullRequestDataResponse is returned by getMergedPullRequestData on success.
 type getMergedPullRequestDataResponse struct {
+	// The client's rate limit information.
+	RateLimit getMergedPullRequestDataRateLimit `json:"rateLimit"`
 	// Lookup a given repository by the owner and repository name.
 	Repository getMergedPullRequestDataRepository `json:"repository"`
+}
+
+// GetRateLimit returns getMergedPullRequestDataResponse.RateLimit, and is useful for accessing the field via an interface.
+func (v *getMergedPullRequestDataResponse) GetRateLimit() getMergedPullRequestDataRateLimit {
+	return v.RateLimit
 }
 
 // GetRepository returns getMergedPullRequestDataResponse.Repository, and is useful for accessing the field via an interface.
 func (v *getMergedPullRequestDataResponse) GetRepository() getMergedPullRequestDataRepository {
 	return v.Repository
+}
+
+// getPullRequestDataRateLimit includes the requested fields of the GraphQL type RateLimit.
+// The GraphQL type's documentation follows.
+//
+// Represents the client's rate limit.
+type getPullRequestDataRateLimit struct {
+	rateLimitInfo `json:"-"`
+}
+
+// GetCost returns getPullRequestDataRateLimit.Cost, and is useful for accessing the field via an interface.
+func (v *getPullRequestDataRateLimit) GetCost() int { return v.rateLimitInfo.Cost }
+
+// GetLimit returns getPullRequestDataRateLimit.Limit, and is useful for accessing the field via an interface.
+func (v *getPullRequestDataRateLimit) GetLimit() int { return v.rateLimitInfo.Limit }
+
+// GetRemaining returns getPullRequestDataRateLimit.Remaining, and is useful for accessing the field via an interface.
+func (v *getPullRequestDataRateLimit) GetRemaining() int { return v.rateLimitInfo.Remaining }
+
+// GetResetAt returns getPullRequestDataRateLimit.ResetAt, and is useful for accessing the field via an interface.
+func (v *getPullRequestDataRateLimit) GetResetAt() time.Time { return v.rateLimitInfo.ResetAt }
+
+// GetUsed returns getPullRequestDataRateLimit.Used, and is useful for accessing the field via an interface.
+func (v *getPullRequestDataRateLimit) GetUsed() int { return v.rateLimitInfo.Used }
+
+func (v *getPullRequestDataRateLimit) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getPullRequestDataRateLimit
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getPullRequestDataRateLimit = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.rateLimitInfo)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetPullRequestDataRateLimit struct {
+	Cost int `json:"cost"`
+
+	Limit int `json:"limit"`
+
+	Remaining int `json:"remaining"`
+
+	ResetAt time.Time `json:"resetAt"`
+
+	Used int `json:"used"`
+}
+
+func (v *getPullRequestDataRateLimit) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getPullRequestDataRateLimit) __premarshalJSON() (*__premarshalgetPullRequestDataRateLimit, error) {
+	var retval __premarshalgetPullRequestDataRateLimit
+
+	retval.Cost = v.rateLimitInfo.Cost
+	retval.Limit = v.rateLimitInfo.Limit
+	retval.Remaining = v.rateLimitInfo.Remaining
+	retval.ResetAt = v.rateLimitInfo.ResetAt
+	retval.Used = v.rateLimitInfo.Used
+	return &retval, nil
 }
 
 // getPullRequestDataRepository includes the requested fields of the GraphQL type Repository.
@@ -1268,20 +1685,109 @@ func (v *getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo) 
 
 // getPullRequestDataResponse is returned by getPullRequestData on success.
 type getPullRequestDataResponse struct {
+	// The client's rate limit information.
+	RateLimit getPullRequestDataRateLimit `json:"rateLimit"`
 	// Lookup a given repository by the owner and repository name.
 	Repository getPullRequestDataRepository `json:"repository"`
 }
+
+// GetRateLimit returns getPullRequestDataResponse.RateLimit, and is useful for accessing the field via an interface.
+func (v *getPullRequestDataResponse) GetRateLimit() getPullRequestDataRateLimit { return v.RateLimit }
 
 // GetRepository returns getPullRequestDataResponse.Repository, and is useful for accessing the field via an interface.
 func (v *getPullRequestDataResponse) GetRepository() getPullRequestDataRepository {
 	return v.Repository
 }
 
+// getRepoDataBySearchRateLimit includes the requested fields of the GraphQL type RateLimit.
+// The GraphQL type's documentation follows.
+//
+// Represents the client's rate limit.
+type getRepoDataBySearchRateLimit struct {
+	rateLimitInfo `json:"-"`
+}
+
+// GetCost returns getRepoDataBySearchRateLimit.Cost, and is useful for accessing the field via an interface.
+func (v *getRepoDataBySearchRateLimit) GetCost() int { return v.rateLimitInfo.Cost }
+
+// GetLimit returns getRepoDataBySearchRateLimit.Limit, and is useful for accessing the field via an interface.
+func (v *getRepoDataBySearchRateLimit) GetLimit() int { return v.rateLimitInfo.Limit }
+
+// GetRemaining returns getRepoDataBySearchRateLimit.Remaining, and is useful for accessing the field via an interface.
+func (v *getRepoDataBySearchRateLimit) GetRemaining() int { return v.rateLimitInfo.Remaining }
+
+// GetResetAt returns getRepoDataBySearchRateLimit.ResetAt, and is useful for accessing the field via an interface.
+func (v *getRepoDataBySearchRateLimit) GetResetAt() time.Time { return v.rateLimitInfo.ResetAt }
+
+// GetUsed returns getRepoDataBySearchRateLimit.Used, and is useful for accessing the field via an interface.
+func (v *getRepoDataBySearchRateLimit) GetUsed() int { return v.rateLimitInfo.Used }
+
+func (v *getRepoDataBySearchRateLimit) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*getRepoDataBySearchRateLimit
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.getRepoDataBySearchRateLimit = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(
+		b, &v.rateLimitInfo)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type __premarshalgetRepoDataBySearchRateLimit struct {
+	Cost int `json:"cost"`
+
+	Limit int `json:"limit"`
+
+	Remaining int `json:"remaining"`
+
+	ResetAt time.Time `json:"resetAt"`
+
+	Used int `json:"used"`
+}
+
+func (v *getRepoDataBySearchRateLimit) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *getRepoDataBySearchRateLimit) __premarshalJSON() (*__premarshalgetRepoDataBySearchRateLimit, error) {
+	var retval __premarshalgetRepoDataBySearchRateLimit
+
+	retval.Cost = v.rateLimitInfo.Cost
+	retval.Limit = v.rateLimitInfo.Limit
+	retval.Remaining = v.rateLimitInfo.Remaining
+	retval.ResetAt = v.rateLimitInfo.ResetAt
+	retval.Used = v.rateLimitInfo.Used
+	return &retval, nil
+}
+
 // getRepoDataBySearchResponse is returned by getRepoDataBySearch on success.
 type getRepoDataBySearchResponse struct {
+	// The client's rate limit information.
+	RateLimit getRepoDataBySearchRateLimit `json:"rateLimit"`
 	// Perform a search across resources, returning a maximum of 1,000 results.
 	Search getRepoDataBySearchSearchSearchResultItemConnection `json:"search"`
 }
+
+// GetRateLimit returns getRepoDataBySearchResponse.RateLimit, and is useful for accessing the field via an interface.
+func (v *getRepoDataBySearchResponse) GetRateLimit() getRepoDataBySearchRateLimit { return v.RateLimit }
 
 // GetSearch returns getRepoDataBySearchResponse.Search, and is useful for accessing the field via an interface.
 func (v *getRepoDataBySearchResponse) GetSearch() getRepoDataBySearchSearchSearchResultItemConnection {
@@ -1420,15 +1926,55 @@ func (v *getRepoDataBySearchSearchSearchResultItemConnectionPageInfo) GetEndCurs
 	return v.EndCursor
 }
 
+// Rate limit fragment for tracking GitHub API consumption
+// See: https://docs.github.com/en/graphql/overview/rate-limits-and-node-limits-for-the-graphql-api
+type rateLimitInfo struct {
+	// The point cost for the current query counting against the rate limit.
+	Cost int `json:"cost"`
+	// The maximum number of points the client is permitted to consume in a 60 minute window.
+	Limit int `json:"limit"`
+	// The number of points remaining in the current rate limit window.
+	Remaining int `json:"remaining"`
+	// The time at which the current rate limit window resets in UTC epoch seconds.
+	ResetAt time.Time `json:"resetAt"`
+	// The number of points used in the current rate limit window.
+	Used int `json:"used"`
+}
+
+// GetCost returns rateLimitInfo.Cost, and is useful for accessing the field via an interface.
+func (v *rateLimitInfo) GetCost() int { return v.Cost }
+
+// GetLimit returns rateLimitInfo.Limit, and is useful for accessing the field via an interface.
+func (v *rateLimitInfo) GetLimit() int { return v.Limit }
+
+// GetRemaining returns rateLimitInfo.Remaining, and is useful for accessing the field via an interface.
+func (v *rateLimitInfo) GetRemaining() int { return v.Remaining }
+
+// GetResetAt returns rateLimitInfo.ResetAt, and is useful for accessing the field via an interface.
+func (v *rateLimitInfo) GetResetAt() time.Time { return v.ResetAt }
+
+// GetUsed returns rateLimitInfo.Used, and is useful for accessing the field via an interface.
+func (v *rateLimitInfo) GetUsed() int { return v.Used }
+
 // The query executed by checkLogin.
 const checkLogin_Operation = `
 query checkLogin ($login: String!) {
+	rateLimit {
+		... rateLimitInfo
+	}
 	user(login: $login) {
 		login
 	}
 	organization(login: $login) {
 		login
 	}
+}
+fragment rateLimitInfo on RateLimit {
+	cost
+	limit
+	remaining
+	resetAt
+	used
 }
 `
 
@@ -1460,6 +2006,9 @@ func checkLogin(
 // The query executed by getBranchData.
 const getBranchData_Operation = `
 query getBranchData ($name: String!, $owner: String!, $branchFirst: Int!, $targetBranch: String!, $branchCursor: String) {
+	rateLimit {
+		... rateLimitInfo
+	}
 	repository(name: $name, owner: $owner) {
 		refs(refPrefix: "refs/heads/", first: $branchFirst, after: $branchCursor) {
 			totalCount
@@ -1482,6 +2031,13 @@ query getBranchData ($name: String!, $owner: String!, $branchFirst: Int!, $targe
 			}
 		}
 	}
+}
+fragment rateLimitInfo on RateLimit {
+	cost
+	limit
+	remaining
+	resetAt
+	used
 }
 `
 
@@ -1521,6 +2077,9 @@ func getBranchData(
 // The query executed by getCommitData.
 const getCommitData_Operation = `
 query getCommitData ($name: String!, $owner: String!, $branchFirst: Int!, $commitFirst: Int!, $commitCursor: String, $branchName: String!) {
+	rateLimit {
+		... rateLimitInfo
+	}
 	repository(name: $name, owner: $owner) {
 		refs(refPrefix: "refs/heads/", first: $branchFirst, query: $branchName) {
 			nodes {
@@ -1544,6 +2103,13 @@ query getCommitData ($name: String!, $owner: String!, $branchFirst: Int!, $commi
 			}
 		}
 	}
+}
+fragment rateLimitInfo on RateLimit {
+	cost
+	limit
+	remaining
+	resetAt
+	used
 }
 `
 
@@ -1585,6 +2151,9 @@ func getCommitData(
 // The query executed by getMergedPullRequestData.
 const getMergedPullRequestData_Operation = `
 query getMergedPullRequestData ($name: String!, $owner: String!, $prLast: Int!, $prCursor: String) {
+	rateLimit {
+		... rateLimitInfo
+	}
 	repository(name: $name, owner: $owner) {
 		pullRequests(last: $prLast, before: $prCursor, states: [MERGED]) {
 			nodes {
@@ -1617,6 +2186,13 @@ query getMergedPullRequestData ($name: String!, $owner: String!, $prLast: Int!, 
 			}
 		}
 	}
+}
+fragment rateLimitInfo on RateLimit {
+	cost
+	limit
+	remaining
+	resetAt
+	used
 }
 `
 
@@ -1654,6 +2230,9 @@ func getMergedPullRequestData(
 // The query executed by getPullRequestData.
 const getPullRequestData_Operation = `
 query getPullRequestData ($name: String!, $owner: String!, $prFirst: Int!, $prCursor: String) {
+	rateLimit {
+		... rateLimitInfo
+	}
 	repository(name: $name, owner: $owner) {
 		pullRequests(first: $prFirst, after: $prCursor, states: [OPEN]) {
 			nodes {
@@ -1686,6 +2265,13 @@ query getPullRequestData ($name: String!, $owner: String!, $prFirst: Int!, $prCu
 			}
 		}
 	}
+}
+fragment rateLimitInfo on RateLimit {
+	cost
+	limit
+	remaining
+	resetAt
+	used
 }
 `
 
@@ -1723,6 +2309,9 @@ func getPullRequestData(
 // The query executed by getRepoDataBySearch.
 const getRepoDataBySearch_Operation = `
 query getRepoDataBySearch ($searchQuery: String!, $repoCursor: String) {
+	rateLimit {
+		... rateLimitInfo
+	}
 	search(query: $searchQuery, type: REPOSITORY, first: 100, after: $repoCursor) {
 		repositoryCount
 		nodes {
@@ -1741,6 +2330,13 @@ query getRepoDataBySearch ($searchQuery: String!, $repoCursor: String) {
 			endCursor
 		}
 	}
+}
+fragment rateLimitInfo on RateLimit {
+	cost
+	limit
+	remaining
+	resetAt
+	used
 }
 `
 

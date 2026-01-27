@@ -30,6 +30,12 @@ type githubScraper struct {
 	logger   *zap.Logger
 	mb       *metadata.MetricsBuilder
 	rb       *metadata.ResourceBuilder
+
+	// Separate rate limit states for GraphQL and REST APIs.
+	// GitHub has independent rate limits: 5,000 points/hour for GraphQL,
+	// 5,000 requests/hour for REST.
+	graphQLRateLimit *rateLimitState
+	restRateLimit    *rateLimitState
 }
 
 func (ghs *githubScraper) start(ctx context.Context, host component.Host) (err error) {
@@ -43,11 +49,13 @@ func newGitHubScraper(
 	cfg *Config,
 ) *githubScraper {
 	return &githubScraper{
-		cfg:      cfg,
-		settings: settings.TelemetrySettings,
-		logger:   settings.Logger,
-		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
-		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		cfg:              cfg,
+		settings:         settings.TelemetrySettings,
+		logger:           settings.Logger,
+		mb:               metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		rb:               metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		graphQLRateLimit: &rateLimitState{},
+		restRateLimit:    &rateLimitState{},
 	}
 }
 
