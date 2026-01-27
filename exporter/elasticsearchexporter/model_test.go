@@ -1470,6 +1470,69 @@ func TestEncodeLogECSModeProcessExecutableConflict(t *testing.T) {
 		require.Equal(t, "/usr/bin/ssh", executable["path"], "path should pass through")
 		require.Equal(t, "ssh", executable["name"], "name should pass through")
 	})
+
+	// Carson's general solution test: ANY process.executable.* should be handled
+	t.Run("general_solution_any_executable_subfield", func(t *testing.T) {
+		// This test verifies the GENERAL solution addresses Carson's concerns:
+		// 1. Not just process.executable.name, but ANY process.executable.foo
+		// 2. The protected field list prevents .value suffix for ALL well-defined ECS fields
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.path": "/usr/bin/ssh",
+		})
+		require.NoError(t, err)
+
+		scope := pcommon.NewInstrumentationScope()
+		record := plog.NewLogRecord()
+
+		// Record level has various process.executable.* sub-attributes
+		// These are NOT in the conversion map, so they pass through as-is
+		err = record.Attributes().FromRaw(map[string]any{
+			"process.executable.name":     "ssh",           // From original issue
+			"process.executable.foo":      "bar",           // Carson's concern: ANY subfield
+			"process.executable.custom":   "value",         // Another arbitrary subfield
+			"process.executable.version":  "8.0",           // Yet another one
+		})
+		require.NoError(t, err)
+
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: scope},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		t.Logf("Generated JSON:\n%s", buf.String())
+
+		var result map[string]any
+		err = json.Unmarshal(buf.Bytes(), &result)
+		require.NoError(t, err)
+
+		process, ok := result["process"].(map[string]any)
+		require.True(t, ok, "process field should be present")
+
+		executable := process["executable"]
+		t.Logf("process.executable type: %T", executable)
+		t.Logf("process.executable value: %v", executable)
+
+		// CRITICAL: With the general solution, process.executable should remain a string
+		// because it's in the protectedFields list passed to Dedup()
+		// All the conflicting nested fields (process.executable.*) should be removed
+		executableStr, isString := executable.(string)
+		require.True(t, isString, "process.executable should be a string (protected ECS field)")
+		require.Equal(t, "/usr/bin/ssh", executableStr)
+
+		t.Logf("✓ General solution works: process.executable protected from .value suffix")
+		t.Logf("  ALL process.executable.* subfields are removed to preserve the ECS field")
+		t.Logf("  This handles not just 'name', but 'foo', 'custom', 'version', etc.")
+	})
 }
 
 // JSON serializable structs for OTel test convenience

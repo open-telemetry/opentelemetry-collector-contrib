@@ -243,16 +243,27 @@ func (doc *Document) sort() {
 
 // Dedup removes fields from the document, that have duplicate keys.
 // The filtering only keeps the last value for a key.
+// protectedFields is an optional list of field paths that should never get .value suffix.
+// This prevents conflicts with well-defined schema fields (e.g., ECS fields).
 //
 // Dedup ensure that keys are sorted.
-func (doc *Document) Dedup() {
+func (doc *Document) Dedup(protectedFields ...string) {
 	// 1. Always ensure the fields are sorted, Dedup support requires
 	// Fields to be sorted.
 	doc.sort()
 
-	// 2. rename fields if a primitive value is overwritten by an object.
+	protectedSet := make(map[string]bool, len(protectedFields))
+	for _, field := range protectedFields {
+		protectedSet[field] = true
+	}
+
+	// 2. rename fields if a primitive value is overwritten by an object,
+	//    EXCEPT for protected fields (well-defined schema fields like ECS).
 	//    For example the pair (path.x=1, path.x.a="test") becomes:
 	//    (path.x.value=1, path.x.a="test").
+	//
+	//    However, if path.x is a protected field, we skip the renaming and instead
+	//    remove the conflicting nested field (path.x.a) to preserve the protected field.
 	//
 	//    NOTE: We do the renaming, in order to preserve the original value
 	//    in case of conflicts after dedotting, which would lead to the removal of the field.
@@ -267,8 +278,14 @@ func (doc *Document) Dedup() {
 	for i := 0; i < len(doc.fields)-1; i++ {
 		key, nextKey := doc.fields[i].key, doc.fields[i+1].key
 		if len(key) < len(nextKey) && strings.HasPrefix(nextKey, key) && nextKey[len(key)] == '.' {
-			renamed = true
-			doc.fields[i].key = key + ".value"
+			if protectedSet[key] {
+				// This is a protected field - remove the conflicting nested field instead
+				doc.fields[i+1].value = ignoreValue
+			} else {
+				// Normal case: rename to .value
+				renamed = true
+				doc.fields[i].key = key + ".value"
+			}
 		}
 	}
 	if renamed {
@@ -287,7 +304,7 @@ func (doc *Document) Dedup() {
 
 	// 4. fix objects that might be stored in arrays
 	for i := range doc.fields {
-		doc.fields[i].value.Dedup()
+		doc.fields[i].value.dedup(protectedFields...)
 	}
 }
 
@@ -304,6 +321,15 @@ func newJSONVisitor(w io.Writer) *json.Visitor {
 // serialization.
 func (doc *Document) Serialize(w io.Writer, dedot bool) error {
 	doc.Dedup()
+	v := newJSONVisitor(w)
+	return doc.iterJSON(v, dedot)
+}
+
+// SerializeWithProtectedFields is like Serialize but accepts a list of field paths
+// that should never get a .value suffix during deduplication.
+// This is used to protect well-defined schema fields (e.g., ECS fields) from conflicts.
+func (doc *Document) SerializeWithProtectedFields(w io.Writer, dedot bool, protectedFields []string) error {
+	doc.Dedup(protectedFields...)
 	v := newJSONVisitor(w)
 	return doc.iterJSON(v, dedot)
 }
@@ -504,13 +530,17 @@ func (v *Value) sort() {
 // Dedup recursively dedups keys in stored documents.
 //
 // NOTE: The value MUST be sorted.
-func (v *Value) Dedup() {
+func (v *Value) Dedup(protectedFields ...string) {
+	v.dedup(protectedFields...)
+}
+
+func (v *Value) dedup(protectedFields ...string) {
 	switch v.kind {
 	case KindObject:
-		v.doc.Dedup()
+		v.doc.Dedup(protectedFields...)
 	case KindArr:
 		for i := range v.arr {
-			v.arr[i].Dedup()
+			v.arr[i].dedup(protectedFields...)
 		}
 	}
 }

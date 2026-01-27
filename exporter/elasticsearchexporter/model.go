@@ -26,11 +26,28 @@ import (
 )
 
 type conversionEntry struct {
-	to                    string
-	preserveOriginal      bool
-	skip                  bool
-	skipIfExists          bool
-	skipIfDocumentHasPath string
+	to               string
+	preserveOriginal bool
+	skip             bool
+	skipIfExists     bool
+}
+
+// collectECSFields extracts all target ECS field paths from conversion maps.
+// These paths represent well-defined ECS fields that should never get a .value suffix.
+func collectECSFields(maps ...map[string]conversionEntry) []string {
+	fields := make(map[string]bool)
+	for _, m := range maps {
+		for _, entry := range m {
+			if entry.to != "" && !entry.skip {
+				fields[entry.to] = true
+			}
+		}
+	}
+	result := make([]string, 0, len(fields))
+	for field := range fields {
+		result = append(result, field)
+	}
+	return result
 }
 
 // resourceAttrsConversionMap contains conversions for resource-level attributes
@@ -198,26 +215,27 @@ func (ecsModeEncoder) encodeLog(
 ) error {
 	var document objmodel.Document
 
-	// First, try to map resource-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-
-	// Then, try to map scope-level attributes to ECS fields.
+	// Define all conversion maps first so we can collect protected fields
 	scopeAttrsConversionMap := map[string]conversionEntry{
 		// None at the moment
 	}
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-
-	// Finally, try to map record-level attributes to ECS fields.
+	
 	recordAttrsConversionMap := map[string]conversionEntry{
-		"event.name":                                 {to: "event.action"},
-		string(conventions.ExceptionMessageKey):      {to: "error.message"},
-		string(conventions.ExceptionStacktraceKey):   {to: "error.stacktrace"},
-		string(conventions.ExceptionTypeKey):         {to: "error.type"},
-		string(conventionsv126.ExceptionEscapedKey):  {to: "event.error.exception.handled"},
-		string(conventions.HTTPResponseBodySizeKey):  {to: "http.response.encoded_body_size"},
-		string(conventions.ProcessExecutableNameKey): {skip: true, skipIfDocumentHasPath: "process.executable"},
+		"event.name":                                {to: "event.action"},
+		string(conventions.ExceptionMessageKey):     {to: "error.message"},
+		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
+		string(conventions.ExceptionTypeKey):        {to: "error.type"},
+		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
+		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
-	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
+	
+	// Collect all ECS field paths from conversion maps to protect them from conflicts
+	protectedFields := collectECSFields(resourceAttrsConversionMap, scopeAttrsConversionMap, recordAttrsConversionMap)
+
+	// Now encode attributes, passing protected fields to prevent conflicts
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, protectedFields...)
+	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, protectedFields...)
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
@@ -237,7 +255,7 @@ func (ecsModeEncoder) encodeLog(
 		document.AddAttribute("message", record.Body())
 	}
 
-	return document.Serialize(buf, true)
+	return document.SerializeWithProtectedFields(buf, true, protectedFields)
 }
 
 func (ecsModeEncoder) encodeSpan(
@@ -248,16 +266,10 @@ func (ecsModeEncoder) encodeSpan(
 ) error {
 	var document objmodel.Document
 
-	// First, try to map resource-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-
-	// Then, try to map scope-level attributes to ECS fields.
+	// Define all conversion maps first so we can collect protected fields
 	scopeAttrsConversionMap := map[string]conversionEntry{
 		// None at the moment
 	}
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-
-	// Finally, try to map record-level attributes to ECS fields.
 
 	spanAttrsConversionMap := map[string]conversionEntry{
 		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
@@ -266,8 +278,13 @@ func (ecsModeEncoder) encodeSpan(
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
 
-	// Handle special cases.
-	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
+	// Collect all ECS field paths from conversion maps to protect them from conflicts
+	protectedFields := collectECSFields(resourceAttrsConversionMap, scopeAttrsConversionMap, spanAttrsConversionMap)
+
+	// Now encode attributes, passing protected fields to prevent conflicts
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, protectedFields...)
+	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap, protectedFields...)
 	encodeHostOsTypeECSMode(&document, ec.resource)
 	addDataStreamAttributes(&document, "", idx)
 
@@ -286,7 +303,7 @@ func (ecsModeEncoder) encodeSpan(
 		document.AddString("span.kind", spanKind)
 	}
 
-	return document.Serialize(buf, true)
+	return document.SerializeWithProtectedFields(buf, true, protectedFields)
 }
 
 // spanKindToECSStr converts an OTel SpanKind to its ECS equivalent string representation defined here:
@@ -460,7 +477,11 @@ func (ecsDataPointsEncoder) encodeMetrics(
 ) (map[string]string, error) {
 	dp0 := dataPoints[0]
 	var document objmodel.Document
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
+	
+	// Collect all ECS field paths from conversion maps to protect them from conflicts
+	protectedFields := collectECSFields(resourceAttrsConversionMap)
+	
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
 	addDataStreamAttributes(&document, "", idx)
@@ -473,7 +494,8 @@ func (ecsDataPointsEncoder) encodeMetrics(
 		}
 		document.AddAttribute(dp.Metric().Name(), value)
 	}
-	err := document.Serialize(buf, true)
+	
+	err := document.SerializeWithProtectedFields(buf, true, protectedFields)
 
 	return document.DynamicTemplates(), err
 }
@@ -534,11 +556,18 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 	return attrs
 }
 
-func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]conversionEntry) {
+// encodeAttributesECSMode maps OpenTelemetry attributes to ECS fields using the provided conversion map.
+// document is the target document being populated, which is checked to see which protected fields actually exist.
+func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]conversionEntry, protectedFields ...string) {
 	if len(conversionMap) == 0 {
 		// No conversions to be done; add all attributes at top level of
-		// document.
-		document.AddAttributes("", attrs)
+		// document, but skip any that would conflict with protected fields that EXIST in the document.
+		for k, v := range attrs.All() {
+			if shouldSkipAttribute(k, document, protectedFields) {
+				continue
+			}
+			document.AddAttribute(k, v)
+		}
 		return
 	}
 
@@ -546,16 +575,6 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 		// If ECS key is found for current k in conversion map, use it.
 		if c, exists := conversionMap[k]; exists {
 			if c.skip {
-				// Check if there's a condition to skip
-				if c.skipIfDocumentHasPath != "" {
-					// Skip only if the document already has the specified path
-					if document.Get(c.skipIfDocumentHasPath) != nil {
-						continue
-					}
-					// Document doesn't have the path, so pass through as-is
-					document.AddAttribute(k, v)
-					continue
-				}
 				continue
 			}
 			if !c.skipIfExists {
@@ -570,9 +589,36 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 			continue
 		}
 
+		// For unmapped attributes, check if they would conflict with protected ECS fields that EXIST
+		if shouldSkipAttribute(k, document, protectedFields) {
+			continue
+		}
+
 		// Otherwise, add key at top level with attribute name as-is.
 		document.AddAttribute(k, v)
 	}
+}
+
+// shouldSkipAttribute returns true if the attribute key would conflict with a protected ECS field
+// that actually exists in the document.
+// This checks if the attribute key starts with a protected field path followed by a dot,
+// AND the protected field path actually exists in the document.
+// For example, if "process.executable" is protected AND exists in the document,
+// then "process.executable.name" would be skipped.
+func shouldSkipAttribute(attrKey string, document *objmodel.Document, protectedFields []string) bool {
+	// Check if this attribute would create a nested field under any protected field
+	for _, protectedField := range protectedFields {
+		// Check if attrKey starts with "protectedField."
+		if len(attrKey) > len(protectedField) &&
+			attrKey[:len(protectedField)] == protectedField &&
+			attrKey[len(protectedField)] == '.' {
+			// Check if the protected field actually exists in the document
+			if document.Get(protectedField) != nil {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Resource) {
