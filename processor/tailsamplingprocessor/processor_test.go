@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -1092,6 +1093,76 @@ func TestNumericAttributeCases(t *testing.T) {
 	}
 }
 
+func TestDropLargeTraces(t *testing.T) {
+	controller := newTestTSPController()
+
+	traces := ptrace.NewTraces()
+	// Create a large trace (clearly more than 1024 bytes).
+	largeTrace := traces.ResourceSpans().AppendEmpty()
+	ss := largeTrace.ScopeSpans().AppendEmpty()
+	largeValue := strings.Repeat("bar", 1024)
+	sp := ss.Spans().AppendEmpty()
+	sp.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+	sp.Attributes().PutStr("foo", largeValue)
+
+	// Small trace with just one attribute.
+	smallTrace := traces.ResourceSpans().AppendEmpty()
+	ss = smallTrace.ScopeSpans().AppendEmpty()
+	sp = ss.Spans().AppendEmpty()
+	sp.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 5}))
+	sp.Attributes().PutStr("foo", "short")
+
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(4),
+		ExpectedNewTracesPerSec: 64,
+		MaximumTraceSizeBytes:   1024,
+		PolicyCfgs:              testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	processor, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = processor.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = processor.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	require.NoError(t, processor.ConsumeTraces(t.Context(), traces))
+	controller.waitForTick()
+	controller.waitForTick()
+
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Len(t, allSampledTraces, 1)
+
+	// Verify that the config can be changed without restarting the processor.
+	processor.(*tailSamplingSpanProcessor).SetMaximumTraceSizeBytes(1 << 20)
+	controller.waitForTick()
+
+	largeOnly := ptrace.NewTraces()
+	// Create a another large trace as ConsumeTraces is not guaranteed to preserve the trace.
+	largeTrace = largeOnly.ResourceSpans().AppendEmpty()
+	ss = largeTrace.ScopeSpans().AppendEmpty()
+	sp = ss.Spans().AppendEmpty()
+	sp.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 6}))
+	sp.Attributes().PutStr("foo", largeValue)
+
+	require.NoError(t, processor.ConsumeTraces(t.Context(), largeOnly))
+	controller.waitForTick()
+	controller.waitForTick()
+
+	allSampledTraces = nextConsumer.AllTraces()
+	// The sink will still contain the original trace.
+	assert.Len(t, allSampledTraces, 2)
+}
+
 // TestDeleteQueueCleared verifies that all in memory traces are removed from
 // both the idToTrace map as well as the deleteTraceQueue.
 func TestDeleteQueueCleared(t *testing.T) {
@@ -1131,7 +1202,6 @@ func TestDeleteQueueCleared(t *testing.T) {
 	controller.waitForTick()
 	controller.waitForTick()
 
-	// Make sure about half of traces are sampled before a tick is called.
 	allSampledTraces := nextConsumer.AllTraces()
 	assert.Len(t, allSampledTraces, 128)
 	// All traces should be flushed from the map.
