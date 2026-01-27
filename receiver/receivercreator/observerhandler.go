@@ -207,7 +207,10 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		zap.String("name", template.id.String()),
 		zap.String("endpoint", e.Target),
 		zap.String("endpoint_id", string(e.ID)),
-		zap.Any("config", resolvedConfig))
+	)
+
+	// TODO: we should consider about applying sensitive data redaction
+	obs.params.Logger.Debug("starting receiver with resolved config", zap.Any("config", resolvedConfig))
 
 	var receiver component.Component
 	if receiver, err = obs.runner.start(

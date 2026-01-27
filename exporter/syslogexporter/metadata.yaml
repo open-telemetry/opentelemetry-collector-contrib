@@ -1,4 +1,5 @@
 type: syslog
+display_name: Syslog Exporter
 
 status:
   class: exporter

@@ -6,7 +6,7 @@
 | Stability     | [alpha]: metrics, logs, traces   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fazureeventhub%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fazureeventhub) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fazureeventhub%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fazureeventhub) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_azureeventhub)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_azureeventhub&displayType=list) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_azure_event_hub)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_azure_event_hub&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@cparkins](https://www.github.com/cparkins), [@dyl10s](https://www.github.com/dyl10s) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
@@ -28,8 +28,22 @@ Event Hub, transforms them, and pushes them through the collector pipeline.
 
 ## Configuration
 
-### connection (Required)
-A string describing the connection to an Azure event hub.
+### connection (Required if auth is not used)
+A string describing the connection to an Azure event hub. Ignored if `auth` is specified.
+
+### event_hub
+This section is required when using `auth`.
+
+#### name (Required when using auth)
+The name of the Event Hub.
+
+#### namespace (Required when using auth)
+The fully qualified namespace (e.g., `namespace.servicebus.windows.net`).
+
+### auth (Optional)
+The ID of an authentication extension to use. This can be used to authenticate using Azure Active Directory (AAD) pod identity,
+managed identity, or service principal.
+When this field is set, `connection` is ignored and `event_hub` section is required.
 
 ### group (Optional)
 The Consumer Group to read from. If empty will default to the default Consumer Group $Default
@@ -79,13 +93,6 @@ these datapoints.
 
 Default: `nil`
 
-> [!NOTE]
-> You can opt out of using the [`azeventhubs`](https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/messaging/azeventhubs) sdk by disabling the feature gate
-> `receiver.azureeventhubreceiver.UseAzeventhubs` when you run the OpenTelemetry Collector. See the following page
-> for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
->
-> The following configuration options can only be used with this feature flag enabled
-
 ### max_poll_events (optional)
 Specifies the maximum number of events to retrieve in a single poll from the Event Hub.
 
@@ -100,7 +107,7 @@ Default: `5`
 
 ```yaml
 receivers:
-  azureeventhub:
+  azure_event_hub:
     connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
     partition: foo
     group: bar
@@ -111,6 +118,15 @@ receivers:
       # All supported time format. Default is empty string array, which means using the current iso8601 parser. The format is based on https://pkg.go.dev/time#Layout. If no time-zone info, will use UTC time.
       logs: ["01/02/2006 15:04:05","2006-01-02 15:04:05","2006-01-02T15:04:05Z07:00"]
       metrics: ["01/02/2006 15:04:05"]
+
+  # Example with Auth
+  azure_event_hub/auth:
+    event_hub:
+      name: hubName
+      namespace: namespace.servicebus.windows.net
+    auth: azureauth
+    partition: foo
+    group: bar
 ```
 
 This component can persist its state using the [storage extension].
@@ -139,7 +155,7 @@ and the OpenTelemetry attributes.
 
 | Azure                            | OpenTelemetry                          |
 |----------------------------------|----------------------------------------|
-| callerIpAddress (optional)       | net.sock.peer.addr (attribute)         |
+| callerIpAddress (optional)       | network.peer.address (attribute)       |
 | correlationId (optional)         | azure.correlation.id (attribute)       |
 | category (optional)              | azure.category (attribute)             |
 | durationMs (optional)            | azure.duration (attribute)             |

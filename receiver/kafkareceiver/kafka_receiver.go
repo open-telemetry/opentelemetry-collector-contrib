@@ -200,10 +200,7 @@ func newReceiver(
 		telBldr *metadata.TelemetryBuilder,
 	) (consumeMessageFunc, error),
 ) (component.Component, error) {
-	if franzGoConsumerFeatureGate.IsEnabled() {
-		return newFranzKafkaConsumer(config, set, topics, excludeTopics, consumeFn)
-	}
-	return newSaramaConsumer(config, set, topics, excludeTopics, consumeFn)
+	return newFranzKafkaConsumer(config, set, topics, excludeTopics, consumeFn)
 }
 
 type logsHandler struct {
@@ -349,11 +346,11 @@ func (h *profilesHandler) consumeData(ctx context.Context, data pprofile.Profile
 }
 
 func (h *profilesHandler) startObsReport(ctx context.Context) context.Context {
-	return h.obsrecv.StartTracesOp(ctx)
+	return h.obsrecv.StartProfilesOp(ctx)
 }
 
 func (h *profilesHandler) endObsReport(ctx context.Context, n int, err error) {
-	h.obsrecv.EndTracesOp(ctx, h.encoding, n, err)
+	h.obsrecv.EndProfilesOp(ctx, h.encoding, n, err)
 }
 
 func (*profilesHandler) getResources(data pprofile.Profiles) iter.Seq[pcommon.Resource] {

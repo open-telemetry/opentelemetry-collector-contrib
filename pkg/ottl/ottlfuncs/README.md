@@ -46,6 +46,7 @@ Editors:
 Available Editors:
 
 - [append](#append)
+- [delete_index](#delete_index)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_matching_keys](#keep_matching_keys)
@@ -72,6 +73,22 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
 - `append(log.attributes["tags"], "prod")`
 - `append(log.attributes["tags"], values = ["staging", "staging:east"])`
 - `append(log.attributes["tags_copy"], log.attributes["tags"])`
+
+### delete_index
+
+`delete_index(target, startIndex, Optional[endIndex])`
+
+The `delete_index` function removes elements from a slice. It deletes elements from `startIndex` up to, but not including, `endIndex`. If `endIndex` is not provided, only the element at `target[startIndex]` is deleted. If `startIndex` equals `endIndex`, no changes are applied to the target.
+
+Examples:
+
+- `delete_index(attributes["tags"], 0)` # deletes first
+
+- `delete_index(attributes["tags"], Len(attributes["tags"]) - 1)` # deletes last
+
+- `delete_index(attributes["tags"], 0, 3)` # deletes indices 0, 1, & 2
+
+- `delete_index(attributes["tags"], Index(attributes["tags"], "unparsed"))` # deletes first occurrence of "unparsed"
 
 ### delete_key
 
@@ -454,6 +471,7 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 
 - [Base64Decode](#base64decode)
+- [Bool](#bool)
 - [Decode](#decode)
 - [CommunityID](#communityid)
 - [Concat](#concat)
@@ -559,6 +577,36 @@ Examples:
 
 
 - `Base64Decode(resource.attributes["encoded field"])`
+
+### Bool
+
+`Bool(value)`
+
+The `Bool` Converter converts the `value` to a bool type.
+
+The returned type is `bool`.
+
+The accepted input `value` types are:
+
+- `bool`: Returns the value without changes.
+- `float64`: Returns `true` if non-zero, otherwise `false`.
+- `int64`: Returns `true` if non-zero, otherwise `false`.
+- `string`: Tries to parse a boolean from the string. It returns `true` for "1", "t", "T", "true", "TRUE", or "True"; returns `false` for "0", "f", "F", "false", "FALSE" or "False".
+- `nil`: Returns `nil`.
+
+If `value` is another type or parsing failed, `nil` is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Bool(log.attributes["truthy_attribute"])`
+
+
+- `Bool("true")`
+
+
+- `Bool("0")`
 
 ### Decode
 
