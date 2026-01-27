@@ -103,7 +103,7 @@ func ReadConfig() (*Config, error) {
 			switch class {
 			case "receiver", "processor", "exporter", "connector", "extension":
 				mode = Component
-			case "pkg":
+			case "", "pkg":
 				mode = Package
 			default:
 				return nil, fmt.Errorf("schema generation for class '%s' is not supported", md.Status.Class)
