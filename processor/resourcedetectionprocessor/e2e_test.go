@@ -363,6 +363,7 @@ func TestE2ELambdaDetector(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
 	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "lambda", "collector"), map[string]string{}, "")
@@ -374,7 +375,7 @@ func TestE2ELambdaDetector(t *testing.T) {
 	}()
 
 	wantEntries := 10
-	waitForData(t, wantEntries, metricsConsumer)
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
 
 	// Uncomment to regenerate golden file
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
@@ -859,6 +860,7 @@ func TestE2EK8sNodeDetector(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
 	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "k8snode", "collector"), map[string]string{}, "")
@@ -870,7 +872,7 @@ func TestE2EK8sNodeDetector(t *testing.T) {
 	}()
 
 	wantEntries := 10
-	waitForData(t, wantEntries, metricsConsumer)
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
 
 	// Uncomment to regenerate golden file
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
@@ -924,6 +926,7 @@ func TestE2EAKSDetector(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
 	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "aks", "collector"), map[string]string{}, "")
@@ -935,7 +938,7 @@ func TestE2EAKSDetector(t *testing.T) {
 	}()
 
 	wantEntries := 10
-	waitForData(t, wantEntries, metricsConsumer)
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
 
 	// Uncomment to regenerate golden file
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
@@ -1019,6 +1022,7 @@ func TestE2EAkamaiDetector(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
 	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "akamai", "collector"), map[string]string{}, "")
@@ -1030,7 +1034,7 @@ func TestE2EAkamaiDetector(t *testing.T) {
 	}()
 
 	wantEntries := 10
-	waitForData(t, wantEntries, metricsConsumer)
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
 
 	// Uncomment to regenerate golden file
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
@@ -1066,6 +1070,7 @@ func TestE2EElasticBeanstalkDetector(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
 	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "elasticbeanstalk", "collector"), map[string]string{}, "")
@@ -1077,7 +1082,7 @@ func TestE2EElasticBeanstalkDetector(t *testing.T) {
 	}()
 
 	wantEntries := 10
-	waitForData(t, wantEntries, metricsConsumer)
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
 
 	// Uncomment to regenerate golden file
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
@@ -1161,6 +1166,7 @@ func TestE2EECSDetector(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
 	defer shutdownSink()
+	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "ecs", "collector"), map[string]string{}, "")
@@ -1172,7 +1178,7 @@ func TestE2EECSDetector(t *testing.T) {
 	}()
 
 	wantEntries := 10
-	waitForData(t, wantEntries, metricsConsumer)
+	waitForData(t, metricsConsumer, startEntries, wantEntries)
 
 	// Uncomment to regenerate golden file
 	// golden.WriteMetrics(t, expectedFile+".actual", metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
