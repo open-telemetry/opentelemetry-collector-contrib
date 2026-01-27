@@ -681,7 +681,7 @@ func TestIsCollectionDue(t *testing.T) {
 	isCollectionDue := scrpr.isCollectionDue(currentCollectionTime, collectionInterval)
 	assert.True(t, isCollectionDue, "lastExecutionTimestamp is older than collection_interval, so collection should be due.")
 
-	scrpr.lastExecutionTimestamp = currentCollectionTime.Add(-10)
+	scrpr.lastExecutionTimestamp = currentCollectionTime.Add(-10 * time.Second)
 	isCollectionDue = scrpr.isCollectionDue(currentCollectionTime, collectionInterval)
 	assert.False(t, isCollectionDue, "collection_interval is not yet reached since lastExecutionTimestamp, so collection is not due.")
 }

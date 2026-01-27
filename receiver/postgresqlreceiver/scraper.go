@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"net"
 	"os"
 	"strings"
@@ -221,10 +220,7 @@ func (p *postgreSQLScraper) isCollectionDue(collectionTime time.Time, interval t
 		return true
 	}
 
-	lookbackTimeCounter := int(math.Ceil(collectionTime.
-		Sub(p.lastExecutionTimestamp).Seconds()))
-
-	if lookbackTimeCounter < int(interval.Seconds()) {
+	if collectionTime.Sub(p.lastExecutionTimestamp) < interval {
 		p.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed.")
 		return false
 	}
