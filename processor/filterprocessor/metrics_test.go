@@ -1221,6 +1221,14 @@ func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
 			wantErrorWith: "could not convert parsed value of type bool to JSON object",
 		},
 		{
+			name:      "resource: conditions group error mode with undefined context takes precedence",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
+			},
+			want: func(_ pmetric.Metrics) {},
+		},
+		{
 			name:      "scope: conditions group with error mode",
 			errorMode: ottl.PropagateError,
 			conditions: []condition.ContextConditions{

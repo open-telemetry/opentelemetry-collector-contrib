@@ -372,7 +372,7 @@ func (mpc *MetricParserCollection) ParseContextConditions(contextConditions Cont
 		metricConditions:    mConditions,
 		dataPointConditions: dConditions,
 		telemetrySettings:   pc.Settings,
-		errorMode:           pc.ErrorMode,
+		errorMode:           getErrorMode[parsedMetricConditions](&pc, &contextConditions),
 	}
 
 	return newMetricsConsumer(&aggregatedConditions), nil

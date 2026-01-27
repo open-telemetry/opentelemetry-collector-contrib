@@ -222,7 +222,7 @@ func (ppc *ProfileParserCollection) ParseContextConditions(contextConditions Con
 		scopeConditions:    sConditions,
 		profileConditions:  pConditions,
 		telemetrySettings:  pc.Settings,
-		errorMode:          pc.ErrorMode,
+		errorMode:          getErrorMode[parsedProfileConditions](&pc, &contextConditions),
 	}
 
 	return newProfilesConsumer(&aggregatedConditions), nil

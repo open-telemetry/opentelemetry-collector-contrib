@@ -232,7 +232,7 @@ func (lpc *LogParserCollection) ParseContextConditions(contextConditions Context
 		scopeConditions:    sConditions,
 		logConditions:      lConditions,
 		telemetrySettings:  pc.Settings,
-		errorMode:          pc.ErrorMode,
+		errorMode:          getErrorMode[parsedLogConditions](&pc, &contextConditions),
 	}
 
 	return newLogsConsumer(&aggregatedConditions), nil

@@ -279,7 +279,7 @@ func (tpc *TraceParserCollection) ParseContextConditions(contextConditions Conte
 		spanConditions:      spanConditions,
 		spanEventConditions: spanEventConditions,
 		telemetrySettings:   pc.Settings,
-		errorMode:           pc.ErrorMode,
+		errorMode:           getErrorMode[parsedTraceConditions](&pc, &contextConditions),
 	}
 
 	return newTracesConsumer(&aggregatedConditions), nil
