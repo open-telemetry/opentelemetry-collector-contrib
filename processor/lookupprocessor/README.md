@@ -25,7 +25,6 @@ processors:
       - key: user.name
         from_attribute: user.id
         default: "Unknown User"
-        action: upsert
         context: record
 ```
 
@@ -45,14 +44,7 @@ Each entry in `attributes` defines a lookup rule:
 | `key` | Name of the attribute to set with the lookup result (required) | - |
 | `from_attribute` | Name of the attribute containing the lookup key (required) | - |
 | `default` | Value to use when lookup returns no result | - |
-| `action` | How to handle the result: `insert`, `update`, `upsert` | `upsert` |
 | `context` | Where to read/write attributes: `record`, `resource` | `record` |
-
-### Actions
-
-- **insert**: Only set the attribute if it doesn't already exist
-- **update**: Only set the attribute if it already exists
-- **upsert**: Always set the attribute (default)
 
 ### Context
 

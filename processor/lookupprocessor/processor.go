@@ -93,20 +93,6 @@ func (p *lookupProcessor) processAttribute(ctx context.Context, attrs pcommon.Ma
 		return
 	}
 
-	action := cfg.GetAction()
-
-	var shouldSet bool
-	if action == ActionUpsert {
-		shouldSet = true
-	} else {
-		_, targetExists := attrs.Get(cfg.Key)
-		shouldSet = (action == ActionInsert && !targetExists) || (action == ActionUpdate && targetExists)
-	}
-
-	if !shouldSet {
-		return
-	}
-
 	if !found {
 		if cfg.Default == "" {
 			return

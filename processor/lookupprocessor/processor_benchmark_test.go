@@ -46,7 +46,6 @@ func runLookupBenchmark(b *testing.B, numLogRecords, numAttributes int) {
 			Key:           fmt.Sprintf("result.%d", i),
 			FromAttribute: fmt.Sprintf("lookup.key.%d", i),
 			Default:       "default-value", // noop returns not found, so use default
-			Action:        ActionUpsert,
 			Context:       ContextRecord,
 		}
 	}
@@ -90,7 +89,6 @@ func BenchmarkProcessorThroughput(b *testing.B) {
 				Key:           "user.name",
 				FromAttribute: "user.id",
 				Default:       "Unknown",
-				Action:        ActionUpsert,
 				Context:       ContextRecord,
 			},
 		},

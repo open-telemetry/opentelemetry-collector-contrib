@@ -203,7 +203,6 @@ func TestConfigValidation(t *testing.T) {
 						Key:           "user.name",
 						FromAttribute: "user.id",
 						Default:       "Unknown",
-						Action:        ActionUpsert,
 						Context:       ContextRecord,
 					},
 				},
@@ -220,38 +219,6 @@ func TestConfigValidation(t *testing.T) {
 				assert.Contains(t, err.Error(), tt.wantErr)
 			} else {
 				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestActionUnmarshalText(t *testing.T) {
-	tests := []struct {
-		input   string
-		want    Action
-		wantErr bool
-	}{
-		{"insert", ActionInsert, false},
-		{"INSERT", ActionInsert, false},
-		{"Insert", ActionInsert, false},
-		{"update", ActionUpdate, false},
-		{"UPDATE", ActionUpdate, false},
-		{"upsert", ActionUpsert, false},
-		{"UPSERT", ActionUpsert, false},
-		{"invalid", "", true},
-		{"", "", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			var a Action
-			err := a.UnmarshalText([]byte(tt.input))
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), "invalid action")
-			} else {
-				require.NoError(t, err)
-				assert.Equal(t, tt.want, a)
 			}
 		})
 	}

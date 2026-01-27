@@ -13,26 +13,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/lookupsource"
 )
 
-// Action specifies how to handle the lookup result.
-type Action string
-
-const (
-	ActionInsert Action = "insert"
-	ActionUpdate Action = "update"
-	ActionUpsert Action = "upsert"
-)
-
-func (a *Action) UnmarshalText(text []byte) error {
-	str := Action(strings.ToLower(string(text)))
-	switch str {
-	case ActionInsert, ActionUpdate, ActionUpsert:
-		*a = str
-		return nil
-	default:
-		return fmt.Errorf("invalid action %q, must be one of: insert, update, upsert", str)
-	}
-}
-
 // ContextID specifies where to apply the lookup.
 // Matches the semantic used by geoipprocessor.
 type ContextID string
@@ -90,11 +70,6 @@ type AttributeConfig struct {
 	// Optional.
 	Default string `mapstructure:"default"`
 
-	// Action specifies how to handle the lookup result.
-	// Valid values: "insert", "update", "upsert".
-	// Default: "upsert"
-	Action Action `mapstructure:"action"`
-
 	// Context specifies where to read the source attribute and write the result.
 	// Valid values: "record" (log record attributes), "resource" (resource attributes).
 	// Default: "record"
@@ -118,13 +93,6 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
-}
-
-func (a *AttributeConfig) GetAction() Action {
-	if a.Action == "" {
-		return ActionUpsert
-	}
-	return a.Action
 }
 
 func (a *AttributeConfig) GetContext() ContextID {
