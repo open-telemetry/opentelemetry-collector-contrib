@@ -77,7 +77,7 @@ receivers:
         enabled: true
       httpcheck.client.request.duration:
         enabled: true
-      httpcheck.request.duration:
+      httpcheck.duration:
         enabled: true
       httpcheck.response.duration:
         enabled: true
