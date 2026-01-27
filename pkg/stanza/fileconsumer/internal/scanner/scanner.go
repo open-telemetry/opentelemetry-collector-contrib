@@ -34,12 +34,14 @@ func New(r io.Reader, maxLogSize int, buf []byte, startOffset int64, splitFunc b
 	} else {
 		scanFunc = func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 			advance, token, err = splitFunc(data, atEOF)
-			s.pos += int64(advance)
-			// flush data if we are at EOF and it is a gzip file
+			// flush data if there are no more tokens but there is still data left
 			// this is because gzip reader reads the entire compressed stream in one go
-			if atEOF && len(data) != 0 {
-				return len(data), data, nil
+			if advance == 0 && token == nil && atEOF && len(data) > 0 {
+				advance = len(data)
+				token = data
 			}
+
+			s.pos += int64(advance)
 			return advance, token, err
 		}
 	}
