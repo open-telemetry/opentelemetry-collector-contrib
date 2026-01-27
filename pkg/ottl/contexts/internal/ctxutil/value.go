@@ -76,6 +76,8 @@ func SetValue(value pcommon.Value, val any) error {
 		v.CopyTo(dest)
 	case map[string]any:
 		err = value.FromRaw(v)
+	default:
+		return fmt.Errorf("unsupported type %T for SetValue", val)
 	}
 	return err
 }

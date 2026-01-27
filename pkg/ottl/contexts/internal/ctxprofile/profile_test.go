@@ -185,10 +185,8 @@ func TestPathGetSetter(t *testing.T) {
 			require.NoError(t, err)
 
 			// Verify that setting an invalid type returns an error
-			if path.Keys() == nil {
-				err = accessor.Set(t.Context(), ctx, struct{}{})
-				require.Error(t, err)
-			}
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
 
 			got, err := accessor.Get(t.Context(), ctx)
 			require.NoError(t, err)

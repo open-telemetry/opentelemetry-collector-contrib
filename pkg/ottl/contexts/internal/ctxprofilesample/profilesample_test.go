@@ -72,10 +72,8 @@ func TestPathGetSetter(t *testing.T) {
 			assert.Equal(t, tt.val, got)
 
 			// Verify that setting an invalid type returns an error
-			if tt.keys == nil {
-				err = accessor.Set(t.Context(), newProfileSampleContext(sample, dictionary), struct{}{})
-				require.Error(t, err)
-			}
+			err = accessor.Set(t.Context(), newProfileSampleContext(sample, dictionary), struct{}{})
+			require.Error(t, err)
 		})
 	}
 }
