@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.144.0
 	github.com/stretchr/testify v1.11.1
 	github.com/twmb/franz-go v1.20.6
-	github.com/twmb/franz-go/pkg/kadm v1.17.1
+	github.com/twmb/franz-go/pkg/kadm v1.17.2
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20251021233722-4ca18825d8c0
 	go.opentelemetry.io/collector/component v1.50.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/component/componenttest v0.144.1-0.20260121161034-55399d4743af
