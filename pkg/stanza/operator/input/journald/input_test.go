@@ -311,6 +311,22 @@ func TestBuildConfigCmd(t *testing.T) {
 	}
 }
 
+func TestBuildConfigCmdCursor(t *testing.T) {
+	cfg := NewConfigWithID("my_journald_input")
+	newCmdFunc, err := cfg.buildNewCmdFunc()
+	require.NoError(t, err)
+
+	cmd := newCmdFunc(t.Context(), []byte("cursor-value")).(*exec.Cmd)
+	assert.Contains(t, cmd.Args, "--after-cursor")
+	assert.Contains(t, cmd.Args, "cursor-value")
+
+	cmd = newCmdFunc(t.Context(), []byte("  ")).(*exec.Cmd)
+	assert.NotContains(t, cmd.Args, "--after-cursor")
+
+	cmd = newCmdFunc(t.Context(), []byte{}).(*exec.Cmd)
+	assert.NotContains(t, cmd.Args, "--after-cursor")
+}
+
 func TestConfigValidation(t *testing.T) {
 	testCases := []struct {
 		Name          string
