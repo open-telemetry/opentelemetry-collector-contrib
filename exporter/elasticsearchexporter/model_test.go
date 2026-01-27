@@ -712,7 +712,8 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "pid": 9833,
 		  "args": "/usr/bin/ssh -l user 10.0.0.16",
 		  "executable": "/usr/bin/ssh",
-          "parent": { "pid": "42" }
+          "parent": { "pid": "42" },
+		  "title": "node"
 		},
 		"service": {
 		  "name": "foo.bar",
@@ -1383,48 +1384,6 @@ func TestEncodeLogECSModeProcessExecutableConflict(t *testing.T) {
 		// Verify that process.title is NOT present
 		_, titleExists := process["title"]
 		require.False(t, titleExists, "process.title should not be present when only path is provided")
-	})
-
-	t.Run("same_level_conflict_both_at_resource", func(t *testing.T) {
-		// Test the skipIfSourceExists logic: when BOTH process.executable.path and
-		// process.executable.name exist at resource level, name should be skipped
-		logs := plog.NewLogs()
-		resource := logs.ResourceLogs().AppendEmpty().Resource()
-		err := resource.Attributes().FromRaw(map[string]any{
-			"service.name":            "test-service",
-			"process.executable.path": "/usr/bin/ssh",
-			"process.executable.name": "ssh", // This should be skipped in favor of path
-		})
-		require.NoError(t, err)
-
-		scope := pcommon.NewInstrumentationScope()
-		record := plog.NewLogRecord()
-		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
-		logs.MarkReadOnly()
-
-		var buf bytes.Buffer
-		encoder, _ := newEncoder(MappingECS)
-		err = encoder.encodeLog(
-			encodingContext{resource: resource, scope: scope},
-			record, elasticsearch.Index{}, &buf,
-		)
-		require.NoError(t, err)
-
-		var result map[string]any
-		err = json.Unmarshal(buf.Bytes(), &result)
-		require.NoError(t, err)
-
-		process, ok := result["process"].(map[string]any)
-		require.True(t, ok, "process field should be present")
-
-		// Path should win: process.executable should be the path
-		executable, isString := process["executable"].(string)
-		require.True(t, isString, "process.executable should be a string")
-		require.Equal(t, "/usr/bin/ssh", executable, "process.executable should be the path")
-
-		// Name should be skipped: process.title should NOT be present
-		_, titleExists := process["title"]
-		require.False(t, titleExists, "process.title should not be present when path exists at same level (skipIfSourceExists)")
 	})
 
 	t.Run("record_level_name_only_no_resource", func(t *testing.T) {

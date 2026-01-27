@@ -30,7 +30,6 @@ type conversionEntry struct {
 	preserveOriginal      bool
 	skip                  bool
 	skipIfExists          bool
-	skipIfSourceExists    string
 	skipIfDocumentHasPath string
 }
 
@@ -54,7 +53,7 @@ var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventions.HostNameKey):                  {to: "host.hostname", preserveOriginal: true, skipIfExists: true},
 	string(conventions.HostArchKey):                  {to: "host.architecture"},
 	string(conventions.ProcessParentPIDKey):          {to: "process.parent.pid"},
-	string(conventions.ProcessExecutableNameKey):     {to: "process.title", skipIfSourceExists: string(conventions.ProcessExecutablePathKey)},
+	string(conventions.ProcessExecutableNameKey):     {to: "process.title"},
 	string(conventions.ProcessExecutablePathKey):     {to: "process.executable"},
 	string(conventions.ProcessCommandLineKey):        {to: "process.args"},
 	string(conventions.ProcessRuntimeNameKey):        {to: "service.runtime.name"},
@@ -558,11 +557,6 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 					continue
 				}
 				continue
-			}
-			if c.skipIfSourceExists != "" {
-				if _, exists := attrs.Get(c.skipIfSourceExists); exists {
-					continue
-				}
 			}
 			if !c.skipIfExists {
 				document.AddAttribute(c.to, v)
