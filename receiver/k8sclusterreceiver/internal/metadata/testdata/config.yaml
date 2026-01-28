@@ -77,6 +77,10 @@ all_set:
       enabled: true
     k8s.resource_quota.used:
       enabled: true
+    k8s.service.endpoint.count:
+      enabled: true
+    k8s.service.load_balancer.ingress.count:
+      enabled: true
     k8s.statefulset.current_pods:
       enabled: true
     k8s.statefulset.desired_pods:
@@ -161,6 +165,16 @@ all_set:
     k8s.resourcequota.name:
       enabled: true
     k8s.resourcequota.uid:
+      enabled: true
+    k8s.service.name:
+      enabled: true
+    k8s.service.publish_not_ready_addresses:
+      enabled: true
+    k8s.service.traffic_distribution:
+      enabled: true
+    k8s.service.type:
+      enabled: true
+    k8s.service.uid:
       enabled: true
     k8s.statefulset.name:
       enabled: true
@@ -252,6 +266,10 @@ none_set:
       enabled: false
     k8s.resource_quota.used:
       enabled: false
+    k8s.service.endpoint.count:
+      enabled: false
+    k8s.service.load_balancer.ingress.count:
+      enabled: false
     k8s.statefulset.current_pods:
       enabled: false
     k8s.statefulset.desired_pods:
@@ -336,6 +354,16 @@ none_set:
     k8s.resourcequota.name:
       enabled: false
     k8s.resourcequota.uid:
+      enabled: false
+    k8s.service.name:
+      enabled: false
+    k8s.service.publish_not_ready_addresses:
+      enabled: false
+    k8s.service.traffic_distribution:
+      enabled: false
+    k8s.service.type:
+      enabled: false
+    k8s.service.uid:
       enabled: false
     k8s.statefulset.name:
       enabled: false
@@ -484,6 +512,26 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     k8s.resourcequota.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service.publish_not_ready_addresses:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service.traffic_distribution:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service.uid:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -649,6 +697,26 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.resourcequota.uid-val"
+    k8s.service.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.service.name-val"
+    k8s.service.publish_not_ready_addresses:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+    k8s.service.traffic_distribution:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.service.traffic_distribution-val"
+    k8s.service.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.service.type-val"
+    k8s.service.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.service.uid-val"
     k8s.statefulset.name:
       enabled: true
       metrics_exclude:

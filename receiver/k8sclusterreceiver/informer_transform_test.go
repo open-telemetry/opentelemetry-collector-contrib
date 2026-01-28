@@ -107,9 +107,16 @@ func TestTransformObject(t *testing.T) {
 					Selector: map[string]string{
 						"app": "my-app",
 					},
+					Type: corev1.ServiceTypeClusterIP,
 				},
 			},
 			same: false,
+		},
+		{
+			name:   "endpointslice",
+			object: testutils.NewEndpointSlice("1"),
+			want:   testutils.NewEndpointSlice("1"),
+			same:   false,
 		},
 		{
 			// This is a case where we don't transform the object.

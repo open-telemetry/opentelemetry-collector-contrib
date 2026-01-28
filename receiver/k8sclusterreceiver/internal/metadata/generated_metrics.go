@@ -97,6 +97,66 @@ var MapAttributeK8sContainerStatusState = map[string]AttributeK8sContainerStatus
 	"waiting":    AttributeK8sContainerStatusStateWaiting,
 }
 
+// AttributeK8sServiceEndpointAddressType specifies the value k8s.service.endpoint.address_type attribute.
+type AttributeK8sServiceEndpointAddressType int
+
+const (
+	_ AttributeK8sServiceEndpointAddressType = iota
+	AttributeK8sServiceEndpointAddressTypeIPv4
+	AttributeK8sServiceEndpointAddressTypeIPv6
+	AttributeK8sServiceEndpointAddressTypeFQDN
+)
+
+// String returns the string representation of the AttributeK8sServiceEndpointAddressType.
+func (av AttributeK8sServiceEndpointAddressType) String() string {
+	switch av {
+	case AttributeK8sServiceEndpointAddressTypeIPv4:
+		return "IPv4"
+	case AttributeK8sServiceEndpointAddressTypeIPv6:
+		return "IPv6"
+	case AttributeK8sServiceEndpointAddressTypeFQDN:
+		return "FQDN"
+	}
+	return ""
+}
+
+// MapAttributeK8sServiceEndpointAddressType is a helper map of string to AttributeK8sServiceEndpointAddressType attribute value.
+var MapAttributeK8sServiceEndpointAddressType = map[string]AttributeK8sServiceEndpointAddressType{
+	"IPv4": AttributeK8sServiceEndpointAddressTypeIPv4,
+	"IPv6": AttributeK8sServiceEndpointAddressTypeIPv6,
+	"FQDN": AttributeK8sServiceEndpointAddressTypeFQDN,
+}
+
+// AttributeK8sServiceEndpointCondition specifies the value k8s.service.endpoint.condition attribute.
+type AttributeK8sServiceEndpointCondition int
+
+const (
+	_ AttributeK8sServiceEndpointCondition = iota
+	AttributeK8sServiceEndpointConditionReady
+	AttributeK8sServiceEndpointConditionServing
+	AttributeK8sServiceEndpointConditionTerminating
+)
+
+// String returns the string representation of the AttributeK8sServiceEndpointCondition.
+func (av AttributeK8sServiceEndpointCondition) String() string {
+	switch av {
+	case AttributeK8sServiceEndpointConditionReady:
+		return "ready"
+	case AttributeK8sServiceEndpointConditionServing:
+		return "serving"
+	case AttributeK8sServiceEndpointConditionTerminating:
+		return "terminating"
+	}
+	return ""
+}
+
+// MapAttributeK8sServiceEndpointCondition is a helper map of string to AttributeK8sServiceEndpointCondition attribute value.
+var MapAttributeK8sServiceEndpointCondition = map[string]AttributeK8sServiceEndpointCondition{
+	"ready":       AttributeK8sServiceEndpointConditionReady,
+	"serving":     AttributeK8sServiceEndpointConditionServing,
+	"terminating": AttributeK8sServiceEndpointConditionTerminating,
+}
+
 var MetricsInfo = metricsInfo{
 	K8sContainerCPULimit: metricInfo{
 		Name: "k8s.container.cpu_limit",
@@ -212,6 +272,12 @@ var MetricsInfo = metricsInfo{
 	K8sResourceQuotaUsed: metricInfo{
 		Name: "k8s.resource_quota.used",
 	},
+	K8sServiceEndpointCount: metricInfo{
+		Name: "k8s.service.endpoint.count",
+	},
+	K8sServiceLoadBalancerIngressCount: metricInfo{
+		Name: "k8s.service.load_balancer.ingress.count",
+	},
 	K8sStatefulsetCurrentPods: metricInfo{
 		Name: "k8s.statefulset.current_pods",
 	},
@@ -277,6 +343,8 @@ type metricsInfo struct {
 	K8sReplicationControllerDesired     metricInfo
 	K8sResourceQuotaHardLimit           metricInfo
 	K8sResourceQuotaUsed                metricInfo
+	K8sServiceEndpointCount             metricInfo
+	K8sServiceLoadBalancerIngressCount  metricInfo
 	K8sStatefulsetCurrentPods           metricInfo
 	K8sStatefulsetDesiredPods           metricInfo
 	K8sStatefulsetReadyPods             metricInfo
@@ -2205,6 +2273,110 @@ func newMetricK8sResourceQuotaUsed(cfg MetricConfig) metricK8sResourceQuotaUsed 
 	return m
 }
 
+type metricK8sServiceEndpointCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.service.endpoint.count metric with initial data.
+func (m *metricK8sServiceEndpointCount) init() {
+	m.data.SetName("k8s.service.endpoint.count")
+	m.data.SetDescription("The number of endpoints for a service, broken down by condition, address type, and zone.")
+	m.data.SetUnit("{endpoint}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sServiceEndpointCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, k8sServiceEndpointAddressTypeAttributeValue string, k8sServiceEndpointConditionAttributeValue string, k8sServiceEndpointZoneAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("k8s.service.endpoint.address_type", k8sServiceEndpointAddressTypeAttributeValue)
+	dp.Attributes().PutStr("k8s.service.endpoint.condition", k8sServiceEndpointConditionAttributeValue)
+	dp.Attributes().PutStr("k8s.service.endpoint.zone", k8sServiceEndpointZoneAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sServiceEndpointCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sServiceEndpointCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sServiceEndpointCount(cfg MetricConfig) metricK8sServiceEndpointCount {
+	m := metricK8sServiceEndpointCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sServiceLoadBalancerIngressCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.service.load_balancer.ingress.count metric with initial data.
+func (m *metricK8sServiceLoadBalancerIngressCount) init() {
+	m.data.SetName("k8s.service.load_balancer.ingress.count")
+	m.data.SetDescription("The number of load balancer ingress points (external IPs/hostnames) assigned to the service.")
+	m.data.SetUnit("{ingress}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sServiceLoadBalancerIngressCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sServiceLoadBalancerIngressCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sServiceLoadBalancerIngressCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sServiceLoadBalancerIngressCount(cfg MetricConfig) metricK8sServiceLoadBalancerIngressCount {
+	m := metricK8sServiceLoadBalancerIngressCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sStatefulsetCurrentPods struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2663,6 +2835,8 @@ type MetricsBuilder struct {
 	metricK8sReplicationControllerDesired     metricK8sReplicationControllerDesired
 	metricK8sResourceQuotaHardLimit           metricK8sResourceQuotaHardLimit
 	metricK8sResourceQuotaUsed                metricK8sResourceQuotaUsed
+	metricK8sServiceEndpointCount             metricK8sServiceEndpointCount
+	metricK8sServiceLoadBalancerIngressCount  metricK8sServiceLoadBalancerIngressCount
 	metricK8sStatefulsetCurrentPods           metricK8sStatefulsetCurrentPods
 	metricK8sStatefulsetDesiredPods           metricK8sStatefulsetDesiredPods
 	metricK8sStatefulsetReadyPods             metricK8sStatefulsetReadyPods
@@ -2734,6 +2908,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sReplicationControllerDesired:     newMetricK8sReplicationControllerDesired(mbc.Metrics.K8sReplicationControllerDesired),
 		metricK8sResourceQuotaHardLimit:           newMetricK8sResourceQuotaHardLimit(mbc.Metrics.K8sResourceQuotaHardLimit),
 		metricK8sResourceQuotaUsed:                newMetricK8sResourceQuotaUsed(mbc.Metrics.K8sResourceQuotaUsed),
+		metricK8sServiceEndpointCount:             newMetricK8sServiceEndpointCount(mbc.Metrics.K8sServiceEndpointCount),
+		metricK8sServiceLoadBalancerIngressCount:  newMetricK8sServiceLoadBalancerIngressCount(mbc.Metrics.K8sServiceLoadBalancerIngressCount),
 		metricK8sStatefulsetCurrentPods:           newMetricK8sStatefulsetCurrentPods(mbc.Metrics.K8sStatefulsetCurrentPods),
 		metricK8sStatefulsetDesiredPods:           newMetricK8sStatefulsetDesiredPods(mbc.Metrics.K8sStatefulsetDesiredPods),
 		metricK8sStatefulsetReadyPods:             newMetricK8sStatefulsetReadyPods(mbc.Metrics.K8sStatefulsetReadyPods),
@@ -2949,6 +3125,36 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.K8sResourcequotaUID.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.resourcequota.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sResourcequotaUID.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.K8sServiceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.service.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServiceName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sServiceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.service.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServiceName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sServicePublishNotReadyAddresses.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.service.publish_not_ready_addresses"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServicePublishNotReadyAddresses.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sServicePublishNotReadyAddresses.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.service.publish_not_ready_addresses"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServicePublishNotReadyAddresses.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sServiceTrafficDistribution.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.service.traffic_distribution"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServiceTrafficDistribution.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sServiceTrafficDistribution.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.service.traffic_distribution"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServiceTrafficDistribution.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sServiceType.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.service.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServiceType.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sServiceType.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.service.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServiceType.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sServiceUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.service.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServiceUID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sServiceUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.service.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServiceUID.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.K8sStatefulsetName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.statefulset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sStatefulsetName.MetricsInclude)
 	}
@@ -3093,6 +3299,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sReplicationControllerDesired.emit(ils.Metrics())
 	mb.metricK8sResourceQuotaHardLimit.emit(ils.Metrics())
 	mb.metricK8sResourceQuotaUsed.emit(ils.Metrics())
+	mb.metricK8sServiceEndpointCount.emit(ils.Metrics())
+	mb.metricK8sServiceLoadBalancerIngressCount.emit(ils.Metrics())
 	mb.metricK8sStatefulsetCurrentPods.emit(ils.Metrics())
 	mb.metricK8sStatefulsetDesiredPods.emit(ils.Metrics())
 	mb.metricK8sStatefulsetReadyPods.emit(ils.Metrics())
@@ -3320,6 +3528,16 @@ func (mb *MetricsBuilder) RecordK8sResourceQuotaHardLimitDataPoint(ts pcommon.Ti
 // RecordK8sResourceQuotaUsedDataPoint adds a data point to k8s.resource_quota.used metric.
 func (mb *MetricsBuilder) RecordK8sResourceQuotaUsedDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
 	mb.metricK8sResourceQuotaUsed.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
+}
+
+// RecordK8sServiceEndpointCountDataPoint adds a data point to k8s.service.endpoint.count metric.
+func (mb *MetricsBuilder) RecordK8sServiceEndpointCountDataPoint(ts pcommon.Timestamp, val int64, k8sServiceEndpointAddressTypeAttributeValue AttributeK8sServiceEndpointAddressType, k8sServiceEndpointConditionAttributeValue AttributeK8sServiceEndpointCondition, k8sServiceEndpointZoneAttributeValue string) {
+	mb.metricK8sServiceEndpointCount.recordDataPoint(mb.startTime, ts, val, k8sServiceEndpointAddressTypeAttributeValue.String(), k8sServiceEndpointConditionAttributeValue.String(), k8sServiceEndpointZoneAttributeValue)
+}
+
+// RecordK8sServiceLoadBalancerIngressCountDataPoint adds a data point to k8s.service.load_balancer.ingress.count metric.
+func (mb *MetricsBuilder) RecordK8sServiceLoadBalancerIngressCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sServiceLoadBalancerIngressCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sStatefulsetCurrentPodsDataPoint adds a data point to k8s.statefulset.current_pods metric.
