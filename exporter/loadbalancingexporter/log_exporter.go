@@ -99,26 +99,35 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 		balancingKey = random()
 	}
 
-	le, _, err := e.loadBalancer.exporterAndEndpoint(balancingKey[:])
+	exp, endpoint, err := e.loadBalancer.exporterAndEndpoint(balancingKey[:])
 	if err != nil {
 		return err
 	}
 
-	le.consumeWG.Add(1)
-	defer le.consumeWG.Done()
+	consume := func(currentExp *wrappedExporter, currentEndpoint string) error {
+		currentExp.consumeWG.Add(1)
+		start := time.Now()
+		err := currentExp.ConsumeLogs(ctx, ld)
+		duration := time.Since(start)
+		currentExp.consumeWG.Done()
+		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(currentExp.endpointAttr))
 
-	start := time.Now()
-	err = le.ConsumeLogs(ctx, ld)
-	duration := time.Since(start)
-	e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(le.endpointAttr))
-	if err == nil {
-		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(le.successAttr))
-	} else {
-		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(le.failureAttr))
-		e.logger.Debug("failed to export log", zap.Error(err))
+		if err == nil {
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(currentExp.successAttr))
+			return nil
+		}
+
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(currentExp.failureAttr))
+		e.logger.Debug("failed to export log", zap.String("endpoint", currentEndpoint), zap.Error(err))
+		return err
 	}
 
-	return err
+	// If quarantine is not enabled, use the consume function directly
+	if !e.loadBalancer.isQuarantineEnabled() {
+		return consume(exp, endpoint)
+	}
+
+	return e.loadBalancer.consumeWithRetryAndQuarantine(balancingKey[:], exp, endpoint, consume)
 }
 
 func traceIDFromLogs(ld plog.Logs) pcommon.TraceID {
