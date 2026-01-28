@@ -67,7 +67,7 @@ func (s *memoryScraper) recordLinuxHugePagesMetrics(now pcommon.Timestamp, memIn
 	// Record page size in bytes
 	s.mb.RecordSystemMemoryLinuxHugepagesPageSizeDataPoint(now, int64(memInfo.HugePageSize*1024)) // convert from kB to bytes
 
-	// Record limit (total huge pages available) in number of pages
+	// Record limit (total hugepages available) in number of pages
 	s.mb.RecordSystemMemoryLinuxHugepagesLimitDataPoint(now, int64(memInfo.HugePagesTotal))
 
 	// Calculate used pages
@@ -77,14 +77,15 @@ func (s *memoryScraper) recordLinuxHugePagesMetrics(now pcommon.Timestamp, memIn
 	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, int64(memInfo.HugePagesFree), metadata.AttributeSystemMemoryLinuxHugepagesStateFree)
 	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, hugePagesUsed, metadata.AttributeSystemMemoryLinuxHugepagesStateUsed)
 	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, int64(memInfo.HugePagesRsvd), metadata.AttributeSystemMemoryLinuxHugepagesStateReserved)
-	s.mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(now, int64(memInfo.HugePagesSurp), metadata.AttributeSystemMemoryLinuxHugepagesStateSurplus)
+
+	// Record surplus as a separate metric (not a state, since surplus pages can also be in used/free states)
+	s.mb.RecordSystemMemoryLinuxHugepagesSurplusDataPoint(now, int64(memInfo.HugePagesSurp))
 
 	// Record utilization with state attributes as percentage
 	if memInfo.HugePagesTotal != 0 {
 		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, float64(memInfo.HugePagesFree)/float64(memInfo.HugePagesTotal), metadata.AttributeSystemMemoryLinuxHugepagesStateFree)
 		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, float64(hugePagesUsed)/float64(memInfo.HugePagesTotal), metadata.AttributeSystemMemoryLinuxHugepagesStateUsed)
 		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, float64(memInfo.HugePagesRsvd)/float64(memInfo.HugePagesTotal), metadata.AttributeSystemMemoryLinuxHugepagesStateReserved)
-		s.mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(now, float64(memInfo.HugePagesSurp)/float64(memInfo.HugePagesTotal), metadata.AttributeSystemMemoryLinuxHugepagesStateSurplus)
 	}
 }
 
