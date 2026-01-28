@@ -701,11 +701,7 @@ generate-gh-issue-templates:
 
 .PHONY: generate-schemas
 generate-schemas:
-	./cmd/schemagen/run_schemagen_dir.sh ./receiver
-	./cmd/schemagen/run_schemagen_dir.sh -i datadogexporter ./exporter
-	./cmd/schemagen/run_schemagen_dir.sh ./processor
-	./cmd/schemagen/run_schemagen_dir.sh -i encoding,observer,opampcustommessages,storage ./extension
-	./cmd/schemagen/run_schemagen_dir.sh ./connector
+	cmd/schemagen/run_schemagen_dir.sh -v -i testdata .
 
 .PHONY: checks
 checks:
@@ -720,5 +716,5 @@ checks:
 	$(MAKE) gendistributions
 	$(MAKE) -j4 generate
 	$(MAKE) multimod-verify
-	# $(MAKE) generate-schemas Uncomment when schema generation is complete
+	$(MAKE) generate-schemas
 	git diff --exit-code || (echo 'Some files need committing' && git status && exit 1)

@@ -20,17 +20,19 @@ const (
 )
 
 type Config = struct {
-	Mode         RunMode
-	DirPath      string
-	OutputFolder string
-	RootTypeName string
-	FileType     string
-	Class        string
-	Mappings     Mappings
+	Mode          RunMode
+	DirPath       string
+	OutputFolder  string
+	ConfigPackage string
+	ConfigType    string
+	FileType      string
+	Class         string
+	Mappings      Mappings
+	AllowedRefs   []string
 }
 
 var (
-	rootType     = flag.String("r", "Config", "Root type name for component schema generation")
+	configType   = flag.String("c", "Config", "Config type name for component schema generation")
 	outputFolder = flag.String("o", "", "Output schema folder (defaults to input folder)")
 	fileType     = flag.String("t", "yaml", "Output file type (yaml or json)")
 )
@@ -46,7 +48,7 @@ func usage() {
 		"  > schemagen ./components/test_receiver/  		 # Generate schema for a component",
 		"  > schemagen -o component.schema ./config.go       # Generate schema with a custom output file name",
 		"  > schemagen -t json ./config.go                   # Generate schema in JSON format",
-		"  > schemagen -r DatabaseConfig ./config.go         # Generate schema for component with a custom root type name",
+		"  > schemagen -c DatabaseConfig ./config.go         # Generate schema for component with a custom root type name",
 	}
 	_, _ = fmt.Fprintf(os.Stderr, "%s", strings.Join(docs[:3], "\n"))
 	flag.PrintDefaults()
@@ -67,13 +69,14 @@ func ReadConfig() (*Config, error) {
 	}
 
 	var (
-		filePath string
-		dirPath  string
-		output   = *outputFolder
-		mode     = Package
-		mappings Mappings
-		ctype    string
-		class    string
+		dirPath       string
+		output        = *outputFolder
+		mode          = Package
+		mappings      Mappings
+		ctype         string
+		class         string
+		configPackage string
+		allowedRefs   = make([]string, 0)
 	)
 
 	switch {
@@ -87,27 +90,24 @@ func ReadConfig() (*Config, error) {
 		output = dirPath
 	}
 
-	if *rootType == "" {
-		file := filepath.Base(filePath)
-		ext := filepath.Ext(file)
-		fileName := strings.TrimSuffix(file, ext)
-		*rootType = toPascalCase(fileName)
-	}
-
 	if *fileType != "json" && *fileType != "yaml" && *fileType != "yml" {
 		return nil, errors.New("unknown schema file type - use yaml or json: " + *fileType)
 	}
 
 	if md, ok := ReadMetadata(dirPath); ok {
-		ctype = md.Type
-		class = md.Status.Class
-		switch class {
-		case "receiver", "processor", "exporter", "connector", "extension":
+		if md.Parent != "" {
 			mode = Component
-		case "pkg":
-			mode = Package
-		default:
-			return nil, fmt.Errorf("schema generation for class '%s' is not supported", md.Status.Class)
+		} else {
+			ctype = md.Type
+			class = md.Status.Class
+			switch class {
+			case "receiver", "processor", "exporter", "connector", "extension":
+				mode = Component
+			case "", "pkg":
+				mode = Package
+			default:
+				return nil, fmt.Errorf("schema generation for class '%s' is not supported", md.Status.Class)
+			}
 		}
 	}
 
@@ -115,27 +115,26 @@ func ReadConfig() (*Config, error) {
 		mappings = s.Mappings
 		comp := class + "/" + ctype
 		if override, found := s.ComponentOverrides[comp]; found {
-			*rootType = override.ConfigName
+			*configType = override.ConfigName
 		}
+		allowedRefs = s.AllowedRefs
+	}
+
+	configNameParts := strings.Split(*configType, ".")
+	if len(configNameParts) == 2 {
+		configPackage = configNameParts[0]
+		*configType = configNameParts[1]
 	}
 
 	return &Config{
-		DirPath:      dirPath,
-		OutputFolder: output,
-		RootTypeName: *rootType,
-		FileType:     *fileType,
-		Mode:         mode,
-		Mappings:     mappings,
-		Class:        class,
+		DirPath:       dirPath,
+		OutputFolder:  output,
+		ConfigPackage: configPackage,
+		ConfigType:    *configType,
+		FileType:      *fileType,
+		Mode:          mode,
+		Mappings:      mappings,
+		Class:         class,
+		AllowedRefs:   allowedRefs,
 	}, nil
-}
-
-func toPascalCase(s string) string {
-	parts := strings.Split(s, "_")
-	for i, part := range parts {
-		if part != "" {
-			parts[i] = strings.ToUpper(part[:1]) + part[1:]
-		}
-	}
-	return strings.Join(parts, "")
 }
