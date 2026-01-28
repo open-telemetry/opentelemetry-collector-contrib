@@ -152,6 +152,24 @@ func TestLoadConfig(t *testing.T) {
 				InitialValue: tracking.InitialValueDrop,
 			},
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_max_staleness"),
+			errorMessage: "max_staleness (300ns) appears to be missing a unit suffix; did you mean '300s' or '5m0s'? Use '0' for infinite retention",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "valid_max_staleness_zero"),
+			expected: &Config{
+				MaxStaleness: 0,
+				InitialValue: tracking.InitialValueAuto,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "valid_max_staleness_milliseconds"),
+			expected: &Config{
+				MaxStaleness: 100 * time.Millisecond,
+				InitialValue: tracking.InitialValueAuto,
+			},
+		},
 	}
 
 	for _, tt := range tests {

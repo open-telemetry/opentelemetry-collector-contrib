@@ -85,5 +85,29 @@ func (config *Config) Validate() error {
 			)
 		}
 	}
+
+	// Validate max_staleness is reasonable (if set)
+	// max_staleness: 0 means "retain state indefinitely" and is valid
+	// Values > 0 but < 1ms are likely misconfigurations (bare integers parsed as nanoseconds)
+	// Common mistake: max_staleness: 300 (interpreted as 300ns) instead of max_staleness: 300s
+	if config.MaxStaleness > 0 && config.MaxStaleness < time.Millisecond {
+		asSeconds := config.MaxStaleness / time.Nanosecond
+		// If the value in nanoseconds is a "reasonable" number of seconds (1-86400 = 1 day),
+		// the user probably forgot the suffix
+		if asSeconds >= 1 && asSeconds <= 86400 {
+			return fmt.Errorf(
+				"max_staleness (%v) appears to be missing a unit suffix; did you mean '%ds' or '%s'? Use '0' for infinite retention",
+				config.MaxStaleness,
+				asSeconds,
+				(asSeconds * time.Second).String(),
+			)
+		}
+		// Otherwise it's just unreasonably small
+		return fmt.Errorf(
+			"max_staleness (%v) is unreasonably small; duration values require a unit suffix (e.g., '300s', '5m', '1h') or use '0' for infinite retention",
+			config.MaxStaleness,
+		)
+	}
+
 	return nil
 }
