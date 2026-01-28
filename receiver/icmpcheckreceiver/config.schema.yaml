@@ -1,8 +1,5 @@
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/icmpcheckreceiver
-title: icmpcheckreceiver component
 $defs:
-  PingTarget:
+  ping_target:
     type: object
     properties:
       host:
@@ -11,70 +8,16 @@ $defs:
         type: integer
       ping_interval:
         type: string
-        x-customType: time.Duration
         format: duration
       ping_timeout:
         type: string
-        x-customType: time.Duration
         format: duration
-  metadata.MetricConfig:
-    description: MetricConfig provides common config for a particular metric.
-    type: object
-    properties:
-      enabled:
-        type: boolean
-  metadata.MetricsBuilderConfig:
-    description: MetricsBuilderConfig is a configuration for icmpcheckreceiver metrics builder.
-    type: object
-    properties:
-      metrics:
-        $ref: '#/$defs/metadata.MetricsConfig'
-      resource_attributes:
-        $ref: '#/$defs/metadata.ResourceAttributesConfig'
-  metadata.MetricsConfig:
-    description: MetricsConfig provides config for icmpcheckreceiver metrics.
-    type: object
-    properties:
-      ping.loss.ratio:
-        $ref: '#/$defs/metadata.MetricConfig'
-      ping.rtt.avg:
-        $ref: '#/$defs/metadata.MetricConfig'
-      ping.rtt.max:
-        $ref: '#/$defs/metadata.MetricConfig'
-      ping.rtt.min:
-        $ref: '#/$defs/metadata.MetricConfig'
-      ping.rtt.stddev:
-        $ref: '#/$defs/metadata.MetricConfig'
-  metadata.ResourceAttributeConfig:
-    description: ResourceAttributeConfig provides common config for a particular resource attribute.
-    type: object
-    properties:
-      enabled:
-        type: boolean
-      metrics_exclude:
-        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
-        type: array
-        items:
-          $ref: go.opentelemetry.io/collector/filter#/$defs/Config
-      metrics_include:
-        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
-        type: array
-        items:
-          $ref: go.opentelemetry.io/collector/filter#/$defs/Config
-  metadata.ResourceAttributesConfig:
-    description: ResourceAttributesConfig provides config for icmpcheckreceiver resource attributes.
-    type: object
-    properties:
-      net.peer.ip:
-        $ref: '#/$defs/metadata.ResourceAttributeConfig'
-      net.peer.name:
-        $ref: '#/$defs/metadata.ResourceAttributeConfig'
 type: object
 properties:
   targets:
     type: array
     items:
-      $ref: '#/$defs/PingTarget'
+      $ref: ping_target
 allOf:
-  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper#/$defs/ControllerConfig
-  - $ref: '#/$defs/metadata.MetricsBuilderConfig'
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config

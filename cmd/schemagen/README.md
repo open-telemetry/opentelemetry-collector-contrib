@@ -9,17 +9,6 @@ and the generation process would be reversed – Go config files from schemas.
 
 > **Status:** In Development.
 
-## Roadmap
-
-- [x] Basic struct parsing and schema generation
-- [x] Support for maps, slices, pointers, and embedded structs
-- [x] CLI tool for generating schema from a file or directory
-- [x] Support for descriptions from struct field comments
-- [x] Support for std library package references (e.g., `time.Duration`)
-- [x] Tests and examples
-- [x] Support for external package references (e.g., `confighttp.HTTPClientSettings`)
-- [x] Support internal package references
-
 ## Modes
 
 Script can generate schemas for components and packages. There are two distinct modes of operation: 
@@ -32,7 +21,7 @@ exporters, and connectors.
 
 In component mode, schema is generated in file named `config.schema.<ext>` to the chosen output folder
 (by default it's input directory). You can optionally specify the root struct to use for schema generation
-using the `-r` flag; if not provided, the tool defaults to using `Config`.
+using the `-c` flag; if not provided, the tool defaults to using `Config`.
 
 ### Package mode
 
@@ -42,7 +31,7 @@ for a package. This can be used to generate schemas for shared libraries or comm
 multiple components.
 
 In package mode every exported struct becomes a definition under `$defs` and the output file name is
-`<package>.schema.<ext>`.
+`config.schema.<ext>`.
 
 ## Usage
 
@@ -67,7 +56,7 @@ make schemagen SRC=receiver/foo/somecomponent/
 You can pass any CLI flags through the `FLAGS` variable:
 
 ```bash
-make schemagen SRC=connector/countconnector/ FLAGS="-o=$(pwd)/schemas -t=json -r=CustomConfig"
+make schemagen SRC=connector/countconnector/ FLAGS="-o=$(pwd)/schemas -t=json -c=CustomConfig"
 ```
 
 You can also go to specific component folder and run `make schemagen` directly.
@@ -76,7 +65,7 @@ You can also go to specific component folder and run `make schemagen` directly.
 
 | Flag | Default                                                                | Purpose                                                       |
 |------|------------------------------------------------------------------------|---------------------------------------------------------------|
-| `-r` | `Config` in component mode                                             | Explicitly set the struct that should become the root schema. |
+| `-c` | `Config` in component mode                                             | Explicitly set the struct that should become the root schema. |
 | `-o` | Given directory (or `outputFolder` from `.schemagen.yaml` if provided) | Folder that will receive the generated `*.schema.<ext>` file. |
 | `-t` | `yaml`                                                                 | Output format. Accepts `yaml`, `yml`, or `json`.              |
 
@@ -95,6 +84,9 @@ mappings:
     Duration:
       schemaType: string
       format: duration
+allowedRefs:
+  - go.opentelemetry.io/collector
+  - github.com/open-telemetry/opentelemetry-collector-contrib
 componentOverrides:
   receiver/namedpipe:
     configName: 'NamedPipeConfig'
@@ -107,6 +99,10 @@ componentOverrides:
   `schemaType` and can also set the JSON Schema `format`. The original
   Go type shows up under the `x-customType` extension so consumers can still
   see the source information.
+- `allowedRefs` lists repositories that schemagen can make references to when
+  generating `$ref` pointers. This is useful when your configuration structs
+  embed types from other repositories that also have schemagen-generated
+  schemas. If repo is not listed here, schemagen will use type `any`.
 - `componentOverrides` allow per-component configuration of the root struct
   name. This is useful when a component does not use the conventional
   `Config` struct name.
