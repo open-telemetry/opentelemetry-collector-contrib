@@ -70,7 +70,7 @@ func createDefaultConfig() component.Config {
 			MaxRowsPerQuery: 1000,
 		},
 		TopQueryCollection: TopQueryCollection{
-			TopNQuery:              1000,
+			TopNQuery:              200,
 			MaxRowsPerQuery:        1000,
 			MaxExplainEachInterval: 1000,
 			QueryPlanCacheSize:     1000,
