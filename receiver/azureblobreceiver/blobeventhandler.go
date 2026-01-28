@@ -210,7 +210,7 @@ func (p *azureBlobEventHandler) setTracesDataConsumer(tracesDataConsumer tracesD
 	p.tracesDataConsumer = tracesDataConsumer
 }
 
-func newBlobEventHandler(eventHubConnectionString, logsContainerName, tracesContainerName string, blobClient blobClient, maxPollEvent int, pollRate int, logger *zap.Logger) *azureBlobEventHandler {
+func newBlobEventHandler(eventHubConnectionString, logsContainerName, tracesContainerName string, blobClient blobClient, maxPollEvent, pollRate int, logger *zap.Logger) *azureBlobEventHandler {
 	return &azureBlobEventHandler{
 		blobClient:               blobClient,
 		logsContainerName:        logsContainerName,
