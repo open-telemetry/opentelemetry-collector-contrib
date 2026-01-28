@@ -102,15 +102,6 @@ func (p *azureBlobEventHandler) receiveEvents(
 	defer pc.Close(ctx)
 	defer p.logger.Info("partition client closed")
 
-	pollRate := p.pollRate
-	if pollRate <= 0 {
-		pollRate = defaultPollRate
-	}
-	maxPollEvents := p.maxPollEvents
-	if maxPollEvents <= 0 {
-		maxPollEvents = defaultMaxPollEvents
-	}
-
 	for {
 		if ctx.Err() != nil {
 			return
@@ -118,9 +109,9 @@ func (p *azureBlobEventHandler) receiveEvents(
 
 		timeoutCtx, cancelCtx := context.WithTimeout(
 			ctx,
-			time.Second*time.Duration(pollRate),
+			time.Second*time.Duration(defaultPollRate),
 		)
-		events, err := pc.ReceiveEvents(timeoutCtx, maxPollEvents, &azeventhubs.ReceiveEventsOptions{})
+		events, err := pc.ReceiveEvents(timeoutCtx, defaultMaxPollEvents, &azeventhubs.ReceiveEventsOptions{})
 		cancelCtx()
 		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 			p.logger.Error(
@@ -206,14 +197,12 @@ func (p *azureBlobEventHandler) setTracesDataConsumer(tracesDataConsumer tracesD
 	p.tracesDataConsumer = tracesDataConsumer
 }
 
-func newBlobEventHandler(eventHubConnectionString, logsContainerName, tracesContainerName string, blobClient blobClient, maxPollEvent, pollRate int, logger *zap.Logger) *azureBlobEventHandler {
+func newBlobEventHandler(eventHubConnectionString, logsContainerName, tracesContainerName string, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
 	return &azureBlobEventHandler{
 		blobClient:               blobClient,
 		logsContainerName:        logsContainerName,
 		tracesContainerName:      tracesContainerName,
 		eventHubConnectionString: eventHubConnectionString,
 		logger:                   logger,
-		maxPollEvents:            maxPollEvent,
-		pollRate:                 pollRate,
 	}
 }

@@ -22,8 +22,6 @@ The following settings are required:
 
 - `event_hub:`
   - `endpoint:` (no default): Azure Event Hub endpoint triggering on the `Blob Create` event 
-  - `max_poll_events` (default = 100) Specifies the maximum number of events to retrieve in a single poll from the Event Hub.
-  - `poll_rate` (default = 5) Specifies the maximum number of seconds to wait for additional events before returning fewer than `max_poll_events`.
 
 The following settings can be optionally configured:
 

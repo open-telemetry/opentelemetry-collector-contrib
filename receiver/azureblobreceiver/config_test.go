@@ -49,10 +49,6 @@ func TestLoadConfig(t *testing.T) {
 		t,
 		&Config{
 			Authentication: ServicePrincipalAuth,
-			EventHub: EventHubConfig{
-				PollRate:      20,
-				MaxPollEvents: 50,
-			},
 			ServicePrincipal: ServicePrincipalConfig{
 				TenantID:     "mock-tenant-id",
 				ClientID:     "mock-client-id",

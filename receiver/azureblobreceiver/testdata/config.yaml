@@ -3,9 +3,6 @@ receivers:
     connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
   azureblob/2:
     auth: service_principal
-    event_hub:
-      poll_rate: 20
-      max_poll_events: 50
     service_principal:
       tenant_id: mock-tenant-id
       client_id: mock-client-id

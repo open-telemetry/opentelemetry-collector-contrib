@@ -148,6 +148,6 @@ func (*blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger)
 		return nil, fmt.Errorf("unknown authentication %v", cfg.Authentication)
 	}
 
-	return newBlobEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, cfg.EventHub.MaxPollEvents, cfg.EventHub.PollRate, logger),
+	return newBlobEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
 		nil
 }
