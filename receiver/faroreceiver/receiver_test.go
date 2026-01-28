@@ -40,19 +40,19 @@ func TestFaroReceiver_Start(t *testing.T) {
 		{
 			name:               "minimal-traces-only",
 			payload:            filepath.Join("testdata", "traces", "minimal-traces-only.json"),
-			expectedStatusCode: http.StatusOK,
+			expectedStatusCode: http.StatusAccepted,
 			expectedTraces:     filepath.Join("testdata", "golden", "minimal-traces-only.yaml"),
 		},
 		{
 			name:               "minimal-logs-only",
 			payload:            filepath.Join("testdata", "logs", "minimal-logs-only.json"),
-			expectedStatusCode: http.StatusOK,
+			expectedStatusCode: http.StatusAccepted,
 			expectedLogs:       filepath.Join("testdata", "golden", "minimal-logs-only.yaml"),
 		},
 		{
 			name:               "minimal-logs-and-traces-only",
 			payload:            filepath.Join("testdata", "logsandtraces", "minimal-only.json"),
-			expectedStatusCode: http.StatusOK,
+			expectedStatusCode: http.StatusAccepted,
 			expectedLogs:       filepath.Join("testdata", "golden", "minimal-logs-only.yaml"),
 			expectedTraces:     filepath.Join("testdata", "golden", "minimal-traces-only.yaml"),
 		},
