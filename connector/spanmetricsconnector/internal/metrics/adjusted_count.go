@@ -4,7 +4,6 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 
 import (
-	"math"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -23,11 +22,15 @@ func GetStochasticAdjustedCount(span *ptrace.Span) (uint64, bool) {
 	if err != nil {
 		return 1, false
 	}
-	adjustedCount := w3cTraceState.OTelValue().AdjustedCount()
-	if adjustedCount == 0 {
+	threshold, exists := w3cTraceState.OTelValue().TValueThreshold()
+	if !exists {
 		return 1, false
 	}
-	return stochasticIncrement(adjustedCount), true
+	denominator := sampling.MaxAdjustedCount - threshold.Unsigned()
+	if denominator == 0 {
+		return 1, false
+	}
+	return stochasticDiv(sampling.MaxAdjustedCount, denominator), true
 }
 
 // xorshift64star is a very fast PRNG using xor and shift.
@@ -58,18 +61,25 @@ var prngPool = sync.Pool{
 	},
 }
 
-func stochasticIncrement(weight float64) uint64 {
-	floor, frac := math.Modf(weight)
-	count := uint64(floor)
-	if frac <= 0 {
-		return count
+// stochasticDiv computes numerator/denominator with stochastic rounding.
+// It returns floor(numerator/denominator) and probabilistically adds 1 based on
+// the remainder, ensuring an unbiased estimate over many calls.
+// When the denominator is 0, the behavior is undefined.
+func stochasticDiv(numerator, denominator uint64) uint64 {
+	if denominator == 0 { // although the behavior is undefined, we return 0 to avoid panics.
+		return 0
+	}
+	quotient := numerator / denominator
+	remainder := numerator % denominator
+	if remainder == 0 {
+		return quotient
 	}
 	rng := prngPool.Get().(*xorshift64star)
 	defer prngPool.Put(rng)
 
-	threshold := uint64(frac * float64(math.MaxUint64))
-	if rng.next() < threshold {
-		count++
+	// Round up with probability remainder/denominator
+	if rng.next()%denominator < remainder {
+		quotient++
 	}
-	return count
+	return quotient
 }
