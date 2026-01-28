@@ -259,7 +259,7 @@ func withExtractAnnotations(annotations ...FieldExtractConfig) option {
 	}
 }
 
-func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.FieldExtractionRule, error) {
+func extractFieldRules(_ string, fields ...FieldExtractConfig) ([]kube.FieldExtractionRule, error) {
 	var rules []kube.FieldExtractionRule
 	for _, a := range fields {
 		name := a.TagName
