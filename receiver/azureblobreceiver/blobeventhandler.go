@@ -18,6 +18,7 @@ import (
 var (
 	defaultPollRate      = 5
 	defaultMaxPollEvents = 100
+	defaultConsumerGroup = "$Default"
 )
 
 type blobEventHandler interface {
@@ -57,7 +58,7 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 	hub, err := azeventhubs.NewConsumerClientFromConnectionString(
 		p.eventHubConnectionString,
 		"",
-		"$Default",
+		defaultConsumerGroup,
 		&azeventhubs.ConsumerClientOptions{},
 	)
 	if err != nil {
@@ -86,7 +87,6 @@ func (p *azureBlobEventHandler) receiveEvents(
 	handler func(ctx context.Context, event *azeventhubs.ReceivedEventData) error,
 ) {
 	defer p.wg.Done()
-
 	startAtLatest := true
 	pc, err := client.NewPartitionClient(partitionID, &azeventhubs.PartitionClientOptions{
 		StartPosition: azeventhubs.StartPosition{
@@ -101,8 +101,8 @@ func (p *azureBlobEventHandler) receiveEvents(
 		// Use a separate context for cleanup to ensure it completes even if the parent context is canceled
 		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if closeErr := pc.Close(closeCtx); closeErr != nil {
-			p.logger.Error("error closing partition client", zap.Error(closeErr))
+		if err := pc.Close(closeCtx); err != nil {
+			p.logger.Error("error closing partition client", zap.Error(err))
 		}
 	}()
 
