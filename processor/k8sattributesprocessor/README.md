@@ -592,8 +592,6 @@ roleRef:
 
 The processor can be used in collectors deployed both as an agent (Kubernetes DaemonSet) or as a gateway (Kubernetes Deployment).
 
-**For production deployments using Helm charts**, see the official [OpenTelemetry Kube Stack](https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-kube-stack/values.yaml#L178-L182) chart and the [isolated multicollector deployment example](https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-kube-stack/examples/isolated-multicollector-deployment/values.yaml#L23).
-
 ### As an agent
 
 When running as an agent, the processor detects IP addresses of pods sending spans, metrics or logs to the agent
@@ -1001,6 +999,8 @@ For gateway deployments, run multiple replicas with:
 - **No shared state** between replicas
 - **Horizontal scaling** based on CPU/memory usage
 
+**For production deployments using Helm charts**, see the official [OpenTelemetry Kube Stack](https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-kube-stack/values.yaml#L178-L182) chart and the [isolated multicollector deployment example](https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-kube-stack/examples/isolated-multicollector-deployment/values.yaml#L23).
+
 ```yaml
 # Example: 3 replicas for HA
 replicas: 3
@@ -1025,7 +1025,7 @@ The processor is **stateless** and requires no special shutdown procedures:
 
 ### Performance Benchmarks
 
-Based on internal testing with 1000 pods using the default configuration:
+Based on testing with 1000 pods using the default configuration:
 
 ```yaml
 processors:
