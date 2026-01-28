@@ -38,7 +38,54 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return p.TransformerOperator.ProcessBatchWith(ctx, entries, p.Process)
+	processedEntries := make([]*entry.Entry, 0, len(entries))
+	write := func(_ context.Context, ent *entry.Entry) error {
+		processedEntries = append(processedEntries, ent)
+		return nil
+	}
+	var errs []error
+	for _, ent := range entries {
+		skip, err := p.Skip(ctx, ent)
+		if err != nil {
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+			continue
+		}
+		if skip {
+			_ = write(ctx, ent)
+			continue
+		}
+
+		// Determine which callback to use based on entry data
+		callback := postprocess
+		if !p.enableOctetCounting && p.allowSkipPriHeader {
+			var bytes []byte
+			bytes, err = toBytes(ent.Body)
+			if err != nil {
+				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+				continue
+			}
+			if p.shouldSkipPriorityValues(bytes) {
+				callback = postprocessWithoutPriHeader
+			}
+		}
+
+		if err = p.ParseWith(ctx, ent, p.parse, write); err != nil {
+			if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+				errs = append(errs, err)
+			}
+			continue
+		}
+
+		if err = callback(ent); err != nil {
+			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+			continue
+		}
+
+		_ = write(ctx, ent)
+	}
+
+	errs = append(errs, p.WriteBatch(ctx, processedEntries))
+	return errors.Join(errs...)
 }
 
 // Process will parse an entry field as syslog.
