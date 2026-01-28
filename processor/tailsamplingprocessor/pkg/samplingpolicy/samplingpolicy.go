@@ -56,6 +56,15 @@ type Evaluator interface {
 	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
 }
 
+// StoppableEvaluator is an optional interface that Evaluators can implement.
+// If implemented, the tail sampling processor will call Stop before removing or
+// replacing the evaluator.
+type StoppableEvaluator interface {
+	// Stop gives the evaluator a chance to release any resources. Calling Stop
+	// should not block as it can be called in between ticks.
+	Stop()
+}
+
 type Extension interface {
 	NewEvaluator(policyName string, cfg map[string]any) (Evaluator, error)
 }
