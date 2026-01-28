@@ -592,6 +592,8 @@ roleRef:
 
 The processor can be used in collectors deployed both as an agent (Kubernetes DaemonSet) or as a gateway (Kubernetes Deployment).
 
+**For production deployments using Helm charts**, see the official [OpenTelemetry Kube Stack](https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-kube-stack/values.yaml#L178-L182) chart and the [isolated multicollector deployment example](https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-kube-stack/examples/isolated-multicollector-deployment/values.yaml#L23).
+
 ### As an agent
 
 When running as an agent, the processor detects IP addresses of pods sending spans, metrics or logs to the agent
@@ -1023,7 +1025,20 @@ The processor is **stateless** and requires no special shutdown procedures:
 
 ### Performance Benchmarks
 
-Based on internal testing with 1000 pods:
+Based on internal testing with 1000 pods using the default configuration:
+
+```yaml
+processors:
+  k8sattributes:
+    extract:
+      metadata:
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.pod.start_time
+        - k8s.deployment.name
+        - k8s.node.name
+```
 
 | Signal Type | Throughput | Latency | Memory | CPU |
 |-------------|------------|---------|--------|-----|
