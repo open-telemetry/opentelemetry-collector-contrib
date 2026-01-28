@@ -32,16 +32,14 @@ const (
 	categoryFrontDoorAccessLog                 = "FrontDoorAccessLog"
 	categoryFrontDoorHealthProbeLog            = "FrontDoorHealthProbeLog"
 	categoryFrontdoorWebApplicationFirewallLog = "FrontDoorWebApplicationFirewallLog"
+	categoryAdministrative                     = "Administrative"
+	categoryAlert                              = "Alert"
+	categoryAutoscale                          = "Autoscale"
+	categorySecurity                           = "Security"
+	categoryPolicy                             = "Policy"
 	categoryRecommendation                     = "Recommendation"
-
-	// Activity Log categories
-	categoryAdministrative = "Administrative"
-	categoryAlert          = "Alert"
-	categoryAutoscale      = "Autoscale"
-	categorySecurity       = "Security"
-	categoryPolicy         = "Policy"
-	categoryServiceHealth  = "ServiceHealth"
-	categoryResourceHealth = "ResourceHealth"
+	categoryResourceHealth                     = "ResourceHealth"
+	categoryServiceHealth                      = "ServiceHealth"
 )
 
 // Non-SemConv attributes that are used for common Azure Log Record fields
