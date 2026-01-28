@@ -454,6 +454,10 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
+
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
 		})
 	}
 }
@@ -931,6 +935,10 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, histogramDataPoint)
+
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
 		})
 	}
 }
@@ -1492,6 +1500,10 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, expoHistogramDataPoint)
+
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
 		})
 	}
 }
@@ -1953,6 +1965,10 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, summaryDataPoint)
+
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
 		})
 	}
 }
