@@ -1,6 +1,15 @@
 resourceMetrics:
   - resource:
-      attributes: []
+      attributes:
+        - key: server.address
+          value:
+            stringValue: placeholder
+        - key: service.instance.id
+          value:
+            stringValue: placeholder
+        - key: service.name
+          value:
+            stringValue: mongodb
     scopeMetrics:
       - metrics:
           - description: The number of cache operations of the instance.
@@ -203,6 +212,15 @@ resourceMetrics:
         - key: database
           value:
             stringValue: admin
+        - key: server.address
+          value:
+            stringValue: placeholder
+        - key: service.instance.id
+          value:
+            stringValue: placeholder
+        - key: service.name
+          value:
+            stringValue: mongodb
     scopeMetrics:
       - metrics:
           - description: The number of collections.
@@ -342,6 +360,15 @@ resourceMetrics:
         - key: database
           value:
             stringValue: config
+        - key: server.address
+          value:
+            stringValue: placeholder
+        - key: service.instance.id
+          value:
+            stringValue: placeholder
+        - key: service.name
+          value:
+            stringValue: mongodb
     scopeMetrics:
       - metrics:
           - description: The number of collections.
@@ -481,6 +508,15 @@ resourceMetrics:
         - key: database
           value:
             stringValue: local
+        - key: server.address
+          value:
+            stringValue: placeholder
+        - key: service.instance.id
+          value:
+            stringValue: placeholder
+        - key: service.name
+          value:
+            stringValue: mongodb
     scopeMetrics:
       - metrics:
           - description: The number of collections.
@@ -620,6 +656,15 @@ resourceMetrics:
         - key: database
           value:
             stringValue: testdb
+        - key: server.address
+          value:
+            stringValue: placeholder
+        - key: service.instance.id
+          value:
+            stringValue: placeholder
+        - key: service.name
+          value:
+            stringValue: mongodb
     scopeMetrics:
       - metrics:
           - description: The number of collections.
