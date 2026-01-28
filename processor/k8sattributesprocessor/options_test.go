@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestWithAPIConfig(t *testing.T) {
@@ -737,13 +738,13 @@ func Test_extractFieldRules_FeatureGate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set feature gate state for stable and legacy attributes
 			if tt.featureGateValue {
-				require.NoError(t, featuregate.GlobalRegistry().Set(kube.EnableStableAttributes.ID(), true))
-				require.NoError(t, featuregate.GlobalRegistry().Set(kube.DisableLegacyAttributes.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesEnableStableFeatureGate.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.ID(), true))
 			}
 			defer func() {
 				// Reset to default
-				require.NoError(t, featuregate.GlobalRegistry().Set(kube.EnableStableAttributes.ID(), false))
-				require.NoError(t, featuregate.GlobalRegistry().Set(kube.DisableLegacyAttributes.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesEnableStableFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.ID(), false))
 			}()
 
 			got, err := extractFieldRules(tt.fieldType, tt.fields...)

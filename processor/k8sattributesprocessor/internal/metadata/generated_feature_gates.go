@@ -8,8 +8,25 @@ import (
 
 var K8sattrLabelsAnnotationsSingularAllowFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.labelsAnnotationsSingular.allow",
-	featuregate.StageAlpha,
+	featuregate.StageDeprecated,
 	featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774"),
 	featuregate.WithRegisterFromVersion("v0.125.0"),
+	featuregate.WithRegisterToVersion("v0.145.0"),
+)
+
+var SemconvK8sK8sattributesDisableLegacyFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"semconv.k8s.k8sattributes.disableLegacy",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, semconv legacy attributes are disabled."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589"),
+	featuregate.WithRegisterFromVersion("v0.145.0"),
+)
+
+var SemconvK8sK8sattributesEnableStableFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"semconv.k8s.k8sattributes.enableStable",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, semconv stable attributes are enabled."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589"),
+	featuregate.WithRegisterFromVersion("v0.145.0"),
 )

@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 const (
@@ -59,7 +60,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
-	if kube.DisableLegacyAttributes.IsEnabled() && !kube.EnableStableAttributes.IsEnabled() {
+	if metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.IsEnabled() && !metadata.SemconvK8sK8sattributesEnableStableFeatureGate.IsEnabled() {
 		err := errors.New("cannot disable legacy attributes without enabling stable attributes")
 		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		return err

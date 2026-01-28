@@ -15,7 +15,6 @@ import (
 
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/attribute"
 	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.uber.org/zap"
@@ -63,21 +62,6 @@ const (
 	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#job
 	K8sJobLabel      = "k8s.job.label.%s"
 	K8sJobAnnotation = "k8s.job.annotation.%s"
-)
-
-var (
-	EnableStableAttributes = featuregate.GlobalRegistry().MustRegister(
-		"semconv.k8s.k8sattributes.enableStable",
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, semconv stable attributes are enabled."),
-		featuregate.WithRegisterFromVersion("v0.144.0"),
-	)
-	DisableLegacyAttributes = featuregate.GlobalRegistry().MustRegister(
-		"semconv.k8s.k8sattributes.disableLegacy",
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, semconv legacy attributes are disabled."),
-		featuregate.WithRegisterFromVersion("v0.144.0"),
-	)
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -934,8 +918,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	enableStable := EnableStableAttributes.IsEnabled()
-	disableLegacy := DisableLegacyAttributes.IsEnabled()
+	enableStable := metadata.SemconvK8sK8sattributesEnableStableFeatureGate.IsEnabled()
+	disableLegacy := metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
 		if !disableLegacy {
@@ -1183,8 +1167,8 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
 	tags := map[string]string{}
 
-	enableStable := EnableStableAttributes.IsEnabled()
-	disableLegacy := DisableLegacyAttributes.IsEnabled()
+	enableStable := metadata.SemconvK8sK8sattributesEnableStableFeatureGate.IsEnabled()
+	disableLegacy := metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
 		if !disableLegacy {
@@ -1210,8 +1194,8 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
 	tags := map[string]string{}
 
-	enableStable := EnableStableAttributes.IsEnabled()
-	disableLegacy := DisableLegacyAttributes.IsEnabled()
+	enableStable := metadata.SemconvK8sK8sattributesEnableStableFeatureGate.IsEnabled()
+	disableLegacy := metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
 		if !disableLegacy {
