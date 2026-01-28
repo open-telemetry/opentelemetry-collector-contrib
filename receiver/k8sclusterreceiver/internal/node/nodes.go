@@ -60,7 +60,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Ti
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 
-	if metadata.SemconvK8sReceiverK8sclusterEnableStableFeatureGate.IsEnabled() {
+	if metadata.ReceiverK8sclusterEmitV1K8sConventionsFeatureGate.IsEnabled() {
 		if cpuVal, ok := node.Status.Allocatable[corev1.ResourceCPU]; ok {
 			mb.RecordK8sNodeCPUAllocatableDataPoint(ts, float64(cpuVal.MilliValue())/1000.0)
 		}
@@ -101,7 +101,7 @@ func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *co
 	}
 
 	// Adding 'node allocatable type' metrics
-	if !metadata.SemconvK8sReceiverK8sclusterDisableLegacyFeatureGate.IsEnabled() {
+	if !metadata.ReceiverK8sclusterDontEmitV0K8sConventionsFeatureGate.IsEnabled() {
 		for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
 			v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
 			quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]

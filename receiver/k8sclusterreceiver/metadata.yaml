@@ -703,15 +703,15 @@ tests:
     skip: true
 
 feature_gates:
-  - id: semconv.k8s.receiver.k8scluster.disableLegacy
+  - id: receiver.k8scluster.DontEmitV0K8sConventions
     stage: alpha
     description: >-
-            When enabled, semconv stable metrics are enabled.
+      When enabled, V0 semantic conventions are disabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708
-  - id: semconv.k8s.receiver.k8scluster.enableStable
+  - id: receiver.k8scluster.EmitV1K8sConventions
     stage: alpha
     description: >-
-      When enabled, semconv stable metrics are enabled.
+      When enabled, V1 semantic conventions are enabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708
