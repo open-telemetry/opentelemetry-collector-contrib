@@ -476,3 +476,5 @@ If disabled, the old format of the node allocatable metrics are reported:
 - `k8s.node.allocatable_ephemeral_storage`
 - `k8s.node.allocatable_memory`
 - `k8s.node.allocatable_pods`
+
+See [documentation.md](./documentation.md#feature-gates) for the complete list of feature gates supported by this processor.

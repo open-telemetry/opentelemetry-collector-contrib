@@ -522,3 +522,14 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true |
 | os.description | The os description used by Kubernetes Node. | Any Str | false |
 | os.type | The os type used by Kubernetes Node. | Any Str | false |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `semconv.k8s.receiver.k8scluster.disableLegacy` | alpha | When enabled, semconv stable metrics are enabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708) |
+| `semconv.k8s.receiver.k8scluster.enableStable` | alpha | When enabled, semconv stable metrics are enabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

@@ -701,3 +701,17 @@ tests:
   skip_lifecycle: true
   goleak:
     skip: true
+
+feature_gates:
+  - id: semconv.k8s.receiver.k8scluster.disableLegacy
+    stage: alpha
+    description: >-
+            When enabled, semconv stable metrics are enabled.
+    from_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708
+  - id: semconv.k8s.receiver.k8scluster.enableStable
+    stage: alpha
+    description: >-
+      When enabled, semconv stable metrics are enabled.
+    from_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708

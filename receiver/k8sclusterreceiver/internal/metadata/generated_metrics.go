@@ -1861,6 +1861,7 @@ func (m *metricK8sNodeCPUAllocatable) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeCPUAllocatable(cfg MetricConfig) metricK8sNodeCPUAllocatable {
 	m := metricK8sNodeCPUAllocatable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1912,6 +1913,7 @@ func (m *metricK8sNodeEphemeralStorageAllocatable) emit(metrics pmetric.MetricSl
 
 func newMetricK8sNodeEphemeralStorageAllocatable(cfg MetricConfig) metricK8sNodeEphemeralStorageAllocatable {
 	m := metricK8sNodeEphemeralStorageAllocatable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1963,6 +1965,7 @@ func (m *metricK8sNodeMemoryAllocatable) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeMemoryAllocatable(cfg MetricConfig) metricK8sNodeMemoryAllocatable {
 	m := metricK8sNodeMemoryAllocatable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2014,6 +2017,7 @@ func (m *metricK8sNodePodAllocatable) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodePodAllocatable(cfg MetricConfig) metricK8sNodePodAllocatable {
 	m := metricK8sNodePodAllocatable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
