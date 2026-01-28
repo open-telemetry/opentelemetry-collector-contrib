@@ -18,7 +18,7 @@ attributes:
   system.memory.linux.hugepages.state:
     description: Breakdown of hugepages usage by state.
     type: string
-    enum: [free, used, reserved, surplus]
+    enum: [free, used, reserved]
 
 metrics:
   system.linux.memory.available:
