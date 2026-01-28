@@ -194,17 +194,6 @@ func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 	}
 }
 
-// Get retrieves a value from the document by its key.
-// Returns the value if found, nil otherwise.
-func (doc *Document) Get(key string) *Value {
-	for i := range doc.fields {
-		if doc.fields[i].key == key {
-			return &doc.fields[i].value
-		}
-	}
-	return nil
-}
-
 // AddEvents converts and adds span events to the document.
 func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
 	for _, e := range events.All() {
@@ -244,7 +233,6 @@ func (doc *Document) sort() {
 // Dedup removes fields from the document, that have duplicate keys.
 // The filtering only keeps the last value for a key.
 // protectedFields is an optional list of field paths that should never get .value suffix.
-// This prevents conflicts with well-defined schema fields (e.g., ECS fields).
 //
 // Dedup ensure that keys are sorted.
 func (doc *Document) Dedup(protectedFields ...string) {
@@ -304,7 +292,7 @@ func (doc *Document) Dedup(protectedFields ...string) {
 
 	// 4. fix objects that might be stored in arrays
 	for i := range doc.fields {
-		doc.fields[i].value.dedup(protectedFields...)
+		doc.fields[i].value.Dedup(protectedFields...)
 	}
 }
 
@@ -321,15 +309,6 @@ func newJSONVisitor(w io.Writer) *json.Visitor {
 // serialization.
 func (doc *Document) Serialize(w io.Writer, dedot bool) error {
 	doc.Dedup()
-	v := newJSONVisitor(w)
-	return doc.iterJSON(v, dedot)
-}
-
-// SerializeWithProtectedFields is like Serialize but accepts a list of field paths
-// that should never get a .value suffix during deduplication.
-// This is used to protect well-defined schema fields (e.g., ECS fields) from conflicts.
-func (doc *Document) SerializeWithProtectedFields(w io.Writer, dedot bool, protectedFields []string) error {
-	doc.Dedup(protectedFields...)
 	v := newJSONVisitor(w)
 	return doc.iterJSON(v, dedot)
 }
@@ -528,19 +507,13 @@ func (v *Value) sort() {
 }
 
 // Dedup recursively dedups keys in stored documents.
-//
-// NOTE: The value MUST be sorted.
 func (v *Value) Dedup(protectedFields ...string) {
-	v.dedup(protectedFields...)
-}
-
-func (v *Value) dedup(protectedFields ...string) {
 	switch v.kind {
 	case KindObject:
 		v.doc.Dedup(protectedFields...)
 	case KindArr:
 		for i := range v.arr {
-			v.arr[i].dedup(protectedFields...)
+			v.arr[i].Dedup(protectedFields...)
 		}
 	}
 }

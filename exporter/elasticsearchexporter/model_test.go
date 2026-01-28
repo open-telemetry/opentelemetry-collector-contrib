@@ -1229,169 +1229,12 @@ func TestMapLogAttributesToECS(t *testing.T) {
 }
 
 func TestEncodeLogECSModeProcessExecutableConflict(t *testing.T) {
-	// Issue #37211: Test cross-level conflict where process.executable fields
-	t.Run("cross_level_conflict_resource_path_record_name", func(t *testing.T) {
-		logs := plog.NewLogs()
-		resource := logs.ResourceLogs().AppendEmpty().Resource()
-
-		// Resource level: process.executable.path (correct location per semconv)
-		err := resource.Attributes().FromRaw(map[string]any{
-			"service.name":            "test-service",
-			"process.executable.path": "/usr/bin/ssh",
-		})
-		require.NoError(t, err)
-
-		scope := pcommon.NewInstrumentationScope()
-		record := plog.NewLogRecord()
-
-		// Record level: process.executable.name (user instrumentation error - should be at resource level)
-		err = record.Attributes().FromRaw(map[string]any{
-			"process.executable.name": "ssh",
-		})
-		require.NoError(t, err)
-
-		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
-		logs.MarkReadOnly()
-
-		var buf bytes.Buffer
-		encoder, _ := newEncoder(MappingECS)
-		err = encoder.encodeLog(
-			encodingContext{resource: resource, scope: scope},
-			record, elasticsearch.Index{}, &buf,
-		)
-		require.NoError(t, err)
-
-		t.Logf("Generated JSON:\n%s", buf.String())
-
-		// Parse the JSON
-		var result map[string]any
-		err = json.Unmarshal(buf.Bytes(), &result)
-		require.NoError(t, err, "JSON should be valid")
-
-		// Check the process.executable field
-		process, ok := result["process"].(map[string]any)
-		require.True(t, ok, "process field should be present")
-
-		executable := process["executable"]
-		t.Logf("process.executable type: %T", executable)
-		t.Logf("process.executable value: %v", executable)
-
-		// CURRENT BEHAVIOR (BUG): process.executable becomes an object with both fields
-		// {"executable": {"name": "ssh", "value": "/usr/bin/ssh"}}
-		// This happens because:
-		// 1. Resource level: process.executable.path -> process.executable = "/usr/bin/ssh"
-		// 2. Record level: process.executable.name stays as-is
-		// 3. After dedot: both end up under process.executable, causing the first to become "value"
-
-		// EXPECTED BEHAVIOR (AFTER FIX): process.executable should be a string
-		// {"executable": "/usr/bin/ssh"}
-		// The record-level process.executable.name should be ignored/skipped
-
-		executableMap, isMap := executable.(map[string]any)
-		if isMap {
-			t.Logf(" BUG REPRODUCED: process.executable is an object: %v", executableMap)
-			t.Logf("   This creates a mapping conflict in Elasticsearch")
-			t.Logf("   Expected: process.executable should be a string '/usr/bin/ssh'")
-
-			// Verify the buggy structure
-			require.Contains(t, executableMap, "value", "Current buggy behavior: original value becomes 'value' field")
-			require.Contains(t, executableMap, "name", "Current buggy behavior: record-level name gets added")
-			require.Equal(t, "/usr/bin/ssh", executableMap["value"])
-			require.Equal(t, "ssh", executableMap["name"])
-
-			t.Logf("✓ Issue #37211 successfully reproduced - this test should FAIL after implementing the fix")
-		} else if executableStr, isString := executable.(string); isString {
-			t.Logf("✓ FIXED: process.executable is correctly a string: %s", executableStr)
-			require.Equal(t, "/usr/bin/ssh", executableStr, "should be the path from resource level")
-		} else {
-			t.Fatalf("Unexpected type for process.executable: %T", executable)
-		}
-	})
-
-	t.Run("only_executable_name_present", func(t *testing.T) {
-		// Test that process.executable.name is correctly mapped to process.title
-		// when process.executable.path is NOT present
-		logs := plog.NewLogs()
-		resource := logs.ResourceLogs().AppendEmpty().Resource()
-		err := resource.Attributes().FromRaw(map[string]any{
-			"service.name":            "test-service",
-			"process.executable.name": "ssh",
-		})
-		require.NoError(t, err)
-
-		scope := pcommon.NewInstrumentationScope()
-		record := plog.NewLogRecord()
-		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
-		logs.MarkReadOnly()
-
-		var buf bytes.Buffer
-		encoder, _ := newEncoder(MappingECS)
-		err = encoder.encodeLog(
-			encodingContext{resource: resource, scope: scope},
-			record, elasticsearch.Index{}, &buf,
-		)
-		require.NoError(t, err)
-
-		// Parse the JSON to verify the structure
-		var result map[string]any
-		err = json.Unmarshal(buf.Bytes(), &result)
-		require.NoError(t, err)
-
-		// Verify that process.title is present
-		process, ok := result["process"].(map[string]any)
-		require.True(t, ok, "process field should be present")
-		require.Equal(t, "ssh", process["title"], "process.title should contain the name when path is not present")
-
-		// Verify that process.executable is NOT present
-		_, executableExists := process["executable"]
-		require.False(t, executableExists, "process.executable should not be present when only name is provided")
-	})
-
-	t.Run("only_executable_path_present", func(t *testing.T) {
-		// Test that process.executable.path is correctly mapped to process.executable
+	t.Run("resource_path_conflicts_with_record_name", func(t *testing.T) {
 		logs := plog.NewLogs()
 		resource := logs.ResourceLogs().AppendEmpty().Resource()
 		err := resource.Attributes().FromRaw(map[string]any{
 			"service.name":            "test-service",
 			"process.executable.path": "/usr/bin/ssh",
-		})
-		require.NoError(t, err)
-
-		scope := pcommon.NewInstrumentationScope()
-		record := plog.NewLogRecord()
-		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
-		logs.MarkReadOnly()
-
-		var buf bytes.Buffer
-		encoder, _ := newEncoder(MappingECS)
-		err = encoder.encodeLog(
-			encodingContext{resource: resource, scope: scope},
-			record, elasticsearch.Index{}, &buf,
-		)
-		require.NoError(t, err)
-
-		// Parse the JSON to verify the structure
-		var result map[string]any
-		err = json.Unmarshal(buf.Bytes(), &result)
-		require.NoError(t, err)
-
-		// Verify that process.executable is present
-		process, ok := result["process"].(map[string]any)
-		require.True(t, ok, "process field should be present")
-		require.Equal(t, "/usr/bin/ssh", process["executable"], "process.executable should contain the path")
-
-		// Verify that process.title is NOT present
-		_, titleExists := process["title"]
-		require.False(t, titleExists, "process.title should not be present when only path is provided")
-	})
-
-	t.Run("record_level_name_only_no_resource", func(t *testing.T) {
-		// Test that process.executable.name at record level passes through
-		// when there are NO resource-level process attributes
-		logs := plog.NewLogs()
-		resource := logs.ResourceLogs().AppendEmpty().Resource()
-		err := resource.Attributes().FromRaw(map[string]any{
-			"service.name": "test-service",
 		})
 		require.NoError(t, err)
 
@@ -1417,119 +1260,109 @@ func TestEncodeLogECSModeProcessExecutableConflict(t *testing.T) {
 		err = json.Unmarshal(buf.Bytes(), &result)
 		require.NoError(t, err)
 
-		// When process.executable.name is at record level and no resource-level
-		// process.executable exists, it should pass through as-is
-		process, ok := result["process"].(map[string]any)
-		require.True(t, ok, "process field should be present")
-
-		executable, ok := process["executable"].(map[string]any)
-		require.True(t, ok, "process.executable should be an object (from dedot)")
-		require.Equal(t, "ssh", executable["name"], "process.executable.name should pass through")
-	})
-
-	t.Run("both_path_and_name_at_record_level", func(t *testing.T) {
-		// Edge case: both path and name at record level (incorrect instrumentation)
-		logs := plog.NewLogs()
-		resource := logs.ResourceLogs().AppendEmpty().Resource()
-		err := resource.Attributes().FromRaw(map[string]any{
-			"service.name": "test-service",
-		})
-		require.NoError(t, err)
-
-		scope := pcommon.NewInstrumentationScope()
-		record := plog.NewLogRecord()
-		err = record.Attributes().FromRaw(map[string]any{
-			"process.executable.path": "/usr/bin/ssh",
-			"process.executable.name": "ssh",
-		})
-		require.NoError(t, err)
-
-		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
-		logs.MarkReadOnly()
-
-		var buf bytes.Buffer
-		encoder, _ := newEncoder(MappingECS)
-		err = encoder.encodeLog(
-			encodingContext{resource: resource, scope: scope},
-			record, elasticsearch.Index{}, &buf,
-		)
-		require.NoError(t, err)
-
-		var result map[string]any
-		err = json.Unmarshal(buf.Bytes(), &result)
-		require.NoError(t, err)
-
-		// Since there's no conversion for record-level process.executable.path,
-		// both will pass through and dedot will create nested object
-		process, ok := result["process"].(map[string]any)
-		require.True(t, ok, "process field should be present")
-
-		executable, ok := process["executable"].(map[string]any)
-		require.True(t, ok, "process.executable should be an object")
-		require.Equal(t, "/usr/bin/ssh", executable["path"], "path should pass through")
-		require.Equal(t, "ssh", executable["name"], "name should pass through")
-	})
-
-	t.Run("general_solution_any_executable_subfield", func(t *testing.T) {
-		// This test verifies the GENERAL solution addresses Carson's concerns:
-		// 1. Not just process.executable.name, but ANY process.executable.foo
-		// 2. The protected field list prevents .value suffix for ALL well-defined ECS fields
-		logs := plog.NewLogs()
-		resource := logs.ResourceLogs().AppendEmpty().Resource()
-
-		err := resource.Attributes().FromRaw(map[string]any{
-			"service.name":            "test-service",
-			"process.executable.path": "/usr/bin/ssh",
-		})
-		require.NoError(t, err)
-
-		scope := pcommon.NewInstrumentationScope()
-		record := plog.NewLogRecord()
-
-		// Record level has various process.executable.* sub-attributes
-		// These are NOT in the conversion map, so they pass through as-is
-		err = record.Attributes().FromRaw(map[string]any{
-			"process.executable.name":    "ssh",   // From original issue
-			"process.executable.foo":     "bar",   // Carson's concern: ANY subfield
-			"process.executable.custom":  "value", // Another arbitrary subfield
-			"process.executable.version": "8.0",   // Yet another one
-		})
-		require.NoError(t, err)
-
-		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
-		logs.MarkReadOnly()
-
-		var buf bytes.Buffer
-		encoder, _ := newEncoder(MappingECS)
-		err = encoder.encodeLog(
-			encodingContext{resource: resource, scope: scope},
-			record, elasticsearch.Index{}, &buf,
-		)
-		require.NoError(t, err)
-
-		t.Logf("Generated JSON:\n%s", buf.String())
-
-		var result map[string]any
-		err = json.Unmarshal(buf.Bytes(), &result)
-		require.NoError(t, err)
-
-		process, ok := result["process"].(map[string]any)
-		require.True(t, ok, "process field should be present")
-
-		executable := process["executable"]
-		t.Logf("process.executable type: %T", executable)
-		t.Logf("process.executable value: %v", executable)
-
-		// CRITICAL: With the general solution, process.executable should remain a string
-		// because it's in the protectedFields list passed to Dedup()
-		// All the conflicting nested fields (process.executable.*) should be removed
-		executableStr, isString := executable.(string)
-		require.True(t, isString, "process.executable should be a string (protected ECS field)")
+		process := result["process"].(map[string]any)
+		executableStr, isString := process["executable"].(string)
+		require.True(t, isString, "process.executable should be a string")
 		require.Equal(t, "/usr/bin/ssh", executableStr)
+	})
 
-		t.Logf("✓ General solution works: process.executable protected from .value suffix")
-		t.Logf("  ALL process.executable.* subfields are removed to preserve the ECS field")
-		t.Logf("  This handles not just 'name', but 'foo', 'custom', 'version', etc.")
+	t.Run("only_name_present", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.name": "ssh",
+		})
+		require.NoError(t, err)
+
+		record := plog.NewLogRecord()
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: pcommon.NewInstrumentationScope()},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		var result map[string]any
+		err = json.Unmarshal(buf.Bytes(), &result)
+		require.NoError(t, err)
+
+		process := result["process"].(map[string]any)
+		require.Equal(t, "ssh", process["title"])
+		_, executableExists := process["executable"]
+		require.False(t, executableExists)
+	})
+
+	t.Run("only_path_present", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.path": "/usr/bin/ssh",
+		})
+		require.NoError(t, err)
+
+		record := plog.NewLogRecord()
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: pcommon.NewInstrumentationScope()},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		var result map[string]any
+		err = json.Unmarshal(buf.Bytes(), &result)
+		require.NoError(t, err)
+
+		process := result["process"].(map[string]any)
+		require.Equal(t, "/usr/bin/ssh", process["executable"])
+		_, titleExists := process["title"]
+		require.False(t, titleExists)
+	})
+
+	t.Run("multiple_conflicting_subfields", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.path": "/usr/bin/ssh",
+		})
+		require.NoError(t, err)
+
+		record := plog.NewLogRecord()
+		err = record.Attributes().FromRaw(map[string]any{
+			"process.executable.name": "ssh",
+			"process.executable.foo":  "bar",
+		})
+		require.NoError(t, err)
+
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: pcommon.NewInstrumentationScope()},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		var result map[string]any
+		err = json.Unmarshal(buf.Bytes(), &result)
+		require.NoError(t, err)
+
+		process := result["process"].(map[string]any)
+		executableStr, isString := process["executable"].(string)
+		require.True(t, isString)
+		require.Equal(t, "/usr/bin/ssh", executableStr)
 	})
 }
 

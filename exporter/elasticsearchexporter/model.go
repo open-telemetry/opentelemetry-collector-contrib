@@ -33,7 +33,6 @@ type conversionEntry struct {
 }
 
 // collectECSFields extracts all target ECS field paths from conversion maps.
-// These paths represent well-defined ECS fields that should never get a .value suffix.
 func collectECSFields(maps ...map[string]conversionEntry) []string {
 	fields := make(map[string]bool)
 	for _, m := range maps {
@@ -215,10 +214,7 @@ func (ecsModeEncoder) encodeLog(
 ) error {
 	var document objmodel.Document
 
-	// Define all conversion maps first so we can collect protected fields
-	scopeAttrsConversionMap := map[string]conversionEntry{
-		// None at the moment
-	}
+	scopeAttrsConversionMap := map[string]conversionEntry{}
 
 	recordAttrsConversionMap := map[string]conversionEntry{
 		"event.name":                                {to: "event.action"},
@@ -229,10 +225,8 @@ func (ecsModeEncoder) encodeLog(
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
 
-	// Collect all ECS field paths from conversion maps to protect them from conflicts
 	protectedFields := collectECSFields(resourceAttrsConversionMap, scopeAttrsConversionMap, recordAttrsConversionMap)
 
-	// Now encode attributes, passing protected fields to prevent conflicts
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, protectedFields...)
 	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, protectedFields...)
@@ -255,7 +249,8 @@ func (ecsModeEncoder) encodeLog(
 		document.AddAttribute("message", record.Body())
 	}
 
-	return document.SerializeWithProtectedFields(buf, true, protectedFields)
+	document.Dedup(protectedFields...)
+	return document.Serialize(buf, true)
 }
 
 func (ecsModeEncoder) encodeSpan(
@@ -266,10 +261,7 @@ func (ecsModeEncoder) encodeSpan(
 ) error {
 	var document objmodel.Document
 
-	// Define all conversion maps first so we can collect protected fields
-	scopeAttrsConversionMap := map[string]conversionEntry{
-		// None at the moment
-	}
+	scopeAttrsConversionMap := map[string]conversionEntry{}
 
 	spanAttrsConversionMap := map[string]conversionEntry{
 		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
@@ -278,10 +270,8 @@ func (ecsModeEncoder) encodeSpan(
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
 
-	// Collect all ECS field paths from conversion maps to protect them from conflicts
 	protectedFields := collectECSFields(resourceAttrsConversionMap, scopeAttrsConversionMap, spanAttrsConversionMap)
 
-	// Now encode attributes, passing protected fields to prevent conflicts
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, protectedFields...)
 	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap, protectedFields...)
@@ -303,7 +293,8 @@ func (ecsModeEncoder) encodeSpan(
 		document.AddString("span.kind", spanKind)
 	}
 
-	return document.SerializeWithProtectedFields(buf, true, protectedFields)
+	document.Dedup(protectedFields...)
+	return document.Serialize(buf, true)
 }
 
 // spanKindToECSStr converts an OTel SpanKind to its ECS equivalent string representation defined here:
@@ -478,7 +469,6 @@ func (ecsDataPointsEncoder) encodeMetrics(
 	dp0 := dataPoints[0]
 	var document objmodel.Document
 
-	// Collect all ECS field paths from conversion maps to protect them from conflicts
 	protectedFields := collectECSFields(resourceAttrsConversionMap)
 
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
@@ -495,7 +485,8 @@ func (ecsDataPointsEncoder) encodeMetrics(
 		document.AddAttribute(dp.Metric().Name(), value)
 	}
 
-	err := document.SerializeWithProtectedFields(buf, true, protectedFields)
+	document.Dedup(protectedFields...)
+	err := document.Serialize(buf, true)
 
 	return document.DynamicTemplates(), err
 }
@@ -556,14 +547,10 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 	return attrs
 }
 
-// encodeAttributesECSMode maps OpenTelemetry attributes to ECS fields using the provided conversion map.
-// document is the target document being populated, which is checked to see which protected fields actually exist.
 func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]conversionEntry, protectedFields ...string) {
 	if len(conversionMap) == 0 {
-		// No conversions to be done; add all attributes at top level of
-		// document, but skip any that would conflict with protected fields that EXIST in the document.
 		for k, v := range attrs.All() {
-			if shouldSkipAttribute(k, document, protectedFields) {
+			if shouldSkipAttribute(k, protectedFields) {
 				continue
 			}
 			document.AddAttribute(k, v)
@@ -589,33 +576,20 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 			continue
 		}
 
-		// For unmapped attributes, check if they would conflict with protected ECS fields that EXIST
-		if shouldSkipAttribute(k, document, protectedFields) {
+		if shouldSkipAttribute(k, protectedFields) {
 			continue
 		}
 
-		// Otherwise, add key at top level with attribute name as-is.
 		document.AddAttribute(k, v)
 	}
 }
 
-// shouldSkipAttribute returns true if the attribute key would conflict with a protected ECS field
-// that actually exists in the document.
-// This checks if the attribute key starts with a protected field path followed by a dot,
-// AND the protected field path actually exists in the document.
-// For example, if "process.executable" is protected AND exists in the document,
-// then "process.executable.name" would be skipped.
-func shouldSkipAttribute(attrKey string, document *objmodel.Document, protectedFields []string) bool {
-	// Check if this attribute would create a nested field under any protected field
+func shouldSkipAttribute(attrKey string, protectedFields []string) bool {
 	for _, protectedField := range protectedFields {
-		// Check if attrKey starts with "protectedField."
 		if len(attrKey) > len(protectedField) &&
 			attrKey[:len(protectedField)] == protectedField &&
 			attrKey[len(protectedField)] == '.' {
-			// Check if the protected field actually exists in the document
-			if document.Get(protectedField) != nil {
-				return true
-			}
+			return true
 		}
 	}
 	return false
