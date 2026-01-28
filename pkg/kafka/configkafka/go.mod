@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.50.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/confmap/xconfmap v0.144.1-0.20260121161034-55399d4743af
 	go.uber.org/goleak v1.3.0
+	golang.org/x/oauth2 v0.30.0
 )
 
 require (
