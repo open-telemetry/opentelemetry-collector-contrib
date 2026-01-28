@@ -91,9 +91,12 @@ func TestMockedEndToEnd(t *testing.T) {
 
 	defer shutdown()
 
+	// Expect 1 receiver: nop/1 succeeds, examplereceiver/1 fails (no factory).
+	// Even though two observers emit the same endpoint, we correctly avoid
+	// creating duplicate receivers for the same endpoint+template.
 	require.Eventuallyf(t, func() bool {
-		return dyn.observerHandler.receiversByEndpointID.Size() == 2
-	}, 1*time.Second, 100*time.Millisecond, "expected 2 receiver but got %v", dyn.observerHandler.receiversByEndpointID)
+		return dyn.observerHandler.receiversByEndpointID.Size() == 1
+	}, 1*time.Second, 100*time.Millisecond, "expected 1 receiver but got %v", dyn.observerHandler.receiversByEndpointID)
 
 	// Test that we can send metrics.
 	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
@@ -111,5 +114,5 @@ func TestMockedEndToEnd(t *testing.T) {
 	}
 
 	// TODO: Will have to rework once receivers are started asynchronously to Start().
-	assert.Len(t, mockConsumer.AllMetrics(), 2)
+	assert.Len(t, mockConsumer.AllMetrics(), 1)
 }

@@ -51,8 +51,10 @@ type receiverTemplate struct {
 	// ResourceAttributes is a map of resource attributes to add to just this receiver's resource metrics.
 	// It can contain expr expressions for endpoint env value expansion
 	ResourceAttributes map[string]any `mapstructure:"resource_attributes"`
-	rule               rule
-	signals            receiverSignals
+	// rule is the compiled form of Rule, created by newRule() during config unmarshaling.
+	// It wraps an expr VM program for efficient repeated evaluation.
+	rule    rule
+	signals receiverSignals
 }
 
 // resourceAttributes holds a map of default resource attributes for each Endpoint type.

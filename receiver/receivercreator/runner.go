@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"sync"
 
 	"github.com/spf13/cast"
@@ -23,7 +24,8 @@ import (
 // runner starts and stops receiver instances.
 type runner interface {
 	// start a metrics receiver instance from its static config and discovered config.
-	start(receiver receiverConfig, discoveredConfig userConfigMap, consumer *enhancingConsumer) (component.Component, error)
+	// endpointAutoSet indicates whether the endpoint was auto-populated (not set by user).
+	start(receiver receiverConfig, discoveredConfig userConfigMap, endpointAutoSet bool, consumer *enhancingConsumer) (component.Component, error)
 	// shutdown a receiver.
 	shutdown(rcvr component.Component) error
 }
@@ -54,6 +56,7 @@ var _ runner = (*receiverRunner)(nil)
 func (run *receiverRunner) start(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
+	endpointAutoSet bool,
 	consumer *enhancingConsumer,
 ) (component.Component, error) {
 	factory := run.host.GetFactory(component.KindReceiver, receiver.id.Type())
@@ -64,7 +67,7 @@ func (run *receiverRunner) start(
 
 	receiverFactory := factory.(rcvr.Factory)
 
-	cfg, targetEndpoint, err := run.loadRuntimeReceiverConfig(receiverFactory, receiver, discoveredConfig)
+	cfg, targetEndpoint, err := run.loadRuntimeReceiverConfig(receiverFactory, receiver, discoveredConfig, endpointAutoSet)
 	if err != nil {
 		return nil, err
 	}
@@ -123,13 +126,15 @@ func (*receiverRunner) shutdown(rcvr component.Component) error {
 
 // loadRuntimeReceiverConfig loads the given receiverTemplate merged with config values
 // that may have been discovered at runtime.
+// endpointAutoSet indicates whether the endpoint was auto-populated from the discovered endpoint.
 func (*receiverRunner) loadRuntimeReceiverConfig(
 	factory rcvr.Factory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
+	endpointAutoSet bool,
 ) (component.Config, string, error) {
 	// remove dynamically added "endpoint" field if not supported by receiver
-	mergedConfig, targetEndpoint, err := mergeTemplatedAndDiscoveredConfigs(factory, receiver.config, discoveredConfig)
+	mergedConfig, targetEndpoint, err := mergeTemplatedAndDiscoveredConfigs(factory, receiver.config, discoveredConfig, endpointAutoSet)
 	if err != nil {
 		return nil, targetEndpoint, fmt.Errorf("failed to merge constituent template configs: %w", err)
 	}
@@ -146,11 +151,15 @@ func (*receiverRunner) loadRuntimeReceiverConfig(
 
 // mergeTemplateAndDiscoveredConfigs will unify the templated and discovered configs,
 // setting the `endpoint` field from the discovered one if 1. not specified by the user
-// and 2. determined to be supported (by trial and error of unmarshalling a temp intermediary).
-func mergeTemplatedAndDiscoveredConfigs(factory rcvr.Factory, templated, discovered userConfigMap) (*confmap.Conf, string, error) {
+// (indicated by endpointAutoSet) and 2. determined to be supported (by trial and error
+// of unmarshalling a temp intermediary).
+func mergeTemplatedAndDiscoveredConfigs(factory rcvr.Factory, templated, discovered userConfigMap, endpointAutoSet bool) (*confmap.Conf, string, error) {
+	// Clone discovered to avoid mutating the caller's map. The caller stores
+	// this map for later comparison during OnChange handling.
+	discovered = maps.Clone(discovered)
+
 	targetEndpoint := cast.ToString(templated[endpointConfigKey])
-	if _, endpointSet := discovered[tmpSetEndpointConfigKey]; endpointSet {
-		delete(discovered, tmpSetEndpointConfigKey)
+	if endpointAutoSet {
 		targetEndpoint = cast.ToString(discovered[endpointConfigKey])
 
 		// confirm the endpoint we've added is supported, removing if not
