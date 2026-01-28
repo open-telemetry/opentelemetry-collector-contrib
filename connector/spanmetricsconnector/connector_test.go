@@ -78,6 +78,7 @@ type span struct {
 	statusCode ptrace.StatusCode
 	traceID    [16]byte
 	spanID     [8]byte
+	tracestate string
 }
 
 // verifyDisabledHistogram expects that histograms are disabled.
@@ -495,6 +496,10 @@ func initSpan(span span, s ptrace.Span) {
 	s.Attributes().PutEmptySlice(arrayAttrName)
 	s.SetTraceID(span.traceID)
 	s.SetSpanID(span.spanID)
+
+	if span.tracestate != "" {
+		s.TraceState().FromRaw(span.tracestate)
+	}
 
 	e := s.Events().AppendEmpty()
 	e.SetName("exception")
@@ -2637,24 +2642,7 @@ func TestAdjustedCountAttribute_Integration(t *testing.T) {
 			require.NoError(t, err)
 			defer func() { require.NoError(t, p.Shutdown(ctx)) }()
 
-			// Create a trace with the specified tracestate
-			traces := ptrace.NewTraces()
-			rs := traces.ResourceSpans().AppendEmpty()
-			rs.Resource().Attributes().PutStr("service.name", "test-service")
-			ss := rs.ScopeSpans().AppendEmpty()
-			span := ss.Spans().AppendEmpty()
-			span.SetName("test-span")
-			span.SetKind(ptrace.SpanKindServer)
-			span.Status().SetCode(ptrace.StatusCodeOk)
-			span.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-			span.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
-			now := time.Now()
-			span.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
-			span.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
-
-			if tt.tracestate != "" {
-				span.TraceState().FromRaw(tt.tracestate)
-			}
+			traces := buildSampleTraceWithTracestate(tt.tracestate)
 
 			err = p.ConsumeTraces(ctx, traces)
 			require.NoError(t, err)
@@ -2729,24 +2717,7 @@ func TestAdjustedCountAttribute_Histogram(t *testing.T) {
 			require.NoError(t, err)
 			defer func() { require.NoError(t, p.Shutdown(ctx)) }()
 
-			// Create a trace
-			traces := ptrace.NewTraces()
-			rs := traces.ResourceSpans().AppendEmpty()
-			rs.Resource().Attributes().PutStr("service.name", "test-service")
-			ss := rs.ScopeSpans().AppendEmpty()
-			span := ss.Spans().AppendEmpty()
-			span.SetName("test-span")
-			span.SetKind(ptrace.SpanKindServer)
-			span.Status().SetCode(ptrace.StatusCodeOk)
-			span.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-			span.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
-			now := time.Now()
-			span.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
-			span.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
-
-			if tt.tracestate != "" {
-				span.TraceState().FromRaw(tt.tracestate)
-			}
+			traces := buildSampleTraceWithTracestate(tt.tracestate)
 
 			err = p.ConsumeTraces(ctx, traces)
 			require.NoError(t, err)
@@ -2821,29 +2792,8 @@ func TestAdjustedCountAttribute_Events(t *testing.T) {
 			require.NoError(t, err)
 			defer func() { require.NoError(t, p.Shutdown(ctx)) }()
 
-			// Create a trace with an event
-			traces := ptrace.NewTraces()
-			rs := traces.ResourceSpans().AppendEmpty()
-			rs.Resource().Attributes().PutStr("service.name", "test-service")
-			ss := rs.ScopeSpans().AppendEmpty()
-			span := ss.Spans().AppendEmpty()
-			span.SetName("test-span")
-			span.SetKind(ptrace.SpanKindServer)
-			span.Status().SetCode(ptrace.StatusCodeOk)
-			span.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-			span.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
-			now := time.Now()
-			span.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
-			span.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleDuration)))
-
-			// Add an event to the span
-			event := span.Events().AppendEmpty()
-			event.SetName("exception")
-			event.Attributes().PutStr(exceptionTypeAttrName, "NullPointerException")
-
-			if tt.tracestate != "" {
-				span.TraceState().FromRaw(tt.tracestate)
-			}
+			// buildSampleTraceWithTracestate creates spans with events via initSpan
+			traces := buildSampleTraceWithTracestate(tt.tracestate)
 
 			err = p.ConsumeTraces(ctx, traces)
 			require.NoError(t, err)
@@ -2884,6 +2834,223 @@ func TestAdjustedCountAttribute_Events(t *testing.T) {
 				}
 			}
 			assert.True(t, found, "should have found events metric")
+		})
+	}
+}
+
+// buildSampleTraceWithTracestate builds a sample trace similar to buildSampleTrace,
+// but with the specified tracestate set on all spans.
+func buildSampleTraceWithTracestate(tracestate string) ptrace.Traces {
+	traces := ptrace.NewTraces()
+
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-a",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+					tracestate: tracestate,
+				},
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindClient,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10},
+					tracestate: tracestate,
+				},
+			},
+		}, traces.ResourceSpans().AppendEmpty())
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-b",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+					traceID:    [16]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10},
+					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+					tracestate: tracestate,
+				},
+			},
+		}, traces.ResourceSpans().AppendEmpty())
+	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
+	return traces
+}
+
+// buildLargeSampleTraceWithTracestate builds a larger trace with many spans for more realistic benchmarks.
+func buildLargeSampleTraceWithTracestate(numSpans int, tracestate string) ptrace.Traces {
+	traces := ptrace.NewTraces()
+
+	spans := make([]span, numSpans)
+	kinds := []ptrace.SpanKind{ptrace.SpanKindServer, ptrace.SpanKindClient, ptrace.SpanKindInternal}
+	statuses := []ptrace.StatusCode{ptrace.StatusCodeOk, ptrace.StatusCodeError, ptrace.StatusCodeUnset}
+
+	for i := range numSpans {
+		spans[i] = span{
+			name:       fmt.Sprintf("/endpoint-%d", i%10),
+			kind:       kinds[i%len(kinds)],
+			statusCode: statuses[i%len(statuses)],
+			traceID:    [16]byte{byte(i), 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+			spanID:     [8]byte{byte(i), 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+			tracestate: tracestate,
+		}
+	}
+
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-a",
+			spans:       spans,
+		}, traces.ResourceSpans().AppendEmpty())
+
+	return traces
+}
+
+// BenchmarkConnectorConsumeTraces_WithTracestate benchmarks ConsumeTraces with ot.th tracestate values.
+func BenchmarkConnectorConsumeTraces_WithTracestate(b *testing.B) {
+	benchmarks := []struct {
+		name       string
+		tracestate string
+	}{
+		{
+			name:       "NoTracestate",
+			tracestate: "",
+		},
+		{
+			name:       "Tracestate_th_8_50pct_sampling",
+			tracestate: "ot=th:8",
+		},
+		{
+			name:       "Tracestate_th_c_25pct_sampling",
+			tracestate: "ot=th:c",
+		},
+		{
+			name:       "Tracestate_th_1_6pct_sampling",
+			tracestate: "ot=th:1",
+		},
+		{
+			name:       "Tracestate_no_th_field",
+			tracestate: "ot=rv:abcdabcdabcdff",
+		},
+		{
+			name:       "Tracestate_complex",
+			tracestate: "ot=th:c;rv:abcdabcdabcdff,vendor1=value1",
+		},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+			require.NoError(b, err)
+
+			traces := buildSampleTraceWithTracestate(bm.tracestate)
+			ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+			b.ResetTimer()
+			for b.Loop() {
+				_ = conn.ConsumeTraces(ctx, traces)
+			}
+		})
+	}
+}
+
+// BenchmarkConnectorConsumeTraces_WithTracestate_LargeTrace benchmarks ConsumeTraces with larger traces.
+func BenchmarkConnectorConsumeTraces_WithTracestate_LargeTrace(b *testing.B) {
+	spanCounts := []int{10, 100, 500}
+	tracestates := []struct {
+		name  string
+		value string
+	}{
+		{"NoTracestate", ""},
+		{"Tracestate_th_8", "ot=th:8"},
+	}
+
+	for _, sc := range spanCounts {
+		for _, ts := range tracestates {
+			b.Run(fmt.Sprintf("Spans_%d/%s", sc, ts.name), func(b *testing.B) {
+				conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+				require.NoError(b, err)
+
+				traces := buildLargeSampleTraceWithTracestate(sc, ts.value)
+				ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+				b.ResetTimer()
+				for b.Loop() {
+					_ = conn.ConsumeTraces(ctx, traces)
+				}
+			})
+		}
+	}
+}
+
+// BenchmarkConnectorConsumeTraces_WithTracestate_Parallel benchmarks parallel ConsumeTraces calls.
+func BenchmarkConnectorConsumeTraces_WithTracestate_Parallel(b *testing.B) {
+	benchmarks := []struct {
+		name       string
+		tracestate string
+	}{
+		{
+			name:       "NoTracestate",
+			tracestate: "",
+		},
+		{
+			name:       "Tracestate_th_8",
+			tracestate: "ot=th:8",
+		},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			conn, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+			require.NoError(b, err)
+
+			ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+			b.ResetTimer()
+			b.RunParallel(func(pb *testing.PB) {
+				// Each goroutine gets its own trace to avoid contention
+				traces := buildSampleTraceWithTracestate(bm.tracestate)
+				for pb.Next() {
+					_ = conn.ConsumeTraces(ctx, traces)
+				}
+			})
+		})
+	}
+}
+
+// BenchmarkConnectorConsumeTraces_WithTracestate_ExponentialHistogram benchmarks with exponential histograms.
+func BenchmarkConnectorConsumeTraces_WithTracestate_ExponentialHistogram(b *testing.B) {
+	benchmarks := []struct {
+		name       string
+		tracestate string
+	}{
+		{
+			name:       "NoTracestate",
+			tracestate: "",
+		},
+		{
+			name:       "Tracestate_th_8",
+			tracestate: "ot=th:8",
+		},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			conn, err := newConnectorImp(stringp("defaultNullValue"), exponentialHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+			require.NoError(b, err)
+
+			traces := buildSampleTraceWithTracestate(bm.tracestate)
+			ctx := metadata.NewIncomingContext(b.Context(), nil)
+
+			b.ResetTimer()
+			for b.Loop() {
+				_ = conn.ConsumeTraces(ctx, traces)
+			}
 		})
 	}
 }
