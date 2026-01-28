@@ -800,12 +800,15 @@ Examples:
 
 ### Encode
 
-`Encode(value, encoding)`
+`Encode(value, encoding, Optional[replacement])`
 
-The `Encode` Converter takes a string or byte array and returns the string or byte array encoded with the specified encoding.
+The `Encode` Converter takes a string or byte array and returns a UTF-8 safe string encoded with the specified encoding. Invalid UTF-8 bytes in the output are automatically replaced to ensure OTLP compatibility.
 
 `value` is a string or byte array to encode.
-`encoding` is a valid encoding name included in the [IANA encoding index](https://www.iana.org/assignments/character-sets/character-sets.xhtml) or one of `base64`, `base64-raw`, `base64-url` or `base64-raw-url`.
+`encoding` is a valid encoding name included in the [IANA encoding index](https://www.iana.org/assignments/character-sets/character-sets.xhtml) or one of `base64`, `base64-raw`, `base64-url`, `base64-raw-url`, `utf-8-raw`, `utf8-raw`, or `nop`.
+`replacement` (optional) is a string used to replace invalid UTF-8 bytes or non-encodable characters. If not specified, defaults to `�` (U+FFFD, the Unicode replacement character).
+
+**Note:** The function always returns valid UTF-8 strings to ensure collector compatibility and avoid protobuf serialization issues. For encodings that produce invalid UTF-8 output (e.g., ISO-8859-1, Windows-1252, UTF-16), invalid bytes are replaced with the replacement character.
 
 Examples:
 
@@ -813,6 +816,12 @@ Examples:
 
 
 - `Encode(resource.attributes["field"], "us-ascii")`
+
+
+- `Encode(body, "utf-8", "?")`  - Replace invalid UTF-8 bytes with `?`
+
+
+- `Encode(attributes["data"], "ISO-8859-1", "*")`  - Replace non-UTF-8 output bytes with `*`
 
 ### ExtractPatterns
 

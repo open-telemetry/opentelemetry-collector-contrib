@@ -18,7 +18,6 @@ func TestEncode(t *testing.T) {
 	testByteSlice.FromRaw([]byte("test string"))
 	testByteSliceB64 := pcommon.NewByteSlice()
 	testByteSliceB64.FromRaw([]byte("hello world"))
-
 	testValue := pcommon.NewValueEmpty()
 	_ = testValue.FromRaw("test string")
 	testValueB64 := pcommon.NewValueEmpty()
@@ -28,6 +27,7 @@ func TestEncode(t *testing.T) {
 		name          string
 		value         any
 		encoding      string
+		replacement   string
 		want          any
 		expectedError string
 	}
@@ -105,10 +105,23 @@ func TestEncode(t *testing.T) {
 			want:     "test string",
 		},
 		{
+			name:          "encode Value pointer to us-ascii with invalid ascii characters",
+			value:         "test á",
+			encoding:      "ascii",
+			want:          nil,
+			expectedError: "could not encode: encoding: rune not supported by encoding.",
+		},
+		{
 			name:     "encode string to ISO-8859-1",
 			value:    "test string",
 			encoding: "ISO-8859-1",
 			want:     "test string",
+		},
+		{
+			name:     "encode string to ISO-8859-1 with invalid UTF-8 characters",
+			value:    "test string with é",
+			encoding: "ISO-8859-1",
+			want:     "test string with �",
 		},
 		{
 			name:     "encode string to WINDOWS-1251",
@@ -117,10 +130,22 @@ func TestEncode(t *testing.T) {
 			want:     "test string",
 		},
 		{
+			name:     "encode string to WINDOWS-1251 with invalid UTF-8 characters",
+			value:    "test string with €",
+			encoding: "WINDOWS-1251",
+			want:     "test string with �",
+		},
+		{
 			name:     "encode string to WINDOWS-1252",
 			value:    "test string",
 			encoding: "WINDOWS-1252",
 			want:     "test string",
+		},
+		{
+			name:     "encode string to WINDOWS-1252 with invalid UTF-8 characters",
+			value:    "test string with €",
+			encoding: "WINDOWS-1252",
+			want:     "test string with �",
 		},
 		{
 			name:     "encode string to UTF-8",
@@ -139,6 +164,36 @@ func TestEncode(t *testing.T) {
 			value:    "test string",
 			encoding: "UTF16",
 			want:     "t\x00e\x00s\x00t\x00 \x00s\x00t\x00r\x00i\x00n\x00g\x00",
+		},
+		{
+			name:     "encode string to UTF-16 with invalid UTF-8 character",
+			value:    "€100",
+			encoding: "UTF16",
+			want:     "� 1\x000\x000\x00",
+		},
+		{
+			name:     "encode string to nop",
+			value:    "test string",
+			encoding: "nop",
+			want:     "test string",
+		},
+		{
+			name:     "encode string to utf-8-raw",
+			value:    "test string",
+			encoding: "utf-8-raw",
+			want:     "test string",
+		},
+		{
+			name:     "encode string to utf8-raw",
+			value:    "test string",
+			encoding: "utf8-raw",
+			want:     "test string",
+		},
+		{
+			name:     "encode string to utf8-raw with invalid UTF-8 character is not sanitized",
+			value:    "test\xff\xfestring", // 0xFF and 0xFE are invalid UTF-8
+			encoding: "utf8-raw",
+			want:     "test\xff\xfestring",
 		},
 		{
 			name:          "encode string to GB2312; no encoder available",
@@ -183,17 +238,42 @@ func TestEncode(t *testing.T) {
 			encoding: "base64-raw-url",
 			want:     "R28_L1p-eA",
 		},
+		{
+			name:        "UTF-8 with custom replacement for invalid UTF-8",
+			value:       "test\xff\xfestring",
+			encoding:    "utf-8",
+			replacement: "?",
+			want:        "test??string",
+		},
+		{
+			name:        "ISO-8859-1 with custom replacement for invalid UTF-8 output",
+			value:       "test é",
+			encoding:    "ISO-8859-1",
+			replacement: "INVALID",
+			want:        "test INVALID",
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expressionFunc, err := createEncodeFunction[any](ottl.FunctionContext{}, &EncodeArguments[any]{
+			encodeArguments := &EncodeArguments[any]{
 				Target: &ottl.StandardGetSetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return tt.value, nil
 					},
 				},
 				Encoding: tt.encoding,
-			})
+			}
+
+			if tt.replacement != "" {
+				encodeArguments.Replacement = ottl.NewTestingOptional[ottl.StringGetter[any]](&ottl.StandardStringGetter[any]{
+					Getter: func(context.Context, any) (any, error) {
+						return tt.replacement, nil
+					},
+				})
+			}
+
+			expressionFunc, err := createEncodeFunction[any](ottl.FunctionContext{}, encodeArguments)
 
 			require.NoError(t, err)
 
