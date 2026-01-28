@@ -11,11 +11,8 @@ type DeviceConfig struct {
 	Auth   AuthConfig `mapstructure:"auth"`
 }
 
-// DeviceInfo follows semantic conventions for device identification
+// DeviceInfo contains device identification information.
 type DeviceInfo struct {
-	// DO NOT USE unkeyed struct initialization
-	_ struct{} `mapstructure:"-"`
-
 	Host HostInfo `mapstructure:"host"`
 }
 
