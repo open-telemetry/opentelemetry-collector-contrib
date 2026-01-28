@@ -76,6 +76,8 @@ func getLogsMarshaler(encoding string, host component.Host) (marshaler.LogsMarsh
 		return marshaler.NewPdataLogsMarshaler(&plog.JSONMarshaler{}), nil
 	case "raw":
 		return marshaler.RawLogsMarshaler{}, nil
+	case "opensearch_json":
+		return &marshaler.OpenSearchLogsMarshaler{}, nil
 	}
 	return nil, fmt.Errorf("unrecognized logs encoding %q", encoding)
 }
