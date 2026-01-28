@@ -699,9 +699,11 @@ clean:
 generate-gh-issue-templates:
 	$(GITHUBGEN) issue-templates
 
+SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
+
 .PHONY: generate-schemas
 generate-schemas:
-	cmd/schemagen/run_schemagen_dir.sh -v -i testdata .
+	@$(foreach dir,$(SCHEMA_DIRS), $(SCHEMAGEN) $(dir) -o $(dir);)
 
 .PHONY: checks
 checks:
