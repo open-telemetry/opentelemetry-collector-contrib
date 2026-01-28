@@ -1,9 +1,6 @@
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/test08
-title: test08 component
 type: object
 $defs:
-  Schedule:
+  schedule:
     properties:
       interval:
         type: string
@@ -28,7 +25,7 @@ properties:
       x-customType: time.Duration
     type: object
   optional_schedule:
-    $ref: '#/$defs/Schedule'
+    $ref: schedule
     x-pointer: true
   probes:
     items:
@@ -44,7 +41,7 @@ properties:
       x-customType: time.Duration
     type: array
   schedule:
-    $ref: '#/$defs/Schedule'
+    $ref: 'schedule'
   start_at:
     type: string
     format: date-time

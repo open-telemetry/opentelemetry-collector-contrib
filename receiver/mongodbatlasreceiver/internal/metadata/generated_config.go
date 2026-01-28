@@ -27,7 +27,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for mongodbatlas metrics.
+// MetricsConfig provides config for mongodb_atlas metrics.
 type MetricsConfig struct {
 	MongodbatlasDbCounts                                  MetricConfig `mapstructure:"mongodbatlas.db.counts"`
 	MongodbatlasDbSize                                    MetricConfig `mapstructure:"mongodbatlas.db.size"`
@@ -322,7 +322,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for mongodbatlas resource attributes.
+// ResourceAttributesConfig provides config for mongodb_atlas resource attributes.
 type ResourceAttributesConfig struct {
 	MongodbAtlasClusterName     ResourceAttributeConfig `mapstructure:"mongodb_atlas.cluster.name"`
 	MongodbAtlasDbName          ResourceAttributeConfig `mapstructure:"mongodb_atlas.db.name"`
@@ -383,7 +383,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for mongodbatlas metrics builder.
+// MetricsBuilderConfig is a configuration for mongodb_atlas metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
