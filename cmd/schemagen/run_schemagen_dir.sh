@@ -55,8 +55,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SCHEMAGEN_BIN="$REPO_ROOT/.tools/schemagen"
 
 if [ ! -x "$SCHEMAGEN_BIN" ]; then
-    echo "Error: schemagen binary not found or not executable at $SCHEMAGEN_BIN"
-    exit 1
+    chmod +x "$SCHEMAGEN_BIN" 2>/dev/null
 fi
 
 run_schemagen_for_dir() {
