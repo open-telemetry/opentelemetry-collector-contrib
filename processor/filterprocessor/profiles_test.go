@@ -79,6 +79,7 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 		{
 			name: "drop resource",
 			conditions: ProfileFilters{
+				Action: dropAction,
 				ResourceConditions: []string{
 					`attributes["host.name"] == "localhost"`,
 				},
@@ -87,8 +88,20 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
+			name: "keep resource",
+			conditions: ProfileFilters{
+				Action: keepAction,
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			want:      func(_ pprofile.Profiles) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop profiles",
 			conditions: ProfileFilters{
+				Action: dropAction,
 				ProfileConditions: []string{
 					`original_payload_format == "legacy"`,
 				},
@@ -104,8 +117,27 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 			errorMode: ottl.IgnoreError,
 		},
 		{
+			name: "keep profiles",
+			conditions: ProfileFilters{
+				Action: keepAction,
+				ProfileConditions: []string{
+					`original_payload_format == "legacy"`,
+				},
+			},
+			want: func(ld pprofile.Profiles) {
+				ld.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().RemoveIf(func(profile pprofile.Profile) bool {
+					return profile.OriginalPayloadFormat() != "legacy"
+				})
+				ld.ResourceProfiles().At(0).ScopeProfiles().At(1).Profiles().RemoveIf(func(profile pprofile.Profile) bool {
+					return profile.OriginalPayloadFormat() != "legacy"
+				})
+			},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "drop everything by dropping all profiles",
 			conditions: ProfileFilters{
+				Action: dropAction,
 				ProfileConditions: []string{
 					`IsMatch(original_payload_format, ".*legacy")`,
 				},
@@ -114,8 +146,20 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
+			name: "keep everything",
+			conditions: ProfileFilters{
+				Action: keepAction,
+				ProfileConditions: []string{
+					`IsMatch(original_payload_format, ".*legacy")`,
+				},
+			},
+			want:      func(_ pprofile.Profiles) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "multiple conditions",
 			conditions: ProfileFilters{
+				Action: dropAction,
 				ProfileConditions: []string{
 					`IsMatch(original_payload_format, "wrong name")`,
 					`IsMatch(original_payload_format, ".*legacy")`,
@@ -125,14 +169,38 @@ func TestFilterProfileProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
+			name: "multiple conditions keep everything",
+			conditions: ProfileFilters{
+				Action: keepAction,
+				ProfileConditions: []string{
+					`IsMatch(original_payload_format, "wrong name")`,
+					`IsMatch(original_payload_format, ".*legacy")`,
+				},
+			},
+			want:      func(_ pprofile.Profiles) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
 			name: "with error conditions",
 			conditions: ProfileFilters{
+				Action: dropAction,
 				ProfileConditions: []string{
 					`Substring("", 0, 100) == "test"`,
 				},
 			},
 			want:      func(_ pprofile.Profiles) {},
 			errorMode: ottl.IgnoreError,
+		},
+		{
+			name: "keep action with error conditions should not keep anything",
+			conditions: ProfileFilters{
+				Action: keepAction,
+				ProfileConditions: []string{
+					`Substring("", 0, 100) == "test"`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
 		},
 	}
 	for _, tt := range tests {
