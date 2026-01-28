@@ -177,7 +177,7 @@ func TestFetchContainerStatsAsJSONWithSlowResponse(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/stats") {
 			w.Header().Set("Content-Type", "application/json")
-			w.(http.Flusher).Flush()
+			w.Flush()
 			time.Sleep(10 * time.Millisecond)
 			_, _ = w.Write([]byte(`{"cpu_stats":{},"memory_stats":{}}`))
 		}
