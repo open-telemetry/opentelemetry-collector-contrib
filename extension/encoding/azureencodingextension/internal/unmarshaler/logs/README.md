@@ -41,9 +41,49 @@ in OpenTelemetry Collector pipeline (for example, using `transformprocessor`) or
 | `durationMs`          | `azure.operation.duration`    | Log Attribute |
 | `callerIpAddress`     | `network.peer.address`        | Log Attribute |
 | `correlationId`       | `azure.correlation_id`        | Log Attribute |
-| `identity`            | `azure.identity`              | Log Attribute |
+| `identity`            | see [Identity Field](#identity-field) below | Log Attribute |
 | `Level`               | `log.SeverityNumber`          | Log |
 | `properties`          | see mapping for each Category below | mixed |
+
+### Identity Field
+
+The `identity` field contains authorization and claims information. Rather than storing it as a nested structure,
+specific fields are extracted into flat, semantically meaningful attributes. Only known useful fields are extracted
+to minimize the risk of accidentally including sensitive data.
+
+#### Authorization Fields
+
+| Azure identity Field | OpenTelemetry | OpenTelemetry Scope |
+|---------------------|---------------|---------------------|
+| `identity.authorization.scope` | `azure.identity.authorization.scope` | Log Attribute |
+| `identity.authorization.action` | `azure.identity.authorization.action` | Log Attribute |
+| `identity.authorization.evidence.role` | `azure.identity.authorization.evidence.role` | Log Attribute |
+| `identity.authorization.evidence.roleAssignmentScope` | `azure.identity.authorization.evidence.role.assignment.scope` | Log Attribute |
+| `identity.authorization.evidence.roleAssignmentId` | `azure.identity.authorization.evidence.role.assignment.id` | Log Attribute |
+| `identity.authorization.evidence.roleDefinitionId` | `azure.identity.authorization.evidence.role.definition.id` | Log Attribute |
+| `identity.authorization.evidence.principalId` | `azure.identity.authorization.evidence.principal.id` | Log Attribute |
+| `identity.authorization.evidence.principalType` | `azure.identity.authorization.evidence.principal.type` | Log Attribute |
+
+#### Claims Fields
+
+Unix timestamps (`exp`, `nbf`, `iat`) are converted to RFC3339 format.
+
+| Azure identity.claims Field | OpenTelemetry | OpenTelemetry Scope |
+|----------------------------|---------------|---------------------|
+| `iss` | `azure.identity.issuer` | Log Attribute |
+| `sub` | `azure.identity.subject` | Log Attribute |
+| `aud` | `azure.identity.audience` | Log Attribute |
+| `exp` | `azure.identity.not_after` | Log Attribute |
+| `nbf` | `azure.identity.not_before` | Log Attribute |
+| `iat` | `azure.identity.created` | Log Attribute |
+| `http://schemas.microsoft.com/identity/claims/scope` | `azure.identity.scope` | Log Attribute |
+| `idtyp` | `azure.identity.type` | Log Attribute |
+| `appid` | `azure.identity.application.id` | Log Attribute |
+| `http://schemas.microsoft.com/claims/authnmethodsreferences` | `azure.identity.auth.methods.references` | Log Attribute |
+| `http://schemas.microsoft.com/identity/claims/identityprovider` | `azure.identity.provider` | Log Attribute |
+| `http://schemas.microsoft.com/identity/claims/objectidentifier` | `azure.identity.identifier.object` | Log Attribute |
+| `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier` | `user.name` | Log Attribute |
+| `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress` | `user.email` | Log Attribute |
 
 ## Application Gateway
 
