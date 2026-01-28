@@ -1,0 +1,73 @@
+$defs:
+  autodiscover_config:
+    description: AutodiscoverConfig is the configuration for the autodiscovery functionality of log groups
+    type: object
+    properties:
+      account_identifiers:
+        type: array
+        items:
+          type: string
+      include_linked_accounts:
+        x-pointer: true
+        type: boolean
+      limit:
+        type: integer
+      pattern:
+        type: string
+      prefix:
+        type: string
+      streams:
+        $ref: stream_config
+  group_config:
+    description: GroupConfig is the configuration for log group collection
+    type: object
+    properties:
+      autodiscover:
+        x-pointer: true
+        $ref: autodiscover_config
+      named:
+        type: object
+        additionalProperties:
+          $ref: stream_config
+  logs_config:
+    description: LogsConfig is the configuration for the logs portion of this receiver
+    type: object
+    properties:
+      groups:
+        $ref: group_config
+      max_events_per_request:
+        type: integer
+      poll_interval:
+        type: string
+        format: duration
+      start_from:
+        type: string
+  stream_config:
+    description: StreamConfig represents the configuration for the log stream filtering
+    type: object
+    properties:
+      names:
+        type: array
+        items:
+          x-pointer: true
+          type: string
+      prefixes:
+        type: array
+        items:
+          x-pointer: true
+          type: string
+description: Config is the overall config structure for the awscloudwatchreceiver
+type: object
+properties:
+  imds_endpoint:
+    type: string
+  logs:
+    $ref: logs_config
+  profile:
+    type: string
+  region:
+    type: string
+  storage:
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID

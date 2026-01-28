@@ -1,0 +1,13 @@
+type: object
+properties:
+  access_key:
+    description: AccessKey is checked against the one received with each request. This can be set when creating or updating the Firehose delivery stream.
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  encoding:
+    description: 'Encoding identifies the encoding of records received from Firehose. Defaults to telemetry-specific encodings: "cwlog" for logs, and "cwmetrics" for metrics.'
+    type: string
+  record_type:
+    description: 'RecordType is an alias for Encoding for backwards compatibility. It is an error to specify both encoding and record_type. Deprecated: [v0.121.0] use Encoding instead.'
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.server_config

@@ -1,0 +1,74 @@
+$defs:
+  attribute_bind_type:
+    description: AttributeBindType specifies the value bind_type attribute.
+    type: integer
+  attribute_direction:
+    description: AttributeDirection specifies the value direction attribute.
+    type: integer
+  attribute_network_data_type:
+    description: AttributeNetworkDataType specifies the value network_data_type attribute.
+    type: integer
+  attribute_operation_type:
+    description: AttributeOperationType specifies the value operation_type attribute.
+    type: integer
+  attribute_suboperation_type:
+    description: AttributeSuboperationType specifies the value suboperation_type attribute.
+    type: integer
+  attribute_sync_result:
+    description: AttributeSyncResult specifies the value sync_result attribute.
+    type: integer
+  attribute_value_type:
+    description: AttributeValueType specifies the value value_type attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for active_directory_ds metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+  metrics_config:
+    description: MetricsConfig provides config for active_directory_ds metrics.
+    type: object
+    properties:
+      active_directory.ds.bind.rate:
+        $ref: metric_config
+      active_directory.ds.ldap.bind.last_successful.time:
+        $ref: metric_config
+      active_directory.ds.ldap.bind.rate:
+        $ref: metric_config
+      active_directory.ds.ldap.client.session.count:
+        $ref: metric_config
+      active_directory.ds.ldap.search.rate:
+        $ref: metric_config
+      active_directory.ds.name_cache.hit_rate:
+        $ref: metric_config
+      active_directory.ds.notification.queued:
+        $ref: metric_config
+      active_directory.ds.operation.rate:
+        $ref: metric_config
+      active_directory.ds.replication.network.io:
+        $ref: metric_config
+      active_directory.ds.replication.object.rate:
+        $ref: metric_config
+      active_directory.ds.replication.operation.pending:
+        $ref: metric_config
+      active_directory.ds.replication.property.rate:
+        $ref: metric_config
+      active_directory.ds.replication.sync.object.pending:
+        $ref: metric_config
+      active_directory.ds.replication.sync.request.count:
+        $ref: metric_config
+      active_directory.ds.replication.value.rate:
+        $ref: metric_config
+      active_directory.ds.security_descriptor_propagations_event.queued:
+        $ref: metric_config
+      active_directory.ds.suboperation.rate:
+        $ref: metric_config
+      active_directory.ds.thread.count:
+        $ref: metric_config

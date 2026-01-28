@@ -1,0 +1,19 @@
+description: Config defines configuration for aws ecs container metrics receiver.
+type: object
+properties:
+  add_full_pod_name_metric_label:
+    description: The "FullPodName" attribute is the pod name including suffix If false FullPodName label is not added The default value is false
+    type: boolean
+  add_service_as_attribute:
+    description: Whether to add the associated service name as attribute. The default is true
+    type: boolean
+  collection_interval:
+    description: CollectionInterval is the interval at which metrics should be collected. The default is 60 second.
+    type: string
+    format: duration
+  container_orchestrator:
+    description: ContainerOrchestrator is the type of container orchestration service, e.g. eks or ecs. The default is eks.
+    type: string
+  prefer_full_pod_name:
+    description: The "PodName" attribute is set based on the name of the relevant controllers like Daemonset, Job, ReplicaSet, ReplicationController, ... If it cannot be set that way and PrefFullPodName is true, the "PodName" attribute is set to the pod's own name. The default value is false
+    type: boolean
