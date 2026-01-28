@@ -8,6 +8,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -109,4 +111,43 @@ func TestConvertStackFramesToStackTraceStrNoErrorMessage(t *testing.T) {
 	}
 	actual := convertStackFramesToStackTraceStr(excp)
 	assert.Equal(t, ": \n\tat label0(path0: 10)\n\tat (path1: 11)\n", actual)
+}
+
+func TestAddCause(t *testing.T) {
+	seg := &awsxray.Segment{
+		Cause: &awsxray.CauseData{
+			Type: awsxray.CauseTypeObject,
+			CauseObject: awsxray.CauseObject{
+				Exceptions: []awsxray.Exception{
+					{
+						// ID is nil
+						Message: awsxray.String("test error message"),
+						Type:    awsxray.String("TestException"),
+					},
+				},
+			},
+		},
+	}
+
+	span := ptrace.NewSpan()
+
+	require.NotPanics(t, func() {
+		addCause(seg, span)
+	})
+
+	require.Equal(t, 1, span.Events().Len())
+
+	evt := span.Events().At(0)
+	assert.Equal(t, ExceptionEventName, evt.Name())
+
+	_, exists := evt.Attributes().Get(awsxray.AWSXrayExceptionIDAttribute)
+	assert.False(t, exists, "exception ID attribute should not be set when ID is nil")
+
+	msgVal, exists := evt.Attributes().Get("exception.message")
+	require.True(t, exists)
+	assert.Equal(t, "test error message", msgVal.Str())
+
+	typeVal, exists := evt.Attributes().Get("exception.type")
+	require.True(t, exists)
+	assert.Equal(t, "TestException", typeVal.Str())
 }
