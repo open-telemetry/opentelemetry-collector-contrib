@@ -2838,6 +2838,158 @@ func TestAdjustedCountAttribute_Events(t *testing.T) {
 	}
 }
 
+func TestConsumeTracesWithTracestate_ExtrapolatedValues(t *testing.T) {
+	// Test that metric values are correctly extrapolated based on tracestate sampling probability.
+	// This is a functional test that verifies the actual numeric values of metrics.
+	//
+	// buildSampleTraceWithTracestate creates:
+	// - service-a: 2 spans (1 server kind, 1 client kind) - each has 1 event
+	// - service-b: 1 span (server kind with error status) - has 1 event
+	//
+	// For th:8 (50% sampling), adjusted count = 2, so each span contributes 2 to metrics.
+
+	tests := []struct {
+		name                  string
+		tracestate            string
+		expectedAdjustedCount int64 // expected count per span (1 for no extrapolation, 2 for 50%, 4 for 25%)
+		expectExtrapolated    bool  // whether metrics should have is_extrapolated attribute
+	}{
+		{
+			name:                  "th:8 (50% sampling) - adjusted count 2",
+			tracestate:            "ot=th:8",
+			expectedAdjustedCount: 2,
+			expectExtrapolated:    true,
+		},
+		{
+			name:                  "th:c (25% sampling) - adjusted count 4",
+			tracestate:            "ot=th:c",
+			expectedAdjustedCount: 4,
+			expectExtrapolated:    true,
+		},
+		{
+			name:                  "no tracestate - no extrapolation",
+			tracestate:            "",
+			expectedAdjustedCount: 1,
+			expectExtrapolated:    false,
+		},
+		{
+			name:                  "tracestate without th field - no extrapolation",
+			tracestate:            "ot=rv:abcdabcdabcdff",
+			expectedAdjustedCount: 1,
+			expectExtrapolated:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Use explicit histograms and events enabled to test all metric types
+			p, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+			require.NoError(t, err)
+
+			ctx := metadata.NewIncomingContext(t.Context(), nil)
+			err = p.Start(ctx, componenttest.NewNopHost())
+			require.NoError(t, err)
+			defer func() { require.NoError(t, p.Shutdown(ctx)) }()
+
+			traces := buildSampleTraceWithTracestate(tt.tracestate)
+
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			// First call buildMetrics() emits zero value, second call emits actual value
+			_ = p.buildMetrics()
+			receivedMetrics := p.buildMetrics()
+
+			require.NotEmpty(t, receivedMetrics.ResourceMetrics().Len(), "should have resource metrics")
+
+			// Track totals across all services for verification
+			var totalCalls int64
+			var totalHistogramCount uint64
+			var totalEvents int64
+
+			for i := 0; i < receivedMetrics.ResourceMetrics().Len(); i++ {
+				rm := receivedMetrics.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						m := sm.Metrics().At(k)
+						switch m.Name() {
+						case metricNameCalls:
+							require.Equal(t, pmetric.MetricTypeSum, m.Type())
+							dps := m.Sum().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								totalCalls += dp.IntValue()
+
+								// Verify is_extrapolated attribute
+								_, hasAttr := dp.Attributes().Get(metricAttrIsExtrapolated)
+								if tt.expectExtrapolated {
+									assert.True(t, hasAttr, "calls metric should have is_extrapolated attribute")
+								} else {
+									assert.False(t, hasAttr, "calls metric should not have is_extrapolated attribute")
+								}
+							}
+
+						case metricNameDuration:
+							require.Equal(t, pmetric.MetricTypeHistogram, m.Type())
+							dps := m.Histogram().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								totalHistogramCount += dp.Count()
+
+								// Verify is_extrapolated attribute
+								_, hasAttr := dp.Attributes().Get(metricAttrIsExtrapolated)
+								if tt.expectExtrapolated {
+									assert.True(t, hasAttr, "histogram metric should have is_extrapolated attribute")
+								} else {
+									assert.False(t, hasAttr, "histogram metric should not have is_extrapolated attribute")
+								}
+							}
+
+						case metricNameEvents:
+							require.Equal(t, pmetric.MetricTypeSum, m.Type())
+							dps := m.Sum().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								totalEvents += dp.IntValue()
+
+								// Verify is_extrapolated attribute
+								_, hasAttr := dp.Attributes().Get(metricAttrIsExtrapolated)
+								if tt.expectExtrapolated {
+									assert.True(t, hasAttr, "events metric should have is_extrapolated attribute")
+								} else {
+									assert.False(t, hasAttr, "events metric should not have is_extrapolated attribute")
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// buildSampleTraceWithTracestate creates 3 spans total (2 in service-a, 1 in service-b)
+			// Each span should contribute expectedAdjustedCount to the total
+			expectedTotalSpans := int64(3)
+			expectedTotalCalls := expectedTotalSpans * tt.expectedAdjustedCount
+			expectedTotalHistogramCount := uint64(expectedTotalSpans) * uint64(tt.expectedAdjustedCount)
+
+			// Each span has 1 event (added by initSpan), so events = spans * adjustedCount
+			expectedTotalEvents := expectedTotalSpans * tt.expectedAdjustedCount
+
+			assert.Equal(t, expectedTotalCalls, totalCalls,
+				"total calls should be %d spans × %d adjusted count = %d",
+				expectedTotalSpans, tt.expectedAdjustedCount, expectedTotalCalls)
+
+			assert.Equal(t, expectedTotalHistogramCount, totalHistogramCount,
+				"total histogram count should be %d spans × %d adjusted count = %d",
+				expectedTotalSpans, tt.expectedAdjustedCount, expectedTotalHistogramCount)
+
+			assert.Equal(t, expectedTotalEvents, totalEvents,
+				"total events should be %d spans × %d adjusted count = %d (each span has 1 event)",
+				expectedTotalSpans, tt.expectedAdjustedCount, expectedTotalEvents)
+		})
+	}
+}
+
 // buildSampleTraceWithTracestate builds a sample trace similar to buildSampleTrace,
 // but with the specified tracestate set on all spans.
 func buildSampleTraceWithTracestate(tracestate string) ptrace.Traces {
