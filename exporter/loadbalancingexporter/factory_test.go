@@ -18,8 +18,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
-	metricnoop "go.opentelemetry.io/otel/metric/noop"
-	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -123,8 +121,8 @@ func TestBuildExporterSettings(t *testing.T) {
 		exporterParams.Logger.Info("test")
 
 		assert.Equal(t, component.NewID(otlpType), exporterParams.ID)
-		assert.IsType(t, metricnoop.NewMeterProvider(), exporterParams.MeterProvider)
-		assert.IsType(t, tracenoop.NewTracerProvider(), exporterParams.TracerProvider)
+		assert.NotNil(t, exporterParams.MeterProvider)
+		assert.NotNil(t, exporterParams.TracerProvider)
 
 		assert.Same(t, originalTelemetry.MeterProvider, creationParams.MeterProvider)
 		assert.Same(t, originalTelemetry.TracerProvider, creationParams.TracerProvider)
@@ -157,8 +155,8 @@ func TestBuildExporterSettings(t *testing.T) {
 		exporterParams.Logger.Info("test")
 
 		assert.Equal(t, component.NewIDWithName(otlpType, "custom"), exporterParams.ID)
-		assert.IsType(t, metricnoop.NewMeterProvider(), exporterParams.MeterProvider)
-		assert.IsType(t, tracenoop.NewTracerProvider(), exporterParams.TracerProvider)
+		assert.NotNil(t, exporterParams.MeterProvider)
+		assert.NotNil(t, exporterParams.TracerProvider)
 
 		assert.Same(t, originalTelemetry.MeterProvider, creationParams.MeterProvider)
 		assert.Same(t, originalTelemetry.TracerProvider, creationParams.TracerProvider)

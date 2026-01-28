@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -128,12 +129,12 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	}
 
 	var errs error
+	var failedTraces *ptrace.Traces
 
 	for exp, td := range exporterSegregatedTraces {
 		start := time.Now()
 		err := exp.ConsumeTraces(ctx, td)
 		exp.consumeWG.Done()
-		errs = multierr.Append(errs, err)
 		duration := time.Since(start)
 		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
 		if err == nil {
@@ -141,7 +142,17 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		} else {
 			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
 			e.logger.Debug("failed to export traces", zap.Error(err))
+			if failedTraces == nil {
+				traces := ptrace.NewTraces()
+				failedTraces = &traces
+			}
+			td.ResourceSpans().MoveAndAppendTo(failedTraces.ResourceSpans())
+			errs = multierr.Append(errs, err)
 		}
+	}
+
+	if errs != nil && failedTraces != nil && failedTraces.SpanCount() > 0 {
+		return consumererror.NewTraces(errs, *failedTraces)
 	}
 
 	return errs
