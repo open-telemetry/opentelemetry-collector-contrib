@@ -6,6 +6,7 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 
@@ -14,8 +15,10 @@ import (
 
 // convertPodToEndpoints converts a pod instance into a slice of endpoints. The endpoints
 // include the pod itself as well as an endpoint for each container port that is mapped
-// to a container that is in a running state.
-func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint {
+// to a container that is in a running state or has recently terminated (within the TTL).
+// Init containers are included when configured. The TTL applies to all terminated containers
+// (both regular and init), allowing time for log collection from crashed or completed containers.
+func convertPodToEndpoints(idNamespace string, pod *v1.Pod, observePodPhases map[string]bool, observeInitContainers bool, containerTerminatedTTL time.Duration) []observer.Endpoint {
 	podID := observer.EndpointID(fmt.Sprintf("%s/%s", idNamespace, pod.UID))
 	podIP := pod.Status.PodIP
 
@@ -27,8 +30,8 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 		Namespace:   pod.Namespace,
 	}
 
-	// Return no endpoints if the Pod is not running
-	if pod.Status.Phase != v1.PodRunning {
+	// Return no endpoints if the Pod is not in an observable phase
+	if !observePodPhases[string(pod.Status.Phase)] {
 		return nil
 	}
 
@@ -38,65 +41,80 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 		Details: &podDetails,
 	}}
 
-	// Map of running containers by name.
-	runningContainers := map[string]runningContainer{}
+	// Always called for regular containers, sometimes called for init containers
+	addContainerEndpoints := func(containers []v1.Container, statuses []v1.ContainerStatus, isInit bool) {
+		observable := getObservableContainers(statuses, containerTerminatedTTL)
+		for i := range containers {
+			container := &containers[i]
+			rc, ok := observable[container.Name]
+			if !ok {
+				continue
+			}
 
-	for i := range pod.Status.ContainerStatuses {
-		container := &pod.Status.ContainerStatuses[i]
-		if container.State.Running != nil {
-			runningContainers[container.Name] = containerIDWithRuntime(container)
+			endpointID := observer.EndpointID(fmt.Sprintf("%s/%s", podID, container.Name))
+			endpoints = append(endpoints, observer.Endpoint{
+				ID:     endpointID,
+				Target: podIP,
+				Details: &observer.PodContainer{
+					Name:            container.Name,
+					ContainerID:     rc.ID,
+					Image:           container.Image,
+					IsInitContainer: isInit,
+					Pod:             podDetails,
+				},
+			})
+
+			// Create endpoint for each container port
+			for _, port := range container.Ports {
+				portEndpointID := observer.EndpointID(fmt.Sprintf("%s/%s(%d)", podID, port.Name, port.ContainerPort))
+				endpoints = append(endpoints, observer.Endpoint{
+					ID:     portEndpointID,
+					Target: fmt.Sprintf("%s:%d", podIP, port.ContainerPort),
+					Details: &observer.Port{
+						Pod:            podDetails,
+						Name:           port.Name,
+						Port:           uint16(port.ContainerPort),
+						Transport:      getTransport(port.Protocol),
+						ContainerName:  container.Name,
+						ContainerID:    rc.ID,
+						ContainerImage: container.Image,
+					},
+				})
+			}
 		}
 	}
 
-	// Create endpoint for each named container port.
-	for i := range pod.Spec.Containers {
-		container := &pod.Spec.Containers[i]
-		var rc runningContainer
-		var ok bool
-		if rc, ok = runningContainers[container.Name]; !ok {
-			continue
-		}
-
-		endpointID := observer.EndpointID(
-			fmt.Sprintf(
-				"%s/%s", podID, container.Name,
-			),
-		)
-		endpoints = append(endpoints, observer.Endpoint{
-			ID:     endpointID,
-			Target: podIP,
-			Details: &observer.PodContainer{
-				Name:        container.Name,
-				ContainerID: rc.ID,
-				Image:       container.Image,
-				Pod:         podDetails,
-			},
-		})
-
-		// Create endpoint for each named container port.
-		for _, port := range container.Ports {
-			endpointID = observer.EndpointID(
-				fmt.Sprintf(
-					"%s/%s(%d)", podID, port.Name, port.ContainerPort,
-				),
-			)
-			endpoints = append(endpoints, observer.Endpoint{
-				ID:     endpointID,
-				Target: fmt.Sprintf("%s:%d", podIP, port.ContainerPort),
-				Details: &observer.Port{
-					Pod:            podDetails,
-					Name:           port.Name,
-					Port:           uint16(port.ContainerPort),
-					Transport:      getTransport(port.Protocol),
-					ContainerName:  container.Name,
-					ContainerID:    rc.ID,
-					ContainerImage: container.Image,
-				},
-			})
-		}
+	addContainerEndpoints(pod.Spec.Containers, pod.Status.ContainerStatuses, false)
+	if observeInitContainers {
+		addContainerEndpoints(pod.Spec.InitContainers, pod.Status.InitContainerStatuses, true)
 	}
 
 	return endpoints
+}
+
+// getObservableContainers returns a map of container names to their runtime info
+// for containers that are either running, recently terminated (within the TTL),
+// or in CrashLoopBackOff state (crashed recently within the TTL).
+func getObservableContainers(statuses []v1.ContainerStatus, ttl time.Duration) map[string]runningContainer {
+	result := map[string]runningContainer{}
+	for i := range statuses {
+		container := &statuses[i]
+		if container.State.Running != nil {
+			result[container.Name] = containerIDWithRuntime(container)
+		} else if container.State.Terminated != nil {
+			if time.Since(container.State.Terminated.FinishedAt.Time) <= ttl {
+				result[container.Name] = containerIDWithRuntime(container)
+			}
+		} else if container.State.Waiting != nil &&
+			container.State.Waiting.Reason == "CrashLoopBackOff" &&
+			container.LastTerminationState.Terminated != nil {
+			// Container crashed and is waiting to restart - use LastTerminationState for TTL
+			if time.Since(container.LastTerminationState.Terminated.FinishedAt.Time) <= ttl {
+				result[container.Name] = containerIDWithRuntime(container)
+			}
+		}
+	}
+	return result
 }
 
 func getTransport(protocol v1.Protocol) observer.Transport {

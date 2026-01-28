@@ -100,6 +100,22 @@ func (k *k8sObserver) Shutdown(_ context.Context) error {
 
 // newObserver creates a new k8s observer extension.
 func newObserver(config *Config, set extension.Settings) (extension.Extension, error) {
+	// Apply observe_all_containers convenience option
+	if config.ObserveAllContainers {
+		config.ObserveInitContainers = true
+		// Add Pending phase if not already present
+		hasPending := false
+		for _, phase := range config.ObservePodPhases {
+			if phase == "Pending" {
+				hasPending = true
+				break
+			}
+		}
+		if !hasPending {
+			config.ObservePodPhases = append(config.ObservePodPhases, "Pending")
+		}
+	}
+
 	client, err := k8sconfig.MakeClient(config.APIConfig)
 	if err != nil {
 		return nil, err
@@ -167,7 +183,20 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 			}
 		}
 	}
-	h := &handler{idNamespace: set.ID.String(), endpoints: &sync.Map{}, logger: set.Logger}
+	// Build a set of phases to observe for efficient lookup
+	observePodPhases := make(map[string]bool)
+	for _, phase := range config.ObservePodPhases {
+		observePodPhases[phase] = true
+	}
+
+	h := &handler{
+		idNamespace:            set.ID.String(),
+		endpoints:              &sync.Map{},
+		logger:                 set.Logger,
+		observePodPhases:       observePodPhases,
+		observeInitContainers:  config.ObserveInitContainers,
+		containerTerminatedTTL: config.ContainerTerminatedTTL,
+	}
 	obs := &k8sObserver{
 		EndpointsWatcher:      endpointswatcher.New(h, time.Second, set.Logger),
 		telemetry:             set.TelemetrySettings,

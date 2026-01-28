@@ -211,16 +211,19 @@ type PodContainer struct {
 	Image string `mapstructure:"container_image"`
 	// ContainerID is the id of the container exposing the Endpoint
 	ContainerID string `mapstructure:"container_id"`
+	// IsInitContainer indicates whether the container is an init container
+	IsInitContainer bool `mapstructure:"is_init_container"`
 	// Pod is the k8s pod in which the container is running
 	Pod Pod
 }
 
 func (p *PodContainer) Env() EndpointEnv {
 	return map[string]any{
-		"container_name":  p.Name,
-		"container_id":    p.ContainerID,
-		"container_image": p.Image,
-		"pod":             p.Pod.Env(),
+		"container_name":    p.Name,
+		"container_id":      p.ContainerID,
+		"container_image":   p.Image,
+		"is_init_container": p.IsInitContainer,
+		"pod":               p.Pod.Env(),
 	}
 }
 
