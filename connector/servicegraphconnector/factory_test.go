@@ -15,6 +15,8 @@ import (
 )
 
 func TestNewConnector(t *testing.T) {
+	defaultLatencyHistogramBuckets := createDefaultConfig().(*Config).LatencyHistogramBuckets
+
 	for _, tc := range []struct {
 		name                            string
 		latencyHistogramBuckets         []time.Duration
@@ -22,7 +24,7 @@ func TestNewConnector(t *testing.T) {
 	}{
 		{
 			name:                            "simplest config (use defaults)",
-			expectedLatencyHistogramBuckets: defaultLatencyHistogramBuckets,
+			expectedLatencyHistogramBuckets: mapDurationsToFloat(defaultLatencyHistogramBuckets),
 		},
 		{
 			name:                            "latency histogram configured with catch-all bucket to check no additional catch-all bucket inserted",

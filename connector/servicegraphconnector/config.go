@@ -45,7 +45,7 @@ type Config struct {
 	// MetricsFlushInterval is the interval at which metrics are flushed to the exporter.
 	// If set to 0, metrics are flushed on every received batch of traces.
 	// Default is 60s if unset.
-	MetricsFlushInterval *time.Duration `mapstructure:"metrics_flush_interval"`
+	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
 
 	// DatabaseNameAttributes is the attribute name list of attributes need to match used to identify the database name from span attributes, the higher the front, the higher the priority.
 	// The default value is {"db.name"}.
@@ -76,6 +76,14 @@ func (c *Config) Validate() error {
 
 	if c.LatencyHistogramBuckets != nil && c.ExponentialHistogramMaxSize > 0 {
 		return errors.New("use either `latency_histogram_buckets` or `exponential_histogram_max_size`")
+	}
+
+	if c.StoreExpirationLoop <= 0 {
+		return errors.New("`store_expiration_loop` must be positive")
+	}
+
+	if c.CacheLoop <= 0 {
+		return errors.New("`cache_loop` must be positive")
 	}
 
 	return nil

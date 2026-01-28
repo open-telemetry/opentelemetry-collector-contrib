@@ -20,9 +20,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
-	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -37,23 +34,6 @@ const (
 	virtualNodeLabel   = "virtual_node"
 	millisecondsUnit   = "ms"
 	secondsUnit        = "s"
-)
-
-var (
-	legacyDefaultLatencyHistogramBuckets = []float64{
-		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
-	}
-	defaultLatencyHistogramBuckets = []float64{
-		0.002, 0.004, 0.006, 0.008, 0.01, 0.05, 0.1, 0.2, 0.4, 0.8, 1, 1.4, 2, 5, 10, 15,
-	}
-
-	defaultPeerAttributes = []string{
-		string(conventions.PeerServiceKey), string(conventionsv125.DBNameKey), string(conventionsv128.DBSystemKey),
-	}
-
-	defaultDatabaseNameAttributes = []string{string(conventionsv125.DBNameKey)}
-
-	defaultMetricsFlushInterval = 60 * time.Second // 1 DPM
 )
 
 type metricSeries struct {
@@ -96,36 +76,7 @@ type serviceGraphConnector struct {
 func newConnector(set component.TelemetrySettings, config component.Config, next consumer.Metrics) (*serviceGraphConnector, error) {
 	pConfig := config.(*Config)
 
-	var bounds []float64
-	if pConfig.ExponentialHistogramMaxSize == 0 {
-		bounds = defaultLatencyHistogramBuckets
-		if legacyLatencyUnitMsFeatureGate.IsEnabled() {
-			bounds = legacyDefaultLatencyHistogramBuckets
-		}
-		if pConfig.LatencyHistogramBuckets != nil {
-			bounds = mapDurationsToFloat(pConfig.LatencyHistogramBuckets)
-		}
-	}
-
-	if pConfig.CacheLoop <= 0 {
-		pConfig.CacheLoop = time.Minute
-	}
-
-	if pConfig.StoreExpirationLoop <= 0 {
-		pConfig.StoreExpirationLoop = 2 * time.Second
-	}
-
-	if pConfig.VirtualNodePeerAttributes == nil {
-		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
-	}
-
-	if len(pConfig.DatabaseNameAttributes) == 0 {
-		pConfig.DatabaseNameAttributes = defaultDatabaseNameAttributes
-	}
-
-	if pConfig.MetricsFlushInterval == nil {
-		pConfig.MetricsFlushInterval = &defaultMetricsFlushInterval
-	} else if pConfig.MetricsFlushInterval.Nanoseconds() <= 0 {
+	if pConfig.MetricsFlushInterval.Nanoseconds() <= 0 {
 		set.Logger.Warn("MetricsFlushInterval is set to 0, metrics will be flushed on every received batch of traces")
 	}
 
@@ -150,7 +101,7 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 		reqServerDurationSecondsSum:          make(map[string]float64),
 		reqServerDurationSecondsBucketCounts: make(map[string][]uint64),
 		reqServerDurationExpHistogram:        make(map[string]*structure.Histogram[float64]),
-		reqDurationBounds:                    bounds,
+		reqDurationBounds:                    mapDurationsToFloat(pConfig.LatencyHistogramBuckets),
 		keyToMetric:                          make(map[string]metricSeries),
 		shutdownCh:                           make(chan any),
 		telemetryBuilder:                     telemetryBuilder,
@@ -160,7 +111,7 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 func (p *serviceGraphConnector) Start(context.Context, component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
-	go p.metricFlushLoop(*p.config.MetricsFlushInterval)
+	go p.metricFlushLoop(p.config.MetricsFlushInterval)
 
 	go p.cacheLoop(p.config.CacheLoop)
 
@@ -221,7 +172,7 @@ func (p *serviceGraphConnector) ConsumeTraces(ctx context.Context, td ptrace.Tra
 	}
 
 	// If metricsFlushInterval is not set, flush metrics immediately.
-	if *p.config.MetricsFlushInterval <= 0 {
+	if p.config.MetricsFlushInterval <= 0 {
 		if err := p.flushMetrics(ctx); err != nil {
 			// Not return error here to avoid impacting traces.
 			p.logger.Error("failed to flush metrics", zap.Error(err))
