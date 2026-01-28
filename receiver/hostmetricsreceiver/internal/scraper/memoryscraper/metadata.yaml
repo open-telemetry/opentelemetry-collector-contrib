@@ -76,6 +76,15 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
 
+  system.memory.linux.hugepages.surplus:
+    enabled: false
+    description: Number of surplus hugepages (overcommitted hugepages beyond the persistent pool).
+    unit: "{page}"
+    stability:
+      level: development
+    gauge:
+      value_type: int
+
   system.memory.linux.hugepages.usage:
     enabled: false
     description: Number of hugepages in use by state.
