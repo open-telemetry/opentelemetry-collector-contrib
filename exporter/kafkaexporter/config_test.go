@@ -139,6 +139,36 @@ func TestLoadConfig(t *testing.T) {
 				Encoding: "legacy_encoding",
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "opensearch"),
+			expected: &Config{
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig: func() configkafka.ClientConfig {
+					config := configkafka.NewDefaultClientConfig()
+					config.Brokers = []string{"localhost:9092"}
+					return config
+				}(),
+				Producer: configkafka.NewDefaultProducerConfig(),
+				Logs: SignalConfig{
+					Topic:    "otel-logs",
+					Encoding: "opensearch_json",
+				},
+				Metrics: SignalConfig{
+					Topic:    "otlp_metrics",
+					Encoding: "otlp_proto",
+				},
+				Traces: SignalConfig{
+					Topic:    "otlp_spans",
+					Encoding: "otlp_proto",
+				},
+				Profiles: SignalConfig{
+					Topic:    "otlp_profiles",
+					Encoding: "otlp_proto",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

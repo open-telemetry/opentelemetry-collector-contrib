@@ -29,3 +29,9 @@ kafka/legacy_encoding:
   encoding: legacy_encoding
   metrics:
     encoding: metrics_encoding
+kafka/opensearch:
+  brokers:
+    - "localhost:9092"
+  logs:
+    topic: otel-logs
+    encoding: opensearch_json

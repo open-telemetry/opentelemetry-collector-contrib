@@ -141,6 +141,7 @@ Available only for traces:
 Available only for logs:
 
 - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
+- `opensearch_json`: the payload is encoded as OpenSearch-compatible JSON using the Simple Schema for Observability (SS4O) format.
 
 ### Example configuration
 
