@@ -57,7 +57,7 @@ metrics:
   system.memory.linux.hugepages.limit:
     enabled: false
     description: Total number of hugepages available.
-    unit: "{pages}"
+    unit: "{page}"
     stability:
       level: development
     sum:
@@ -79,7 +79,7 @@ metrics:
   system.memory.linux.hugepages.usage:
     enabled: false
     description: Number of hugepages in use by state.
-    unit: "{pages}"
+    unit: "{page}"
     stability:
       level: development
     sum:
