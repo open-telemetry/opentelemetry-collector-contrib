@@ -62,37 +62,45 @@ Total bytes of memory available.
 
 ### system.memory.linux.hugepages.limit
 
-Total number of huge pages available.
+Total number of hugepages available.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {pages} | Sum | Int | Cumulative | false | Development |
+| {page} | Sum | Int | Cumulative | false | Development |
 
 ### system.memory.linux.hugepages.page_size
 
-System huge page size in bytes.
+System hugepage size in bytes.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+### system.memory.linux.hugepages.surplus
+
+Number of surplus hugepages (overcommitted hugepages beyond the persistent pool).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {page} | Gauge | Int | Development |
+
 ### system.memory.linux.hugepages.usage
 
-Number of huge pages in use by state.
+Number of hugepages in use by state.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {pages} | Sum | Int | Cumulative | false | Development |
+| {page} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| system.memory.linux.hugepages.state | Breakdown of huge pages usage by state. | Str: ``free``, ``used``, ``reserved``, ``surplus`` | Recommended |
+| system.memory.linux.hugepages.state | Breakdown of hugepages usage by state. | Str: ``free``, ``used``, ``reserved`` | Recommended |
 
 ### system.memory.linux.hugepages.utilization
 
-Percentage of huge pages in use by state.
+Percentage of hugepages in use by state.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -102,7 +110,7 @@ Percentage of huge pages in use by state.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| system.memory.linux.hugepages.state | Breakdown of huge pages usage by state. | Str: ``free``, ``used``, ``reserved``, ``surplus`` | Recommended |
+| system.memory.linux.hugepages.state | Breakdown of hugepages usage by state. | Str: ``free``, ``used``, ``reserved`` | Recommended |
 
 ### system.memory.page_size
 

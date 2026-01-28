@@ -74,6 +74,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemMemoryLinuxHugepagesPageSizeDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSystemMemoryLinuxHugepagesSurplusDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(ts, 1, AttributeSystemMemoryLinuxHugepagesStateFree)
 
 			allMetricsCount++
@@ -158,8 +161,8 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.memory.linux.hugepages.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of huge pages available.", ms.At(i).Description())
-					assert.Equal(t, "{pages}", ms.At(i).Unit())
+					assert.Equal(t, "Total number of hugepages available.", ms.At(i).Description())
+					assert.Equal(t, "{page}", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -172,8 +175,20 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.memory.linux.hugepages.page_size"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "System huge page size in bytes.", ms.At(i).Description())
+					assert.Equal(t, "System hugepage size in bytes.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.linux.hugepages.surplus":
+					assert.False(t, validatedMetrics["system.memory.linux.hugepages.surplus"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.surplus")
+					validatedMetrics["system.memory.linux.hugepages.surplus"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of surplus hugepages (overcommitted hugepages beyond the persistent pool).", ms.At(i).Description())
+					assert.Equal(t, "{page}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -184,8 +199,8 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.memory.linux.hugepages.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of huge pages in use by state.", ms.At(i).Description())
-					assert.Equal(t, "{pages}", ms.At(i).Unit())
+					assert.Equal(t, "Number of hugepages in use by state.", ms.At(i).Description())
+					assert.Equal(t, "{page}", ms.At(i).Unit())
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -201,7 +216,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.memory.linux.hugepages.utilization"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Percentage of huge pages in use by state.", ms.At(i).Description())
+					assert.Equal(t, "Percentage of hugepages in use by state.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
