@@ -116,7 +116,11 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 		m, err := expr.Run(t.prog, env)
 		helper.PutExprEnv(env)
 		if err != nil {
-			errs = append(errs, t.HandleEntryErrorWithWrite(ctx, e, err, collectWrite))
+			if handleErr := t.HandleEntryErrorWithWrite(ctx, e, err, collectWrite); handleErr != nil {
+				if t.OnError != helper.DropOnErrorQuiet && t.OnError != helper.SendOnErrorQuiet {
+					errs = append(errs, handleErr)
+				}
+			}
 			continue
 		}
 
@@ -136,14 +140,18 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 		case matches && t.matchFirstLine:
 			// Flush the existing batch
 			if err := t.flushSource(ctx, s, collectWrite); err != nil {
-				errs = append(errs, err)
+				if t.OnError != helper.DropOnErrorQuiet && t.OnError != helper.SendOnErrorQuiet {
+					errs = append(errs, err)
+				}
 			}
 			// Add the current log to the new batch
 			t.addToBatch(ctx, e, s, matches, collectWrite)
 		case matches && !t.matchFirstLine:
 			t.addToBatch(ctx, e, s, matches, collectWrite)
 			if err := t.flushSource(ctx, s, collectWrite); err != nil {
-				errs = append(errs, err)
+				if t.OnError != helper.DropOnErrorQuiet && t.OnError != helper.SendOnErrorQuiet {
+					errs = append(errs, err)
+				}
 			}
 		default:
 			// Neither first nor last entry, just add to batch
@@ -173,7 +181,11 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 
 	m, err := expr.Run(t.prog, env)
 	if err != nil {
-		return t.HandleEntryError(ctx, e, err)
+		handleErr := t.HandleEntryError(ctx, e, err)
+		if t.OnError == helper.DropOnErrorQuiet || t.OnError == helper.SendOnErrorQuiet {
+			return nil
+		}
+		return handleErr
 	}
 
 	// this is guaranteed to be a boolean because of expr.AsBool
@@ -194,6 +206,9 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	case matches && t.matchFirstLine:
 		// Flush the existing batch
 		if err := t.flushSource(ctx, s, t.Write); err != nil {
+			if t.OnError == helper.DropOnErrorQuiet || t.OnError == helper.SendOnErrorQuiet {
+				return nil
+			}
 			return err
 		}
 
@@ -203,7 +218,13 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	// This is the last entry in a complete batch
 	case matches && !t.matchFirstLine:
 		t.addToBatch(ctx, e, s, matches, t.Write)
-		return t.flushSource(ctx, s, t.Write)
+		if err := t.flushSource(ctx, s, t.Write); err != nil {
+			if t.OnError == helper.DropOnErrorQuiet || t.OnError == helper.SendOnErrorQuiet {
+				return nil
+			}
+			return err
+		}
+		return nil
 	}
 
 	// This is neither the first entry of a new log,
