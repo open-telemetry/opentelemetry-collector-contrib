@@ -272,9 +272,11 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 
 		if name == "" && a.Key != "" {
 			// name for KeyRegex case is set at extraction time/runtime, skipped here
-			// Use singular form when feature gate is enabled
+			// Use singular form when stable attributes are enabled and legacy attributes are disabled
 			fieldTypeName := fieldType
-			if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
+			enableStable := kube.EnableStableAttributes.IsEnabled()
+			disableLegacy := kube.DisableLegacyAttributes.IsEnabled()
+			if enableStable && disableLegacy {
 				fieldTypeName = strings.TrimSuffix(fieldType, "s")
 			}
 			name = fmt.Sprintf("k8s.%v.%v.%v", a.From, fieldTypeName, a.Key)
