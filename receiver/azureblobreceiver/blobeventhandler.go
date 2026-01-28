@@ -40,6 +40,7 @@ type azureBlobEventHandler struct {
 	pollRate                 int
 	logger                   *zap.Logger
 	wg                       sync.WaitGroup
+	cancelFunc               context.CancelFunc
 }
 
 var _ blobEventHandler = (*azureBlobEventHandler)(nil)
@@ -72,9 +73,21 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 		return err
 	}
 
+	startAtLatest := true
+	pcCtx, cancelFunc := context.WithCancel(ctx)
+	p.cancelFunc = cancelFunc
 	for _, partitionID := range runtimeInfo.PartitionIDs {
 		p.wg.Add(1)
-		go p.receiveEvents(ctx, hub, partitionID, p.newMessageHandler)
+		pc, err := p.hub.NewPartitionClient(partitionID, &azeventhubs.PartitionClientOptions{
+			StartPosition: azeventhubs.StartPosition{
+				Latest: &startAtLatest,
+			},
+		})
+		if err != nil {
+			p.logger.Error("error creating partition client", zap.Error(err))
+			return err
+		}
+		go p.receiveEvents(pcCtx, pc, p.newMessageHandler)
 	}
 
 	return nil
@@ -82,29 +95,12 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 
 func (p *azureBlobEventHandler) receiveEvents(
 	ctx context.Context,
-	client *azeventhubs.ConsumerClient,
-	partitionID string,
+	pc *azeventhubs.PartitionClient,
 	handler func(ctx context.Context, event *azeventhubs.ReceivedEventData) error,
 ) {
 	defer p.wg.Done()
-	startAtLatest := true
-	pc, err := client.NewPartitionClient(partitionID, &azeventhubs.PartitionClientOptions{
-		StartPosition: azeventhubs.StartPosition{
-			Latest: &startAtLatest,
-		},
-	})
-	if err != nil {
-		p.logger.Error("error creating partition client", zap.Error(err))
-		return
-	}
-	defer func() {
-		// Use a separate context for cleanup to ensure it completes even if the parent context is canceled
-		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := pc.Close(closeCtx); err != nil {
-			p.logger.Error("error closing partition client", zap.Error(err))
-		}
-	}()
+	defer pc.Close(ctx)
+	defer p.logger.Info("partition client closed")
 
 	pollRate := p.pollRate
 	if pollRate <= 0 {
@@ -126,20 +122,16 @@ func (p *azureBlobEventHandler) receiveEvents(
 		)
 		events, err := pc.ReceiveEvents(timeoutCtx, maxPollEvents, &azeventhubs.ReceiveEventsOptions{})
 		cancelCtx()
-
-		if err != nil && !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
+		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
 			p.logger.Error(
 				"error receiving events from partition",
-				zap.String("partitionID", partitionID),
 				zap.Error(err),
 			)
-		} else {
-			return
 		}
 
 		for _, event := range events {
 			if handlerErr := handler(ctx, event); handlerErr != nil {
-				p.logger.Error("error handling event", zap.String("partitionID", partitionID), zap.Error(handlerErr))
+				p.logger.Error("error handling event", zap.Error(handlerErr))
 			}
 		}
 	}
@@ -191,6 +183,9 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *az
 }
 
 func (p *azureBlobEventHandler) close(ctx context.Context) error {
+	if p.cancelFunc != nil {
+		p.cancelFunc()
+	}
 	// Wait for all partition receiver goroutines to finish
 	p.wg.Wait()
 	if p.hub != nil {
