@@ -5,15 +5,15 @@ go 1.24.0
 require (
 	github.com/expr-lang/expr v1.17.7
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.143.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.143.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.143.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.144.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.144.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.144.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/component/componenttest v0.143.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/confmap v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/featuregate v1.49.1-0.20260119125341-0550b08ddcc5
-	go.opentelemetry.io/collector/pdata v1.49.1-0.20260119125341-0550b08ddcc5
+	go.opentelemetry.io/collector/component v1.50.1-0.20260121161034-55399d4743af
+	go.opentelemetry.io/collector/component/componenttest v0.144.1-0.20260121161034-55399d4743af
+	go.opentelemetry.io/collector/confmap v1.50.1-0.20260121161034-55399d4743af
+	go.opentelemetry.io/collector/featuregate v1.50.1-0.20260121161034-55399d4743af
+	go.opentelemetry.io/collector/pdata v1.50.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/otel v1.39.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
@@ -38,7 +38,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.3.0 // indirect
@@ -50,9 +50,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
-	github.com/zeebo/xxh3 v1.0.2 // indirect
+	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.143.1-0.20260119125341-0550b08ddcc5 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.144.1-0.20260121161034-55399d4743af // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
@@ -82,6 +82,3 @@ retract (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5

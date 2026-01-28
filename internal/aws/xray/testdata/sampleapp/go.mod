@@ -5,8 +5,8 @@ go 1.24.0
 require (
 	github.com/aws/aws-sdk-go-v2 v1.41.1
 	github.com/aws/aws-sdk-go-v2/config v1.32.7
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.30
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.53.6
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.20.31
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.54.0
 	github.com/aws/aws-xray-sdk-go/v2 v2.0.0
 )
 
@@ -45,6 +45,3 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5
