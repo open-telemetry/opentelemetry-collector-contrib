@@ -738,13 +738,13 @@ func Test_extractFieldRules_FeatureGate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set feature gate state for stable and legacy attributes
 			if tt.featureGateValue {
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesEnableStableFeatureGate.ID(), true))
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
 			}
 			defer func() {
 				// Reset to default
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesEnableStableFeatureGate.ID(), false))
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
 			}()
 
 			got, err := extractFieldRules(tt.fieldType, tt.fields...)

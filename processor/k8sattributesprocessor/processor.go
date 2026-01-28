@@ -60,7 +60,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
-	if metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.IsEnabled() && !metadata.SemconvK8sK8sattributesEnableStableFeatureGate.IsEnabled() {
+	if metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled() && !metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled() {
 		err := errors.New("cannot disable legacy attributes without enabling stable attributes")
 		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		return err

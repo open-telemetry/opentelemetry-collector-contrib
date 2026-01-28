@@ -142,13 +142,13 @@ feature_gates:
     from_version: v0.125.0
     to_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774
-  - id: semconv.k8s.k8sattributes.disableLegacy
+  - id: processor.k8sattributes.DontEmitV0K8sConventions
     stage: alpha
     description: >-
       When enabled, semconv legacy attributes are disabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
-  - id: semconv.k8s.k8sattributes.enableStable
+  - id: processor.k8sattributes.EmitV1K8sConventions
     stage: alpha
     description: >-
       When enabled, semconv stable attributes are enabled.

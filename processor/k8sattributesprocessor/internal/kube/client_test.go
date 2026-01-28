@@ -1074,11 +1074,11 @@ func TestExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesEnableStableFeatureGate.ID(), true))
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesEnableStableFeatureGate.ID(), false))
-					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
 				}()
 			}
 
@@ -1380,11 +1380,11 @@ func TestNamespaceExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesEnableStableFeatureGate.ID(), true))
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesEnableStableFeatureGate.ID(), false))
-					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
 				}()
 			}
 
@@ -1640,11 +1640,11 @@ func TestNodeExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.singularFeatureGate {
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesEnableStableFeatureGate.ID(), true))
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), true))
 				defer func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesEnableStableFeatureGate.ID(), false))
-					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.ID(), false))
 				}()
 			}
 

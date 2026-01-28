@@ -918,8 +918,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	enableStable := metadata.SemconvK8sK8sattributesEnableStableFeatureGate.IsEnabled()
-	disableLegacy := metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.IsEnabled()
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
 		if !disableLegacy {
@@ -1167,8 +1167,8 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
 	tags := map[string]string{}
 
-	enableStable := metadata.SemconvK8sK8sattributesEnableStableFeatureGate.IsEnabled()
-	disableLegacy := metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.IsEnabled()
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
 		if !disableLegacy {
@@ -1194,8 +1194,8 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
 	tags := map[string]string{}
 
-	enableStable := metadata.SemconvK8sK8sattributesEnableStableFeatureGate.IsEnabled()
-	disableLegacy := metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.IsEnabled()
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
 		if !disableLegacy {

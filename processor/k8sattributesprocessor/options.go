@@ -274,8 +274,8 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			// name for KeyRegex case is set at extraction time/runtime, skipped here
 			// Use singular form when stable attributes are enabled and legacy attributes are disabled
 			fieldTypeName := fieldType
-			enableStable := metadata.SemconvK8sK8sattributesEnableStableFeatureGate.IsEnabled()
-			disableLegacy := metadata.SemconvK8sK8sattributesDisableLegacyFeatureGate.IsEnabled()
+			enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+			disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 			if enableStable && disableLegacy {
 				fieldTypeName = strings.TrimSuffix(fieldType, "s")
 			}

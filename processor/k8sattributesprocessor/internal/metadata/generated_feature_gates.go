@@ -15,16 +15,16 @@ var K8sattrLabelsAnnotationsSingularAllowFeatureGate = featuregate.GlobalRegistr
 	featuregate.WithRegisterToVersion("v0.145.0"),
 )
 
-var SemconvK8sK8sattributesDisableLegacyFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"semconv.k8s.k8sattributes.disableLegacy",
+var ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.k8sattributes.DontEmitV0K8sConventions",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, semconv legacy attributes are disabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589"),
 	featuregate.WithRegisterFromVersion("v0.145.0"),
 )
 
-var SemconvK8sK8sattributesEnableStableFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"semconv.k8s.k8sattributes.enableStable",
+var ProcessorK8sattributesEmitV1K8sConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.k8sattributes.EmitV1K8sConventions",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, semconv stable attributes are enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589"),
