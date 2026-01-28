@@ -267,8 +267,14 @@ func (doc *Document) Dedup(protectedFields ...string) {
 		key, nextKey := doc.fields[i].key, doc.fields[i+1].key
 		if len(key) < len(nextKey) && strings.HasPrefix(nextKey, key) && nextKey[len(key)] == '.' {
 			if protectedSet[key] {
-				// This is a protected field - remove the conflicting nested field instead
-				doc.fields[i+1].value = ignoreValue
+				// This is a protected field - mark all nested fields under it as ignore.
+				for j := i + 1; j < len(doc.fields); j++ {
+					if strings.HasPrefix(doc.fields[j].key, key+".") {
+						doc.fields[j].value = ignoreValue
+					} else {
+						break
+					}
+				}
 			} else {
 				// Normal case: rename to .value
 				renamed = true
