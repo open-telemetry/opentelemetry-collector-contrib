@@ -71,10 +71,6 @@ const (
 	// from `durationMs` field in Azure Log Record
 	attributeAzureOperationDuration = "azure.operation.duration"
 
-	// OpenTelemetry attribute name for Azure Identity,
-	// from `identity` field in Azure Log Record
-	attributeAzureIdentity = "azure.identity"
-
 	// OpenTelemetry attribute name for Azure Log Record properties,
 	// from `properties` field in Azure Log Record
 	// Used when we cannot map parse "properties" field or
