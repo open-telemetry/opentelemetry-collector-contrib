@@ -133,6 +133,8 @@ func (p *azureBlobEventHandler) receiveEvents(
 				zap.String("partitionID", partitionID),
 				zap.Error(err),
 			)
+		} else {
+			return
 		}
 
 		for _, event := range events {
@@ -191,7 +193,6 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *az
 func (p *azureBlobEventHandler) close(ctx context.Context) error {
 	// Wait for all partition receiver goroutines to finish
 	p.wg.Wait()
-
 	if p.hub != nil {
 		err := p.hub.Close(ctx)
 		if err != nil {
