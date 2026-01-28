@@ -4,6 +4,7 @@
 package prometheusreceiver
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -20,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
@@ -1617,21 +1619,35 @@ scrape_configs:
       - %s
         `, strings.TrimPrefix(svr.URL, "http://")), promslog.NewNopLogger())
 	require.NoError(t, err)
+
 	set := receivertest.NewNopSettings(metadata.Type)
-	receiver, err := newPrometheusReceiver(set, &Config{
-		PrometheusConfig: (*PromConfig)(cfg),
-	}, new(consumertest.MetricsSink))
+	_, _ = newTestReceiverSettings(t, &Config{PrometheusConfig: (*PromConfig)(cfg)}, set)
+
+	gotUA := <-uaCh
+	require.Contains(t, gotUA, set.BuildInfo.Command)
+	require.Contains(t, gotUA, set.BuildInfo.Version)
+}
+
+func newTestReceiver(t *testing.T, cfg *Config) (*pReceiver, *consumertest.MetricsSink) {
+	set := receivertest.NewNopSettings(metadata.Type)
+	return newTestReceiverSettings(t, cfg, set)
+}
+
+func newTestReceiverSettings(t *testing.T, cfg *Config, set receiver.Settings) (*pReceiver, *consumertest.MetricsSink) {
+	sink := new(consumertest.MetricsSink)
+	receiver, err := newPrometheusReceiver(set, cfg, sink)
 	require.NoError(t, err)
 
 	ctx := t.Context()
-
-	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(t, receiver.start(ctx, componenttest.NewNopHost(),
+		prometheusComponentOptions{
+			discovery: prometheusDiscoveryOptions{updatert: 50 * time.Millisecond},
+			scrape:    prometheusScrapeOptions{discoveryReloadInterval: 50 * time.Millisecond},
+		},
+	))
 	t.Cleanup(func() {
-		require.NoError(t, receiver.Shutdown(ctx))
+		require.NoError(t, receiver.Shutdown(context.WithoutCancel(ctx)))
+		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()))
 	})
-
-	gotUA := <-uaCh
-
-	require.Contains(t, gotUA, set.BuildInfo.Command)
-	require.Contains(t, gotUA, set.BuildInfo.Version)
+	return receiver, sink
 }
