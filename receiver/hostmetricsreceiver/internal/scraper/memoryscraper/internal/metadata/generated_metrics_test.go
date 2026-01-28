@@ -65,6 +65,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemLinuxMemoryDirtyDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSystemMemoryDarwinCompressorPagesDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSystemMemoryDarwinPressureStatusDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSystemMemoryLimitDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -123,6 +129,30 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.darwin.compressor.pages":
+					assert.False(t, validatedMetrics["system.memory.darwin.compressor.pages"], "Found a duplicate in the metrics slice: system.memory.darwin.compressor.pages")
+					validatedMetrics["system.memory.darwin.compressor.pages"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of memory pages currently occupied by the macOS compressor (Pages occupied by compressor from vm_stat).", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.darwin.pressure.status":
+					assert.False(t, validatedMetrics["system.memory.darwin.pressure.status"], "Found a duplicate in the metrics slice: system.memory.darwin.pressure.status")
+					validatedMetrics["system.memory.darwin.pressure.status"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "macOS memory pressure level reported by sysctl kern.memorystatus_vm_system.memory.darwin.pressure.status_level.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
