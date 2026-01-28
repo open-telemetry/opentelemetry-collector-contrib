@@ -40,3 +40,8 @@ retain_single_resource:
   type: retain
   fields:
     - resource.key
+on_error_drop:
+  type: retain
+  fields:
+    - body.key
+  on_error: drop
