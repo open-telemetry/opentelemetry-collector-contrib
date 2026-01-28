@@ -14,6 +14,8 @@
 		"total_rows": "2A",
 		"total_grant_kb": "3096A",
 		"query_text": "SELECT cpu_time AS [CPU Usage (time)",
-		"query_plan": "<ShowPlanXML"
+		"query_plan": "<ShowPlanXML",
+		"procedure_id": "0",
+		"procedure_name": ""
 	}
 ]

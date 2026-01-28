@@ -44,7 +44,7 @@ func TestFactory(t *testing.T) {
 					},
 					TopQueryCollection: TopQueryCollection{
 						MaxQuerySampleCount: 1000,
-						TopQueryCount:       200,
+						TopQueryCount:       250,
 						CollectionInterval:  time.Minute,
 					},
 					QuerySample: QuerySample{
