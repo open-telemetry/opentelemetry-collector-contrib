@@ -44,9 +44,17 @@ func replicaSetSyncCheckerOption(checker initialSyncChecker) replicaSetClientOpt
 	}
 }
 
+func disableReplicaSetInformers() replicaSetClientOption {
+	return func(r *replicaSetClient) {
+		r.disableInformers = true
+	}
+}
+
 type replicaSetClient struct {
 	stopChan chan struct{}
 	store    *ObjStore
+
+	disableInformers bool
 
 	stopped     bool
 	syncChecker initialSyncChecker
@@ -119,7 +127,9 @@ func newReplicaSetClient(clientSet kubernetes.Interface, logger *zap.Logger, opt
 
 	lw := createReplicaSetListWatch(clientSet, metav1.NamespaceAll)
 	reflector := cache.NewReflector(lw, &appsv1.ReplicaSet{}, c.store, 0)
-	go reflector.Run(c.stopChan)
+	if !c.disableInformers {
+		go reflector.Run(c.stopChan)
+	}
 
 	if c.syncChecker != nil {
 		// check the init sync for potential connection issue

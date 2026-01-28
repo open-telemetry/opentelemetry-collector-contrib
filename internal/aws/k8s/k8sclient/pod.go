@@ -30,12 +30,19 @@ func podSyncCheckerOption(checker initialSyncChecker) podClientOption {
 	}
 }
 
+func disablePodInformers() podClientOption {
+	return func(p *podClient) {
+		p.disableInformers = true
+	}
+}
+
 type podClient struct {
 	stopChan chan struct{}
 	store    *ObjStore
 
-	stopped     bool
-	syncChecker initialSyncChecker
+	disableInformers bool
+	stopped          bool
+	syncChecker      initialSyncChecker
 
 	mu                          sync.RWMutex
 	namespaceToRunningPodNumMap map[string]int
@@ -83,7 +90,9 @@ func newPodClient(clientSet kubernetes.Interface, logger *zap.Logger, options ..
 	lw := createPodListWatch(clientSet, metav1.NamespaceAll)
 	reflector := cache.NewReflector(lw, &v1.Pod{}, c.store, 0)
 
-	go reflector.Run(c.stopChan)
+	if !c.disableInformers {
+		go reflector.Run(c.stopChan)
+	}
 
 	if c.syncChecker != nil {
 		// check the init sync for potential connection issue
