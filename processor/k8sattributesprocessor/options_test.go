@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestWithAPIConfig(t *testing.T) {
@@ -736,10 +737,10 @@ func Test_extractFieldRules_FeatureGate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set feature gate state
-			require.NoError(t, featuregate.GlobalRegistry().Set(kube.AllowLabelsAnnotationsSingular.ID(), tt.featureGateValue))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), tt.featureGateValue))
 			defer func() {
 				// Reset to default
-				require.NoError(t, featuregate.GlobalRegistry().Set(kube.AllowLabelsAnnotationsSingular.ID(), false))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), false))
 			}()
 
 			got, err := extractFieldRules(tt.fieldType, tt.fields...)
