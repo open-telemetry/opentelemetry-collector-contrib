@@ -52,9 +52,9 @@ const (
 	categoryAutoscale                          = "Autoscale"
 	categorySecurity                           = "Security"
 	categoryPolicy                             = "Policy"
-	categoryServiceHealth                      = "ServiceHealth"
 	categoryRecommendation                     = "Recommendation"
 	categoryResourceHealth                     = "ResourceHealth"
+	categoryServiceHealth                      = "ServiceHealth"
 )
 
 // Non-SemConv attributes that are used for common Azure Log Record fields
