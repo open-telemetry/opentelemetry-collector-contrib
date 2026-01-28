@@ -4,12 +4,12 @@ resourceLogs:
         - key: cloud.provider
           value:
             stringValue: azure
-        - key: cloud.resource_id
-          value:
-            stringValue: /SUBSCRIPTIONS/11111111-1111-1111-1111-111111111111/PROVIDERS/MICROSOFT.SECURITY/LOCATIONS/CENTRALUS/ALERTS/2518939942613820660_A48F8653-3FC6-4166-9F19-914F030A13D3
         - key: cloudevents.event_source
           value:
             stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/11111111-1111-1111-1111-111111111111/PROVIDERS/MICROSOFT.SECURITY/LOCATIONS/CENTRALUS/ALERTS/2518939942613820660_A48F8653-3FC6-4166-9F19-914F030A13D3
         - key: cloud.region
           value:
             stringValue: centralus
