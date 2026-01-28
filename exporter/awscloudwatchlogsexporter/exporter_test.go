@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.uber.org/zap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -305,9 +306,12 @@ func TestLogToCWLog(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resourceAttrs := attrsValue(tt.resource.Attributes())
-			got, err := logToCWLog(resourceAttrs, tt.scope, tt.log, tt.config)
+			got, err := logToCWLog(resourceAttrs, tt.scope, tt.log, tt.config, zap.NewNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("logToCWLog() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
 				return
 			}
 			// Do not test generated time since it is time.Now()
@@ -325,7 +329,7 @@ func BenchmarkLogToCWLog(b *testing.B) {
 	log := testLogRecord()
 	scope := testScope()
 	for b.Loop() {
-		_, err := logToCWLog(attrsValue(resource.Attributes()), scope, log, &Config{})
+		_, err := logToCWLog(attrsValue(resource.Attributes()), scope, log, &Config{}, zap.NewNop())
 		if err != nil {
 			b.Errorf("logToCWLog() failed %v", err)
 			return

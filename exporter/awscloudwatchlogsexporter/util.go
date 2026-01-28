@@ -77,7 +77,7 @@ func replace(s, pattern, value string, logger *zap.Logger) (string, bool) {
 }
 
 // getLogInfo retrieves the log group and log stream names from a given set of metrics.
-func getLogInfo(resourceAttrs map[string]any, config *Config) (string, string, bool) {
+func getLogInfo(resourceAttrs map[string]any, config *Config, logger *zap.Logger) (string, string, bool) {
 	var logGroup, logStream string
 	groupReplaced := true
 	streamReplaced := true
@@ -87,10 +87,10 @@ func getLogInfo(resourceAttrs map[string]any, config *Config) (string, string, b
 
 	// Override log group/stream if specified in config. However, in this case, customer won't have correlation experience
 	if config.LogGroupName != "" {
-		logGroup, groupReplaced = replacePatterns(config.LogGroupName, strAttributeMap, config.logger)
+		logGroup, groupReplaced = replacePatterns(config.LogGroupName, strAttributeMap, logger)
 	}
 	if config.LogStreamName != "" {
-		logStream, streamReplaced = replacePatterns(config.LogStreamName, strAttributeMap, config.logger)
+		logStream, streamReplaced = replacePatterns(config.LogStreamName, strAttributeMap, logger)
 	}
 
 	return logGroup, logStream, (groupReplaced && streamReplaced)

@@ -151,7 +151,7 @@ func pushLogsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher c
 			logs := sl.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				event, err := logToCWLog(resourceAttrs, scope, log, config)
+				event, err := logToCWLog(resourceAttrs, scope, log, config, logger)
 				if err != nil {
 					logger.Debug("Failed to convert to CloudWatch Log", zap.Error(err))
 				} else {
@@ -186,11 +186,11 @@ type cwLogBody struct {
 	Resource               map[string]any  `json:"resource,omitempty"`
 }
 
-func logToCWLog(resourceAttrs map[string]any, scope pcommon.InstrumentationScope, log plog.LogRecord, config *Config) (*cwlogs.Event, error) {
+func logToCWLog(resourceAttrs map[string]any, scope pcommon.InstrumentationScope, log plog.LogRecord, config *Config, logger *zap.Logger) (*cwlogs.Event, error) {
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
 	// Replace loggroup and logstream with resource attribute
-	logGroupName, logStreamName, _ := getLogInfo(resourceAttrs, config)
+	logGroupName, logStreamName, _ := getLogInfo(resourceAttrs, config, logger)
 
 	var bodyJSON []byte
 	var err error
