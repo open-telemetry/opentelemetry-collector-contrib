@@ -4,10 +4,8 @@
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
-	"fmt"
 	"os"
 	"regexp"
-	"strings"
 	"time"
 
 	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
@@ -268,18 +266,6 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 
 		if a.From == "" {
 			a.From = kube.MetadataFromPod
-		}
-
-		if name == "" && a.Key != "" {
-			// name for KeyRegex case is set at extraction time/runtime, skipped here
-			// Use singular form when stable attributes are enabled and legacy attributes are disabled
-			fieldTypeName := fieldType
-			enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
-			disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
-			if enableStable && disableLegacy {
-				fieldTypeName = strings.TrimSuffix(fieldType, "s")
-			}
-			name = fmt.Sprintf("k8s.%v.%v.%v", a.From, fieldTypeName, a.Key)
 		}
 
 		var keyRegex *regexp.Regexp
