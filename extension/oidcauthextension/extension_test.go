@@ -244,9 +244,9 @@ func TestOIDCAuthenticationFailedNoMatchingIssuers(t *testing.T) {
 // of the issuer in the token. In that case, the issuer provided in the extension
 // config doesn't necessarily have to match the issuer in the token since it's
 // only used for discovery.
-// This code path doesn't actually work (for now) since Start() will fail when the issuer
-// in the config doesn't match the issuer returned by the discovery server, but this test
-// remains out of an abundance of caution.
+// This code path doesn't actually work (for now) since the configured provider won't be
+// usable when the issuer in the config doesn't match the issuer returned by the discovery
+// server, but this test remains out of an abundance of caution.
 func TestOIDCAuthenticationSucceededSingleIssuerMismatch(t *testing.T) {
 	oidcServer, err := newOIDCServer()
 	require.NoError(t, err)
@@ -538,6 +538,54 @@ func TestProviderNotReachable(t *testing.T) {
 
 	// verify
 	assert.Error(t, err)
+
+	err = p.Shutdown(t.Context())
+	assert.NoError(t, err)
+}
+
+func TestStartSucceedsWithPartialProviderFailure(t *testing.T) {
+	// prepare - one reachable provider and one unreachable
+	oidcServer, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer.Start()
+	defer oidcServer.Close()
+
+	config := &Config{
+		Providers: []ProviderCfg{
+			{
+				IssuerURL: oidcServer.URL,
+				Audience:  "unit-test",
+			},
+			{
+				IssuerURL: "http://unreachable-oidc-provider.example.com",
+				Audience:  "unit-test-2",
+			},
+		},
+	}
+	p := newTestExtension(t, config)
+
+	// test - should succeed even though one provider is unreachable
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+
+	// verify - no error because at least one provider is reachable
+	assert.NoError(t, err)
+
+	// verify authentication still works with the reachable provider
+	srvAuth, ok := p.(extensionauth.Server)
+	require.True(t, ok)
+
+	payload, _ := json.Marshal(map[string]any{
+		"sub": "jdoe@example.com",
+		"iss": oidcServer.URL,
+		"aud": "unit-test",
+		"exp": time.Now().Add(time.Minute).Unix(),
+	})
+	token, err := oidcServer.token(payload)
+	require.NoError(t, err)
+
+	ctx, err := srvAuth.Authenticate(t.Context(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
 
 	err = p.Shutdown(t.Context())
 	assert.NoError(t, err)
