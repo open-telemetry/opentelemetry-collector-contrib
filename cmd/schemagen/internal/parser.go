@@ -11,6 +11,7 @@ import (
 	"go/token"
 	"strings"
 
+	"github.com/iancoleman/strcase"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -18,15 +19,16 @@ type Parser struct {
 	config       *Config
 	schema       *Schema
 	types        map[string]*TypeInfo
-	imports      map[string]string
 	processQueue *list.List
-	rootPkg      *packages.Package
+	pkg          *packages.Package
+	current      *TypeInfo
 }
 
 type TypeInfo struct {
 	spec      *ast.TypeSpec
 	comms     []*ast.CommentGroup
-	pkgName   string
+	imports   map[string]string
+	typeName  string
 	processed bool
 }
 
@@ -34,7 +36,6 @@ func NewParser(cfg *Config) *Parser {
 	return &Parser{
 		config:       cfg,
 		types:        make(map[string]*TypeInfo),
-		imports:      make(map[string]string),
 		processQueue: list.New(),
 	}
 }
@@ -47,24 +48,22 @@ func (p *Parser) Parse() (*Schema, error) {
 		Fset:  set,
 		Dir:   p.config.DirPath,
 		Tests: false,
-	}, "./...")
+	}, ".")
 
 	if e != nil {
 		return nil, e
 	}
 
-	p.rootPkg = pkgs[0]
+	p.pkg = pkgs[0]
+	p.schema = CreateSchema()
 	p.processPackages(set, pkgs)
-	p.initializeSchema()
-	p.feedProcessQueue()
 
-	if p.processQueue.Len() == 0 {
-		msg := "no types to process"
-		if p.config.Mode == Component {
-			msg += fmt.Sprintf("; check if the root type name '%s' is correct", p.config.RootTypeName)
-		}
-		return nil, errors.New(msg)
+	// select types to process
+	if err := p.feedProcessQueue(); err != nil {
+		return nil, err
 	}
+
+	// process types
 	if err := p.processTypes(); err != nil {
 		return nil, err
 	}
@@ -78,21 +77,21 @@ func (p *Parser) processPackages(set *token.FileSet, pkgs []*packages.Package) {
 			p.collectTypesAndImports(file, pkg.PkgPath, ast.NewCommentMap(set, file, file.Comments))
 		}
 	}
-	if _, ok := p.types[p.config.RootTypeName]; !ok && p.config.Mode == Component {
-		fmt.Printf("Warning: Root type %s not found among collected type specs\n", p.config.RootTypeName)
-	}
-}
-
-func (p *Parser) initializeSchema() {
-	var (
-		id    = p.rootPkg.ID
-		title = fmt.Sprintf("%s %s", p.rootPkg.Name, p.config.Mode)
-	)
-	p.schema = CreateSchema(id, title)
 }
 
 func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast.CommentMap) {
 	target := p.types
+	// collect imports from current file, distinguish internal vs external
+	imports := make(map[string]string)
+	for _, imp := range file.Imports {
+		path, name := ParseImport(imp)
+		isInternal := strings.HasPrefix(path, pkgPath)
+		if isInternal {
+			path = "." + strings.TrimPrefix(path, pkgPath)
+		}
+		imports[name] = path
+	}
+	// collect exported type specs
 	for _, decl := range file.Decls {
 		genDecl, ok := decl.(*ast.GenDecl)
 		if !ok || genDecl.Tok != token.TYPE {
@@ -106,53 +105,48 @@ func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast
 			}
 			if typeSpec.Name.IsExported() {
 				name := typeSpec.Name.Name
-				pgkName := file.Name.Name
-				target[name] = &TypeInfo{typeSpec, comms, pgkName, false}
+				target[name] = &TypeInfo{typeSpec, comms, imports, name, false}
 			}
 		}
 	}
-	for _, imp := range file.Imports {
-		path, name := ParseImport(imp)
-		// omit internal package paths
-		if strings.HasPrefix(path, pkgPath) {
-			continue
-		}
-		// if mapping defined for package, skip adding import
-		if p.config.Mappings[name] != nil {
-			continue
-		}
-		p.imports[name] = path
-	}
 }
 
-func (p *Parser) feedProcessQueue() {
-	filterFn := func(name string, t *TypeInfo) bool {
-		if p.config.Mode == Component {
-			return name == p.config.RootTypeName
+func (p *Parser) feedProcessQueue() error {
+	configTypeName := p.config.ConfigType
+	// in component mode process only the config type initially
+	if p.config.Mode == Component {
+		if typeInfo, ok := p.types[configTypeName]; ok {
+			p.processQueue.PushBack(typeInfo)
 		}
-		return t.pkgName == p.rootPkg.Name
-	}
-	for name, typeSpec := range p.types {
-		if filterFn(name, typeSpec) {
-			p.processQueue.PushBack(name)
+	} else { // in package mode process all exported types
+		for _, typeInfo := range p.types {
+			p.processQueue.PushBack(typeInfo)
 		}
 	}
+	if len(p.types) == 0 {
+		return errors.New("no exported types found in the package")
+	}
+	return nil
 }
 
 func (p *Parser) processTypes() error {
 	for p.processQueue.Len() > 0 {
+		// pick next type to process from the queue
 		item := p.processQueue.Front()
 		p.processQueue.Remove(item)
 
-		name, _ := item.Value.(string)
-		typeInfo := p.types[name]
+		typeInfo, _ := item.Value.(*TypeInfo)
+		typeName := typeInfo.typeName
+		// skip already processed types
 		if typeInfo.processed {
 			continue
 		}
 		typeInfo.processed = true
+		p.current = typeInfo
+
 		schemaElement, err := p.parseType(typeInfo)
 		if err != nil {
-			return fmt.Errorf("parse type spec %s: %w", name, err)
+			return fmt.Errorf("parse type spec %s: %w", typeName, err)
 		}
 		if schemaElement == nil {
 			continue
@@ -165,29 +159,32 @@ func (p *Parser) processTypes() error {
 			}
 		}
 
-		if p.isRootType(name) {
+		// add parsed type to schema
+		if p.isConfigType(typeInfo) {
 			if obj, ok := schemaElement.(*ObjectSchemaElement); ok {
 				p.schema.ObjectSchemaElement = *obj
 			}
 			if field, ok := schemaElement.(*FieldSchemaElement); ok {
 				p.schema.ElementType = field.ElementType
 			}
-		} else {
-			if typeInfo.pkgName != p.rootPkg.Name {
-				name = typeInfo.pkgName + "." + name
+			if ref, ok := schemaElement.(*RefSchemaElement); ok {
+				p.schema.ElementType = SchemaTypeObject
+				p.schema.AllOf = append(p.schema.AllOf, ref)
 			}
-			p.schema.Defs.AddDef(name, schemaElement)
+		} else {
+			p.schema.Defs.AddDef(strcase.ToSnake(typeName), schemaElement)
 		}
 	}
 	return nil
 }
 
-func (p *Parser) isRootType(name string) bool {
-	return p.config.Mode == Component && (name == p.config.RootTypeName || len(p.types) == 1)
+func (p *Parser) isConfigType(typeInfo *TypeInfo) bool {
+	return p.config.Mode == Component && typeInfo.typeName == p.config.ConfigType
 }
 
 func (p *Parser) parseType(typeInfo *TypeInfo) (SchemaElement, error) {
 	typeSpec := typeInfo.spec
+	// skip non-struct types at the top level
 	switch typeSpec.Type.(type) {
 	case *ast.InterfaceType, *ast.FuncType:
 		// skip these types
@@ -268,20 +265,17 @@ func (p *Parser) addEmbeddedField(field *ast.Field, schemaObject SchemaObject) e
 		return errors.New("unrecognized embedded field type ")
 	}
 
-	typeName := ident.Name
-	if _, exists := p.types[typeName]; !exists {
-		if typeSpec, ok := ident.Obj.Decl.(*ast.TypeSpec); ok {
-			elem, err := p.parseExpr(typeSpec.Type)
-			if err != nil {
-				return err
-			}
+	elem, err := p.parseIdent(ident)
+	if err == nil {
+		switch elem := elem.(type) {
+		case *RefSchemaElement:
+			schemaObject.AddEmbeddedRef(elem.Ref)
+			return nil
+		case *ObjectSchemaElement:
 			return mergeSchemas(schemaObject, elem)
 		}
-		return fmt.Errorf("type %s not found in collected type specs", typeName)
 	}
-	p.processQueue.PushBack(typeName)
-	schemaObject.AddEmbeddedRef("#/$defs/" + typeName)
-	return nil
+	return err
 }
 
 func (p *Parser) addNamedFields(field *ast.Field, schemaObject SchemaObject) {
@@ -331,21 +325,21 @@ func (p *Parser) parseIdent(ident *ast.Ident) (SchemaElement, error) {
 		return element, nil
 	}
 
-	if ident.Obj != nil {
-		typeSpec, ok := ident.Obj.Decl.(*ast.TypeSpec)
-		if !ok {
-			return nil, errors.New("unrecognized Ident declaration type")
-		}
-		typeName = typeSpec.Name.Name
+	if info, exists := p.types[typeName]; exists {
+		p.processQueue.PushBack(info)
+		return CreateRefField(strcase.ToSnake(typeName), ""), nil
 	}
 
-	if info, exists := p.types[typeName]; exists {
-		p.processQueue.PushBack(typeName)
-		if info.pkgName != p.rootPkg.Name {
-			typeName = info.pkgName + "." + typeName
+	if ident.Obj != nil {
+		if typeSpec, ok := ident.Obj.Decl.(*ast.TypeSpec); ok {
+			elem, err := p.parseExpr(typeSpec.Type)
+			if err != nil {
+				return nil, err
+			}
+			return elem, nil
 		}
-		return CreateRefField("#/$defs/"+typeName, ""), nil
 	}
+
 	return nil, fmt.Errorf("type %s not found in collected type specs", typeName)
 }
 
@@ -372,29 +366,52 @@ func (p *Parser) parseSelector(selector *ast.SelectorExpr) (SchemaElement, error
 		return nil, errors.New("unrecognized SelectorExpr structure")
 	}
 
-	if path, ok := p.imports[pkgIdent.Name]; ok {
-		fullID := fmt.Sprintf("%s#/$defs/%s", path, selector.Sel.Name)
-		element := CreateRefField(fullID, "")
-		return element, nil
+	pkgName := pkgIdent.Name
+	name := selector.Sel.Name
+	fullTypeName := pkgName + "." + name
+
+	if path, ok := p.current.imports[pkgName]; ok {
+		_, exists := p.config.Mappings[path]
+		if !exists {
+			// always allow internal packages
+			allowed := strings.HasPrefix(path, ".")
+			// otherwise check allowed refs
+			if !allowed {
+				for _, allowedPath := range p.config.AllowedRefs {
+					if strings.HasPrefix(path, allowedPath) {
+						allowed = true
+						break
+					}
+				}
+			}
+			fullID := fmt.Sprintf("%s.%s", path, strcase.ToSnake(name))
+			// if allowed - create ref, else create any with custom type
+			if allowed {
+				element := CreateRefField(fullID, "")
+				return element, nil
+			}
+			element := CreateSimpleField(SchemaTypeAny, "")
+			element.CustomElementType = fullID
+			return element, nil
+		}
+		pkgName = path
+		fullTypeName = pkgName + "." + name
 	}
 
-	fullTypeName := pkgIdent.Name + "." + selector.Sel.Name
-	if pkg, ok := p.config.Mappings[pkgIdent.Name]; ok {
-		if typeDesc, ok := pkg[selector.Sel.Name]; ok {
+	if pkg, ok := p.config.Mappings[pkgName]; ok {
+		if typeDesc, ok := pkg[name]; ok {
 			element := CreateSimpleField(typeDesc.SchemaType, "")
-			element.CustomElementType = fullTypeName
+			if !typeDesc.SkipAnnotation {
+				element.CustomElementType = fullTypeName
+			}
 			element.Format = typeDesc.Format
 			return element, nil
 		}
 	}
 
-	name := selector.Sel.Name
 	if info, exists := p.types[name]; exists {
-		p.processQueue.PushBack(name)
-		if info.pkgName != p.rootPkg.Name {
-			name = fullTypeName
-		}
-		element := CreateRefField("#/$defs/"+name, "")
+		p.processQueue.PushBack(info)
+		element := CreateRefField(strcase.ToSnake(name), "")
 		return element, nil
 	}
 
@@ -416,5 +433,7 @@ func (p *Parser) parseOptional(indexExpr *ast.IndexExpr) (SchemaElement, error) 
 		return element, err
 	}
 
-	return nil, fmt.Errorf("unrecognized generic type: %s", wrapperTypeName)
+	fmt.Printf("Warning: unrecognized generic type: %s\n", wrapperTypeName)
+
+	return nil, nil
 }

@@ -397,6 +397,8 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 	case OTTLCondition:
 		ottlfCfg := cfg.OTTLConditionCfg
 		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
+	case TraceFlags:
+		return sampling.NewTraceFlags(settings), nil
 	default:
 		t := string(cfg.Type)
 		extension, ok := policyExtensions[t]

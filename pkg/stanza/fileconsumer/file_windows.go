@@ -7,8 +7,11 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 // Noop on windows because we close files immediately after reading.
@@ -41,4 +44,33 @@ func normalizePath(path string) (string, bool) {
 	// For non-UNC paths (including paths starting with single backslash which are
 	// valid local paths on the current drive), just clean normally
 	return filepath.Clean(path), false
+}
+
+// openFile opens a file on Windows with FILE_SHARE_DELETE flag to allow
+// other processes to delete or rename the file while it's open.
+func openFile(path string) (*os.File, error) {
+	if path == "" {
+		return nil, &fs.PathError{Op: "open", Path: path, Err: syscall.ENOENT}
+	}
+
+	pathp, err := syscall.UTF16PtrFromString(path)
+	if err != nil {
+		return nil, &fs.PathError{Op: "open", Path: path, Err: err}
+	}
+
+	access := uint32(syscall.GENERIC_READ)
+	sharemode := uint32(syscall.FILE_SHARE_READ | syscall.FILE_SHARE_WRITE | syscall.FILE_SHARE_DELETE)
+	createmode := uint32(syscall.OPEN_EXISTING)
+	flags := uint32(syscall.FILE_ATTRIBUTE_NORMAL)
+
+	handle, err := syscall.CreateFile(pathp, access, sharemode, nil, createmode, flags, 0)
+	if err != nil {
+		return nil, &fs.PathError{Op: "open", Path: path, Err: err}
+	}
+
+	if handle == syscall.InvalidHandle {
+		return nil, &fs.PathError{Op: "open", Path: path, Err: syscall.EINVAL}
+	}
+
+	return os.NewFile(uintptr(handle), path), nil
 }

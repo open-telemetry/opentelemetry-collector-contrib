@@ -66,3 +66,8 @@ invalid_missing_to:
   from: body.nothing
 invalid_missing_to_and_from:
   type: move
+on_error_drop:
+  type: move
+  from: body.key
+  to: body.new
+  on_error: drop

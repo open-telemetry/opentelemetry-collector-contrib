@@ -284,7 +284,7 @@ components:
     - receiver/macosunifiedlogging
     - receiver/memcached
     - receiver/mongodb
-    - receiver/mongodbatlas
+    - receiver/mongodb_atlas
     - receiver/mysql
     - receiver/namedpipe
     - receiver/netflow

@@ -6,3 +6,7 @@ sanitize_utf8_with_field:
 sanitize_utf8_with_invalid_field:
   type: sanitize_utf8
   field: invalid_field
+on_error_drop:
+  type: sanitize_utf8
+  field: body
+  on_error: drop

@@ -167,6 +167,11 @@ func TestLogsExporter_PushLogs_WhenCannotSend(t *testing.T) {
 			cfg := &Config{
 				Domain:     "test.domain.com",
 				PrivateKey: "test-key",
+				Logs: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint: "ingress.test.domain.com:443",
+					},
+				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   tt.enabled,
 					Threshold: 1,

@@ -1,6 +1,3 @@
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/test09
-title: test09 component
 description: MixedTagsConfig showcases json and mapstructure tag interactions.
 type: object
 properties:
