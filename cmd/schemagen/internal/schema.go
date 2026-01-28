@@ -11,8 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const Version = "https://json-schema.org/draft/2020-12/schema"
-
 type SchemaElement interface {
 	setIsPointer(value bool)
 	setDescription(description string)
@@ -90,9 +88,6 @@ func (d DefsSchemaElement) AddDef(name string, property SchemaElement) {
 }
 
 type Schema struct {
-	Schema              string            `json:"$schema" yaml:"$schema"`
-	ID                  string            `json:"$id" yaml:"$id"`
-	Title               string            `json:"title" yaml:"title"`
 	Defs                DefsSchemaElement `json:"$defs,omitempty" yaml:"$defs,omitempty"`
 	ObjectSchemaElement `json:",inline" yaml:",inline"`
 }
@@ -114,12 +109,9 @@ func (s *Schema) ToYAML() ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func CreateSchema(id, title string) *Schema {
+func CreateSchema() *Schema {
 	return &Schema{
-		Schema: Version,
-		ID:     id,
-		Title:  title,
-		Defs:   DefsSchemaElement{},
+		Defs: DefsSchemaElement{},
 	}
 }
 

@@ -1,9 +1,6 @@
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/test07
-title: test07 component
 type: object
 $defs:
-  Certificate:
+  certificate:
     properties:
       password:
         type: string
@@ -11,14 +8,14 @@ $defs:
       path:
         type: string
     type: object
-  Credentials:
+  credentials:
     properties:
       password:
         type: string
       username:
         type: string
     type: object
-  Endpoint:
+  endpoint:
     properties:
       headers:
         additionalProperties:
@@ -31,7 +28,7 @@ $defs:
       url:
         type: string
     type: object
-  MetadataEntry:
+  metadata_entry:
     properties:
       attributes:
         additionalProperties:
@@ -40,7 +37,7 @@ $defs:
       value:
         type: string
     type: object
-  RetryPolicy:
+  retry_policy:
     properties:
       backoff_seconds:
         items:
@@ -49,23 +46,23 @@ $defs:
       max_attempts:
         type: integer
     type: object
-  TLSConfig:
+  tls_config:
     properties:
       certificates:
         items:
-          $ref: '#/$defs/Certificate'
+          $ref: 'certificate'
         type: array
       insecure:
         type: boolean
     type: object
 properties:
   credentials:
-    $ref: '#/$defs/Credentials'
+    $ref: 'credentials'
   enabled:
     type: boolean
   endpoints:
     items:
-      $ref: '#/$defs/Endpoint'
+      $ref: 'endpoint'
     type: array
   inline:
     properties:
@@ -87,10 +84,10 @@ properties:
     type: object
   metadata:
     additionalProperties:
-      $ref: '#/$defs/MetadataEntry'
+      $ref: 'metadata_entry'
     type: object
   retry:
-    $ref: '#/$defs/RetryPolicy'
+    $ref: 'retry_policy'
   routes:
     items:
       additionalProperties:
@@ -102,5 +99,5 @@ properties:
   service_name:
     type: string
   tls:
-    $ref: '#/$defs/TLSConfig'
+    $ref: 'tls_config'
     x-pointer: true
