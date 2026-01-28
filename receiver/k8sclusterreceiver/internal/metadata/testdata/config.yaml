@@ -61,6 +61,14 @@ all_set:
       enabled: true
     k8s.node.condition:
       enabled: true
+    k8s.node.cpu.allocatable:
+      enabled: true
+    k8s.node.ephemeral_storage.allocatable:
+      enabled: true
+    k8s.node.memory.allocatable:
+      enabled: true
+    k8s.node.pod.allocatable:
+      enabled: true
     k8s.pod.phase:
       enabled: true
     k8s.pod.status_reason:
@@ -235,6 +243,14 @@ none_set:
     k8s.namespace.phase:
       enabled: false
     k8s.node.condition:
+      enabled: false
+    k8s.node.cpu.allocatable:
+      enabled: false
+    k8s.node.ephemeral_storage.allocatable:
+      enabled: false
+    k8s.node.memory.allocatable:
+      enabled: false
+    k8s.node.pod.allocatable:
       enabled: false
     k8s.pod.phase:
       enabled: false
