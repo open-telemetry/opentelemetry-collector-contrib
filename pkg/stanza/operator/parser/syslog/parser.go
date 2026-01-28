@@ -47,7 +47,11 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 	for _, ent := range entries {
 		skip, err := p.Skip(ctx, ent)
 		if err != nil {
-			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+			if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
+				if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+					errs = append(errs, handleErr)
+				}
+			}
 			continue
 		}
 		if skip {
@@ -61,7 +65,11 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			var bytes []byte
 			bytes, err = toBytes(ent.Body)
 			if err != nil {
-				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+				if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
+					if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+						errs = append(errs, handleErr)
+					}
+				}
 				continue
 			}
 			if p.shouldSkipPriorityValues(bytes) {
@@ -77,7 +85,11 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 		}
 
 		if err = callback(ent); err != nil {
-			errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
+			if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
+				if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+					errs = append(errs, handleErr)
+				}
+			}
 			continue
 		}
 
@@ -94,7 +106,11 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	if !p.enableOctetCounting && p.allowSkipPriHeader {
 		bytes, err := toBytes(entry.Body)
 		if err != nil {
-			return err
+			handleErr := p.HandleEntryError(ctx, entry, err)
+			if p.OnError == helper.DropOnErrorQuiet || p.OnError == helper.SendOnErrorQuiet {
+				return nil
+			}
+			return handleErr
 		}
 
 		if p.shouldSkipPriorityValues(bytes) {
