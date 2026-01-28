@@ -20,7 +20,7 @@ func (s *Server) statusHandler() http.Handler {
 			return
 		}
 
-		if err := s.responder.respond(st, w); err != nil {
+		if err := s.responder.respond(st, w, verbose); err != nil {
 			s.telemetry.Logger.Warn(err.Error())
 		}
 	})
