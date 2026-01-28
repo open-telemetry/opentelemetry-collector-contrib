@@ -22,10 +22,20 @@ This receiver supports Kafka versions:
   -  2.X
   -  3.X
 
+## Feature gates
+
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
+
+Feature gates can be enabled using the `--feature-gates` flag:
+
+```shell
+"--feature-gates=<feature-gate>"
+```
+
 ## Getting Started
 
 > [!NOTE]
-> You can opt-in to use [`franz-go`](https://github.com/twmb/franz-go) client by enabling the feature gate
+> You can opt out of using the [`franz-go`](https://github.com/twmb/franz-go) client by disabling the feature gate
 > `receiver.kafkametricsreceiver.UseFranzGo` when you run the OpenTelemetry Collector. See the following page
 > for more details: [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#controlling-gates)
 
