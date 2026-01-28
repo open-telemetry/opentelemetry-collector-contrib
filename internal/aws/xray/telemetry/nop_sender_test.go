@@ -13,14 +13,14 @@ func TestNopRecorder(t *testing.T) {
 	assert.Same(t, nopSenderInstance, NewNopSender())
 	recorder := NewNopSender()
 	assert.NotPanics(t, func() {
-		recorder.Start(t.Context())
+		recorder.Start()
 		recorder.RecordConnectionError(nil)
 		recorder.RecordSegmentsSent(1)
 		recorder.RecordSegmentsSpillover(1)
 		recorder.RecordSegmentsRejected(1)
 		recorder.RecordSegmentsReceived(1)
 		assert.False(t, recorder.HasRecording())
-		assert.Zero(t, recorder.Rotate())
+		assert.Nil(t, recorder.Rotate())
 		recorder.Stop()
 	})
 }

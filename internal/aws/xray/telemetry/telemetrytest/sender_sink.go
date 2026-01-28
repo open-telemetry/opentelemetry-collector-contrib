@@ -4,7 +4,6 @@
 package telemetrytest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
 
 import (
-	"context"
 	"sync/atomic"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
@@ -28,7 +27,7 @@ type SenderSink struct {
 	StopCount  *atomic.Int64
 }
 
-func (s SenderSink) Start(_ context.Context) {
+func (s SenderSink) Start() {
 	s.StartCount.Add(1)
 }
 

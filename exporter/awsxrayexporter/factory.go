@@ -36,7 +36,11 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (exporter.Traces, error) {
+func createTracesExporter(
+	_ context.Context,
+	params exporter.Settings,
+	cfg component.Config,
+) (exporter.Traces, error) {
 	eCfg := cfg.(*Config)
-	return newTracesExporter(ctx, eCfg, params, telemetry.GlobalRegistry())
+	return newTracesExporter(eCfg, params, &awsutil.Conn{}, telemetry.GlobalRegistry())
 }

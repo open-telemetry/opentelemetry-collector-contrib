@@ -3,11 +3,7 @@
 
 package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 
-import (
-	"context"
-
-	"github.com/aws/aws-sdk-go-v2/service/xray/types"
-)
+import "github.com/aws/aws-sdk-go/service/xray"
 
 // NewNopSender returns a Sender that drops all data.
 func NewNopSender() Sender {
@@ -18,15 +14,15 @@ var nopSenderInstance Sender = &nopSender{}
 
 type nopSender struct{}
 
-func (nopSender) Rotate() types.TelemetryRecord {
-	return types.TelemetryRecord{}
+func (nopSender) Rotate() *xray.TelemetryRecord {
+	return nil
 }
 
 func (nopSender) HasRecording() bool {
 	return false
 }
 
-func (nopSender) Start(context.Context) {
+func (nopSender) Start() {
 }
 
 func (nopSender) Stop() {

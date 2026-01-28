@@ -201,7 +201,6 @@ func ToOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSe
 		WithHostname(getMetadata(hostnameProviders...)),
 		WithInstanceID(getMetadata(instanceIDProviders...)),
 		WithResourceARN(getMetadata(
-			ctx,
 			simpleMetadataProvider{metadata: cfg.ResourceARN},
 			simpleMetadataProvider{metadata: settings.ResourceARN},
 		)),

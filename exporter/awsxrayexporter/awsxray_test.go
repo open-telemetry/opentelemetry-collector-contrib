@@ -82,7 +82,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	require.Equal(t, sink, sender)
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
-	traceExporter, err := newTracesExporter(t.Context(), cfg, set, registry)
+	traceExporter, err := newTracesExporter(cfg, set, new(awsutil.Conn), registry)
 	assert.NoError(t, err)
 	ctx := t.Context()
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))

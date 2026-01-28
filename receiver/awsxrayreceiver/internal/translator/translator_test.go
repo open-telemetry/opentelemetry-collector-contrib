@@ -913,9 +913,9 @@ func TestTranslation(t *testing.T) {
 					"cloud.provider": "unknown",
 				}
 			},
-			expectedRecord: types.TelemetryRecord{
-				SegmentsReceivedCount: aws.Int32(1),
-				SegmentsRejectedCount: aws.Int32(0),
+			expectedRecord: xray.TelemetryRecord{
+				SegmentsReceivedCount: aws.Int64(1),
+				SegmentsRejectedCount: aws.Int64(0),
 			},
 			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()

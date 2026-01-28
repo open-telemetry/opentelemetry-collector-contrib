@@ -6,7 +6,7 @@ package translator
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -409,9 +409,9 @@ func TestCustomSDK(t *testing.T) {
 func TestCustomSDKForLanguage(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, "test")
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "2.0.3")
+	resource.Attributes().PutStr("telemetry.sdk.name", "test")
+	resource.Attributes().PutStr("telemetry.sdk.language", "java")
+	resource.Attributes().PutStr("telemetry.sdk.version", "2.0.3")
 
 	filtered, awsData := makeAws(attributes, resource, nil)
 
