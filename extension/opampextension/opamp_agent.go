@@ -473,7 +473,7 @@ func (o *opampAgent) onCommand(_ context.Context, command *protobufs.ServerToAge
 		o.logger.Debug("ignoring non-restart command")
 		return nil
 	}
-	// the SIGHUP signal doesn't exist in windows, so we'll just short circuit if this is running on a windows system.
+
 	if o.capabilities.AcceptsRestartCommand {
 		o.logger.Info("received restart command, sending SIGHUP to reload")
 		collectorProcess, err := os.FindProcess(os.Getpid())
