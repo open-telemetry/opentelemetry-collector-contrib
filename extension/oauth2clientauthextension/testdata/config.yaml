@@ -7,6 +7,16 @@ oauth2client:
   scopes: ["api.metrics"]
   timeout: 1s
 
+oauth2client/jwt-bearer-grant-type:
+  client_id: someclientid
+  client_certificate_key: secret_key
+  grant_type: urn:ietf:params:oauth:grant-type:jwt-bearer
+  token_url: https://example.com/oauth2/default/v1/token
+  endpoint_params:
+    audience: someaudience
+  scopes: ["api.metrics"]
+  timeout: 1s
+
 oauth2client/withtls:
   client_id: someclientid2
   client_secret: someclientsecret2
@@ -28,6 +38,12 @@ oauth2client/missingid:
 
 oauth2client/missingsecret:
   client_id: someclientid
+  token_url: https://example.com/oauth2/default/v1/token
+  scopes: ["api.metrics"]
+
+oauth2client/missingcertificate:
+  client_id: someclientid
+  grant_type: urn:ietf:params:oauth:grant-type:jwt-bearer
   token_url: https://example.com/oauth2/default/v1/token
   scopes: ["api.metrics"]
 

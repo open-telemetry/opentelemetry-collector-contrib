@@ -126,7 +126,23 @@ All time parameters must have the unit of time specified. e.g.: `200ms`, `1s`, `
 
 ### Log Rotation
 
-File Log Receiver can read files that are being rotated. 
+File Log Receiver can read files that are being rotated.
+
+#### File Attribute Behavior During Rotation
+
+The receiver handles file attributes differently depending on whether rotated files match your `include` pattern:
+
+**Rotated files NOT matching the include pattern:**
+When a file is rotated and the rotated filename no longer matches the `include` pattern, the receiver preserves the original file attributes (e.g., `log.file.name`, `log.file.path`). This ensures logs read from the rotated file continue to be associated with their original file identity.
+
+Example: With `include: /var/log/pods/*/*/0.log`, when `0.log` is rotated to `0.log.20260115-120000`, logs from the rotated file will still report `log.file.name=0.log`.
+
+**Rotated files matching the include pattern:**
+When a file is rotated and the rotated filename continues to match the `include` pattern, the receiver reports the new rotated filename in file attributes. This is expected behavior that prevents duplicate metrics when tracking per-file consumption.
+
+Example: With `include: /var/log/pods/*/*/*.log*`, when `0.log` is rotated to `0.log.20260115-120000`, logs from the rotated file will report `log.file.name=0.log.20260115-120000`.
+
+For more details, see [issue #38454](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38454). 
 
 ## Example - Tailing a simple json file
 

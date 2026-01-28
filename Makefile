@@ -699,6 +699,10 @@ clean:
 generate-gh-issue-templates:
 	$(GITHUBGEN) issue-templates
 
+.PHONY: generate-schemas
+generate-schemas:
+	cmd/schemagen/run_schemagen_dir.sh -v -i testdata .
+
 .PHONY: checks
 checks:
 	$(MAKE) checkdoc
@@ -712,4 +716,5 @@ checks:
 	$(MAKE) gendistributions
 	$(MAKE) -j4 generate
 	$(MAKE) multimod-verify
+	$(MAKE) generate-schemas
 	git diff --exit-code || (echo 'Some files need committing' && git status && exit 1)

@@ -183,6 +183,10 @@ jobs:
           make generate-gh-issue-templates
           git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
       - run: ./.github/workflows/scripts/check-disk-space.sh
+      - name: Check config schemas
+        run: |
+          make generate-schemas
+          git diff --exit-code '*.schema.yaml' || (echo 'Config schemas are out of date, please run "make generate-schemas" and commit the changes in this PR.' && exit 1)
   unittest-matrix:
     strategy:
       fail-fast: false
@@ -214,7 +218,7 @@ jobs:
         with:
           go-version: oldstable
       - name: Cache Test Build
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5
         with:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}

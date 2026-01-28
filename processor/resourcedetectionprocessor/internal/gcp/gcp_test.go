@@ -14,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
+	processormetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 func TestDetect(t *testing.T) {
@@ -432,7 +433,7 @@ func TestDetect(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			defer testutil.SetFeatureGateForTest(t, removeGCPFaasID, !tc.addFaasID)()
+			defer testutil.SetFeatureGateForTest(t, processormetadata.ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate, !tc.addFaasID)()
 			res, schema, err := tc.detector.Detect(t.Context())
 			if tc.expectErr {
 				assert.Error(t, err)

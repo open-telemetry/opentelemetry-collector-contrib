@@ -31,7 +31,7 @@ job "otel-collector" {
       port "otlp" {
         to = 4317
       }
-      port "otlphttp" {
+      port "otlp-http" {
         to = 4318
       }
       port "zipkin" {
@@ -55,7 +55,7 @@ job "otel-collector" {
         ]
 
         ports = [
-  "otlphttp",
+  "otlp-http",
   "zipkin",
   "zpages",
   "healthcheck",
@@ -173,7 +173,7 @@ EOH
           "traefik.http.routers.otel-collector-http.tls=false",
           "traefik.enable=true",
         ]
-        port = "otlphttp"
+        port = "otlp-http"
       }
 
     }
