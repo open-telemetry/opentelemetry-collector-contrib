@@ -27,7 +27,7 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool) pmet
 	nm.Sum().SetIsMonotonic(isMonotonicCounter)
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
-	dp.SetIntValue(parsedMetric.counterValue())
+	dp.SetDoubleValue(parsedMetric.counterValue())
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
 		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
@@ -182,17 +182,15 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 	}
 }
 
-func (s statsDMetric) counterValue() int64 {
+func (s statsDMetric) counterValue() float64 {
 	x := s.asFloat
-	// Note statds counters are always represented as integers.
-	// There is no statsd specification that says what should or
-	// shouldn't be done here.  Rounding may occur for sample
-	// rates that are not integer reciprocals.  Recommendation:
-	// use integer reciprocal sampling rates.
+	// Note statsD counters are traditionally represented as integers, but
+	// we'll preserve the floating point precision to avoid truncating
+	// fractional values to zero.
 	if 0 < s.sampleRate && s.sampleRate < 1 {
 		x /= s.sampleRate
 	}
-	return int64(x)
+	return x
 }
 
 func (s statsDMetric) gaugeValue() float64 {
