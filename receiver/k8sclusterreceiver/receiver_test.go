@@ -30,7 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
 )
 
 type nopHost struct {
@@ -233,9 +232,9 @@ func TestNamespacedReceiverWithMultipleNamespaces(t *testing.T) {
 }
 
 func TestReceiverFeatureGatesCombination(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(node.DisableLegacyMetrics.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sReceiverK8sclusterDisableLegacyFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(node.DisableLegacyMetrics.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sReceiverK8sclusterDisableLegacyFeatureGate.ID(), false))
 	}()
 
 	tt := componenttest.NewTelemetry()

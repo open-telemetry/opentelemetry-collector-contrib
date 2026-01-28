@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/iancoleman/strcase"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -26,20 +25,6 @@ const (
 	// Keys for node metadata and entity attributes. These are NOT used by resource attributes.
 	nodeCreationTime       = "node.creation_timestamp"
 	k8sNodeConditionPrefix = "k8s.node.condition"
-)
-
-var EnableStableMetrics = featuregate.GlobalRegistry().MustRegister(
-	"semconv.k8s.receiver.k8scluster.enableStable",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, semconv stable metrics are enabled."),
-	featuregate.WithRegisterFromVersion("v0.144.0"),
-)
-
-var DisableLegacyMetrics = featuregate.GlobalRegistry().MustRegister(
-	"semconv.k8s.receiver.k8scluster.disableLegacy",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, semconv legacy metrics are disabled."),
-	featuregate.WithRegisterFromVersion("v0.144.0"),
 )
 
 // Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
@@ -75,7 +60,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Ti
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 
-	if EnableStableMetrics.IsEnabled() {
+	if metadata.SemconvK8sReceiverK8sclusterEnableStableFeatureGate.IsEnabled() {
 		if cpuVal, ok := node.Status.Allocatable[corev1.ResourceCPU]; ok {
 			mb.RecordK8sNodeCPUAllocatableDataPoint(ts, float64(cpuVal.MilliValue())/1000.0)
 		}
@@ -116,7 +101,7 @@ func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *co
 	}
 
 	// Adding 'node allocatable type' metrics
-	if !DisableLegacyMetrics.IsEnabled() {
+	if !metadata.SemconvK8sReceiverK8sclusterDisableLegacyFeatureGate.IsEnabled() {
 		for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
 			v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
 			quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]
