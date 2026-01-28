@@ -36,6 +36,12 @@ var (
 	errMissingLogStream = errors.New("cloudwatch log record is missing logStream field")
 )
 
+// resourceGroupKey represents the combination of account ID and region used for grouping log events.
+type resourceGroupKey struct {
+	accountID string
+	region    string
+}
+
 // Unmarshaler for the CloudWatch Log JSON record format.
 type Unmarshaler struct {
 	logger    *zap.Logger
@@ -91,27 +97,63 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	}
 
 	logs := plog.NewLogs()
-	rl := logs.ResourceLogs().AppendEmpty()
-	resourceAttrs := rl.Resource().Attributes()
-	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
-	resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwLog.Owner)
-	resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
-	resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)
-	// Deprecated: [v0.121.0] Use `string(conventions.AWSLogGroupNamesKey)` instead
-	resourceAttrs.PutStr(attributeAWSCloudWatchLogGroupName, cwLog.LogGroup)
-	// Deprecated: [v0.121.0] Use `string(conventions.AWSLogStreamNamesKey)` instead
-	resourceAttrs.PutStr(attributeAWSCloudWatchLogStreamName, cwLog.LogStream)
 
-	sl := rl.ScopeLogs().AppendEmpty()
-	sl.Scope().SetName(metadata.ScopeName)
-	sl.Scope().SetVersion(u.buildInfo.Version)
+	// Group events by their extracted fields (account ID + region).
+	// Events with different extracted fields should be in separate ResourceLogs.
+	// Events without extracted fields use the Owner value.
 
-	for _, event := range cwLog.LogEvents {
-		logRecord := sl.LogRecords().AppendEmpty()
-		// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
-		// but timestamp in cloudwatch logs are in milliseconds.
-		logRecord.SetTimestamp(pcommon.Timestamp(event.Timestamp * int64(time.Millisecond)))
-		logRecord.Body().SetStr(event.Message)
+	// Group event indices by key to get the indices of the events that belong to the same resource group.
+	// This allows us append all the log records for a given resource group at once.
+	eventsByKey := make(map[resourceGroupKey][]int)
+	for i, event := range cwLog.LogEvents {
+		var key resourceGroupKey
+		if event.ExtractedFields != nil {
+			if event.ExtractedFields.AccountID != "" {
+				key.accountID = event.ExtractedFields.AccountID
+			} else {
+				key.accountID = cwLog.Owner
+			}
+			key.region = event.ExtractedFields.Region
+		} else {
+			key.accountID = cwLog.Owner
+		}
+		eventsByKey[key] = append(eventsByKey[key], i)
+	}
+
+	// Create ResourceLogs and populate log records with pre-allocation.
+	for key, eventIndices := range eventsByKey {
+		rl := logs.ResourceLogs().AppendEmpty()
+		resourceAttrs := rl.Resource().Attributes()
+		resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+		resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), key.accountID)
+		if key.region != "" {
+			resourceAttrs.PutStr(string(conventions.CloudRegionKey), key.region)
+		}
+		resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
+		resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)
+		// Deprecated: [v0.121.0] Use `string(conventions.AWSLogGroupNamesKey)` instead
+		resourceAttrs.PutStr(attributeAWSCloudWatchLogGroupName, cwLog.LogGroup)
+		// Deprecated: [v0.121.0] Use `string(conventions.AWSLogStreamNamesKey)` instead
+		resourceAttrs.PutStr(attributeAWSCloudWatchLogStreamName, cwLog.LogStream)
+
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.Scope().SetName(metadata.ScopeName)
+		sl.Scope().SetVersion(u.buildInfo.Version)
+
+		// Pre-allocate LogRecords capacity to avoid reallocations.
+		logRecords := sl.LogRecords()
+		logRecords.EnsureCapacity(len(eventIndices))
+
+		// Append log records using indices to access original events.
+		for _, idx := range eventIndices {
+			event := cwLog.LogEvents[idx]
+			logRecord := logRecords.AppendEmpty()
+
+			// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
+			// but timestamp in cloudwatch logs are in milliseconds.
+			logRecord.SetTimestamp(pcommon.Timestamp(event.Timestamp * int64(time.Millisecond)))
+			logRecord.Body().SetStr(event.Message)
+		}
 	}
 
 	return logs, nil

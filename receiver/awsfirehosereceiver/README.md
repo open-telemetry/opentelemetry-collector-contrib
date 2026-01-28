@@ -87,6 +87,8 @@ For example:
 }
 ```
 
+**Note:** To include AWS Account ID and Region in log events, enable the `emitSystemFields` parameter when creating or updating your CloudWatch Logs subscription filter. Set `emitSystemFields` to `["@aws.account", "@aws.region"]` in the [PutSubscriptionFilter](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutSubscriptionFilter.html) API call. When enabled, these fields will appear in the `extractedFields` property of each log event and will be automatically mapped to the OpenTelemetry semantic conventions `cloud.account.id` and `cloud.region` as resource attributes. This is particularly useful for centralized logging scenarios where logs from multiple accounts or regions are forwarded to a single destination.
+
 ### otlp_v1
 
 The OTLP v1 encoding as produced by CloudWatch metric streams.
