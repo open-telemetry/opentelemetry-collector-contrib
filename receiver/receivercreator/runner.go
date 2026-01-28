@@ -123,13 +123,13 @@ func (*receiverRunner) shutdown(rcvr component.Component) error {
 
 // loadRuntimeReceiverConfig loads the given receiverTemplate merged with config values
 // that may have been discovered at runtime.
-func (*receiverRunner) loadRuntimeReceiverConfig(
+func (run *receiverRunner) loadRuntimeReceiverConfig(
 	factory rcvr.Factory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (component.Config, string, error) {
 	// remove dynamically added "endpoint" field if not supported by receiver
-	mergedConfig, targetEndpoint, err := mergeTemplatedAndDiscoveredConfigs(factory, receiver.config, discoveredConfig)
+	mergedConfig, targetEndpoint, err := run.mergeTemplatedAndDiscoveredConfigs(factory, receiver.config, discoveredConfig)
 	if err != nil {
 		return nil, targetEndpoint, fmt.Errorf("failed to merge constituent template configs: %w", err)
 	}
@@ -144,22 +144,36 @@ func (*receiverRunner) loadRuntimeReceiverConfig(
 	return receiverCfg, targetEndpoint, nil
 }
 
-// mergeTemplateAndDiscoveredConfigs will unify the templated and discovered configs,
+// mergeTemplatedAndDiscoveredConfigs will unify the templated and discovered configs,
 // setting the `endpoint` field from the discovered one if 1. not specified by the user
 // and 2. determined to be supported (by trial and error of unmarshalling a temp intermediary).
-func mergeTemplatedAndDiscoveredConfigs(factory rcvr.Factory, templated, discovered userConfigMap) (*confmap.Conf, string, error) {
+func (run *receiverRunner) mergeTemplatedAndDiscoveredConfigs(factory rcvr.Factory, templated, discovered userConfigMap) (*confmap.Conf, string, error) {
 	targetEndpoint := cast.ToString(templated[endpointConfigKey])
 	if _, endpointSet := discovered[tmpSetEndpointConfigKey]; endpointSet {
 		delete(discovered, tmpSetEndpointConfigKey)
 		targetEndpoint = cast.ToString(discovered[endpointConfigKey])
 
-		// confirm the endpoint we've added is supported, removing if not
-		endpointConfig := confmap.NewFromStringMap(map[string]any{
-			endpointConfigKey: targetEndpoint,
-		})
-		if err := endpointConfig.Unmarshal(factory.CreateDefaultConfig()); err != nil {
-			// we assume that the error is due to unused keys in the config, so we need to remove endpoint key
-			delete(discovered, endpointConfigKey)
+		// Only validate discoveredConfig if there is a discoveredConfig
+		// (i.e., this is a dynamically discovered config, not a static one)
+		cfg := factory.CreateDefaultConfig()
+		if discoverable, ok := cfg.(Discoverable); ok {
+			if err := discoverable.ValidateForDiscovery(templated, targetEndpoint); err != nil {
+				return nil, targetEndpoint, fmt.Errorf("discovery validation failed: %w", err)
+			}
+		} else {
+			// Discovered receiver does not implement Discoverable interface.
+			run.logger.Warn("receiver does not implement the Discoverable interface")
+			if err := ValidateEndpointConfig(templated, targetEndpoint); err != nil {
+				return nil, targetEndpoint, fmt.Errorf("discovery validation failed: %w ", err)
+			}
+			// confirm the endpoint we've added is supported, removing if not
+			endpointConfig := confmap.NewFromStringMap(map[string]any{
+				endpointConfigKey: targetEndpoint,
+			})
+			if err := endpointConfig.Unmarshal(cfg); err != nil {
+				// we assume that the error is due to unused keys in the config, so we need to remove endpoint key
+				delete(discovered, endpointConfigKey)
+			}
 		}
 	}
 	discoveredConfig := confmap.NewFromStringMap(discovered)

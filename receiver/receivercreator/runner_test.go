@@ -4,6 +4,7 @@
 package receivercreator
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,17 +13,23 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator/internal/metadata"
 )
+
+func (c *nopWithEndpointConfig) ValidateForDiscovery(rawCfg map[string]any, discoveredEndpoint string) error {
+	fmt.Println("ValidateForDiscovery called!")
+	return nil
+}
 
 func Test_loadAndCreateMetricsRuntimeReceiver(t *testing.T) {
 	logCore, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore).With(zap.String("name", "receiver_creator"))
 	rcs := receivertest.NewNopSettings(metadata.Type)
 	rcs.Logger = logger
-	run := &receiverRunner{params: rcs, idNamespace: component.NewIDWithName(metadata.Type, "1")}
+	run := &receiverRunner{logger: logger, params: rcs, idNamespace: component.NewIDWithName(metadata.Type, "1")}
 	exampleFactory := &nopWithEndpointFactory{}
 	template, err := newReceiverTemplate("nop/1", nil)
 	require.NoError(t, err)
@@ -54,6 +61,10 @@ func Test_loadAndCreateMetricsRuntimeReceiver(t *testing.T) {
 			var found bool
 			for _, entry := range logs.All() {
 				if name, ok := entry.ContextMap()["name"]; ok {
+					// Skip logs from receiver_creator itself (from your validation code)
+					// if name == "receiver_creator" {
+					// 	continue
+					// }
 					found = true
 					assert.Equal(t, expectedID, name)
 				}
@@ -64,6 +75,10 @@ func Test_loadAndCreateMetricsRuntimeReceiver(t *testing.T) {
 }
 
 func TestValidateSetEndpointFromConfig(t *testing.T) {
+	runner := &receiverRunner{
+		logger: zaptest.NewLogger(t),
+	}
+
 	type configWithEndpoint struct {
 		Endpoint any `mapstructure:"endpoint"`
 	}
@@ -80,7 +95,7 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 		return &configWithoutEndpoint{}
 	})
 
-	setEndpointConfMap, setEndpoint, setErr := mergeTemplatedAndDiscoveredConfigs(
+	setEndpointConfMap, setEndpoint, setErr := runner.mergeTemplatedAndDiscoveredConfigs(
 		receiverWithEndpoint, nil, map[string]any{
 			tmpSetEndpointConfigKey: struct{}{},
 			endpointConfigKey:       "an.endpoint",
@@ -90,7 +105,7 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 	require.Equal(t, "an.endpoint", setEndpoint)
 	require.NoError(t, setErr)
 
-	inheritedEndpointConfMap, inheritedEndpoint, inheritedErr := mergeTemplatedAndDiscoveredConfigs(
+	inheritedEndpointConfMap, inheritedEndpoint, inheritedErr := runner.mergeTemplatedAndDiscoveredConfigs(
 		receiverWithEndpoint, map[string]any{
 			endpointConfigKey: "an.endpoint",
 		}, map[string]any{},
@@ -99,7 +114,7 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 	require.Equal(t, "an.endpoint", inheritedEndpoint)
 	require.NoError(t, inheritedErr)
 
-	setEndpointConfMap, setEndpoint, setErr = mergeTemplatedAndDiscoveredConfigs(
+	setEndpointConfMap, setEndpoint, setErr = runner.mergeTemplatedAndDiscoveredConfigs(
 		receiverWithoutEndpoint, nil, map[string]any{
 			tmpSetEndpointConfigKey: struct{}{},
 			endpointConfigKey:       "an.endpoint",
@@ -109,7 +124,7 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 	require.Equal(t, "an.endpoint", setEndpoint)
 	require.NoError(t, setErr)
 
-	inheritedEndpointConfMap, inheritedEndpoint, inheritedErr = mergeTemplatedAndDiscoveredConfigs(
+	inheritedEndpointConfMap, inheritedEndpoint, inheritedErr = runner.mergeTemplatedAndDiscoveredConfigs(
 		receiverWithoutEndpoint, map[string]any{
 			endpointConfigKey: "an.endpoint",
 		}, map[string]any{},
