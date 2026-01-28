@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/aws/aws-lambda-go/events"
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -163,11 +164,16 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 		return plog.Logs{}, fmt.Errorf("failed to extract the first JSON key: %w", err)
 	}
 
+	// CloudWatch subscription filter format
+	if firstKey == "messageType" {
+		return u.fromCloudWatch(bufferedReader)
+	}
+
 	decoder := gojson.NewDecoder(bufferedReader)
 
-	// Records indicates a CloudTrail log file
+	// Records indicates a CloudTrail log file from S3
 	if firstKey == "Records" {
-		return u.processRecords(decoder)
+		return u.fromS3(decoder)
 	}
 
 	// Try to parse as a CloudTrail digest record
@@ -180,11 +186,55 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 	return u.processDigestRecord(cloudTrailDigest)
 }
 
+// fromCloudWatch handles CloudTrail logs from CloudWatch Logs subscription filter
+func (u *CloudTrailLogUnmarshaler) fromCloudWatch(reader *bufio.Reader) (plog.Logs, error) {
+	var cwLog events.CloudwatchLogsData
+	if err := gojson.NewDecoder(reader).Decode(&cwLog); err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to unmarshal data as cloudwatch logs event: %w", err)
+	}
+
+	if len(cwLog.LogEvents) == 0 {
+		return plog.NewLogs(), nil
+	}
+
+	logs, resourceLogs, scopeLogs := u.createLogs()
+
+	// Set CloudWatch-specific resource attributes
+	resourceAttrs := resourceLogs.Resource().Attributes()
+	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	resourceAttrs.PutStr(string(conventions.AWSLogGroupNamesKey), cwLog.LogGroup)
+	resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwLog.LogStream)
+
+	logRecords := scopeLogs.LogRecords()
+	logRecords.EnsureCapacity(len(cwLog.LogEvents))
+
+	init := true
+
+	for _, event := range cwLog.LogEvents {
+		// Parse message as a single CloudTrail record
+		var record CloudTrailRecord
+		if err := gojson.Unmarshal([]byte(event.Message), &record); err != nil {
+			return plog.Logs{}, fmt.Errorf("failed to unmarshal CloudTrail event from message: %w", err)
+		}
+
+		// Set resource attributes from first record (region, account)
+		if init {
+			u.setResourceAttributes(resourceLogs.Resource().Attributes(), record)
+			init = false
+		}
+
+		logRecord := logRecords.AppendEmpty()
+		if err := u.setLogRecord(logRecord, &record); err != nil {
+			return plog.Logs{}, err
+		}
+	}
+
+	return logs, nil
+}
+
 // processRecords is specialized in processing CloudTrail log records.
 // Implementation works with a gojson.Decoder to efficiently stream through potentially large log files.
-func (u *CloudTrailLogUnmarshaler) processRecords(decoder *gojson.Decoder) (plog.Logs, error) {
-	logs := plog.NewLogs()
-
+func (u *CloudTrailLogUnmarshaler) fromS3(decoder *gojson.Decoder) (plog.Logs, error) {
 	// Check opening bracket
 	if token, err := decoder.Token(); err != nil || token != gojson.Delim('{') {
 		return plog.Logs{}, fmt.Errorf("expected '{': %w", err)
@@ -200,10 +250,7 @@ func (u *CloudTrailLogUnmarshaler) processRecords(decoder *gojson.Decoder) (plog
 		return plog.Logs{}, fmt.Errorf("expected '[': %w", err)
 	}
 
-	// Create a single resource logs entry for all records
-	resourceLogs := logs.ResourceLogs().AppendEmpty()
-	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-	u.setCommonScopeAttributes(scopeLogs)
+	logs, resourceLogs, scopeLogs := u.createLogs()
 
 	logRecords := scopeLogs.LogRecords()
 	// Pre-allocate space for log records to improve performance
@@ -289,6 +336,15 @@ func (u *CloudTrailLogUnmarshaler) setCommonScopeAttributes(scope plog.ScopeLogs
 	scope.Scope().SetName(metadata.ScopeName)
 	scope.Scope().SetVersion(u.buildInfo.Version)
 	scope.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatCloudTrailLog)
+}
+
+func (u *CloudTrailLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog.ScopeLogs) {
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	u.setCommonScopeAttributes(scopeLogs)
+	return logs, resourceLogs, scopeLogs
 }
 
 func (*CloudTrailLogUnmarshaler) setResourceAttributes(attrs pcommon.Map, record CloudTrailRecord) {

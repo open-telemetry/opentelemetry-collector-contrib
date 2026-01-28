@@ -41,6 +41,12 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 			outputLogsFile: "cloudtrail_log_expected_with_uid_feature.yaml",
 			userIDFeature:  true,
 		},
+		{
+			name:           "Valid CloudWatch subscription filter format",
+			inputLogsFile:  "cloudtrail_log_cw.json",
+			outputLogsFile: "cloudtrail_log_cw_expected.yaml",
+			userIDFeature:  true,
+		},
 	}
 
 	for _, test := range tests {
