@@ -36,8 +36,6 @@ type azureBlobEventHandler struct {
 	tracesContainerName      string
 	eventHubConnectionString string
 	hub                      *azeventhubs.ConsumerClient
-	maxPollEvents            int
-	pollRate                 int
 	logger                   *zap.Logger
 	wg                       sync.WaitGroup
 	cancelFunc               context.CancelFunc
