@@ -14,4 +14,3 @@ $defs:
         type: string
       bar:
         type: integer
-
