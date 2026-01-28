@@ -6,18 +6,18 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var SemconvK8sReceiverK8sclusterDisableLegacyFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"semconv.k8s.receiver.k8scluster.disableLegacy",
+var ReceiverK8sclusterDontEmitV0K8sConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.k8scluster.DontEmitV0K8sConventions",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, semconv stable metrics are enabled."),
+	featuregate.WithRegisterDescription("When enabled, V0 semantic conventions are disabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708"),
 	featuregate.WithRegisterFromVersion("v0.145.0"),
 )
 
-var SemconvK8sReceiverK8sclusterEnableStableFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"semconv.k8s.receiver.k8scluster.enableStable",
+var ReceiverK8sclusterEmitV1K8sConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.k8scluster.EmitV1K8sConventions",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, semconv stable metrics are enabled."),
+	featuregate.WithRegisterDescription("When enabled, V1 semantic conventions are enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708"),
 	featuregate.WithRegisterFromVersion("v0.145.0"),
 )

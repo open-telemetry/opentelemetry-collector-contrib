@@ -104,7 +104,7 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, kr.cancel = context.WithCancel(ctx)
 
-	if metadata.SemconvK8sReceiverK8sclusterDisableLegacyFeatureGate.IsEnabled() && !metadata.SemconvK8sReceiverK8sclusterEnableStableFeatureGate.IsEnabled() {
+	if metadata.ReceiverK8sclusterDontEmitV0K8sConventionsFeatureGate.IsEnabled() && !metadata.ReceiverK8sclusterEmitV1K8sConventionsFeatureGate.IsEnabled() {
 		return errors.New("cannot disable legacy metrics without enabling stable metrics")
 	}
 

@@ -529,7 +529,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `semconv.k8s.receiver.k8scluster.disableLegacy` | alpha | When enabled, semconv stable metrics are enabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708) |
-| `semconv.k8s.receiver.k8scluster.enableStable` | alpha | When enabled, semconv stable metrics are enabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708) |
+| `receiver.k8scluster.DontEmitV0K8sConventions` | alpha | When enabled, V0 semantic conventions are disabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708) |
+| `receiver.k8scluster.EmitV1K8sConventions` | alpha | When enabled, V1 semantic conventions are enabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

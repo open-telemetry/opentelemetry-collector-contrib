@@ -232,9 +232,9 @@ func TestNamespacedReceiverWithMultipleNamespaces(t *testing.T) {
 }
 
 func TestReceiverFeatureGatesCombination(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sReceiverK8sclusterDisableLegacyFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverK8sclusterDontEmitV0K8sConventionsFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.SemconvK8sReceiverK8sclusterDisableLegacyFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverK8sclusterDontEmitV0K8sConventionsFeatureGate.ID(), false))
 	}()
 
 	tt := componenttest.NewTelemetry()
