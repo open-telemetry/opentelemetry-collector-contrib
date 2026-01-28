@@ -147,7 +147,7 @@ func (a *archive) WriteFiles(ctx context.Context, metadata *fileset.Fileset[*rea
 
 func (a *archive) readArchive(ctx context.Context, index int) (*fileset.Fileset[*reader.Metadata], error) {
 	// readArchive loads data from the archive for a given index and returns a fileset.Filset.
-	metadata, err := checkpoint.LoadKey(ctx, a.persister, archiveKey(index))
+	metadata, err := checkpoint.LoadKey(ctx, a.persister, archiveKey(index), a.logger)
 	if err != nil {
 		return nil, err
 	}

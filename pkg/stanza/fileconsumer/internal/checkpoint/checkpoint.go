@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
@@ -59,11 +60,11 @@ func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.M
 
 // Load loads the most recent set of files from the database
 // Tries protobuf first for backward compatibility, falls back to JSON if protobuf fails
-func Load(ctx context.Context, persister operator.Persister) ([]*reader.Metadata, error) {
-	return LoadKey(ctx, persister, knownFilesKey)
+func Load(ctx context.Context, persister operator.Persister, logger *zap.Logger) ([]*reader.Metadata, error) {
+	return LoadKey(ctx, persister, knownFilesKey, logger)
 }
 
-func LoadKey(ctx context.Context, persister operator.Persister, key string) ([]*reader.Metadata, error) {
+func LoadKey(ctx context.Context, persister operator.Persister, key string, logger *zap.Logger) ([]*reader.Metadata, error) {
 	encoded, err := persister.Get(ctx, key)
 	if err != nil {
 		return nil, err
@@ -79,6 +80,7 @@ func LoadKey(ctx context.Context, persister operator.Persister, key string) ([]*
 	if err == nil {
 		return rmds, nil
 	}
+	logger.Debug("failed to load checkpoint as protobuf, falling back to JSON", zap.Error(err))
 
 	// Fall back to JSON if protobuf fails
 	dec := json.NewDecoder(bytes.NewReader(encoded))

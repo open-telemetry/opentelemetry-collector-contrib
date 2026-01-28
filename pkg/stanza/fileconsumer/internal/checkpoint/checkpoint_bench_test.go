@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
@@ -117,7 +119,7 @@ func BenchmarkCheckpointDecoding(b *testing.B) {
 			b.ReportAllocs()
 
 			for i := 0; i < b.N; i++ {
-				if _, err := Load(ctx, persister); err != nil {
+				if _, err := Load(ctx, persister, zap.NewNop()); err != nil {
 					b.Fatal(err)
 				}
 			}
@@ -154,7 +156,7 @@ func BenchmarkCheckpointRoundTrip(b *testing.B) {
 				if err := Save(ctx, persister, rmds); err != nil {
 					b.Fatal(err)
 				}
-				if _, err := Load(ctx, persister); err != nil {
+				if _, err := Load(ctx, persister, zap.NewNop()); err != nil {
 					b.Fatal(err)
 				}
 			}
