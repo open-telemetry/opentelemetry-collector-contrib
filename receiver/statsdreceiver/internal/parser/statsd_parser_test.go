@@ -2138,3 +2138,40 @@ func TestStatsDParser_IPOnlyAggregation(t *testing.T) {
 
 	assert.Equal(t, int64(4), value)
 }
+
+func TestStatsDParser_DiscardInvalidValues(t *testing.T) {
+	p := &StatsDParser{}
+	assert.NoError(t, p.Initialize(false, false, false, false, nil))
+	addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+	// Test that NaN and infinite values return errors for all metric types
+	invalidTestCases := []struct {
+		packet      string
+		expectedErr string
+	}{
+		{"test.counter:NaN|c", "discarding metric \"test.counter\": invalid NaN value"},
+		{"test.gauge:+Inf|g", "discarding metric \"test.gauge\": invalid infinite value"},
+		{"test.timer:-Inf|ms", "discarding metric \"test.timer\": invalid infinite value"},
+		{"test.histogram:NaN|h", "discarding metric \"test.histogram\": invalid NaN value"},
+	}
+
+	for _, tc := range invalidTestCases {
+		err := p.Aggregate(tc.packet, addr)
+		assert.EqualError(t, err, tc.expectedErr)
+	}
+
+	// Test that valid values are processed normally
+	assert.NoError(t, p.Aggregate("test.valid:42.5|g", addr))
+
+	// Only the valid value should remain, invalid ones should be discarded
+	metrics := p.GetMetrics()
+	assert.Len(t, metrics, 1)
+
+	// Verify the valid metric was processed
+	resourceMetrics := metrics[0].Metrics.ResourceMetrics()
+	assert.Equal(t, 1, resourceMetrics.Len())
+	scopeMetrics := resourceMetrics.At(0).ScopeMetrics()
+	assert.Equal(t, 1, scopeMetrics.Len())
+	gaugeMetrics := scopeMetrics.At(0).Metrics()
+	assert.Equal(t, 1, gaugeMetrics.Len())
+	assert.Equal(t, "test.valid", gaugeMetrics.At(0).Name())
+}

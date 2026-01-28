@@ -345,6 +345,15 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 		return err
 	}
 
+	// Discard NaN and infinite values for all metric types
+	if math.IsNaN(parsedMetric.asFloat) || math.IsInf(parsedMetric.asFloat, 0) {
+		reason := "NaN"
+		if math.IsInf(parsedMetric.asFloat, 0) {
+			reason = "infinite"
+		}
+		return fmt.Errorf("discarding metric %q: invalid %s value", parsedMetric.description.name, reason)
+	}
+
 	addrKey := newNetAddr(addr)
 	if p.enableIPOnlyAggregation {
 		addrKey = newIPOnlyNetAddr(addr)
