@@ -89,6 +89,11 @@ func newVcenterScrapeData() *vcenterScrapeData {
 }
 
 func (v *vcenterMetricScraper) hasEnabledVSANMetrics() bool {
+	if v.config.Scrapers != nil {
+		return isScraperGroupEnabled(v.config, ScraperGroupVSAN)
+	}
+
+	// TODO: keep this or?
 	metrics := v.config.Metrics
 
 	// Check cluster vSAN metrics

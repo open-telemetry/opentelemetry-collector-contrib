@@ -111,3 +111,217 @@ func TestLoadConfig(t *testing.T) {
 		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 	}
 }
+
+func TestScraperGroupsConfig(t *testing.T) {
+	tests := []struct {
+		name        string
+		cfg         *Config
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "valid scraper group",
+			cfg: &Config{
+				Endpoint:         "https://vcsa.some-host",
+				Username:         "user",
+				Password:         "pass",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Scrapers: map[ScraperGroup]ScraperConfig{
+					ScraperGroupVSAN: {Enabled: true},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid scraper group",
+			cfg: &Config{
+				Endpoint:         "https://vcsa.some-host",
+				Username:         "user",
+				Password:         "pass",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Scrapers: map[ScraperGroup]ScraperConfig{
+					ScraperGroup("invalid"): {Enabled: true},
+				},
+			},
+			expectError: true,
+			errorMsg:    "invalid scraper group",
+		},
+		{
+			name: "multiple scraper groups",
+			cfg: &Config{
+				Endpoint:         "https://vcsa.some-host",
+				Username:         "user",
+				Password:         "pass",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Scrapers: map[ScraperGroup]ScraperConfig{
+					ScraperGroupVSAN:      {Enabled: true},
+					ScraperGroupCluster:   {Enabled: false},
+					ScraperGroupHost:      {Enabled: true},
+					ScraperGroupVM:        {Enabled: true},
+					ScraperGroupDatastore: {Enabled: false},
+				},
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.expectError {
+				require.Error(t, err)
+				if tt.errorMsg != "" {
+					require.ErrorContains(t, err, tt.errorMsg)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestIsScraperGroupEnabled(t *testing.T) {
+	tests := []struct {
+		name           string
+		cfg            *Config
+		group          ScraperGroup
+		expectedResult bool
+	}{
+		{
+			name: "scraper groups not configured - defaults to enabled",
+			cfg: &Config{
+				Scrapers: nil,
+			},
+			group:          ScraperGroupVSAN,
+			expectedResult: true,
+		},
+		{
+			name: "scraper group not specified - defaults to enabled",
+			cfg: &Config{
+				Scrapers: map[ScraperGroup]ScraperConfig{
+					ScraperGroupCluster: {Enabled: false},
+				},
+			},
+			group:          ScraperGroupVSAN,
+			expectedResult: true,
+		},
+		{
+			name: "scraper group explicitly enabled",
+			cfg: &Config{
+				Scrapers: map[ScraperGroup]ScraperConfig{
+					ScraperGroupVSAN: {Enabled: true},
+				},
+			},
+			group:          ScraperGroupVSAN,
+			expectedResult: true,
+		},
+		{
+			name: "scraper group explicitly disabled",
+			cfg: &Config{
+				Scrapers: map[ScraperGroup]ScraperConfig{
+					ScraperGroupVSAN: {Enabled: false},
+				},
+			},
+			group:          ScraperGroupVSAN,
+			expectedResult: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isScraperGroupEnabled(tt.cfg, tt.group)
+			require.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func TestHasEnabledVSANMetrics(t *testing.T) {
+	tests := []struct {
+		name           string
+		cfg            *Config
+		expectedResult bool
+	}{
+		{
+			name: "scraper groups not configured - uses backward compatibility",
+			cfg: &Config{
+				Scrapers: nil,
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						VcenterClusterVsanOperations: metadata.MetricConfig{Enabled: true},
+					},
+				},
+			},
+			expectedResult: true,
+		},
+		{
+			name: "scraper groups configured - vsan enabled",
+			cfg: &Config{
+				Scrapers: map[ScraperGroup]ScraperConfig{
+					ScraperGroupVSAN: {Enabled: true},
+				},
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						// Even if individual metrics are disabled, scraper group takes precedence
+						VcenterClusterVsanOperations: metadata.MetricConfig{Enabled: false},
+					},
+				},
+			},
+			expectedResult: true,
+		},
+		{
+			name: "scraper groups configured - vsan disabled",
+			cfg: &Config{
+				Scrapers: map[ScraperGroup]ScraperConfig{
+					ScraperGroupVSAN: {Enabled: false},
+				},
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						// Even if individual metrics are enabled, scraper group takes precedence
+						VcenterClusterVsanOperations: metadata.MetricConfig{Enabled: true},
+					},
+				},
+			},
+			expectedResult: false,
+		},
+		{
+			name: "scraper groups configured - vsan not specified, defaults to enabled",
+			cfg: &Config{
+				Scrapers: map[ScraperGroup]ScraperConfig{
+					ScraperGroupCluster: {Enabled: false},
+				},
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						VcenterClusterVsanOperations: metadata.MetricConfig{Enabled: false},
+					},
+				},
+			},
+			expectedResult: true, // Defaults to enabled when not specified
+		},
+		{
+			name: "backward compatibility - no vsan metrics enabled",
+			cfg: &Config{
+				Scrapers: nil,
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						// All vSAN metrics disabled
+						VcenterClusterVsanOperations: metadata.MetricConfig{Enabled: false},
+						VcenterClusterVsanThroughput: metadata.MetricConfig{Enabled: false},
+						VcenterHostVsanOperations:    metadata.MetricConfig{Enabled: false},
+						VcenterVMVsanOperations:      metadata.MetricConfig{Enabled: false},
+					},
+				},
+			},
+			expectedResult: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scraper := &vcenterMetricScraper{
+				config: tt.cfg,
+			}
+			result := scraper.hasEnabledVSANMetrics()
+			require.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
