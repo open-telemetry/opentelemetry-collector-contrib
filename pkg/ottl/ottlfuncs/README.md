@@ -448,20 +448,25 @@ Examples:
 
 ### truncate_all
 
-`truncate_all(target, limit)`
+`truncate_all(target, limit, Optional[utf8_safe])`
 
 The `truncate_all` function truncates all string values in a `pcommon.Map` so that none are longer than the limit.
 
-`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer representing the maximum number of bytes.
+`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer representing the maximum number of bytes. `utf8_safe` is an optional boolean (default: `false`) that enables UTF-8 aware truncation.
 
-The map will be mutated such that the number of bytes in all string values is less than or equal to the limit. Non-string values are ignored. If the string is valid UTF-8, the truncation will respect UTF-8 character boundaries to avoid producing invalid UTF-8 sequences. This means the resulting string may be slightly shorter than the limit if truncating at exactly the limit would split a multi-byte character.
+The map will be mutated such that the number of bytes in all string values is less than or equal to the limit. Non-string values are ignored.
+
+**UTF-8 Safe Mode (`utf8_safe=true`):**
+When enabled, if the string is valid UTF-8, the truncation will respect UTF-8 character boundaries to avoid producing invalid UTF-8 sequences. This means the resulting string may be slightly shorter than the limit if truncating at exactly the limit would split a multi-byte character. Invalid UTF-8 strings will be truncated at the byte level.
+
+**Default Mode (`utf8_safe=false`):**
+Truncation occurs at the byte level regardless of UTF-8 encoding. This provides maximum performance but may split multi-byte UTF-8 characters.
 
 Examples:
 
-- `truncate_all(log.attributes, 100)`
-
-
-- `truncate_all(resource.attributes, 50)`
+- `truncate_all(log.attributes, 100)` - Truncate at byte level (default)
+- `truncate_all(log.attributes, 100, true)` - Truncate with UTF-8 safety
+- `truncate_all(resource.attributes, 50, false)` - Explicitly disable UTF-8 safety
 
 ## Converters
 

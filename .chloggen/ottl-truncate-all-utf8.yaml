@@ -1,13 +1,13 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: bug_fix
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add UTF-8 support to truncate_all function to avoid producing invalid UTF-8 sequences
+note: "`truncate_all` function now supports optional UTF-8 safe truncation"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36713]
@@ -16,9 +16,9 @@ issues: [36713]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The truncate_all function now respects UTF-8 character boundaries when truncating strings.
-  If truncating at exactly the byte limit would split a multi-byte character, the function
-  backs up to the start of that character to ensure valid UTF-8 output.
+  Added optional third parameter `utf8_safe` (default: false) to truncate_all function.
+  When enabled, the function respects UTF-8 character boundaries to avoid producing
+  invalid UTF-8 sequences. Default behavior remains unchanged for backward compatibility.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

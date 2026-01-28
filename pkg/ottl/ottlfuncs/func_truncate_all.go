@@ -13,8 +13,9 @@ import (
 )
 
 type TruncateAllArguments[K any] struct {
-	Target ottl.PMapGetSetter[K]
-	Limit  int64
+	Target   ottl.PMapGetSetter[K]
+	Limit    int64
+	UTF8Safe ottl.Optional[bool]
 }
 
 func NewTruncateAllFactory[K any]() ottl.Factory[K] {
@@ -28,13 +29,19 @@ func createTruncateAllFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 		return nil, errors.New("TruncateAllFactory args must be of type *TruncateAllArguments[K]")
 	}
 
-	return TruncateAll(args.Target, args.Limit)
+	return TruncateAll(args.Target, args.Limit, args.UTF8Safe)
 }
 
-func TruncateAll[K any](target ottl.PMapGetSetter[K], limit int64) (ottl.ExprFunc[K], error) {
+func TruncateAll[K any](target ottl.PMapGetSetter[K], limit int64, utf8Safe ottl.Optional[bool]) (ottl.ExprFunc[K], error) {
 	if limit < 0 {
 		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
 	}
+
+	useUTF8Safe := false
+	if !utf8Safe.IsEmpty() {
+		useUTF8Safe = utf8Safe.Get()
+	}
+
 	return func(ctx context.Context, tCtx K) (any, error) {
 		if limit < 0 {
 			return nil, nil
@@ -48,8 +55,8 @@ func TruncateAll[K any](target ottl.PMapGetSetter[K], limit int64) (ottl.ExprFun
 			stringVal := value.Str()
 			if int64(len(stringVal)) > limit {
 				truncateAt := int(limit)
-				// Only adjust for UTF-8 boundaries if the string is valid UTF-8
-				if utf8.ValidString(stringVal) {
+				// Only adjust for UTF-8 boundaries if useUTF8Safe is true and the string is valid UTF-8
+				if useUTF8Safe && utf8.ValidString(stringVal) {
 					// Back up to a valid UTF-8 boundary if we're in the middle of a rune
 					for truncateAt > 0 && !utf8.RuneStart(stringVal[truncateAt]) {
 						truncateAt--
