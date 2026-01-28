@@ -6,15 +6,18 @@ package mocks // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"fmt"
 	"log"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"sync"
 	"sync/atomic"
 
+	"github.com/goccy/go-yaml"
+	"github.com/prometheus/common/promslog"
 	promcfg "github.com/prometheus/prometheus/config"
-	"gopkg.in/yaml.v2"
+	_ "github.com/prometheus/prometheus/discovery/install" // init() registers service discovery impl.
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 type MockPrometheusResponse struct {
@@ -64,7 +67,7 @@ func (mp *MockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	_, _ = rw.Write([]byte(pages[index].Data))
 }
 
-func SetupMockPrometheus(tds ...*TestData) (*MockPrometheus, *promcfg.Config, error) {
+func SetupMockPrometheus(tds ...*TestData) (*MockPrometheus, *prometheusreceiver.PromConfig, error) {
 	jobs := make([]map[string]any, 0, len(tds))
 	endpoints := make(map[string][]MockPrometheusResponse)
 	var metricPaths []string
@@ -95,8 +98,8 @@ func SetupMockPrometheus(tds ...*TestData) (*MockPrometheus, *promcfg.Config, er
 		return mp, nil, err
 	}
 
-	pCfg, err := promcfg.Load(string(cfg), slog.Default())
-	return mp, pCfg, err
+	pCfg, err := promcfg.Load(string(cfg), promslog.NewNopLogger())
+	return mp, (*prometheusreceiver.PromConfig)(pCfg), err
 }
 
 func newMockPrometheus(endpoints map[string][]MockPrometheusResponse) *MockPrometheus {

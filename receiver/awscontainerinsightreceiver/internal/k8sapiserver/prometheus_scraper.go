@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
+	_ "github.com/prometheus/prometheus/discovery/install" // init() registers service discovery impl.
 	"github.com/prometheus/prometheus/model/relabel"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -63,6 +64,19 @@ type PrometheusScraper struct {
 	prometheusReceiver  receiver.Metrics
 	leaderElection      *LeaderElection
 	running             bool
+}
+
+// Exported getters for testing
+func (ps *PrometheusScraper) GetSettings() component.TelemetrySettings {
+	return ps.settings
+}
+
+func (ps *PrometheusScraper) GetContext() context.Context {
+	return ps.ctx
+}
+
+func (ps *PrometheusScraper) SetPrometheusReceiver(r receiver.Metrics) {
+	ps.prometheusReceiver = r
 }
 
 type PrometheusScraperOpts struct {

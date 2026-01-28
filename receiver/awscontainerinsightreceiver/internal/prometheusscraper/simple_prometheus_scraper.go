@@ -21,7 +21,7 @@ import (
 type SimplePrometheusScraper struct {
 	Ctx                context.Context
 	Settings           component.TelemetrySettings
-	host               component.Host
+	Host               component.Host
 	HostInfoProvider   HostInfoProvider
 	PrometheusReceiver receiver.Metrics
 	ScraperConfigs     *config.ScrapeConfig
@@ -81,7 +81,7 @@ func NewSimplePrometheusScraper(opts SimplePrometheusScraperOpts) (*SimplePromet
 	return &SimplePrometheusScraper{
 		Ctx:                opts.Ctx,
 		Settings:           opts.TelemetrySettings,
-		host:               opts.Host,
+		Host:               opts.Host,
 		HostInfoProvider:   opts.HostInfoProvider,
 		ScraperConfigs:     opts.ScraperConfigs,
 		PrometheusReceiver: promReceiver,
@@ -94,7 +94,7 @@ func (ds *SimplePrometheusScraper) GetMetrics() []pmetric.Metrics {
 
 	if !ds.running {
 		ds.Settings.Logger.Info("The scraper is not running, starting up the scraper")
-		err := ds.PrometheusReceiver.Start(ds.Ctx, ds.host)
+		err := ds.PrometheusReceiver.Start(ds.Ctx, ds.Host)
 		if err != nil {
 			ds.Settings.Logger.Error("Unable to start PrometheusReceiver", zap.Error(err))
 		}

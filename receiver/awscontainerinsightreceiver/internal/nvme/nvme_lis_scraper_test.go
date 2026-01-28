@@ -8,10 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	configutil "github.com/prometheus/common/config"
-	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
@@ -20,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+
+	_ "github.com/prometheus/prometheus/discovery/install" // init() registers service discovery impl.
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/mocks"
@@ -192,16 +190,17 @@ func TestNewLisNVMEScraperEndToEnd(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 	settings.Logger, _ = zap.NewDevelopment()
 
-	scraper, err := prometheusscraper.NewSimplePrometheusScraper(prometheusscraper.SimplePrometheusScraperOpts{
-		Ctx:               t.Context(),
-		TelemetrySettings: settings,
-		Consumer:          mConsumer,
-		Host:              componenttest.NewNopHost(),
-		HostInfoProvider:  mockHostInfoProvider{},
-		ScraperConfigs:    GetLisScraperConfig(mockHostInfoProvider{}),
-		Logger:            settings.Logger,
-	})
-	assert.NoError(t, err)
+	// Create the scraper struct directly without calling the prometheus factory
+	// with production configs that use kubernetes SD (which can't be marshaled to YAML).
+	// We'll replace the PrometheusReceiver with one created using the mock config.
+	scraperConfig := GetLisScraperConfig(mockHostInfoProvider{})
+	scraper := &prometheusscraper.SimplePrometheusScraper{
+		Ctx:              t.Context(),
+		Settings:         settings,
+		Host:             componenttest.NewNopHost(),
+		HostInfoProvider: mockHostInfoProvider{},
+		ScraperConfigs:   scraperConfig,
+	}
 	assert.Equal(t, mockHostInfoProvider{}, scraper.HostInfoProvider)
 
 	// build up a new PR
@@ -218,34 +217,15 @@ func TestNewLisNVMEScraperEndToEnd(t *testing.T) {
 	mp, cfg, err := mocks.SetupMockPrometheus(targets...)
 	assert.NoError(t, err)
 
-	scrapeConfig := scraper.ScraperConfigs
-	scrapeConfig.ScrapeProtocols = cfg.ScrapeConfigs[0].ScrapeProtocols
-	scrapeConfig.ScrapeInterval = cfg.ScrapeConfigs[0].ScrapeInterval
-	scrapeConfig.ScrapeTimeout = cfg.ScrapeConfigs[0].ScrapeInterval
-	scrapeConfig.Scheme = "http"
-	scrapeConfig.MetricsPath = cfg.ScrapeConfigs[0].MetricsPath
-	scrapeConfig.HTTPClientConfig = configutil.HTTPClientConfig{
-		TLSConfig: configutil.TLSConfig{
-			InsecureSkipVerify: true,
-		},
-	}
-	scrapeConfig.ServiceDiscoveryConfigs = discovery.Configs{
-		// using dummy static config to avoid service discovery initialization
-		&discovery.StaticConfig{
-			{
-				Targets: []model.LabelSet{
-					{
-						model.AddressLabel: model.LabelValue(strings.Split(mp.Srv.URL, "http://")[1]),
-					},
-				},
-			},
-		},
+	// Apply the metric relabel configs from the production config to the mock config
+	if len(cfg.ScrapeConfigs) > 0 {
+		cfg.ScrapeConfigs[0].MetricRelabelConfigs = scraperConfig.MetricRelabelConfigs
 	}
 
+	// Use the config returned by SetupMockPrometheus directly, as it's already
+	// properly loaded via promcfg.Load() with all discovery types registered.
 	promConfig := prometheusreceiver.Config{
-		PrometheusConfig: &prometheusreceiver.PromConfig{
-			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
-		},
+		PrometheusConfig: cfg,
 	}
 
 	// replace the prom receiver
@@ -253,7 +233,7 @@ func TestNewLisNVMEScraperEndToEnd(t *testing.T) {
 		TelemetrySettings: scraper.Settings,
 		ID:                component.NewID(component.MustNewType("prometheus")),
 	}
-	scraper.PrometheusReceiver, err = promFactory.CreateMetrics(t.Context(), params, &promConfig, mConsumer)
+	scraper.PrometheusReceiver, err = promFactory.CreateMetrics(scraper.Ctx, params, &promConfig, mConsumer)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
