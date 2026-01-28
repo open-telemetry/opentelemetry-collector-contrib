@@ -21,7 +21,7 @@ By default, the TLS Check Receiver will emit a single metric, `tlscheck.time_lef
 
 ## Example Configuration
 
-Targets are configured as either remote enpoints accessed via TCP, or PEM-encoded certificate files stored locally on disk.
+Targets are configured as either remote enpoints accessed via TCP, or PEM-encoded certificate files stored locally on disk. By default only the first certificate in a file or presented by an endpoint (i.e. the leaf certificate) is monitored. The `scrape_all_certs` option can be used to monitor all certificates in a PEM bundle or all certificates presented by an endpoint.
 
 ```yaml
 receivers:
@@ -29,6 +29,10 @@ receivers:
     targets:
       # Monitor a local PEM file
       - file_path: /etc/istio/certs/cert-chain.pem
+      
+      # Monitor all certificates in a PEM bundle
+      - file_path: /etc/ssl/certs/ca-bundle.crt
+        scrape_all_certs: true
       
       # Monitor a remote endpoint
       - endpoint: example.com:443

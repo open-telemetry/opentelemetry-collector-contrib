@@ -109,30 +109,7 @@ func getConnectionState(endpoint string) (tls.ConnectionState, error) {
 	return conn.ConnectionState(), nil
 }
 
-func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, wg *sync.WaitGroup, mux *sync.Mutex, errs chan error) {
-	defer wg.Done()
-	if err := validateEndpoint(endpoint); err != nil {
-		s.settings.Logger.Error("Failed to validate endpoint", zap.String("endpoint", endpoint), zap.Error(err))
-		errs <- err
-		return
-	}
-
-	state, err := s.getConnectionState(endpoint)
-	if err != nil {
-		s.settings.Logger.Error("TCP connection error encountered", zap.String("endpoint", endpoint), zap.Error(err))
-		errs <- err
-		return
-	}
-
-	s.settings.Logger.Debug("Peer Certificates", zap.Int("certificates_count", len(state.PeerCertificates)))
-	if len(state.PeerCertificates) == 0 {
-		err := fmt.Errorf("no TLS certificates found for endpoint: %s. Verify the endpoint serves TLS certificates", endpoint)
-		s.settings.Logger.Error(err.Error(), zap.String("endpoint", endpoint))
-		errs <- err
-		return
-	}
-
-	cert := state.PeerCertificates[0]
+func recordOneCert(mb *metadata.MetricsBuilder, now pcommon.Timestamp, cert *x509.Certificate) {
 	issuer := cert.Issuer.String()
 	commonName := cert.Subject.CommonName
 	sans := make([]any, len(cert.DNSNames)+len(cert.IPAddresses)+len(cert.URIs)+len(cert.EmailAddresses))
@@ -160,7 +137,32 @@ func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, wg *
 	currentTime := time.Now()
 	timeLeft := cert.NotAfter.Sub(currentTime).Seconds()
 	timeLeftInt := int64(timeLeft)
-	now := pcommon.NewTimestampFromTime(time.Now())
+
+	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, sans)
+}
+
+func (s *scraper) scrapeEndpoint(endpoint string, scrapeAll bool, metrics *pmetric.Metrics, wg *sync.WaitGroup, mux *sync.Mutex, errs chan error) {
+	defer wg.Done()
+	if err := validateEndpoint(endpoint); err != nil {
+		s.settings.Logger.Error("Failed to validate endpoint", zap.String("endpoint", endpoint), zap.Error(err))
+		errs <- err
+		return
+	}
+
+	state, err := s.getConnectionState(endpoint)
+	if err != nil {
+		s.settings.Logger.Error("TCP connection error encountered", zap.String("endpoint", endpoint), zap.Error(err))
+		errs <- err
+		return
+	}
+
+	s.settings.Logger.Debug("Peer Certificates", zap.Int("certificates_count", len(state.PeerCertificates)))
+	if len(state.PeerCertificates) == 0 {
+		err := fmt.Errorf("no TLS certificates found for endpoint: %s. Verify the endpoint serves TLS certificates", endpoint)
+		s.settings.Logger.Error(err.Error(), zap.String("endpoint", endpoint))
+		errs <- err
+		return
+	}
 
 	mux.Lock()
 	defer mux.Unlock()
@@ -168,12 +170,18 @@ func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, wg *
 	mb := metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
 	rb := mb.NewResourceBuilder()
 	rb.SetTlscheckTarget(endpoint)
-	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, sans)
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for _, cert := range state.PeerCertificates {
+		recordOneCert(mb, now, cert)
+		if !scrapeAll {
+			break
+		}
+	}
 	resourceMetrics := mb.Emit(metadata.WithResource(rb.Emit()))
 	resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
 }
 
-func (s *scraper) scrapeFile(filePath string, metrics *pmetric.Metrics, wg *sync.WaitGroup, mux *sync.Mutex, errs chan error) {
+func (s *scraper) scrapeFile(filePath string, scrapeAll bool, metrics *pmetric.Metrics, wg *sync.WaitGroup, mux *sync.Mutex, errs chan error) {
 	defer wg.Done()
 	if err := validateFilepath(filePath); err != nil {
 		s.settings.Logger.Error("Failed to validate certificate file", zap.String("file_path", filePath), zap.Error(err))
@@ -226,43 +234,19 @@ func (s *scraper) scrapeFile(filePath string, metrics *pmetric.Metrics, wg *sync
 
 	s.settings.Logger.Debug("Found certificates in chain", zap.String("file_path", filePath), zap.Int("count", len(certs)))
 
-	cert := certs[0] // Use the leaf certificate
-	issuer := cert.Issuer.String()
-	commonName := cert.Subject.CommonName
-	sans := make([]any, len(cert.DNSNames)+len(cert.IPAddresses)+len(cert.URIs)+len(cert.EmailAddresses))
-	i := 0
-	for _, ip := range cert.IPAddresses {
-		sans[i] = ip.String()
-		i++
-	}
-
-	for _, uri := range cert.URIs {
-		sans[i] = uri.String()
-		i++
-	}
-
-	for _, dnsName := range cert.DNSNames {
-		sans[i] = dnsName
-		i++
-	}
-
-	for _, emailAddress := range cert.EmailAddresses {
-		sans[i] = emailAddress
-		i++
-	}
-
-	currentTime := time.Now()
-	timeLeft := cert.NotAfter.Sub(currentTime).Seconds()
-	timeLeftInt := int64(timeLeft)
-	now := pcommon.NewTimestampFromTime(time.Now())
-
 	mux.Lock()
 	defer mux.Unlock()
 
 	mb := metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
 	rb := mb.NewResourceBuilder()
 	rb.SetTlscheckTarget(filePath)
-	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, sans)
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for _, cert := range certs {
+		recordOneCert(mb, now, cert)
+		if !scrapeAll {
+			break
+		}
+	}
 	resourceMetrics := mb.Emit(metadata.WithResource(rb.Emit()))
 	resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
 }
@@ -288,9 +272,9 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	for _, target := range s.cfg.Targets {
 		if target.FilePath != "" {
-			go s.scrapeFile(target.FilePath, &metrics, &wg, &mux, errChan)
+			go s.scrapeFile(target.FilePath, target.ScrapeAllCerts, &metrics, &wg, &mux, errChan)
 		} else {
-			go s.scrapeEndpoint(target.Endpoint, &metrics, &wg, &mux, errChan)
+			go s.scrapeEndpoint(target.Endpoint, target.ScrapeAllCerts, &metrics, &wg, &mux, errChan)
 		}
 	}
 
