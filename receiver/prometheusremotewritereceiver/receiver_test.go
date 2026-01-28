@@ -2130,3 +2130,47 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 		assert.Contains(t, string(body), "permanent failure")
 	})
 }
+
+func TestRequestBodyExceedsMaxSize(t *testing.T) {
+	const maxSize = 1 * 1024 // 1KB limit for testing
+	request := &writev2.Request{
+		Symbols: []string{"", "__name__", "test_metric", "job", "test-job", "instance", "test-instance"},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			},
+		},
+	}
+
+	pBuf := proto.NewBuffer(nil)
+	err := pBuf.Marshal(request)
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MaxRequestBodySize = maxSize
+
+	prwReceiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, prwReceiver)
+
+	ts := httptest.NewServer(http.HandlerFunc(prwReceiver.(*prometheusRemoteWriteReceiver).handlePRW))
+	defer ts.Close()
+
+	largeBody := bytes.Repeat([]byte("X"), 2*maxSize)
+	resp, err := http.Post(
+		ts.URL,
+		fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
+		bytes.NewBuffer(largeBody),
+	)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusRequestEntityTooLarge, resp.StatusCode)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "request body exceeds max size")
+	assert.Contains(t, string(body), "bytes")
+}

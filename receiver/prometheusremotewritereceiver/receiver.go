@@ -189,10 +189,18 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	buf.Reset()
 	defer prw.bodyBufferPool.Put(buf)
 	maxRequestBodySize := prw.config.MaxRequestBodySize
-	limitedReader := io.LimitReader(req.Body, maxRequestBodySize)
-	if _, err = buf.ReadFrom(limitedReader); err != nil {
+	limitedReader := io.LimitReader(req.Body, int64(maxRequestBodySize)+1)
+	n, err := buf.ReadFrom(limitedReader)
+	if err != nil {
 		prw.settings.Logger.Error("Error reading remote-write request body", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if n > maxRequestBodySize {
+		prw.settings.Logger.Warn("Request body exceeded max size",
+			zapcore.Field{Key: "max_size", Type: zapcore.Int64Type, Integer: int64(maxRequestBodySize)},
+			zapcore.Field{Key: "actual_size", Type: zapcore.Int64Type, Integer: n})
+		http.Error(w, fmt.Sprintf("request body exceeds max size of %d bytes (got %d bytes)", maxRequestBodySize, n), http.StatusRequestEntityTooLarge)
 		return
 	}
 
