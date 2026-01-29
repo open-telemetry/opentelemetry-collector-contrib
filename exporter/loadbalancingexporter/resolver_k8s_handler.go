@@ -140,6 +140,9 @@ func convertToEndpoints(retNames bool, eps ...*discoveryv1.EndpointSlice) (bool,
 	res := map[string]bool{}
 	for _, ep := range eps {
 		for _, endpoint := range ep.Endpoints {
+			if endpoint.Conditions.Ready != nil && !*endpoint.Conditions.Ready {
+				continue
+			}
 			for _, addr := range endpoint.Addresses {
 				if retNames {
 					if endpoint.Hostname == nil || *endpoint.Hostname == "" {

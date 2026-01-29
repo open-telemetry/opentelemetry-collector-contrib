@@ -75,7 +75,7 @@ func TestK8sResolve(t *testing.T) {
 		// Wait for the initial endpoints to be populated by the informer
 		// The informer cache sync only guarantees the cache is ready, but the OnAdd
 		// handler runs asynchronously and may not have completed yet
-		cErr := waitForCondition(t, 3*time.Second, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+		cErr := waitForCondition(t, 3*time.Second, func(ctx context.Context) (bool, error) {
 			if _, resErr := res.resolve(ctx); resErr != nil {
 				return false, resErr
 			}
@@ -242,7 +242,7 @@ func TestK8sResolve(t *testing.T) {
 
 			slices.Sort(tt.expectedEndpoints)
 
-			cErr := waitForCondition(t, 1200*time.Millisecond, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+			cErr := waitForCondition(t, 1200*time.Millisecond, func(ctx context.Context) (bool, error) {
 				if _, err := suiteCtx.resolver.resolve(ctx); err != nil {
 					return false, err
 				}
@@ -294,7 +294,7 @@ func TestK8sResolveWithServiceFQDN(t *testing.T) {
 
 	expected := []string{fmt.Sprintf("%s.%s.%s:%d", hostname, serviceName, namespace, port)}
 
-	cErr := waitForCondition(t, 3*time.Second, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+	cErr := waitForCondition(t, 3*time.Second, func(ctx context.Context) (bool, error) {
 		if _, err := res.resolve(ctx); err != nil {
 			return false, err
 		}
@@ -305,14 +305,79 @@ func TestK8sResolveWithServiceFQDN(t *testing.T) {
 	}
 }
 
+func TestK8sResolveEndpointReadyTransition(t *testing.T) {
+	serviceName := "lb"
+	namespace := "default"
+	port := int32(4317)
+	readyFalse := false
+	readyTrue := true
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"kubernetes.io/service-name": serviceName,
+			},
+		},
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				Addresses: []string{"10.0.0.1"},
+				Conditions: discoveryv1.EndpointConditions{
+					Ready: &readyFalse,
+				},
+			},
+		},
+	}
+
+	cl := fake.NewClientset(endpointSlice)
+	_, tb := getTelemetryAssets(t)
+	res, err := newK8sResolver(cl, zap.NewNop(), serviceName, []int32{port}, defaultListWatchTimeout, false, tb)
+	require.NoError(t, err)
+	require.NoError(t, res.start(t.Context()))
+	t.Cleanup(func() {
+		require.NoError(t, res.shutdown(t.Context()))
+	})
+
+	cErr := waitForCondition(t, 3*time.Second, func(ctx context.Context) (bool, error) {
+		if _, resErr := res.resolve(ctx); resErr != nil {
+			return false, resErr
+		}
+		return slices.Equal([]string{}, res.Endpoints()), nil
+	})
+	if cErr != nil {
+		t.Fatalf("timed out waiting for resolver endpoints to be empty: %v", cErr)
+	}
+
+	updated := endpointSlice.DeepCopy()
+	updated.Endpoints[0].Conditions.Ready = &readyTrue
+	patch := client.MergeFrom(endpointSlice)
+	data, err := patch.Data(updated)
+	require.NoError(t, err)
+	_, err = cl.DiscoveryV1().EndpointSlices(namespace).
+		Patch(t.Context(), serviceName, types.MergePatchType, data, metav1.PatchOptions{})
+	require.NoError(t, err)
+
+	expected := []string{fmt.Sprintf("%s:%d", "10.0.0.1", port)}
+	cErr = waitForCondition(t, 3*time.Second, func(ctx context.Context) (bool, error) {
+		if _, resErr := res.resolve(ctx); resErr != nil {
+			return false, resErr
+		}
+		return slices.Equal(expected, res.Endpoints()), nil
+	})
+	if cErr != nil {
+		t.Fatalf("timed out waiting for resolver endpoints to match expected: %v", cErr)
+	}
+}
+
 // waitForCondition will poll the condition function until it returns true or times out.
 // Any errors returned from the condition are treated as test failures.
-func waitForCondition(t *testing.T, timeout, interval time.Duration, condition func(context.Context) (bool, error)) error {
+func waitForCondition(t *testing.T, timeout time.Duration, condition func(context.Context) (bool, error)) error {
 	ctx, cancel := context.WithTimeout(t.Context(), timeout)
 	defer cancel()
 	t.Helper()
 
-	return wait.PollUntilContextTimeout(ctx, interval, timeout, true, condition)
+	return wait.PollUntilContextTimeout(ctx, 20*time.Millisecond, timeout, true, condition)
 }
 
 func Test_newK8sResolver(t *testing.T) {
