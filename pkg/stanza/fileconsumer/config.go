@@ -224,7 +224,10 @@ func (c Config) validate() error {
 		return errors.New("'max_batches' must not be negative")
 	}
 
-	if c.MaxLogSizeBehavior != MaxLogSizeBehaviorSplit && c.MaxLogSizeBehavior != MaxLogSizeBehaviorTruncate {
+	switch c.MaxLogSizeBehavior {
+	case MaxLogSizeBehaviorSplit:
+	case MaxLogSizeBehaviorTruncate:
+	default:
 		return fmt.Errorf("'max_log_size_behavior' must be either '%s' or '%s'", MaxLogSizeBehaviorSplit, MaxLogSizeBehaviorTruncate)
 	}
 
