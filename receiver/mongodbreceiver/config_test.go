@@ -213,6 +213,34 @@ func TestOptionsWithAuthMechanismAndSource(t *testing.T) {
 	require.Equal(t, secondaryOptions.Auth.AuthMechanismProperties, cfg.AuthMechanismProperties)
 }
 
+func TestOptionsWithAuthMechanismOnly(t *testing.T) {
+	// Test auth mechanisms that don't require username/password (e.g., MONGODB-X509, MONGODB-AWS with IAM)
+	cfg := &Config{
+		Hosts: []confignet.TCPAddrConfig{
+			{
+				Endpoint: defaultEndpoint,
+			},
+		},
+		AuthMechanism: "MONGODB-X509",
+		AuthSource:    "$external",
+		Timeout:       2 * time.Minute,
+	}
+
+	// Test primary connection options
+	clientOptions := cfg.ClientOptions(false)
+	require.Equal(t, "", clientOptions.Auth.Username)
+	require.Equal(t, "", clientOptions.Auth.Password)
+	require.Equal(t, "MONGODB-X509", clientOptions.Auth.AuthMechanism)
+	require.Equal(t, "$external", clientOptions.Auth.AuthSource)
+
+	// Test secondary connection options
+	secondaryOptions := cfg.ClientOptions(true)
+	require.Equal(t, "", secondaryOptions.Auth.Username)
+	require.Equal(t, "", secondaryOptions.Auth.Password)
+	require.Equal(t, "MONGODB-X509", secondaryOptions.Auth.AuthMechanism)
+	require.Equal(t, "$external", secondaryOptions.Auth.AuthSource)
+}
+
 func TestOptionsTLS(t *testing.T) {
 	// loading valid ca file
 	caFile := filepath.Join("testdata", "certs", "ca.crt")
