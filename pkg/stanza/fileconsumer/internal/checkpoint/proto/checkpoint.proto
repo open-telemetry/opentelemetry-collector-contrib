@@ -1,0 +1,62 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package checkpoint;
+
+option go_package = "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint/proto";
+
+// MetadataList represents a list of file metadata for checkpoint storage
+message MetadataList {
+  repeated Metadata metadata = 1;
+}
+
+// Metadata represents the state of a file reader
+message Metadata {
+  // Fingerprint identifies the file
+  Fingerprint fingerprint = 1;
+
+  // Current read offset in the file
+  int64 offset = 2;
+
+  // Number of records read
+  int64 record_num = 3;
+
+  // File attributes as key-value pairs encoded as JSON bytes
+  // We use bytes instead of map<string, google.protobuf.Any> to avoid
+  // the complexity and overhead of the Any type while still supporting
+  // arbitrary JSON-serializable values
+  bytes file_attributes = 4;
+
+  // Whether header processing is complete
+  bool header_finalized = 5;
+
+  // Flush state for tracking data changes
+  FlushState flush_state = 6;
+
+  // Token length state
+  TokenLenState token_len_state = 7;
+
+  // File type (e.g., ".gz")
+  string file_type = 8;
+}
+
+// Fingerprint identifies a file by its first N bytes
+message Fingerprint {
+  bytes first_bytes = 1;
+}
+
+// FlushState tracks timing for flush operations
+message FlushState {
+  // Last data change timestamp in Unix nanoseconds
+  int64 last_data_change_unix_nano = 1;
+
+  // Last data length
+  int32 last_data_length = 2;
+}
+
+// TokenLenState tracks potential token lengths
+message TokenLenState {
+  int32 minimum_length = 1;
+}
