@@ -293,12 +293,12 @@ func NoSplitFunc(maxLogSize int) bufio.SplitFunc {
 
 // matchResult holds the result of a regex match operation on encoded data
 type matchResult struct {
-	loc        []int  // location of first match in decoded string (nil if no match)
-	matchStart int    // byte position of first match start
-	matchEnd   int    // byte position of first match end
+	loc        []int // location of first match in decoded string (nil if no match)
+	matchStart int   // byte position of first match start
+	matchEnd   int   // byte position of first match end
 	// Second match fields (only populated when maxMatches > 1)
-	secondLoc        []int // location of second match in decoded string (nil if no second match)
-	secondMatchStart int   // byte position of second match start
+	secondLoc        []int  // location of second match in decoded string (nil if no second match)
+	secondMatchStart int    // byte position of second match start
 	data             []byte // potentially truncated data
 	decoded          []byte // decoded data for reuse in subsequent matching
 }
@@ -400,24 +400,25 @@ func findRegexMatches(re *regexp.Regexp, data []byte, decoder *encoding.Decoder,
 	// This is needed for LineStartSplitFunc to find where the next log entry starts
 	if maxMatches != 1 && len(allMatches) > 1 {
 		for i := 1; i < len(allMatches); i++ {
-			if allMatches[i][0] > result.loc[1] {
-				result.secondLoc = allMatches[i]
-				// Map second match start position back to original encoded byte position
-				secondMatchStartBytes := decoded[:result.secondLoc[0]]
-				secondStartNeeded := len(secondMatchStartBytes) * 4
-				secondStartBuf := getBuffer(transformBuf, secondStartNeeded)
-				nDst2, _, err := encoder.Transform(secondStartBuf, secondMatchStartBytes, true)
-				if err != nil {
-					// If encoding fails for second match, leave secondLoc nil
-					if logger != nil {
-						logger.Warn("encoding transform failed for second match", zap.Error(err))
-					}
-					result.secondLoc = nil
-				} else {
-					result.secondMatchStart = nDst2
-				}
-				break
+			if allMatches[i][0] <= result.loc[1] {
+				continue
 			}
+			result.secondLoc = allMatches[i]
+			// Map second match start position back to original encoded byte position
+			secondMatchStartBytes := decoded[:result.secondLoc[0]]
+			secondStartNeeded := len(secondMatchStartBytes) * 4
+			secondStartBuf := getBuffer(transformBuf, secondStartNeeded)
+			nDst2, _, err := encoder.Transform(secondStartBuf, secondMatchStartBytes, true)
+			if err != nil {
+				// If encoding fails for second match, leave secondLoc nil
+				if logger != nil {
+					logger.Warn("encoding transform failed for second match", zap.Error(err))
+				}
+				result.secondLoc = nil
+			} else {
+				result.secondMatchStart = nDst2
+			}
+			break
 		}
 	}
 

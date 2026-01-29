@@ -14,9 +14,9 @@ import (
 )
 
 // generateTestData creates test data with the specified number of records
-func generateTestData(numRecords int, recordSize int, encoder func([]byte) []byte) []byte {
+func generateTestData(numRecords, recordSize int, encoder func([]byte) []byte) []byte {
 	var data []byte
-	for i := 0; i < numRecords; i++ {
+	for i := range numRecords {
 		record := make([]byte, recordSize)
 		// Create a record starting with "LOGSTART_XX_" where XX is the record number
 		prefix := []byte("LOGSTART_")
@@ -117,7 +117,7 @@ func BenchmarkLineEndSplitFunc_UTF16LE_LargeRecords(b *testing.B) {
 func benchmarkLineEndSplitFunc(b *testing.B, enc encoding.Encoding, encoder func([]byte) []byte, numRecords, recordSize int) {
 	// Generate data with LOGEND pattern at the end of each record
 	var data []byte
-	for i := 0; i < numRecords; i++ {
+	for i := range numRecords {
 		record := make([]byte, recordSize)
 		// Fill with 'x'
 		for j := 0; j < recordSize-10; j++ {
@@ -168,7 +168,7 @@ func BenchmarkNewlineSplitFunc_UTF16LE(b *testing.B) {
 func benchmarkNewlineSplitFunc(b *testing.B, enc encoding.Encoding, encoder func([]byte) []byte, numRecords, recordSize int) {
 	// Generate data with newlines
 	var data []byte
-	for i := 0; i < numRecords; i++ {
+	for range numRecords {
 		record := make([]byte, recordSize-1)
 		for j := range record {
 			record[j] = 'x'
