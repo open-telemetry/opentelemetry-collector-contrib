@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/hostmetrics
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add support for hugepages monitoring.
+note: Add support for Linux hugepages memory monitoring via system.memory.linux.hugepages metrics.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [42650]
