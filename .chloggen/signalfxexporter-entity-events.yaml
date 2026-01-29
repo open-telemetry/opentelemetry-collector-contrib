@@ -19,6 +19,7 @@ subtext: |
   The SignalFx exporter now supports processing entity events (e.g., from k8s_cluster receiver)
   received via the logs pipeline and converting them to dimension property updates. This provides
   an alternative to the metadata_exporters option and enables consistent metadata handling.
+  This feature is behind the `exporter.signalfx.consumeEntityEvents` feature gate (disabled by default).
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
