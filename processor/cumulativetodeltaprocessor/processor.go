@@ -262,8 +262,9 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in any, baseI
 				return false
 			}
 
-		return !valid
-	})
+			return !valid
+		})
+	}
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(in any, baseIdentity tracking.MetricIdentity) {

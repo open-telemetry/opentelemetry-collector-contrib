@@ -177,7 +177,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		out.HistogramValue = &delta
 	case pmetric.MetricTypeExponentialHistogram:
 		value := metricPoint.ExpHistogramValue
-		prevValue := state.PrevPoint.ExpHistogramValue
+		prevValue := state.prevPoint.ExpHistogramValue
 		if math.IsNaN(value.Sum) {
 			value.Sum = prevValue.Sum
 		}
@@ -226,7 +226,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 			out.IntValue = delta
 		}
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
 	}
 
 	state.prevPoint = metricPoint
