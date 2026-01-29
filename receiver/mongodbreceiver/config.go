@@ -75,10 +75,15 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 			clientOptions.SetConnectTimeout(c.Timeout)
 		}
 
-		if c.Username != "" && c.Password != "" {
-			credential := options.Credential{
-				Username: c.Username,
-				Password: string(c.Password),
+		// Set up authentication if username/password are provided or if an auth mechanism is specified
+		// Some mechanisms (e.g., MONGODB-X509, MONGODB-AWS with IAM) don't require username/password
+		if c.Username != "" && c.Password != "" || c.AuthMechanism != "" {
+			credential := options.Credential{}
+			if c.Username != "" {
+				credential.Username = c.Username
+			}
+			if c.Password != "" {
+				credential.Password = string(c.Password)
 			}
 			if c.AuthMechanism != "" {
 				credential.AuthMechanism = c.AuthMechanism
@@ -115,10 +120,15 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		clientOptions.SetDirect(c.DirectConnection)
 	}
 
-	if c.Username != "" && c.Password != "" {
-		credential := options.Credential{
-			Username: c.Username,
-			Password: string(c.Password),
+	// Set up authentication if username/password are provided or if an auth mechanism is specified
+	// Some mechanisms (e.g., MONGODB-X509, MONGODB-AWS with IAM) don't require username/password
+	if c.Username != "" && c.Password != "" || c.AuthMechanism != "" {
+		credential := options.Credential{}
+		if c.Username != "" {
+			credential.Username = c.Username
+		}
+		if c.Password != "" {
+			credential.Password = string(c.Password)
 		}
 		if c.AuthMechanism != "" {
 			credential.AuthMechanism = c.AuthMechanism
