@@ -1,166 +1,139 @@
-package marshaler // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
+package marshaler
 
 import (
+	"bytes"
 	"encoding/hex"
-	"encoding/json"
+	"fmt"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-// OpenSearchLogsMarshaler marshals logs to OpenSearch SS4O format.
-// It produces JSON documents compatible with OpenSearch's Simple Schema for Observability (SS4O),
-// enabling direct consumption of Kafka messages by OpenSearch without additional transformation.
-//
-// The marshaler preserves all OpenTelemetry semantic information including:
-// - Resource attributes (converted to string map)
-// - Instrumentation scope with attributes and schema URL
-// - Log body, severity, and attributes
-// - Trace context (trace ID and span ID) when available
-// - Schema URL from the ScopeLogs level
-//
-// Configuration:
-// - unixTimestamps: If true, timestamps are formatted as Unix epoch milliseconds;
-//   otherwise, timestamps use ISO 8601 format (RFC3339Nano)
-type OpenSearchLogsMarshaler struct {
-	unixTimestamps bool
-}
+// OpenSearchLogsMarshaler marshals logs to OpenSearch SS4O JSON format.
+type OpenSearchLogsMarshaler struct{ unixTimestamps bool }
 
-// MarshalLogs implements LogsMarshaler
 func (m *OpenSearchLogsMarshaler) MarshalLogs(logs plog.Logs) ([]Message, error) {
-	var messages []Message
-
-	resourceLogs := logs.ResourceLogs()
-	for i := 0; i < resourceLogs.Len(); i++ {
-		rl := resourceLogs.At(i)
-		resource := rl.Resource()
-
-		scopeLogs := rl.ScopeLogs()
-		for j := 0; j < scopeLogs.Len(); j++ {
-			sl := scopeLogs.At(j)
-			scope := sl.Scope()
-			schemaURL := sl.SchemaUrl()
-
-			logRecords := sl.LogRecords()
-			for k := 0; k < logRecords.Len(); k++ {
-				record := logRecords.At(k)
-
-				// Encode to SS4O format
-				doc, err := m.encodeLogRecord(record, resource, scope, schemaURL)
-				if err != nil {
-					return nil, err
-				}
-
-				// Use trace ID as key if available, otherwise nil
+	var total int
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+			total += logs.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Len()
+		}
+	}
+	if total == 0 {
+		return nil, nil
+	}
+	msgs, buf := make([]Message, 0, total), new(bytes.Buffer)
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		rl := logs.ResourceLogs().At(i)
+		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+			sl := rl.ScopeLogs().At(j)
+			for k := 0; k < sl.LogRecords().Len(); k++ {
+				rec := sl.LogRecords().At(k)
+				buf.Reset()
+				m.encode(buf, rec, rl.Resource(), sl.Scope(), sl.SchemaUrl())
+				val := make([]byte, buf.Len())
+				copy(val, buf.Bytes())
 				var key []byte
-				if !record.TraceID().IsEmpty() {
-					tid := record.TraceID()
-					key = tid[:]
+				if !rec.TraceID().IsEmpty() {
+					t := rec.TraceID()
+					key = t[:]
 				}
-
-				messages = append(messages, Message{
-					Key:   key,
-					Value: doc,
-				})
+				msgs = append(msgs, Message{Key: key, Value: val})
 			}
 		}
 	}
-
-	return messages, nil
+	return msgs, nil
 }
 
-// encodeLogRecord converts a plog.LogRecord to SS4O JSON
-func (m *OpenSearchLogsMarshaler) encodeLogRecord(
-	record plog.LogRecord,
-	resource pcommon.Resource,
-	scope pcommon.InstrumentationScope,
-	schemaURL string,
-) ([]byte, error) {
-	doc := map[string]any{
-		"@timestamp": m.formatTimestamp(record.Timestamp()),
-		"body":       record.Body().AsString(),
+func (m *OpenSearchLogsMarshaler) encode(b *bytes.Buffer, r plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope, schema string) {
+	fmt.Fprintf(b, `{"@timestamp":%s,"body":%s`, m.fmtTS(r.Timestamp()), strconv.Quote(r.Body().AsString()))
+	if r.ObservedTimestamp() != 0 {
+		fmt.Fprintf(b, `,"observedTimestamp":%s`, m.fmtTS(r.ObservedTimestamp()))
 	}
-
-	// Add observed timestamp if present
-	if record.ObservedTimestamp() != 0 {
-		doc["observedTimestamp"] = m.formatTimestamp(record.ObservedTimestamp())
+	if !r.TraceID().IsEmpty() {
+		t := r.TraceID()
+		fmt.Fprintf(b, `,"traceId":"%s"`, hex.EncodeToString(t[:]))
 	}
-
-	// Add trace/span IDs if present
-	if !record.TraceID().IsEmpty() {
-		tid := record.TraceID()
-		doc["traceId"] = hex.EncodeToString(tid[:])
+	if !r.SpanID().IsEmpty() {
+		s := r.SpanID()
+		fmt.Fprintf(b, `,"spanId":"%s"`, hex.EncodeToString(s[:]))
 	}
-	if !record.SpanID().IsEmpty() {
-		sid := record.SpanID()
-		doc["spanId"] = hex.EncodeToString(sid[:])
+	fmt.Fprintf(b, `,"severity":{"text":%s,"number":%d},"attributes":`, strconv.Quote(r.SeverityText()), r.SeverityNumber())
+	writeMap(b, r.Attributes(), false)
+	b.WriteString(`,"resource":`)
+	writeMap(b, res.Attributes(), true)
+	if schema != "" {
+		fmt.Fprintf(b, `,"schemaUrl":%s`, strconv.Quote(schema))
 	}
-
-	// Add severity
-	doc["severity"] = map[string]any{
-		"text":   record.SeverityText(),
-		"number": int64(record.SeverityNumber()),
+	fmt.Fprintf(b, `,"instrumentationScope":{"name":%s,"version":%s`, strconv.Quote(scope.Name()), strconv.Quote(scope.Version()))
+	if schema != "" {
+		fmt.Fprintf(b, `,"schemaUrl":%s`, strconv.Quote(schema))
 	}
-
-	// Add attributes
-	attributes := make(map[string]any)
-	record.Attributes().Range(func(k string, v pcommon.Value) bool {
-		attributes[k] = v.AsRaw()
-		return true
-	})
-	doc["attributes"] = attributes
-
-	// Add resource attributes
-	resourceMap := make(map[string]string)
-	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
-		resourceMap[k] = v.AsString()
-		return true
-	})
-	doc["resource"] = resourceMap
-
-	// Add schema URL if present
-	if schemaURL != "" {
-		doc["schemaUrl"] = schemaURL
+	if scope.Attributes().Len() > 0 {
+		b.WriteString(`,"attributes":`)
+		writeMap(b, scope.Attributes(), false)
 	}
-
-	// Add instrumentation scope
-	scopeAttrs := make(map[string]any)
-	scope.Attributes().Range(func(k string, v pcommon.Value) bool {
-		scopeAttrs[k] = v.AsRaw()
-		return true
-	})
-
-	instrumentationScope := map[string]any{
-		"name":    scope.Name(),
-		"version": scope.Version(),
-	}
-	if schemaURL != "" {
-		instrumentationScope["schemaUrl"] = schemaURL
-	}
-	if len(scopeAttrs) > 0 {
-		instrumentationScope["attributes"] = scopeAttrs
-	}
-
-	doc["instrumentationScope"] = instrumentationScope
-
-	// Marshal to JSON
-	return json.Marshal(doc)
+	b.WriteString("}}")
 }
 
-// formatTimestamp converts pcommon.Timestamp to appropriate format
-func (m *OpenSearchLogsMarshaler) formatTimestamp(ts pcommon.Timestamp) any {
+func (m *OpenSearchLogsMarshaler) fmtTS(ts pcommon.Timestamp) string {
 	if ts == 0 {
-		return nil
+		return "null"
 	}
-	t := ts.AsTime()
 	if m.unixTimestamps {
-		return t.UnixMilli()
+		return strconv.FormatInt(ts.AsTime().UnixMilli(), 10)
 	}
-	return t.Format(time.RFC3339Nano)
+	return strconv.Quote(ts.AsTime().Format(time.RFC3339Nano))
 }
 
-// Encoding returns the encoding name
-func (m *OpenSearchLogsMarshaler) Encoding() string {
-	return "opensearch_json"
+func writeMap(b *bytes.Buffer, m pcommon.Map, strVal bool) {
+	b.WriteByte('{')
+	first := true
+	m.Range(func(k string, v pcommon.Value) bool {
+		if !first {
+			b.WriteByte(',')
+		}
+		first = false
+		b.WriteString(strconv.Quote(k))
+		b.WriteByte(':')
+		if strVal {
+			b.WriteString(strconv.Quote(v.AsString()))
+		} else {
+			writeVal(b, v)
+		}
+		return true
+	})
+	b.WriteByte('}')
 }
+
+func writeVal(b *bytes.Buffer, v pcommon.Value) {
+	switch v.Type() {
+	case pcommon.ValueTypeStr:
+		b.WriteString(strconv.Quote(v.Str()))
+	case pcommon.ValueTypeBool:
+		b.WriteString(strconv.FormatBool(v.Bool()))
+	case pcommon.ValueTypeInt:
+		b.WriteString(strconv.FormatInt(v.Int(), 10))
+	case pcommon.ValueTypeDouble:
+		b.WriteString(strconv.FormatFloat(v.Double(), 'g', -1, 64))
+	case pcommon.ValueTypeMap:
+		writeMap(b, v.Map(), false)
+	case pcommon.ValueTypeSlice:
+		b.WriteByte('[')
+		for i := 0; i < v.Slice().Len(); i++ {
+			if i > 0 {
+				b.WriteByte(',')
+			}
+			writeVal(b, v.Slice().At(i))
+		}
+		b.WriteByte(']')
+	case pcommon.ValueTypeBytes:
+		fmt.Fprintf(b, `"%s"`, hex.EncodeToString(v.Bytes().AsRaw()))
+	default:
+		b.WriteString("null")
+	}
+}
+
+func (m *OpenSearchLogsMarshaler) Encoding() string { return "opensearch_json" }
