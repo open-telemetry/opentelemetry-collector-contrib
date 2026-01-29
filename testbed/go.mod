@@ -101,7 +101,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/version v0.76.0-devel // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.54.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.8.2 // indirect
-	github.com/DataDog/go-sqllexer v0.1.10 // indirect
+	github.com/DataDog/go-sqllexer v0.1.12 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect
@@ -121,7 +121,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.17 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.17 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.279.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.283.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.70.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.17 // indirect
@@ -334,7 +334,7 @@ require (
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	github.com/zeebo/xxh3 v1.0.2 // indirect
+	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.mongodb.org/mongo-driver v1.17.6 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector v0.144.1-0.20260121161034-55399d4743af // indirect

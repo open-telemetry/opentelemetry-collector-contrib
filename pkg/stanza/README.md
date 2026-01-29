@@ -97,12 +97,14 @@ Operators that support batching:
 - `json_parser`
 - `key_value_parser`
 - `move`
+- `recombine`
 - `regex_parser`
 - `regex_replace`
 - `remove`
 - `retain`
 - `scope_name`
 - `severity`
+- `syslog`
 - `timestamp`
 - `trace_parser`
 - `unquote`
@@ -113,9 +115,7 @@ Operators that do not support batching:
 - `container`
 - `csv_parser`
 - `filter`
-- `recombine`
 - `router`
-- `syslog`
 
 ### FAQ
 
