@@ -5,6 +5,10 @@ all_set:
       enabled: true
     system.linux.memory.dirty:
       enabled: true
+    system.memory.darwin.compressor.pages:
+      enabled: true
+    system.memory.darwin.pressure.status:
+      enabled: true
     system.memory.limit:
       enabled: true
     system.memory.page_size:
@@ -18,6 +22,10 @@ none_set:
     system.linux.memory.available:
       enabled: false
     system.linux.memory.dirty:
+      enabled: false
+    system.memory.darwin.compressor.pages:
+      enabled: false
+    system.memory.darwin.pressure.status:
       enabled: false
     system.memory.limit:
       enabled: false

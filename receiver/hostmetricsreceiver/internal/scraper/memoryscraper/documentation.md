@@ -52,6 +52,22 @@ The amount of dirty memory according to `/proc/meminfo`.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
+### system.memory.darwin.compressor.pages
+
+Number of memory pages currently occupied by the macOS compressor (Pages occupied by compressor from vm_stat).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+### system.memory.darwin.pressure.status
+
+macOS memory pressure level reported by sysctl kern.memorystatus_vm_system.memory.darwin.pressure.status_level.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
 ### system.memory.limit
 
 Total bytes of memory available.
