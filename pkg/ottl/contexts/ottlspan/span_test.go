@@ -653,6 +653,17 @@ func Test_newPathGetSetter(t *testing.T) {
 				span.Status().SetMessage("bad span")
 			},
 		},
+		{
+			name: "flags",
+			path: &pathtest.Path[*TransformContext]{
+				N: "flags",
+			},
+			orig:   int64(refSpan.Flags()),
+			newVal: int64(0x00),
+			modified: func(span ptrace.Span, _ pcommon.Map) {
+				span.SetFlags(0x00)
+			},
+		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
 	// It ensures all exiting field access also work when the path context is set.
@@ -840,6 +851,8 @@ func createTelemetry() (ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span) {
 
 	span.Status().SetCode(ptrace.StatusCodeOk)
 	span.Status().SetMessage("good span")
+
+	span.SetFlags(0x01)
 
 	il := rs.ScopeSpans().At(0).Scope()
 	il.SetName("library")
