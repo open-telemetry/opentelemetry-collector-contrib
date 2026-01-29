@@ -538,6 +538,30 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Encode("pass", "base64"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "cGFzcw==")
+			},
+		},
+		{
+			statement: `set(attributes["encoded_base64"], Encode("pass", attributes["encoding"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("encoded_base64", "cGFzcw==")
+			},
+		},
+		{
+			statement: `set(attributes["encoded_base64"], Encode(attributes["invalid_string"], "utf-8"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("encoded_base64", "invalid��")
+			},
+		},
+		{
+			statement: `set(attributes["encoded_base64"], Encode("café", "ISO-8859-1", "?"))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("encoded_base64", "caf?")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Concat(["A","B"], ":"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "A:B")
@@ -2111,6 +2135,7 @@ func constructLogTransformContext() *ottllog.TransformContext {
 	logRecord.Attributes().PutStr("val", "val2")
 	logRecord.Attributes().PutInt("int_value", 0)
 	logRecord.Attributes().PutStr("nil_string", "nil")
+	logRecord.Attributes().PutStr("invalid_string", "invalid\xff\xfe")
 	arr := logRecord.Attributes().PutEmptySlice("array")
 	arr0 := arr.AppendEmpty()
 	arr0.SetStr("looong")
