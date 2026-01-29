@@ -185,7 +185,6 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
       - name: Check config schemas
         run: |
-          chmod +x ./.tools/schemagen
           make generate-schemas
           git diff --exit-code '*.schema.yaml' || (echo 'Config schemas are out of date, please run "make generate-schemas" and commit the changes in this PR.' && exit 1)
   unittest-matrix:
