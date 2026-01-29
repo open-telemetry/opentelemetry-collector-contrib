@@ -65,6 +65,9 @@ var MetricsInfo = metricsInfo{
 	SystemLinuxMemoryDirty: metricInfo{
 		Name: "system.linux.memory.dirty",
 	},
+	SystemMemoryDarwinPressure: metricInfo{
+		Name: "system.memory.darwin.pressure",
+	},
 	SystemMemoryLimit: metricInfo{
 		Name: "system.memory.limit",
 	},
@@ -82,6 +85,7 @@ var MetricsInfo = metricsInfo{
 type metricsInfo struct {
 	SystemLinuxMemoryAvailable metricInfo
 	SystemLinuxMemoryDirty     metricInfo
+	SystemMemoryDarwinPressure metricInfo
 	SystemMemoryLimit          metricInfo
 	SystemMemoryPageSize       metricInfo
 	SystemMemoryUsage          metricInfo
@@ -189,6 +193,55 @@ func (m *metricSystemLinuxMemoryDirty) emit(metrics pmetric.MetricSlice) {
 func newMetricSystemLinuxMemoryDirty(cfg MetricConfig) metricSystemLinuxMemoryDirty {
 	m := metricSystemLinuxMemoryDirty{config: cfg}
 
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemMemoryDarwinPressure struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.darwin.pressure metric with initial data.
+func (m *metricSystemMemoryDarwinPressure) init() {
+	m.data.SetName("system.memory.darwin.pressure")
+	m.data.SetDescription("Percentage of memory pressure on Darwin system. This is a more accurate alternative than system.memory.usage with state=used.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSystemMemoryDarwinPressure) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryDarwinPressure) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryDarwinPressure) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryDarwinPressure(cfg MetricConfig) metricSystemMemoryDarwinPressure {
+	m := metricSystemMemoryDarwinPressure{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -414,6 +467,7 @@ type MetricsBuilder struct {
 	buildInfo                        component.BuildInfo  // contains version information.
 	metricSystemLinuxMemoryAvailable metricSystemLinuxMemoryAvailable
 	metricSystemLinuxMemoryDirty     metricSystemLinuxMemoryDirty
+	metricSystemMemoryDarwinPressure metricSystemMemoryDarwinPressure
 	metricSystemMemoryLimit          metricSystemMemoryLimit
 	metricSystemMemoryPageSize       metricSystemMemoryPageSize
 	metricSystemMemoryUsage          metricSystemMemoryUsage
@@ -445,6 +499,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		buildInfo:                        settings.BuildInfo,
 		metricSystemLinuxMemoryAvailable: newMetricSystemLinuxMemoryAvailable(mbc.Metrics.SystemLinuxMemoryAvailable),
 		metricSystemLinuxMemoryDirty:     newMetricSystemLinuxMemoryDirty(mbc.Metrics.SystemLinuxMemoryDirty),
+		metricSystemMemoryDarwinPressure: newMetricSystemMemoryDarwinPressure(mbc.Metrics.SystemMemoryDarwinPressure),
 		metricSystemMemoryLimit:          newMetricSystemMemoryLimit(mbc.Metrics.SystemMemoryLimit),
 		metricSystemMemoryPageSize:       newMetricSystemMemoryPageSize(mbc.Metrics.SystemMemoryPageSize),
 		metricSystemMemoryUsage:          newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
@@ -517,6 +572,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemLinuxMemoryAvailable.emit(ils.Metrics())
 	mb.metricSystemLinuxMemoryDirty.emit(ils.Metrics())
+	mb.metricSystemMemoryDarwinPressure.emit(ils.Metrics())
 	mb.metricSystemMemoryLimit.emit(ils.Metrics())
 	mb.metricSystemMemoryPageSize.emit(ils.Metrics())
 	mb.metricSystemMemoryUsage.emit(ils.Metrics())
@@ -550,6 +606,11 @@ func (mb *MetricsBuilder) RecordSystemLinuxMemoryAvailableDataPoint(ts pcommon.T
 // RecordSystemLinuxMemoryDirtyDataPoint adds a data point to system.linux.memory.dirty metric.
 func (mb *MetricsBuilder) RecordSystemLinuxMemoryDirtyDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSystemLinuxMemoryDirty.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemMemoryDarwinPressureDataPoint adds a data point to system.memory.darwin.pressure metric.
+func (mb *MetricsBuilder) RecordSystemMemoryDarwinPressureDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemMemoryDarwinPressure.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemMemoryLimitDataPoint adds a data point to system.memory.limit metric.

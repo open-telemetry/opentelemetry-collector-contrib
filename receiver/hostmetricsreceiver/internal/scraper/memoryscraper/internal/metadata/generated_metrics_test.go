@@ -65,6 +65,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemLinuxMemoryDirtyDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSystemMemoryDarwinPressureDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSystemMemoryLimitDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -123,6 +126,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.darwin.pressure":
+					assert.False(t, validatedMetrics["system.memory.darwin.pressure"], "Found a duplicate in the metrics slice: system.memory.darwin.pressure")
+					validatedMetrics["system.memory.darwin.pressure"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Percentage of memory pressure on Darwin system. This is a more accurate alternative than system.memory.usage with state=used.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

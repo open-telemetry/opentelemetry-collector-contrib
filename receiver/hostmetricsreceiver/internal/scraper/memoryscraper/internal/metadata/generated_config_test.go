@@ -28,6 +28,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					SystemLinuxMemoryAvailable: MetricConfig{Enabled: true},
 					SystemLinuxMemoryDirty:     MetricConfig{Enabled: true},
+					SystemMemoryDarwinPressure: MetricConfig{Enabled: true},
 					SystemMemoryLimit:          MetricConfig{Enabled: true},
 					SystemMemoryPageSize:       MetricConfig{Enabled: true},
 					SystemMemoryUsage:          MetricConfig{Enabled: true},
@@ -41,6 +42,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					SystemLinuxMemoryAvailable: MetricConfig{Enabled: false},
 					SystemLinuxMemoryDirty:     MetricConfig{Enabled: false},
+					SystemMemoryDarwinPressure: MetricConfig{Enabled: false},
 					SystemMemoryLimit:          MetricConfig{Enabled: false},
 					SystemMemoryPageSize:       MetricConfig{Enabled: false},
 					SystemMemoryUsage:          MetricConfig{Enabled: false},

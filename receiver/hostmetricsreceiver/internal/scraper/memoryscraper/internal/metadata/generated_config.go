@@ -30,6 +30,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 type MetricsConfig struct {
 	SystemLinuxMemoryAvailable MetricConfig `mapstructure:"system.linux.memory.available"`
 	SystemLinuxMemoryDirty     MetricConfig `mapstructure:"system.linux.memory.dirty"`
+	SystemMemoryDarwinPressure MetricConfig `mapstructure:"system.memory.darwin.pressure"`
 	SystemMemoryLimit          MetricConfig `mapstructure:"system.memory.limit"`
 	SystemMemoryPageSize       MetricConfig `mapstructure:"system.memory.page_size"`
 	SystemMemoryUsage          MetricConfig `mapstructure:"system.memory.usage"`
@@ -42,6 +43,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SystemLinuxMemoryDirty: MetricConfig{
+			Enabled: false,
+		},
+		SystemMemoryDarwinPressure: MetricConfig{
 			Enabled: false,
 		},
 		SystemMemoryLimit: MetricConfig{
