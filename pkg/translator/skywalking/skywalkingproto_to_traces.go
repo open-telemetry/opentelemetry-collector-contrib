@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
@@ -32,11 +32,11 @@ const (
 )
 
 var otSpanTagsMapping = map[string]string{
-	"url":         string(conventions.HTTPURLKey),
-	"status_code": string(conventions.HTTPStatusCodeKey),
-	"db.type":     string(conventions.DBSystemKey),
-	"db.instance": string(conventions.DBNameKey),
-	"mq.broker":   string(conventions.NetPeerNameKey),
+	"url":         string(conventions.URLFullKey),
+	"status_code": string(conventions.HTTPResponseStatusCodeKey),
+	"db.type":     string(conventions.DBSystemNameKey),
+	"db.instance": string(conventions.DBNamespaceKey),
+	"mq.broker":   string(conventions.ServerAddressKey),
 }
 
 // ProtoToTraces converts multiple skywalking proto batches to internal traces
