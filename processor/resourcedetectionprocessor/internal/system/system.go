@@ -230,6 +230,13 @@ func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) {
 	d.rb.SetHostCPUModelName(cpuInfo.ModelName)
 	d.rb.SetHostCPUStepping(fmt.Sprintf("%d", cpuInfo.Stepping))
 	d.rb.SetHostCPUCacheL2Size(int64(cpuInfo.CacheSize))
-	d.rb.SetHostCPUCoreID(cpuInfo.CoreID)
-	d.rb.SetHostCPUSocketID(cpuInfo.PhysicalID)
+
+	// gopsutil does not implement CoreID and PhysicalID for all platforms.
+	// Skip setting them if the fields are blank.
+	if cpuInfo.CoreID != "" {
+		d.rb.SetHostCPUCoreID(cpuInfo.CoreID)
+	}
+	if cpuInfo.PhysicalID != "" {
+		d.rb.SetHostCPUSocketID(cpuInfo.PhysicalID)
+	}
 }
