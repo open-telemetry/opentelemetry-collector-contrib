@@ -31,7 +31,7 @@ func NewFactory() connector.Factory {
 		xconnector.WithMetricsToMetrics(createMetricsToMetrics, metadata.MetricsToMetricsStability),
 		xconnector.WithLogsToMetrics(createLogsToMetrics, metadata.LogsToMetricsStability),
 		xconnector.WithProfilesToMetrics(createProfilesToMetrics, metadata.ProfilesToMetricsStability),
-		// xconnector.WithDeprecatedTypeAlias(component.MustNewType("signaltometrics")),
+		xconnector.WithDeprecatedTypeAlias(component.MustNewType("signaltometrics")),
 	)
 }
 
