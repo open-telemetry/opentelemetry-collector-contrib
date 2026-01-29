@@ -42,14 +42,18 @@ func New(logger *zap.Logger, nextConsumer consumer.Traces, obsrecv *receiverhelp
 func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	td := req.Traces()
 	numSpans := td.SpanCount()
-	if numSpans == 0 {
+	sizeBytes := uint64(r.sizer.TracesSize(td))
+
+	// Early return for truly empty requests (no data at all).
+	// We check size rather than span count to ensure requests with
+	// metadata but no spans still go through admission control.
+	if sizeBytes == 0 {
 		return ptraceotlp.NewExportResponse(), nil
 	}
 
 	ctx = r.obsrecv.StartTracesOp(ctx)
 
 	var err error
-	sizeBytes := uint64(r.sizer.TracesSize(req.Traces()))
 	if releaser, acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
 		err = r.nextConsumer.ConsumeTraces(ctx, td)
 		releaser() // immediate release

@@ -42,14 +42,18 @@ func New(logger *zap.Logger, nextConsumer consumer.Metrics, obsrecv *receiverhel
 func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
 	md := req.Metrics()
 	dataPointCount := md.DataPointCount()
-	if dataPointCount == 0 {
+	sizeBytes := uint64(r.sizer.MetricsSize(md))
+
+	// Early return for truly empty requests (no data at all).
+	// We check size rather than data point count to ensure requests with
+	// metadata but no data points still go through admission control.
+	if sizeBytes == 0 {
 		return pmetricotlp.NewExportResponse(), nil
 	}
 
 	ctx = r.obsrecv.StartMetricsOp(ctx)
 
 	var err error
-	sizeBytes := uint64(r.sizer.MetricsSize(req.Metrics()))
 	if releaser, acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
 		err = r.nextConsumer.ConsumeMetrics(ctx, md)
 		releaser() // immediate release
