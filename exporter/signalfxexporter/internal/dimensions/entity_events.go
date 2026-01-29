@@ -76,53 +76,53 @@ func (t *EntityEventTransformer) extractPropertiesAndTags(attrs pcommon.Map) (ma
 
 func extractDimensionKeyValue(entityType string, entityID pcommon.Map) (string, string, error) {
 	switch entityType {
-	case "k8s.pod":
-		if v, ok := entityID.Get("k8s.pod.uid"); ok {
-			return "k8s.pod.uid", v.Str(), nil
-		}
-	case "k8s.node":
-		if v, ok := entityID.Get("k8s.node.uid"); ok {
-			return "k8s.node.uid", v.Str(), nil
-		}
-	case "k8s.namespace":
-		if v, ok := entityID.Get("k8s.namespace.uid"); ok {
-			return "k8s.namespace.uid", v.Str(), nil
-		}
-	case "k8s.replicaset":
-		if v, ok := entityID.Get("k8s.replicaset.uid"); ok {
-			return "k8s.replicaset.uid", v.Str(), nil
-		}
-	case "k8s.deployment":
-		if v, ok := entityID.Get("k8s.deployment.uid"); ok {
-			return "k8s.deployment.uid", v.Str(), nil
-		}
-	case "k8s.statefulset":
-		if v, ok := entityID.Get("k8s.statefulset.uid"); ok {
-			return "k8s.statefulset.uid", v.Str(), nil
-		}
-	case "k8s.daemonset":
-		if v, ok := entityID.Get("k8s.daemonset.uid"); ok {
-			return "k8s.daemonset.uid", v.Str(), nil
+	case "container":
+		if v, ok := entityID.Get("container.id"); ok {
+			return "container.id", v.Str(), nil
 		}
 	case "k8s.cronjob":
 		if v, ok := entityID.Get("k8s.cronjob.uid"); ok {
 			return "k8s.cronjob.uid", v.Str(), nil
 		}
-	case "k8s.job":
-		if v, ok := entityID.Get("k8s.job.uid"); ok {
-			return "k8s.job.uid", v.Str(), nil
+	case "k8s.daemonset":
+		if v, ok := entityID.Get("k8s.daemonset.uid"); ok {
+			return "k8s.daemonset.uid", v.Str(), nil
+		}
+	case "k8s.deployment":
+		if v, ok := entityID.Get("k8s.deployment.uid"); ok {
+			return "k8s.deployment.uid", v.Str(), nil
 		}
 	case "k8s.hpa":
 		if v, ok := entityID.Get("k8s.hpa.uid"); ok {
 			return "k8s.hpa.uid", v.Str(), nil
 		}
+	case "k8s.job":
+		if v, ok := entityID.Get("k8s.job.uid"); ok {
+			return "k8s.job.uid", v.Str(), nil
+		}
+	case "k8s.namespace":
+		if v, ok := entityID.Get("k8s.namespace.uid"); ok {
+			return "k8s.namespace.uid", v.Str(), nil
+		}
+	case "k8s.node":
+		if v, ok := entityID.Get("k8s.node.uid"); ok {
+			return "k8s.node.uid", v.Str(), nil
+		}
+	case "k8s.pod":
+		if v, ok := entityID.Get("k8s.pod.uid"); ok {
+			return "k8s.pod.uid", v.Str(), nil
+		}
+	case "k8s.replicaset":
+		if v, ok := entityID.Get("k8s.replicaset.uid"); ok {
+			return "k8s.replicaset.uid", v.Str(), nil
+		}
 	case "k8s.replicationcontroller":
 		if v, ok := entityID.Get("k8s.replicationcontroller.uid"); ok {
 			return "k8s.replicationcontroller.uid", v.Str(), nil
 		}
-	case "container":
-		if v, ok := entityID.Get("container.id"); ok {
-			return "container.id", v.Str(), nil
+	case "k8s.statefulset":
+		if v, ok := entityID.Get("k8s.statefulset.uid"); ok {
+			return "k8s.statefulset.uid", v.Str(), nil
 		}
 	default:
 		return "", "", fmt.Errorf("unsupported entity type: %s", entityType)
