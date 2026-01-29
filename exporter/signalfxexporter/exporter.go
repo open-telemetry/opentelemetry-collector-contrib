@@ -237,9 +237,11 @@ func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) 
 		accessTokenPassthrough: se.config.AccessTokenPassthrough,
 	}
 
-	// Initialize dimension client for entity event processing
-	if err := se.startDimensionClient(ctx); err != nil {
-		return err
+	// Initialize dimension client for entity event processing if entity events processing is enabled.
+	if entityEventsFeatureGate.IsEnabled() {
+		if err := se.startDimensionClient(ctx); err != nil {
+			return err
+		}
 	}
 	se.eventClient = eventClient
 	return nil
@@ -274,7 +276,7 @@ func (se *signalfxExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 			sl := ills.At(j)
 
 			// Process logs that represent entity events and skip regular event conversion
-			if isEntityEventScope(sl) {
+			if entityEventsFeatureGate.IsEnabled() && isEntityEventScope(sl) {
 				err := se.processEntityEvents(sl.LogRecords())
 				if err != nil {
 					return fmt.Errorf("failed to process entity events: %w", err)
