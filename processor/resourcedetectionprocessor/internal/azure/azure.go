@@ -62,17 +62,27 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	d.rb.SetCloudProvider(conventions.CloudProviderAzure.Value.AsString())
 	d.rb.SetCloudPlatform(conventionsv134.CloudPlatformAzureVM.Value.AsString())
-	d.rb.SetHostName(compute.OSProfile.ComputerName)
+	// Use osProfile.computerName for host.name, falling back to the VM name
+	// if computerName is empty (e.g., VMs created from specialized disks).
+	if compute.OSProfile.ComputerName != "" {
+		d.rb.SetHostName(compute.OSProfile.ComputerName)
+	} else if compute.Name != "" {
+		d.rb.SetHostName(compute.Name)
+	}
 	d.rb.SetCloudRegion(compute.Location)
 	d.rb.SetHostID(compute.VMID)
 	d.rb.SetCloudAccountID(compute.SubscriptionID)
-	d.rb.SetCloudAvailabilityZone(compute.AvailabilityZone)
+	if compute.AvailabilityZone != "" {
+		d.rb.SetCloudAvailabilityZone(compute.AvailabilityZone)
+	}
 
 	// Also save compute.Name in "azure.vm.name" as host.id (AttributeHostName) is
 	// used by system detector.
 	d.rb.SetAzureVMName(compute.Name)
 	d.rb.SetAzureVMSize(compute.VMSize)
-	d.rb.SetAzureVMScalesetName(compute.VMScaleSetName)
+	if compute.VMScaleSetName != "" {
+		d.rb.SetAzureVMScalesetName(compute.VMScaleSetName)
+	}
 	d.rb.SetAzureResourcegroupName(compute.ResourceGroupName)
 	res := d.rb.Emit()
 
