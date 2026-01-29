@@ -24,15 +24,32 @@ This receiver implements the [Prometheus Remote Write 2.0 protocol](https://prom
 
 The breaking change in Prometheus 3.8.0 ([prometheus/prometheus#17411](https://github.com/prometheus/prometheus/pull/17411)) updated the Remote Write 2.0 spec from rc.3 to rc.4, renaming `CreatedTimestamp` to `StartTimestamp` and moving it from the `TimeSeries` message to individual `Sample` and `Histogram` messages. This is a wire-protocol incompatibility, so mismatched versions will not work correctly together.
 
-## Configuring `PrometheuRemoteWriteReceiver`
+## Configuring `PrometheusRemoteWriteReceiver`
 
-This component's configuration surface is only what's available though [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). A minimal example can be seen below:
+This component's configuration is based on [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). A minimal example can be seen below:
 
 ```yaml
 receivers:
   prometheusremotewrite:
     endpoint: 0.0.0.0:9090
 ```
+
+### Configuration Options
+
+The `max_request_body_size` option controls the maximum size of incoming request bodies. Requests exceeding this limit will be rejected with a 400 Bad Request response.
+
+```yaml
+receivers:
+  prometheusremotewrite:
+    endpoint: 0.0.0.0:9090
+    max_request_body_size: 10485760  # optional, defaults to 10MiB (10 * 1024 * 1024)
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `max_request_body_size` | int64 | 10485760 (10MiB) | Maximum size in bytes of a single request body |
+
+This setting helps prevent memory exhaustion from large requests and ensures the receiver can handle high-throughput scenarios safely.
 
 ## Configuring your Prometheus
 
