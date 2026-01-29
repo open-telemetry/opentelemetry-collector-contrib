@@ -95,7 +95,8 @@ type lookupTables struct {
 	lastStackTableIdx int32
 }
 
-func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
+// ConvertPprofToProfiles converts a pprof profile to OTLP profiles format.
+func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 	if err := src.CheckValid(); err != nil {
 		return nil, fmt.Errorf("%w: %w", err, errPprofInvalid)
 	}
