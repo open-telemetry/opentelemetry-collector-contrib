@@ -414,6 +414,118 @@ func TestLogAttributes_Convert(t *testing.T) {
 	}
 }
 
+func TestLogProcessor_WithDefaultValue(t *testing.T) {
+	testCases := []struct {
+		name               string
+		config             *Config
+		inputAttributes    map[string]any
+		expectedAttributes map[string]any
+	}{
+		{
+			name: "default_value_used_when_from_attribute_missing",
+			config: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "env", FromAttribute: "environment", DefaultValue: "production", Action: attraction.INSERT},
+					},
+				},
+			},
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
+				"env": "production",
+			},
+		},
+		{
+			name: "default_value_not_used_when_from_attribute_exists",
+			config: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "env", FromAttribute: "environment", DefaultValue: "production", Action: attraction.INSERT},
+					},
+				},
+			},
+			inputAttributes: map[string]any{
+				"environment": "staging",
+			},
+			expectedAttributes: map[string]any{
+				"environment": "staging",
+				"env":         "staging",
+			},
+		},
+		{
+			name: "default_value_with_upsert_creates_new_attribute",
+			config: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "region", FromAttribute: "cloud.region", DefaultValue: "us-east-1", Action: attraction.UPSERT},
+					},
+				},
+			},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{"region": "us-east-1"},
+		},
+		{
+			name: "default_value_with_update_does_not_create_new",
+			config: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "service.namespace", FromAttribute: "namespace", DefaultValue: "default", Action: attraction.UPDATE},
+					},
+				},
+			},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
+		},
+		{
+			name: "default_value_with_update_modifies_existing",
+			config: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "service.namespace", FromAttribute: "namespace", DefaultValue: "default", Action: attraction.UPDATE},
+					},
+				},
+			},
+			inputAttributes: map[string]any{
+				"service.namespace": "old",
+			},
+			expectedAttributes: map[string]any{
+				"service.namespace": "default",
+			},
+		},
+		{
+			name: "default_value_with_different_types",
+			config: &Config{
+				Settings: attraction.Settings{
+					Actions: []attraction.ActionKeyValue{
+						{Key: "string_attr", FromAttribute: "missing", DefaultValue: "default_string", Action: attraction.INSERT},
+						{Key: "int_attr", FromAttribute: "missing", DefaultValue: 42, Action: attraction.INSERT},
+						{Key: "bool_attr", FromAttribute: "missing", DefaultValue: true, Action: attraction.INSERT},
+					},
+				},
+			},
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
+				"string_attr": "default_string",
+				"int_attr":    int64(42),
+				"bool_attr":   true,
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			lp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, consumertest.NewNop())
+			require.NoError(t, err)
+			require.NotNil(t, lp)
+
+			ld := generateLogData(tt.name, tt.inputAttributes)
+			assert.NoError(t, lp.ConsumeLogs(t.Context(), ld))
+			assert.NoError(t, plogtest.CompareLogs(generateLogData(tt.name, tt.expectedAttributes), ld))
+		})
+	}
+}
+
 func BenchmarkAttributes_FilterLogsByName(b *testing.B) {
 	testCases := []logTestCase{
 		{
