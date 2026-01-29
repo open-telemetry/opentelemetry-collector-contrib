@@ -32,8 +32,8 @@ func createExtractPercentileMetricFunction(_ ottl.FunctionContext, oArgs ottl.Ar
 		return nil, errors.New("extractPercentileMetricFactory args must be of type *extractPercentileMetricArguments")
 	}
 
-	if args.Percentile < 0 || args.Percentile > 100 {
-		return nil, fmt.Errorf("percentile must be between 0 and 100, got %f", args.Percentile)
+	if args.Percentile <= 0 || args.Percentile >= 100 {
+		return nil, fmt.Errorf("percentile must be greater than 0 and less than 100, got %f", args.Percentile)
 	}
 
 	return extractPercentileMetric(args.Percentile, args.Suffix)
@@ -71,6 +71,8 @@ func extractPercentileMetric(percentile float64, suffix ottl.Optional[string]) (
 			if err := extractPercentileFromDataPoints(metric.ExponentialHistogram().DataPoints(), percentile, gaugeDataPoints, calculateExponentialHistogramPercentile); err != nil {
 				return nil, err
 			}
+		default:
+			return nil, nil
 		}
 
 		if percentileMetric.Gauge().DataPoints().Len() > 0 {

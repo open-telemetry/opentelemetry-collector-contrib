@@ -85,14 +85,14 @@ func Test_createExtractPercentileMetricFunction(t *testing.T) {
 			args: &extractPercentileMetricArguments{
 				Percentile: -1.0,
 			},
-			want: "percentile must be between 0 and 100, got -1.000000",
+			want: "percentile must be greater than 0 and less than 100, got -1.000000",
 		},
 		{
 			name: "percentile above 100",
 			args: &extractPercentileMetricArguments{
 				Percentile: 101.0,
 			},
-			want: "percentile must be between 0 and 100, got 101.000000",
+			want: "percentile must be greater than 0 and less than 100, got 101.000000",
 		},
 		{
 			name: "valid percentile",
@@ -121,6 +121,25 @@ func Test_createExtractPercentileMetricFunction(t *testing.T) {
 			require.Nil(t, exprFunc)
 		})
 	}
+}
+
+func Test_extractPercentileMetric_NonHistogramType(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_gauge")
+	metric.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(42.0)
+
+	exprFunc, err := extractPercentileMetric(50.0, ottl.Optional[string]{})
+	require.NoError(t, err)
+
+	scopeMetrics := pmetric.NewScopeMetrics()
+	metric.CopyTo(scopeMetrics.Metrics().AppendEmpty())
+
+	tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), scopeMetrics, metric)
+
+	_, err = exprFunc(t.Context(), tCtx)
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, tCtx.GetMetrics().Len(), "should only have original metric")
 }
 
 func Test_extractPercentileMetric_Histogram(t *testing.T) {
