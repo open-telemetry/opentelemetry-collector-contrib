@@ -170,23 +170,6 @@ are `md5`, `sha1`, `sha3` (SHA-256), `hmac-sha256`, and `hmac-sha512`.
 
 For enhanced security, especially when dealing with low-entropy data like IP addresses, HMAC (Hash-based Message Authentication Code) hash functions are recommended over simple hash functions like MD5, SHA1, or SHA3.
 
-**Why HMAC?**
-
-Simple hash functions are vulnerable to rainbow table attacks for low-entropy data:
-- IPv4 address space: only 2^32 ≈ 4.3 billion possible values
-- Attackers can pre-compute all possible IPv4 hashes to reverse the hashing
-
-HMAC uses a secret key, making it practically impossible to:
-- Reverse-engineer the original value without the key
-- Use pre-computed rainbow tables
-- Brute-force the hash even if the algorithm is known
-
-**Benefits:**
-- ✅ Consistency: Same input + same key = same output (required for pattern analysis)
-- ✅ Irreversibility: Cannot reverse without the secret key
-- ✅ Rainbow table resistant: Pre-computed hash tables are useless
-- ✅ GDPR compliant: Meets true pseudonymization requirements per Article 4(5)
-
 **Configuration Example:**
 
 ```yaml
@@ -217,32 +200,6 @@ export REDACTION_SECRET_KEY=$(openssl rand -hex 32)
 # - Azure Key Vault
 # Never commit keys to version control!
 ```
-
-**Security Notes:**
-- Use at least 256-bit (32-byte) random keys for HMAC-SHA256
-- Use at least 512-bit (64-byte) random keys for HMAC-SHA512
-- Store keys separately from log data
-- Rotate keys periodically according to your security policy
-- Document which key version was used for each time period
-- HMAC-SHA256 provides sufficient security for most use cases
-- HMAC-SHA512 offers additional security margin with minimal performance cost (~10-20% CPU overhead vs simple hashes)
-
-**Key Validation:**
-
-The processor automatically validates HMAC keys at startup:
-- HMAC-SHA256 requires keys of at least 32 bytes (256 bits)
-- HMAC-SHA512 requires keys of at least 64 bytes (512 bits)
-- Empty keys are not allowed when HMAC hash functions are configured
-- Configuration will fail if the key doesn't meet minimum requirements
-
-This ensures that weak keys cannot be used accidentally, maintaining the security guarantees of HMAC hashing.
-
-**GDPR Compliance:**
-
-HMAC satisfies GDPR Article 4(5) pseudonymization requirements:
-- Without the key, personal data cannot be attributed to a specific data subject
-- Provides technical measures to ensure data protection
-- Key and data are stored separately
 
 The `url_sanitizer` configuration enables sanitization of URLs in specified attributes by removing potentially sensitive information like UUIDs, timestamps, and other non-essential path segments. This is particularly useful for reducing cardinality in telemetry data while preserving the essential parts of URLs for troubleshooting.
 
