@@ -167,6 +167,25 @@ func NewPusher(params exporter.Settings, pcfg PusherConfig) inframetadata.Pusher
 	}
 }
 
+// deepCopyHostMetadata creates a deep copy of the host metadata payload to avoid
+// race conditions when the payload is shared with the reporter's gohai collector
+// that may refresh its internal maps concurrently.
+func deepCopyHostMetadata(hm payload.HostMetadata) (payload.HostMetadata, error) {
+	// Use JSON marshal/unmarshal to create a deep copy
+	// This ensures all nested maps and slices are properly copied
+	marshaled, err := json.Marshal(hm)
+	if err != nil {
+		return payload.HostMetadata{}, fmt.Errorf("failed to marshal host metadata for deep copy: %w", err)
+	}
+
+	var copy payload.HostMetadata
+	if err := json.Unmarshal(marshaled, &copy); err != nil {
+		return payload.HostMetadata{}, fmt.Errorf("failed to unmarshal host metadata for deep copy: %w", err)
+	}
+
+	return copy, nil
+}
+
 // RunPusher to push host metadata payloads from the host where the Collector is running periodically to Datadog intake.
 // This function is blocking and it is meant to be run on a goroutine.
 func RunPusher(ctx context.Context, params exporter.Settings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map, reporter *inframetadata.Reporter) {
@@ -179,17 +198,24 @@ func RunPusher(ctx context.Context, params exporter.Settings, pcfg PusherConfig,
 	// Currently we only retrieve it once but still send the same payload
 	// every 30 minutes for consistency with the Datadog Agent behavior.
 	//
-	// All fields that are being filled in by our exporter
-	// do not change over time. If this ever changes `hostMetadata`
-	// *must* be deep copied before calling `fillHostMetadata`.
+	// NOTE: The gohai payload contains maps that are shared with the reporter's
+	// internal gohai collector. To avoid race conditions (concurrent map iteration
+	// during JSON marshaling and map writes during gohai refresh), we deep copy
+	// the payload before each ConsumeHostMetadata call.
 	hostMetadata := payload.NewEmpty()
 	if pcfg.UseResourceMetadata {
 		hostMetadata = metadataFromAttributes(attrs, nil)
 	}
 	fillHostMetadata(params, pcfg, p, &hostMetadata)
-	// Consume one first time
-	if err := reporter.ConsumeHostMetadata(hostMetadata); err != nil {
-		params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadata))
+	// Consume one first time - deep copy to avoid race condition
+	hostMetadataCopy, err := deepCopyHostMetadata(hostMetadata)
+	if err != nil {
+		params.Logger.Warn("Failed to deep copy host metadata", zap.Error(err))
+		// Fall back to original payload if copy fails (shouldn't happen in normal operation)
+		hostMetadataCopy = hostMetadata
+	}
+	if err := reporter.ConsumeHostMetadata(hostMetadataCopy); err != nil {
+		params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadataCopy))
 	}
 
 	for {
@@ -197,8 +223,15 @@ func RunPusher(ctx context.Context, params exporter.Settings, pcfg PusherConfig,
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := reporter.ConsumeHostMetadata(hostMetadata); err != nil {
-				params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadata))
+			// Deep copy before each consumption to avoid race condition with reporter's gohai refresh
+			hostMetadataCopy, err := deepCopyHostMetadata(hostMetadata)
+			if err != nil {
+				params.Logger.Warn("Failed to deep copy host metadata", zap.Error(err))
+				// Fall back to original payload if copy fails (shouldn't happen in normal operation)
+				hostMetadataCopy = hostMetadata
+			}
+			if err := reporter.ConsumeHostMetadata(hostMetadataCopy); err != nil {
+				params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadataCopy))
 			}
 		}
 	}
