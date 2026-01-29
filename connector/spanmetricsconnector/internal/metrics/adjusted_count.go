@@ -13,11 +13,60 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
+// AdjustedCountCache is a simple single-entry cache for adjusted count results.
+// Use as a function-local variable to cache consecutive identical tracestates.
+// No synchronization is needed when used within a single goroutine.
+type AdjustedCountCache struct {
+	tracestate string
+	count      uint64
+	isAdjusted bool
+}
+
+// NewAdjustedCountCache creates a cache initialized with correct defaults.
+// The zero-value tracestate ("") maps to count=1, isAdjusted=false.
+func NewAdjustedCountCache() AdjustedCountCache {
+	return AdjustedCountCache{
+		tracestate: "",
+		count:      1,
+		isAdjusted: false,
+	}
+}
+
 // GetStochasticAdjustedCount returns the stochastic-rounded adjusted count for the span.
 // The second return value indicates whether the count is adjusted (i.e., the span has
 // a valid tracestate with a sampling threshold). When false, the count will be 1, meaning it only represents the span itself.
 func GetStochasticAdjustedCount(span *ptrace.Span) (uint64, bool) {
+	return GetStochasticAdjustedCountWithCache(span, nil)
+}
+
+// GetStochasticAdjustedCountWithCache is like GetStochasticAdjustedCount but accepts
+// an optional cache. When processing spans in a batch, consecutive spans from the same
+// trace will have identical tracestates, so caching avoids redundant parsing.
+// Pass nil to disable caching.
+// This method is thread-compatible.
+func GetStochasticAdjustedCountWithCache(span *ptrace.Span, cache *AdjustedCountCache) (uint64, bool) {
 	tracestate := span.TraceState().AsRaw()
+
+	// Check cache first
+	if cache != nil && tracestate == cache.tracestate {
+		return cache.count, cache.isAdjusted
+	}
+
+	// Compute the adjusted count
+	count, isAdjusted := computeAdjustedCount(tracestate)
+
+	// Update cache
+	if cache != nil {
+		cache.tracestate = tracestate
+		cache.count = count
+		cache.isAdjusted = isAdjusted
+	}
+
+	return count, isAdjusted
+}
+
+// computeAdjustedCount does the actual computation without caching.
+func computeAdjustedCount(tracestate string) (uint64, bool) {
 	w3cTraceState, err := sampling.NewW3CTraceState(tracestate)
 	if err != nil {
 		return 1, false

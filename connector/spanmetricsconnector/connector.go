@@ -383,6 +383,11 @@ func (p *connectorImp) resetState() {
 // dimensions the user has configured.
 func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	startTimestamp := pcommon.NewTimestampFromTime(p.clock.Now())
+
+	// Local cache for adjusted count - no synchronization needed.
+	// Consecutive spans from the same trace share identical tracestates.
+	adjustedCountCache := metrics.NewAdjustedCountCache()
+
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -412,7 +417,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					duration = float64(endTime-startTime) / float64(unitDivider)
 				}
 
-				adjustedCount, isAdjusted := metrics.GetStochasticAdjustedCount(&span)
+				adjustedCount, isAdjusted := metrics.GetStochasticAdjustedCountWithCache(&span, &adjustedCountCache)
 				callsDimensions := p.dimensions
 				callsDimensions = append(callsDimensions, p.callsDimensions...)
 				key := p.buildKey(serviceName, span, callsDimensions, resourceAttr)
