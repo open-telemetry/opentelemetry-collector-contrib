@@ -713,7 +713,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "args": "/usr/bin/ssh -l user 10.0.0.16",
 		  "executable": "/usr/bin/ssh",
           "parent": { "pid": "42" },
-		   "title": "node"
+		  "title": "node"
 		},
 		"service": {
 		  "name": "foo.bar",
@@ -1226,6 +1226,144 @@ func TestMapLogAttributesToECS(t *testing.T) {
 			require.Equal(t, expectedDoc, doc)
 		})
 	}
+}
+
+func TestEncodeLogECSModeProcessExecutableConflict(t *testing.T) {
+	t.Run("resource_path_conflicts_with_record_name", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.path": "/usr/bin/ssh",
+		})
+		require.NoError(t, err)
+
+		scope := pcommon.NewInstrumentationScope()
+		record := plog.NewLogRecord()
+		err = record.Attributes().FromRaw(map[string]any{
+			"process.executable.name": "ssh",
+		})
+		require.NoError(t, err)
+
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: scope},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		var result map[string]any
+		err = json.Unmarshal(buf.Bytes(), &result)
+		require.NoError(t, err)
+
+		process := result["process"].(map[string]any)
+		executableStr, isString := process["executable"].(string)
+		require.True(t, isString, "process.executable should be a string")
+		require.Equal(t, "/usr/bin/ssh", executableStr)
+	})
+
+	t.Run("only_name_present", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.name": "ssh",
+		})
+		require.NoError(t, err)
+
+		record := plog.NewLogRecord()
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: pcommon.NewInstrumentationScope()},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		var result map[string]any
+		err = json.Unmarshal(buf.Bytes(), &result)
+		require.NoError(t, err)
+
+		process := result["process"].(map[string]any)
+		require.Equal(t, "ssh", process["title"])
+		_, executableExists := process["executable"]
+		require.False(t, executableExists)
+	})
+
+	t.Run("only_path_present", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.path": "/usr/bin/ssh",
+		})
+		require.NoError(t, err)
+
+		record := plog.NewLogRecord()
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: pcommon.NewInstrumentationScope()},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		var result map[string]any
+		err = json.Unmarshal(buf.Bytes(), &result)
+		require.NoError(t, err)
+
+		process := result["process"].(map[string]any)
+		require.Equal(t, "/usr/bin/ssh", process["executable"])
+		_, titleExists := process["title"]
+		require.False(t, titleExists)
+	})
+
+	t.Run("multiple_conflicting_subfields", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.path": "/usr/bin/ssh",
+		})
+		require.NoError(t, err)
+
+		record := plog.NewLogRecord()
+		err = record.Attributes().FromRaw(map[string]any{
+			"process.executable.name": "ssh",
+			"process.executable.foo":  "bar",
+		})
+		require.NoError(t, err)
+
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: pcommon.NewInstrumentationScope()},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		var result map[string]any
+		err = json.Unmarshal(buf.Bytes(), &result)
+		require.NoError(t, err)
+
+		process := result["process"].(map[string]any)
+		executableStr, isString := process["executable"].(string)
+		require.True(t, isString)
+		require.Equal(t, "/usr/bin/ssh", executableStr)
+	})
 }
 
 // JSON serializable structs for OTel test convenience

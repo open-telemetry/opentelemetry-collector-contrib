@@ -32,6 +32,23 @@ type conversionEntry struct {
 	skipIfExists     bool
 }
 
+// collectECSFields extracts all target ECS field paths from conversion maps.
+func collectECSFields(maps ...map[string]conversionEntry) []string {
+	fields := make(map[string]bool)
+	for _, m := range maps {
+		for _, entry := range m {
+			if entry.to != "" && !entry.skip {
+				fields[entry.to] = true
+			}
+		}
+	}
+	result := make([]string, 0, len(fields))
+	for field := range fields {
+		result = append(result, field)
+	}
+	return result
+}
+
 // resourceAttrsConversionMap contains conversions for resource-level attributes
 // from their Semantic Conventions (SemConv) names to equivalent Elastic Common
 // Schema (ECS) names.
@@ -197,16 +214,8 @@ func (ecsModeEncoder) encodeLog(
 ) error {
 	var document objmodel.Document
 
-	// First, try to map resource-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
+	scopeAttrsConversionMap := map[string]conversionEntry{}
 
-	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]conversionEntry{
-		// None at the moment
-	}
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-
-	// Finally, try to map record-level attributes to ECS fields.
 	recordAttrsConversionMap := map[string]conversionEntry{
 		"event.name":                                {to: "event.action"},
 		string(conventions.ExceptionMessageKey):     {to: "error.message"},
@@ -215,7 +224,12 @@ func (ecsModeEncoder) encodeLog(
 		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
-	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
+
+	protectedFields := collectECSFields(resourceAttrsConversionMap, scopeAttrsConversionMap, recordAttrsConversionMap)
+
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, protectedFields...)
+	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, protectedFields...)
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
@@ -235,6 +249,7 @@ func (ecsModeEncoder) encodeLog(
 		document.AddAttribute("message", record.Body())
 	}
 
+	document.Dedup(protectedFields...)
 	return document.Serialize(buf, true)
 }
 
@@ -246,16 +261,7 @@ func (ecsModeEncoder) encodeSpan(
 ) error {
 	var document objmodel.Document
 
-	// First, try to map resource-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-
-	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]conversionEntry{
-		// None at the moment
-	}
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-
-	// Finally, try to map record-level attributes to ECS fields.
+	scopeAttrsConversionMap := map[string]conversionEntry{}
 
 	spanAttrsConversionMap := map[string]conversionEntry{
 		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
@@ -264,8 +270,11 @@ func (ecsModeEncoder) encodeSpan(
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
 
-	// Handle special cases.
-	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
+	protectedFields := collectECSFields(resourceAttrsConversionMap, scopeAttrsConversionMap, spanAttrsConversionMap)
+
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, protectedFields...)
+	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap, protectedFields...)
 	encodeHostOsTypeECSMode(&document, ec.resource)
 	addDataStreamAttributes(&document, "", idx)
 
@@ -284,6 +293,7 @@ func (ecsModeEncoder) encodeSpan(
 		document.AddString("span.kind", spanKind)
 	}
 
+	document.Dedup(protectedFields...)
 	return document.Serialize(buf, true)
 }
 
@@ -458,7 +468,10 @@ func (ecsDataPointsEncoder) encodeMetrics(
 ) (map[string]string, error) {
 	dp0 := dataPoints[0]
 	var document objmodel.Document
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
+
+	protectedFields := collectECSFields(resourceAttrsConversionMap)
+
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
 	addDataStreamAttributes(&document, "", idx)
@@ -471,6 +484,8 @@ func (ecsDataPointsEncoder) encodeMetrics(
 		}
 		document.AddAttribute(dp.Metric().Name(), value)
 	}
+
+	document.Dedup(protectedFields...)
 	err := document.Serialize(buf, true)
 
 	return document.DynamicTemplates(), err
@@ -532,11 +547,14 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 	return attrs
 }
 
-func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]conversionEntry) {
+func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]conversionEntry, protectedFields ...string) {
 	if len(conversionMap) == 0 {
-		// No conversions to be done; add all attributes at top level of
-		// document.
-		document.AddAttributes("", attrs)
+		for k, v := range attrs.All() {
+			if shouldSkipAttribute(k, protectedFields) {
+				continue
+			}
+			document.AddAttribute(k, v)
+		}
 		return
 	}
 
@@ -544,7 +562,6 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 		// If ECS key is found for current k in conversion map, use it.
 		if c, exists := conversionMap[k]; exists {
 			if c.skip {
-				// Skip the conversion for this k.
 				continue
 			}
 			if !c.skipIfExists {
@@ -559,9 +576,23 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 			continue
 		}
 
-		// Otherwise, add key at top level with attribute name as-is.
+		if shouldSkipAttribute(k, protectedFields) {
+			continue
+		}
+
 		document.AddAttribute(k, v)
 	}
+}
+
+func shouldSkipAttribute(attrKey string, protectedFields []string) bool {
+	for _, protectedField := range protectedFields {
+		if len(attrKey) > len(protectedField) &&
+			attrKey[:len(protectedField)] == protectedField &&
+			attrKey[len(protectedField)] == '.' {
+			return true
+		}
+	}
+	return false
 }
 
 func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Resource) {
