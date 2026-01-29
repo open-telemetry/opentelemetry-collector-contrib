@@ -65,7 +65,6 @@ const (
 	_ AttributeSystemMemoryLinuxHugepagesState = iota
 	AttributeSystemMemoryLinuxHugepagesStateFree
 	AttributeSystemMemoryLinuxHugepagesStateUsed
-	AttributeSystemMemoryLinuxHugepagesStateReserved
 )
 
 // String returns the string representation of the AttributeSystemMemoryLinuxHugepagesState.
@@ -75,17 +74,14 @@ func (av AttributeSystemMemoryLinuxHugepagesState) String() string {
 		return "free"
 	case AttributeSystemMemoryLinuxHugepagesStateUsed:
 		return "used"
-	case AttributeSystemMemoryLinuxHugepagesStateReserved:
-		return "reserved"
 	}
 	return ""
 }
 
 // MapAttributeSystemMemoryLinuxHugepagesState is a helper map of string to AttributeSystemMemoryLinuxHugepagesState attribute value.
 var MapAttributeSystemMemoryLinuxHugepagesState = map[string]AttributeSystemMemoryLinuxHugepagesState{
-	"free":     AttributeSystemMemoryLinuxHugepagesStateFree,
-	"used":     AttributeSystemMemoryLinuxHugepagesStateUsed,
-	"reserved": AttributeSystemMemoryLinuxHugepagesStateReserved,
+	"free": AttributeSystemMemoryLinuxHugepagesStateFree,
+	"used": AttributeSystemMemoryLinuxHugepagesStateUsed,
 }
 
 var MetricsInfo = metricsInfo{
@@ -103,6 +99,9 @@ var MetricsInfo = metricsInfo{
 	},
 	SystemMemoryLinuxHugepagesPageSize: metricInfo{
 		Name: "system.memory.linux.hugepages.page_size",
+	},
+	SystemMemoryLinuxHugepagesReserved: metricInfo{
+		Name: "system.memory.linux.hugepages.reserved",
 	},
 	SystemMemoryLinuxHugepagesSurplus: metricInfo{
 		Name: "system.memory.linux.hugepages.surplus",
@@ -130,6 +129,7 @@ type metricsInfo struct {
 	SystemMemoryLimit                     metricInfo
 	SystemMemoryLinuxHugepagesLimit       metricInfo
 	SystemMemoryLinuxHugepagesPageSize    metricInfo
+	SystemMemoryLinuxHugepagesReserved    metricInfo
 	SystemMemoryLinuxHugepagesSurplus     metricInfo
 	SystemMemoryLinuxHugepagesUsage       metricInfo
 	SystemMemoryLinuxHugepagesUtilization metricInfo
@@ -400,6 +400,56 @@ func newMetricSystemMemoryLinuxHugepagesPageSize(cfg MetricConfig) metricSystemM
 	return m
 }
 
+type metricSystemMemoryLinuxHugepagesReserved struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.linux.hugepages.reserved metric with initial data.
+func (m *metricSystemMemoryLinuxHugepagesReserved) init() {
+	m.data.SetName("system.memory.linux.hugepages.reserved")
+	m.data.SetDescription("Number of reserved hugepages (hugepages for which a commitment to allocate has been made, but no allocation has yet been made). This is reported as a separate metric rather than a usage state because reserved pages are already counted in free pages - they represent a subset of free pages that cannot be used for non-reserved allocations.")
+	m.data.SetUnit("{page}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSystemMemoryLinuxHugepagesReserved) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryLinuxHugepagesReserved) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryLinuxHugepagesReserved) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryLinuxHugepagesReserved(cfg MetricConfig) metricSystemMemoryLinuxHugepagesReserved {
+	m := metricSystemMemoryLinuxHugepagesReserved{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemMemoryLinuxHugepagesSurplus struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -409,7 +459,7 @@ type metricSystemMemoryLinuxHugepagesSurplus struct {
 // init fills system.memory.linux.hugepages.surplus metric with initial data.
 func (m *metricSystemMemoryLinuxHugepagesSurplus) init() {
 	m.data.SetName("system.memory.linux.hugepages.surplus")
-	m.data.SetDescription("Number of surplus hugepages (overcommitted hugepages beyond the persistent pool).")
+	m.data.SetDescription("Number of surplus hugepages (overcommitted hugepages beyond the persistent pool). This is reported as a separate metric rather than a usage state because surplus pages can be in either used or free state, and including them would break the semantic convention that usage states must sum to the limit.")
 	m.data.SetUnit("{page}")
 	m.data.SetEmptyGauge()
 }
@@ -725,6 +775,7 @@ type MetricsBuilder struct {
 	metricSystemMemoryLimit                     metricSystemMemoryLimit
 	metricSystemMemoryLinuxHugepagesLimit       metricSystemMemoryLinuxHugepagesLimit
 	metricSystemMemoryLinuxHugepagesPageSize    metricSystemMemoryLinuxHugepagesPageSize
+	metricSystemMemoryLinuxHugepagesReserved    metricSystemMemoryLinuxHugepagesReserved
 	metricSystemMemoryLinuxHugepagesSurplus     metricSystemMemoryLinuxHugepagesSurplus
 	metricSystemMemoryLinuxHugepagesUsage       metricSystemMemoryLinuxHugepagesUsage
 	metricSystemMemoryLinuxHugepagesUtilization metricSystemMemoryLinuxHugepagesUtilization
@@ -761,6 +812,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricSystemMemoryLimit:                     newMetricSystemMemoryLimit(mbc.Metrics.SystemMemoryLimit),
 		metricSystemMemoryLinuxHugepagesLimit:       newMetricSystemMemoryLinuxHugepagesLimit(mbc.Metrics.SystemMemoryLinuxHugepagesLimit),
 		metricSystemMemoryLinuxHugepagesPageSize:    newMetricSystemMemoryLinuxHugepagesPageSize(mbc.Metrics.SystemMemoryLinuxHugepagesPageSize),
+		metricSystemMemoryLinuxHugepagesReserved:    newMetricSystemMemoryLinuxHugepagesReserved(mbc.Metrics.SystemMemoryLinuxHugepagesReserved),
 		metricSystemMemoryLinuxHugepagesSurplus:     newMetricSystemMemoryLinuxHugepagesSurplus(mbc.Metrics.SystemMemoryLinuxHugepagesSurplus),
 		metricSystemMemoryLinuxHugepagesUsage:       newMetricSystemMemoryLinuxHugepagesUsage(mbc.Metrics.SystemMemoryLinuxHugepagesUsage),
 		metricSystemMemoryLinuxHugepagesUtilization: newMetricSystemMemoryLinuxHugepagesUtilization(mbc.Metrics.SystemMemoryLinuxHugepagesUtilization),
@@ -838,6 +890,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSystemMemoryLimit.emit(ils.Metrics())
 	mb.metricSystemMemoryLinuxHugepagesLimit.emit(ils.Metrics())
 	mb.metricSystemMemoryLinuxHugepagesPageSize.emit(ils.Metrics())
+	mb.metricSystemMemoryLinuxHugepagesReserved.emit(ils.Metrics())
 	mb.metricSystemMemoryLinuxHugepagesSurplus.emit(ils.Metrics())
 	mb.metricSystemMemoryLinuxHugepagesUsage.emit(ils.Metrics())
 	mb.metricSystemMemoryLinuxHugepagesUtilization.emit(ils.Metrics())
@@ -888,6 +941,11 @@ func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesLimitDataPoint(ts pcom
 // RecordSystemMemoryLinuxHugepagesPageSizeDataPoint adds a data point to system.memory.linux.hugepages.page_size metric.
 func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesPageSizeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSystemMemoryLinuxHugepagesPageSize.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemMemoryLinuxHugepagesReservedDataPoint adds a data point to system.memory.linux.hugepages.reserved metric.
+func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesReservedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemMemoryLinuxHugepagesReserved.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemMemoryLinuxHugepagesSurplusDataPoint adds a data point to system.memory.linux.hugepages.surplus metric.

@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -31,6 +32,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemMemoryLimit:                     MetricConfig{Enabled: true},
 					SystemMemoryLinuxHugepagesLimit:       MetricConfig{Enabled: true},
 					SystemMemoryLinuxHugepagesPageSize:    MetricConfig{Enabled: true},
+					SystemMemoryLinuxHugepagesReserved:    MetricConfig{Enabled: true},
 					SystemMemoryLinuxHugepagesSurplus:     MetricConfig{Enabled: true},
 					SystemMemoryLinuxHugepagesUsage:       MetricConfig{Enabled: true},
 					SystemMemoryLinuxHugepagesUtilization: MetricConfig{Enabled: true},
@@ -49,6 +51,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SystemMemoryLimit:                     MetricConfig{Enabled: false},
 					SystemMemoryLinuxHugepagesLimit:       MetricConfig{Enabled: false},
 					SystemMemoryLinuxHugepagesPageSize:    MetricConfig{Enabled: false},
+					SystemMemoryLinuxHugepagesReserved:    MetricConfig{Enabled: false},
 					SystemMemoryLinuxHugepagesSurplus:     MetricConfig{Enabled: false},
 					SystemMemoryLinuxHugepagesUsage:       MetricConfig{Enabled: false},
 					SystemMemoryLinuxHugepagesUtilization: MetricConfig{Enabled: false},

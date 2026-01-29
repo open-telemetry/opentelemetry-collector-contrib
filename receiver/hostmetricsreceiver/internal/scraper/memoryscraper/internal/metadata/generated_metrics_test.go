@@ -74,6 +74,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemMemoryLinuxHugepagesPageSizeDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSystemMemoryLinuxHugepagesReservedDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSystemMemoryLinuxHugepagesSurplusDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -182,12 +185,24 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.linux.hugepages.reserved":
+					assert.False(t, validatedMetrics["system.memory.linux.hugepages.reserved"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.reserved")
+					validatedMetrics["system.memory.linux.hugepages.reserved"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of reserved hugepages (hugepages for which a commitment to allocate has been made, but no allocation has yet been made). This is reported as a separate metric rather than a usage state because reserved pages are already counted in free pages - they represent a subset of free pages that cannot be used for non-reserved allocations.", ms.At(i).Description())
+					assert.Equal(t, "{page}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "system.memory.linux.hugepages.surplus":
 					assert.False(t, validatedMetrics["system.memory.linux.hugepages.surplus"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.surplus")
 					validatedMetrics["system.memory.linux.hugepages.surplus"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of surplus hugepages (overcommitted hugepages beyond the persistent pool).", ms.At(i).Description())
+					assert.Equal(t, "Number of surplus hugepages (overcommitted hugepages beyond the persistent pool). This is reported as a separate metric rather than a usage state because surplus pages can be in either used or free state, and including them would break the semantic convention that usage states must sum to the limit.", ms.At(i).Description())
 					assert.Equal(t, "{page}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

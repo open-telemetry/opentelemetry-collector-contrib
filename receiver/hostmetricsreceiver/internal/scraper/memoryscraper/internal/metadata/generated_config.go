@@ -33,6 +33,7 @@ type MetricsConfig struct {
 	SystemMemoryLimit                     MetricConfig `mapstructure:"system.memory.limit"`
 	SystemMemoryLinuxHugepagesLimit       MetricConfig `mapstructure:"system.memory.linux.hugepages.limit"`
 	SystemMemoryLinuxHugepagesPageSize    MetricConfig `mapstructure:"system.memory.linux.hugepages.page_size"`
+	SystemMemoryLinuxHugepagesReserved    MetricConfig `mapstructure:"system.memory.linux.hugepages.reserved"`
 	SystemMemoryLinuxHugepagesSurplus     MetricConfig `mapstructure:"system.memory.linux.hugepages.surplus"`
 	SystemMemoryLinuxHugepagesUsage       MetricConfig `mapstructure:"system.memory.linux.hugepages.usage"`
 	SystemMemoryLinuxHugepagesUtilization MetricConfig `mapstructure:"system.memory.linux.hugepages.utilization"`
@@ -56,6 +57,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SystemMemoryLinuxHugepagesPageSize: MetricConfig{
+			Enabled: false,
+		},
+		SystemMemoryLinuxHugepagesReserved: MetricConfig{
 			Enabled: false,
 		},
 		SystemMemoryLinuxHugepagesSurplus: MetricConfig{
