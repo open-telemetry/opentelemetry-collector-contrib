@@ -15,6 +15,7 @@ type Metadata struct {
 	Status struct {
 		Class string `mapstructure:"class"`
 	} `mapstructure:"status"`
+	Parent string `mapstructure:"parent"`
 }
 
 func ReadMetadata(dir string) (*Metadata, bool) {
