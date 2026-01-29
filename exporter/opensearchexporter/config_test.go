@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 )
@@ -224,6 +225,20 @@ func TestLoadConfig(t *testing.T) {
 			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.ErrorContains(t, err, errTracesIndexTimeFormatInvalid.Error())
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "sending_queue_with_batch"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.LogsIndex = "otel-logs"
+				config.LogsIndexTimeFormat = "yyyy-MM-dd"
+				// sending_queue should have default values applied
+				config.QueueConfig = configoptional.Default(exporterhelper.QueueBatchConfig{
+					NumConsumers: 10,
+					QueueSize:    1000,
+				})
+			}),
+			configValidateAssert: assert.NoError,
 		},
 	}
 

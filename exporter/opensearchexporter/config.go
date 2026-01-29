@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -147,6 +148,41 @@ var mappingModes = func() map[string]MappingMode {
 
 	return table
 }()
+
+// Ensure Config implements confmap.Unmarshaler interface
+var _ confmap.Unmarshaler = (*Config)(nil)
+
+// Unmarshal handles unmarshaling of the configuration and sets defaults for optional fields.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+	
+	// Set default values for sending_queue if it's specified but fields are not set
+	// Check if sending_queue is present in config, even if not yet unmarshaled to HasValue()
+	if conf.IsSet("sending_queue") && cfg.QueueConfig.HasValue() {
+		queueCfg := *cfg.QueueConfig.Get()
+		// Set default num_consumers if not specified
+		if !conf.IsSet("sending_queue::num_consumers") {
+			queueCfg.NumConsumers = 10 // Default value from exporterhelper
+		}
+		// Set default queue_size if not specified
+		if !conf.IsSet("sending_queue::queue_size") {
+			queueCfg.QueueSize = 1000 // Default value from exporterhelper
+		}
+		cfg.QueueConfig = configoptional.Default(queueCfg)
+	} else if conf.IsSet("sending_queue") && !cfg.QueueConfig.HasValue() {
+		// If sending_queue is in config but didn't get unmarshaled (e.g., only has batch subfield),
+		// create a new config with defaults
+		queueCfg := exporterhelper.QueueBatchConfig{
+			NumConsumers: 10,
+			QueueSize:    1000,
+		}
+		cfg.QueueConfig = configoptional.Default(queueCfg)
+	}
+	
+	return nil
+}
 
 // Validate validates the opensearch server configuration.
 func (cfg *Config) Validate() error {
