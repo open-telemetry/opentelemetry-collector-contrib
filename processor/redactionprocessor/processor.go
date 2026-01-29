@@ -417,7 +417,7 @@ func hashString(input string, hasher hash.Hash) string {
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-func hashStringHMAC(input string, key string, newHash func() hash.Hash) string {
+func hashStringHMAC(input, key string, newHash func() hash.Hash) string {
 	h := hmac.New(newHash, []byte(key))
 	h.Write([]byte(input))
 	return hex.EncodeToString(h.Sum(nil))
