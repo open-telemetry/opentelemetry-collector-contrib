@@ -135,7 +135,7 @@ attributes:
     type: double
   # Stored Procedures
   sqlserver.procedure_id:
-    description: The SQLServer ID of the stored procedure, if any
+    description: The SQL Server ID of the stored procedure, if any
     type: string
   sqlserver.procedure_name:
     description: The name of the stored procedure, if any
