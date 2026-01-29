@@ -4,7 +4,7 @@
 package waf // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/waf"
 
 import (
-	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -16,20 +16,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
 )
-
-type wafLogUnmarshaler struct {
-	buildInfo component.BuildInfo
-}
-
-func NewWAFLogUnmarshaler(buildInfo component.BuildInfo) unmarshaler.AWSUnmarshaler {
-	return &wafLogUnmarshaler{
-		buildInfo: buildInfo,
-	}
-}
 
 // See log fields: https://docs.aws.amazon.com/waf/latest/developerguide/logging-fields.html.
 type wafLog struct {
@@ -61,83 +52,101 @@ type wafLog struct {
 	Ja4Fingerprint   string `json:"ja4Fingerprint"`
 }
 
-func (w *wafLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	logs := plog.NewLogs()
+type wafLogUnmarshaler struct {
+	buildInfo component.BuildInfo
+}
 
-	resourceLogs := logs.ResourceLogs().AppendEmpty()
-	resourceLogs.Resource().Attributes().PutStr(
-		string(conventions.CloudProviderKey),
-		conventions.CloudProviderAWS.Value.AsString(),
-	)
-
-	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName(metadata.ScopeName)
-	scopeLogs.Scope().SetVersion(w.buildInfo.Version)
-	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatWAFLog)
-
-	scanner := bufio.NewScanner(reader)
-	webACLID := ""
-	for scanner.Scan() {
-		logLine := scanner.Bytes()
-
-		var log wafLog
-		if err := gojson.Unmarshal(logLine, &log); err != nil {
-			return plog.Logs{}, fmt.Errorf("failed to unmarshal WAF log: %w", err)
-		}
-		if log.WebACLID == "" {
-			return plog.Logs{}, errors.New("invalid WAF log: empty webaclId field")
-		}
-		if webACLID != "" && log.WebACLID != webACLID {
-			return plog.Logs{}, fmt.Errorf(
-				"unexpected: new webaclId %q is different than previous one %q",
-				webACLID,
-				log.WebACLID,
-			)
-		}
-		webACLID = log.WebACLID
-
-		record := scopeLogs.LogRecords().AppendEmpty()
-		if err := w.addWAFLog(log, record); err != nil {
-			return plog.Logs{}, err
-		}
+func NewWAFLogUnmarshaler(buildInfo component.BuildInfo) unmarshaler.AWSUnmarshaler {
+	return &wafLogUnmarshaler{
+		buildInfo: buildInfo,
 	}
+}
 
-	if err := setResourceAttributes(resourceLogs, webACLID); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to get resource attributes: %w", err)
+func (w *wafLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
+	streamUnmarshaler := w.NewStreamUnmarshaler(reader)
+	logs, err := streamUnmarshaler.UnmarshalBatch(context.Background())
+	if err != nil {
+		//nolint:errorlint
+		if err == io.EOF {
+			// EOF indicates no logs were found, return any logs that's available
+			return logs, nil
+		}
+		return plog.Logs{}, err
 	}
 
 	return logs, nil
 }
 
-// setResourceAttributes based on the web ACL ID
-func setResourceAttributes(resourceLogs plog.ResourceLogs, webACLID string) error {
-	expectedFormat := "arn:aws:wafv2:<region>:<account>:<scope>/webacl/<name>/<id>"
-	value, remaining, _ := strings.Cut(webACLID, "arn:aws:wafv2:")
-	if value != "" {
-		return fmt.Errorf("webaclId %q does not have expected prefix %q", webACLID, "arn:aws:wafv2:")
-	}
-	if remaining == "" {
-		return fmt.Errorf("webaclId %q contains no data after expected prefix %q", webACLID, "arn:aws:wafv2:")
-	}
+func (w *wafLogUnmarshaler) NewStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
+	scannerHelper := encoding.NewStreamScannerHelper(reader, options...)
 
-	value, remaining, _ = strings.Cut(remaining, ":")
-	if value == "" {
-		return fmt.Errorf("could not find region in webaclId %q", webACLID)
-	}
-	resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudRegionKey), value)
+	var sharedWebACLID string
+	return encoding.NewLogsStreamUnmarshalerFunc(func(ctx context.Context) (plog.Logs, error) {
+		logs := plog.NewLogs()
 
-	value, remaining, _ = strings.Cut(remaining, ":")
-	if value == "" {
-		return fmt.Errorf("could not find account in webaclId %q", webACLID)
-	}
-	resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudAccountIDKey), value)
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		resourceLogs.Resource().Attributes().PutStr(
+			string(conventions.CloudProviderKey),
+			conventions.CloudProviderAWS.Value.AsString(),
+		)
 
-	if remaining == "" {
-		return fmt.Errorf("webaclId %q does not have expected format %q", webACLID, expectedFormat)
-	}
+		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		scopeLogs.Scope().SetName(metadata.ScopeName)
+		scopeLogs.Scope().SetVersion(w.buildInfo.Version)
+		scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatWAFLog)
 
-	resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), webACLID)
-	return nil
+		var isEOF bool
+		for {
+			select {
+			case <-ctx.Done():
+				return plog.Logs{}, errors.New("context cancelled, exiting WAF log stream processing")
+			default:
+			}
+
+			logLine, flush, err := scannerHelper.ScanBytes()
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					isEOF = true
+					break
+				}
+				return plog.Logs{}, fmt.Errorf("error reading WAF logs from stream:: %w", err)
+			}
+
+			var log wafLog
+			if err := gojson.Unmarshal(logLine, &log); err != nil {
+				return plog.Logs{}, fmt.Errorf("failed to unmarshal WAF log: %w", err)
+			}
+			if log.WebACLID == "" {
+				return plog.Logs{}, errors.New("invalid WAF log: empty webaclId field")
+			}
+			if sharedWebACLID != "" && log.WebACLID != sharedWebACLID {
+				return plog.Logs{}, fmt.Errorf(
+					"unexpected: new webaclId %q is different than previous one %q",
+					log.WebACLID,
+					sharedWebACLID,
+				)
+			}
+			sharedWebACLID = log.WebACLID
+			record := scopeLogs.LogRecords().AppendEmpty()
+			if err := w.addWAFLog(log, record); err != nil {
+				return plog.Logs{}, err
+			}
+
+			if flush {
+				break
+			}
+		}
+
+		if err := setResourceAttributes(resourceLogs, sharedWebACLID); err != nil {
+			return plog.Logs{}, fmt.Errorf("failed to get resource attributes: %w", err)
+		}
+
+		if isEOF {
+			return logs, io.EOF
+		}
+
+		return logs, nil
+	})
 }
 
 func (*wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
@@ -191,5 +200,36 @@ func (*wafLogUnmarshaler) addWAFLog(log wafLog, record plog.LogRecord) error {
 	putStr(string(conventions.TLSClientJa3Key), log.Ja3Fingerprint)
 	putStr("tls.client.ja4", log.Ja4Fingerprint)
 
+	return nil
+}
+
+// setResourceAttributes based on the web ACL ID
+func setResourceAttributes(resourceLogs plog.ResourceLogs, webACLID string) error {
+	expectedFormat := "arn:aws:wafv2:<region>:<account>:<scope>/webacl/<name>/<id>"
+	value, remaining, _ := strings.Cut(webACLID, "arn:aws:wafv2:")
+	if value != "" {
+		return fmt.Errorf("webaclId %q does not have expected prefix %q", webACLID, "arn:aws:wafv2:")
+	}
+	if remaining == "" {
+		return fmt.Errorf("webaclId %q contains no data after expected prefix %q", webACLID, "arn:aws:wafv2:")
+	}
+
+	value, remaining, _ = strings.Cut(remaining, ":")
+	if value == "" {
+		return fmt.Errorf("could not find region in webaclId %q", webACLID)
+	}
+	resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudRegionKey), value)
+
+	value, remaining, _ = strings.Cut(remaining, ":")
+	if value == "" {
+		return fmt.Errorf("could not find account in webaclId %q", webACLID)
+	}
+	resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudAccountIDKey), value)
+
+	if remaining == "" {
+		return fmt.Errorf("webaclId %q does not have expected format %q", webACLID, expectedFormat)
+	}
+
+	resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), webACLID)
 	return nil
 }

@@ -4,7 +4,7 @@
 package networkfirewall // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/network-firewall-log"
 
 import (
-	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
@@ -99,56 +100,100 @@ type networkFirewallLog struct {
 }
 
 func (n *networkFirewallLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	logs := plog.NewLogs()
-
-	resourceLogs := logs.ResourceLogs().AppendEmpty()
-	resourceLogs.Resource().Attributes().PutStr(
-		string(conventions.CloudProviderKey),
-		conventions.CloudProviderAWS.Value.AsString(),
-	)
-
-	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName(metadata.ScopeName)
-	scopeLogs.Scope().SetVersion(n.buildInfo.Version)
-	scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatNetworkFirewallLog)
-
-	firewallName := ""
-	availabilityZone := ""
-
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		logLine := scanner.Bytes()
-
-		var log networkFirewallLog
-		if err := gojson.Unmarshal(logLine, &log); err != nil {
-			return plog.Logs{}, fmt.Errorf("failed to unmarshal Network Firewall log: %w", err)
-		}
-		if log.FirewallName == "" {
-			return plog.Logs{}, errors.New("invalid Network Firewall log: empty firewall_name field")
-		}
-		if firewallName == "" {
-			firewallName = log.FirewallName
-			availabilityZone = log.AvailabilityZone
-		}
-		if firewallName != log.FirewallName {
-			return plog.Logs{}, fmt.Errorf(
-				"unexpected: new firewall_name %q is different than previous one %q",
-				log.FirewallName,
-				firewallName,
-			)
+	streamUnmarshaler := n.NewStreamUnmarshaler(reader)
+	logs, err := streamUnmarshaler.UnmarshalBatch(context.Background())
+	if err != nil {
+		//nolint:errorlint
+		if err == io.EOF {
+			// EOF indicates no logs were found, return any logs that's available
+			return logs, nil
 		}
 
-		record := scopeLogs.LogRecords().AppendEmpty()
-		if err := n.addNetworkFirewallLog(log, record); err != nil {
-			return plog.Logs{}, err
-		}
-	}
-
-	if err := setResourceAttributes(resourceLogs, firewallName, availabilityZone); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to set resource attributes: %w", err)
+		return plog.Logs{}, err
 	}
 
 	return logs, nil
+}
+
+func (n *networkFirewallLogUnmarshaler) NewStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
+	scannerHelper := encoding.NewStreamScannerHelper(reader, options...)
+	return encoding.NewLogsStreamUnmarshalerFunc(func(ctx context.Context) (plog.Logs, error) {
+		logs := plog.NewLogs()
+
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		resourceLogs.Resource().Attributes().PutStr(
+			string(conventions.CloudProviderKey),
+			conventions.CloudProviderAWS.Value.AsString(),
+		)
+
+		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		scopeLogs.Scope().SetName(metadata.ScopeName)
+		scopeLogs.Scope().SetVersion(n.buildInfo.Version)
+		scopeLogs.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatNetworkFirewallLog)
+
+		firewallName := ""
+		availabilityZone := ""
+
+		var isEOF bool
+		for {
+			select {
+			case <-ctx.Done():
+				return plog.Logs{}, errors.New("context cancelled, exiting Network Firewall log processing")
+			default:
+			}
+
+			logBytes, flush, err := scannerHelper.ScanBytes()
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					isEOF = true
+					break
+				}
+				return plog.Logs{}, fmt.Errorf("failed to unmarshal Network Firewall log: %w", err)
+			}
+
+			var log networkFirewallLog
+			if err := gojson.Unmarshal(logBytes, &log); err != nil {
+				return plog.Logs{}, fmt.Errorf("failed to unmarshal Network Firewall log: %w", err)
+			}
+			if log.FirewallName == "" {
+				return plog.Logs{}, errors.New("invalid Network Firewall log: empty firewall_name field")
+			}
+			if firewallName == "" {
+				firewallName = log.FirewallName
+				availabilityZone = log.AvailabilityZone
+			}
+			if firewallName != log.FirewallName {
+				return plog.Logs{}, fmt.Errorf(
+					"unexpected: new firewall_name %q is different than previous one %q",
+					log.FirewallName,
+					firewallName,
+				)
+			}
+
+			record := scopeLogs.LogRecords().AppendEmpty()
+			if err := n.addNetworkFirewallLog(log, record); err != nil {
+				return plog.Logs{}, err
+			}
+
+			if flush {
+				break
+			}
+		}
+
+		if firewallName == "" && isEOF {
+			// This means there is no log to process
+			return plog.Logs{}, io.EOF
+		}
+
+		if err := setResourceAttributes(resourceLogs, firewallName, availabilityZone); err != nil {
+			return plog.Logs{}, fmt.Errorf("failed to set resource attributes: %w", err)
+		}
+
+		if isEOF {
+			return logs, io.EOF
+		}
+		return logs, nil
+	})
 }
 
 func setResourceAttributes(resourceLogs plog.ResourceLogs, firewallName, availabilityZone string) error {

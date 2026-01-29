@@ -4,6 +4,7 @@
 package subscriptionfilter // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
@@ -61,21 +63,46 @@ func NewSubscriptionFilterUnmarshaler(buildInfo component.BuildInfo) unmarshaler
 // log stream. Logs are assumed to be gzip-compressed as specified at
 // https://docs.aws.amazon.com/firehose/latest/dev/writing-with-cloudwatch-logs.html.
 func (f *subscriptionFilterUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	var cwLog events.CloudwatchLogsData
-	decoder := gojson.NewDecoder(reader)
-	if err := decoder.Decode(&cwLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to decode decompressed reader: %w", err)
+	streamUnmarshaler := f.NewStreamUnmarshaler(reader)
+	logs, err := streamUnmarshaler.UnmarshalBatch(context.Background())
+	if err != nil {
+		//nolint:errorlint
+		if err == io.EOF {
+			// EOF indicates no logs were found, return any logs that's available
+			return logs, nil
+		}
+
+		return plog.Logs{}, err
 	}
 
-	if cwLog.MessageType == "CONTROL_MESSAGE" {
-		return plog.NewLogs(), nil
-	}
+	return logs, nil
+}
 
-	if err := validateLog(cwLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("invalid cloudwatch log: %w", err)
-	}
+func (f *subscriptionFilterUnmarshaler) NewStreamUnmarshaler(reader io.Reader, _ ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
+	// Note - no real streaming as CloudWatch Logs subscription filter events are small in size
+	var complete bool
+	return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
+		if complete {
+			return plog.NewLogs(), io.EOF
+		}
 
-	return f.createLogs(cwLog), nil
+		var cwLog events.CloudwatchLogsData
+		decoder := gojson.NewDecoder(reader)
+		if err := decoder.Decode(&cwLog); err != nil {
+			return plog.Logs{}, fmt.Errorf("failed to decode decompressed reader: %w", err)
+		}
+
+		if cwLog.MessageType == "CONTROL_MESSAGE" {
+			return plog.NewLogs(), nil
+		}
+
+		if err := validateLog(cwLog); err != nil {
+			return plog.Logs{}, fmt.Errorf("invalid cloudwatch log: %w", err)
+		}
+
+		complete = true
+		return f.createLogs(cwLog), nil
+	})
 }
 
 // createLogs create plog.Logs from the cloudwatchLog

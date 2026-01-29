@@ -4,7 +4,7 @@
 package s3accesslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 
 import (
-	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
@@ -47,23 +48,58 @@ type resourceAttributes struct {
 }
 
 func (s *s3AccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	scanner := bufio.NewScanner(reader)
-
-	logs, resourceLogs, scopeLogs := s.createLogs()
-	resourceAttr := &resourceAttributes{}
-	for scanner.Scan() {
-		log := scanner.Text()
-		if err := handleLog(resourceAttr, scopeLogs, log); err != nil {
-			return plog.Logs{}, err
+	streamUnmarshaler := s.NewStreamUnmarshaler(reader)
+	logs, err := streamUnmarshaler.UnmarshalBatch(context.Background())
+	if err != nil {
+		//nolint:errorlint
+		if err == io.EOF {
+			// EOF indicates no logs were found, return any logs that's available
+			return logs, nil
 		}
-	}
 
-	if err := scanner.Err(); err != nil {
-		return plog.Logs{}, fmt.Errorf("error reading log line: %w", err)
+		return plog.Logs{}, err
 	}
-
-	s.setResourceAttributes(resourceAttr, resourceLogs)
 	return logs, nil
+}
+
+func (s *s3AccessLogUnmarshaler) NewStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
+	scannerHelper := encoding.NewStreamScannerHelper(reader, options...)
+	return encoding.NewLogsStreamUnmarshalerFunc(func(ctx context.Context) (plog.Logs, error) {
+		logs, resourceLogs, scopeLogs := s.createLogs()
+		resourceAttr := &resourceAttributes{}
+
+		var isEOF bool
+		for {
+			select {
+			case <-ctx.Done():
+				return plog.Logs{}, errors.New("context cancelled, exiting S3 access log streaming")
+			default:
+			}
+
+			log, flush, err := scannerHelper.ScanString()
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					isEOF = true
+					break
+				}
+				return plog.Logs{}, fmt.Errorf("error reading S3 access logs from stream:: %w", err)
+			}
+
+			if err := handleLog(resourceAttr, scopeLogs, log); err != nil {
+				return plog.Logs{}, err
+			}
+
+			if flush {
+				break
+			}
+		}
+
+		s.setResourceAttributes(resourceAttr, resourceLogs)
+		if isEOF {
+			return logs, io.EOF
+		}
+		return logs, nil
+	})
 }
 
 // createLogs with the expected fields for the scope logs

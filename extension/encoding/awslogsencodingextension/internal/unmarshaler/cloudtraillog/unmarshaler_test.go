@@ -6,6 +6,7 @@ package cloudtraillog
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -125,6 +127,38 @@ func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest(t *testing.T) {
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareLogsOptions...))
 		})
 	}
+}
+
+func TestGetStreamUnmarshaler(t *testing.T) {
+	directory := "testdata/stream"
+	expectPattern := "cloudtrail_log_expect_%d.yaml"
+
+	content := readLogFile(t, directory, "cloudtrail_log.json")
+
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
+	// Flush after every log for testing purposes
+	streamer := unmarshaler.NewStreamUnmarshaler(content, encoding.WithFlushItems(1))
+
+	var i int
+	for {
+		logs, err := streamer.UnmarshalBatch(t.Context())
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			t.Errorf("failed to unmarshal log %d: %v", i, err)
+		}
+
+		i++
+		expectedLogs, err := golden.ReadLogs(filepath.Join(directory, fmt.Sprintf(expectPattern, i)))
+		require.NoError(t, err)
+		require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+	}
+
+	// expect EOF after all logs are read
+	_, err := streamer.UnmarshalBatch(t.Context())
+	require.ErrorIs(t, err, io.EOF)
 }
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidJSON(t *testing.T) {

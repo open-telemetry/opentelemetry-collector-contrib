@@ -5,6 +5,7 @@ package elbaccesslogs // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
@@ -37,85 +39,102 @@ type resourceAttributes struct {
 	resourceID string
 }
 
-// UnmarshalAWSLogs processes a file containing ELB access logs.
+// UnmarshalAWSLogs processes all logs from the provided reader
 func (f *elbAccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	scanner := bufio.NewScanner(reader)
-
-	logs, resourceLogs, scopeLogs := f.createLogs()
-	resourceAttr := &resourceAttributes{}
-
-	var line string
-	var fields []string
-
-	// Read first line to determine format
-	if !scanner.Scan() {
-		return plog.Logs{}, errors.New("no log lines found")
-	}
-	line = scanner.Text()
-
-	fields, err := extractFields(line)
+	// Read all logs from stream reader
+	streamUnmarshaler := f.NewStreamUnmarshaler(reader)
+	logs, err := streamUnmarshaler.UnmarshalBatch(context.Background())
 	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to parse log line: %w", err)
-	}
-	if len(fields) == 0 {
-		return plog.Logs{}, fmt.Errorf("log line has no fields: %s", line)
-	}
-
-	// Check for control message
-	if fields[0] == EnableControlMessage {
-		f.logger.Info(fmt.Sprintf("Control message received: %s", line))
-		return plog.NewLogs(), nil
-	}
-
-	// Determine syntax
-	syntax, err := findLogSyntaxByField(fields[0])
-	if err != nil {
-		return plog.Logs{}, fmt.Errorf("unable to determine log syntax: %w", err)
-	}
-	for {
-		// Process lines based on determined syntax
-		switch syntax {
-		case albAccessLogs:
-			err = f.handleALBAccessLogs(fields, resourceAttr, scopeLogs)
-			if err != nil {
-				return plog.Logs{}, err
-			}
-		case nlbAccessLogs:
-			err = f.handleNLBAccessLogs(fields, resourceAttr, scopeLogs)
-			if err != nil {
-				return plog.Logs{}, err
-			}
-		case clbAccessLogs:
-			err = f.handleCLBAccessLogs(fields, resourceAttr, scopeLogs)
-			if err != nil {
-				return plog.Logs{}, err
-			}
-		default:
-			return plog.Logs{}, fmt.Errorf("unsupported log syntax: %s", syntax)
+		//nolint:errorlint
+		if err == io.EOF {
+			// EOF indicates no logs were found, return any logs that's available
+			return logs, nil
 		}
 
-		// Refill with next line until we reach the scanner end
-		if !scanner.Scan() {
-			break
-		}
-
-		line = scanner.Text()
-		fields, err = extractFields(line)
-		if err != nil {
-			return plog.Logs{}, fmt.Errorf("failed to parse log line: %w", err)
-		}
-		if len(fields) == 0 {
-			return plog.Logs{}, fmt.Errorf("log line has no fields: %s", line)
-		}
+		return plog.Logs{}, err
 	}
 
-	// Handle potential scanner errors
-	if err := scanner.Err(); err != nil {
-		return plog.Logs{}, fmt.Errorf("error scanning log lines: %w", err)
-	}
-
-	f.setResourceAttributes(resourceAttr, resourceLogs)
 	return logs, nil
+}
+
+// NewStreamUnmarshaler returns a LogsStreamer that processes ELB access logs from the provided reader
+func (f *elbAccessLogUnmarshaler) NewStreamUnmarshaler(reader io.Reader, options ...encoding.StreamUnmarshalOption) encoding.LogsStreamUnmarshaler {
+	bufReader := bufio.NewReader(reader)
+	syntax, err := peekAndGetSyntax(bufReader)
+	if err != nil {
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
+			return plog.Logs{}, err
+		})
+	}
+
+	if syntax == controlMessage {
+		f.logger.Info("ELB Control message received")
+		return encoding.NewLogsStreamUnmarshalerFunc(func(_ context.Context) (plog.Logs, error) {
+			return plog.Logs{}, nil
+		})
+	}
+
+	scannerHelper := encoding.NewStreamScannerHelper(bufReader, options...)
+
+	return encoding.NewLogsStreamUnmarshalerFunc(func(ctx context.Context) (plog.Logs, error) {
+		logs, resourceLogs, scopeLogs := f.createLogs()
+		resourceAttr := &resourceAttributes{}
+
+		var isEOF bool
+		for {
+			select {
+			case <-ctx.Done():
+				return plog.Logs{}, errors.New("context cancelled, exiting ELB access log stream processing")
+			default:
+			}
+
+			line, flush, err := scannerHelper.ScanString()
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					isEOF = true
+					break
+				}
+				return plog.Logs{}, fmt.Errorf("error reading ELB access logs from stream: %w", err)
+			}
+
+			// Check for empty line
+			if line == "" {
+				return plog.Logs{}, fmt.Errorf("log line has no fields: %s", line)
+			}
+
+			fields, err := extractFields(line)
+			if err != nil {
+				return plog.Logs{}, fmt.Errorf("failed to parse log line: %w", err)
+			}
+
+			if len(fields) == 0 {
+				return plog.Logs{}, fmt.Errorf("log line has no fields: %s", line)
+			}
+
+			// Process line based on syntax
+			switch syntax {
+			case albAccessLogs:
+				err = f.handleALBAccessLogs(fields, resourceAttr, scopeLogs)
+			case nlbAccessLogs:
+				err = f.handleNLBAccessLogs(fields, resourceAttr, scopeLogs)
+			case clbAccessLogs:
+				err = f.handleCLBAccessLogs(fields, resourceAttr, scopeLogs)
+			}
+			if err != nil {
+				return plog.Logs{}, err
+			}
+
+			if flush {
+				break
+			}
+		}
+
+		f.setResourceAttributes(resourceAttr, resourceLogs)
+		if isEOF {
+			return logs, io.EOF
+		}
+		return logs, nil
+	})
 }
 
 // createLogs with the expected fields for the scope logs
@@ -413,4 +432,35 @@ func (f *elbAccessLogUnmarshaler) addToNLBAccessLogs(resourceAttr *resourceAttri
 	// move recordLog to scope
 	rScope := scopeLogs.LogRecords().AppendEmpty()
 	recordLog.MoveTo(rScope)
+}
+
+func peekAndGetSyntax(bufReader *bufio.Reader) (logSyntaxType, error) {
+	// 100 bytes should be enough to cover first sections of the log line
+	peekedData, err := bufReader.Peek(100)
+	if err != nil {
+		if !errors.Is(err, io.EOF) {
+			return "", fmt.Errorf("failed to peek log line: %w", err)
+		}
+	}
+
+	fields, err := extractFields(string(peekedData))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse log line: %w", err)
+	}
+	if len(fields) == 0 {
+		return "", fmt.Errorf("invalid first ELB access log line part: %s", string(peekedData))
+	}
+
+	// Check for control message
+	if fields[0] == EnableControlMessage {
+		return controlMessage, nil
+	}
+
+	// Determine syntax
+	syntax, err := findLogSyntaxByField(fields[0])
+	if err != nil {
+		return "", fmt.Errorf("unable to determine log syntax: %w", err)
+	}
+
+	return syntax, nil
 }
