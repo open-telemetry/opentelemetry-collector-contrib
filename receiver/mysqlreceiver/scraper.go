@@ -698,9 +698,9 @@ func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timesta
 			m.logger.Error("Failed to obfuscate query", zap.Error(err))
 		}
 
-		var obfuscatedPlan = "NONE"
-		var queryPlanHash = "NONE"
 		queryPlan := m.sqlclient.explainQuery(q.querySampleText, q.schemaName, m.logger)
+		queryPlanHash := q.digest
+		obfuscatedPlan := ""
 		if queryPlan == "" {
 			m.logger.Warn("Empty query plan received", zap.String("schema", q.schemaName), zap.String("digest", q.digest))
 		} else {
@@ -763,25 +763,35 @@ func (m *mySQLScraper) scrapeQuerySamples(ctx context.Context, now pcommon.Times
 		if err != nil {
 			m.logger.Error("Failed to obfuscate query", zap.Error(err))
 		}
+		queryPlanHash := sample.digest
+		queryPlan := m.sqlclient.explainQuery(sample.sqlText, sample.schema, m.logger)
+		if queryPlan == "" {
+			m.logger.Warn("Empty query plan received", zap.String("schema", sample.schema), zap.String("sql digest", sample.digest))
+		} else {
+			hasher := sha256.New()
+			hasher.Write([]byte(queryPlan))
+			queryPlanHash = hex.EncodeToString(hasher.Sum(nil))
+		}
 
 		m.lb.RecordDbServerQuerySampleEvent(
 			ctx,
 			now,
-			metadata.AttributeDbSystemNameMysql,
-			sample.threadID,
-			sample.processlistUser,
-			sample.processlistDB,
-			sample.processlistCommand,
-			sample.processlistState,
-			obfuscatedQuery,
-			sample.digest,
-			sample.eventID,
-			sample.waitEvent,
-			sample.waitTime,
 			clientAddress,
 			clientPort,
+			sample.processlistDB,
+			obfuscatedQuery,
+			metadata.AttributeDbSystemNameMysql,
+			sample.eventID,
+			sample.digest,
+			queryPlanHash,
+			sample.waitTime,
+			sample.processlistCommand,
+			sample.processlistState,
+			sample.threadID,
+			sample.waitEvent,
 			networkPeerAddress,
 			networkPeerPort,
+			sample.processlistUser,
 		)
 	}
 }
