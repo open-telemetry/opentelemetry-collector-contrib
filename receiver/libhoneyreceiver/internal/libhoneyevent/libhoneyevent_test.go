@@ -612,6 +612,198 @@ func TestGetParentID(t *testing.T) {
 	}
 }
 
+func TestToPLogRecord_IntegerTypeHandling(t *testing.T) {
+	logger := zap.NewNop()
+	now := time.Now()
+
+	tests := []struct {
+		name              string
+		event             LibhoneyEvent
+		alreadyUsedFields []string
+		checkFunc         func(t *testing.T, lr plog.LogRecord)
+	}{
+		{
+			name: "severity_code as int64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"severity_code": int64(5),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, plog.SeverityNumber(5), lr.SeverityNumber())
+			},
+		},
+		{
+			name: "severity_code as uint64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"severity_code": uint64(5),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, plog.SeverityNumber(5), lr.SeverityNumber())
+			},
+		},
+		{
+			name: "flags as int64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"flags": int64(1),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, plog.LogRecordFlags(1), lr.Flags())
+			},
+		},
+		{
+			name: "flags as uint64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"flags": uint64(1),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				assert.Equal(t, plog.LogRecordFlags(1), lr.Flags())
+			},
+		},
+		{
+			name: "attribute as int64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"my_int_attr": int64(42),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				val, ok := lr.Attributes().Get("my_int_attr")
+				assert.True(t, ok)
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+		{
+			name: "attribute as uint64",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"my_uint_attr": uint64(42),
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				val, ok := lr.Attributes().Get("my_uint_attr")
+				assert.True(t, ok)
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+		{
+			name: "large uint64 attribute",
+			event: LibhoneyEvent{
+				Samplerate:       1,
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"large_uint": uint64(18446744073709551615), // max uint64
+				},
+			},
+			checkFunc: func(t *testing.T, lr plog.LogRecord) {
+				val, ok := lr.Attributes().Get("large_uint")
+				assert.True(t, ok)
+				// When converted to int64, this will overflow but should not panic
+				assert.Equal(t, int64(-1), val.Int())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			newLog := plog.NewLogRecord()
+			err := tt.event.ToPLogRecord(&newLog, &tt.alreadyUsedFields, *logger)
+			require.NoError(t, err)
+			tt.checkFunc(t, newLog)
+		})
+	}
+}
+
+func TestToPTraceSpan_IntegerTypeHandling(t *testing.T) {
+	now := time.Now()
+	alreadyUsedFields := []string{"name", "trace.span_id", "trace.trace_id", "duration_ms"}
+	testCfg := FieldMapConfig{
+		Attributes: AttributesConfig{
+			Name:           "name",
+			TraceID:        "trace.trace_id",
+			SpanID:         "trace.span_id",
+			ParentID:       "trace.parent_id",
+			Error:          "error",
+			SpanKind:       "kind",
+			DurationFields: []string{"duration_ms"},
+		},
+	}
+
+	tests := []struct {
+		name      string
+		event     LibhoneyEvent
+		checkFunc func(t *testing.T, span ptrace.Span)
+	}{
+		{
+			name: "attribute as int64",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Samplerate:       1,
+				Data: map[string]any{
+					"name":           "test-span",
+					"trace.span_id":  "1234567890abcdef",
+					"trace.trace_id": "1234567890abcdef1234567890abcdef",
+					"duration_ms":    100.0,
+					"my_int_attr":    int64(42),
+				},
+			},
+			checkFunc: func(t *testing.T, span ptrace.Span) {
+				val, ok := span.Attributes().Get("my_int_attr")
+				assert.True(t, ok)
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+		{
+			name: "attribute as uint64",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Samplerate:       1,
+				Data: map[string]any{
+					"name":           "test-span",
+					"trace.span_id":  "1234567890abcdef",
+					"trace.trace_id": "1234567890abcdef1234567890abcdef",
+					"duration_ms":    100.0,
+					"my_uint_attr":   uint64(42),
+				},
+			},
+			checkFunc: func(t *testing.T, span ptrace.Span) {
+				val, ok := span.Attributes().Get("my_uint_attr")
+				assert.True(t, ok)
+				assert.Equal(t, int64(42), val.Int())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			err := tt.event.ToPTraceSpan(&span, &alreadyUsedFields, testCfg, *zap.NewNop())
+			require.NoError(t, err)
+			tt.checkFunc(t, span)
+		})
+	}
+}
+
 func TestLibhoneyEvent_UnmarshalMsgpack(t *testing.T) {
 	tests := []struct {
 		name                  string

@@ -19,6 +19,20 @@ const (
 	EarliestOffset = "earliest"
 )
 
+// GroupRebalanceStrategy defines the strategy to use for partition assignment.
+type GroupRebalanceStrategy string
+
+const (
+	// RangeBalanceStrategy assigns partitions on a per-topic basis.
+	RangeBalanceStrategy GroupRebalanceStrategy = "range"
+	// RoundRobinBalanceStrategy assigns partitions to all consumers in a round-robin fashion.
+	RoundRobinBalanceStrategy GroupRebalanceStrategy = "roundrobin"
+	// StickyBalanceStrategy attempts to preserve previous assignments when rebalancing.
+	StickyBalanceStrategy GroupRebalanceStrategy = "sticky"
+	// CooperativeStickyBalanceStrategy is similar to sticky but uses cooperative rebalancing.
+	CooperativeStickyBalanceStrategy GroupRebalanceStrategy = "cooperative-sticky"
+)
+
 type ClientConfig struct {
 	// Brokers holds the list of Kafka bootstrap servers (default localhost:9092).
 	Brokers []string `mapstructure:"brokers"`
@@ -109,10 +123,6 @@ type ConsumerConfig struct {
 	// The minimum bytes per fetch from Kafka (default "1")
 	MinFetchSize int32 `mapstructure:"min_fetch_size"`
 
-	// The default bytes per fetch from Kafka (default "1048576")
-	// Only used with Sarama client. Use MaxFetchSize for franz-go.
-	DefaultFetchSize int32 `mapstructure:"default_fetch_size"`
-
 	// The maximum bytes per fetch from Kafka (default "1048576")
 	MaxFetchSize int32 `mapstructure:"max_fetch_size"`
 
@@ -124,12 +134,11 @@ type ConsumerConfig struct {
 	// per partition (default "1048576")
 	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
 
-	// RebalanceStrategy specifies the strategy to use for partition assignment.
-	// Possible values are "range", "roundrobin", and "sticky", and
-	// "cooperative-sticky" (franz-go only).
+	// GroupRebalanceStrategy specifies the strategy to use for partition assignment.
+	// Possible values are "range", "roundrobin", "sticky", and "cooperative-sticky".
 	//
-	// Defaults to "cooperative-sticky" for franz-go, "range" for Sarama.
-	GroupRebalanceStrategy string `mapstructure:"group_rebalance_strategy,omitempty"`
+	// Defaults to "cooperative-sticky"
+	GroupRebalanceStrategy GroupRebalanceStrategy `mapstructure:"group_rebalance_strategy,omitempty"`
 
 	// GroupInstanceID specifies the ID of the consumer
 	GroupInstanceID string `mapstructure:"group_instance_id,omitempty"`
@@ -148,7 +157,6 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 		MinFetchSize:          1,
 		MaxFetchSize:          1048576,
 		MaxFetchWait:          250 * time.Millisecond,
-		DefaultFetchSize:      1048576,
 		MaxPartitionFetchSize: 1048576,
 	}
 }
@@ -166,11 +174,12 @@ func (c ConsumerConfig) Validate() error {
 
 	if c.GroupRebalanceStrategy != "" {
 		switch c.GroupRebalanceStrategy {
-		case sarama.RangeBalanceStrategyName, sarama.RoundRobinBalanceStrategyName, sarama.StickyBalanceStrategyName:
+		case RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy:
 			// Valid
 		default:
 			return fmt.Errorf(
-				"rebalance_strategy should be one of 'range', 'roundrobin', or 'sticky'. configured value %v",
+				"rebalance_strategy should be one of '%s', '%s', '%s', or '%s'. configured value %v",
+				RangeBalanceStrategy, RoundRobinBalanceStrategy, StickyBalanceStrategy, CooperativeStickyBalanceStrategy,
 				c.GroupRebalanceStrategy,
 			)
 		}
@@ -224,7 +233,7 @@ type ProducerConfig struct {
 	RequiredAcks RequiredAcks `mapstructure:"required_acks"`
 
 	// Compression Codec used to produce messages
-	// https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#CompressionCodec
+	// https://pkg.go.dev/github.com/twmb/franz-go/pkg/kgo#CompressionCodec
 	// The options are: 'none' (default), 'gzip', 'snappy', 'lz4', and 'zstd'
 	Compression string `mapstructure:"compression"`
 

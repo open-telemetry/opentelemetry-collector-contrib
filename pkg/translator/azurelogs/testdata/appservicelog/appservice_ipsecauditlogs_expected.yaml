@@ -15,6 +15,9 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
+                  - key: url.domain
+                    value:
+                      stringValue: HOST
                   - key: http.request.header.x-azure-fdid
                     value:
                       stringValue: FDID
@@ -27,18 +30,16 @@ resourceLogs:
                   - key: http.request.header.x-forwarded-host
                     value:
                       stringValue: FORWARDED_HOST
-                  - key: client.address
-                    value:
-                      stringValue: 42.42.42.42
                   - key: category
                     value:
                       stringValue: AppServiceIPSecAuditLogs
                   - key: operation.name
                     value:
                       stringValue: IPSecAuditLog
-                  - key: url.domain
+                  - key: client.address
                     value:
-                      stringValue: HOST
+                      stringValue: 42.42.42.42
+            observedTimeUnixNano: "1766081218374810000"
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

@@ -294,6 +294,7 @@ func (m *metricApacheConnectionsAsync) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheConnectionsAsync(cfg MetricConfig) metricApacheConnectionsAsync {
 	m := metricApacheConnectionsAsync{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -343,6 +344,7 @@ func (m *metricApacheCPULoad) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheCPULoad(cfg MetricConfig) metricApacheCPULoad {
 	m := metricApacheCPULoad{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -397,6 +399,7 @@ func (m *metricApacheCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheCPUTime(cfg MetricConfig) metricApacheCPUTime {
 	m := metricApacheCPUTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -448,6 +451,7 @@ func (m *metricApacheCurrentConnections) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheCurrentConnections(cfg MetricConfig) metricApacheCurrentConnections {
 	m := metricApacheCurrentConnections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -497,6 +501,7 @@ func (m *metricApacheLoad1) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheLoad1(cfg MetricConfig) metricApacheLoad1 {
 	m := metricApacheLoad1{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -546,6 +551,7 @@ func (m *metricApacheLoad15) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheLoad15(cfg MetricConfig) metricApacheLoad15 {
 	m := metricApacheLoad15{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -595,6 +601,7 @@ func (m *metricApacheLoad5) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheLoad5(cfg MetricConfig) metricApacheLoad5 {
 	m := metricApacheLoad5{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -646,6 +653,7 @@ func (m *metricApacheRequestTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheRequestTime(cfg MetricConfig) metricApacheRequestTime {
 	m := metricApacheRequestTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -697,6 +705,7 @@ func (m *metricApacheRequests) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheRequests(cfg MetricConfig) metricApacheRequests {
 	m := metricApacheRequests{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -750,6 +759,7 @@ func (m *metricApacheScoreboard) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheScoreboard(cfg MetricConfig) metricApacheScoreboard {
 	m := metricApacheScoreboard{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -801,6 +811,7 @@ func (m *metricApacheTraffic) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheTraffic(cfg MetricConfig) metricApacheTraffic {
 	m := metricApacheTraffic{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -852,6 +863,7 @@ func (m *metricApacheUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheUptime(cfg MetricConfig) metricApacheUptime {
 	m := metricApacheUptime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -905,6 +917,7 @@ func (m *metricApacheWorkers) emit(metrics pmetric.MetricSlice) {
 
 func newMetricApacheWorkers(cfg MetricConfig) metricApacheWorkers {
 	m := metricApacheWorkers{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

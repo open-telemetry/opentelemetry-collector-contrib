@@ -290,7 +290,13 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 	newLog.SetTimestamp(pcommon.Timestamp(timeNs))
 
 	if logSevCode, ok := l.Data["severity_code"]; ok {
-		logSevInt := int32(logSevCode.(int64))
+		var logSevInt int32
+		switch v := logSevCode.(type) {
+		case int64:
+			logSevInt = int32(v)
+		case uint64:
+			logSevInt = int32(v)
+		}
 		newLog.SetSeverityNumber(plog.SeverityNumber(logSevInt))
 	}
 
@@ -299,7 +305,13 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 	}
 
 	if logFlags, ok := l.Data["flags"]; ok {
-		logFlagsUint := uint32(logFlags.(uint64))
+		var logFlagsUint uint32
+		switch v := logFlags.(type) {
+		case int64:
+			logFlagsUint = uint32(v)
+		case uint64:
+			logFlagsUint = uint32(v)
+		}
 		newLog.SetFlags(plog.LogRecordFlags(logFlagsUint))
 	}
 
@@ -326,6 +338,8 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 		case int64, int16, int32:
 			intv := v.(int64)
 			newLog.Attributes().PutInt(k, intv)
+		case uint64:
+			newLog.Attributes().PutInt(k, int64(v))
 		case float64:
 			newLog.Attributes().PutDouble(k, v)
 		case bool:
@@ -473,6 +487,8 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 		case int64, int16, int32:
 			intv := v.(int64)
 			newSpan.Attributes().PutInt(k, intv)
+		case uint64:
+			newSpan.Attributes().PutInt(k, int64(v))
 		case float64:
 			newSpan.Attributes().PutDouble(k, v)
 		case bool:

@@ -68,6 +68,7 @@ func (m *metricNtpOffset) emit(metrics pmetric.MetricSlice) {
 
 func newMetricNtpOffset(cfg MetricConfig) metricNtpOffset {
 	m := metricNtpOffset{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

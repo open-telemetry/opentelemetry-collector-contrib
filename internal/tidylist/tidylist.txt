@@ -50,6 +50,7 @@ pkg/datadog
 receiver/datadogreceiver
 receiver/jaegerreceiver
 receiver/signalfxreceiver
+pkg/translator/splunk
 exporter/splunkhecexporter
 extension/ackextension
 receiver/splunkhecreceiver
@@ -206,7 +207,6 @@ internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
-pkg/translator/opencensus
 pkg/translator/pprof
 processor/attributesprocessor
 processor/coralogixprocessor
@@ -222,6 +222,7 @@ processor/intervalprocessor
 processor/isolationforestprocessor
 processor/logdedupprocessor
 processor/logstransformprocessor
+processor/lookupprocessor
 processor/metricsgenerationprocessor
 processor/metricstarttimeprocessor
 processor/metricstransformprocessor

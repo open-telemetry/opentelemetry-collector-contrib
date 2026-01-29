@@ -699,6 +699,12 @@ clean:
 generate-gh-issue-templates:
 	$(GITHUBGEN) issue-templates
 
+SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
+
+.PHONY: generate-schemas
+generate-schemas:
+	@$(foreach dir,$(SCHEMA_DIRS), $(SCHEMAGEN) $(dir) -o $(dir);)
+
 .PHONY: checks
 checks:
 	$(MAKE) checkdoc
@@ -712,4 +718,5 @@ checks:
 	$(MAKE) gendistributions
 	$(MAKE) -j4 generate
 	$(MAKE) multimod-verify
+	$(MAKE) generate-schemas
 	git diff --exit-code || (echo 'Some files need committing' && git status && exit 1)

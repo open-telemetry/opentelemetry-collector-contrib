@@ -6,92 +6,135 @@ package internal
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-type Config = struct {
-	FilePath       string
-	DirPath        string
-	SchemaPath     string
-	SchemaIDPrefix string
-	RootTypeName   string
-	FileType       string
-}
+type RunMode string
 
 const (
-	DefaultConfigGoFileName = "config.go"
-	DefaultSchemaFileName   = "config.schema"
+	Component RunMode = "component"
+	Package   RunMode = "package"
 )
+
+type Config = struct {
+	Mode          RunMode
+	DirPath       string
+	OutputFolder  string
+	ConfigPackage string
+	ConfigType    string
+	FileType      string
+	Class         string
+	Mappings      Mappings
+	AllowedRefs   []string
+}
 
 var (
-	id       = flag.String("p", "", "Schema ID prefix")
-	rootType = flag.String("r", "", "Root type name (default is derived from file name)")
-	output   = flag.String("o", DefaultSchemaFileName, "Output schema file name (without extension)")
-	fileType = flag.String("t", "yaml", "Output file type (yaml or json)")
+	configType   = flag.String("c", "Config", "Config type name for component schema generation")
+	outputFolder = flag.String("o", "", "Output schema folder (defaults to input folder)")
+	fileType     = flag.String("t", "yaml", "Output file type (yaml or json)")
 )
 
+func usage() {
+	docs := []string{
+		"Usage: schemagen [options] <path>",
+		"This script is a tiny utility that walks a Go configuration file and emits JSON Schema that mirrors the exported structs.\n",
+		"Options:\n",
+		"\nArguments:",
+		`  <input_file > Path to the dir to be processed. If not provided, the current working directory is used.`,
+		"\nExamples:",
+		"  > schemagen ./components/test_receiver/  		 # Generate schema for a component",
+		"  > schemagen -o component.schema ./config.go       # Generate schema with a custom output file name",
+		"  > schemagen -t json ./config.go                   # Generate schema in JSON format",
+		"  > schemagen -c DatabaseConfig ./config.go         # Generate schema for component with a custom root type name",
+	}
+	_, _ = fmt.Fprintf(os.Stderr, "%s", strings.Join(docs[:3], "\n"))
+	flag.PrintDefaults()
+	_, _ = fmt.Fprintf(os.Stderr, "%s", strings.Join(docs[3:], "\n"))
+}
+
 func ReadConfig() (*Config, error) {
+	flag.Usage = usage
 	flag.Parse()
 
-	if len(flag.Args()) < 1 {
-		return nil, errors.New("usage: schemagen <path>")
-	}
-
 	inputPath := flag.Arg(0)
+	if inputPath == "" {
+		inputPath = "."
+	}
 	info, err := os.Stat(inputPath)
 	if err != nil {
 		return nil, err
 	}
 
 	var (
-		filePath string
-		dirPath  string
+		dirPath       string
+		output        = *outputFolder
+		mode          = Package
+		mappings      Mappings
+		ctype         string
+		class         string
+		configPackage string
+		allowedRefs   = make([]string, 0)
 	)
 
 	switch {
 	case info.IsDir():
-		dirPath = inputPath
-		filePath = filepath.Join(dirPath, DefaultConfigGoFileName)
+		dirPath, _ = filepath.Abs(inputPath)
 	default:
-		filePath = inputPath
-		dirPath = filepath.Dir(filePath)
+		dirPath, _ = filepath.Abs(filepath.Dir(inputPath))
 	}
 
-	if *rootType == "" {
-		file := filepath.Base(filePath)
-		ext := filepath.Ext(file)
-		fileName := strings.TrimSuffix(file, ext)
-		*rootType = toPascalCase(fileName)
+	if output == "" {
+		output = dirPath
 	}
 
-	ext := *fileType
-	switch *fileType {
-	case "yaml", "yml":
-		ext = ".yaml"
-	case "json":
-		ext = ".json"
-	default:
-		return nil, errors.New("unknown output file type - use yaml or json: " + ext)
+	if *fileType != "json" && *fileType != "yaml" && *fileType != "yml" {
+		return nil, errors.New("unknown schema file type - use yaml or json: " + *fileType)
+	}
+
+	if md, ok := ReadMetadata(dirPath); ok {
+		if md.Parent != "" {
+			mode = Component
+		} else {
+			ctype = md.Type
+			class = md.Status.Class
+			switch class {
+			case "receiver", "processor", "exporter", "connector", "extension":
+				mode = Component
+			case "", "pkg":
+				mode = Package
+			default:
+				return nil, fmt.Errorf("schema generation for class '%s' is not supported", md.Status.Class)
+			}
+		}
+	}
+
+	if s, ok := ReadSettingsFile(); ok {
+		mappings = s.Mappings
+		comp := class + "/" + ctype
+		if override, found := s.ComponentOverrides[comp]; found {
+			*configType = override.ConfigName
+		}
+		allowedRefs = s.AllowedRefs
+	}
+
+	configNameParts := strings.Split(*configType, ".")
+	if len(configNameParts) == 2 {
+		configPackage = configNameParts[0]
+		*configType = configNameParts[1]
 	}
 
 	return &Config{
-		FilePath:       filePath,
-		DirPath:        dirPath,
-		SchemaPath:     filepath.Join(dirPath, *output+ext),
-		SchemaIDPrefix: *id,
-		RootTypeName:   *rootType,
-		FileType:       *fileType,
+		DirPath:       dirPath,
+		OutputFolder:  output,
+		ConfigPackage: configPackage,
+		ConfigType:    *configType,
+		FileType:      *fileType,
+		Mode:          mode,
+		Mappings:      mappings,
+		Class:         class,
+		AllowedRefs:   allowedRefs,
 	}, nil
-}
-
-func toPascalCase(s string) string {
-	parts := strings.Split(s, "_")
-	for i, part := range parts {
-		if part != "" {
-			parts[i] = strings.ToUpper(part[:1]) + part[1:]
-		}
-	}
-	return strings.Join(parts, "")
 }

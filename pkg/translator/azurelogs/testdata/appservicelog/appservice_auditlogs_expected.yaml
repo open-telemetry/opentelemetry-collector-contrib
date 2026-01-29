@@ -15,16 +15,6 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: network.protocol.name
-                    value:
-                      stringValue: kudu
-                  - key: properties
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: UserDisplayName
-                            value:
-                              stringValue: $fbehtestapp
                   - key: category
                     value:
                       stringValue: AppServiceAuditLogs
@@ -37,6 +27,17 @@ resourceLogs:
                   - key: client.address
                     value:
                       stringValue: 42.42.42.42
+                  - key: network.protocol.name
+                    value:
+                      stringValue: kudu
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: UserDisplayName
+                            value:
+                              stringValue: $fbehtestapp
+            observedTimeUnixNano: "1766081218374183000"
             timeUnixNano: "1713960080842740000"
         scope:
           name: otelcol/azureresourcelogs

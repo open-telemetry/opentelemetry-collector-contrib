@@ -18,7 +18,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               aggregationTemporality: AGGREGATION_TEMPORALITY_CUMULATIVE
               isMonotonic: true
-            unit: "{error}"
+            unit: "{errors}"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver
           version: latest

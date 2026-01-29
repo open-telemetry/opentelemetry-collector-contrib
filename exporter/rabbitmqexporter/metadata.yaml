@@ -1,4 +1,5 @@
 type: rabbitmq
+display_name: RabbitMQ Exporter
 
 status:
   class: exporter

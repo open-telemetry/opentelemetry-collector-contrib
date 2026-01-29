@@ -20,7 +20,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -46,10 +48,10 @@ var (
 	}
 
 	defaultPeerAttributes = []string{
-		string(conventions.PeerServiceKey), string(conventions.DBNameKey), string(conventions.DBSystemKey),
+		string(conventions.PeerServiceKey), string(conventionsv125.DBNameKey), string(conventionsv128.DBSystemKey),
 	}
 
-	defaultDatabaseNameAttributes = []string{string(conventions.DBNameKey)}
+	defaultDatabaseNameAttributes = []string{string(conventionsv125.DBNameKey)}
 
 	defaultMetricsFlushInterval = 60 * time.Second // 1 DPM
 )
@@ -93,10 +95,6 @@ type serviceGraphConnector struct {
 
 func newConnector(set component.TelemetrySettings, config component.Config, next consumer.Metrics) (*serviceGraphConnector, error) {
 	pConfig := config.(*Config)
-
-	if pConfig.MetricsExporter != "" {
-		set.Logger.Warn("'metrics_exporter' is deprecated and will be removed in a future release. Please remove it from the configuration.")
-	}
 
 	var bounds []float64
 	if pConfig.ExponentialHistogramMaxSize == 0 {

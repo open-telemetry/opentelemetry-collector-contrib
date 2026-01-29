@@ -99,7 +99,7 @@ type DetectorConfig struct {
 	// OpenShift contains user-specified configurations for the OpenShift detector
 	OpenShiftConfig openshift.Config `mapstructure:"openshift"`
 
-	// OpenShift contains user-specified configurations for the OpenShift detector
+	// OpenStackNovaConfig contains user-specified configurations for the OpenStackNova detector
 	OpenStackNovaConfig nova.Config `mapstructure:"nova"`
 
 	// OracleCloud contains user-specified configurations for the OracleCloud detector
@@ -114,7 +114,7 @@ type DetectorConfig struct {
 	// AkamaiConfig contains user-specified configurations for the akamai detector
 	AkamaiConfig akamai.Config `mapstructure:"akamai"`
 
-	// ScalewayConfig contains user-specified configurations for the akamai detector
+	// ScalewayConfig contains user-specified configurations for the scaleway detector
 	ScalewayConfig scaleway.Config `mapstructure:"scaleway"`
 
 	// UpcloudConfig contains user-specified configurations for the upcloud detector

@@ -1,7 +1,9 @@
 default:
 all_set:
   metrics:
-    systemd.unit.cpu.time:
+    systemd.service.cpu.time:
+      enabled: true
+    systemd.service.restarts:
       enabled: true
     systemd.unit.state:
       enabled: true
@@ -10,7 +12,9 @@ all_set:
       enabled: true
 none_set:
   metrics:
-    systemd.unit.cpu.time:
+    systemd.service.cpu.time:
+      enabled: false
+    systemd.service.restarts:
       enabled: false
     systemd.unit.state:
       enabled: false

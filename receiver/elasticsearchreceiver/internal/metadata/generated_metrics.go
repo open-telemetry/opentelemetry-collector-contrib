@@ -960,6 +960,7 @@ func (m *metricElasticsearchBreakerMemoryEstimated) emit(metrics pmetric.MetricS
 
 func newMetricElasticsearchBreakerMemoryEstimated(cfg MetricConfig) metricElasticsearchBreakerMemoryEstimated {
 	m := metricElasticsearchBreakerMemoryEstimated{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1013,6 +1014,7 @@ func (m *metricElasticsearchBreakerMemoryLimit) emit(metrics pmetric.MetricSlice
 
 func newMetricElasticsearchBreakerMemoryLimit(cfg MetricConfig) metricElasticsearchBreakerMemoryLimit {
 	m := metricElasticsearchBreakerMemoryLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1066,6 +1068,7 @@ func (m *metricElasticsearchBreakerTripped) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchBreakerTripped(cfg MetricConfig) metricElasticsearchBreakerTripped {
 	m := metricElasticsearchBreakerTripped{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1117,6 +1120,7 @@ func (m *metricElasticsearchClusterDataNodes) emit(metrics pmetric.MetricSlice) 
 
 func newMetricElasticsearchClusterDataNodes(cfg MetricConfig) metricElasticsearchClusterDataNodes {
 	m := metricElasticsearchClusterDataNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1170,6 +1174,7 @@ func (m *metricElasticsearchClusterHealth) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchClusterHealth(cfg MetricConfig) metricElasticsearchClusterHealth {
 	m := metricElasticsearchClusterHealth{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1221,6 +1226,7 @@ func (m *metricElasticsearchClusterInFlightFetch) emit(metrics pmetric.MetricSli
 
 func newMetricElasticsearchClusterInFlightFetch(cfg MetricConfig) metricElasticsearchClusterInFlightFetch {
 	m := metricElasticsearchClusterInFlightFetch{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1274,6 +1280,7 @@ func (m *metricElasticsearchClusterIndicesCacheEvictions) emit(metrics pmetric.M
 
 func newMetricElasticsearchClusterIndicesCacheEvictions(cfg MetricConfig) metricElasticsearchClusterIndicesCacheEvictions {
 	m := metricElasticsearchClusterIndicesCacheEvictions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1325,6 +1332,7 @@ func (m *metricElasticsearchClusterNodes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchClusterNodes(cfg MetricConfig) metricElasticsearchClusterNodes {
 	m := metricElasticsearchClusterNodes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1376,6 +1384,7 @@ func (m *metricElasticsearchClusterPendingTasks) emit(metrics pmetric.MetricSlic
 
 func newMetricElasticsearchClusterPendingTasks(cfg MetricConfig) metricElasticsearchClusterPendingTasks {
 	m := metricElasticsearchClusterPendingTasks{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1429,6 +1438,7 @@ func (m *metricElasticsearchClusterPublishedStatesDifferences) emit(metrics pmet
 
 func newMetricElasticsearchClusterPublishedStatesDifferences(cfg MetricConfig) metricElasticsearchClusterPublishedStatesDifferences {
 	m := metricElasticsearchClusterPublishedStatesDifferences{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1480,6 +1490,7 @@ func (m *metricElasticsearchClusterPublishedStatesFull) emit(metrics pmetric.Met
 
 func newMetricElasticsearchClusterPublishedStatesFull(cfg MetricConfig) metricElasticsearchClusterPublishedStatesFull {
 	m := metricElasticsearchClusterPublishedStatesFull{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1533,6 +1544,7 @@ func (m *metricElasticsearchClusterShards) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchClusterShards(cfg MetricConfig) metricElasticsearchClusterShards {
 	m := metricElasticsearchClusterShards{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1586,6 +1598,7 @@ func (m *metricElasticsearchClusterStateQueue) emit(metrics pmetric.MetricSlice)
 
 func newMetricElasticsearchClusterStateQueue(cfg MetricConfig) metricElasticsearchClusterStateQueue {
 	m := metricElasticsearchClusterStateQueue{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1639,6 +1652,7 @@ func (m *metricElasticsearchClusterStateUpdateCount) emit(metrics pmetric.Metric
 
 func newMetricElasticsearchClusterStateUpdateCount(cfg MetricConfig) metricElasticsearchClusterStateUpdateCount {
 	m := metricElasticsearchClusterStateUpdateCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1693,6 +1707,7 @@ func (m *metricElasticsearchClusterStateUpdateTime) emit(metrics pmetric.MetricS
 
 func newMetricElasticsearchClusterStateUpdateTime(cfg MetricConfig) metricElasticsearchClusterStateUpdateTime {
 	m := metricElasticsearchClusterStateUpdateTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1747,6 +1762,7 @@ func (m *metricElasticsearchIndexCacheEvictions) emit(metrics pmetric.MetricSlic
 
 func newMetricElasticsearchIndexCacheEvictions(cfg MetricConfig) metricElasticsearchIndexCacheEvictions {
 	m := metricElasticsearchIndexCacheEvictions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1801,6 +1817,7 @@ func (m *metricElasticsearchIndexCacheMemoryUsage) emit(metrics pmetric.MetricSl
 
 func newMetricElasticsearchIndexCacheMemoryUsage(cfg MetricConfig) metricElasticsearchIndexCacheMemoryUsage {
 	m := metricElasticsearchIndexCacheMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1854,6 +1871,7 @@ func (m *metricElasticsearchIndexCacheSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchIndexCacheSize(cfg MetricConfig) metricElasticsearchIndexCacheSize {
 	m := metricElasticsearchIndexCacheSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1908,6 +1926,7 @@ func (m *metricElasticsearchIndexDocuments) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchIndexDocuments(cfg MetricConfig) metricElasticsearchIndexDocuments {
 	m := metricElasticsearchIndexDocuments{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1962,6 +1981,7 @@ func (m *metricElasticsearchIndexOperationsCompleted) emit(metrics pmetric.Metri
 
 func newMetricElasticsearchIndexOperationsCompleted(cfg MetricConfig) metricElasticsearchIndexOperationsCompleted {
 	m := metricElasticsearchIndexOperationsCompleted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2013,6 +2033,7 @@ func (m *metricElasticsearchIndexOperationsMergeCurrent) emit(metrics pmetric.Me
 
 func newMetricElasticsearchIndexOperationsMergeCurrent(cfg MetricConfig) metricElasticsearchIndexOperationsMergeCurrent {
 	m := metricElasticsearchIndexOperationsMergeCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2066,6 +2087,7 @@ func (m *metricElasticsearchIndexOperationsMergeDocsCount) emit(metrics pmetric.
 
 func newMetricElasticsearchIndexOperationsMergeDocsCount(cfg MetricConfig) metricElasticsearchIndexOperationsMergeDocsCount {
 	m := metricElasticsearchIndexOperationsMergeDocsCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2119,6 +2141,7 @@ func (m *metricElasticsearchIndexOperationsMergeSize) emit(metrics pmetric.Metri
 
 func newMetricElasticsearchIndexOperationsMergeSize(cfg MetricConfig) metricElasticsearchIndexOperationsMergeSize {
 	m := metricElasticsearchIndexOperationsMergeSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2173,6 +2196,7 @@ func (m *metricElasticsearchIndexOperationsTime) emit(metrics pmetric.MetricSlic
 
 func newMetricElasticsearchIndexOperationsTime(cfg MetricConfig) metricElasticsearchIndexOperationsTime {
 	m := metricElasticsearchIndexOperationsTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2226,6 +2250,7 @@ func (m *metricElasticsearchIndexSegmentsCount) emit(metrics pmetric.MetricSlice
 
 func newMetricElasticsearchIndexSegmentsCount(cfg MetricConfig) metricElasticsearchIndexSegmentsCount {
 	m := metricElasticsearchIndexSegmentsCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2280,6 +2305,7 @@ func (m *metricElasticsearchIndexSegmentsMemory) emit(metrics pmetric.MetricSlic
 
 func newMetricElasticsearchIndexSegmentsMemory(cfg MetricConfig) metricElasticsearchIndexSegmentsMemory {
 	m := metricElasticsearchIndexSegmentsMemory{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2333,6 +2359,7 @@ func (m *metricElasticsearchIndexSegmentsSize) emit(metrics pmetric.MetricSlice)
 
 func newMetricElasticsearchIndexSegmentsSize(cfg MetricConfig) metricElasticsearchIndexSegmentsSize {
 	m := metricElasticsearchIndexSegmentsSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2386,6 +2413,7 @@ func (m *metricElasticsearchIndexShardsSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchIndexShardsSize(cfg MetricConfig) metricElasticsearchIndexShardsSize {
 	m := metricElasticsearchIndexShardsSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2439,6 +2467,7 @@ func (m *metricElasticsearchIndexTranslogOperations) emit(metrics pmetric.Metric
 
 func newMetricElasticsearchIndexTranslogOperations(cfg MetricConfig) metricElasticsearchIndexTranslogOperations {
 	m := metricElasticsearchIndexTranslogOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2492,6 +2521,7 @@ func (m *metricElasticsearchIndexTranslogSize) emit(metrics pmetric.MetricSlice)
 
 func newMetricElasticsearchIndexTranslogSize(cfg MetricConfig) metricElasticsearchIndexTranslogSize {
 	m := metricElasticsearchIndexTranslogSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2541,6 +2571,7 @@ func (m *metricElasticsearchIndexingPressureMemoryLimit) emit(metrics pmetric.Me
 
 func newMetricElasticsearchIndexingPressureMemoryLimit(cfg MetricConfig) metricElasticsearchIndexingPressureMemoryLimit {
 	m := metricElasticsearchIndexingPressureMemoryLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2592,6 +2623,7 @@ func (m *metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections) emit(m
 
 func newMetricElasticsearchIndexingPressureMemoryTotalPrimaryRejections(cfg MetricConfig) metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections {
 	m := metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2643,6 +2675,7 @@ func (m *metricElasticsearchIndexingPressureMemoryTotalReplicaRejections) emit(m
 
 func newMetricElasticsearchIndexingPressureMemoryTotalReplicaRejections(cfg MetricConfig) metricElasticsearchIndexingPressureMemoryTotalReplicaRejections {
 	m := metricElasticsearchIndexingPressureMemoryTotalReplicaRejections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2696,6 +2729,7 @@ func (m *metricElasticsearchMemoryIndexingPressure) emit(metrics pmetric.MetricS
 
 func newMetricElasticsearchMemoryIndexingPressure(cfg MetricConfig) metricElasticsearchMemoryIndexingPressure {
 	m := metricElasticsearchMemoryIndexingPressure{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2749,6 +2783,7 @@ func (m *metricElasticsearchNodeCacheCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchNodeCacheCount(cfg MetricConfig) metricElasticsearchNodeCacheCount {
 	m := metricElasticsearchNodeCacheCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2802,6 +2837,7 @@ func (m *metricElasticsearchNodeCacheEvictions) emit(metrics pmetric.MetricSlice
 
 func newMetricElasticsearchNodeCacheEvictions(cfg MetricConfig) metricElasticsearchNodeCacheEvictions {
 	m := metricElasticsearchNodeCacheEvictions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2855,6 +2891,7 @@ func (m *metricElasticsearchNodeCacheMemoryUsage) emit(metrics pmetric.MetricSli
 
 func newMetricElasticsearchNodeCacheMemoryUsage(cfg MetricConfig) metricElasticsearchNodeCacheMemoryUsage {
 	m := metricElasticsearchNodeCacheMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2906,6 +2943,7 @@ func (m *metricElasticsearchNodeCacheSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchNodeCacheSize(cfg MetricConfig) metricElasticsearchNodeCacheSize {
 	m := metricElasticsearchNodeCacheSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2957,6 +2995,7 @@ func (m *metricElasticsearchNodeClusterConnections) emit(metrics pmetric.MetricS
 
 func newMetricElasticsearchNodeClusterConnections(cfg MetricConfig) metricElasticsearchNodeClusterConnections {
 	m := metricElasticsearchNodeClusterConnections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3010,6 +3049,7 @@ func (m *metricElasticsearchNodeClusterIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchNodeClusterIo(cfg MetricConfig) metricElasticsearchNodeClusterIo {
 	m := metricElasticsearchNodeClusterIo{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3061,6 +3101,7 @@ func (m *metricElasticsearchNodeDiskIoRead) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchNodeDiskIoRead(cfg MetricConfig) metricElasticsearchNodeDiskIoRead {
 	m := metricElasticsearchNodeDiskIoRead{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3112,6 +3153,7 @@ func (m *metricElasticsearchNodeDiskIoWrite) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchNodeDiskIoWrite(cfg MetricConfig) metricElasticsearchNodeDiskIoWrite {
 	m := metricElasticsearchNodeDiskIoWrite{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3165,6 +3207,7 @@ func (m *metricElasticsearchNodeDocuments) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchNodeDocuments(cfg MetricConfig) metricElasticsearchNodeDocuments {
 	m := metricElasticsearchNodeDocuments{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3216,6 +3259,7 @@ func (m *metricElasticsearchNodeFsDiskAvailable) emit(metrics pmetric.MetricSlic
 
 func newMetricElasticsearchNodeFsDiskAvailable(cfg MetricConfig) metricElasticsearchNodeFsDiskAvailable {
 	m := metricElasticsearchNodeFsDiskAvailable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3267,6 +3311,7 @@ func (m *metricElasticsearchNodeFsDiskFree) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchNodeFsDiskFree(cfg MetricConfig) metricElasticsearchNodeFsDiskFree {
 	m := metricElasticsearchNodeFsDiskFree{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3318,6 +3363,7 @@ func (m *metricElasticsearchNodeFsDiskTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchNodeFsDiskTotal(cfg MetricConfig) metricElasticsearchNodeFsDiskTotal {
 	m := metricElasticsearchNodeFsDiskTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3369,6 +3415,7 @@ func (m *metricElasticsearchNodeHTTPConnections) emit(metrics pmetric.MetricSlic
 
 func newMetricElasticsearchNodeHTTPConnections(cfg MetricConfig) metricElasticsearchNodeHTTPConnections {
 	m := metricElasticsearchNodeHTTPConnections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3420,6 +3467,7 @@ func (m *metricElasticsearchNodeIngestDocuments) emit(metrics pmetric.MetricSlic
 
 func newMetricElasticsearchNodeIngestDocuments(cfg MetricConfig) metricElasticsearchNodeIngestDocuments {
 	m := metricElasticsearchNodeIngestDocuments{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3471,6 +3519,7 @@ func (m *metricElasticsearchNodeIngestDocumentsCurrent) emit(metrics pmetric.Met
 
 func newMetricElasticsearchNodeIngestDocumentsCurrent(cfg MetricConfig) metricElasticsearchNodeIngestDocumentsCurrent {
 	m := metricElasticsearchNodeIngestDocumentsCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3522,6 +3571,7 @@ func (m *metricElasticsearchNodeIngestOperationsFailed) emit(metrics pmetric.Met
 
 func newMetricElasticsearchNodeIngestOperationsFailed(cfg MetricConfig) metricElasticsearchNodeIngestOperationsFailed {
 	m := metricElasticsearchNodeIngestOperationsFailed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3573,6 +3623,7 @@ func (m *metricElasticsearchNodeOpenFiles) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchNodeOpenFiles(cfg MetricConfig) metricElasticsearchNodeOpenFiles {
 	m := metricElasticsearchNodeOpenFiles{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3626,6 +3677,7 @@ func (m *metricElasticsearchNodeOperationsCompleted) emit(metrics pmetric.Metric
 
 func newMetricElasticsearchNodeOperationsCompleted(cfg MetricConfig) metricElasticsearchNodeOperationsCompleted {
 	m := metricElasticsearchNodeOperationsCompleted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3677,6 +3729,7 @@ func (m *metricElasticsearchNodeOperationsCurrent) emit(metrics pmetric.MetricSl
 
 func newMetricElasticsearchNodeOperationsCurrent(cfg MetricConfig) metricElasticsearchNodeOperationsCurrent {
 	m := metricElasticsearchNodeOperationsCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3730,6 +3783,7 @@ func (m *metricElasticsearchNodeOperationsGetCompleted) emit(metrics pmetric.Met
 
 func newMetricElasticsearchNodeOperationsGetCompleted(cfg MetricConfig) metricElasticsearchNodeOperationsGetCompleted {
 	m := metricElasticsearchNodeOperationsGetCompleted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3783,6 +3837,7 @@ func (m *metricElasticsearchNodeOperationsGetTime) emit(metrics pmetric.MetricSl
 
 func newMetricElasticsearchNodeOperationsGetTime(cfg MetricConfig) metricElasticsearchNodeOperationsGetTime {
 	m := metricElasticsearchNodeOperationsGetTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3836,6 +3891,7 @@ func (m *metricElasticsearchNodeOperationsTime) emit(metrics pmetric.MetricSlice
 
 func newMetricElasticsearchNodeOperationsTime(cfg MetricConfig) metricElasticsearchNodeOperationsTime {
 	m := metricElasticsearchNodeOperationsTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3889,6 +3945,7 @@ func (m *metricElasticsearchNodePipelineIngestDocumentsCurrent) emit(metrics pme
 
 func newMetricElasticsearchNodePipelineIngestDocumentsCurrent(cfg MetricConfig) metricElasticsearchNodePipelineIngestDocumentsCurrent {
 	m := metricElasticsearchNodePipelineIngestDocumentsCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3942,6 +3999,7 @@ func (m *metricElasticsearchNodePipelineIngestDocumentsPreprocessed) emit(metric
 
 func newMetricElasticsearchNodePipelineIngestDocumentsPreprocessed(cfg MetricConfig) metricElasticsearchNodePipelineIngestDocumentsPreprocessed {
 	m := metricElasticsearchNodePipelineIngestDocumentsPreprocessed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3995,6 +4053,7 @@ func (m *metricElasticsearchNodePipelineIngestOperationsFailed) emit(metrics pme
 
 func newMetricElasticsearchNodePipelineIngestOperationsFailed(cfg MetricConfig) metricElasticsearchNodePipelineIngestOperationsFailed {
 	m := metricElasticsearchNodePipelineIngestOperationsFailed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4046,6 +4105,7 @@ func (m *metricElasticsearchNodeScriptCacheEvictions) emit(metrics pmetric.Metri
 
 func newMetricElasticsearchNodeScriptCacheEvictions(cfg MetricConfig) metricElasticsearchNodeScriptCacheEvictions {
 	m := metricElasticsearchNodeScriptCacheEvictions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4097,6 +4157,7 @@ func (m *metricElasticsearchNodeScriptCompilationLimitTriggered) emit(metrics pm
 
 func newMetricElasticsearchNodeScriptCompilationLimitTriggered(cfg MetricConfig) metricElasticsearchNodeScriptCompilationLimitTriggered {
 	m := metricElasticsearchNodeScriptCompilationLimitTriggered{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4148,6 +4209,7 @@ func (m *metricElasticsearchNodeScriptCompilations) emit(metrics pmetric.MetricS
 
 func newMetricElasticsearchNodeScriptCompilations(cfg MetricConfig) metricElasticsearchNodeScriptCompilations {
 	m := metricElasticsearchNodeScriptCompilations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4201,6 +4263,7 @@ func (m *metricElasticsearchNodeSegmentsMemory) emit(metrics pmetric.MetricSlice
 
 func newMetricElasticsearchNodeSegmentsMemory(cfg MetricConfig) metricElasticsearchNodeSegmentsMemory {
 	m := metricElasticsearchNodeSegmentsMemory{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4252,6 +4315,7 @@ func (m *metricElasticsearchNodeShardsDataSetSize) emit(metrics pmetric.MetricSl
 
 func newMetricElasticsearchNodeShardsDataSetSize(cfg MetricConfig) metricElasticsearchNodeShardsDataSetSize {
 	m := metricElasticsearchNodeShardsDataSetSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4303,6 +4367,7 @@ func (m *metricElasticsearchNodeShardsReservedSize) emit(metrics pmetric.MetricS
 
 func newMetricElasticsearchNodeShardsReservedSize(cfg MetricConfig) metricElasticsearchNodeShardsReservedSize {
 	m := metricElasticsearchNodeShardsReservedSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4354,6 +4419,7 @@ func (m *metricElasticsearchNodeShardsSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchNodeShardsSize(cfg MetricConfig) metricElasticsearchNodeShardsSize {
 	m := metricElasticsearchNodeShardsSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4408,6 +4474,7 @@ func (m *metricElasticsearchNodeThreadPoolTasksFinished) emit(metrics pmetric.Me
 
 func newMetricElasticsearchNodeThreadPoolTasksFinished(cfg MetricConfig) metricElasticsearchNodeThreadPoolTasksFinished {
 	m := metricElasticsearchNodeThreadPoolTasksFinished{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4461,6 +4528,7 @@ func (m *metricElasticsearchNodeThreadPoolTasksQueued) emit(metrics pmetric.Metr
 
 func newMetricElasticsearchNodeThreadPoolTasksQueued(cfg MetricConfig) metricElasticsearchNodeThreadPoolTasksQueued {
 	m := metricElasticsearchNodeThreadPoolTasksQueued{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4515,6 +4583,7 @@ func (m *metricElasticsearchNodeThreadPoolThreads) emit(metrics pmetric.MetricSl
 
 func newMetricElasticsearchNodeThreadPoolThreads(cfg MetricConfig) metricElasticsearchNodeThreadPoolThreads {
 	m := metricElasticsearchNodeThreadPoolThreads{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4566,6 +4635,7 @@ func (m *metricElasticsearchNodeTranslogOperations) emit(metrics pmetric.MetricS
 
 func newMetricElasticsearchNodeTranslogOperations(cfg MetricConfig) metricElasticsearchNodeTranslogOperations {
 	m := metricElasticsearchNodeTranslogOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4617,6 +4687,7 @@ func (m *metricElasticsearchNodeTranslogSize) emit(metrics pmetric.MetricSlice) 
 
 func newMetricElasticsearchNodeTranslogSize(cfg MetricConfig) metricElasticsearchNodeTranslogSize {
 	m := metricElasticsearchNodeTranslogSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4668,6 +4739,7 @@ func (m *metricElasticsearchNodeTranslogUncommittedSize) emit(metrics pmetric.Me
 
 func newMetricElasticsearchNodeTranslogUncommittedSize(cfg MetricConfig) metricElasticsearchNodeTranslogUncommittedSize {
 	m := metricElasticsearchNodeTranslogUncommittedSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4717,6 +4789,7 @@ func (m *metricElasticsearchOsCPULoadAvg15m) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchOsCPULoadAvg15m(cfg MetricConfig) metricElasticsearchOsCPULoadAvg15m {
 	m := metricElasticsearchOsCPULoadAvg15m{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4766,6 +4839,7 @@ func (m *metricElasticsearchOsCPULoadAvg1m) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchOsCPULoadAvg1m(cfg MetricConfig) metricElasticsearchOsCPULoadAvg1m {
 	m := metricElasticsearchOsCPULoadAvg1m{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4815,6 +4889,7 @@ func (m *metricElasticsearchOsCPULoadAvg5m) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchOsCPULoadAvg5m(cfg MetricConfig) metricElasticsearchOsCPULoadAvg5m {
 	m := metricElasticsearchOsCPULoadAvg5m{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4864,6 +4939,7 @@ func (m *metricElasticsearchOsCPUUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchOsCPUUsage(cfg MetricConfig) metricElasticsearchOsCPUUsage {
 	m := metricElasticsearchOsCPUUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4915,6 +4991,7 @@ func (m *metricElasticsearchOsMemory) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchOsMemory(cfg MetricConfig) metricElasticsearchOsMemory {
 	m := metricElasticsearchOsMemory{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4966,6 +5043,7 @@ func (m *metricElasticsearchProcessCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchProcessCPUTime(cfg MetricConfig) metricElasticsearchProcessCPUTime {
 	m := metricElasticsearchProcessCPUTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5015,6 +5093,7 @@ func (m *metricElasticsearchProcessCPUUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchProcessCPUUsage(cfg MetricConfig) metricElasticsearchProcessCPUUsage {
 	m := metricElasticsearchProcessCPUUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5066,6 +5145,7 @@ func (m *metricElasticsearchProcessMemoryVirtual) emit(metrics pmetric.MetricSli
 
 func newMetricElasticsearchProcessMemoryVirtual(cfg MetricConfig) metricElasticsearchProcessMemoryVirtual {
 	m := metricElasticsearchProcessMemoryVirtual{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5115,6 +5195,7 @@ func (m *metricJvmClassesLoaded) emit(metrics pmetric.MetricSlice) {
 
 func newMetricJvmClassesLoaded(cfg MetricConfig) metricJvmClassesLoaded {
 	m := metricJvmClassesLoaded{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5168,6 +5249,7 @@ func (m *metricJvmGcCollectionsCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricJvmGcCollectionsCount(cfg MetricConfig) metricJvmGcCollectionsCount {
 	m := metricJvmGcCollectionsCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5221,6 +5303,7 @@ func (m *metricJvmGcCollectionsElapsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricJvmGcCollectionsElapsed(cfg MetricConfig) metricJvmGcCollectionsElapsed {
 	m := metricJvmGcCollectionsElapsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5270,6 +5353,7 @@ func (m *metricJvmMemoryHeapCommitted) emit(metrics pmetric.MetricSlice) {
 
 func newMetricJvmMemoryHeapCommitted(cfg MetricConfig) metricJvmMemoryHeapCommitted {
 	m := metricJvmMemoryHeapCommitted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5319,6 +5403,7 @@ func (m *metricJvmMemoryHeapMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricJvmMemoryHeapMax(cfg MetricConfig) metricJvmMemoryHeapMax {
 	m := metricJvmMemoryHeapMax{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5368,6 +5453,7 @@ func (m *metricJvmMemoryHeapUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricJvmMemoryHeapUsed(cfg MetricConfig) metricJvmMemoryHeapUsed {
 	m := metricJvmMemoryHeapUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5417,6 +5503,7 @@ func (m *metricJvmMemoryHeapUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricJvmMemoryHeapUtilization(cfg MetricConfig) metricJvmMemoryHeapUtilization {
 	m := metricJvmMemoryHeapUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5466,6 +5553,7 @@ func (m *metricJvmMemoryNonheapCommitted) emit(metrics pmetric.MetricSlice) {
 
 func newMetricJvmMemoryNonheapCommitted(cfg MetricConfig) metricJvmMemoryNonheapCommitted {
 	m := metricJvmMemoryNonheapCommitted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5515,6 +5603,7 @@ func (m *metricJvmMemoryNonheapUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricJvmMemoryNonheapUsed(cfg MetricConfig) metricJvmMemoryNonheapUsed {
 	m := metricJvmMemoryNonheapUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5566,6 +5655,7 @@ func (m *metricJvmMemoryPoolMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricJvmMemoryPoolMax(cfg MetricConfig) metricJvmMemoryPoolMax {
 	m := metricJvmMemoryPoolMax{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5617,6 +5707,7 @@ func (m *metricJvmMemoryPoolUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricJvmMemoryPoolUsed(cfg MetricConfig) metricJvmMemoryPoolUsed {
 	m := metricJvmMemoryPoolUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5666,6 +5757,7 @@ func (m *metricJvmThreadsCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricJvmThreadsCount(cfg MetricConfig) metricJvmThreadsCount {
 	m := metricJvmThreadsCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

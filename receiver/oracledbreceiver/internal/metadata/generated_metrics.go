@@ -236,6 +236,7 @@ func (m *metricOracledbConsistentGets) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbConsistentGets(cfg MetricConfig) metricOracledbConsistentGets {
 	m := metricOracledbConsistentGets{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -287,6 +288,7 @@ func (m *metricOracledbCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbCPUTime(cfg MetricConfig) metricOracledbCPUTime {
 	m := metricOracledbCPUTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -338,6 +340,7 @@ func (m *metricOracledbDbBlockGets) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbDbBlockGets(cfg MetricConfig) metricOracledbDbBlockGets {
 	m := metricOracledbDbBlockGets{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -389,6 +392,7 @@ func (m *metricOracledbDdlStatementsParallelized) emit(metrics pmetric.MetricSli
 
 func newMetricOracledbDdlStatementsParallelized(cfg MetricConfig) metricOracledbDdlStatementsParallelized {
 	m := metricOracledbDdlStatementsParallelized{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -438,6 +442,7 @@ func (m *metricOracledbDmlLocksLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbDmlLocksLimit(cfg MetricConfig) metricOracledbDmlLocksLimit {
 	m := metricOracledbDmlLocksLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -487,6 +492,7 @@ func (m *metricOracledbDmlLocksUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbDmlLocksUsage(cfg MetricConfig) metricOracledbDmlLocksUsage {
 	m := metricOracledbDmlLocksUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -538,6 +544,7 @@ func (m *metricOracledbDmlStatementsParallelized) emit(metrics pmetric.MetricSli
 
 func newMetricOracledbDmlStatementsParallelized(cfg MetricConfig) metricOracledbDmlStatementsParallelized {
 	m := metricOracledbDmlStatementsParallelized{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -589,6 +596,7 @@ func (m *metricOracledbEnqueueDeadlocks) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbEnqueueDeadlocks(cfg MetricConfig) metricOracledbEnqueueDeadlocks {
 	m := metricOracledbEnqueueDeadlocks{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -638,6 +646,7 @@ func (m *metricOracledbEnqueueLocksLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbEnqueueLocksLimit(cfg MetricConfig) metricOracledbEnqueueLocksLimit {
 	m := metricOracledbEnqueueLocksLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -687,6 +696,7 @@ func (m *metricOracledbEnqueueLocksUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbEnqueueLocksUsage(cfg MetricConfig) metricOracledbEnqueueLocksUsage {
 	m := metricOracledbEnqueueLocksUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -736,6 +746,7 @@ func (m *metricOracledbEnqueueResourcesLimit) emit(metrics pmetric.MetricSlice) 
 
 func newMetricOracledbEnqueueResourcesLimit(cfg MetricConfig) metricOracledbEnqueueResourcesLimit {
 	m := metricOracledbEnqueueResourcesLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -785,6 +796,7 @@ func (m *metricOracledbEnqueueResourcesUsage) emit(metrics pmetric.MetricSlice) 
 
 func newMetricOracledbEnqueueResourcesUsage(cfg MetricConfig) metricOracledbEnqueueResourcesUsage {
 	m := metricOracledbEnqueueResourcesUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -836,6 +848,7 @@ func (m *metricOracledbExchangeDeadlocks) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbExchangeDeadlocks(cfg MetricConfig) metricOracledbExchangeDeadlocks {
 	m := metricOracledbExchangeDeadlocks{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -887,6 +900,7 @@ func (m *metricOracledbExecutions) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbExecutions(cfg MetricConfig) metricOracledbExecutions {
 	m := metricOracledbExecutions{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -938,6 +952,7 @@ func (m *metricOracledbHardParses) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbHardParses(cfg MetricConfig) metricOracledbHardParses {
 	m := metricOracledbHardParses{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -989,6 +1004,7 @@ func (m *metricOracledbLogicalReads) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbLogicalReads(cfg MetricConfig) metricOracledbLogicalReads {
 	m := metricOracledbLogicalReads{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1040,6 +1056,7 @@ func (m *metricOracledbLogons) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbLogons(cfg MetricConfig) metricOracledbLogons {
 	m := metricOracledbLogons{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1091,6 +1108,7 @@ func (m *metricOracledbParallelOperationsDowngraded1To25Pct) emit(metrics pmetri
 
 func newMetricOracledbParallelOperationsDowngraded1To25Pct(cfg MetricConfig) metricOracledbParallelOperationsDowngraded1To25Pct {
 	m := metricOracledbParallelOperationsDowngraded1To25Pct{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1142,6 +1160,7 @@ func (m *metricOracledbParallelOperationsDowngraded25To50Pct) emit(metrics pmetr
 
 func newMetricOracledbParallelOperationsDowngraded25To50Pct(cfg MetricConfig) metricOracledbParallelOperationsDowngraded25To50Pct {
 	m := metricOracledbParallelOperationsDowngraded25To50Pct{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1193,6 +1212,7 @@ func (m *metricOracledbParallelOperationsDowngraded50To75Pct) emit(metrics pmetr
 
 func newMetricOracledbParallelOperationsDowngraded50To75Pct(cfg MetricConfig) metricOracledbParallelOperationsDowngraded50To75Pct {
 	m := metricOracledbParallelOperationsDowngraded50To75Pct{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1244,6 +1264,7 @@ func (m *metricOracledbParallelOperationsDowngraded75To99Pct) emit(metrics pmetr
 
 func newMetricOracledbParallelOperationsDowngraded75To99Pct(cfg MetricConfig) metricOracledbParallelOperationsDowngraded75To99Pct {
 	m := metricOracledbParallelOperationsDowngraded75To99Pct{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1295,6 +1316,7 @@ func (m *metricOracledbParallelOperationsDowngradedToSerial) emit(metrics pmetri
 
 func newMetricOracledbParallelOperationsDowngradedToSerial(cfg MetricConfig) metricOracledbParallelOperationsDowngradedToSerial {
 	m := metricOracledbParallelOperationsDowngradedToSerial{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1346,6 +1368,7 @@ func (m *metricOracledbParallelOperationsNotDowngraded) emit(metrics pmetric.Met
 
 func newMetricOracledbParallelOperationsNotDowngraded(cfg MetricConfig) metricOracledbParallelOperationsNotDowngraded {
 	m := metricOracledbParallelOperationsNotDowngraded{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1397,6 +1420,7 @@ func (m *metricOracledbParseCalls) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbParseCalls(cfg MetricConfig) metricOracledbParseCalls {
 	m := metricOracledbParseCalls{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1448,6 +1472,7 @@ func (m *metricOracledbPgaMemory) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbPgaMemory(cfg MetricConfig) metricOracledbPgaMemory {
 	m := metricOracledbPgaMemory{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1499,6 +1524,7 @@ func (m *metricOracledbPhysicalReadIoRequests) emit(metrics pmetric.MetricSlice)
 
 func newMetricOracledbPhysicalReadIoRequests(cfg MetricConfig) metricOracledbPhysicalReadIoRequests {
 	m := metricOracledbPhysicalReadIoRequests{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1550,6 +1576,7 @@ func (m *metricOracledbPhysicalReads) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbPhysicalReads(cfg MetricConfig) metricOracledbPhysicalReads {
 	m := metricOracledbPhysicalReads{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1601,6 +1628,7 @@ func (m *metricOracledbPhysicalReadsDirect) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbPhysicalReadsDirect(cfg MetricConfig) metricOracledbPhysicalReadsDirect {
 	m := metricOracledbPhysicalReadsDirect{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1652,6 +1680,7 @@ func (m *metricOracledbPhysicalWriteIoRequests) emit(metrics pmetric.MetricSlice
 
 func newMetricOracledbPhysicalWriteIoRequests(cfg MetricConfig) metricOracledbPhysicalWriteIoRequests {
 	m := metricOracledbPhysicalWriteIoRequests{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1703,6 +1732,7 @@ func (m *metricOracledbPhysicalWrites) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbPhysicalWrites(cfg MetricConfig) metricOracledbPhysicalWrites {
 	m := metricOracledbPhysicalWrites{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1754,6 +1784,7 @@ func (m *metricOracledbPhysicalWritesDirect) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbPhysicalWritesDirect(cfg MetricConfig) metricOracledbPhysicalWritesDirect {
 	m := metricOracledbPhysicalWritesDirect{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1803,6 +1834,7 @@ func (m *metricOracledbProcessesLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbProcessesLimit(cfg MetricConfig) metricOracledbProcessesLimit {
 	m := metricOracledbProcessesLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1852,6 +1884,7 @@ func (m *metricOracledbProcessesUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbProcessesUsage(cfg MetricConfig) metricOracledbProcessesUsage {
 	m := metricOracledbProcessesUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1903,6 +1936,7 @@ func (m *metricOracledbQueriesParallelized) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbQueriesParallelized(cfg MetricConfig) metricOracledbQueriesParallelized {
 	m := metricOracledbQueriesParallelized{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1952,6 +1986,7 @@ func (m *metricOracledbSessionsLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbSessionsLimit(cfg MetricConfig) metricOracledbSessionsLimit {
 	m := metricOracledbSessionsLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2004,6 +2039,7 @@ func (m *metricOracledbSessionsUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbSessionsUsage(cfg MetricConfig) metricOracledbSessionsUsage {
 	m := metricOracledbSessionsUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2055,6 +2091,7 @@ func (m *metricOracledbTablespaceSizeLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbTablespaceSizeLimit(cfg MetricConfig) metricOracledbTablespaceSizeLimit {
 	m := metricOracledbTablespaceSizeLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2106,6 +2143,7 @@ func (m *metricOracledbTablespaceSizeUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbTablespaceSizeUsage(cfg MetricConfig) metricOracledbTablespaceSizeUsage {
 	m := metricOracledbTablespaceSizeUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2155,6 +2193,7 @@ func (m *metricOracledbTransactionsLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbTransactionsLimit(cfg MetricConfig) metricOracledbTransactionsLimit {
 	m := metricOracledbTransactionsLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2204,6 +2243,7 @@ func (m *metricOracledbTransactionsUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbTransactionsUsage(cfg MetricConfig) metricOracledbTransactionsUsage {
 	m := metricOracledbTransactionsUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2255,6 +2295,7 @@ func (m *metricOracledbUserCommits) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbUserCommits(cfg MetricConfig) metricOracledbUserCommits {
 	m := metricOracledbUserCommits{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2306,6 +2347,7 @@ func (m *metricOracledbUserRollbacks) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbUserRollbacks(cfg MetricConfig) metricOracledbUserRollbacks {
 	m := metricOracledbUserRollbacks{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

@@ -5,7 +5,9 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
+	conventionsv118 "go.opentelemetry.io/otel/semconv/v1.18.0"
+	conventionsv120 "go.opentelemetry.io/otel/semconv/v1.20.0"
+	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -19,16 +21,16 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 	attrs := span.Attributes()
 	if req := seg.HTTP.Request; req != nil {
 		// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-http
-		addString(req.Method, string(conventions.HTTPMethodKey), attrs)
+		addString(req.Method, string(conventionsv125.HTTPMethodKey), attrs)
 
 		if req.ClientIP != nil {
 			// since the ClientIP is not nil, this means that this segment is generated
 			// by a server serving an incoming request
-			attrs.PutStr(string(conventions.HTTPClientIPKey), *req.ClientIP)
+			attrs.PutStr(string(conventionsv120.HTTPClientIPKey), *req.ClientIP)
 		}
 
-		addString(req.UserAgent, string(conventions.HTTPUserAgentKey), attrs)
-		addString(req.URL, string(conventions.HTTPURLKey), attrs)
+		addString(req.UserAgent, string(conventionsv118.HTTPUserAgentKey), attrs)
+		addString(req.URL, string(conventionsv125.HTTPURLKey), attrs)
 		addBool(req.XForwardedFor, awsxray.AWSXRayXForwardedForAttribute, attrs)
 	}
 
@@ -40,15 +42,15 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 			// then the span status. Since we are also setting the span attribute
 			// below, the span status code here will not be actually used
 			span.Status().SetCode(otStatus)
-			attrs.PutInt(string(conventions.HTTPStatusCodeKey), *resp.Status)
+			attrs.PutInt(string(conventionsv125.HTTPStatusCodeKey), *resp.Status)
 		}
 
 		switch val := resp.ContentLength.(type) {
 		case string:
-			addString(&val, string(conventions.HTTPResponseContentLengthKey), attrs)
+			addString(&val, string(conventionsv125.HTTPResponseContentLengthKey), attrs)
 		case float64:
 			lengthPointer := int64(val)
-			addInt64(&lengthPointer, string(conventions.HTTPResponseContentLengthKey), attrs)
+			addInt64(&lengthPointer, string(conventionsv125.HTTPResponseContentLengthKey), attrs)
 		}
 	}
 }

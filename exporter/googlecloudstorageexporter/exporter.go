@@ -8,32 +8,57 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
+	"time"
 
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
+	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/googleapi"
 )
 
+type signalType string
+
+const (
+	signalTypeLogs   signalType = "logs"
+	signalTypeTraces signalType = "traces"
+)
+
+var (
+	errNotLogsMarshaler   = errors.New("extension is not a logs marshaler")
+	errNotTracesMarshaler = errors.New("extension is not a traces marshaler")
+)
+
+var validSignals = []signalType{signalTypeLogs, signalTypeTraces}
+
 type storageExporter struct {
-	cfg           *Config
-	logsMarshaler plog.Marshaler
-	storageClient *storage.Client
-	bucketHandle  *storage.BucketHandle
-	logger        *zap.Logger
+	cfg             *Config
+	logsMarshaler   plog.Marshaler
+	tracesMarshaler ptrace.Marshaler
+	storageClient   *storage.Client
+	bucketHandle    *storage.BucketHandle
+	logger          *zap.Logger
+	partitionFormat *strftime.Strftime
+	signal          signalType
 }
 
-var _ exporter.Logs = (*storageExporter)(nil)
+var (
+	_ exporter.Logs   = (*storageExporter)(nil)
+	_ exporter.Traces = (*storageExporter)(nil)
+)
 
 func newGCSExporter(
 	ctx context.Context,
 	cfg *Config,
 	logger *zap.Logger,
+	signal signalType,
 ) (*storageExporter, error) {
 	return newStorageExporter(
 		ctx,
@@ -41,6 +66,7 @@ func newGCSExporter(
 		metadata.ZoneWithContext,
 		metadata.ProjectIDWithContext,
 		logger,
+		signal,
 	)
 }
 
@@ -50,7 +76,15 @@ func newStorageExporter(
 	getZone func(context.Context) (string, error),
 	getProjectID func(context.Context) (string, error),
 	logger *zap.Logger,
+	signal signalType,
 ) (*storageExporter, error) {
+	// Validate signal type
+	switch signal {
+	case signalTypeLogs, signalTypeTraces: // valid
+	default:
+		return nil, fmt.Errorf("signal type %q not recognized, valid values are %v", signal, validSignals)
+	}
+
 	errMsg := "failed to determine %s: not set in exporter config '%s' and unable to retrieve from metadata: %w"
 
 	if cfg.Bucket.Region == "" {
@@ -67,9 +101,21 @@ func newStorageExporter(
 		}
 	}
 
+	var partitionFormat *strftime.Strftime
+	if cfg.Bucket.Partition.Format != "" {
+		var err error
+		partitionFormat, err = strftime.New(cfg.Bucket.Partition.Format)
+		if err != nil {
+			// should not happen here, prevented by config.Validate
+			return nil, fmt.Errorf("failed to parse partition format: %w", err)
+		}
+	}
+
 	return &storageExporter{
-		cfg:    cfg,
-		logger: logger,
+		cfg:             cfg,
+		logger:          logger,
+		partitionFormat: partitionFormat,
+		signal:          signal,
 	}, nil
 }
 
@@ -82,13 +128,30 @@ func isBucketConflictError(err error) bool {
 }
 
 func (s *storageExporter) Start(ctx context.Context, host component.Host) error {
+	// Initialize default marshalers
 	s.logsMarshaler = &plog.JSONMarshaler{}
+	s.tracesMarshaler = &ptrace.JSONMarshaler{}
+
+	// Load encoding extension if configured
 	if s.cfg.Encoding != nil {
-		encoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler")
-		if err != nil {
-			return fmt.Errorf("failed to load logs extension: %w", err)
+		switch s.signal {
+		case signalTypeLogs:
+			logsEncoding, err := loadExtension[plog.Marshaler](host, *s.cfg.Encoding, "logs marshaler", errNotLogsMarshaler)
+			if err != nil {
+				return fmt.Errorf("failed to load logs extension: %w", err)
+			}
+			s.logsMarshaler = logsEncoding
+		case signalTypeTraces:
+			tracesEncoding, err := loadExtension[ptrace.Marshaler](host, *s.cfg.Encoding, "traces marshaler", errNotTracesMarshaler)
+			if err != nil {
+				if !errors.Is(err, errNotTracesMarshaler) {
+					return fmt.Errorf("failed to load traces extension: %w", err)
+				}
+				s.logger.Warn("Configured encoding extension does not support traces, falling back to JSON marshaler", zap.String("encoding", s.cfg.Encoding.String()))
+			} else {
+				s.tracesMarshaler = tracesEncoding
+			}
 		}
-		s.logsMarshaler = encoding
 	}
 
 	// TODO Add option for authenticator
@@ -139,6 +202,51 @@ func (s *storageExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
+func (s *storageExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	buf, err := s.tracesMarshaler.MarshalTraces(td)
+	if err != nil {
+		return fmt.Errorf("failed to marshal traces: %w", err)
+	}
+
+	if err = s.uploadFile(ctx, buf); err != nil {
+		return fmt.Errorf("failed to upload traces: %w", err)
+	}
+	return nil
+}
+
+// generateFilename returns the name of the file to be uploaded.
+// It starts from a unique ID, and prepends the partitionFormat and the prefix to it.
+func generateFilename(
+	uniqueID, filePrefix, partitionPrefix string,
+	partitionFormat *strftime.Strftime,
+	now time.Time,
+) string {
+	filename := uniqueID
+	if filePrefix != "" {
+		if strings.HasSuffix(filePrefix, "/") {
+			filename = filePrefix + uniqueID
+		} else {
+			filename = filePrefix + "_" + uniqueID
+		}
+	}
+
+	if partitionFormat != nil {
+		partition := partitionFormat.FormatString(now)
+		if !strings.HasSuffix(partition, "/") {
+			partition += "/"
+		}
+		filename = partition + filename
+	}
+
+	if partitionPrefix != "" {
+		if !strings.HasSuffix(partitionPrefix, "/") {
+			partitionPrefix += "/"
+		}
+		filename = partitionPrefix + filename
+	}
+	return filename
+}
+
 func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err error) {
 	if len(content) == 0 {
 		s.logger.Info("No content to upload")
@@ -147,10 +255,15 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 
 	// if we have multiple files coming, we need to make sure the name is unique so they do
 	// not overwrite each other
-	filename := uuid.New().String()
-	if s.cfg.Bucket.FilePrefix != "" {
-		filename = s.cfg.Bucket.FilePrefix + "_" + filename
-	}
+	uniqueID := uuid.New().String()
+	filename := generateFilename(
+		uniqueID,
+		s.cfg.Bucket.FilePrefix,
+		s.cfg.Bucket.Partition.Prefix,
+		s.partitionFormat,
+		time.Now().UTC(),
+	)
+
 	writer := s.bucketHandle.Object(filename).NewWriter(ctx)
 	defer func() {
 		err = writer.Close()
@@ -176,7 +289,7 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 }
 
 // loadExtension tries to load an available extension for the given id.
-func loadExtension[T any](host component.Host, id component.ID, extensionType string) (T, error) {
+func loadExtension[T any](host component.Host, id component.ID, _ string, errNotMarshaler error) (T, error) {
 	var zero T
 	ext, ok := host.GetExtensions()[id]
 	if !ok {
@@ -184,7 +297,7 @@ func loadExtension[T any](host component.Host, id component.ID, extensionType st
 	}
 	extT, ok := ext.(T)
 	if !ok {
-		return zero, fmt.Errorf("extension %q is not a %s", id, extensionType)
+		return zero, fmt.Errorf("extension %q: %w", id, errNotMarshaler)
 	}
 	return extT, nil
 }
