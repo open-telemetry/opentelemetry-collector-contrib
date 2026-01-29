@@ -1,0 +1,31 @@
+type: object
+properties:
+  client_id:
+    description: The client id that will be used by Pubsub to make load balancing decisions
+    type: string
+  compression:
+    description: Lock down the compression of the payload, leave empty for attribute based detection
+    type: string
+  encoding:
+    description: Lock down the encoding of the payload, leave empty for attribute based detection
+    type: string
+  endpoint:
+    description: Override of the Pubsub Endpoint, leave empty for the default endpoint
+    type: string
+  ignore_encoding_error:
+    description: Ignore errors when the configured encoder fails to decoding a PubSub messages
+    type: boolean
+  insecure:
+    description: Only has effect if Endpoint is not ""
+    type: boolean
+  project:
+    description: Google Cloud Project ID where the Pubsub client will connect to
+    type: string
+  subscription:
+    description: The fully qualified resource name of the Pubsub subscription
+    type: string
+  user_agent:
+    description: User agent that will be used by the Pubsub client to connect to the service
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
