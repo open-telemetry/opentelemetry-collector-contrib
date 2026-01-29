@@ -57,12 +57,6 @@ func configureSASL(ctx context.Context, config configkafka.SASLConfig, saramaCon
 	case AWSMSKIAMOAUTHBEARER:
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
 		saramaConfig.Net.SASL.TokenProvider = &awsMSKTokenProvider{ctx: ctx, region: config.AWSMSK.Region}
-	case OAUTHBEARER:
-		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
-		saramaConfig.Net.SASL.TokenProvider, _ = NewOIDCTokenProvider(ctx, saramaConfig.ClientID,
-			config.OAUTHBEARER.ClientSecretFilePath, config.OAUTHBEARER.TokenURL,
-			config.OAUTHBEARER.Scopes, config.OAUTHBEARER.EndPointParams,
-			config.OAUTHBEARER.AuthStyle, config.OAUTHBEARER.ExpiryBuffer)
 	}
 }
 

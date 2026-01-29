@@ -150,22 +150,6 @@ func TestAuthentication(t *testing.T) {
 			},
 			saramaConfig: saramaSASLAWSIAMOAUTHConfig,
 		},
-		{
-			auth: configkafka.AuthenticationConfig{
-				SASL: &configkafka.SASLConfig{
-					Mechanism: "OAUTHBEARER",
-					OAUTHBEARER: configkafka.OAUTHBEARERConfig{
-						ClientSecretFilePath: "/etc/hosts",
-						TokenURL:             "http://127.0.0.1:3000/oidc",
-						Scopes:               []string{"mock-scope"},
-						RefreshAheadSecs:     0,
-						EndPointParams:       url.Values{},
-						AuthStyle:            oauth2.AuthStyleAutoDetect,
-					},
-				},
-			},
-			saramaConfig: saramaSASLOAUTHBEARERConfig,
-		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {

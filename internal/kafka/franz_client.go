@@ -5,6 +5,7 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"strings"
@@ -27,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
@@ -204,7 +206,7 @@ func NewFranzClusterAdminClient(
 
 func commonOpts(
 	ctx context.Context,
-	_ component.Host,
+	host component.Host,
 	clientCfg configkafka.ClientConfig,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
@@ -240,7 +242,7 @@ func commonOpts(
 		opts = append(opts, kgo.SASL(auth.AsMechanism()))
 	}
 	if clientCfg.Authentication.SASL != nil {
-		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL, clientCfg.ClientID)
+		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL, host)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure SASL: %w", err)
 		}
@@ -283,7 +285,7 @@ func commonOpts(
 	return opts, nil
 }
 
-func configureKgoSASL(cfg *configkafka.SASLConfig, clientID string) (kgo.Opt, error) {
+func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
 	var m sasl.Mechanism
 	switch cfg.Mechanism {
 	case PLAIN:
@@ -298,12 +300,19 @@ func configureKgoSASL(cfg *configkafka.SASLConfig, clientID string) (kgo.Opt, er
 			return oauth.Auth{Token: token}, err
 		})
 	case OAUTHBEARER:
-		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
-			tokenProvider, _ := NewOIDCTokenProvider(ctx, clientID,
-				cfg.OAUTHBEARER.ClientSecretFilePath, cfg.OAUTHBEARER.TokenURL,
-				cfg.OAUTHBEARER.Scopes, cfg.OAUTHBEARER.EndPointParams,
-				cfg.OAUTHBEARER.AuthStyle, cfg.OAUTHBEARER.ExpiryBuffer)
-			token, err := tokenProvider.GetToken()
+		extMap := host.GetExtensions()
+		extType, _ := component.NewType(component.KindExtension.String())
+
+		oauthExtID := component.NewIDWithName(extType, "oauth2client")
+		oauthExt, exists := extMap[oauthExtID]
+		if !exists {
+			return nil, errors.New("oauth2client extension is not configured")
+		}
+
+		m = oauth.Oauth(func(_ context.Context) (oauth.Auth, error) {
+			ts := oauthExt.(oauth2.TokenSource)
+
+			token, err := ts.Token()
 			if err != nil {
 				return oauth.Auth{}, err
 			}
