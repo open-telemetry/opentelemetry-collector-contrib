@@ -786,40 +786,81 @@ func TestParserCSV(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfigWithID("test")
-			cfg.OutputIDs = []string{"fake"}
-			tc.configure(cfg)
+	t.Run("Process", func(t *testing.T) {
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				cfg := NewConfigWithID("test")
+				cfg.OutputIDs = []string{"fake"}
+				tc.configure(cfg)
 
-			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(set)
-			if tc.expectBuildErr {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-
-			fake := testutil.NewFakeOutput(t)
-			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
-
-			ots := time.Now()
-			for i := range tc.inputEntries {
-				inputEntry := tc.inputEntries[i]
-				inputEntry.ObservedTimestamp = ots
-				err = op.Process(t.Context(), &inputEntry)
-				if tc.expectProcessErr {
+				set := componenttest.NewNopTelemetrySettings()
+				op, err := cfg.Build(set)
+				if tc.expectBuildErr {
 					require.Error(t, err)
 					return
 				}
 				require.NoError(t, err)
 
-				expectedEntry := tc.expectedEntries[i]
-				expectedEntry.ObservedTimestamp = ots
-				fake.ExpectEntry(t, &expectedEntry)
-			}
-		})
-	}
+				fake := testutil.NewFakeOutput(t)
+				require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+				ots := time.Now()
+				for i := range tc.inputEntries {
+					inputEntry := tc.inputEntries[i].Copy()
+					inputEntry.ObservedTimestamp = ots
+					err = op.Process(t.Context(), inputEntry)
+					if tc.expectProcessErr {
+						require.Error(t, err)
+						return
+					}
+					require.NoError(t, err)
+
+					expectedEntry := tc.expectedEntries[i].Copy()
+					expectedEntry.ObservedTimestamp = ots
+					fake.ExpectEntry(t, expectedEntry)
+				}
+			})
+		}
+	})
+
+	t.Run("ProcessBatch", func(t *testing.T) {
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				cfg := NewConfigWithID("test")
+				cfg.OutputIDs = []string{"fake"}
+				tc.configure(cfg)
+
+				set := componenttest.NewNopTelemetrySettings()
+				op, err := cfg.Build(set)
+				if tc.expectBuildErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
+
+				fake := testutil.NewFakeOutput(t)
+				require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+				ots := time.Now()
+				inputs := make([]*entry.Entry, len(tc.inputEntries))
+				expected := make([]*entry.Entry, len(tc.expectedEntries))
+				for i := range tc.inputEntries {
+					inputs[i] = tc.inputEntries[i].Copy()
+					inputs[i].ObservedTimestamp = ots
+					expected[i] = tc.expectedEntries[i].Copy()
+					expected[i].ObservedTimestamp = ots
+				}
+
+				err = op.ProcessBatch(t.Context(), inputs)
+				if tc.expectProcessErr {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
+					fake.ExpectEntries(t, expected)
+				}
+			})
+		}
+	})
 }
 
 func TestParserCSVMultiline(t *testing.T) {
@@ -1030,28 +1071,55 @@ cc""",dddd,eeee`,
 			},
 		},
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfigWithID("test")
-			cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
-			cfg.OutputIDs = []string{"fake"}
-			cfg.Header = "A,B,C,D,E"
+	t.Run("Process", func(t *testing.T) {
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				cfg := NewConfigWithID("test")
+				cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
+				cfg.OutputIDs = []string{"fake"}
+				cfg.Header = "A,B,C,D,E"
 
-			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(set)
-			require.NoError(t, err)
+				set := componenttest.NewNopTelemetrySettings()
+				op, err := cfg.Build(set)
+				require.NoError(t, err)
 
-			fake := testutil.NewFakeOutput(t)
-			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+				fake := testutil.NewFakeOutput(t)
+				require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 
-			entry := entry.New()
-			entry.Body = tc.input
-			err = op.Process(t.Context(), entry)
-			require.NoError(t, err)
-			fake.ExpectBody(t, tc.expected)
-			fake.ExpectNoEntry(t, 100*time.Millisecond)
-		})
-	}
+				entry := entry.New()
+				entry.Body = tc.input
+				err = op.Process(t.Context(), entry)
+				require.NoError(t, err)
+				fake.ExpectBody(t, tc.expected)
+				fake.ExpectNoEntry(t, 100*time.Millisecond)
+			})
+		}
+	})
+
+	t.Run("ProcessBatch", func(t *testing.T) {
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				cfg := NewConfigWithID("test")
+				cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
+				cfg.OutputIDs = []string{"fake"}
+				cfg.Header = "A,B,C,D,E"
+
+				set := componenttest.NewNopTelemetrySettings()
+				op, err := cfg.Build(set)
+				require.NoError(t, err)
+
+				fake := testutil.NewFakeOutput(t)
+				require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+				e := entry.New()
+				e.Body = tc.input
+				err = op.ProcessBatch(t.Context(), []*entry.Entry{e})
+				require.NoError(t, err)
+				fake.ExpectBody(t, tc.expected)
+				fake.ExpectNoEntry(t, 100*time.Millisecond)
+			})
+		}
+	})
 }
 
 func TestParserCSVInvalidJSONInput(t *testing.T) {
