@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.76.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/trace v0.76.0-rc.2
-	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.76.0-rc.2
+	github.com/DataDog/datadog-agent/pkg/trace/otel v0.76.0-rc.2
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.50.1-0.20260121161034-55399d4743af
 	go.opentelemetry.io/collector/component/componentstatus v0.144.1-0.20260121161034-55399d4743af
@@ -27,8 +27,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/template v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/log v0.76.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/otel v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/stats v0.76.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.76.0-rc.2 // indirect
