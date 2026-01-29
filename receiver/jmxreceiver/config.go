@@ -460,12 +460,28 @@ func (c *Config) buildJMXConfig() (string, error) {
 		config["otel.exporter.otlp.headers"] = c.OTLPExporterConfig.headersToString()
 	}
 
+	// AWS-specific config options
+	config["otel.jmx.remote.registry.ssl"] = strconv.FormatBool(c.JMXRegistrySSLEnabled)
+	config["otel.jmx.aggregate.across.mbeans"] = strconv.FormatBool(c.AggregateAcrossMBeans)
+
+	// Read password file if specified
+	var passwordMap map[string]string
+	if c.PasswordFile != "" {
+		var err error
+		passwordMap, err = parsePasswordFile(c.PasswordFile)
+		if err != nil {
+			return "", fmt.Errorf("failed to read password file: %w", err)
+		}
+	}
+
 	if c.Username != "" {
 		config["otel.jmx.username"] = c.Username
 	}
 
 	if c.Password != "" {
 		config["otel.jmx.password"] = string(c.Password)
+	} else if password, ok := passwordMap[c.Username]; ok && c.Username != "" {
+		config["otel.jmx.password"] = password
 	}
 
 	if c.RemoteProfile != "" {
@@ -481,6 +497,8 @@ func (c *Config) buildJMXConfig() (string, error) {
 	}
 	if c.KeystorePassword != "" {
 		config["javax.net.ssl.keyStorePassword"] = string(c.KeystorePassword)
+	} else if password, ok := passwordMap[roleNameKeyStore]; ok {
+		config["javax.net.ssl.keyStorePassword"] = password
 	}
 	if c.KeystoreType != "" {
 		config["javax.net.ssl.keyStoreType"] = c.KeystoreType
@@ -490,6 +508,8 @@ func (c *Config) buildJMXConfig() (string, error) {
 	}
 	if c.TruststorePassword != "" {
 		config["javax.net.ssl.trustStorePassword"] = string(c.TruststorePassword)
+	} else if password, ok := passwordMap[roleNameTrustStore]; ok {
+		config["javax.net.ssl.trustStorePassword"] = password
 	}
 	if c.TruststoreType != "" {
 		config["javax.net.ssl.trustStoreType"] = c.TruststoreType

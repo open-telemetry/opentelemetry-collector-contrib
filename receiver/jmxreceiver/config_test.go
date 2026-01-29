@@ -464,10 +464,9 @@ func TestPasswordFilePermissions(t *testing.T) {
 	tempDir := t.TempDir()
 
 	testCases := []struct {
-		desc           string
-		setupFile      func(t *testing.T) string
-		expectedError  string
-		skipOnPlatform string // Skip test on specific platforms
+		desc          string
+		setupFile     func(t *testing.T) string
+		expectedError string
 	}{
 		{
 			desc: "nonexistent file",
@@ -519,15 +518,16 @@ func TestPasswordFilePermissions(t *testing.T) {
 				require.NoError(t, err)
 				return filePath
 			},
-			expectedError:  "`password_file` read access must be restricted to owner-only:",
-			skipOnPlatform: "windows", // Windows file permissions work differently
+			expectedError: "`password_file` read access must be restricted to owner-only:",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			if tc.skipOnPlatform != "" && runtime.GOOS == tc.skipOnPlatform {
-				t.Skipf("Skipping test on %s", tc.skipOnPlatform)
+			// Skip permission validation tests on non-Linux platforms
+			// config_others.go only checks readability, not strict permissions
+			if runtime.GOOS != "linux" && tc.expectedError == "`password_file` read access must be restricted to owner-only:" {
+				t.Skip("Skipping strict permission test on non-Linux platform")
 			}
 
 			filePath := tc.setupFile(t)

@@ -159,9 +159,11 @@ javax.net.ssl.trustStoreType = ASCII
 otel.exporter.otlp.endpoint = https://myotlpendpoint
 otel.exporter.otlp.headers = one=two,three=four
 otel.exporter.otlp.timeout = 234000
+otel.jmx.aggregate.across.mbeans = false
 otel.jmx.password = mypass \nword
 otel.jmx.realm = myrealm
 otel.jmx.remote.profile = myprofile
+otel.jmx.remote.registry.ssl = false
 otel.jmx.service.url = service:jmx:rmi:///jndi/rmi://myhost:12345/jmxrmi
 otel.jmx.target.source = auto
 otel.jmx.target.system = mytargetsystem
@@ -173,9 +175,10 @@ otel.resource.attributes = abc=123,one=two`,
 		},
 		{
 			"handles password file",
-			"",
+			"5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5",
 			"",
 			&Config{
+				JARPath:      "testdata/fake_jmx.jar",
 				Endpoint:     "myhost:12345",
 				TargetSystem: "mytargetsystem",
 				OTLPExporterConfig: otlpExporterConfig{
