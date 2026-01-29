@@ -419,3 +419,58 @@ func BenchmarkXorshift64star(b *testing.B) {
 		_ = rng.next()
 	}
 }
+
+func BenchmarkGetStochasticAdjustedCount(b *testing.B) {
+	// Create spans with realistic tracestates
+	spans := make([]ptrace.Span, 100)
+	for i := range spans {
+		span := ptrace.NewSpan()
+		span.TraceState().FromRaw("ot=th:c;rv:d29d6a7215ced0")
+		spans[i] = span
+	}
+
+	b.Run("NoCache", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for j := range spans {
+				GetStochasticAdjustedCount(&spans[j])
+			}
+		}
+	})
+
+	b.Run("WithCache", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			cache := NewAdjustedCountCache()
+			for j := range spans {
+				GetStochasticAdjustedCountWithCache(&spans[j], &cache)
+			}
+		}
+	})
+}
+
+func BenchmarkAdjustedCountCache(b *testing.B) {
+	span := ptrace.NewSpan()
+	span.TraceState().FromRaw("ot=th:c;rv:d29d6a7215ced0;pn:abc,zz=vendorcontent")
+
+	b.Run("CacheHit", func(b *testing.B) {
+		cache := NewAdjustedCountCache()
+		// Prime the cache
+		GetStochasticAdjustedCountWithCache(&span, &cache)
+
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			GetStochasticAdjustedCountWithCache(&span, &cache)
+		}
+	})
+
+	b.Run("CacheMiss", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			// Force cache miss by using fresh cache each time
+			cache := NewAdjustedCountCache()
+			GetStochasticAdjustedCountWithCache(&span, &cache)
+		}
+	})
+}
