@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -384,7 +385,7 @@ func TestRedactSummaryDebugHashHMACSHA256(t *testing.T) {
 			AllowedKeys:        []string{"id", "group", "name", "group.id", "member (id)", "token_some", "api_key_some", "email"},
 			BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?"},
 			HashFunction:       HMACSHA256,
-			HMACKey:            "test-secret-key-32-bytes-long",
+			HMACKey:            configopaque.String("test-secret-key-32-bytes-long"),
 			IgnoredKeys:        []string{"safe_attribute"},
 			IgnoredKeyPatterns: []string{"safeRE_attribute.*"},
 			BlockedKeyPatterns: []string{".*token.*", ".*api_key.*"},
@@ -497,7 +498,7 @@ func TestRedactSummaryDebugHashHMACSHA512(t *testing.T) {
 			AllowedKeys:   []string{"id", "group", "name"},
 			BlockedValues: []string{"(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"}, // IPv4 regex
 			HashFunction:  HMACSHA512,
-			HMACKey:       "test-secret-key-for-hmac-sha512",
+			HMACKey:       configopaque.String("test-secret-key-for-hmac-sha512"),
 			Summary:       "debug",
 		},
 		allowed: map[string]pcommon.Value{
@@ -527,7 +528,7 @@ func TestHMACConsistency(t *testing.T) {
 		AllowedKeys:   []string{"ip_address"},
 		BlockedValues: []string{"(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"},
 		HashFunction:  HMACSHA256,
-		HMACKey:       "consistent-key-test",
+		HMACKey:       configopaque.String("consistent-key-test"),
 		Summary:       "silent",
 	}
 
@@ -568,7 +569,7 @@ func TestHMACDifferentKeys(t *testing.T) {
 		AllowedKeys:   []string{"ip_address"},
 		BlockedValues: []string{"(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"},
 		HashFunction:  HMACSHA256,
-		HMACKey:       "key-one",
+		HMACKey:       configopaque.String("key-one"),
 		Summary:       "silent",
 	}
 
@@ -576,7 +577,7 @@ func TestHMACDifferentKeys(t *testing.T) {
 		AllowedKeys:   []string{"ip_address"},
 		BlockedValues: []string{"(?:[0-9]{1,3}\\.){3}[0-9]{1,3}"},
 		HashFunction:  HMACSHA256,
-		HMACKey:       "key-two",
+		HMACKey:       configopaque.String("key-two"),
 		Summary:       "silent",
 	}
 
