@@ -1,0 +1,69 @@
+$defs:
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for expvar metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+  metrics_config:
+    description: MetricsConfig provides config for expvar metrics.
+    type: object
+    properties:
+      process.runtime.memstats.buck_hash_sys:
+        $ref: metric_config
+      process.runtime.memstats.frees:
+        $ref: metric_config
+      process.runtime.memstats.gc_cpu_fraction:
+        $ref: metric_config
+      process.runtime.memstats.gc_sys:
+        $ref: metric_config
+      process.runtime.memstats.heap_alloc:
+        $ref: metric_config
+      process.runtime.memstats.heap_idle:
+        $ref: metric_config
+      process.runtime.memstats.heap_inuse:
+        $ref: metric_config
+      process.runtime.memstats.heap_objects:
+        $ref: metric_config
+      process.runtime.memstats.heap_released:
+        $ref: metric_config
+      process.runtime.memstats.heap_sys:
+        $ref: metric_config
+      process.runtime.memstats.last_pause:
+        $ref: metric_config
+      process.runtime.memstats.lookups:
+        $ref: metric_config
+      process.runtime.memstats.mallocs:
+        $ref: metric_config
+      process.runtime.memstats.mcache_inuse:
+        $ref: metric_config
+      process.runtime.memstats.mcache_sys:
+        $ref: metric_config
+      process.runtime.memstats.mspan_inuse:
+        $ref: metric_config
+      process.runtime.memstats.mspan_sys:
+        $ref: metric_config
+      process.runtime.memstats.next_gc:
+        $ref: metric_config
+      process.runtime.memstats.num_forced_gc:
+        $ref: metric_config
+      process.runtime.memstats.num_gc:
+        $ref: metric_config
+      process.runtime.memstats.other_sys:
+        $ref: metric_config
+      process.runtime.memstats.pause_total:
+        $ref: metric_config
+      process.runtime.memstats.stack_inuse:
+        $ref: metric_config
+      process.runtime.memstats.stack_sys:
+        $ref: metric_config
+      process.runtime.memstats.sys:
+        $ref: metric_config
+      process.runtime.memstats.total_alloc:
+        $ref: metric_config
