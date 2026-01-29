@@ -1,0 +1,93 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.DATAFACTORY/FACTORIES/TESTDATAFACTORY
+        - key: cloud.region
+          value:
+            stringValue: southcentralus
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: TriggerRuns
+              - key: azure.operation.name
+                value:
+                  stringValue: trigger1 - Succeeded
+              - key: azure.correlation_id
+                value:
+                  stringValue: 06a5be36-ad33-4cc7-88dd-139d038c9066
+              - key: azure.datafactory.trigger.start_time
+                value:
+                  stringValue: "2020-11-04T21:48:00.1695402Z"
+              - key: azure.datafactory.trigger.run_id
+                value:
+                  stringValue: 08585970804052975818107475697CU19
+              - key: azure.datafactory.trigger.name
+                value:
+                  stringValue: trigger1
+              - key: azure.datafactory.trigger.type
+                value:
+                  stringValue: ScheduleTrigger
+              - key: azure.datafactory.trigger.event_payload
+                value:
+                  stringValue: ScheduleTrigger - 2020-11-04T21:48:00.1695402Z
+              - key: azure.datafactory.pipeline.state
+                value:
+                  stringValue: Succeeded
+              - key: azure.datafactory.parameters
+                value:
+                  kvlistValue:
+                    values:
+                      - key: TriggerTime
+                        value:
+                          stringValue: "2020-11-04T21:48:00.1695402Z"
+                      - key: ScheduleTime
+                        value:
+                          stringValue: "2020-11-04T21:48:00Z"
+                      - key: triggerObject
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: clientTrackingId
+                                value:
+                                  stringValue: 08585970804052975818107475697CU19
+                              - key: status
+                                value:
+                                  stringValue: Succeeded
+                              - key: startTime
+                                value:
+                                  stringValue: "2020-11-04T21:48:00.1695402Z"
+                              - key: trackingId
+                                value:
+                                  stringValue: 3af57bb0-44cc-49a9-8c24-a03f319988af
+                              - key: originHistoryName
+                                value:
+                                  stringValue: 08585970804052975818107475697CU19
+                              - key: code
+                                value:
+                                  stringValue: OK
+                              - key: name
+                                value:
+                                  stringValue: Trigger_421B8CAF-BE66-42CF-83DA-E3028693F304
+                              - key: endTime
+                                value:
+                                  stringValue: "2020-11-04T21:48:00.1695402Z"
+                              - key: scheduledTime
+                                value:
+                                  stringValue: "2020-11-04T21:48:00Z"
+            body: {}
+            severityNumber: 9
+            severityText: Informational
+            timeUnixNano: "1604526481875932400"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

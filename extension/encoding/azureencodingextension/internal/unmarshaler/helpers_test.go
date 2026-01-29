@@ -527,6 +527,14 @@ func TestAttrPutMapIf(t *testing.T) {
 			wantRaw: map[string]any{},
 		},
 		{
+			name: "empty map",
+			args: args{
+				attrKey:   "foo",
+				attrValue: map[string]any{},
+			},
+			wantRaw: map[string]any{},
+		},
+		{
 			name: "map value",
 			args: args{
 				attrKey:   "map",

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 
-	gojson "github.com/goccy/go-json"
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -19,6 +18,9 @@ import (
 
 // List of supported Azure Resource Log Categories
 const (
+	categoryApplicationGatewayAccessLog        = "ApplicationGatewayAccessLog"
+	categoryApplicationGatewayPerformanceLog   = "ApplicationGatewayPerformanceLog"
+	categoryApplicationGatewayFirewallLog      = "ApplicationGatewayFirewallLog"
 	categoryAppServiceAppLogs                  = "AppServiceAppLogs"
 	categoryAppServiceAuditLogs                = "AppServiceAuditLogs"
 	categoryAppServiceAuthenticationLogs       = "AppServiceAuthenticationLogs"
@@ -28,10 +30,22 @@ const (
 	categoryAppServiceIPSecAuditLogs           = "AppServiceIPSecAuditLogs"
 	categoryAppServicePlatformLogs             = "AppServicePlatformLogs"
 	categoryAzureCdnAccessLog                  = "AzureCdnAccessLog"
+	categoryAzureMSApplicationMetricsLog       = "ApplicationMetricsLogs"
+	categoryAzureMSDiagnosticErrorLog          = "DiagnosticErrorLogs"
+	categoryAzureMSOperationalLog              = "OperationalLogs"
+	categoryAzureMSRuntimeAuditLog             = "RuntimeAuditLogs"
+	categoryAzureMSVNetAndIPFilteringLog       = "VNetAndIPFilteringLogs"
+	categoryDataFactoryActivityRuns            = "ActivityRuns"
+	categoryDataFactoryPipelineRuns            = "PipelineRuns"
+	categoryDataFactoryTriggerRuns             = "TriggerRuns"
 	categoryFrontDoorAccessLog                 = "FrontDoorAccessLog"
 	categoryFrontDoorHealthProbeLog            = "FrontDoorHealthProbeLog"
 	categoryFrontdoorWebApplicationFirewallLog = "FrontDoorWebApplicationFirewallLog"
+	categoryFunctionAppLogs                    = "FunctionAppLogs"
 	categoryRecommendation                     = "Recommendation"
+	categoryStorageRead                        = "StorageRead"
+	categoryStorageWrite                       = "StorageWrite"
+	categoryStorageDelete                      = "StorageDelete"
 )
 
 // Non-SemConv attributes that are used for common Azure Log Record fields
@@ -77,8 +91,14 @@ const (
 	// OpenTelemetry attribute name for "Host" HTTP Header value
 	attributeHTTPHeaderHost = "http.request.header.host"
 
-	// OpenTelemetry attribute name for "Referer" HTTP Header value
-	attributeHTTPHeaderReferer = "http.request.header.referer"
+	// OpenTelemetry attribute name for the WAF action taken on the request
+	attributeSecurityRuleActionKey = "security_rule.action"
+
+	// OpenTelemetry attribute name for the operations mode of the WAF policy
+	attributeSecurityRuleRulesetModeKey = "security_rule.ruleset.mode"
+
+	// OpenTelemetry attribute name for Error Code
+	attributeErrorCode = "error.code"
 
 	// OpenTelemetry attribute name for Azure HTTP Request Duration,
 	// from `durationMs` field in Azure Log Record
@@ -209,7 +229,7 @@ func (r *azureLogRecordGeneric) PutProperties(attrs pcommon.Map, body pcommon.Va
 	// so we'll try to parse it as JSON here
 	// If parsing will fail - we will put value of "properties" field
 	// into `azure.properties` Attribute and return parse error to caller
-	if err := gojson.Unmarshal(r.Properties, &properties); err != nil {
+	if err := jsoniter.ConfigFastest.Unmarshal(r.Properties, &properties); err != nil {
 		attrs.PutStr(attributesAzureProperties, string(r.Properties))
 		return fmt.Errorf("failed to parse Azure Logs 'properties' field as JSON: %w", err)
 	}
@@ -248,6 +268,12 @@ func processLogRecord(logCategory string, record []byte) (azureLogRecord, error)
 	var parsed azureLogRecord
 
 	switch logCategory {
+	case categoryApplicationGatewayAccessLog:
+		parsed = new(azureApplicationGatewayAccessLog)
+	case categoryApplicationGatewayPerformanceLog:
+		parsed = new(azureApplicationGatewayPerformanceLog)
+	case categoryApplicationGatewayFirewallLog:
+		parsed = new(azureApplicationGatewayFirewallLog)
 	case categoryAppServiceAppLogs:
 		parsed = new(azureAppServiceAppLog)
 	case categoryAppServiceAuditLogs:
@@ -266,14 +292,36 @@ func processLogRecord(logCategory string, record []byte) (azureLogRecord, error)
 		parsed = new(azureAppServiceFileAuditLog)
 	case categoryAzureCdnAccessLog:
 		parsed = new(azureHTTPAccessLog)
+	case categoryAzureMSApplicationMetricsLog:
+		parsed = new(azureMSApplicationMetricsLog)
+	case categoryAzureMSDiagnosticErrorLog:
+		parsed = new(azureMSDiagnosticErrorLog)
+	case categoryAzureMSOperationalLog:
+		parsed = new(azureMSOperationalLog)
+	case categoryAzureMSRuntimeAuditLog:
+		parsed = new(azureMSRuntimeAuditLog)
+	case categoryAzureMSVNetAndIPFilteringLog:
+		parsed = new(azureMSVNetAndIPFilteringLog)
+	case categoryDataFactoryActivityRuns:
+		parsed = new(azureDataFactoryActivityRunsLog)
+	case categoryDataFactoryPipelineRuns:
+		parsed = new(azureDataFactoryPipelineRunsLog)
+	case categoryDataFactoryTriggerRuns:
+		parsed = new(azureDataFactoryTriggerRunsLog)
 	case categoryFrontDoorAccessLog:
 		parsed = new(azureHTTPAccessLog)
 	case categoryFrontDoorHealthProbeLog:
 		parsed = new(frontDoorHealthProbeLog)
 	case categoryFrontdoorWebApplicationFirewallLog:
 		parsed = new(frontDoorWAFLog)
+	case categoryFunctionAppLogs:
+		parsed = new(azureFunctionAppLog)
 	case categoryRecommendation:
 		parsed = new(azureRecommendationLog)
+	// StorageRead, StorageWrite, StorageDelete share the same properties,
+	// called StorageBlobLogs, see https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/storagebloblogs
+	case categoryStorageRead, categoryStorageWrite, categoryStorageDelete:
+		parsed = new(azureStorageBlobLog)
 	default:
 		parsed = new(azureLogRecordGeneric)
 	}

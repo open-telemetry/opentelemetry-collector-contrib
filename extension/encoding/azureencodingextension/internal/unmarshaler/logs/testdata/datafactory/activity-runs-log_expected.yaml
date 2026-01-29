@@ -1,0 +1,98 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.DATAFACTORY/FACTORIES/TESTDATAFACTORY
+        - key: cloud.region
+          value:
+            stringValue: southcentralus
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: ActivityRuns
+              - key: azure.operation.name
+                value:
+                  stringValue: dataflow1 - InProgress
+              - key: azure.correlation_id
+                value:
+                  stringValue: 99428920-8ec1-4adf-944f-940b3f531519
+              - key: azure.datafactory.activity.start_time
+                value:
+                  stringValue: "2020-11-04T19:23:06.5819112Z"
+              - key: azure.datafactory.activity.end_time
+                value:
+                  stringValue: "1601-01-01T00:00:00Z"
+              - key: azure.datafactory.activity.run_id
+                value:
+                  stringValue: 99428920-8ec1-4adf-944f-940b3f531519
+              - key: azure.datafactory.activity.name
+                value:
+                  stringValue: dataflow1
+              - key: azure.datafactory.pipeline.run_id
+                value:
+                  stringValue: 82282710-a665-4a79-9bbc-e1f207af4b1e
+              - key: azure.datafactory.pipeline.name
+                value:
+                  stringValue: dataFlowPipeline
+              - key: azure.datafactory.input
+                value:
+                  kvlistValue:
+                    values:
+                      - key: staging
+                        value:
+                          kvlistValue: {}
+                      - key: compute
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: coreCount
+                                value:
+                                  doubleValue: 8
+                              - key: computeType
+                                value:
+                                  stringValue: General
+                      - key: dataFlowETag
+                        value:
+                          stringValue: 78004df7-0000-0500-0000-5f7d51d50000
+                      - key: dataflow
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: referenceName
+                                value:
+                                  stringValue: dataflow1
+                              - key: type
+                                value:
+                                  stringValue: DataFlowReference
+                              - key: parameters
+                                value:
+                                  kvlistValue: {}
+                              - key: datasetParameters
+                                value:
+                                  kvlistValue:
+                                    values:
+                                      - key: source1
+                                        value:
+                                          kvlistValue: {}
+                                      - key: sink1
+                                        value:
+                                          kvlistValue: {}
+              - key: error.target
+                value:
+                  stringValue: dataflow1
+            body: {}
+            severityNumber: 9
+            severityText: Informational
+            timeUnixNano: "1604517786606911200"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

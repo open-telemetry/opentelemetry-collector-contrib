@@ -1,0 +1,154 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /subscriptions/ABCD1234-5678-90EF-1234-567890ABCDEF/resourceGroups/random-rg/providers/Microsoft.Storage/storageAccounts/randomstor/blobServices/default
+        - key: cloud.region
+          value:
+            stringValue: centralus
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: StorageRead
+              - key: azure.operation.name
+                value:
+                  stringValue: ListBlobs
+              - key: azure.operation.version
+                value:
+                  stringValue: "2022-05-01"
+              - key: network.peer.address
+                value:
+                  stringValue: 172.16.254.1
+              - key: azure.correlation_id
+                value:
+                  stringValue: f1e2d3c4-b5a6-7890-1234-56789abcdef0
+              - key: azure.operation.duration
+                value:
+                  intValue: "42"
+              - key: azure.identity
+                value:
+                  kvlistValue:
+                    values:
+                      - key: requester
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: tenantId
+                                value:
+                                  stringValue: 12345678-90ab-cdef-1234-567890abcdef
+                              - key: objectId
+                                value:
+                                  stringValue: abcdef12-3456-7890-abcd-ef1234567890
+                      - key: type
+                        value:
+                          stringValue: DelegationSAS
+                      - key: tokenHash
+                        value:
+                          stringValue: system-delegation(ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890),SasSignature(1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF)
+                      - key: authorization
+                        value:
+                          arrayValue:
+                            values:
+                              - kvlistValue:
+                                  values:
+                                    - key: principals
+                                      value:
+                                        arrayValue:
+                                          values:
+                                            - kvlistValue:
+                                                values:
+                                                  - key: type
+                                                    value:
+                                                      stringValue: User
+                                                  - key: id
+                                                    value:
+                                                      stringValue: 7890abcd-ef12-3456-7890-abcd12345678
+                                    - key: denyAssignmentId
+                                      value:
+                                        stringValue: ""
+                                    - key: type
+                                      value:
+                                        stringValue: RBAC
+                                    - key: result
+                                      value:
+                                        stringValue: Denied
+                                    - key: reason
+                                      value:
+                                        stringValue: NoPolicy
+                                    - key: action
+                                      value:
+                                        stringValue: Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read
+                                    - key: roleAssignmentId
+                                      value:
+                                        stringValue: abcdef12-3456-7890-abcd-ef1234567890
+                                    - key: roleDefinitionId
+                                      value:
+                                        stringValue: 12345678-90ab-cdef-1234-567890abcdef
+              - key: http.response.status_code
+                value:
+                  intValue: "500"
+              - key: http.response.status_text
+                value:
+                  stringValue: Error
+              - key: network.protocol.name
+                value:
+                  stringValue: https
+              - key: url.full
+                value:
+                  stringValue: https://randomstor.dfs.core.windows.net/randomuser/randomdata.csv?upn=true&action=write&timeout=120&st=2025-09-17T14%3A12%3A45Z&sv=2022-05-01&ske=2025-09-17T16%3A12%3A45Z&sig=RANDOMSIG&sktid=abcdef12-3456-7890-abcd-ef1234567890&se=2025-09-17T15%3A22%3A45Z&sdd=1&skoid=12345678-90ab-cdef-1234-567890abcdef&spr=https&sks=a&skt=2025-09-17T14%3A12%3A45Z&sp=rw&skv=2025-09-17&sr=c
+              - key: url.scheme
+                value:
+                  stringValue: https
+              - key: url.domain
+                value:
+                  stringValue: randomstor.dfs.core.windows.net
+              - key: url.path
+                value:
+                  stringValue: /randomuser/randomdata.csv
+              - key: url.query
+                value:
+                  stringValue: upn=true&action=write&timeout=120&st=2025-09-17T14%3A12%3A45Z&sv=2022-05-01&ske=2025-09-17T16%3A12%3A45Z&sig=RANDOMSIG&sktid=abcdef12-3456-7890-abcd-ef1234567890&se=2025-09-17T15%3A22%3A45Z&sdd=1&skoid=12345678-90ab-cdef-1234-567890abcdef&spr=https&sks=a&skt=2025-09-17T14%3A12%3A45Z&sp=rw&skv=2025-09-17&sr=c
+              - key: azure.storage.namespace
+                value:
+                  stringValue: randomstor
+              - key: user_agent.original
+                value:
+                  stringValue: APN/2.0 Azure Blob FS/4.0 (Oracle,Inc. JavaJRE 17.0.2; Windows 11.0.22000/amd64; SunJSSE-2.0; UNKNOWN/UNKNOWN) unknown
+              - key: azure.service.request.id
+                value:
+                  stringValue: 0917-142245-abc987-v2n--77--66--5:abcdef12-3456-7890-abcd-ef1234567890:12345678-90ab-cdef-1234-567890abcdef:::GF:1
+              - key: azure.response.duration
+                value:
+                  doubleValue: 33
+              - key: azure.storage.service.type
+                value:
+                  stringValue: blob
+              - key: http.request.header.size
+                value:
+                  intValue: "2048"
+              - key: http.response.header.size
+                value:
+                  intValue: "2048"
+              - key: tls.protocol.name
+                value:
+                  stringValue: TLS
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.2"
+              - key: azure.storage.object.key
+                value:
+                  stringValue: /randomstor/randomuser/randomdata.csv
+            body: {}
+            timeUnixNano: "1758118965987654300"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

@@ -1,0 +1,20 @@
+{
+  "records": [
+    {
+      "Environment": "PROD",
+      "Region": "East US",
+      "ScaleUnit": "PROD-BL2-002",
+      "ActivityId": "5caef1dc-732b-4c9f-a940-a585a28d20e6",
+      "EventName": "Retrieve Namespace",
+      "SubscriptionId": "0000000-0000-0000-0000-000000000000",
+      "namespaceName": "namespace-name",
+      "ipAddress": "1.2.3.4",
+      "action": "Accept Connection",
+      "reason": "IP is accepted by IPAddress filter.",
+      "count": 1,
+      "resourceId": "/SUBSCRIPTIONS/XXXX-YYYYY-ZZZZ/RESOURCEGROUPS/TESTGROUP/PROVIDERS/MICROSOFT.SERVICEBUS/NAMESPACES/NAMESPACE",
+      "category": "VNetAndIPFilteringLogs",
+      "eventTimestamp": "1/1/2021 8:40:06 PM +00:00"
+    }
+  ]
+}
