@@ -11,15 +11,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redfishreceiver/internal/redfish"
 )
 
-func (s *redfishScraper) recordComputerSystem(baseURL string, compSys *redfish.ComputerSystem) {
+func (s *redfishScraper) recordComputerSystem(compSys *redfish.ComputerSystem) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	s.mb.RecordSystemPowerstateDataPoint(now,
 		redfish.PowerStateToMetric(compSys.PowerState),
-		baseURL,
 		compSys.ID,
 		compSys.AssetTag,
 		compSys.BiosVersion,
-		compSys.HostName,
 		compSys.Model,
 		compSys.Name,
 		compSys.Manufacturer,
@@ -30,11 +28,9 @@ func (s *redfishScraper) recordComputerSystem(baseURL string, compSys *redfish.C
 	s.mb.RecordSystemStatusHealthDataPoint(
 		now,
 		redfish.StatusHealthToMetric(compSys.Status.Health),
-		baseURL,
 		compSys.ID,
 		compSys.AssetTag,
 		compSys.BiosVersion,
-		compSys.HostName,
 		compSys.Model,
 		compSys.Name,
 		compSys.Manufacturer,
@@ -45,11 +41,9 @@ func (s *redfishScraper) recordComputerSystem(baseURL string, compSys *redfish.C
 	s.mb.RecordSystemStatusStateDataPoint(
 		now,
 		redfish.StatusStateToMetric(compSys.Status.State),
-		baseURL,
 		compSys.ID,
 		compSys.AssetTag,
 		compSys.BiosVersion,
-		compSys.HostName,
 		compSys.Model,
 		compSys.Name,
 		compSys.Manufacturer,
@@ -59,13 +53,11 @@ func (s *redfishScraper) recordComputerSystem(baseURL string, compSys *redfish.C
 	)
 }
 
-func (s *redfishScraper) recordChassis(hostName, baseURL string, chassis *redfish.Chassis) {
+func (s *redfishScraper) recordChassis(chassis *redfish.Chassis) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	s.mb.RecordChassisPowerstateDataPoint(
 		now,
 		redfish.PowerStateToMetric(chassis.PowerState),
-		hostName,
-		baseURL,
 		chassis.ID,
 		chassis.AssetTag,
 		chassis.Model,
@@ -78,8 +70,6 @@ func (s *redfishScraper) recordChassis(hostName, baseURL string, chassis *redfis
 	s.mb.RecordChassisStatusHealthDataPoint(
 		now,
 		redfish.StatusHealthToMetric(chassis.Status.Health),
-		hostName,
-		baseURL,
 		chassis.ID,
 		chassis.AssetTag,
 		chassis.Model,
@@ -92,8 +82,6 @@ func (s *redfishScraper) recordChassis(hostName, baseURL string, chassis *redfis
 	s.mb.RecordChassisStatusStateDataPoint(
 		now,
 		redfish.StatusStateToMetric(chassis.Status.State),
-		hostName,
-		baseURL,
 		chassis.ID,
 		chassis.AssetTag,
 		chassis.Model,
@@ -105,15 +93,13 @@ func (s *redfishScraper) recordChassis(hostName, baseURL string, chassis *redfis
 	)
 }
 
-func (s *redfishScraper) recordFans(hostName, baseURL, chassisID string, fans []redfish.Fan) {
+func (s *redfishScraper) recordFans(chassisID string, fans []redfish.Fan) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, fan := range fans {
 		if fan.Reading != nil {
 			s.mb.RecordFanReadingDataPoint(
 				now,
 				*fan.Reading,
-				hostName,
-				baseURL,
 				chassisID,
 				fan.Name,
 				fan.ReadingUnits,
@@ -122,31 +108,25 @@ func (s *redfishScraper) recordFans(hostName, baseURL, chassisID string, fans []
 		s.mb.RecordFanStatusHealthDataPoint(
 			now,
 			redfish.StatusHealthToMetric(fan.Status.Health),
-			hostName,
-			baseURL,
 			chassisID,
 			fan.Name,
 		)
 		s.mb.RecordFanStatusStateDataPoint(
 			now,
 			redfish.StatusStateToMetric(fan.Status.State),
-			hostName,
-			baseURL,
 			chassisID,
 			fan.Name,
 		)
 	}
 }
 
-func (s *redfishScraper) recordTemperatures(hostName, baseURL, chassisID string, temps []redfish.Temperature) {
+func (s *redfishScraper) recordTemperatures(chassisID string, temps []redfish.Temperature) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, temp := range temps {
 		if temp.ReadingCelsius != nil {
 			s.mb.RecordTemperatureReadingDataPoint(
 				now,
 				*temp.ReadingCelsius,
-				hostName,
-				baseURL,
 				chassisID,
 				temp.Name,
 			)
@@ -154,16 +134,12 @@ func (s *redfishScraper) recordTemperatures(hostName, baseURL, chassisID string,
 		s.mb.RecordTemperatureStatusHealthDataPoint(
 			now,
 			redfish.StatusHealthToMetric(temp.Status.Health),
-			hostName,
-			baseURL,
 			chassisID,
 			temp.Name,
 		)
 		s.mb.RecordTemperatureStatusStateDataPoint(
 			now,
 			redfish.StatusStateToMetric(temp.Status.State),
-			hostName,
-			baseURL,
 			chassisID,
 			temp.Name,
 		)
