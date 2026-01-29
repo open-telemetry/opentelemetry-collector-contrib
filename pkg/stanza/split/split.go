@@ -92,16 +92,30 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc enc
 
 		var firstLoc []int
 		var firstMatchStart, firstMatchEnd int
-		var decoded []byte
+		var secondLoc []int
+		var secondMatchStart int
 
 		if isUTF8 {
-			// For UTF-8, match directly on bytes
-			firstLoc = re.FindIndex(data)
-			if firstLoc != nil {
+			// For UTF-8, find matches directly on bytes in a single operation
+			// We need to find matches that don't start at firstLoc[1], so get up to 3 matches
+			// (first match + potentially adjacent match + actual second match)
+			allMatches := re.FindAllIndex(data, 3)
+			if len(allMatches) > 0 {
+				firstLoc = allMatches[0]
 				firstMatchStart, firstMatchEnd = firstLoc[0], firstLoc[1]
+				// Find second match that starts after firstLoc[1] (not at firstLoc[1])
+				for i := 1; i < len(allMatches); i++ {
+					if allMatches[i][0] > firstLoc[1] {
+						secondLoc = allMatches[i]
+						secondMatchStart = secondLoc[0]
+						break
+					}
+				}
 			}
 		} else {
-			result, flush, needMoreData := findRegexMatch(re, data, decoder, enc, atEOF, flushAtEOF, logger, transformBuf)
+			// Find matches in a single operation for non-UTF8 encodings
+			// Limit to 3 matches (first + potentially adjacent + actual second)
+			result, flush, needMoreData := findRegexMatches(re, data, decoder, enc, atEOF, flushAtEOF, logger, transformBuf, 3)
 			if flush {
 				return len(data), data, nil
 			}
@@ -112,7 +126,8 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc enc
 			firstLoc = result.loc
 			firstMatchStart = result.matchStart
 			firstMatchEnd = result.matchEnd
-			decoded = result.decoded
+			secondLoc = result.secondLoc
+			secondMatchStart = result.secondMatchStart
 		}
 
 		if firstLoc == nil {
@@ -146,35 +161,6 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc enc
 			}
 
 			return len(data), data, nil
-		}
-
-		// Find second match
-		var secondLoc []int
-		var secondMatchStart int
-
-		if isUTF8 {
-			secondLocOfset := firstMatchEnd + 1
-			secondLoc = re.FindIndex(data[secondLocOfset:])
-			if secondLoc != nil {
-				secondMatchStart = secondLoc[0] + secondLocOfset
-			}
-		} else if decoded != nil && firstLoc[1] <= len(decoded) {
-			// Use the decoded data from findRegexMatch to find the second match
-			remainingDecoded := decoded[firstLoc[1]:]
-			secondLoc = re.FindIndex(remainingDecoded)
-			if secondLoc != nil {
-				// Map decoded byte position back to original encoded byte position
-				matchStartBytes := remainingDecoded[:secondLoc[0]]
-				encoder := enc.NewEncoder()
-				neededSize := len(matchStartBytes) * 4
-				buf := getBuffer(transformBuf, neededSize)
-				var nDst int
-				nDst, _, err = encoder.Transform(buf, matchStartBytes, true)
-				if err != nil {
-					return 0, nil, nil
-				}
-				secondMatchStart = firstMatchEnd + nDst
-			}
 		}
 
 		if secondLoc == nil {
@@ -214,7 +200,7 @@ func LineEndSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc encod
 				matchStart, matchEnd = loc[0], loc[1]
 			}
 		} else {
-			result, flush, needMoreData := findRegexMatch(re, data, decoder, enc, atEOF, flushAtEOF, logger, transformBuf)
+			result, flush, needMoreData := findRegexMatches(re, data, decoder, enc, atEOF, flushAtEOF, logger, transformBuf, 1)
 			if flush {
 				return len(data), data, nil
 			}
@@ -307,22 +293,27 @@ func NoSplitFunc(maxLogSize int) bufio.SplitFunc {
 
 // matchResult holds the result of a regex match operation on encoded data
 type matchResult struct {
-	loc        []int  // location in decoded string (nil if no match)
-	matchStart int    // byte position of match start
-	matchEnd   int    // byte position of match end
-	data       []byte // potentially truncated data
-	decoded    []byte // decoded data for reuse in subsequent matching
+	loc        []int  // location of first match in decoded string (nil if no match)
+	matchStart int    // byte position of first match start
+	matchEnd   int    // byte position of first match end
+	// Second match fields (only populated when maxMatches > 1)
+	secondLoc        []int // location of second match in decoded string (nil if no second match)
+	secondMatchStart int   // byte position of second match start
+	data             []byte // potentially truncated data
+	decoded          []byte // decoded data for reuse in subsequent matching
 }
 
-// findRegexMatch finds a regex match in data that may be encoded in a non-UTF8 encoding.
+// findRegexMatches finds regex matches in data that may be encoded in a non-UTF8 encoding.
 // It handles decoding, truncation at EOF for encodings like UTF-16, and maps the match
 // positions back to byte positions in the original data.
 // The transformBuf parameter is a reusable buffer for encoding transforms to reduce allocations.
+// maxMatches controls how many matches to find (1 for just first match, 3 for LineStartSplitFunc).
+// For LineStartSplitFunc, pass 3 to find up to 3 matches (enough to find second non-adjacent match).
 // Returns:
 // - result: the match result with positions mapped to byte offsets
 // - flush: if true, caller should return (len(data), data, nil) to flush remaining data
 // - needMoreData: if true, caller should return (0, nil, nil) to request more data
-func findRegexMatch(re *regexp.Regexp, data []byte, decoder *encoding.Decoder, enc encoding.Encoding, atEOF, flushAtEOF bool, logger *zap.Logger, transformBuf []byte) (result matchResult, flush, needMoreData bool) {
+func findRegexMatches(re *regexp.Regexp, data []byte, decoder *encoding.Decoder, enc encoding.Encoding, atEOF, flushAtEOF bool, logger *zap.Logger, transformBuf []byte, maxMatches int) (result matchResult, flush, needMoreData bool) {
 	result.data = data
 
 	decoded, decodeErr := decoder.Bytes(data)
@@ -356,15 +347,20 @@ func findRegexMatch(re *regexp.Regexp, data []byte, decoder *encoding.Decoder, e
 	}
 
 	result.decoded = decoded
-	result.loc = re.FindIndex(decoded)
-	if result.loc == nil {
+
+	// Find matches in a single regex operation
+	allMatches := re.FindAllIndex(decoded, maxMatches)
+	if len(allMatches) == 0 {
 		return result, false, false
 	}
 
-	// Map decoded byte positions back to original encoded byte positions
+	// Process first match
+	result.loc = allMatches[0]
+	encoder := enc.NewEncoder()
+
+	// Map first match positions back to original encoded byte positions
 	matchStartBytes := decoded[:result.loc[0]]
 	matchEndBytes := decoded[:result.loc[1]]
-	encoder := enc.NewEncoder()
 
 	// Use reusable buffer if it has sufficient capacity, otherwise allocate
 	startNeeded := len(matchStartBytes) * 4
@@ -399,6 +395,32 @@ func findRegexMatch(re *regexp.Regexp, data []byte, decoder *encoding.Decoder, e
 
 	result.matchStart = nDst
 	result.matchEnd = nDstEnd
+
+	// Find second match that starts after firstLoc[1] (not at firstLoc[1])
+	// This is needed for LineStartSplitFunc to find where the next log entry starts
+	if maxMatches != 1 && len(allMatches) > 1 {
+		for i := 1; i < len(allMatches); i++ {
+			if allMatches[i][0] > result.loc[1] {
+				result.secondLoc = allMatches[i]
+				// Map second match start position back to original encoded byte position
+				secondMatchStartBytes := decoded[:result.secondLoc[0]]
+				secondStartNeeded := len(secondMatchStartBytes) * 4
+				secondStartBuf := getBuffer(transformBuf, secondStartNeeded)
+				nDst2, _, err := encoder.Transform(secondStartBuf, secondMatchStartBytes, true)
+				if err != nil {
+					// If encoding fails for second match, leave secondLoc nil
+					if logger != nil {
+						logger.Warn("encoding transform failed for second match", zap.Error(err))
+					}
+					result.secondLoc = nil
+				} else {
+					result.secondMatchStart = nDst2
+				}
+				break
+			}
+		}
+	}
+
 	return result, false, false
 }
 
