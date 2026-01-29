@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 )
 
 type authenticator struct {
@@ -28,11 +29,16 @@ type authenticator struct {
 	scopes     []string
 }
 
+type tokenSource interface {
+	Token(context.Context) (*oauth2.Token, error)
+}
+
 var (
 	_ extension.Extension      = (*authenticator)(nil)
 	_ extensionauth.HTTPClient = (*authenticator)(nil)
 	_ extensionauth.Server     = (*authenticator)(nil)
 	_ azcore.TokenCredential   = (*authenticator)(nil)
+	_ tokenSource              = (*authenticator)(nil)
 )
 
 func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, error) {
@@ -131,8 +137,8 @@ func (*authenticator) Shutdown(context.Context) error {
 	return nil
 }
 
-// GetToken returns an access token with a
-// valid token for authorization
+// GetToken returns an access token with a valid token for authorization.
+// Implements tokenSource interface.
 func (a *authenticator) GetToken(ctx context.Context, options policy.TokenRequestOptions) (azcore.AccessToken, error) {
 	if a.credential == nil {
 		// This is not expected, since creating a new authenticator
@@ -142,6 +148,23 @@ func (a *authenticator) GetToken(ctx context.Context, options policy.TokenReques
 		return azcore.AccessToken{}, errors.New("unexpected: credentials were not initialized")
 	}
 	return a.credential.GetToken(ctx, options)
+}
+
+// Token returns an access token with a valid token for authorization.
+// Implements oauth2.TokenSource interface.
+func (a *authenticator) Token(ctx context.Context) (*oauth2.Token, error) {
+	opts := policy.TokenRequestOptions{
+		Scopes: a.scopes,
+	}
+	token, err := a.credential.GetToken(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	return &oauth2.Token{
+		AccessToken: token.Token,
+		Expiry:      token.ExpiresOn,
+		TokenType:   "Bearer",
+	}, nil
 }
 
 func getHeaderValue(header string, headers map[string][]string) (string, error) {
