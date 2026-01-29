@@ -3,74 +3,219 @@ all_set:
   metrics:
     snowflake.billing.cloud_service.total:
       enabled: true
+      attributes: ["service_type"]
     snowflake.billing.total_credit.total:
       enabled: true
+      attributes: ["service_type"]
     snowflake.billing.virtual_warehouse.total:
       enabled: true
+      attributes: ["service_type"]
     snowflake.billing.warehouse.cloud_service.total:
       enabled: true
+      attributes: ["warehouse_name"]
     snowflake.billing.warehouse.total_credit.total:
       enabled: true
+      attributes: ["warehouse_name"]
     snowflake.billing.warehouse.virtual_warehouse.total:
       enabled: true
+      attributes: ["warehouse_name"]
     snowflake.database.bytes_scanned.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.database.query.count:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.logins.total:
       enabled: true
+      attributes: ["error_message","reported_client_type","is_success"]
     snowflake.pipe.credits_used.total:
       enabled: true
+      attributes: ["pipe_name"]
     snowflake.query.blocked:
       enabled: true
+      attributes: ["warehouse_name"]
     snowflake.query.bytes_deleted.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.bytes_spilled.local.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.bytes_spilled.remote.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.bytes_written.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.compilation_time.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.data_scanned_cache.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.executed:
       enabled: true
+      attributes: ["warehouse_name"]
     snowflake.query.execution_time.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.partitions_scanned.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.queued_overload:
       enabled: true
+      attributes: ["warehouse_name"]
     snowflake.query.queued_provision:
       enabled: true
+      attributes: ["warehouse_name"]
     snowflake.queued_overload_time.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.queued_provisioning_time.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.queued_repair_time.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.rows_deleted.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.rows_inserted.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.rows_produced.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.rows_unloaded.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.rows_updated.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.session_id.count:
       enabled: true
+      attributes: ["user_name"]
     snowflake.storage.failsafe_bytes.total:
       enabled: true
+      attributes: []
     snowflake.storage.stage_bytes.total:
       enabled: true
+      attributes: []
     snowflake.storage.storage_bytes.total:
       enabled: true
+      attributes: []
     snowflake.total_elapsed_time.avg:
       enabled: true
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
+  resource_attributes:
+    snowflake.account.name:
+      enabled: true
+reaggregate_set:
+  metrics:
+    snowflake.billing.cloud_service.total:
+      enabled: true
+      attributes: []
+    snowflake.billing.total_credit.total:
+      enabled: true
+      attributes: []
+    snowflake.billing.virtual_warehouse.total:
+      enabled: true
+      attributes: []
+    snowflake.billing.warehouse.cloud_service.total:
+      enabled: true
+      attributes: []
+    snowflake.billing.warehouse.total_credit.total:
+      enabled: true
+      attributes: []
+    snowflake.billing.warehouse.virtual_warehouse.total:
+      enabled: true
+      attributes: []
+    snowflake.database.bytes_scanned.avg:
+      enabled: true
+      attributes: []
+    snowflake.database.query.count:
+      enabled: true
+      attributes: []
+    snowflake.logins.total:
+      enabled: true
+      attributes: []
+    snowflake.pipe.credits_used.total:
+      enabled: true
+      attributes: []
+    snowflake.query.blocked:
+      enabled: true
+      attributes: []
+    snowflake.query.bytes_deleted.avg:
+      enabled: true
+      attributes: []
+    snowflake.query.bytes_spilled.local.avg:
+      enabled: true
+      attributes: []
+    snowflake.query.bytes_spilled.remote.avg:
+      enabled: true
+      attributes: []
+    snowflake.query.bytes_written.avg:
+      enabled: true
+      attributes: []
+    snowflake.query.compilation_time.avg:
+      enabled: true
+      attributes: []
+    snowflake.query.data_scanned_cache.avg:
+      enabled: true
+      attributes: []
+    snowflake.query.executed:
+      enabled: true
+      attributes: []
+    snowflake.query.execution_time.avg:
+      enabled: true
+      attributes: []
+    snowflake.query.partitions_scanned.avg:
+      enabled: true
+      attributes: []
+    snowflake.query.queued_overload:
+      enabled: true
+      attributes: []
+    snowflake.query.queued_provision:
+      enabled: true
+      attributes: []
+    snowflake.queued_overload_time.avg:
+      enabled: true
+      attributes: []
+    snowflake.queued_provisioning_time.avg:
+      enabled: true
+      attributes: []
+    snowflake.queued_repair_time.avg:
+      enabled: true
+      attributes: []
+    snowflake.rows_deleted.avg:
+      enabled: true
+      attributes: []
+    snowflake.rows_inserted.avg:
+      enabled: true
+      attributes: []
+    snowflake.rows_produced.avg:
+      enabled: true
+      attributes: []
+    snowflake.rows_unloaded.avg:
+      enabled: true
+      attributes: []
+    snowflake.rows_updated.avg:
+      enabled: true
+      attributes: []
+    snowflake.session_id.count:
+      enabled: true
+      attributes: []
+    snowflake.storage.failsafe_bytes.total:
+      enabled: true
+      attributes: []
+    snowflake.storage.stage_bytes.total:
+      enabled: true
+      attributes: []
+    snowflake.storage.storage_bytes.total:
+      enabled: true
+      attributes: []
+    snowflake.total_elapsed_time.avg:
+      enabled: true
+      attributes: []
   resource_attributes:
     snowflake.account.name:
       enabled: true
@@ -78,74 +223,109 @@ none_set:
   metrics:
     snowflake.billing.cloud_service.total:
       enabled: false
+      attributes: ["service_type"]
     snowflake.billing.total_credit.total:
       enabled: false
+      attributes: ["service_type"]
     snowflake.billing.virtual_warehouse.total:
       enabled: false
+      attributes: ["service_type"]
     snowflake.billing.warehouse.cloud_service.total:
       enabled: false
+      attributes: ["warehouse_name"]
     snowflake.billing.warehouse.total_credit.total:
       enabled: false
+      attributes: ["warehouse_name"]
     snowflake.billing.warehouse.virtual_warehouse.total:
       enabled: false
+      attributes: ["warehouse_name"]
     snowflake.database.bytes_scanned.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.database.query.count:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.logins.total:
       enabled: false
+      attributes: ["error_message","reported_client_type","is_success"]
     snowflake.pipe.credits_used.total:
       enabled: false
+      attributes: ["pipe_name"]
     snowflake.query.blocked:
       enabled: false
+      attributes: ["warehouse_name"]
     snowflake.query.bytes_deleted.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.bytes_spilled.local.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.bytes_spilled.remote.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.bytes_written.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.compilation_time.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.data_scanned_cache.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.executed:
       enabled: false
+      attributes: ["warehouse_name"]
     snowflake.query.execution_time.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.partitions_scanned.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.query.queued_overload:
       enabled: false
+      attributes: ["warehouse_name"]
     snowflake.query.queued_provision:
       enabled: false
+      attributes: ["warehouse_name"]
     snowflake.queued_overload_time.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.queued_provisioning_time.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.queued_repair_time.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.rows_deleted.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.rows_inserted.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.rows_produced.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.rows_unloaded.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.rows_updated.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
     snowflake.session_id.count:
       enabled: false
+      attributes: ["user_name"]
     snowflake.storage.failsafe_bytes.total:
       enabled: false
+      attributes: []
     snowflake.storage.stage_bytes.total:
       enabled: false
+      attributes: []
     snowflake.storage.storage_bytes.total:
       enabled: false
+      attributes: []
     snowflake.total_elapsed_time.avg:
       enabled: false
+      attributes: ["schema_name","execution_status","error_message","query_type","warehouse_name","database_name","warehouse_size"]
   resource_attributes:
     snowflake.account.name:
       enabled: false
