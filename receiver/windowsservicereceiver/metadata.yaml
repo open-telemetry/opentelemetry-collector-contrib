@@ -9,14 +9,18 @@ status:
     active: [pjanotti, shalper2]
   unsupported_platforms: [darwin, linux]
 
+reaggregation_enabled: true
+
 attributes:
   name:
     description: The name of the windows Service being reported.
     type: string
+    requirement_level: required
   startup_mode:
     description: Startup mode of Windows Service
     enum: [boot_start, system_start, auto_start, demand_start, disabled]
     type: string
+    requirement_level: required
   
 metrics:
   windows.service.status:
