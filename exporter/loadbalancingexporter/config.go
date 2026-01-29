@@ -45,10 +45,11 @@ type Config struct {
 	// RoutingKey is a single routing key value
 	RoutingKey string `mapstructure:"routing_key"`
 
-	// RoutingAttributes creates a composite routing key, based on several resource attributes of the application.
+	// RoutingAttributes creates a composite routing key from the listed attributes.
 	//
-	// Supports all attributes available (both resource and span), as well as the pseudo attributes "span.kind" and
+	// For traces, attributes can come from resource, scope, or span, plus the pseudo attributes "span.kind" and
 	// "span.name".
+	// For metrics, attributes can come from resource, scope, or datapoint attributes.
 	RoutingAttributes []string `mapstructure:"routing_attributes"`
 }
 
