@@ -174,6 +174,9 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 	// Copy status from template
 	templateSpan.Status().CopyTo(newSpan.Status())
 
+	// Copy TraceState from template for Consistent Probability Sampling compatibility
+	newSpan.TraceState().FromRaw(templateSpan.TraceState().AsRaw())
+
 	// Add aggregation statistics as attributes
 	prefix := p.config.AggregationAttributePrefix
 	newSpan.Attributes().PutBool(prefix+"is_summary", true)

@@ -23,8 +23,9 @@ Spans are grouped by:
 1. **Span name** - spans must have the same name
 2. **Span kind** - spans must have the same kind (Internal, Server, Client, Producer, Consumer)
 3. **Status code** - spans must have the same status (OK, Error, or Unset)
-4. **Configured attributes** - spans must have matching values for attributes specified in `group_by_attributes`
-5. **Parent span name** - leaf spans must share the same parent span name to be grouped together
+4. **TraceState** - spans must have identical TraceState values (for Consistent Probability Sampling compatibility)
+5. **Configured attributes** - spans must have matching values for attributes specified in `group_by_attributes`
+6. **Parent span name** - leaf spans must share the same parent span name to be grouped together
 
 Parent spans are eligible for aggregation when all of their children are aggregated, they share the same name, kind, and status code, and they are not root spans.
 
@@ -203,6 +204,7 @@ When spans are aggregated, the summary span includes:
 - **StartTimestamp**: Earliest start time of all spans in the group
 - **EndTimestamp**: Latest end time of all spans in the group
 - **Status**: Same as original spans (spans are grouped by status code)
+- **TraceState**: Inherited from the template span (preserved for Consistent Probability Sampling compatibility)
 - **Attributes**: Inherited from the slowest span in the group
 
 > **Note**: The summary span's duration (`EndTimestamp - StartTimestamp`) represents the total time window covered by all aggregated spans, which may exceed `duration_max_ns`. For example, if spans overlap or are staggered, the time range can be larger than any individual span's duration. Use `duration_max_ns` to find the slowest individual operation.
@@ -543,6 +545,22 @@ root
 - Requires complete traces for accurate leaf detection
 - Summary span inherits attributes from the slowest span in the group
 - Parent spans are only aggregated when ALL their children are aggregated
+
+## Consistent Probability Sampling (CPS) Compatibility
+
+The processor is designed to be compatible with [Consistent Probability Sampling](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/) (CPS). CPS uses TraceState to carry sampling metadata (`ot=th:...;rv:...`) where:
+
+- `th` (threshold) indicates the sampling probability threshold
+- `rv` (randomness value) provides consistent randomness for sampling decisions
+
+**Why TraceState matters for aggregation:**
+
+Spans with different TraceState values represent different sampling populations with different "adjusted counts" (weights). Aggregating them together would produce statistically incorrect summaries and break downstream sampling decisions.
+
+The processor uses **exact TraceState matching** (not just the `th` value) because:
+- The `rv` value affects sampling decisions
+- Vendor-specific keys may have semantic meaning
+- Key ordering may be significant
 
 ## Telemetry
 

@@ -37,6 +37,12 @@ func (p *spanPruningProcessor) buildGroupKey(span ptrace.Span) string {
 	builder.WriteString("|status=")
 	builder.WriteString(span.Status().Code().String())
 
+	// Include TraceState for Consistent Probability Sampling (CPS) compatibility.
+	// Spans with different TraceState values (e.g., different sampling thresholds)
+	// represent different sampling populations and must not be aggregated together.
+	builder.WriteString("|ts=")
+	builder.WriteString(span.TraceState().AsRaw())
+
 	attrs := span.Attributes()
 
 	// Collect all matching attribute key-value pairs
@@ -81,6 +87,9 @@ func (*spanPruningProcessor) buildParentGroupKey(span ptrace.Span) string {
 	builder.WriteString(span.Kind().String())
 	builder.WriteString("|status=")
 	builder.WriteString(span.Status().Code().String())
+	// Include TraceState for CPS compatibility
+	builder.WriteString("|ts=")
+	builder.WriteString(span.TraceState().AsRaw())
 	return builder.String()
 }
 

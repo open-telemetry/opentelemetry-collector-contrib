@@ -2061,6 +2061,416 @@ func TestProcessorSkipsAggregationWhenTooFewNormalSpans(t *testing.T) {
 	// Since span counts are equal, no aggregation occurred
 }
 
+// TraceState grouping tests for Consistent Probability Sampling (CPS) compatibility
+
+func TestLeafSpanPruning_TraceStateGrouping_SameTraceState(t *testing.T) {
+	// Test: spans with identical TraceState should be aggregated together
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithSameTraceState(t, "ot=th:fd70a4;rv:12345")
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 4, originalSpanCount) // 1 parent + 3 leaf spans
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// All 3 leaf spans have same TraceState, should aggregate to 1
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 2, finalSpanCount) // 1 parent + 1 summary
+
+	summarySpan := findSummarySpan(td)
+	require.NotNil(t, summarySpan)
+
+	attrs := summarySpan.Attributes()
+	spanCount, _ := attrs.Get("aggregation.span_count")
+	assert.Equal(t, int64(3), spanCount.Int())
+
+	// Verify TraceState is preserved in summary span
+	assert.Equal(t, "ot=th:fd70a4;rv:12345", summarySpan.TraceState().AsRaw())
+}
+
+func TestLeafSpanPruning_TraceStateGrouping_DifferentThresholds(t *testing.T) {
+	// Test: spans with different th (threshold) values should be in separate groups
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithDifferentTraceStates(t)
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 6, originalSpanCount) // 1 parent + 3 spans (th:fd70a4) + 2 spans (th:fa00)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// 3 spans with th:fd70a4 -> 1 summary
+	// 2 spans with th:fa00 -> 1 summary
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 3, finalSpanCount) // 1 parent + 2 summaries
+
+	// Verify we have two summary spans with different TraceState values
+	summaries := findAllSummarySpans(td)
+	assert.Len(t, summaries, 2, "should have 2 summary spans")
+
+	// Collect TraceState values from summaries
+	traceStates := make(map[string]int64)
+	for _, summary := range summaries {
+		ts := summary.TraceState().AsRaw()
+		count, _ := summary.Attributes().Get("aggregation.span_count")
+		traceStates[ts] = count.Int()
+	}
+
+	assert.Equal(t, int64(3), traceStates["ot=th:fd70a4;rv:12345"], "th:fd70a4 group should have 3 spans")
+	assert.Equal(t, int64(2), traceStates["ot=th:fa00;rv:12345"], "th:fa00 group should have 2 spans")
+}
+
+func TestLeafSpanPruning_TraceStateGrouping_MixedWithEmpty(t *testing.T) {
+	// Test: spans with TraceState and spans without should be in separate groups
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithMixedTraceState(t)
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 6, originalSpanCount) // 1 parent + 3 spans (with TraceState) + 2 spans (empty)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// 3 spans with TraceState -> 1 summary
+	// 2 spans with empty TraceState -> 1 summary
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 3, finalSpanCount) // 1 parent + 2 summaries
+
+	summaries := findAllSummarySpans(td)
+	assert.Len(t, summaries, 2, "should have 2 summary spans")
+
+	// Verify TraceState values are preserved correctly
+	var withTS, withoutTS ptrace.Span
+	for _, s := range summaries {
+		if s.TraceState().AsRaw() == "" {
+			withoutTS = s
+		} else {
+			withTS = s
+		}
+	}
+
+	assert.Equal(t, "ot=th:fd70a4;rv:12345", withTS.TraceState().AsRaw())
+	count1, _ := withTS.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(3), count1.Int())
+
+	assert.Equal(t, "", withoutTS.TraceState().AsRaw())
+	count2, _ := withoutTS.Attributes().Get("aggregation.span_count")
+	assert.Equal(t, int64(2), count2.Int())
+}
+
+func TestLeafSpanPruning_TraceStateGrouping_EmptyTraceState(t *testing.T) {
+	// Test: spans with empty TraceState should be grouped together
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithSameTraceState(t, "") // Empty TraceState
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 4, originalSpanCount) // 1 parent + 3 leaf spans
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// All 3 leaf spans have empty TraceState, should aggregate to 1
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 2, finalSpanCount)
+
+	summarySpan := findSummarySpan(td)
+	require.NotNil(t, summarySpan)
+	assert.Equal(t, "", summarySpan.TraceState().AsRaw())
+
+	attrs := summarySpan.Attributes()
+	spanCount, _ := attrs.Get("aggregation.span_count")
+	assert.Equal(t, int64(3), spanCount.Int())
+}
+
+func TestLeafSpanPruning_TraceStateGrouping_DifferentRVValues(t *testing.T) {
+	// Test: spans with different rv (randomness value) should be in separate groups
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithDifferentRVValues(t)
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 5, originalSpanCount) // 1 parent + 2 spans (rv:11111) + 2 spans (rv:22222)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// 2 spans with rv:11111 -> 1 summary
+	// 2 spans with rv:22222 -> 1 summary
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 3, finalSpanCount) // 1 parent + 2 summaries
+
+	summaries := findAllSummarySpans(td)
+	assert.Len(t, summaries, 2, "should have 2 summary spans")
+}
+
+func TestLeafSpanPruning_TraceStateGrouping_VendorKeys(t *testing.T) {
+	// Test: spans with different vendor-specific keys should be in separate groups
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithVendorTraceState(t)
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 5, originalSpanCount) // 1 parent + 2 spans (vendor=a) + 2 spans (vendor=b)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	// Different vendor keys should result in separate groups
+	finalSpanCount := countSpans(td)
+	assert.Equal(t, 3, finalSpanCount) // 1 parent + 2 summaries
+
+	summaries := findAllSummarySpans(td)
+	assert.Len(t, summaries, 2, "should have 2 summary spans")
+}
+
+// Helper functions for TraceState tests
+
+func createTestTraceWithSameTraceState(t *testing.T, traceState string) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	// Parent span
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("parent")
+
+	// 3 leaf spans with identical TraceState
+	for i := range 3 {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.TraceState().FromRaw(traceState)
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	return td
+}
+
+func createTestTraceWithDifferentTraceStates(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	// Parent span
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("parent")
+
+	// 3 leaf spans with th:fd70a4 (1% sampling)
+	for i := range 3 {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.TraceState().FromRaw("ot=th:fd70a4;rv:12345")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	// 2 leaf spans with th:fa00 (2% sampling)
+	for i := range 2 {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.TraceState().FromRaw("ot=th:fa00;rv:12345")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	return td
+}
+
+func createTestTraceWithMixedTraceState(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	// Parent span
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("parent")
+
+	// 3 leaf spans with TraceState
+	for i := range 3 {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.TraceState().FromRaw("ot=th:fd70a4;rv:12345")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	// 2 leaf spans WITHOUT TraceState (empty)
+	for i := range 2 {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		// No TraceState set (empty)
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	return td
+}
+
+func createTestTraceWithDifferentRVValues(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	// Parent span
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("parent")
+
+	// 2 leaf spans with rv:11111
+	for i := range 2 {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.TraceState().FromRaw("ot=th:fd70a4;rv:11111")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	// 2 leaf spans with rv:22222
+	for i := range 2 {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.TraceState().FromRaw("ot=th:fd70a4;rv:22222")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	return td
+}
+
+func createTestTraceWithVendorTraceState(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	parentSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	// Parent span
+	parentSpan := ss.Spans().AppendEmpty()
+	parentSpan.SetTraceID(traceID)
+	parentSpan.SetSpanID(parentSpanID)
+	parentSpan.SetName("parent")
+
+	// 2 leaf spans with vendor=a
+	for i := range 2 {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{2, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.TraceState().FromRaw("ot=th:fd70a4,vendor=a")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	// 2 leaf spans with vendor=b
+	for i := range 2 {
+		span := ss.Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(pcommon.SpanID([8]byte{3, byte(i), 0, 0, 0, 0, 0, 0}))
+		span.SetParentSpanID(parentSpanID)
+		span.SetName("SELECT")
+		span.TraceState().FromRaw("ot=th:fd70a4,vendor=b")
+		span.SetStartTimestamp(pcommon.Timestamp(1000000000))
+		span.SetEndTimestamp(pcommon.Timestamp(1000000100))
+	}
+
+	return td
+}
+
+func findAllSummarySpans(td ptrace.Traces) []ptrace.Span {
+	var result []ptrace.Span
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		ilss := rss.At(i).ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			spans := ilss.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				isSummary, exists := span.Attributes().Get("aggregation.is_summary")
+				if exists && isSummary.Bool() {
+					result = append(result, span)
+				}
+			}
+		}
+	}
+	return result
+}
+
 func createTestTraceWithManyOutliers(t *testing.T) ptrace.Traces {
 	t.Helper()
 	td := ptrace.NewTraces()
