@@ -145,9 +145,9 @@ func (dc *DimensionClient) Shutdown() {
 	}
 }
 
-// acceptDimension to be sent to the API.  This will return fairly quickly and
+// AcceptDimension to be sent to the API.  This will return fairly quickly and
 // won't block. If the buffer is full, the dim update will be dropped.
-func (dc *DimensionClient) acceptDimension(dimUpdate *DimensionUpdate) error {
+func (dc *DimensionClient) AcceptDimension(dimUpdate *DimensionUpdate) error {
 	if dimUpdate = dc.filterDimensionUpdate(dimUpdate); dimUpdate == nil {
 		return nil
 	}
@@ -271,7 +271,7 @@ func (dc *DimensionClient) handleDimensionUpdate(ctx context.Context, dimUpdate 
 			// temporary API failures.  If the API is down for significant
 			// periods of time, dimension updates will probably eventually back
 			// up beyond PropertiesMaxBuffered and start dropping.
-			if err := dc.acceptDimension(dimUpdate); err != nil {
+			if err := dc.AcceptDimension(dimUpdate); err != nil {
 				dc.logger.Error(
 					"Failed to retry dimension update",
 					zap.Error(err),
