@@ -60,6 +60,7 @@ The following settings are optional:
   - `limit` - limit of records, which is maximum number of generated metrics (default=`250`)
 - `query_sample_collection`: Additional configuration for query sample collection(`db.server.query_sample` event):
   - `max_rows_per_query` - maximum number of rows to collect per scrape (default=`100`)
+  - Note that collection of Query Plans requires that the query returned from `performance_schema.events_statements_summary_by_digest` is limited to 1024 characters by default. If a query exceeds this length, the plan cannot be collected. See `QUERY_SAMPLE_TEXT` in https://dev.mysql.com/doc/refman/8.4/en/performance-schema-statement-summary-tables.html for details and how to change this limit.
 - `top_query_collection`: Additional configuration for top queries collection (`db.server.top_query` event):
   - `lookback_time` (optional, example = `60`, default = `2 * collection_interval`): The time window (in seconds) in which to query for top queries.
     - Queries that finished execution outside the lookback window are not included in the collection. Increasing the lookback window will be useful for capturing long-running queries.
