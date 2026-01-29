@@ -80,3 +80,218 @@ filter/bad_syntax_log:
   logs:
     log_record:
       - 'attributes[test] == "pass"'
+filter/context_inferred_trace:
+  trace_conditions:
+    - conditions:
+        - span.attributes["test"] == "pass"
+filter/context_inferred_metric:
+  metric_conditions:
+    - conditions:
+        - metric.name == "pass"
+filter/context_inferred_log:
+  log_conditions:
+    - conditions:
+        - log.attributes["test"] == "pass"
+filter/context_inferred_profile:
+  profile_conditions:
+    - conditions:
+        - profile.attributes["test"] == "pass"
+filter/context_inferred_with_error_mode:
+  error_mode: ignore
+  trace_conditions:
+    - conditions:
+        - span.attributes["test"] == "pass"
+filter/context_inferred_multiple_conditions:
+  trace_conditions:
+    - conditions:
+        - span.attributes["test"] == "pass"
+        - span.attributes["test2"] == "also pass"
+    - conditions:
+        - span.attributes["event"] == "pass"
+# Error cases - mixing old and new formats
+filter/mix_trace_conditions:
+  trace_conditions:
+    - conditions:
+        - attributes["test"] == "pass"
+  traces:
+    span:
+      - attributes["test"] == "pass"
+
+filter/mix_metric_conditions:
+  metric_conditions:
+    - conditions:
+        - name == "pass"
+  metrics:
+    metric:
+      - name == "pass"
+
+filter/mix_log_conditions:
+  log_conditions:
+    - conditions:
+        - attributes["test"] == "pass"
+  logs:
+    log_record:
+      - attributes["test"] == "pass"
+
+filter/mix_metric_conditions_with_include:
+  metric_conditions:
+    - conditions:
+        - name == "pass"
+  metrics:
+    include:
+      match_type: strict
+      metric_names:
+        - test_metric
+
+filter/mix_log_conditions_with_exclude:
+  log_conditions:
+    - conditions:
+        - attributes["test"] == "pass"
+  logs:
+    exclude:
+      match_type: strict
+      bodies:
+        - test_body
+filter/mix_profile_conditions:
+  profile_conditions:
+    - conditions:
+        - profile.attributes["test"] == "pass"
+  profiles:
+    profile:
+      - attributes["test"] == "pass"
+
+# Bad syntax cases for context inferred conditions
+filter/bad_syntax_context_inferred_trace:
+  trace_conditions:
+    - conditions:
+        - invalid_syntax_here ==
+
+filter/bad_syntax_context_inferred_metric:
+  metric_conditions:
+    - conditions:
+        - invalid_function() == "test"
+
+filter/bad_syntax_context_inferred_log:
+  log_conditions:
+    - conditions:
+        - malformed condition without quotes
+filter/bad_syntax_context_inferred_profile:
+  profile_conditions:
+    - conditions:
+        - malformed condition without quotes
+# Flat style
+filter/flat_style:
+  trace_conditions:
+    - span.attributes["test"] == "pass"
+    - span.attributes["another"] == "pass"
+  metric_conditions:
+    - datapoint.attributes["test"] == "pass"
+    - datapoint.attributes["another"] == "pass"
+  log_conditions:
+    - log.attributes["test"] == "pass"
+    - log.attributes["another"] == "pass"
+  profile_conditions:
+    - profile.attributes["test"] == "pass"
+    - profile.attributes["another"] == "pass"
+# Advance style
+filter/advance_style:
+  trace_conditions:
+    - context: span
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+    - context: spanevent
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+    - context: scope
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+    - context: resource
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+  metric_conditions:
+    - context: metric
+      conditions:
+        - name == "pass"
+    - context: datapoint
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+    - context: scope
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+    - context: resource
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+  log_conditions:
+    - context: log
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+    - context: scope
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+    - context: resource
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+  profile_conditions:
+    - context: profile
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+    - context: scope
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+    - context: resource
+      conditions:
+        - attributes["test"] == "pass"
+        - attributes["another"] == "pass"
+
+# Bad syntax for mixing advance and flat styles
+filter/mixed_advance_and_flat_styles:
+  log_conditions:
+    - context: log
+      conditions:
+        - attributes["another_test"] == "fail"
+    - log.attributes["test"] == "fail"
+# Error mode in global and conditions
+filter/context_conditions_error_mode:
+  error_mode: ignore
+  trace_conditions:
+    - error_mode: silent
+      conditions:
+        - span.attributes["test"] == "pass"
+  metric_conditions:
+    - error_mode: silent
+      conditions:
+        - metric.name == "pass"
+  log_conditions:
+    - error_mode: propagate
+      conditions:
+        - log.attributes["test"] == "pass"
+  profile_conditions:
+    - error_mode: silent
+      conditions:
+        - profile.attributes["test"] == "pass"
+# Bad error mode
+filter/unknown_error_mode:
+  error_mode: test
+# Bad context
+filter/unknown_context:
+  log_conditions:
+    - context: abc
+      conditions:
+        - attributes["another_test"] == "fail"
+# Bad conditions flat style
+filter/empty_flat_style:
+  log_conditions:
+    -
+    -
