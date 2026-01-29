@@ -1,10 +1,10 @@
 {
   "records": [
     {
-      "correlationId": "91e76397-5361-49bc-b814-a346a1761bb3",
+      "correlationId": "aaaaaaaa-bbbb-cccc-dddd-333333333333",
       "time": "2025-04-24T14:11:46.4216690Z",
-      "eventDataId": "d2ecfbc7-151b-48fd-ab16-4db80d087e7b",
-      "resourceId": "/SUBSCRIPTIONS/441fcba2-0b42-4269-b8b8-52f7c1cfb5d7/RESOURCEGROUPS/FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/FRONTDOOR-PROFILE",
+      "eventDataId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "resourceId": "/SUBSCRIPTIONS/11111111-1111-1111-1111-111111111111/RESOURCEGROUPS/EXAMPLE-FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/EXAMPLE-FRONTDOOR-PROFILE",
       "operationName": "Microsoft.Advisor/recommendations/available/action",
       "resultType": "Active",
       "properties": {
@@ -12,7 +12,7 @@
         "recommendationCategory": "HighAvailability",
         "recommendationImpact": "High",
         "recommendationName": "Consider having at least two origins",
-        "recommendationResourceLink": "https://portal.azure.com/#blade/Microsoft_Azure_Expert/RecommendationListBlade/source/ActivityLog/recommendationTypeId/589ab0b0-1362-44fd-8551-0e7847767600/resourceId/%2Fsubscriptions%2F441fcba2-0b42-4269-b8b8-52f7c1cfb5d7%2Fresourcegroups%2Fjohn-doe-frontdoor%2Fproviders%2FMicrosoft.Cdn%2Fprofiles%2Fjohn-doe-frontdoor-profile",
+        "recommendationResourceLink": "https://portal.azure.com/#blade/Microsoft_Azure_Expert/RecommendationListBlade/source/ActivityLog/recommendationTypeId/589ab0b0-1362-44fd-8551-0e7847767600/resourceId/%2Fsubscriptions%2F11111111-1111-1111-1111-111111111111%2Fresourcegroups%2Fexample-frontdoor%2Fproviders%2FMicrosoft.Cdn%2Fprofiles%2Fexample-frontdoor-profile",
         "recommendationType": "589ab0b0-1362-44fd-8551-0e7847767600"
       },
       "location": "global",
