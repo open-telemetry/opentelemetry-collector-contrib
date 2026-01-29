@@ -126,7 +126,7 @@ func encodeASCII(input string) (string, error) {
 	return encodedString, nil
 }
 
-func encodeAndSanitize(e encoding.Encoding, input string, replacement string) (string, error) {
+func encodeAndSanitize(e encoding.Encoding, input, replacement string) (string, error) {
 	encodedString, err := e.NewEncoder().String(input)
 	// If encoding fails (unmappable characters), sanitize input first
 	if err != nil {
@@ -147,10 +147,10 @@ func encodeAndSanitize(e encoding.Encoding, input string, replacement string) (s
 	return encodedString, nil
 }
 
-func replaceInvalidUTF8(input string, replacement string) string {
+func replaceInvalidUTF8(input, replacement string) string {
 	var buf bytes.Buffer
 
-	for len(input) > 0 {
+	for input != "" {
 		r, size := utf8.DecodeRuneInString(input)
 		if r == utf8.RuneError {
 			buf.WriteString(replacement)
