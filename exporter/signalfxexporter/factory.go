@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
@@ -35,6 +36,12 @@ const (
 	defaultDimMaxIdleConns        = 20
 	defaultDimMaxIdleConnsPerHost = 20
 )
+
+var entityEventsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.signalfx.consumeEntityEvents",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Process entity events from logs pipeline and convert to dimension property updates"),
+	featuregate.WithRegisterFromVersion("v0.145.0"))
 
 // NewFactory creates a factory for SignalFx exporter.
 func NewFactory() exporter.Factory {
@@ -174,7 +181,8 @@ func createLogsExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(expCfg.BackOffConfig),
 		exporterhelper.WithQueue(expCfg.QueueSettings),
-		exporterhelper.WithStart(exp.startLogs))
+		exporterhelper.WithStart(exp.startLogs),
+		exporterhelper.WithShutdown(exp.shutdown))
 	if err != nil {
 		return nil, err
 	}
