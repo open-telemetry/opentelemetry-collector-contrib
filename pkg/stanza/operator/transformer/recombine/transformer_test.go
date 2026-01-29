@@ -4,12 +4,14 @@
 package recombine
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
@@ -1092,4 +1094,241 @@ func TestProcessBatchPreservesBatching(t *testing.T) {
 	fake.ExpectEntry(t, expect1)
 	fake.ExpectEntry(t, expect2)
 	fake.ExpectEntry(t, expect3)
+}
+
+func TestRecombineQuietModeProcess(t *testing.T) {
+	testCases := []struct {
+		name        string
+		onError     string
+		expectError bool
+	}{
+		{
+			name:        "DropOnErrorQuiet_ReturnsNoError",
+			onError:     helper.DropOnErrorQuiet,
+			expectError: false,
+		},
+		{
+			name:        "SendOnErrorQuiet_ReturnsNoError",
+			onError:     helper.SendOnErrorQuiet,
+			expectError: false,
+		},
+		{
+			name:        "DropOnError_ReturnsError",
+			onError:     helper.DropOnError,
+			expectError: true,
+		},
+		{
+			name:        "SendOnError_ReturnsError",
+			onError:     helper.SendOnError,
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewConfig()
+			cfg.CombineField = entry.NewBodyField()
+			// Use an invalid expression that will cause an error during processing
+			cfg.IsLastEntry = "body.invalid_field == 'test'"
+			cfg.OutputIDs = []string{"fake"}
+			cfg.OnError = tc.onError
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
+			require.NoError(t, err)
+
+			fake := testutil.NewFakeOutput(t)
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+			require.NoError(t, op.Start(nil))
+			defer func() { require.NoError(t, op.Stop()) }()
+
+			// Create entry that will cause expression evaluation error
+			e := entry.New()
+			e.Body = "test"
+			e.ObservedTimestamp = time.Now()
+
+			err = op.Process(t.Context(), e)
+			if tc.expectError {
+				require.Error(t, err, "expected error in non-quiet mode")
+			} else {
+				require.NoError(t, err, "expected no error in quiet mode")
+			}
+		})
+	}
+}
+
+func TestRecombineQuietModeProcessBatch(t *testing.T) {
+	testCases := []struct {
+		name        string
+		onError     string
+		expectError bool
+	}{
+		{
+			name:        "DropOnErrorQuiet_ReturnsNoError",
+			onError:     helper.DropOnErrorQuiet,
+			expectError: false,
+		},
+		{
+			name:        "SendOnErrorQuiet_ReturnsNoError",
+			onError:     helper.SendOnErrorQuiet,
+			expectError: false,
+		},
+		{
+			name:        "DropOnError_ReturnsError",
+			onError:     helper.DropOnError,
+			expectError: true,
+		},
+		{
+			name:        "SendOnError_ReturnsError",
+			onError:     helper.SendOnError,
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewConfig()
+			cfg.CombineField = entry.NewBodyField()
+			// Use an invalid expression that will cause an error during processing
+			cfg.IsLastEntry = "body.invalid_field == 'test'"
+			cfg.OutputIDs = []string{"fake"}
+			cfg.OnError = tc.onError
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
+			require.NoError(t, err)
+
+			fake := testutil.NewFakeOutput(t)
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+			require.NoError(t, op.Start(nil))
+			defer func() { require.NoError(t, op.Stop()) }()
+
+			// Create entries that will cause expression evaluation errors
+			entries := make([]*entry.Entry, 3)
+			for i := range entries {
+				e := entry.New()
+				e.Body = "test"
+				e.ObservedTimestamp = time.Now()
+				entries[i] = e
+			}
+
+			err = op.ProcessBatch(t.Context(), entries)
+			if tc.expectError {
+				require.Error(t, err, "expected error in non-quiet mode")
+			} else {
+				require.NoError(t, err, "expected no error in quiet mode")
+			}
+		})
+	}
+}
+
+// TestRecombineQuietModeFlushSourceProcess tests quiet mode handling for flushSource errors
+// in the Process method when matchFirstLine or matchLastLine triggers a flush
+func TestRecombineQuietModeFlushSourceProcess(t *testing.T) {
+	testCases := []struct {
+		name        string
+		onError     string
+		expectError bool
+	}{
+		{
+			name:        "DropOnErrorQuiet_ReturnsNoError",
+			onError:     helper.DropOnErrorQuiet,
+			expectError: false,
+		},
+		{
+			name:        "SendOnErrorQuiet_ReturnsNoError",
+			onError:     helper.SendOnErrorQuiet,
+			expectError: false,
+		},
+		{
+			name:        "DropOnError_ReturnsError",
+			onError:     helper.DropOnError,
+			expectError: true,
+		},
+		{
+			name:        "SendOnError_ReturnsError",
+			onError:     helper.SendOnError,
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name+"_MatchFirstLine", func(t *testing.T) {
+			cfg := NewConfig()
+			cfg.CombineField = entry.NewBodyField()
+			cfg.IsFirstEntry = "body == 'START'"
+			cfg.OutputIDs = []string{"fake"}
+			cfg.OnError = tc.onError
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
+			require.NoError(t, err)
+
+			// Use an output that will fail on write to trigger flushSource error
+			failingOutput := &testutil.Operator{}
+			failingOutput.On("ID").Return("fake")
+			failingOutput.On("CanProcess").Return(true)
+			failingOutput.On("Process", mock.Anything, mock.Anything).Return(errors.New("write error"))
+			require.NoError(t, op.SetOutputs([]operator.Operator{failingOutput}))
+			require.NoError(t, op.Start(nil))
+			defer func() { require.NoError(t, op.Stop()) }()
+
+			// First entry - starts batch
+			e1 := entry.New()
+			e1.Body = "START"
+			e1.ObservedTimestamp = time.Now()
+			err = op.Process(t.Context(), e1)
+			require.NoError(t, err) // First entry just starts batch, no flush yet
+
+			// Second entry with START triggers flush of first batch
+			e2 := entry.New()
+			e2.Body = "START"
+			e2.ObservedTimestamp = time.Now()
+			err = op.Process(t.Context(), e2)
+			if tc.expectError {
+				require.Error(t, err, "expected error in non-quiet mode")
+			} else {
+				require.NoError(t, err, "expected no error in quiet mode")
+			}
+		})
+
+		t.Run(tc.name+"_MatchLastLine", func(t *testing.T) {
+			cfg := NewConfig()
+			cfg.CombineField = entry.NewBodyField()
+			cfg.IsLastEntry = "body == 'END'"
+			cfg.OutputIDs = []string{"fake"}
+			cfg.OnError = tc.onError
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
+			require.NoError(t, err)
+
+			// Use an output that will fail on write to trigger flushSource error
+			failingOutput := &testutil.Operator{}
+			failingOutput.On("ID").Return("fake")
+			failingOutput.On("CanProcess").Return(true)
+			failingOutput.On("Process", mock.Anything, mock.Anything).Return(errors.New("write error"))
+			require.NoError(t, op.SetOutputs([]operator.Operator{failingOutput}))
+			require.NoError(t, op.Start(nil))
+			defer func() { require.NoError(t, op.Stop()) }()
+
+			// First entry - starts batch
+			e1 := entry.New()
+			e1.Body = "line1"
+			e1.ObservedTimestamp = time.Now()
+			err = op.Process(t.Context(), e1)
+			require.NoError(t, err) // First entry just starts batch, no flush yet
+
+			// Second entry with END triggers flush
+			e2 := entry.New()
+			e2.Body = "END"
+			e2.ObservedTimestamp = time.Now()
+			err = op.Process(t.Context(), e2)
+			if tc.expectError {
+				require.Error(t, err, "expected error in non-quiet mode")
+			} else {
+				require.NoError(t, err, "expected no error in quiet mode")
+			}
+		})
+	}
 }
