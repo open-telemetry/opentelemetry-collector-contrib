@@ -600,11 +600,12 @@ func TestDoWithTimeout_NoTimeout(t *testing.T) {
 func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 	// prepare
 	start := time.Now()
-	blockCh := make(chan struct{}) // channel that will never be closed/signaled
+	blockCh := make(chan struct{})
+	defer close(blockCh) // cleanup: unblock the goroutine to prevent leak
 
 	// test
 	succeed, err := doWithTimeout(20*time.Millisecond, func() error {
-		<-blockCh // block forever (simulating a long-running function)
+		<-blockCh // block until timeout or channel closed
 		return nil
 	})
 	assert.False(t, succeed)
