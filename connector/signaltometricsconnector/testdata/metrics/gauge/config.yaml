@@ -1,4 +1,4 @@
-signaltometrics:
+signal_to_metrics:
   datapoints:
     - name: datapoint.bar.gauge
       description: Last gauge as per datapoint.bar attribute
@@ -8,3 +8,4 @@ signaltometrics:
         - metric.type == 2 # select all sums
       gauge:
         value: Double(value_int) + value_double
+
