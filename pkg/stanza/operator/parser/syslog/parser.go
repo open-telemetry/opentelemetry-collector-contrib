@@ -194,6 +194,7 @@ func (p *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage, skipPriHeade
 		value["priority"] = syslogMessage.Priority
 		value["severity"] = syslogMessage.Severity
 		value["facility"] = syslogMessage.Facility
+		value["facility_text"] = syslogMessage.FacilityLevel()
 	}
 
 	return p.toSafeMap(value)
@@ -216,6 +217,7 @@ func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeade
 		value["priority"] = syslogMessage.Priority
 		value["severity"] = syslogMessage.Severity
 		value["facility"] = syslogMessage.Facility
+		value["facility_text"] = syslogMessage.FacilityLevel()
 	}
 
 	return p.toSafeMap(value)
