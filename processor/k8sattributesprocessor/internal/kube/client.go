@@ -981,7 +981,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		transformedPod.SetUID(pod.GetUID())
 	}
 
-	if rules.Node {
+	if rules.Node || rules.NodeUID {
 		transformedPod.Spec.NodeName = pod.Spec.NodeName
 	}
 

@@ -792,6 +792,16 @@ processors:
     detectors: ["vultr"]
 ```
 
+The Vultr detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/vultr:
+    detectors: ["vultr"]
+    vultr:
+      fail_on_missing_metadata: true
+```
+
 ### Digital Ocean
 
 Uses the [Digital Ocean metadata API](https://docs.digitalocean.com/reference/api/metadata/) to read resource information from the instance metadata service and populate related resource attributes.
@@ -804,16 +814,6 @@ Akamai custom configuration example:
 processors:
   resourcedetection/digitalocean:
     detectors: ["digitalocean"]
-```
-
-The Vultr detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resourcedetection/vultr:
-    detectors: ["vultr"]
-    vultr:
-      fail_on_missing_metadata: true
 ```
 
 ### Openstack Nova

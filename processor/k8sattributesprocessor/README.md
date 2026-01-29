@@ -67,7 +67,7 @@ The following attributes are added by default:
   - k8s.pod.name
   - k8s.pod.uid
   - k8s.pod.start_time
-  - k8s.deployment.name
+  - k8s.deployment.name (requires watching Deployment resources unless `deployment_name_from_replicaset` is enabled)
   - k8s.node.name
 
 These attributes are also available for the use within association rules by default.
@@ -267,7 +267,11 @@ The processor can be configured to set the
 [recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
 
 - `otel_annotations` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
-- `deployment_name_from_replicaset` allows extracting deployment name from replicaset name by trimming pod template hash. This will disable watching for replicaset resources, which can be useful in environments with limited RBAC permissions as the processor will not need `get`, `watch`, and `list` permissions for `replicasets`. It also reduces memory consumption of the processor. When enabled, this feature works automatically with the existing deployment name extraction. Take the following ownerReference of a pod managed by deployment for example:
+- `deployment_name_from_replicaset` allows extracting deployment name from replicaset name by trimming pod template hash. This will disable watching for replicaset resources, which can be useful in environments with limited RBAC permissions as the processor will not need `get`, `watch`, and `list` permissions for `deployments`. It also reduces memory consumption of the processor.
+
+  **Important:** When `deployment_name_from_replicaset: true` is set, you **must still include** `k8s.deployment.name` (or `service.name`) in the `extract.metadata` section for the deployment name to be extracted. The processor derives the deployment name from the ReplicaSet's naming convention without requiring direct access to Deployment resources, but the extraction rules must be enabled.
+
+  Take the following ownerReference of a pod managed by deployment for example:
 
 ```yaml
   ownerReferences:
@@ -311,7 +315,7 @@ k8sattributes:
     metadata:
       - k8s.pod.name
       - k8s.pod.uid
-      - k8s.deployment.name
+      - k8s.deployment.name  # Requires watching Deployment resources. To avoid this, use deployment_name_from_replicaset instead.
       - k8s.namespace.name
       - k8s.node.name
       - k8s.pod.start_time
@@ -453,7 +457,9 @@ processors:
         - k8s.namespace.name
         - k8s.pod.name
         - k8s.pod.uid
-        - k8s.deployment.name
+        - k8s.deployment.name  # Required to enable deployment name extraction
+        # Note: deployment_name_from_replicaset extracts the name from the ReplicaSet
+        # without watching Deployment resources, but k8s.deployment.name must still be listed
       # Use deployment name extraction without watching replicasets
       deployment_name_from_replicaset: true
 ```
@@ -953,6 +959,18 @@ as tags.
 
 By default, the `k8s.pod.start_time` uses [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) to format the
 timestamp value as an RFC3339 compliant timestamp.
+
+## Self-Observability Features
+
+The processor exposes internal telemetry metrics for monitoring its operation. For a complete list of all available metrics, see the [Internal Telemetry documentation](./documentation.md#internal-telemetry).
+
+Key metrics to monitor:
+- **`otelcol_otelsvc_k8s_ip_lookup_miss`**: Number of times pod lookup by IP failed
+  - High values indicate association issues
+- **`otelcol_otelsvc_k8s_pod_added`** / **`otelcol_otelsvc_k8s_pod_deleted`**: Track pod churn rates
+  - Monitor for unexpected spikes in pod lifecycle events
+- **`otelcol_otelsvc_k8s_pod_table_size`**: Current size of pod metadata cache
+  - Use to monitor memory consumption trends
 
 ## Warnings
 

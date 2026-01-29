@@ -966,3 +966,106 @@ func TestTracesForIgnoreError(t *testing.T) {
 	assert.Len(t, defaultSink.AllTraces(), 1)
 	assert.Equal(t, ptraceutiltest.NewTraces("1", "2", "3", "4"), defaultSink.AllTraces()[0])
 }
+
+func TestTracesCopyAndMoveConfig(t *testing.T) {
+	tracesDefault := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
+	traces0 := pipeline.NewIDWithName(pipeline.SignalTraces, "0")
+	traces1 := pipeline.NewIDWithName(pipeline.SignalTraces, "1")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{tracesDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `attributes["value"] > 0 and attributes["value"] < 4`,
+				Pipelines: []pipeline.ID{traces0},
+				Action:    Copy,
+			},
+			{
+				Statement: `route() where attributes["value"] > 1 and attributes["value"] < 5`,
+				Pipelines: []pipeline.ID{traces1},
+				Action:    Move,
+			},
+			{
+				Statement: `route() where attributes["value"] == 5`,
+				Pipelines: []pipeline.ID{tracesDefault, traces0},
+			},
+		},
+	}
+
+	var defaultSink, sink0, sink1 consumertest.TracesSink
+
+	resetSinks := func() {
+		defaultSink.Reset()
+		sink0.Reset()
+		sink1.Reset()
+	}
+
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+		tracesDefault: &defaultSink,
+		traces1:       &sink1,
+		traces0:       &sink0,
+	})
+
+	factory := NewFactory()
+	conn, err := factory.CreateTracesToTraces(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Traces),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, conn.Shutdown(t.Context()))
+	}()
+
+	t.Run("Traces copied correctly", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 1)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
+
+		assert.Len(t, defaultSink.AllTraces(), 1)
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Empty(t, sink1.AllTraces())
+	})
+
+	t.Run("Traces moved correctly", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 4)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
+
+		assert.Empty(t, defaultSink.AllTraces())
+		assert.Empty(t, sink0.AllTraces())
+		assert.Len(t, sink1.AllTraces(), 1)
+	})
+
+	t.Run("Traces copied & moved correctly", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 3)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, conn.ConsumeTraces(t.Context(), tr))
+
+		assert.Empty(t, defaultSink.AllTraces())
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Len(t, sink1.AllTraces(), 1)
+	})
+}
