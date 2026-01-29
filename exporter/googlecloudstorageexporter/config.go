@@ -9,12 +9,14 @@ import (
 
 	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 var (
-	errNameRequired  = errors.New("name is required")
-	errFormatInvalid = errors.New("invalid format")
+	errNameRequired       = errors.New("name is required")
+	errFormatInvalid      = errors.New("invalid format")
+	errUnknownCompression = errors.New("unknown compression type")
 )
 
 type Config struct {
@@ -52,6 +54,11 @@ type bucketConfig struct {
 	// empty, it will query the metadata endpoint. It requires the collector
 	// to be running in a Google Cloud environment.
 	Region string `mapstructure:"region"`
+
+	// Compression sets the algorithm used to process the payload
+	// before uploading to GCS.
+	// Valid values are: `gzip`, `zstd`, or no value set.
+	Compression configcompression.Type `mapstructure:"compression"`
 }
 
 type partitionConfig struct {
@@ -84,6 +91,17 @@ func (c *bucketConfig) Validate() error {
 	if c.Name == "" {
 		return errNameRequired
 	}
+
+	compression := c.Compression
+	if compression.IsCompressed() {
+		if compression != configcompression.TypeGzip && compression != configcompression.TypeZstd {
+			return fmt.Errorf(
+				"%w %q, valid values are %q and %q",
+				errUnknownCompression, compression,
+				configcompression.TypeGzip, configcompression.TypeZstd)
+		}
+	}
+
 	return nil
 }
 
