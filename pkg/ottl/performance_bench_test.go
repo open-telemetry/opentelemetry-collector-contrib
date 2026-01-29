@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -112,6 +113,32 @@ func BenchmarkParserParseStatements(b *testing.B) {
 	}
 }
 
+func TestNewStatementSequence(t *testing.T) {
+	settings := componenttest.NewNopTelemetrySettings()
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	require.NoError(t, err)
+	statements := buildLogStatements(1)
+
+	parsed, err := parser.ParseStatements(statements)
+	require.NoError(t, err)
+	sequence := ottllog.NewStatementSequence(parsed, settings)
+
+	context := newBenchmarkLogContext(1)
+	require.NoError(t, sequence.Execute(t.Context(), context))
+	context.GetLogRecord().Attributes().Range(func(k string, v pcommon.Value) bool {
+		t.Log(k, v)
+		return true
+	})
+	t.Log(context.GetLogRecord().SeverityText())
+	t.Log(context.GetLogRecord().Body().Str())
+	t.Log(statements[0])
+	// `set(log.attributes["conditional_copy_%[1]d"], log.attributes["source_%[1]d"]) where log.severity_text == "error" and log.body == "test"`
+	val, ok := context.GetLogRecord().Attributes().Get("conditional_copy_0")
+	require.True(t, ok)
+	t.Log(val.AsString())
+	context.Close()
+}
+
 func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
 	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
@@ -123,6 +150,7 @@ func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 		name       string
 		statements []string
 	}{
+		{name: "one", statements: buildLogStatements(1)},
 		{name: "small", statements: buildLogStatements(10)},
 		{name: "medium", statements: buildLogStatements(50)},
 		{name: "large", statements: buildLogStatements(200)},
@@ -430,7 +458,7 @@ func buildLogStatements(count int) []string {
 	for i := range count {
 		switch i % 5 {
 		case 0:
-			result = append(result, fmt.Sprintf(`set(log.attributes["conditional_copy_%[1]d"], log.attributes["source_%[1]d"]) where log.attributes["severity_text"] == "error"`, i))
+			result = append(result, fmt.Sprintf(`set(log.attributes["conditional_copy_%[1]d"], log.attributes["source_%[1]d"]) where log.severity_text == "error" and HasPrefix(log.body, "benchmark")`, i))
 		case 1:
 			result = append(result, fmt.Sprintf(`set(log.attributes["sanitized_%[1]d"], ToLowerCase(log.attributes["log_message"]))`, i))
 		case 2:
@@ -493,7 +521,8 @@ func newBenchmarkLogContext(attributeCount int) *ottllog.TransformContext {
 	logRecord.SetTimestamp(pcommon.Timestamp(1710000000000000000))
 	logRecord.SetObservedTimestamp(pcommon.Timestamp(1710000000000000000))
 	logRecord.Attributes().PutStr("log_message", "user=alice password=secret region=us-west-2")
-	logRecord.Attributes().PutStr("severity_text", "error")
+	logRecord.SetSeverityText("error")
+	logRecord.Body().SetStr("test")
 	tags := logRecord.Attributes().PutEmptySlice("tags")
 	tags.AppendEmpty().SetStr("prod")
 	tags.AppendEmpty().SetStr("critical")
