@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
@@ -77,10 +78,9 @@ func TestErrorModes(t *testing.T) {
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
 					Name: tt.objectName,
-					Mode: PullMode,
+					Mode: k8sinventory.PullMode,
 				},
 			}
-
 			r, err := newReceiver(
 				receivertest.NewNopSettings(metadata.Type),
 				rCfg,
@@ -118,7 +118,7 @@ func TestNewReceiver(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: PullMode,
+			Mode: k8sinventory.PullMode,
 		},
 	}
 
@@ -157,7 +157,7 @@ func TestPullObject(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:          "pods",
-			Mode:          PullMode,
+			Mode:          k8sinventory.PullMode,
 			Interval:      time.Second * 30,
 			LabelSelector: "environment=production",
 		},
@@ -195,7 +195,7 @@ func TestWatchObject(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:       "pods",
-			Mode:       WatchMode,
+			Mode:       k8sinventory.WatchMode,
 			Namespaces: []string{"default"},
 		},
 	}
@@ -296,7 +296,7 @@ func TestIncludeInitialState(t *testing.T) {
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
 					Name:       "pods",
-					Mode:       WatchMode,
+					Mode:       k8sinventory.WatchMode,
 					Namespaces: []string{"default"},
 				},
 			}
@@ -373,7 +373,7 @@ func TestIncludeInitialStateWithPullMode(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: PullMode,
+			Mode: k8sinventory.PullMode,
 		},
 	}
 
@@ -406,7 +406,7 @@ func TestExcludeDeletedTrue(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name:       "pods",
-			Mode:       WatchMode,
+			Mode:       k8sinventory.WatchMode,
 			Namespaces: []string{"default"},
 			ExcludeWatchType: []apiWatch.EventType{
 				apiWatch.Deleted,
@@ -457,7 +457,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: PullMode,
+			Mode: k8sinventory.PullMode,
 		},
 	}
 	rCfg.K8sLeaderElector = &leaderElectorID
@@ -535,7 +535,7 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
-			Mode: WatchMode,
+			Mode: k8sinventory.WatchMode,
 			ExcludeNamespaces: []filter.Config{
 				{
 					Regex: "default_ignore",
