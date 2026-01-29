@@ -87,7 +87,13 @@ all_set:
       enabled: true
     postgresql.table.name:
       enabled: true
+    server.host:
+      enabled: true
+    server.port:
+      enabled: true
     service.instance.id:
+      enabled: true
+    service.name:
       enabled: true
 none_set:
   metrics:
@@ -177,7 +183,13 @@ none_set:
       enabled: false
     postgresql.table.name:
       enabled: false
+    server.host:
+      enabled: false
+    server.port:
+      enabled: false
     service.instance.id:
+      enabled: false
+    service.name:
       enabled: false
 filter_set_include:
   resource_attributes:
@@ -205,7 +217,25 @@ filter_set_include:
         - regexp: ".*"
       events_include:
         - regexp: ".*"
+    server.host:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    server.port:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     service.instance.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -237,9 +267,27 @@ filter_set_exclude:
         - strict: "postgresql.table.name-val"
       events_exclude:
         - strict: "postgresql.table.name-val"
+    server.host:
+      enabled: true
+      metrics_exclude:
+        - strict: "server.host-val"
+      events_exclude:
+        - strict: "server.host-val"
+    server.port:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+      events_exclude:
+        - regexp: ".*"
     service.instance.id:
       enabled: true
       metrics_exclude:
         - strict: "service.instance.id-val"
       events_exclude:
         - strict: "service.instance.id-val"
+    service.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.name-val"
+      events_exclude:
+        - strict: "service.name-val"

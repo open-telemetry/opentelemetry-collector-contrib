@@ -17,16 +17,19 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
+			rb.SetServerHost("server.host-val")
+			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 5, res.Attributes().Len())
+				assert.Equal(t, 8, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 5, res.Attributes().Len())
+				assert.Equal(t, 8, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -54,10 +57,25 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.Equal(t, "postgresql.table.name-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("server.host")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "server.host-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("server.port")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, 11, val.Int())
+			}
 			val, ok = res.Attributes().Get("service.instance.id")
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "service.instance.id-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("service.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "service.name-val", val.Str())
 			}
 		})
 	}
