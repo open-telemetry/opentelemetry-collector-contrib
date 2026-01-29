@@ -6,7 +6,6 @@ require (
 	github.com/DataDog/agent-payload/v5 v5.0.179
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.76.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/proto v0.76.0-rc.2
-	github.com/DataDog/datadog-agent/pkg/trace v0.76.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/trace/stats v0.76.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.76.0-rc.2
 	github.com/DataDog/datadog-api-client-go/v2 v2.54.0
@@ -49,6 +48,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/template v0.76.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/log v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/otel v0.77.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.76.0-rc.2 // indirect
@@ -78,7 +78,6 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/google/uuid v1.6.0 // indirect

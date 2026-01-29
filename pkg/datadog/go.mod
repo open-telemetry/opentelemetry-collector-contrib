@@ -102,7 +102,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/http v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/json v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.76.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log/setup v0.76.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.76.0-rc.2 // indirect
@@ -162,7 +161,6 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gofrs/flock v0.13.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
