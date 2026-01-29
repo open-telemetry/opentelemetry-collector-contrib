@@ -61,7 +61,8 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 
 func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
 	if metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled() && !metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled() {
-		err := errors.New("cannot disable legacy attributes without enabling stable attributes")
+		err := errors.New("processor.k8sattributes.DontEmitV0K8sConventions cannot be enabled without enabling processor.k8sattributes.EmitV1K8sConventions")
+		kp.logger.Error("Invalid feature gate combination", zap.Error(err))
 		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		return err
 	}
