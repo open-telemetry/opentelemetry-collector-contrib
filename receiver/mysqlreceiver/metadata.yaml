@@ -16,18 +16,6 @@ resource_attributes:
     description: Endpoint of the MySQL instance.
     enabled: true
     type: string
-  service.instance.id:
-    description: OTel service instance identifier, set to the value of `mysql.instance.endpoint` if unset.
-    enabled: true
-    type: string
-  service.name:
-    description: OTel service name, set to `unknown_service:mysql` if unset.
-    enabled: true
-    type: string
-  service.namespace:
-    description: OTel service namespace, set to `` if unset.
-    enabled: true
-    type: string
 attributes:
   buffer_pool_data:
     name_override: status
@@ -132,22 +120,12 @@ attributes:
   mysql.event_id:
     description: The thread associated with the event and the thread current event number when the event starts.
     type: int
-  mysql.events_statements_current.digest:
-    description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
-    type: string
-  mysql.events_statements_summary_by_digest.count_star:
+  mysql.execution_count:
     description: The number of times the statement was executed, report in delta value.
     type: int
-  mysql.events_statements_summary_by_digest.digest:
+  mysql.query_hash:
     description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
     type: string
-  mysql.events_statements_summary_by_digest.sum_timer_wait:
-    description: The total time spent executing the statement, report in delta seconds.
-    type: double
-
-  mysql.events_waits_current.timer_wait:
-    description: Timing information for the event, indicating elapsed time the event waited in seconds.
-    type: double
   mysql.query_plan:
     description: The query plan for the statement, if available.
     type: string
@@ -163,6 +141,12 @@ attributes:
   mysql.threads.thread_id:
     description: The unique identifier for the thread executing the statement.
     type: int
+  mysql.total_elapsed_time:
+    description: The total time spent executing the statement, report in delta seconds.
+    type: double
+  mysql.wait_time:
+    description: Timing information for the event, indicating elapsed time the event waited in seconds.
+    type: double
   mysql.wait_type:
     description: The name of the instrument that produced the event.
     type: string
@@ -260,8 +244,9 @@ events:
       - db.query.text
       - db.system.name
       - mysql.event_id
-      - mysql.events_statements_current.digest
-      - mysql.events_waits_current.timer_wait
+      - mysql.query_hash
+      - mysql.query_plan_hash
+      - mysql.wait_time
       - mysql.threads.processlist_command
       - mysql.threads.processlist_state
       - mysql.threads.thread_id
@@ -280,9 +265,9 @@ events:
       - db.query.text
       - mysql.query_plan
       - mysql.query_plan_hash
-      - mysql.events_statements_summary_by_digest.digest
-      - mysql.events_statements_summary_by_digest.count_star
-      - mysql.events_statements_summary_by_digest.sum_timer_wait
+      - mysql.query_hash
+      - mysql.execution_count
+      - mysql.total_elapsed_time
 
 metrics:
   mysql.buffer_pool.data_pages:
