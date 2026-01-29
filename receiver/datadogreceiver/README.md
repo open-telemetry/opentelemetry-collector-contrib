@@ -24,8 +24,8 @@ Configuration wise is very simple, just need to specify where the Datadog receiv
 
 Then, the receiver must be configured in the pipeline where it will be used.
 
-The feature gate `receiver.datadogreceiver.Enable128BitTraceID` (disabled by default) enables the receiver to 
-reconstruct 128-bit trace ids from spans coming from a datadog instrumented service. This is necessary if a trace is 
+The feature gate `receiver.datadogreceiver.Enable128BitTraceID` (disabled by default) enables the receiver to
+reconstruct 128-bit trace ids from spans coming from a datadog instrumented service. This is necessary if a trace is
 initiated with a 128-bit trace id by a service that then calls a datadog instrumented one. Without this, spans from the
 datadog instrumented service will not correlate with the other spans.
 
@@ -35,6 +35,7 @@ receivers:
     endpoint: localhost:8126
     read_timeout: 60s
     trace_id_cache_size: 100
+    series_idle_timeout: 60m
 
 exporters:
   debug:
@@ -60,6 +61,13 @@ The size of the LRU cache used to cache 64-bit trace ids and their matching 128-
 when the feature gate `receiver.datadogreceiver.Enable128BitTraceID` is enabled.
 
 Default: 100
+
+### series_idle_timeout (Optional)
+The duration a specific series (metric name + unique tags) can be idle (not receive data) before being considered stale and removed from memory. This is useful to release memory in High Cardinality scenarios (e.g. ephemeral pods) where the number of series grows indefinitely.
+
+Recommendation: If enabled, ensure this value is significantly higher than the interval of your slowest emitting metric or cronjob. For example, if you have a job that runs every 30 minutes, set this to at least 60m to avoid resetting the start timestamp for those metrics.
+
+Default: 0s (Disabled - series are kept indefinitely)
 
 ### HTTP Service Config
 
@@ -101,7 +109,7 @@ If the `receiver.datadogreceiver.EnableMultiTagParsing` feature gate is enabled,
 
 ### Optional Attributes
 
-- `_dd.span_links`: This receiver supports DD Agent's `_dd.span_links` attribute for span links creation, as produced by Datadog's tracing libraries. 
+- `_dd.span_links`: This receiver supports DD Agent's `_dd.span_links` attribute for span links creation, as produced by Datadog's tracing libraries.
 Format example can be found [here](./internal/translator/traces_translator_test.go).
 
 ### Datadog's API support
