@@ -64,8 +64,9 @@ func (s *memoryScraper) recordLinuxMemoryDirtyMetric(now pcommon.Timestamp, memI
 }
 
 func (s *memoryScraper) recordLinuxHugePagesMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	// Record page size in bytes
-	s.mb.RecordSystemMemoryLinuxHugepagesPageSizeDataPoint(now, int64(memInfo.HugePageSize*1024)) // convert from kB to bytes
+	// Record page size in bytes (converted from kB to bytes in gopsutil):
+	// https://github.com/shirou/gopsutil/blob/v4.25.12/mem/mem_linux.go#L303
+	s.mb.RecordSystemMemoryLinuxHugepagesPageSizeDataPoint(now, int64(memInfo.HugePageSize))
 
 	// Record limit (total hugepages available) in number of pages
 	s.mb.RecordSystemMemoryLinuxHugepagesLimitDataPoint(now, int64(memInfo.HugePagesTotal))
