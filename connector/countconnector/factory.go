@@ -173,9 +173,9 @@ func createProfilesToMetrics(
 ) (xconnector.Profiles, error) {
 	c := cfg.(*Config)
 
-	metricDefs := make(map[string]metricDef[ottlprofile.TransformContext], len(c.Profiles))
+	metricDefs := make(map[string]metricDef[*ottlprofile.TransformContext], len(c.Profiles))
 	for name, info := range c.Profiles {
-		md := metricDef[ottlprofile.TransformContext]{
+		md := metricDef[*ottlprofile.TransformContext]{
 			desc:  info.Description,
 			attrs: info.Attributes,
 		}
