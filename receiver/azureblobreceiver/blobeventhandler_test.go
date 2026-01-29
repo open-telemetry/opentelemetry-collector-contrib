@@ -6,7 +6,7 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"testing"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -51,11 +51,21 @@ func TestNewMessageHandler(t *testing.T) {
 	blobClient.AssertNumberOfCalls(t, "readBlob", 2)
 }
 
-func getEvent(eventData []byte) *eventhub.Event {
-	return &eventhub.Event{Data: eventData}
+func getEvent(eventData []byte) *azeventhubs.ReceivedEventData {
+	return &azeventhubs.ReceivedEventData{
+		EventData: azeventhubs.EventData{
+			Body: eventData,
+		},
+	}
 }
 
 func getBlobEventHandler(tb testing.TB, blobClient blobClient) *azureBlobEventHandler {
-	blobEventHandler := newBlobEventHandler(eventHubString, logsContainerName, tracesContainerName, blobClient, zaptest.NewLogger(tb))
+	blobEventHandler := newBlobEventHandler(
+		eventHubString,
+		logsContainerName,
+		tracesContainerName,
+		blobClient,
+		zaptest.NewLogger(tb),
+	)
 	return blobEventHandler
 }
