@@ -740,6 +740,22 @@ Number of restarts for the container.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {restarts} | Sum | Int | Cumulative | true | Development |
 
+### container.status
+
+Status of the container. One of - created, running, paused, restarting, removing, exited and dead
+
+A timeseries is produced for every possible value of `container.state`. The value of this metric is 1 for a state if it is currently in said state, and is 0 for all other states
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {status} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| container.state | Container State | Str: ``created``, ``running``, ``paused``, ``restarting``, ``removing``, ``exited``, ``dead`` | Recommended |
+
 ### container.uptime
 
 Time elapsed since container start time.

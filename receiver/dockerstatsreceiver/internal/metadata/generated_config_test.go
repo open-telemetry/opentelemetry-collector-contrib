@@ -96,6 +96,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerPidsCount:                         MetricConfig{Enabled: true},
 					ContainerPidsLimit:                         MetricConfig{Enabled: true},
 					ContainerRestarts:                          MetricConfig{Enabled: true},
+					ContainerStatus:                            MetricConfig{Enabled: true},
 					ContainerUptime:                            MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -183,6 +184,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerPidsCount:                         MetricConfig{Enabled: false},
 					ContainerPidsLimit:                         MetricConfig{Enabled: false},
 					ContainerRestarts:                          MetricConfig{Enabled: false},
+					ContainerStatus:                            MetricConfig{Enabled: false},
 					ContainerUptime:                            MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
