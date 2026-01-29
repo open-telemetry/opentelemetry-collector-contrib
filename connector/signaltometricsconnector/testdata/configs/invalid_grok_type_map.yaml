@@ -1,6 +1,7 @@
-signaltometrics:
+signal_to_metrics:
   logs:
     - name: logs.memory_mb
-      description: Extract memory_mb from log records 
+      description: Extract memory_mb from log records
       gauge:
         value: ExtractGrokPatterns(body, "Memory usage %{NUMBER:memory_mb:int}MB")
+

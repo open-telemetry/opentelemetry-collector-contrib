@@ -25,7 +25,7 @@ components:
     - connector/roundrobin
     - connector/routing
     - connector/servicegraph
-    - connector/signaltometrics
+    - connector/signal_to_metrics
     - connector/slowsql
     - connector/spanmetrics
     - connector/sum
