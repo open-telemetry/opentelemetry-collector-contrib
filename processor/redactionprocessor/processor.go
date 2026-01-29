@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -417,8 +418,8 @@ func hashString(input string, hasher hash.Hash) string {
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-func hashStringHMAC(input, key string, newHash func() hash.Hash) string {
-	h := hmac.New(newHash, []byte(key))
+func hashStringHMAC(input string, key configopaque.String, newHash func() hash.Hash) string {
+	h := hmac.New(newHash, []byte(string(key)))
 	h.Write([]byte(input))
 	return hex.EncodeToString(h.Sum(nil))
 }

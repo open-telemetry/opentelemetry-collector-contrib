@@ -219,12 +219,23 @@ export REDACTION_SECRET_KEY=$(openssl rand -hex 32)
 ```
 
 **Security Notes:**
-- Use at least 256-bit (32-byte) random keys
+- Use at least 256-bit (32-byte) random keys for HMAC-SHA256
+- Use at least 512-bit (64-byte) random keys for HMAC-SHA512
 - Store keys separately from log data
 - Rotate keys periodically according to your security policy
 - Document which key version was used for each time period
 - HMAC-SHA256 provides sufficient security for most use cases
 - HMAC-SHA512 offers additional security margin with minimal performance cost (~10-20% CPU overhead vs simple hashes)
+
+**Key Validation:**
+
+The processor automatically validates HMAC keys at startup:
+- HMAC-SHA256 requires keys of at least 32 bytes (256 bits)
+- HMAC-SHA512 requires keys of at least 64 bytes (512 bits)
+- Empty keys are not allowed when HMAC hash functions are configured
+- Configuration will fail if the key doesn't meet minimum requirements
+
+This ensures that weak keys cannot be used accidentally, maintaining the security guarantees of HMAC hashing.
 
 **GDPR Compliance:**
 
