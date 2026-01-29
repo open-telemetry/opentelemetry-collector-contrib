@@ -7,6 +7,8 @@ all_set:
       enabled: true
     system.memory.limit:
       enabled: true
+    system.memory.linux.shared:
+      enabled: true
     system.memory.page_size:
       enabled: true
     system.memory.usage:
@@ -20,6 +22,8 @@ none_set:
     system.linux.memory.dirty:
       enabled: false
     system.memory.limit:
+      enabled: false
+    system.memory.linux.shared:
       enabled: false
     system.memory.page_size:
       enabled: false
