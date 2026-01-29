@@ -638,6 +638,30 @@ func TestBuild(t *testing.T) {
 			require.NoError,
 			func(_ *testing.T, _ *Manager) {},
 		},
+		{
+			"MaxLogSizeBehaviorSplit",
+			func(cfg *Config) {
+				cfg.MaxLogSizeBehavior = MaxLogSizeBehaviorSplit
+			},
+			require.NoError,
+			func(_ *testing.T, _ *Manager) {},
+		},
+		{
+			"MaxLogSizeBehaviorTruncate",
+			func(cfg *Config) {
+				cfg.MaxLogSizeBehavior = MaxLogSizeBehaviorTruncate
+			},
+			require.NoError,
+			func(_ *testing.T, _ *Manager) {},
+		},
+		{
+			"InvalidMaxLogSizeBehavior",
+			func(cfg *Config) {
+				cfg.MaxLogSizeBehavior = "invalid"
+			},
+			require.Error,
+			nil,
+		},
 	}
 
 	for _, tc := range cases {

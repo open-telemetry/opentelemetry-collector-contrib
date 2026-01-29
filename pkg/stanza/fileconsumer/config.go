@@ -35,6 +35,11 @@ const (
 	defaultMaxConcurrentFiles = 1024
 	defaultEncoding           = "utf-8"
 	defaultPollInterval       = 200 * time.Millisecond
+
+	// MaxLogSizeBehaviorSplit splits oversized log entries into multiple log entries.
+	MaxLogSizeBehaviorSplit = "split"
+	// MaxLogSizeBehaviorTruncate truncates oversized log entries and drops the remainder.
+	MaxLogSizeBehaviorTruncate = "truncate"
 )
 
 // NewConfig creates a new input config with default values
@@ -46,6 +51,7 @@ func NewConfig() *Config {
 		FingerprintSize:    fingerprint.DefaultSize,
 		InitialBufferSize:  scanner.DefaultBufferSize,
 		MaxLogSize:         reader.DefaultMaxLogSize,
+		MaxLogSizeBehavior: MaxLogSizeBehaviorSplit,
 		Encoding:           defaultEncoding,
 		FlushPeriod:        reader.DefaultFlushPeriod,
 		Resolver: attrs.Resolver{
@@ -65,6 +71,7 @@ type Config struct {
 	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
 	InitialBufferSize       helper.ByteSize `mapstructure:"initial_buffer_size,omitempty"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+	MaxLogSizeBehavior      string          `mapstructure:"max_log_size_behavior,omitempty"`
 	Encoding                string          `mapstructure:"encoding,omitempty"`
 	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
 	TrimConfig              trim.Config     `mapstructure:",squash,omitempty"`
@@ -144,6 +151,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		FingerprintSize:         int(c.FingerprintSize),
 		InitialBufferSize:       int(c.InitialBufferSize),
 		MaxLogSize:              int(c.MaxLogSize),
+		TruncateOnMaxLogSize:    c.MaxLogSizeBehavior == MaxLogSizeBehaviorTruncate,
 		Encoding:                enc,
 		SplitFunc:               splitFunc,
 		TrimFunc:                trimFunc,
@@ -199,6 +207,13 @@ func (c Config) validate() error {
 
 	if c.MaxBatches < 0 {
 		return errors.New("'max_batches' must not be negative")
+	}
+
+	switch c.MaxLogSizeBehavior {
+	case MaxLogSizeBehaviorSplit:
+	case MaxLogSizeBehaviorTruncate:
+	default:
+		return fmt.Errorf("'max_log_size_behavior' must be either '%s' or '%s'", MaxLogSizeBehaviorSplit, MaxLogSizeBehaviorTruncate)
 	}
 
 	enc, err := textutils.LookupEncoding(c.Encoding)
