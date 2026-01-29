@@ -562,58 +562,54 @@ func TestWithFilterFields(t *testing.T) {
 }
 
 func Test_extractFieldRules(t *testing.T) {
-	type args struct {
-		fieldType string
-		fields    []FieldExtractConfig
-	}
 	tests := []struct {
 		name    string
-		args    args
+		fields  []FieldExtractConfig
 		want    []kube.FieldExtractionRule
 		wantErr bool
 	}{
 		{
-			name: "default",
-			args: args{"labels", []FieldExtractConfig{
+			name: "empty tag_name leaves Name empty for dynamic resolution",
+			fields: []FieldExtractConfig{
 				{
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},
-			}},
+			},
 			want: []kube.FieldExtractionRule{
 				{
-					Name: "", // Name is empty for dynamic resolution based on feature gates
+					Name: "",
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},
 			},
 		},
 		{
-			name: "basic",
-			args: args{"field", []FieldExtractConfig{
+			name: "explicit tag_name is preserved",
+			fields: []FieldExtractConfig{
 				{
-					TagName: "name",
+					TagName: "custom.name",
 					Key:     "key",
 					From:    kube.MetadataFromPod,
 				},
-			}},
+			},
 			want: []kube.FieldExtractionRule{
 				{
-					Name: "name",
+					Name: "custom.name",
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},
 			},
 		},
 		{
-			name: "keyregex-capture-group",
-			args: args{"labels", []FieldExtractConfig{
+			name: "keyregex with capture groups",
+			fields: []FieldExtractConfig{
 				{
 					TagName:  "$0-$1-$2",
 					KeyRegex: "(key)(.*)",
 					From:     kube.MetadataFromPod,
 				},
-			}},
+			},
 			want: []kube.FieldExtractionRule{
 				{
 					Name:                 "$0-$1-$2",
@@ -623,91 +619,49 @@ func Test_extractFieldRules(t *testing.T) {
 				},
 			},
 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := extractFieldRules(tt.args.fieldType, tt.args.fields...)
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
-func Test_extractFieldRules_FeatureGate(t *testing.T) {
-	tests := []struct {
-		name            string
-		fieldType       string
-		fields          []FieldExtractConfig
-		wantNamePattern string
-	}{
 		{
-			name:      "labels without custom tag_name leaves Name empty for dynamic resolution",
-			fieldType: "labels",
-			fields: []FieldExtractConfig{
-				{
-					Key:  "app",
-					From: kube.MetadataFromPod,
-				},
-			},
-			wantNamePattern: "",
-		},
-		{
-			name:      "annotations without custom tag_name leaves Name empty for dynamic resolution",
-			fieldType: "annotations",
-			fields: []FieldExtractConfig{
-				{
-					Key:  "workload",
-					From: kube.MetadataFromPod,
-				},
-			},
-			wantNamePattern: "",
-		},
-		{
-			name:      "namespace labels without custom tag_name leaves Name empty",
-			fieldType: "labels",
+			name: "namespace metadata source",
 			fields: []FieldExtractConfig{
 				{
 					Key:  "env",
 					From: kube.MetadataFromNamespace,
 				},
 			},
-			wantNamePattern: "",
+			want: []kube.FieldExtractionRule{
+				{
+					Name: "",
+					Key:  "env",
+					From: kube.MetadataFromNamespace,
+				},
+			},
 		},
 		{
-			name:      "node annotations without custom tag_name leaves Name empty",
-			fieldType: "annotations",
+			name: "node metadata source",
 			fields: []FieldExtractConfig{
 				{
 					Key:  "zone",
 					From: kube.MetadataFromNode,
 				},
 			},
-			wantNamePattern: "",
-		},
-		{
-			name:      "explicit tag name preserved regardless of feature gates",
-			fieldType: "labels",
-			fields: []FieldExtractConfig{
+			want: []kube.FieldExtractionRule{
 				{
-					TagName: "custom.tag.name",
-					Key:     "app",
-					From:    kube.MetadataFromPod,
+					Name: "",
+					Key:  "zone",
+					From: kube.MetadataFromNode,
 				},
 			},
-			wantNamePattern: "custom.tag.name",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := extractFieldRules(tt.fieldType, tt.fields...)
+			got, err := extractFieldRules(tt.fields...)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
 			require.NoError(t, err)
-			require.Len(t, got, 1)
-			assert.Equal(t, tt.wantNamePattern, got[0].Name)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
