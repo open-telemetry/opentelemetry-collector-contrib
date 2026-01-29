@@ -5,12 +5,8 @@ package kueuescraper
 
 import (
 	"context"
-	"strings"
 	"testing"
 
-	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -114,20 +110,7 @@ func TestNewKueuePrometheusScraperEndToEnd(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 	settings.Logger, _ = zap.NewDevelopment()
 
-	scraper, err := NewKueuePrometheusScraper(
-		KueuePrometheusScraperOpts{
-			Ctx:               t.Context(),
-			TelemetrySettings: settings,
-			Consumer:          mConsumer,
-			Host:              componenttest.NewNopHost(),
-			ClusterName:       "DummyCluster",
-		},
-	)
-	assert.NoError(t, err)
-
-	// build up a new prometheus receiver
-	promFactory := prometheusreceiver.NewFactory()
-
+	// Setup mock prometheus server
 	targets := []*mocks.TestData{
 		{
 			Name: "kueue_prometheus",
@@ -140,33 +123,15 @@ func TestNewKueuePrometheusScraperEndToEnd(t *testing.T) {
 	assert.NoError(t, err)
 	defer mp.Close()
 
-	// create a test-specific prometheus config
-	scrapeConfig := &config.ScrapeConfig{
-		JobName:         kmJobName,
-		ScrapeInterval:  cfg.ScrapeConfigs[0].ScrapeInterval,
-		ScrapeTimeout:   cfg.ScrapeConfigs[0].ScrapeTimeout,
-		ScrapeProtocols: cfg.ScrapeConfigs[0].ScrapeProtocols,
-		MetricsPath:     cfg.ScrapeConfigs[0].MetricsPath,
-		Scheme:          "http",
-		ServiceDiscoveryConfigs: discovery.Configs{
-			&discovery.StaticConfig{
-				{
-					Targets: []model.LabelSet{
-						{
-							model.AddressLabel: model.LabelValue(strings.Split(mp.Srv.URL, "http://")[1]),
-						},
-					},
-				},
-			},
-		},
-	}
-	promConfig := prometheusreceiver.Config{
-		PrometheusConfig: &prometheusreceiver.PromConfig{
-			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
-		},
-	}
+	// Apply metric relabel configs from production config to mock config
+	metricRelabelConfigs := GetKueueMetricRelabelConfigs("DummyCluster")
+	cfg.ScrapeConfigs[0].MetricRelabelConfigs = metricRelabelConfigs
 
-	// create test receiver
+	// Create prometheus receiver with mock config
+	promFactory := prometheusreceiver.NewFactory()
+	promConfig := prometheusreceiver.Config{
+		PrometheusConfig: (*prometheusreceiver.PromConfig)(cfg),
+	}
 	params := receiver.Settings{
 		TelemetrySettings: settings,
 		ID:                component.NewIDWithName(component.MustNewType("prometheus"), ""),
@@ -174,11 +139,14 @@ func TestNewKueuePrometheusScraperEndToEnd(t *testing.T) {
 	promReceiver, err := promFactory.CreateMetrics(t.Context(), params, &promConfig, mConsumer)
 	assert.NoError(t, err)
 
-	// attach test receiver to scraper (replaces existing one)
-	scraper.prometheusReceiver = promReceiver
-	assert.NoError(t, err)
-	assert.NotNil(t, mp)
-	defer mp.Close()
+	// Create scraper struct directly (bypass factory to avoid Reload() call)
+	scraper := &KueuePrometheusScraper{
+		ctx:                t.Context(),
+		settings:           settings,
+		host:               componenttest.NewNopHost(),
+		clusterName:        "DummyCluster",
+		prometheusReceiver: promReceiver,
+	}
 
 	// perform a single scrape, this will kick off the scraper process for additional scrapes
 	scraper.GetMetrics()
