@@ -7,7 +7,7 @@ Signal to metrics connector produces metrics from all signal types (traces, logs
 | ------------- |-----------|
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fsignaltometrics%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fsignaltometrics) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fsignaltometrics%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fsignaltometrics) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_signaltometrics)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_signaltometrics&displayType=list) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_signal_to_metrics)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_signal_to_metrics&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@ChrsMark](https://www.github.com/ChrsMark), [@lahsivjar](https://www.github.com/lahsivjar) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -38,7 +38,7 @@ structure. For example, the below configuration will produce delta temporality c
 for counting number of events for each of the configured signals:
 
 ```yaml
-signaltometrics:
+signal_to_metrics:
   spans:
     - name: span.count
       description: Count of spans
@@ -63,7 +63,7 @@ signaltometrics:
 
 ### Metrics types
 
-`signaltometrics` produces a variety of metric types by utilizing [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md)
+`signal_to_metrics` produces a variety of metric types by utilizing [OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md)
 to extract the relevant data for a metric type from the incoming data. The
 component can produce the following metric types for each signal type:
 
@@ -110,7 +110,7 @@ gauge:
 
 _Logs (with Grok pattern):_
 ```yaml
-signaltometrics:
+signal_to_metrics:
   logs:
     - name: logs.memory_mb
       description: Extract memory_mb from log records
@@ -120,7 +120,7 @@ signaltometrics:
 
 _Traces:_
 ```yaml
-signaltometrics:
+signal_to_metrics:
   spans:
     - name: span.duration.gauge
       description: Span duration as gauge
@@ -229,7 +229,7 @@ Conditions are an optional list of OTTL conditions that are evaluated on the inc
 data and are ORed together. For example:
 
 ```yaml
-signaltometrics:
+signal_to_metrics:
   datapoints:
     - name: datapoint.bar.sum
       description: Count total number of datapoints as per datapoint.bar attribute
@@ -246,7 +246,7 @@ OR `bar` resource attribute defined.
 Conditions can also be ANDed together, for example:
 
 ```yaml
-signaltometrics:
+signal_to_metrics:
   datapoints:
     - name: gauge.to.exphistogram
       conditions:
@@ -292,14 +292,14 @@ resource attributes:
 ### Single writer
 
 Metrics data streams MUST obey [single-writer](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer)
-principle. However, since `signaltometrics` component produces metrics from all signal
+principle. However, since `signal_to_metrics` component produces metrics from all signal
 types and also allows customizing the resource attributes, there is a possibility
 of violating the single-writer principle. To keep the single-writer principle intact,
 the component adds collector instance information as resource attributes. The following
 resource attribute is added to each produced metric:
 
 ```yaml
-signaltometrics.service.instance.id: <service_instance_id_of_the_otel_collector>
+signal_to_metrics.service.instance.id: <service_instance_id_of_the_otel_collector>
 ```
 
 ### Custom OTTL functions

@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("signaltometrics")
+	Type      = component.MustNewType("signal_to_metrics")
 	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector"
 )
 

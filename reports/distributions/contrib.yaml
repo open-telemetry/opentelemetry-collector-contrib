@@ -12,7 +12,7 @@ components:
         - roundrobin
         - routing
         - servicegraph
-        - signaltometrics
+        - signal_to_metrics
         - spanmetrics
         - sum
     exporter:
