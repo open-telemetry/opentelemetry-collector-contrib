@@ -16,13 +16,13 @@ resourceLogs:
               - key: mysql.query_plan_hash
                 value:
                   stringValue: 9a2692756afe28fbfd3057805a4768d4f0587eb49095cb8461982e4aca4563f7
-              - key: mysql.events_statements_summary_by_digest.digest
+              - key: mysql.query_hash
                 value:
                   stringValue: c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739
-              - key: mysql.events_statements_summary_by_digest.count_star
+              - key: mysql.execution_count
                 value:
                   intValue: "5"
-              - key: mysql.events_statements_summary_by_digest.sum_timer_wait
+              - key: mysql.total_elapsed_time
                 value:
                   doubleValue: 0.001021918999
             body: {}
