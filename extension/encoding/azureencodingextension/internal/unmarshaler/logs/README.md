@@ -45,6 +45,78 @@ in OpenTelemetry Collector pipeline (for example, using `transformprocessor`) or
 | `Level`               | `log.SeverityNumber`          | Log |
 | `properties`          | see mapping for each Category below | mixed |
 
+## Application Gateway
+
+### Application Gateway Access Logs (both v1 and v2)
+
+| Azure "properties" Field      | OpenTelemetry                     | OpenTelemetry Scope |
+|-------------------------------|-----------------------------------|---------------------|
+| `listenerName`                | `azure.agw.listener.name`         | Log Attribute |
+| `ruleName`                    | `azure.agw.rule.name`             | Log Attribute |
+| `backendPoolName`             | `azure.agw.backend.pool.name`     | Log Attribute |
+| `backendSettingName`          | `azure.agw.backend.setting.name`  | Log Attribute |
+| `instanceId`                  | `service.instance.id`             | Resource Attribute |
+| `clientIP`                    | `client.address`                  | Log Attribute |
+| `clientPort`                  | `client.port`                     | Log Attribute |
+| `clientResponseTime`          | `azure.agw.latency`               | Log Attribute |
+| `httpMethod`                  | `http.request.method`             | Log Attribute |
+| `requestUri`                  | `url.path`                        | Log Attribute |
+| `requestQuery`                | `url.query`                       | Log Attribute |
+| `originalRequestUriWithArgs`  | `url.original`                    | Log Attribute |
+| `userAgent`                   | `user_agent.original`             | Log Attribute |
+| `httpStatus`                  | `http.response.status_code`       | Log Attribute |
+| `httpVersion`                 | `network.protocol.name` + `network.protocol.version`. If unparsable - `network.protocol.original` | Log Attribute |
+| `receivedBytes`               | `http.request.size`               | Log Attribute |
+| `sentBytes`                   | `http.response.size`              | Log Attribute |
+| `timeTaken`                   | `azure.request.duration`          | Log Attribute |
+| `transactionId`               | `azure.service.request.id`        | Log Attribute |
+| `sslEnabled`                  | `tls.enabled`                     | Log Attribute |
+| `host`                        | `host.name`                       | Log Attribute |
+| `originalHost`                | `http.request.header.host`        | Log Attribute |
+| `sslCipher`                   | `tls.cipher`                      | Log Attribute |
+| `sslProtocol`                 | `tls.protocol.name` + `tls.protocol.version`. If unparsable - `tls.protocol.original` | Log Attribute |
+| `serverRouted`                | `server.address` + `server.port`. If unparsable - `server.original_address` | Log Attribute |
+| `serverStatus`                | `azure.agw.backend.status_code`   | Log Attribute |
+| `serverResponseLatency`       | `azure.agw.backend.latency`       | Log Attribute |
+| `WAFEvaluationTime`           | `azure.firewall.evaluation.duration` | Log Attribute |
+| `WAFMode`                     | `security_rule.ruleset.mode`      | Log Attribute |
+| `upstreamSourcePort`          | `network.local.port`              | Log Attribute |
+| `error_info`                  | `error.type`                      | Log Attribute |
+
+### Application Gateway Performance Logs
+
+| Azure "properties" Field  | OpenTelemetry                         | OpenTelemetry Scope |
+|---------------------------|---------------------------------------|---------------------|
+| `instanceId`              | `service.instance.id`                 | Resource Attribute |
+| `healthyHostCount`        | `azure.agw.backend.healthy.count`     | Log Attribute |
+| `unHealthyHostCount`      | `azure.agw.backend.unhealthy.count`   | Log Attribute |
+| `requestCount`            | `azure.agw.request.count`             | Log Attribute |
+| `latency`                 | `azure.agw.backend.latency`           | Log Attribute |
+| `failedRequestCount`      | `azure.agw.request.failed`            | Log Attribute |
+| `throughput`              | `azure.agw.throughput`                | Log Attribute |
+
+### Application Gateway Firewall Logs
+
+| Azure "properties" Field  | OpenTelemetry                         | OpenTelemetry Scope |
+|---------------------------|---------------------------------------|---------------------|
+| `instanceId`              | `service.instance.id`                 | Resource Attribute |
+| `clientIP`                | `client.address`                      | Log Attribute |
+| `clientPort`              | `client.port`                         | Log Attribute |
+| `requestUri`              | `url.original`                        | Log Attribute |
+| `ruleSetType`             | `security_rule.category`              | Log Attribute |
+| `ruleSetVersion`          | `security_rule.version`               | Log Attribute |
+| `ruleId`                  | `security_rule.uuid`                  | Log Attribute |
+| `ruleGroup`               | `security_rule.ruleset.name`          | Log Attribute |
+| `message`                 | Body                                  | Log |
+| `action`                  | `security_rule.action`                | Log Attribute |
+| `site`                    | `azure.firewall.site`                 | Log Attribute |
+| `details`                 | `azure.firewall.evaluation.details`   | Log Attribute |
+| `hostname`                | `host.name`                           | Log Attribute |
+| `transactionId`           | `azure.service.request.id`            | Log Attribute |
+| `policyId`                | `azure.firewall.policy.id`            | Log Attribute |
+| `policyScope`             | `azure.firewall.policy.scope.type`    | Log Attribute |
+| `policyScopeName`         | `azure.firewall.policy.object.name`   | Log Attribute |
+
 ## App Service
 
 ### App Service App Logs
@@ -174,6 +246,184 @@ in OpenTelemetry Collector pipeline (for example, using `transformprocessor`) or
 | `isReceivedFromClient`    | `network.io.direction` with value `receive` (if `true`) or `transmit` (if `false`) | Log Attribute |
 | `backendHostname`         | `server.address` + `server.port`. If unparsable - `server.original_address` | Log Attribute |
 
+## Azure Messaging Logs (service Bus and EventHub Logs)
+
+### ApplicationMetricsLogs
+
+| Azure "properties" Field  | OpenTelemetry                         | OpenTelemetry Scope |
+|---------------------------|---------------------------------------|---------------------|
+| `Environment`             | `deployment.environment.name`         | Resource Attribute |
+| `Region`                  | `cloud.region`                        | Resource Attribute |
+| `SubscriptionId`          | `cloud.account.id`                    | Resource Attribute |
+| `NamespaceName`           | `service.namespace`                   | Resource Attribute |
+| `EntityName`              | `service.name`                        | Resource Attribute |
+| `EntityType`              | `messaging.system`                    | Log Attribute |
+| `ScaleUnit`               | `azure.autoscale.unit`                | Log Attribute |
+| `ActivityId`              | `log.record.uid`                      | Log Attribute |
+| `ActivityName`            | `azure.operation.name`                | Log Attribute |
+| `ChildEntityType`         | - (not documented)                    | Log Attribute |
+| `ChildEntityName`         | - (not documented)                    | Log Attribute |
+| `PartitionId`             | `messaging.destination.partition.id`  | Log Attribute |
+| `Outcome`                 | `error.type` (in not eq "Success")    | Log Attribute |
+| `Protocol`                | `network.protocol.name`               | Log Attribute |
+| `AuthType`                | `azure.auth.type`                     | Log Attribute |
+| `AuthId`                  | `azure.auth.id`                       | Log Attribute |
+| `NetworkType`             | `network.connection.type`             | Log Attribute |
+| `ClientIp`                | `client.address`                      | Log Attribute |
+| `Count`                   | `messaging.message.count`             | Log Attribute |
+| `Properties.ApplicationGroupName` | - (not documented)            | Log Attribute |
+
+### DiagnosticErrorLogs
+
+| Azure "properties" Field  | OpenTelemetry                 | OpenTelemetry Scope |
+|---------------------------|-------------------------------|---------------------|
+| `Environment`             | `deployment.environment.name` | Resource Attribute |
+| `Region`                  | `cloud.region`                | Resource Attribute |
+| `SubscriptionId`          | `cloud.account.id`            | Resource Attribute |
+| `NamespaceName`           | `service.namespace`           | Resource Attribute |
+| `EntityName`              | `service.name`                | Resource Attribute |
+| `EntityType`              | `messaging.system`            | Log Attribute |
+| `ScaleUnit`               | `azure.autoscale.unit`        | Log Attribute |
+| `ActivityId`              | `log.record.uid`              | Log Attribute |
+| `ActivityName`            | `azure.operation.name`        | Log Attribute |
+| `TaskName`                | `azure.messaging.task.name`   | Log Attribute |
+| `OperationResult`         | `error.type`                  | Log Attribute |
+| `ErrorMessage`            | `error.message`               | Log Attribute |
+| `ErrorCount`              | `azure.messaging.error.count` | Log Attribute |
+
+### OperationalLogs
+
+| Azure "properties" Field  | OpenTelemetry                 | OpenTelemetry Scope |
+|---------------------------|-------------------------------|---------------------|
+| `Environment`             | `deployment.environment.name` | Resource Attribute |
+| `Region`                  | `cloud.region`                | Resource Attribute |
+| `SubscriptionId`          | `cloud.account.id`            | Resource Attribute |
+| `NamespaceName`           | `service.namespace`           | Resource Attribute |
+| `EntityName`              | `service.name`                | Resource Attribute |
+| - (from ResourceID)       | `messaging.system`            | Log Attribute |
+| `ScaleUnit`               | `azure.autoscale.unit`        | Log Attribute |
+| `ActivityId`              | `log.record.uid`              | Log Attribute |
+| `EventName`               | `azure.operation.name`        | Log Attribute |
+| `Status`                  | `error.type` (if not eq "Succeeded") | Log Attribute |
+| `Caller`                  | `client.type`                 | Log Attribute |
+| `EventProperties.SubscriptionId`  | - (duplicates high level attributes) | - |
+| `EventProperties.Namespace`       | - (duplicates high level attributes) | - |
+| `EventProperties.Via`             | `url.full` with parsed `url.scheme`, `url.domain`, `url.fragment`, `url.query`, `url.path` and `url.port`. If unparsable - only `url.original` | Log Attribute |
+| `EventProperties.TrackingId`      | `azure.service.request.id`    | Log Attribute |
+| `EventProperties.ErrorCode`       | `error.code`                  | Log Attribute |
+| `EventProperties.ErrorMessage`    | `error.message`               | Log Attribute |
+
+### RuntimeAuditLogs
+
+| Azure "properties" Field  | OpenTelemetry                 | OpenTelemetry Scope |
+|---------------------------|-------------------------------|---------------------|
+| `Environment`             | `deployment.environment.name` | Resource Attribute |
+| `Region`                  | `cloud.region`                | Resource Attribute |
+| `SubscriptionId`          | `cloud.account.id`            | Resource Attribute |
+| `NamespaceName`           | `service.namespace`           | Resource Attribute |
+| `EntityName`              | `service.name`                | Resource Attribute |
+| `EntityType`              | `messaging.system`            | Log Attribute |
+| `ScaleUnit`               | `azure.autoscale.unit`        | Log Attribute |
+| `ActivityId`              | `log.record.uid`              | Log Attribute |
+| `ActivityName`            | `azure.operation.name`        | Log Attribute |
+| `TaskName`                | `azure.messaging.task.name`   | Log Attribute |
+| `Status`                  | `error.type` (if not eq "Success") | Log Attribute |
+| `Protocol`                | `network.protocol.name`       | Log Attribute |
+| `AuthType`                | `azure.auth.type`             | Log Attribute |
+| `AuthId`                  | `azure.auth.id`               | Log Attribute |
+| `NetworkType`             | `network.connection.type`     | Log Attribute |
+| `ClientIp`                | `client.address`              | Log Attribute |
+| `Count`                   | `messaging.message.count`     | Log Attribute |
+| `Properties`              | Body (unparsed, as-is)        | Log |
+
+### VNetAndIPFilteringLogs
+
+| Azure "properties" Field  | OpenTelemetry                 | OpenTelemetry Scope |
+|---------------------------|-------------------------------|---------------------|
+| `Environment`             | `deployment.environment.name` | Resource Attribute |
+| `Region`                  | `cloud.region`                | Resource Attribute |
+| `SubscriptionId`          | `cloud.account.id`            | Resource Attribute |
+| `NamespaceName`           | `service.namespace`           | Resource Attribute |
+| - (from ResourceID)       | `messaging.system`            | Log Attribute |
+| `ScaleUnit`               | `azure.autoscale.unit`        | Log Attribute |
+| `ActivityId`              | `log.record.uid`              | Log Attribute |
+| `EventName`               | `azure.operation.name`        | Log Attribute |
+| `ipAddress`               | `client.address`              | Log Attribute |
+| `action`                  | `security_rule.action`        | Log Attribute |
+| `reason`                  | `security_rule.evaluation.reason` | Log Attribute |
+| `count`                   | `security_rule.evaluation.count`  | Log Attribute |
+
+## Azure Data Factory
+
+### ActivityRuns Logs
+
+| Azure "properties" Field  | OpenTelemetry                         | OpenTelemetry Scope |
+|---------------------------|---------------------------------------|---------------------|
+| `start`                   | `azure.datafactory.activity.start_time` | Log Attribute |
+| `end`                     | `azure.datafactory.activity.end_time` | Log Attribute |
+| `UserProperties`          | `azure.datafactory.user_properties`   | Log Attribute |
+| `Annotations`             | `azure.datafactory.annotations`       | Log Attribute |
+| `Input`                   | `azure.datafactory.input`             | Log Attribute |
+| `Output`                  | `azure.datafactory.output`            | Log Attribute |
+| `Predecessors`            | `azure.datafactory.predecessors`      | Log Attribute |
+| `Parameters`              | `azure.datafactory.parameters`        | Log Attribute |
+| `SystemParameters`        | `azure.datafactory.system_parameters` | Log Attribute |
+| `Tags`                    | `azure.datafactory.tags`              | Log Attribute |
+| `Error.errorCode`         | `error.code`                          | Log Attribute |
+| `Error.message`           | `error.message`                       | Log Attribute |
+| `Error.failureType`       | `error.type`                          | Log Attribute |
+| `Error.target`            | `error.target`                        | Log Attribute |
+| `activityRunId`           | `azure.datafactory.activity.run_id`   | Log Attribute |
+| `activityName`            | `azure.datafactory.activity.name`     | Log Attribute |
+| `pipelineRunId`           | `azure.datafactory.pipeline.run_id`   | Log Attribute |
+| `pipelineName`            | `azure.datafactory.pipeline.name`     | Log Attribute |
+
+### PipelineRuns Logs
+
+| Azure "properties" Field  | OpenTelemetry                         | OpenTelemetry Scope |
+|---------------------------|---------------------------------------|---------------------|
+| `start`                   | `azure.datafactory.pipeline.start_time` | Log Attribute |
+| `end`                     | `azure.datafactory.pipeline.end_time` | Log Attribute |
+| `UserProperties`          | `azure.datafactory.user_properties`   | Log Attribute |
+| `Annotations`             | `azure.datafactory.annotations`       | Log Attribute |
+| `Input`                   | `azure.datafactory.input`             | Log Attribute |
+| `Output`                  | `azure.datafactory.output`            | Log Attribute |
+| `Predecessors`            | `azure.datafactory.predecessors`      | Log Attribute |
+| `Parameters`              | `azure.datafactory.parameters`        | Log Attribute |
+| `SystemParameters`        | `azure.datafactory.system_parameters` | Log Attribute |
+| `Tags`                    | `azure.datafactory.tags`              | Log Attribute |
+| `Error.errorCode`         | `error.code`                          | Log Attribute |
+| `Error.message`           | `error.message`                       | Log Attribute |
+| `Error.failureType`       | `error.type`                          | Log Attribute |
+| `Error.target`            | `error.target`                        | Log Attribute |
+| `runId`                   | `azure.datafactory.pipeline.run_id`   | Log Attribute |
+| `pipelineName`            | `azure.datafactory.pipeline.name`     | Log Attribute |
+| `status`                  | ``   | Log Attribute |
+
+### TriggerRuns Logs
+
+| Azure "properties" Field  | OpenTelemetry                         | OpenTelemetry Scope |
+|---------------------------|---------------------------------------|---------------------|
+| `start`                   | `azure.datafactory.trigger.start_time` | Log Attribute |
+| `end`                     | `azure.datafactory.trigger.end_time`  | Log Attribute |
+| `UserProperties`          | `azure.datafactory.user_properties`   | Log Attribute |
+| `Annotations`             | `azure.datafactory.annotations`       | Log Attribute |
+| `Input`                   | `azure.datafactory.input`             | Log Attribute |
+| `Output`                  | `azure.datafactory.output`            | Log Attribute |
+| `Predecessors`            | `azure.datafactory.predecessors`      | Log Attribute |
+| `Parameters`              | `azure.datafactory.parameters`        | Log Attribute |
+| `SystemParameters`        | `azure.datafactory.system_parameters` | Log Attribute |
+| `Tags`                    | `azure.datafactory.tags`              | Log Attribute |
+| `Error.errorCode`         | `error.code`                          | Log Attribute |
+| `Error.message`           | `error.message`                       | Log Attribute |
+| `Error.failureType`       | `error.type`                          | Log Attribute |
+| `Error.target`            | `error.target`                        | Log Attribute |
+| `triggerId`               | `azure.datafactory.trigger.run_id`    | Log Attribute |
+| `triggerName`             | `azure.datafactory.trigger.name`      | Log Attribute |
+| `triggerType`             | `azure.datafactory.trigger.type`      | Log Attribute |
+| `triggerEvent`            | `azure.datafactory.trigger.event_payload` | Log Attribute |
+| `status`                  | `azure.datafactory.pipeline.state`    | Log Attribute |
+
 ## Front Door
 
 ### Front Door Web Application Firewall Logs
@@ -236,6 +486,30 @@ in OpenTelemetry Collector pipeline (for example, using `transformprocessor`) or
 | `securityCipher`          | `tls.cipher`                  | Log Attribute |
 | `OriginIP`                | `server.address` + `server.port`. If unparsable - `server.original_address` | Log Attribute |
 
+## Function App Logs
+
+| Azure "properties" Field  | OpenTelemetry                     | OpenTelemetry Scope |
+|---------------------------|-----------------------------------|---------------------|
+| `activityId`              | `log.record.uid`                  | Log Attribute |
+| `appName`                 | `service.name`                    | Resource Attribute |
+| `category`                | - (duplicates high level attributes) | - |
+| `eventId`                 | `azure.event.id`                  | Log Attribute |
+| `eventName`               | `azure.event.name`                | Log Attribute |
+| `exceptionDetails`        | `exception.stacktrace`            | Log Attribute |
+| `exceptionMessage`        | `exception.message`               | Log Attribute |
+| `exceptionType`           | `exception.type`                  | Log Attribute |
+| `functionInvocationId`    | `faas.invocation_id`              | Log Attribute |
+| `appName`/`functionName`  | `faas.name`                       | Log Attribute |
+| `functionName`            | `faas.invoked_name`               | Log Attribute |
+| `hostInstanceId`          | `host.id`                         | Log Attribute |
+| `hostVersion`             | `host.image.version`              | Log Attribute |
+| `level`                   | - (duplicates high level attributes) | - |
+| `levelId`                 | - (duplicates high level attributes) | - |
+| `message`                 | Body                              | Log |
+| `processId`               | `process.pid`                     | Log Attribute |
+| `roleInstance`            | `service.instance.id`             | Resource Attribute |
+| -                         | `faas.invoked_provider`=`azure`   | Log Attribute |
+
 ## Recommendation Logs
 
 | Azure "properties" Field      | OpenTelemetry                         | OpenTelemetry Scope |
@@ -247,3 +521,25 @@ in OpenTelemetry Collector pipeline (for example, using `transformprocessor`) or
 | `recommendationResourceLink`  | `azure.recommendation.link`           | Log Attribute |
 | `recommendationType`          | `azure.recommendation.type`           | Log Attribute |
 | `recommendationRisk`          | `azure.recommendation.risk`           | Log Attribute |
+
+## Storage Blob Logs (StorageRead, StorageWrite, StorageDelete)
+
+| Azure "properties" Field  | OpenTelemetry                                 | OpenTelemetry Scope |
+|---------------------------|-----------------------------------------------|---------------------|
+| `statusCode`              | `http.response.status_code`                   | Log Attribute |
+| `statusText`              | `http.response.status_text`                   | Log Attribute |
+| `uri`                     | `url.full` with parsed `url.scheme`, `url.domain`, `url.fragment`, `url.query`, `url.path` and `url.port`. If unparsable - only `url.original`                   | Log Attribute |
+| `protocol`                | `network.protocol.name`                       | Log Attribute |
+| `accountName`             | `azure.storage.namespace`                     | Log Attribute |
+| `userAgentHeader`         | `user_agent.original`                         | Log Attribute |
+| `clientRequestId`         | `azure.service.request.id`                    | Log Attribute |
+| `serverLatencyMs`         | `azure.response.duration`                     | Log Attribute |
+| `serviceType`             | `azure.storage.service.type`                  | Log Attribute |
+| `operationCount`          | `azure.storage.operation.count`               | Log Attribute |
+| `requestHeaderSize`       | `http.request.header.size`                    | Log Attribute |
+| `requestBodySize`         | `http.request.body.size`                      | Log Attribute |
+| `responseHeaderSize`      | `http.response.header.size`                   | Log Attribute |
+| `responseBodySize`        | `http.response.body.size`                     | Log Attribute |
+| `tlsVersion`              | `tls.protocol.name` + `tls.protocol.version`. If unparsable - `tls.protocol.original` | Log Attribute |
+| `objectKey`               | `azure.storage.object.key`                    | Log Attribute |
+| `sourceAccessTier`        | `azure.storage.source.access_tier`            | Log Attribute |
