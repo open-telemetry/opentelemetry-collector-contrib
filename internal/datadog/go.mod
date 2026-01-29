@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/datado
 go 1.24.0
 
 require (
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.76.0-devel
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.76.0-devel
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.76.0-devel
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.76.0-devel
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.76.0-rc.1
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.76.0-rc.1
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.76.0-rc.1
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.76.0-rc.1
 	github.com/DataDog/datadog-api-client-go/v2 v2.54.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.31.0
@@ -39,35 +39,35 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
-	github.com/DataDog/datadog-agent/comp/core/secrets/def v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/types v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/utils v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/config/create v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/config/env v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/config/helper v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/config/mock v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/config/model v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/config/setup v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/config/structure v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/fips v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/serializer v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/template v0.76.0-devel // indirect
+	github.com/DataDog/datadog-agent/comp/core/secrets/def v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/types v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/utils v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/create v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/env v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/helper v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/mock v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/model v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/setup v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/structure v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/fips v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/serializer v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/template v0.76.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/executable v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/system v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/winutil v0.76.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.76.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/util/executable v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/system v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/winutil v0.76.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.76.0-rc.1 // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/viper v1.15.0 // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect
@@ -145,7 +145,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/tinylib/msgp v1.6.1 // indirect
+	github.com/tinylib/msgp v1.6.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
