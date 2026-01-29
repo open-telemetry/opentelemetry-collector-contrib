@@ -44,6 +44,28 @@ type Config struct {
 	// ServiceName determines which service the requests are sent to.
 	// will be default to `xray`. This is mandatory for SigV4
 	ServiceName string `mapstructure:"service_name"`
+
+	// AdditionalRoutingRules defines optional routing rules for multi-service support.
+	// Each route can specify its own service name, region, role, and endpoint.
+	AdditionalRoutingRules []RoutingRule `mapstructure:"additional_routing_rules,omitempty"`
+}
+
+// RoutingRule defines routing configuration for a specific service.
+type RoutingRule struct {
+	// Paths is a list of URL paths to match against the request.
+	Paths []string `mapstructure:"paths"`
+
+	// ServiceName is the AWS service name. Required.
+	ServiceName string `mapstructure:"service_name"`
+
+	// Region is the AWS region for this service. Falls back to top-level region if not set.
+	Region string `mapstructure:"region"`
+
+	// RoleARN is the IAM role for this service. Falls back to top-level role_arn if not set.
+	RoleARN string `mapstructure:"role_arn"`
+
+	// AWSEndpoint is the AWS endpoint for this service. Auto-resolves if not set.
+	AWSEndpoint string `mapstructure:"aws_endpoint"`
 }
 
 func DefaultConfig() *Config {
@@ -61,4 +83,18 @@ func DefaultConfig() *Config {
 		AWSEndpoint: "",
 		ServiceName: "xray",
 	}
+}
+
+func (cfg *Config) toSessionConfig() *sessionConfig {
+	return &sessionConfig{
+		Region:   cfg.Region,
+		RoleARN:  cfg.RoleARN,
+		Endpoint: cfg.AWSEndpoint,
+	}
+}
+
+type sessionConfig struct {
+	Region   string
+	RoleARN  string
+	Endpoint string
 }
