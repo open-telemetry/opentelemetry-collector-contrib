@@ -61,7 +61,7 @@ func (cfg *Config) Validate() error {
 	return err
 }
 
-func (cfg *Config) ValidateForDiscovery(rawCfg map[string]any, discoveredEndpoint string) error {
+func (*Config) ValidateForDiscovery(rawCfg map[string]any, discoveredEndpoint string) error {
 	targets, ok := rawCfg["targets"].([]any)
 	if !ok {
 		return nil
