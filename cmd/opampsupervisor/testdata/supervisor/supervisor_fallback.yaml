@@ -20,8 +20,8 @@ agent:
   config_files:
     - '{{.local_config}}'
   {{- end }}
-  fallback_configs:
-    - '{{.fallback_configs}}'
+  initial_fallback_configs:
+    - '{{.initial_fallback_config}}'
   {{- if .use_hup_config_reload }}
   use_hup_config_reload: {{ .use_hup_config_reload }}
   {{- end }}

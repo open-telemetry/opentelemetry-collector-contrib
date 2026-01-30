@@ -311,7 +311,7 @@ func escapePathStringForWin(path string) string {
 }
 
 // This test ensures the Supervisor config validation path can validate
-// agent::fallback_configs by executing the real Collector binary with:
+// agent::initial_fallback_configs by executing the real Collector binary with:
 //
 //	<collector> validate --config <cfg1> [--config <cfg2> ...]
 //
@@ -331,9 +331,9 @@ func TestValidateFallbackConfigsWithColBin_E2E(t *testing.T) {
 	t.Run("Valid fallback config", func(t *testing.T) {
 		goodColConfigPath := filepath.Join("testdata", "collector", "healthcheck_config.yaml")
 		cfgFile := getSupervisorConfig(t, "fallback", map[string]string{
-			"url":              "localhost:12345",
-			"storage_dir":      t.TempDir(),
-			"fallback_configs": goodColConfigPath,
+			"url":                     "localhost:12345",
+			"storage_dir":             t.TempDir(),
+			"initial_fallback_config": escapePathStringForWin(goodColConfigPath),
 		})
 
 		_, err := config.Load(cfgFile.Name())
@@ -343,13 +343,13 @@ func TestValidateFallbackConfigsWithColBin_E2E(t *testing.T) {
 	t.Run("Invalid fallback config", func(t *testing.T) {
 		badColConfigPath := filepath.Join("testdata", "collector", "bad_config.yaml")
 		badCfgFile := getSupervisorConfig(t, "fallback", map[string]string{
-			"url":              "localhost:12345",
-			"storage_dir":      t.TempDir(),
-			"fallback_configs": badColConfigPath,
+			"url":                     "localhost:12345",
+			"storage_dir":             t.TempDir(),
+			"initial_fallback_config": escapePathStringForWin(badColConfigPath),
 		})
 
 		_, err := config.Load(badCfgFile.Name())
-		require.ErrorContains(t, err, "could not validate fallback configs with agent::executable")
+		require.ErrorContains(t, err, "could not validate initial fallback configs with agent::executable")
 	})
 }
 
@@ -643,9 +643,9 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 			defer server.shutdown()
 
 			extraConfigData := map[string]string{
-				"url":              server.addr,
-				"storage_dir":      storageDir,
-				"fallback_configs": escapePathStringForWin(fallbackConfigPath),
+				"url":                     server.addr,
+				"storage_dir":             storageDir,
+				"initial_fallback_config": escapePathStringForWin(fallbackConfigPath),
 			}
 			if mode.UseHUPConfigReload {
 				extraConfigData["use_hup_config_reload"] = "true"
@@ -2780,10 +2780,10 @@ func TestSupervisorFallbackWhenNoPersistedConfig(t *testing.T) {
 
 	// Start supervisor with fallback config and local config for normal operation
 	s, _ := newSupervisor(t, "fallback", map[string]string{
-		"url":              server.addr,
-		"storage_dir":      storageDir,
-		"local_config":     localConfigPath,
-		"fallback_configs": escapePathStringForWin(fallbackConfigPath),
+		"url":                     server.addr,
+		"storage_dir":             storageDir,
+		"local_config":            localConfigPath,
+		"initial_fallback_config": escapePathStringForWin(fallbackConfigPath),
 	})
 
 	require.NoError(t, s.Start(t.Context()))
@@ -2845,10 +2845,10 @@ func TestSupervisorFallbackDisablesAfterFirstConnect(t *testing.T) {
 
 	// Start supervisor with fallback config and local config
 	s, _ := newSupervisor(t, "fallback", map[string]string{
-		"url":              server.addr,
-		"storage_dir":      storageDir,
-		"local_config":     localConfigPath,
-		"fallback_configs": escapePathStringForWin(fallbackConfigPath),
+		"url":                     server.addr,
+		"storage_dir":             storageDir,
+		"local_config":            localConfigPath,
+		"initial_fallback_config": escapePathStringForWin(fallbackConfigPath),
 	})
 
 	require.NoError(t, s.Start(t.Context()))

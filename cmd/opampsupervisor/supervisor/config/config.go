@@ -225,9 +225,9 @@ type Agent struct {
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
-	// FallbackConfigs is an ordered list of fallback configuration files to use
+	// InitialFallbackConfigs is an ordered list of fallback configuration files to use
 	// when the OpAMP server is unreachable. Configs are merged in order.
-	FallbackConfigs []string `mapstructure:"fallback_configs"`
+	InitialFallbackConfigs []string `mapstructure:"initial_fallback_configs"`
 }
 
 func (a Agent) Validate() error {
@@ -278,21 +278,21 @@ func (a Agent) Validate() error {
 
 func (a Agent) validateFallbackConfigs() error {
 	// If no fallback configs are specified, no validation is needed.
-	if len(a.FallbackConfigs) == 0 {
+	if len(a.InitialFallbackConfigs) == 0 {
 		return nil
 	}
 
 	// Validate that the fallback config files exist.
-	for i, cfgPath := range a.FallbackConfigs {
+	for i, cfgPath := range a.InitialFallbackConfigs {
 		if cfgPath == "" {
-			return fmt.Errorf("agent::fallback_configs[%d] cannot be empty", i)
+			return fmt.Errorf("agent::initial_fallback_configs[%d] cannot be empty", i)
 		}
 		if _, err := os.Stat(cfgPath); err != nil {
-			return fmt.Errorf("could not stat agent::fallback_configs[%d] path %q: %w", i, cfgPath, err)
+			return fmt.Errorf("could not stat agent::initial_fallback_configs[%d] path %q: %w", i, cfgPath, err)
 		}
 	}
 	if err := a.validateFallbackConfigsWithColBin(); err != nil {
-		return fmt.Errorf("could not validate fallback configs with agent::executable: %w", err)
+		return fmt.Errorf("could not validate initial fallback configs with agent::executable: %w", err)
 	}
 
 	return nil
@@ -300,7 +300,7 @@ func (a Agent) validateFallbackConfigs() error {
 
 func (a Agent) validateFallbackConfigsWithColBin() error {
 	cfgValidateCommand := []string{a.Executable, "validate"}
-	for _, cfgPath := range a.FallbackConfigs {
+	for _, cfgPath := range a.InitialFallbackConfigs {
 		cfgValidateCommand = append(cfgValidateCommand, "--config", cfgPath)
 	}
 	cmd := exec.Command(cfgValidateCommand[0], cfgValidateCommand[1:]...) // #nosec G204
@@ -316,7 +316,7 @@ func (a Agent) validateFallbackConfigsWithColBin() error {
 
 // FallbackEnabled returns true if fallback configuration is enabled.
 func (a Agent) FallbackEnabled() bool {
-	return len(a.FallbackConfigs) > 0
+	return len(a.InitialFallbackConfigs) > 0
 }
 
 type SpecialConfigFile string

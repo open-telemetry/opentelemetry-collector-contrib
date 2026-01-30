@@ -1517,12 +1517,12 @@ func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
 
 	s.addSpecialConfigFiles()
 
-	if len(s.config.Agent.FallbackConfigs) == 0 {
+	if len(s.config.Agent.InitialFallbackConfigs) == 0 {
 		return false, errors.New("no fallback configs configured")
 	}
 
 	// Load and merge fallback config files, in order.
-	for _, fallbackPath := range s.config.Agent.FallbackConfigs {
+	for _, fallbackPath := range s.config.Agent.InitialFallbackConfigs {
 		fallbackConfigBytes, readErr := os.ReadFile(fallbackPath)
 		if readErr != nil {
 			return false, fmt.Errorf("could not read fallback config file: %w", readErr)
