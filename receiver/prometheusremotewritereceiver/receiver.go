@@ -198,7 +198,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	}
 	if n > maxRequestBodySize {
 		prw.settings.Logger.Warn("Request body exceeded max size",
-			zapcore.Field{Key: "max_size", Type: zapcore.Int64Type, Integer: int64(maxRequestBodySize)},
+			zapcore.Field{Key: "max_size", Type: zapcore.Int64Type, Integer: maxRequestBodySize},
 			zapcore.Field{Key: "actual_size", Type: zapcore.Int64Type, Integer: n})
 		http.Error(w, fmt.Sprintf("request body exceeds max size of %d bytes (got %d bytes)", maxRequestBodySize, n), http.StatusRequestEntityTooLarge)
 		return
