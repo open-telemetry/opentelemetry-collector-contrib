@@ -778,7 +778,7 @@ func (p *postgreSQLScraper) generateInstanceID(database, schema, table, index st
 	if index != "" {
 		parts = append(parts, index)
 	}
-	name := strings.Join(parts, ":")
+	name := strings.Join(parts, "\x00")
 	return uuid.NewSHA1(otelNamespaceUUID, []byte(name)).String()
 }
 
