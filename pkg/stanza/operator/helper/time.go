@@ -14,7 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 // StrptimeKey is literally "strptime", and is the default layout type
@@ -93,13 +93,13 @@ func (t *TimeParser) Validate() error {
 		switch t.Layout {
 		case "s", "ms", "us", "ns", "s.ms", "s.us", "s.ns": // ok
 		default:
-			return stanza_errors.NewError(
+			return stanzaerrors.NewError(
 				"invalid `layout` for `epoch` type",
 				"specify 's', 'ms', 'us', 'ns', 's.ms', 's.us', or 's.ns'",
 			)
 		}
 	default:
-		return stanza_errors.NewError(
+		return stanzaerrors.NewError(
 			fmt.Sprintf("unsupported layout_type %s", t.LayoutType),
 			"valid values are 'strptime', 'gotime', and 'epoch'",
 		)
@@ -139,7 +139,7 @@ func (t *TimeParser) setLocation() error {
 func (t *TimeParser) Parse(entry *entry.Entry) error {
 	value, ok := entry.Get(t.ParseFrom)
 	if !ok {
-		return stanza_errors.NewError(
+		return stanzaerrors.NewError(
 			"log entry does not have the expected parse_from field",
 			"ensure that all entries forwarded to this parser contain the parse_from field",
 			"parse_from", t.ParseFrom.String(),

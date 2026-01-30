@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-package json
+package jsonparser
 
 import (
 	"path/filepath"
