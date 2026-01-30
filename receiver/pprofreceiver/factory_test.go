@@ -24,14 +24,10 @@ import (
 func TestNewFactory_PprofConversion(t *testing.T) {
 	tempDir := t.TempDir()
 	pprofFile := filepath.Join(tempDir, "cpu.pprof")
-	t.Cleanup(func() {
-		os.RemoveAll(pprofFile)
-	})
 
 	t.Run("Generate testdata", func(t *testing.T) {
 		f, err := os.Create(pprofFile)
 		require.NoError(t, err)
-		defer f.Close()
 
 		err = pprof.StartCPUProfile(f)
 		require.NoError(t, err)
@@ -48,6 +44,9 @@ func TestNewFactory_PprofConversion(t *testing.T) {
 		_ = result
 
 		pprof.StopCPUProfile()
+		// Explicitly close the file to ensure it's flushed and unlocked on Windows
+		err = f.Close()
+		require.NoError(t, err)
 	})
 
 	t.Run("Test Receiver", func(t *testing.T) {
