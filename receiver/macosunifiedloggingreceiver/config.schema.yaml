@@ -1,0 +1,26 @@
+description: Config defines configuration for the macOS unified logging receiver Separated into a common file that isn't platform specific so that factory_others.go can reference it
+type: object
+properties:
+  archive_path:
+    description: ArchivePath is a path or glob pattern to .logarchive directory(ies) If empty, reads from the live system logs Supports glob patterns (e.g., "*.logarchive", "**/logs/*.logarchive")
+    type: string
+  end_time:
+    description: EndTime specifies when to stop reading logs Only used with archive_path
+    type: string
+  format:
+    description: 'Format specifies the output format from the log command Options: "default" (system default), "ndjson", "json", "syslog", "compact" Default: "default"'
+    type: string
+  max_log_age:
+    description: 'MaxLogAge specifies the maximum age of logs to read on startup Only applies to live mode. Format: "24h", "1h30m", etc.'
+    type: string
+    format: duration
+  max_poll_interval:
+    description: MaxPollInterval specifies the maximum interval between polling for new logs (live mode only) The actual poll interval uses exponential backoff based on whether logs are being actively written
+    type: string
+    format: duration
+  predicate:
+    description: 'Predicate is a filter predicate to pass to the log command Example: "subsystem == ''com.apple.systempreferences''"'
+    type: string
+  start_time:
+    description: 'StartTime specifies when to start reading logs from Format: "2006-01-02 15:04:05"'
+    type: string

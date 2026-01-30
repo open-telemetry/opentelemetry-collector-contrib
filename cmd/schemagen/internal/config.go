@@ -106,7 +106,12 @@ func ReadConfig() (*Config, error) {
 			case "", "pkg":
 				mode = Package
 			default:
-				return nil, fmt.Errorf("schema generation for class '%s' is not supported", md.Status.Class)
+				isSubClass := strings.HasPrefix(class, "pkg/")
+				if !isSubClass {
+					return nil, fmt.Errorf("schema generation for class '%s' is not supported", md.Status.Class)
+				}
+				mode = Package
+				class = "pkg"
 			}
 		}
 	}
