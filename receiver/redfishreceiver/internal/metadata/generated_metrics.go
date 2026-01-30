@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -84,7 +85,7 @@ func (m *metricChassisPowerstate) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricChassisPowerstate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, chassisAssetTagAttributeValue string, chassisModelAttributeValue string, chassisNameAttributeValue string, chassisManufacturerAttributeValue string, chassisSerialNumberAttributeValue string, chassisSkuAttributeValue string, chassisChassisTypeAttributeValue string) {
+func (m *metricChassisPowerstate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, chassisAssetTagAttributeValue string, chassisModelAttributeValue string, chassisNameAttributeValue string, chassisManufacturerAttributeValue string, chassisSerialNumberAttributeValue string, chassisSkuAttributeValue string, chassisChassisTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -92,8 +93,6 @@ func (m *metricChassisPowerstate) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
-	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
 	dp.Attributes().PutStr("chassis.asset_tag", chassisAssetTagAttributeValue)
 	dp.Attributes().PutStr("chassis.model", chassisModelAttributeValue)
@@ -145,7 +144,7 @@ func (m *metricChassisStatusHealth) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricChassisStatusHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, chassisAssetTagAttributeValue string, chassisModelAttributeValue string, chassisNameAttributeValue string, chassisManufacturerAttributeValue string, chassisSerialNumberAttributeValue string, chassisSkuAttributeValue string, chassisChassisTypeAttributeValue string) {
+func (m *metricChassisStatusHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, chassisAssetTagAttributeValue string, chassisModelAttributeValue string, chassisNameAttributeValue string, chassisManufacturerAttributeValue string, chassisSerialNumberAttributeValue string, chassisSkuAttributeValue string, chassisChassisTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -153,8 +152,6 @@ func (m *metricChassisStatusHealth) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
-	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
 	dp.Attributes().PutStr("chassis.asset_tag", chassisAssetTagAttributeValue)
 	dp.Attributes().PutStr("chassis.model", chassisModelAttributeValue)
@@ -206,7 +203,7 @@ func (m *metricChassisStatusState) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricChassisStatusState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, chassisAssetTagAttributeValue string, chassisModelAttributeValue string, chassisNameAttributeValue string, chassisManufacturerAttributeValue string, chassisSerialNumberAttributeValue string, chassisSkuAttributeValue string, chassisChassisTypeAttributeValue string) {
+func (m *metricChassisStatusState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, chassisAssetTagAttributeValue string, chassisModelAttributeValue string, chassisNameAttributeValue string, chassisManufacturerAttributeValue string, chassisSerialNumberAttributeValue string, chassisSkuAttributeValue string, chassisChassisTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -214,8 +211,6 @@ func (m *metricChassisStatusState) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
-	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
 	dp.Attributes().PutStr("chassis.asset_tag", chassisAssetTagAttributeValue)
 	dp.Attributes().PutStr("chassis.model", chassisModelAttributeValue)
@@ -267,7 +262,7 @@ func (m *metricFanReading) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFanReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string, fanReadingUnitsAttributeValue string) {
+func (m *metricFanReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, fanNameAttributeValue string, fanReadingUnitsAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -275,8 +270,6 @@ func (m *metricFanReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
-	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
 	dp.Attributes().PutStr("fan.name", fanNameAttributeValue)
 	dp.Attributes().PutStr("fan.reading_units", fanReadingUnitsAttributeValue)
@@ -323,7 +316,7 @@ func (m *metricFanStatusHealth) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFanStatusHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string) {
+func (m *metricFanStatusHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, fanNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -331,8 +324,6 @@ func (m *metricFanStatusHealth) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
-	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
 	dp.Attributes().PutStr("fan.name", fanNameAttributeValue)
 }
@@ -378,7 +369,7 @@ func (m *metricFanStatusState) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricFanStatusState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string) {
+func (m *metricFanStatusState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, fanNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -386,8 +377,6 @@ func (m *metricFanStatusState) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
-	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
 	dp.Attributes().PutStr("fan.name", fanNameAttributeValue)
 }
@@ -433,7 +422,7 @@ func (m *metricSystemPowerstate) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemPowerstate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, baseURLAttributeValue string, systemIDAttributeValue string, systemAssetTagAttributeValue string, systemBiosVersionAttributeValue string, systemHostNameAttributeValue string, systemModelAttributeValue string, systemNameAttributeValue string, systemManufacturerAttributeValue string, systemSerialNumberAttributeValue string, systemSkuAttributeValue string, systemSystemTypeAttributeValue string) {
+func (m *metricSystemPowerstate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemIDAttributeValue string, systemAssetTagAttributeValue string, systemBiosVersionAttributeValue string, systemModelAttributeValue string, systemNameAttributeValue string, systemManufacturerAttributeValue string, systemSerialNumberAttributeValue string, systemSkuAttributeValue string, systemSystemTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -441,11 +430,9 @@ func (m *metricSystemPowerstate) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("system.id", systemIDAttributeValue)
 	dp.Attributes().PutStr("system.asset_tag", systemAssetTagAttributeValue)
 	dp.Attributes().PutStr("system.bios_version", systemBiosVersionAttributeValue)
-	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
 	dp.Attributes().PutStr("system.model", systemModelAttributeValue)
 	dp.Attributes().PutStr("system.name", systemNameAttributeValue)
 	dp.Attributes().PutStr("system.manufacturer", systemManufacturerAttributeValue)
@@ -495,7 +482,7 @@ func (m *metricSystemStatusHealth) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemStatusHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, baseURLAttributeValue string, systemIDAttributeValue string, systemAssetTagAttributeValue string, systemBiosVersionAttributeValue string, systemHostNameAttributeValue string, systemModelAttributeValue string, systemNameAttributeValue string, systemManufacturerAttributeValue string, systemSerialNumberAttributeValue string, systemSkuAttributeValue string, systemSystemTypeAttributeValue string) {
+func (m *metricSystemStatusHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemIDAttributeValue string, systemAssetTagAttributeValue string, systemBiosVersionAttributeValue string, systemModelAttributeValue string, systemNameAttributeValue string, systemManufacturerAttributeValue string, systemSerialNumberAttributeValue string, systemSkuAttributeValue string, systemSystemTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -503,11 +490,9 @@ func (m *metricSystemStatusHealth) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("system.id", systemIDAttributeValue)
 	dp.Attributes().PutStr("system.asset_tag", systemAssetTagAttributeValue)
 	dp.Attributes().PutStr("system.bios_version", systemBiosVersionAttributeValue)
-	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
 	dp.Attributes().PutStr("system.model", systemModelAttributeValue)
 	dp.Attributes().PutStr("system.name", systemNameAttributeValue)
 	dp.Attributes().PutStr("system.manufacturer", systemManufacturerAttributeValue)
@@ -557,7 +542,7 @@ func (m *metricSystemStatusState) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemStatusState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, baseURLAttributeValue string, systemIDAttributeValue string, systemAssetTagAttributeValue string, systemBiosVersionAttributeValue string, systemHostNameAttributeValue string, systemModelAttributeValue string, systemNameAttributeValue string, systemManufacturerAttributeValue string, systemSerialNumberAttributeValue string, systemSkuAttributeValue string, systemSystemTypeAttributeValue string) {
+func (m *metricSystemStatusState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemIDAttributeValue string, systemAssetTagAttributeValue string, systemBiosVersionAttributeValue string, systemModelAttributeValue string, systemNameAttributeValue string, systemManufacturerAttributeValue string, systemSerialNumberAttributeValue string, systemSkuAttributeValue string, systemSystemTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -565,11 +550,9 @@ func (m *metricSystemStatusState) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("system.id", systemIDAttributeValue)
 	dp.Attributes().PutStr("system.asset_tag", systemAssetTagAttributeValue)
 	dp.Attributes().PutStr("system.bios_version", systemBiosVersionAttributeValue)
-	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
 	dp.Attributes().PutStr("system.model", systemModelAttributeValue)
 	dp.Attributes().PutStr("system.name", systemNameAttributeValue)
 	dp.Attributes().PutStr("system.manufacturer", systemManufacturerAttributeValue)
@@ -619,7 +602,7 @@ func (m *metricTemperatureReading) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricTemperatureReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
+func (m *metricTemperatureReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -627,8 +610,6 @@ func (m *metricTemperatureReading) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
-	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
 	dp.Attributes().PutStr("temperature.name", temperatureNameAttributeValue)
 }
@@ -674,7 +655,7 @@ func (m *metricTemperatureStatusHealth) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricTemperatureStatusHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
+func (m *metricTemperatureStatusHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -682,8 +663,6 @@ func (m *metricTemperatureStatusHealth) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
-	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
 	dp.Attributes().PutStr("temperature.name", temperatureNameAttributeValue)
 }
@@ -729,7 +708,7 @@ func (m *metricTemperatureStatusState) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricTemperatureStatusState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
+func (m *metricTemperatureStatusState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -737,8 +716,6 @@ func (m *metricTemperatureStatusState) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("system.host_name", systemHostNameAttributeValue)
-	dp.Attributes().PutStr("base_url", baseURLAttributeValue)
 	dp.Attributes().PutStr("chassis.id", chassisIDAttributeValue)
 	dp.Attributes().PutStr("temperature.name", temperatureNameAttributeValue)
 }
@@ -772,23 +749,25 @@ func newMetricTemperatureStatusState(cfg MetricConfig) metricTemperatureStatusSt
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                        MetricsBuilderConfig // config of the metrics builder.
-	startTime                     pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity               int                  // maximum observed number of metrics per resource.
-	metricsBuffer                 pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                     component.BuildInfo  // contains version information.
-	metricChassisPowerstate       metricChassisPowerstate
-	metricChassisStatusHealth     metricChassisStatusHealth
-	metricChassisStatusState      metricChassisStatusState
-	metricFanReading              metricFanReading
-	metricFanStatusHealth         metricFanStatusHealth
-	metricFanStatusState          metricFanStatusState
-	metricSystemPowerstate        metricSystemPowerstate
-	metricSystemStatusHealth      metricSystemStatusHealth
-	metricSystemStatusState       metricSystemStatusState
-	metricTemperatureReading      metricTemperatureReading
-	metricTemperatureStatusHealth metricTemperatureStatusHealth
-	metricTemperatureStatusState  metricTemperatureStatusState
+	config                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricChassisPowerstate        metricChassisPowerstate
+	metricChassisStatusHealth      metricChassisStatusHealth
+	metricChassisStatusState       metricChassisStatusState
+	metricFanReading               metricFanReading
+	metricFanStatusHealth          metricFanStatusHealth
+	metricFanStatusState           metricFanStatusState
+	metricSystemPowerstate         metricSystemPowerstate
+	metricSystemStatusHealth       metricSystemStatusHealth
+	metricSystemStatusState        metricSystemStatusState
+	metricTemperatureReading       metricTemperatureReading
+	metricTemperatureStatusHealth  metricTemperatureStatusHealth
+	metricTemperatureStatusState   metricTemperatureStatusState
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -810,28 +789,47 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                        mbc,
-		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                 pmetric.NewMetrics(),
-		buildInfo:                     settings.BuildInfo,
-		metricChassisPowerstate:       newMetricChassisPowerstate(mbc.Metrics.ChassisPowerstate),
-		metricChassisStatusHealth:     newMetricChassisStatusHealth(mbc.Metrics.ChassisStatusHealth),
-		metricChassisStatusState:      newMetricChassisStatusState(mbc.Metrics.ChassisStatusState),
-		metricFanReading:              newMetricFanReading(mbc.Metrics.FanReading),
-		metricFanStatusHealth:         newMetricFanStatusHealth(mbc.Metrics.FanStatusHealth),
-		metricFanStatusState:          newMetricFanStatusState(mbc.Metrics.FanStatusState),
-		metricSystemPowerstate:        newMetricSystemPowerstate(mbc.Metrics.SystemPowerstate),
-		metricSystemStatusHealth:      newMetricSystemStatusHealth(mbc.Metrics.SystemStatusHealth),
-		metricSystemStatusState:       newMetricSystemStatusState(mbc.Metrics.SystemStatusState),
-		metricTemperatureReading:      newMetricTemperatureReading(mbc.Metrics.TemperatureReading),
-		metricTemperatureStatusHealth: newMetricTemperatureStatusHealth(mbc.Metrics.TemperatureStatusHealth),
-		metricTemperatureStatusState:  newMetricTemperatureStatusState(mbc.Metrics.TemperatureStatusState),
+		config:                         mbc,
+		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                  pmetric.NewMetrics(),
+		buildInfo:                      settings.BuildInfo,
+		metricChassisPowerstate:        newMetricChassisPowerstate(mbc.Metrics.ChassisPowerstate),
+		metricChassisStatusHealth:      newMetricChassisStatusHealth(mbc.Metrics.ChassisStatusHealth),
+		metricChassisStatusState:       newMetricChassisStatusState(mbc.Metrics.ChassisStatusState),
+		metricFanReading:               newMetricFanReading(mbc.Metrics.FanReading),
+		metricFanStatusHealth:          newMetricFanStatusHealth(mbc.Metrics.FanStatusHealth),
+		metricFanStatusState:           newMetricFanStatusState(mbc.Metrics.FanStatusState),
+		metricSystemPowerstate:         newMetricSystemPowerstate(mbc.Metrics.SystemPowerstate),
+		metricSystemStatusHealth:       newMetricSystemStatusHealth(mbc.Metrics.SystemStatusHealth),
+		metricSystemStatusState:        newMetricSystemStatusState(mbc.Metrics.SystemStatusState),
+		metricTemperatureReading:       newMetricTemperatureReading(mbc.Metrics.TemperatureReading),
+		metricTemperatureStatusHealth:  newMetricTemperatureStatusHealth(mbc.Metrics.TemperatureStatusHealth),
+		metricTemperatureStatusState:   newMetricTemperatureStatusState(mbc.Metrics.TemperatureStatusState),
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+	}
+	if mbc.ResourceAttributes.BaseURL.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["base_url"] = filter.CreateFilter(mbc.ResourceAttributes.BaseURL.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BaseURL.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["base_url"] = filter.CreateFilter(mbc.ResourceAttributes.BaseURL.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.SystemHostName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["system.host_name"] = filter.CreateFilter(mbc.ResourceAttributes.SystemHostName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SystemHostName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["system.host_name"] = filter.CreateFilter(mbc.ResourceAttributes.SystemHostName.MetricsExclude)
 	}
 
 	for _, op := range options {
 		op.apply(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -907,6 +905,16 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	for _, op := range options {
 		op.apply(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
 
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -925,63 +933,63 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordChassisPowerstateDataPoint adds a data point to chassis.powerstate metric.
-func (mb *MetricsBuilder) RecordChassisPowerstateDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, chassisAssetTagAttributeValue string, chassisModelAttributeValue string, chassisNameAttributeValue string, chassisManufacturerAttributeValue string, chassisSerialNumberAttributeValue string, chassisSkuAttributeValue string, chassisChassisTypeAttributeValue string) {
-	mb.metricChassisPowerstate.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, chassisAssetTagAttributeValue, chassisModelAttributeValue, chassisNameAttributeValue, chassisManufacturerAttributeValue, chassisSerialNumberAttributeValue, chassisSkuAttributeValue, chassisChassisTypeAttributeValue)
+func (mb *MetricsBuilder) RecordChassisPowerstateDataPoint(ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, chassisAssetTagAttributeValue string, chassisModelAttributeValue string, chassisNameAttributeValue string, chassisManufacturerAttributeValue string, chassisSerialNumberAttributeValue string, chassisSkuAttributeValue string, chassisChassisTypeAttributeValue string) {
+	mb.metricChassisPowerstate.recordDataPoint(mb.startTime, ts, val, chassisIDAttributeValue, chassisAssetTagAttributeValue, chassisModelAttributeValue, chassisNameAttributeValue, chassisManufacturerAttributeValue, chassisSerialNumberAttributeValue, chassisSkuAttributeValue, chassisChassisTypeAttributeValue)
 }
 
 // RecordChassisStatusHealthDataPoint adds a data point to chassis.status.health metric.
-func (mb *MetricsBuilder) RecordChassisStatusHealthDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, chassisAssetTagAttributeValue string, chassisModelAttributeValue string, chassisNameAttributeValue string, chassisManufacturerAttributeValue string, chassisSerialNumberAttributeValue string, chassisSkuAttributeValue string, chassisChassisTypeAttributeValue string) {
-	mb.metricChassisStatusHealth.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, chassisAssetTagAttributeValue, chassisModelAttributeValue, chassisNameAttributeValue, chassisManufacturerAttributeValue, chassisSerialNumberAttributeValue, chassisSkuAttributeValue, chassisChassisTypeAttributeValue)
+func (mb *MetricsBuilder) RecordChassisStatusHealthDataPoint(ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, chassisAssetTagAttributeValue string, chassisModelAttributeValue string, chassisNameAttributeValue string, chassisManufacturerAttributeValue string, chassisSerialNumberAttributeValue string, chassisSkuAttributeValue string, chassisChassisTypeAttributeValue string) {
+	mb.metricChassisStatusHealth.recordDataPoint(mb.startTime, ts, val, chassisIDAttributeValue, chassisAssetTagAttributeValue, chassisModelAttributeValue, chassisNameAttributeValue, chassisManufacturerAttributeValue, chassisSerialNumberAttributeValue, chassisSkuAttributeValue, chassisChassisTypeAttributeValue)
 }
 
 // RecordChassisStatusStateDataPoint adds a data point to chassis.status.state metric.
-func (mb *MetricsBuilder) RecordChassisStatusStateDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, chassisAssetTagAttributeValue string, chassisModelAttributeValue string, chassisNameAttributeValue string, chassisManufacturerAttributeValue string, chassisSerialNumberAttributeValue string, chassisSkuAttributeValue string, chassisChassisTypeAttributeValue string) {
-	mb.metricChassisStatusState.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, chassisAssetTagAttributeValue, chassisModelAttributeValue, chassisNameAttributeValue, chassisManufacturerAttributeValue, chassisSerialNumberAttributeValue, chassisSkuAttributeValue, chassisChassisTypeAttributeValue)
+func (mb *MetricsBuilder) RecordChassisStatusStateDataPoint(ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, chassisAssetTagAttributeValue string, chassisModelAttributeValue string, chassisNameAttributeValue string, chassisManufacturerAttributeValue string, chassisSerialNumberAttributeValue string, chassisSkuAttributeValue string, chassisChassisTypeAttributeValue string) {
+	mb.metricChassisStatusState.recordDataPoint(mb.startTime, ts, val, chassisIDAttributeValue, chassisAssetTagAttributeValue, chassisModelAttributeValue, chassisNameAttributeValue, chassisManufacturerAttributeValue, chassisSerialNumberAttributeValue, chassisSkuAttributeValue, chassisChassisTypeAttributeValue)
 }
 
 // RecordFanReadingDataPoint adds a data point to fan.reading metric.
-func (mb *MetricsBuilder) RecordFanReadingDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string, fanReadingUnitsAttributeValue string) {
-	mb.metricFanReading.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, fanNameAttributeValue, fanReadingUnitsAttributeValue)
+func (mb *MetricsBuilder) RecordFanReadingDataPoint(ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, fanNameAttributeValue string, fanReadingUnitsAttributeValue string) {
+	mb.metricFanReading.recordDataPoint(mb.startTime, ts, val, chassisIDAttributeValue, fanNameAttributeValue, fanReadingUnitsAttributeValue)
 }
 
 // RecordFanStatusHealthDataPoint adds a data point to fan.status.health metric.
-func (mb *MetricsBuilder) RecordFanStatusHealthDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string) {
-	mb.metricFanStatusHealth.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, fanNameAttributeValue)
+func (mb *MetricsBuilder) RecordFanStatusHealthDataPoint(ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, fanNameAttributeValue string) {
+	mb.metricFanStatusHealth.recordDataPoint(mb.startTime, ts, val, chassisIDAttributeValue, fanNameAttributeValue)
 }
 
 // RecordFanStatusStateDataPoint adds a data point to fan.status.state metric.
-func (mb *MetricsBuilder) RecordFanStatusStateDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, fanNameAttributeValue string) {
-	mb.metricFanStatusState.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, fanNameAttributeValue)
+func (mb *MetricsBuilder) RecordFanStatusStateDataPoint(ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, fanNameAttributeValue string) {
+	mb.metricFanStatusState.recordDataPoint(mb.startTime, ts, val, chassisIDAttributeValue, fanNameAttributeValue)
 }
 
 // RecordSystemPowerstateDataPoint adds a data point to system.powerstate metric.
-func (mb *MetricsBuilder) RecordSystemPowerstateDataPoint(ts pcommon.Timestamp, val int64, baseURLAttributeValue string, systemIDAttributeValue string, systemAssetTagAttributeValue string, systemBiosVersionAttributeValue string, systemHostNameAttributeValue string, systemModelAttributeValue string, systemNameAttributeValue string, systemManufacturerAttributeValue string, systemSerialNumberAttributeValue string, systemSkuAttributeValue string, systemSystemTypeAttributeValue string) {
-	mb.metricSystemPowerstate.recordDataPoint(mb.startTime, ts, val, baseURLAttributeValue, systemIDAttributeValue, systemAssetTagAttributeValue, systemBiosVersionAttributeValue, systemHostNameAttributeValue, systemModelAttributeValue, systemNameAttributeValue, systemManufacturerAttributeValue, systemSerialNumberAttributeValue, systemSkuAttributeValue, systemSystemTypeAttributeValue)
+func (mb *MetricsBuilder) RecordSystemPowerstateDataPoint(ts pcommon.Timestamp, val int64, systemIDAttributeValue string, systemAssetTagAttributeValue string, systemBiosVersionAttributeValue string, systemModelAttributeValue string, systemNameAttributeValue string, systemManufacturerAttributeValue string, systemSerialNumberAttributeValue string, systemSkuAttributeValue string, systemSystemTypeAttributeValue string) {
+	mb.metricSystemPowerstate.recordDataPoint(mb.startTime, ts, val, systemIDAttributeValue, systemAssetTagAttributeValue, systemBiosVersionAttributeValue, systemModelAttributeValue, systemNameAttributeValue, systemManufacturerAttributeValue, systemSerialNumberAttributeValue, systemSkuAttributeValue, systemSystemTypeAttributeValue)
 }
 
 // RecordSystemStatusHealthDataPoint adds a data point to system.status.health metric.
-func (mb *MetricsBuilder) RecordSystemStatusHealthDataPoint(ts pcommon.Timestamp, val int64, baseURLAttributeValue string, systemIDAttributeValue string, systemAssetTagAttributeValue string, systemBiosVersionAttributeValue string, systemHostNameAttributeValue string, systemModelAttributeValue string, systemNameAttributeValue string, systemManufacturerAttributeValue string, systemSerialNumberAttributeValue string, systemSkuAttributeValue string, systemSystemTypeAttributeValue string) {
-	mb.metricSystemStatusHealth.recordDataPoint(mb.startTime, ts, val, baseURLAttributeValue, systemIDAttributeValue, systemAssetTagAttributeValue, systemBiosVersionAttributeValue, systemHostNameAttributeValue, systemModelAttributeValue, systemNameAttributeValue, systemManufacturerAttributeValue, systemSerialNumberAttributeValue, systemSkuAttributeValue, systemSystemTypeAttributeValue)
+func (mb *MetricsBuilder) RecordSystemStatusHealthDataPoint(ts pcommon.Timestamp, val int64, systemIDAttributeValue string, systemAssetTagAttributeValue string, systemBiosVersionAttributeValue string, systemModelAttributeValue string, systemNameAttributeValue string, systemManufacturerAttributeValue string, systemSerialNumberAttributeValue string, systemSkuAttributeValue string, systemSystemTypeAttributeValue string) {
+	mb.metricSystemStatusHealth.recordDataPoint(mb.startTime, ts, val, systemIDAttributeValue, systemAssetTagAttributeValue, systemBiosVersionAttributeValue, systemModelAttributeValue, systemNameAttributeValue, systemManufacturerAttributeValue, systemSerialNumberAttributeValue, systemSkuAttributeValue, systemSystemTypeAttributeValue)
 }
 
 // RecordSystemStatusStateDataPoint adds a data point to system.status.state metric.
-func (mb *MetricsBuilder) RecordSystemStatusStateDataPoint(ts pcommon.Timestamp, val int64, baseURLAttributeValue string, systemIDAttributeValue string, systemAssetTagAttributeValue string, systemBiosVersionAttributeValue string, systemHostNameAttributeValue string, systemModelAttributeValue string, systemNameAttributeValue string, systemManufacturerAttributeValue string, systemSerialNumberAttributeValue string, systemSkuAttributeValue string, systemSystemTypeAttributeValue string) {
-	mb.metricSystemStatusState.recordDataPoint(mb.startTime, ts, val, baseURLAttributeValue, systemIDAttributeValue, systemAssetTagAttributeValue, systemBiosVersionAttributeValue, systemHostNameAttributeValue, systemModelAttributeValue, systemNameAttributeValue, systemManufacturerAttributeValue, systemSerialNumberAttributeValue, systemSkuAttributeValue, systemSystemTypeAttributeValue)
+func (mb *MetricsBuilder) RecordSystemStatusStateDataPoint(ts pcommon.Timestamp, val int64, systemIDAttributeValue string, systemAssetTagAttributeValue string, systemBiosVersionAttributeValue string, systemModelAttributeValue string, systemNameAttributeValue string, systemManufacturerAttributeValue string, systemSerialNumberAttributeValue string, systemSkuAttributeValue string, systemSystemTypeAttributeValue string) {
+	mb.metricSystemStatusState.recordDataPoint(mb.startTime, ts, val, systemIDAttributeValue, systemAssetTagAttributeValue, systemBiosVersionAttributeValue, systemModelAttributeValue, systemNameAttributeValue, systemManufacturerAttributeValue, systemSerialNumberAttributeValue, systemSkuAttributeValue, systemSystemTypeAttributeValue)
 }
 
 // RecordTemperatureReadingDataPoint adds a data point to temperature.reading metric.
-func (mb *MetricsBuilder) RecordTemperatureReadingDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
-	mb.metricTemperatureReading.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, temperatureNameAttributeValue)
+func (mb *MetricsBuilder) RecordTemperatureReadingDataPoint(ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
+	mb.metricTemperatureReading.recordDataPoint(mb.startTime, ts, val, chassisIDAttributeValue, temperatureNameAttributeValue)
 }
 
 // RecordTemperatureStatusHealthDataPoint adds a data point to temperature.status.health metric.
-func (mb *MetricsBuilder) RecordTemperatureStatusHealthDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
-	mb.metricTemperatureStatusHealth.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, temperatureNameAttributeValue)
+func (mb *MetricsBuilder) RecordTemperatureStatusHealthDataPoint(ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
+	mb.metricTemperatureStatusHealth.recordDataPoint(mb.startTime, ts, val, chassisIDAttributeValue, temperatureNameAttributeValue)
 }
 
 // RecordTemperatureStatusStateDataPoint adds a data point to temperature.status.state metric.
-func (mb *MetricsBuilder) RecordTemperatureStatusStateDataPoint(ts pcommon.Timestamp, val int64, systemHostNameAttributeValue string, baseURLAttributeValue string, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
-	mb.metricTemperatureStatusState.recordDataPoint(mb.startTime, ts, val, systemHostNameAttributeValue, baseURLAttributeValue, chassisIDAttributeValue, temperatureNameAttributeValue)
+func (mb *MetricsBuilder) RecordTemperatureStatusStateDataPoint(ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
+	mb.metricTemperatureStatusState.recordDataPoint(mb.startTime, ts, val, chassisIDAttributeValue, temperatureNameAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

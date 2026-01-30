@@ -108,7 +108,7 @@ func (s *redfishScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 		// only record computer system metrics if it exists in the scraperClient's resourceSet
 		if _, exists := client.ResourceSet[ComputerSystemResource]; exists {
-			s.recordComputerSystem(baseURL, compSys)
+			s.recordComputerSystem(compSys)
 		}
 
 		for _, link := range compSys.Links.Chassis {
@@ -121,7 +121,7 @@ func (s *redfishScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 			// only record chassis metrics if it exists in the scraperClient's resourceSet
 			if _, exists := client.ResourceSet[ChassisResource]; exists {
-				s.recordChassis(compSys.HostName, baseURL, chassis)
+				s.recordChassis(chassis)
 			}
 
 			// only scrape Fans and Temperatures if they exist in the scraperClient's resourceSet
@@ -134,15 +134,22 @@ func (s *redfishScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 				// only record Fans metrics if it exists in the scraperClient's resourceSet
 				if client.ResourceSet[FansResource] {
-					s.recordFans(compSys.HostName, baseURL, chassis.ID, thermal.Fans)
+					s.recordFans(chassis.ID, thermal.Fans)
 				}
 
 				// only record Temperatures metrics if it exists in the scraperClient's resourceSet
 				if client.ResourceSet[TemperaturesResource] {
-					s.recordTemperatures(compSys.HostName, baseURL, chassis.ID, thermal.Temperatures)
+					s.recordTemperatures(chassis.ID, thermal.Temperatures)
 				}
 			}
 		}
+
+		// Always present - resource attributes
+		rb := s.mb.NewResourceBuilder()
+		rb.SetBaseURL(baseURL)
+		rb.SetSystemHostName(compSys.HostName)
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
 	return s.mb.Emit(), errs.Combine()
