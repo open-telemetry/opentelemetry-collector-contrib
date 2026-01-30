@@ -108,7 +108,7 @@ func (dc *DimensionClient) PushMetadata(metadata []*metadata.MetadataUpdate) err
 			return fmt.Errorf("dimensionUpdate %v is missing Name or value, cannot send", dimensionUpdate)
 		}
 
-		errs = multierr.Append(errs, dc.acceptDimension(dimensionUpdate))
+		errs = multierr.Append(errs, dc.AcceptDimension(dimensionUpdate))
 	}
 
 	return errs
