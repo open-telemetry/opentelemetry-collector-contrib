@@ -178,12 +178,12 @@ func deepCopyHostMetadata(hm payload.HostMetadata) (payload.HostMetadata, error)
 		return payload.HostMetadata{}, fmt.Errorf("failed to marshal host metadata for deep copy: %w", err)
 	}
 
-	var copy payload.HostMetadata
-	if err := json.Unmarshal(marshaled, &copy); err != nil {
+	var copied payload.HostMetadata
+	if err := json.Unmarshal(marshaled, &copied); err != nil {
 		return payload.HostMetadata{}, fmt.Errorf("failed to unmarshal host metadata for deep copy: %w", err)
 	}
 
-	return copy, nil
+	return copied, nil
 }
 
 // RunPusher to push host metadata payloads from the host where the Collector is running periodically to Datadog intake.
