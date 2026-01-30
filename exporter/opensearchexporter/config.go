@@ -157,7 +157,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	if err := conf.Unmarshal(cfg); err != nil {
 		return err
 	}
-	
+
 	// Set default values for sending_queue if it's specified but fields are not set
 	// Check if sending_queue is present in config, even if not yet unmarshaled to HasValue()
 	if conf.IsSet("sending_queue") && cfg.QueueConfig.HasValue() {
@@ -180,7 +180,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		}
 		cfg.QueueConfig = configoptional.Default(queueCfg)
 	}
-	
+
 	return nil
 }
 
