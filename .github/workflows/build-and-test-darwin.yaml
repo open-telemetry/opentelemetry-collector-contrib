@@ -50,7 +50,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          install-tools: "false"
       - name: Build test binaries
         env:
           GOTESTARCH: amd64
@@ -78,7 +77,6 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          install-tools: "false"
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: testbinaries
