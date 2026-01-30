@@ -11,6 +11,7 @@ import (
 	"unsafe"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
@@ -31,12 +32,35 @@ const (
 	AttributeNetworkAddressUsedAtPeer  = "network.AddressUsedAtPeer"
 )
 
-var otSpanTagsMapping = map[string]string{
+var useStableSemconv = featuregate.GlobalRegistry().MustRegister(
+	"translator.skywalking.useStableSemconv",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, uses stable semantic conventions (v1.38.0) for attribute names (e.g., url.full, http.response.status_code, db.namespace, server.address). When disabled, uses legacy attribute names (e.g., http.url, http.status_code, db.name, net.peer.name)."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44796"),
+)
+
+var otSpanTagsMappingStable = map[string]string{
 	"url":         string(conventions.URLFullKey),
 	"status_code": string(conventions.HTTPResponseStatusCodeKey),
 	"db.type":     string(conventions.DBSystemNameKey),
 	"db.instance": string(conventions.DBNamespaceKey),
 	"mq.broker":   string(conventions.ServerAddressKey),
+}
+
+var otSpanTagsMappingLegacy = map[string]string{
+	"url":         "http.url",
+	"status_code": "http.status_code",
+	"db.type":     "db.system",
+	"db.instance": "db.name",
+	"mq.broker":   "net.peer.name",
+}
+
+// getOtSpanTagsMapping returns the appropriate mapping based on the feature gate
+func getOtSpanTagsMapping() map[string]string {
+	if useStableSemconv.IsEnabled() {
+		return otSpanTagsMappingStable
+	}
+	return otSpanTagsMappingLegacy
 }
 
 // ProtoToTraces converts multiple skywalking proto batches to internal traces
@@ -78,8 +102,9 @@ func swTagsToInternalResource(span *agentV3.SpanObject, dest pcommon.Resource) {
 		return
 	}
 
+	mapping := getOtSpanTagsMapping()
 	for _, tag := range tags {
-		otKey, ok := otSpanTagsMapping[tag.Key]
+		otKey, ok := mapping[tag.Key]
 		if ok {
 			attrs.PutStr(otKey, tag.Value)
 		}

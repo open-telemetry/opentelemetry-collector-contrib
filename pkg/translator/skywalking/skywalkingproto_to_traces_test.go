@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
@@ -435,3 +437,32 @@ func mockGrpcTraceSegment(sequence int) *agent.SegmentObject {
 		},
 	}
 }
+
+func TestGetOtSpanTagsMapping(t *testing.T) {
+	t.Run("feature_gate_disabled", func(t *testing.T) {
+		mapping := getOtSpanTagsMapping()
+
+		assert.Equal(t, "http.url", mapping["url"])
+		assert.Equal(t, "http.status_code", mapping["status_code"])
+		assert.Equal(t, "db.system", mapping["db.type"])
+		assert.Equal(t, "db.name", mapping["db.instance"])
+		assert.Equal(t, "net.peer.name", mapping["mq.broker"])
+	})
+
+	t.Run("feature_gate_enabled", func(t *testing.T) {
+		previousValue := useStableSemconv.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(useStableSemconv.ID(), true))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(useStableSemconv.ID(), previousValue))
+		}()
+
+		mapping := getOtSpanTagsMapping()
+
+		assert.Equal(t, "url.full", mapping["url"])
+		assert.Equal(t, "http.response.status_code", mapping["status_code"])
+		assert.Equal(t, "db.system.name", mapping["db.type"])
+		assert.Equal(t, "db.namespace", mapping["db.instance"])
+		assert.Equal(t, "server.address", mapping["mq.broker"])
+	})
+}
+

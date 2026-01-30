@@ -16,11 +16,20 @@ issues: [44796]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The following output attribute names have changed:
+  A feature gate `translator.skywalking.useStableSemconv` has been added to control the migration.
+  The gate is disabled by default (Alpha stage), so existing behavior is preserved.
+
+  To opt-in to the new semantic conventions, enable the gate:
+  `--feature-gates translator.skywalking.useStableSemconv`
+
+  When enabled, the following output attribute names will change:
   - `http.url` is now `url.full`
   - `http.status_code` is now `http.response.status_code`
+  - `db.system` is now `db.system.name`
   - `db.name` is now `db.namespace`
   - `net.peer.name` is now `server.address`
+
+  This affects the Skywalking receiver and Skywalking encoding extension.
 
   See migration guides:
   - https://opentelemetry.io/docs/specs/semconv/non-normative/http-migration/
@@ -33,4 +42,4 @@ subtext: |
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [user]
