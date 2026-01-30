@@ -229,7 +229,7 @@ func isValidW3CTraceState(input string) bool {
 // multi-tenant-key = tenant-id "@" system-id
 // Note: Size limits are checked separately in scanKeyValues to return proper errors.
 func isValidW3CKey(key string) bool {
-	if len(key) == 0 {
+	if key == "" {
 		return false
 	}
 
@@ -239,7 +239,7 @@ func isValidW3CKey(key string) bool {
 		tenant := key[:atIdx]
 		system := key[atIdx+1:]
 
-		if len(tenant) == 0 || len(system) == 0 {
+		if tenant == "" || system == "" {
 			return false
 		}
 
@@ -267,7 +267,7 @@ func isValidW3CKey(key string) bool {
 // nblk-chr = %x21-2B / %x2D-3C / %x3E-7E
 // chr = %x20 / nblk-chr
 func isValidW3CValue(value string) bool {
-	if len(value) == 0 || len(value) > 256 {
+	if value == "" || len(value) > 256 {
 		return false
 	}
 
