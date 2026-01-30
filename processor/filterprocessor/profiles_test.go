@@ -846,3 +846,118 @@ func fillProfileTwo(profile pprofile.Profile) {
 	profile.SetOriginalPayloadFormat("non-legacy")
 	profile.Samples().AppendEmpty()
 }
+
+func Test_ProcessProfiles_Action(t *testing.T) {
+	tests := []struct {
+		name              string
+		action            condition.Action
+		contextConditions []condition.ContextConditions
+		filterEverything  bool
+		want              func(pd pprofile.Profiles)
+	}{
+		{
+			name:   "resource: keep matching",
+			action: condition.ActionKeep,
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`resource.attributes["host.name"] == "localhost"`}},
+			},
+			want: func(_ pprofile.Profiles) {},
+		},
+		{
+			name:   "scope: keep matching",
+			action: condition.ActionKeep,
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`scope.name == "scope1"`}},
+			},
+			want: func(pd pprofile.Profiles) {
+				pd.ResourceProfiles().At(0).ScopeProfiles().RemoveIf(func(sp pprofile.ScopeProfiles) bool {
+					return sp.Scope().Name() != "scope1"
+				})
+			},
+		},
+		{
+			name:   "profile: keep matching",
+			action: condition.ActionKeep,
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`profile.original_payload_format == "legacy"`}},
+			},
+			want: func(pd pprofile.Profiles) {
+				rp := pd.ResourceProfiles().At(0)
+				for i := 0; i < rp.ScopeProfiles().Len(); i++ {
+					rp.ScopeProfiles().At(i).Profiles().RemoveIf(func(profile pprofile.Profile) bool {
+						return profile.OriginalPayloadFormat() != "legacy"
+					})
+				}
+			},
+		},
+		{
+			name:   "profile: drop matching",
+			action: condition.ActionDrop,
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`profile.original_payload_format == "legacy"`}},
+			},
+			want: func(pd pprofile.Profiles) {
+				rp := pd.ResourceProfiles().At(0)
+				for i := 0; i < rp.ScopeProfiles().Len(); i++ {
+					rp.ScopeProfiles().At(i).Profiles().RemoveIf(func(profile pprofile.Profile) bool {
+						return profile.OriginalPayloadFormat() == "legacy"
+					})
+				}
+			},
+		},
+		{
+			name:   "profile: condition group action overrides processor action",
+			action: condition.ActionDrop,
+			contextConditions: []condition.ContextConditions{
+				{
+					Conditions: []string{`profile.original_payload_format == "legacy"`},
+					Action:     condition.ActionKeep,
+				},
+			},
+			want: func(pd pprofile.Profiles) {
+				rp := pd.ResourceProfiles().At(0)
+				for i := 0; i < rp.ScopeProfiles().Len(); i++ {
+					rp.ScopeProfiles().At(i).Profiles().RemoveIf(func(profile pprofile.Profile) bool {
+						return profile.OriginalPayloadFormat() != "legacy"
+					})
+				}
+			},
+		},
+		{
+			name:   "mixed: multiple condition groups with different actions",
+			action: condition.ActionDrop,
+			contextConditions: []condition.ContextConditions{
+				{Context: "scope", Action: condition.ActionKeep, Conditions: []string{`name == "scope1"`}},
+				{Context: "profile", Action: condition.ActionDrop, Conditions: []string{`original_payload_format == "non-legacy"`}},
+			},
+			want: func(pd pprofile.Profiles) {
+				pd.ResourceProfiles().At(0).ScopeProfiles().RemoveIf(func(sp pprofile.ScopeProfiles) bool {
+					return sp.Scope().Name() != "scope1"
+				})
+				pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().RemoveIf(func(profile pprofile.Profile) bool {
+					return profile.OriginalPayloadFormat() == "non-legacy"
+				})
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, _ := NewFactory().CreateDefaultConfig().(*Config)
+			cfg.Action = tt.action
+			cfg.ProfileConditions = tt.contextConditions
+			processor, err := newFilterProfilesProcessor(processortest.NewNopSettings(metadata.Type), cfg)
+			assert.NoError(t, err)
+
+			got, err := processor.processProfiles(t.Context(), constructProfiles2())
+
+			if tt.filterEverything {
+				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
+			} else {
+				assert.NoError(t, err)
+				exTd := constructProfiles2()
+				tt.want(exTd)
+				assert.Equal(t, exTd, got)
+			}
+		})
+	}
+}
