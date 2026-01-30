@@ -299,16 +299,16 @@ func addIdentityAttributes(identityJSON json.RawMessage, attrs pcommon.Map) {
 	// ------------------------------------------------------------
 
 	if id.Authorization != nil {
-		attrs.PutStr(attributeIdentityAuthorizationScope, id.Authorization.Scope)
-		attrs.PutStr(attributeIdentityAuthorizationAction, id.Authorization.Action)
+		unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationScope, id.Authorization.Scope)
+		unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationAction, id.Authorization.Action)
 
 		if id.Authorization.Evidence != nil {
-			attrs.PutStr(attributeIdentityAuthorizationEvidenceRole, id.Authorization.Evidence.Role)
-			attrs.PutStr(attributeIdentityAuthorizationEvidenceRoleAssignmentScope, id.Authorization.Evidence.RoleAssignmentScope)
-			attrs.PutStr(attributeIdentityAuthorizationEvidenceRoleAssignmentID, id.Authorization.Evidence.RoleAssignmentID)
-			attrs.PutStr(attributeIdentityAuthorizationEvidenceRoleDefinitionID, id.Authorization.Evidence.RoleDefinitionID)
-			attrs.PutStr(attributeIdentityAuthorizationEvidencePrincipalID, id.Authorization.Evidence.PrincipalID)
-			attrs.PutStr(attributeIdentityAuthorizationEvidencePrincipalType, id.Authorization.Evidence.PrincipalType)
+			unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationEvidenceRole, id.Authorization.Evidence.Role)
+			unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationEvidenceRoleAssignmentScope, id.Authorization.Evidence.RoleAssignmentScope)
+			unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationEvidenceRoleAssignmentID, id.Authorization.Evidence.RoleAssignmentID)
+			unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationEvidenceRoleDefinitionID, id.Authorization.Evidence.RoleDefinitionID)
+			unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationEvidencePrincipalID, id.Authorization.Evidence.PrincipalID)
+			unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationEvidencePrincipalType, id.Authorization.Evidence.PrincipalType)
 		}
 	}
 
