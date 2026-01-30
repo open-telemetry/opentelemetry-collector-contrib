@@ -4,7 +4,6 @@
 package receivercreator
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -20,7 +20,6 @@ import (
 )
 
 func (c *nopWithEndpointConfig) ValidateForDiscovery(rawCfg map[string]any, discoveredEndpoint string) error {
-	fmt.Println("ValidateForDiscovery called!")
 	return nil
 }
 
@@ -132,4 +131,35 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 	require.Equal(t, map[string]any{endpointConfigKey: "an.endpoint"}, inheritedEndpointConfMap.ToStringMap())
 	require.Equal(t, "an.endpoint", inheritedEndpoint)
 	require.NoError(t, inheritedErr)
+}
+
+func TestMergeTemplatedAndDiscoveredConfigsLogsWarning(t *testing.T) {
+	core, logs := observer.New(zapcore.WarnLevel)
+	runner := &receiverRunner{
+		logger: zap.New(core),
+	}
+
+	type configWithoutDiscoverable struct {
+		Endpoint any `mapstructure:"endpoint"`
+	}
+
+	factory := receiver.NewFactory(
+		component.MustNewType("not_discoverable"),
+		func() component.Config {
+			return &configWithoutDiscoverable{}
+		},
+	)
+	// Templated config is nil as we want to explictly check for discovered configs
+	_, _, err := runner.mergeTemplatedAndDiscoveredConfigs(
+		factory, nil, map[string]any{
+			tmpSetEndpointConfigKey: struct{}{},
+			endpointConfigKey:       "an.endpoint",
+		},
+	)
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.Len())
+	require.Equal(t,
+		"receiver does not implement the Discoverable interface",
+		logs.All()[0].Message,
+	)
 }

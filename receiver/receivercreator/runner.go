@@ -166,14 +166,14 @@ func (run *receiverRunner) mergeTemplatedAndDiscoveredConfigs(factory rcvr.Facto
 			if err := ValidateEndpointConfig(templated, targetEndpoint); err != nil {
 				return nil, targetEndpoint, fmt.Errorf("discovery validation failed: %w ", err)
 			}
-			// confirm the endpoint we've added is supported, removing if not
-			endpointConfig := confmap.NewFromStringMap(map[string]any{
-				endpointConfigKey: targetEndpoint,
-			})
-			if err := endpointConfig.Unmarshal(cfg); err != nil {
-				// we assume that the error is due to unused keys in the config, so we need to remove endpoint key
-				delete(discovered, endpointConfigKey)
-			}
+		}
+		// confirm the endpoint we've added is supported, removing if not
+		endpointConfig := confmap.NewFromStringMap(map[string]any{
+			endpointConfigKey: targetEndpoint,
+		})
+		if err := endpointConfig.Unmarshal(cfg); err != nil {
+			// we assume that the error is due to unused keys in the config, so we need to remove endpoint key
+			delete(discovered, endpointConfigKey)
 		}
 	}
 	discoveredConfig := confmap.NewFromStringMap(discovered)

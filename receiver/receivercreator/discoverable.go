@@ -1,4 +1,7 @@
-package receivercreator
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 
 // Discoverable is an optional interface that receiver factories can implement
 // to indicate they support k8s annotation-based discovery.
