@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/elasticsearch
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add support for dynamic document IDs for traces and span events
+note: Add `traces_dynamic_id` config to dynamically set document IDs for traces and span events
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43649]
@@ -18,6 +18,7 @@ issues: [43649]
 subtext: |
   Adds `traces_dynamic_id` configuration option to allow setting document IDs based on span and span event attributes using the `elasticsearch.document_id` attribute.
   This prevents duplicate documents from being created when the same span is sent multiple times, similar to the existing `logs_dynamic_id` feature.
+  Disabled by default.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
