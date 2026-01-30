@@ -55,6 +55,7 @@ func (s *pprofScraper) scrape(_ context.Context) (pprofile.Profiles, error) {
 		}
 
 		pprofProfile, err := profile.Parse(reader)
+		reader.Close()
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse pprof data from %s: %w", match, err))
 			continue
