@@ -23,7 +23,7 @@ Collects profiles from files specified with a glob pattern.
 
 ```
 receivers:
-  flightrecorder:
+  pprof:
     include: /tmp/pprof/*
     collection_interval: 10s
     initial_delay: 1s
