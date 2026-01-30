@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
@@ -228,6 +229,7 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 func (f *filterProcessorFactory) createDefaultConfig() component.Config {
 	return &Config{
 		ErrorMode:          ottl.PropagateError,
+		Action:             condition.ActionDrop,
 		resourceFunctions:  f.resourceFunctions,
 		dataPointFunctions: f.dataPointFunctions,
 		logFunctions:       f.logFunctions,

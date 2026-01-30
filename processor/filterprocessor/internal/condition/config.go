@@ -12,6 +12,24 @@ import (
 
 var _ ottl.ConditionsGetter = (*ContextConditions)(nil)
 
+type Action string
+
+const (
+	ActionDrop Action = "drop"
+	ActionKeep Action = "keep"
+)
+
+func (a *Action) UnmarshalText(text []byte) error {
+	str := Action(strings.ToLower(string(text)))
+	switch str {
+	case ActionDrop, ActionKeep:
+		*a = str
+		return nil
+	default:
+		return fmt.Errorf("unknown action %q, expected %q or %q", str, ActionDrop, ActionKeep)
+	}
+}
+
 type ContextID string
 
 const (
@@ -43,6 +61,10 @@ type ContextConditions struct {
 	// ErrorMode determines how the processor reacts to errors that occur while processing
 	// this group of conditions. When provided, it overrides the default Config ErrorMode.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
+	// Action determines whether matching data should be dropped or kept.
+	// When provided, it overrides the default Config Action.
+	// Valid values are "drop" (default) and "keep".
+	Action Action `mapstructure:"action"`
 }
 
 func (c ContextConditions) GetConditions() []string {
@@ -63,4 +85,11 @@ func getErrorMode[T any](pc *ottl.ParserCollection[T], contextConditions *Contex
 		errorMode = contextConditions.ErrorMode
 	}
 	return errorMode
+}
+
+func getAction(defaultAction Action, contextConditions *ContextConditions) Action {
+	if contextConditions.Action != "" {
+		return contextConditions.Action
+	}
+	return defaultAction
 }

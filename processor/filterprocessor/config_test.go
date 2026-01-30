@@ -69,6 +69,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "empty"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Metrics: MetricFilters{
 					Include: &filterconfig.MetricMatchProperties{
 						MatchType: filterconfig.MetricStrict,
@@ -79,6 +80,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "include"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 				},
@@ -87,6 +89,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "exclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Metrics: MetricFilters{
 					Exclude: testDataMetricProperties,
 				},
@@ -95,6 +98,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "includeexclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 					Exclude: &filterconfig.MetricMatchProperties{
@@ -155,6 +159,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "empty"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: &LogMatchProperties{
 						LogMatchType: strictType,
@@ -165,6 +170,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "include"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -173,6 +179,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "exclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -181,6 +188,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "includeexclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -228,6 +236,7 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "include"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -236,6 +245,7 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "exclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -244,6 +254,7 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "includeexclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -291,6 +302,7 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "include"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -299,6 +311,7 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "exclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -307,6 +320,7 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "includeexclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -354,6 +368,7 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "include"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -362,6 +377,7 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "exclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -370,6 +386,7 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "includeexclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -417,6 +434,7 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "include"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -425,6 +443,7 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "exclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -433,6 +452,7 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "includeexclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -483,6 +503,7 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "include"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -491,6 +512,7 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "exclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -499,6 +521,7 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "includeexclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -553,6 +576,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "include"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 				},
@@ -561,6 +585,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "exclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Metrics: MetricFilters{
 					Exclude: testDataMetricProperties,
 				},
@@ -569,6 +594,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "unlimitedcache"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Metrics: MetricFilters{
 					Include: &filterconfig.MetricMatchProperties{
 						MatchType: filterconfig.MetricRegexp,
@@ -583,6 +609,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "limitedcache"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Metrics: MetricFilters{
 					Exclude: &filterconfig.MetricMatchProperties{
 						MatchType: filterconfig.MetricRegexp,
@@ -625,6 +652,7 @@ func TestLoadingSpans(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "spans"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Spans: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{
 						Config: filterset.Config{
@@ -676,6 +704,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "empty"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Metrics: MetricFilters{
 					Include: &filterconfig.MetricMatchProperties{
 						MatchType: filterconfig.MetricExpr,
@@ -687,6 +716,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "include"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Metrics: MetricFilters{
 					Include: &filterconfig.MetricMatchProperties{
 						MatchType: filterconfig.MetricExpr,
@@ -702,6 +732,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "exclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Metrics: MetricFilters{
 					Exclude: &filterconfig.MetricMatchProperties{
 						MatchType: filterconfig.MetricExpr,
@@ -717,6 +748,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "includeexclude"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Metrics: MetricFilters{
 					Include: &filterconfig.MetricMatchProperties{
 						MatchType: filterconfig.MetricExpr,
@@ -873,6 +905,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "ottl"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
+				Action:    condition.ActionDrop,
 				Traces: TraceFilters{
 					ResourceConditions: []string{
 						`attributes["test"] == "pass"`,
@@ -917,6 +950,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.MustNewIDWithName("filter", "multiline"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				Traces: TraceFilters{
 					SpanConditions: []string{
 						`attributes["test"] == "pass"`,
@@ -956,6 +990,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_inferred_trace"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				TraceConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`span.attributes["test"] == "pass"`},
@@ -968,6 +1003,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_inferred_metric"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				MetricConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`metric.name == "pass"`},
@@ -980,6 +1016,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_inferred_log"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				LogConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`log.attributes["test"] == "pass"`},
@@ -992,6 +1029,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_inferred_profile"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				ProfileConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`profile.attributes["test"] == "pass"`},
@@ -1004,6 +1042,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_inferred_with_error_mode"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
+				Action:    condition.ActionDrop,
 				TraceConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`span.attributes["test"] == "pass"`},
@@ -1016,6 +1055,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_inferred_multiple_conditions"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				TraceConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{
@@ -1035,6 +1075,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_conditions_error_mode"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
+				Action:    condition.ActionDrop,
 				TraceConditions: []condition.ContextConditions{
 					{
 						Conditions: []string{`span.attributes["test"] == "pass"`},
@@ -1065,6 +1106,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "flat_style"),
 			expected: &Config{
 				ErrorMode:         ottl.PropagateError,
+				Action:            condition.ActionDrop,
 				TraceConditions:   getInferredContextConditions("span"),
 				MetricConditions:  getInferredContextConditions("datapoint"),
 				LogConditions:     getInferredContextConditions("log"),
@@ -1075,6 +1117,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "advance_style"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
 				TraceConditions: []condition.ContextConditions{
 					getDefinedContextConditions("span"),
 					getDefinedContextConditions("spanevent"),
