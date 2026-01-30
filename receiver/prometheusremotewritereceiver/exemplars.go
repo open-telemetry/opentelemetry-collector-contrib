@@ -52,12 +52,13 @@ func collectExemplars(
 
 		ls, err := ts.ToLabels(&builder, req.Symbols)
 		if err != nil {
-			settings.Logger.Warn("error converting labels for exemplars", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+			settings.Logger.Warn("failed to extract labels from request symbols", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 			continue
 		}
 
 		metadata := schema.NewMetadataFromLabels(ls)
 		if metadata.Name == "" {
+			settings.Logger.Warn("missing metric name in labels")
 			continue
 		}
 
@@ -70,7 +71,7 @@ func collectExemplars(
 			MetricType:   ts.Metadata.Type,
 		}
 
-		slice, ok := result[key.Hash()]
+		slice, ok := result[key.hash()]
 		if !ok {
 			slice = pmetric.NewExemplarSlice()
 		}
@@ -91,7 +92,7 @@ func collectExemplars(
 			stats.Exemplars++
 		}
 
-		result[key.Hash()] = slice
+		result[key.hash()] = slice
 	}
 
 	return result
@@ -101,11 +102,11 @@ func extractScopeFromLabels(settings receiver.Settings, ls labels.Labels) (strin
 	name := settings.BuildInfo.Description
 	version := settings.BuildInfo.Version
 
-	if v := ls.Get("otel_scope_name"); v != "" {
-		name = v
+	if sName := ls.Get("otel_scope_name"); sName != "" {
+		name = sName
 	}
-	if v := ls.Get("otel_scope_version"); v != "" {
-		version = v
+	if sVersion := ls.Get("otel_scope_version"); sVersion != "" {
+		version = sVersion
 	}
 	return name, version
 }
@@ -175,7 +176,7 @@ type exemplarKey struct {
 	MetricType   writev2.Metadata_MetricType
 }
 
-func (k exemplarKey) Hash() uint64 {
+func (k exemplarKey) hash() uint64 {
 	const sep = "\xff"
 	return xxhash.Sum64String(strings.Join([]string{
 		k.ScopeName,

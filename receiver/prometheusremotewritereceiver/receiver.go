@@ -570,7 +570,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			MetricType:   ts.Metadata.Type,
 		}
 
-		if ex, ok := exemplarMap[key.Hash()]; ok {
+		if ex, ok := exemplarMap[key.hash()]; ok && ex.Len() > 0 {
 			ex.CopyTo(exemplarSlice)
 		}
 	}
