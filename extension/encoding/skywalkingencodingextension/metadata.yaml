@@ -1,4 +1,9 @@
+display_name: Skywalking Encoding Extension
 type: skywalking_encoding
+
+description: >
+  The `Skywalking` encoding extension is used to unmarshal Apache Skywalking segment traces. Marshalling is not
+  supported.
 
 status:
   disable_codecov_badge: true
