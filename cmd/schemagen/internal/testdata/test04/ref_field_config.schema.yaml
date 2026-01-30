@@ -25,3 +25,10 @@ properties:
     $ref: network_config
   auth:
     $ref: ./internal.authentication
+  conn_opts:
+    type: object
+    properties:
+      use_tls:
+        type: boolean
+      timeout_in_sec:
+        type: integer

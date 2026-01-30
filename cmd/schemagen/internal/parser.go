@@ -32,6 +32,10 @@ type TypeInfo struct {
 	processed bool
 }
 
+func (t *TypeInfo) isExported() bool {
+	return t.spec.Name.IsExported()
+}
+
 func NewParser(cfg *Config) *Parser {
 	return &Parser{
 		config:       cfg,
@@ -103,10 +107,8 @@ func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast
 			if !ok {
 				continue
 			}
-			if typeSpec.Name.IsExported() {
-				name := typeSpec.Name.Name
-				target[name] = &TypeInfo{typeSpec, comms, imports, name, false}
-			}
+			name := typeSpec.Name.Name
+			target[name] = &TypeInfo{typeSpec, comms, imports, name, false}
 		}
 	}
 }
@@ -120,7 +122,9 @@ func (p *Parser) feedProcessQueue() error {
 		}
 	} else { // in package mode process all exported types
 		for _, typeInfo := range p.types {
-			p.processQueue.PushBack(typeInfo)
+			if typeInfo.isExported() {
+				p.processQueue.PushBack(typeInfo)
+			}
 		}
 	}
 	if len(p.types) == 0 {
@@ -325,11 +329,20 @@ func (p *Parser) parseIdent(ident *ast.Ident) (SchemaElement, error) {
 		return element, nil
 	}
 
+	// check if type is defined in the same package
 	if info, exists := p.types[typeName]; exists {
-		p.processQueue.PushBack(info)
-		return CreateRefField(strcase.ToSnake(typeName), ""), nil
+		if info.isExported() {
+			p.processQueue.PushBack(info)
+			return CreateRefField(strcase.ToSnake(typeName), ""), nil
+		}
+		elem, err := p.parseExpr(info.spec.Type)
+		if err != nil {
+			return nil, err
+		}
+		return elem, nil
 	}
 
+	// check if type is a type alias defined in the same package
 	if ident.Obj != nil {
 		if typeSpec, ok := ident.Obj.Decl.(*ast.TypeSpec); ok {
 			elem, err := p.parseExpr(typeSpec.Type)

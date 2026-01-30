@@ -9,6 +9,7 @@ type RefFieldConfig struct {
 	Database DatabaseConfig          `mapstructure:"database"`
 	Network  NetworkConfig           `mapstructure:"network"`
 	Auth     internal.Authentication `mapstructure:"auth"`
+	ConnOpts connectionOptions       `mapstructure:"conn_opts"`
 }
 
 type DatabaseConfig struct {

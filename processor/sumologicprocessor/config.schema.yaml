@@ -1,0 +1,76 @@
+$defs:
+  nesting_processor_config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      exclude:
+        type: array
+        items:
+          type: string
+      include:
+        type: array
+        items:
+          type: string
+      separator:
+        type: string
+      squash_single_values:
+        type: boolean
+type: object
+properties:
+  add_cloud_namespace:
+    type: boolean
+  aggregate_attributes:
+    type: array
+    items:
+      type: object
+      properties:
+        attribute:
+          type: string
+        prefixes:
+          type: array
+          items:
+            type: string
+  field_attributes:
+    type: object
+    properties:
+      severity_number:
+        x-pointer: true
+        type: object
+        properties:
+          enabled:
+            type: boolean
+          name:
+            type: string
+      severity_text:
+        x-pointer: true
+        type: object
+        properties:
+          enabled:
+            type: boolean
+          name:
+            type: string
+      span_id:
+        x-pointer: true
+        type: object
+        properties:
+          enabled:
+            type: boolean
+          name:
+            type: string
+      trace_id:
+        x-pointer: true
+        type: object
+        properties:
+          enabled:
+            type: boolean
+          name:
+            type: string
+  nest_attributes:
+    $ref: nesting_processor_config
+  translate_attributes:
+    type: boolean
+  translate_docker_metrics:
+    type: boolean
+  translate_telegraf_attributes:
+    type: boolean
