@@ -1,0 +1,28 @@
+$defs:
+  api_server:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      server_config:
+        $ref: go.opentelemetry.io/collector/config/confighttp.server_config
+  prom_config:
+    description: PromConfig is a redeclaration of promconfig.Config because we need custom unmarshaling as prometheus "config" uses `yaml` tags.
+    x-customType: github.com/prometheus/prometheus/config.config
+description: Config defines configuration for Prometheus receiver.
+type: object
+properties:
+  api_server:
+    description: APIServer has the settings to enable the receiver to host the Prometheus API server in agent mode. This allows the user to call the endpoint to get the config, service discovery, and targets for debugging purposes.
+    $ref: api_server
+  config:
+    x-pointer: true
+    $ref: prom_config
+  report_extra_scrape_metrics:
+    description: 'ReportExtraScrapeMetrics - enables reporting of additional metrics for Prometheus client like scrape_body_size_bytes Deprecated: use the feature gate "receiver.prometheusreceiver.EnableReportExtraScrapeMetrics" instead.'
+    type: boolean
+  target_allocator:
+    x-optional: true
+    $ref: ./internal/targetallocator.config
+  trim_metric_suffixes:
+    type: boolean

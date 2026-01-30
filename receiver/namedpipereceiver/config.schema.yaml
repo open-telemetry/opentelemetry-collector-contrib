@@ -1,0 +1,5 @@
+description: NamedPipeConfig defines configuration for the namedpipe receiver
+type: object
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/namedpipe.config
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.base_config
