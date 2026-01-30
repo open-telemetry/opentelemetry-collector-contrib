@@ -36,7 +36,7 @@ receivers:
 
 ### Configuration Options
 
-The `max_request_body_size` option controls the maximum size of incoming request bodies. Requests exceeding this limit will be rejected with a 400 Bad Request response.
+The `max_request_body_size` option controls the maximum size of incoming request bodies. Requests exceeding this limit will be rejected with a 413 Request Entity Too Large response.
 
 ```yaml
 receivers:
