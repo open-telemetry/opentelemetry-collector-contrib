@@ -61,6 +61,10 @@ func (cfg *Config) Validate() error {
 	return err
 }
 
+// ValidateForDiscovery implements the receivercreator.Discoverable interface.
+// It validates that all target endpoints in the configuration match the
+// discovered endpoint, preventing annotation-based configurations from
+// targeting arbitrary external endpoints.
 func (*Config) ValidateForDiscovery(rawCfg map[string]any, discoveredEndpoint string) error {
 	targets, ok := rawCfg["targets"].([]any)
 	if !ok {

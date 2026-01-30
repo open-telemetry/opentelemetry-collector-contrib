@@ -60,10 +60,6 @@ func Test_loadAndCreateMetricsRuntimeReceiver(t *testing.T) {
 			var found bool
 			for _, entry := range logs.All() {
 				if name, ok := entry.ContextMap()["name"]; ok {
-					// Skip logs from receiver_creator itself (from your validation code)
-					// if name == "receiver_creator" {
-					// 	continue
-					// }
 					found = true
 					assert.Equal(t, expectedID, name)
 				}
