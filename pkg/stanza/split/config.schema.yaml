@@ -1,0 +1,11 @@
+$defs:
+  config:
+    description: Config is the configuration for a split func
+    type: object
+    properties:
+      line_end_pattern:
+        type: string
+      line_start_pattern:
+        type: string
+      omit_pattern:
+        type: boolean
