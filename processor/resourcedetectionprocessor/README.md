@@ -853,7 +853,7 @@ Uses the [Alibaba Cloud metadata API](https://www.alibabacloud.com/help/en/ecs/u
 
 The list of the populated resource attributes can be found at [Alibaba Cloud ECS Detector Resource Attributes](./internal/alibaba/ecs/documentation.md).
 
-Vultr custom configuration example:
+Alibaba Cloud ECS custom configuration example:
 
 ```yaml
 processors:
