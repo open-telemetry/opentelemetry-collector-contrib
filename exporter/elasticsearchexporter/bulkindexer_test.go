@@ -131,7 +131,7 @@ func TestSyncBulkIndexer(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String("outcome", "success"), // bulk request itself is successful
 						attribute.StringSlice("x-test", []string{"test"}),
-						attribute.Key("http.response.status_code").Int(http.StatusOK),
+						attribute.Int("http.response.status_code", http.StatusOK),
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
@@ -148,11 +148,13 @@ func TestSyncBulkIndexer(t *testing.T) {
 			attrs := []attribute.KeyValue{
 				attribute.StringSlice("x-test", []string{"test"}),
 				attribute.String("outcome", "success"),
+				attribute.Int("http.response.status_code", http.StatusOK),
 			}
 			if tt.wantMessage != "" {
 				attrs = []attribute.KeyValue{
 					attribute.StringSlice("x-test", []string{"test"}),
 					attribute.String("outcome", "failed_client"),
+					attribute.Int("http.response.status_code", http.StatusBadRequest),
 					attribute.String("error.type", "version_conflict_engine_exception"),
 				}
 			}
