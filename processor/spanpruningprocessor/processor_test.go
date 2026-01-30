@@ -2169,7 +2169,7 @@ func TestLeafSpanPruning_TraceStateGrouping_MixedWithEmpty(t *testing.T) {
 	count1, _ := withTS.Attributes().Get("aggregation.span_count")
 	assert.Equal(t, int64(3), count1.Int())
 
-	assert.Equal(t, "", withoutTS.TraceState().AsRaw())
+	assert.Empty(t, withoutTS.TraceState().AsRaw())
 	count2, _ := withoutTS.Attributes().Get("aggregation.span_count")
 	assert.Equal(t, int64(2), count2.Int())
 }
@@ -2196,7 +2196,7 @@ func TestLeafSpanPruning_TraceStateGrouping_EmptyTraceState(t *testing.T) {
 
 	summarySpan := findSummarySpan(td)
 	require.NotNil(t, summarySpan)
-	assert.Equal(t, "", summarySpan.TraceState().AsRaw())
+	assert.Empty(t, summarySpan.TraceState().AsRaw())
 
 	attrs := summarySpan.Attributes()
 	spanCount, _ := attrs.Get("aggregation.span_count")
