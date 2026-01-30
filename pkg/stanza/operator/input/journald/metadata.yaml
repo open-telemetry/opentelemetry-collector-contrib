@@ -2,7 +2,7 @@ type: journald
 
 status:
   disable_codecov_badge: true
-  class: pkg
+  class: pkg/stanza/operator/input
   stability:
     alpha: [logs]
   codeowners:
