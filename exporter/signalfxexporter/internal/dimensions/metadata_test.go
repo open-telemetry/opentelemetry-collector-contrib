@@ -7,10 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
@@ -176,17 +173,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			converter, err := translation.NewMetricsConverter(
-				zap.NewNop(),
-				nil,
-				nil,
-				nil,
-				"-_.",
-				false,
-				true,
-			)
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, getDimensionUpdateFromMetadata(tt.args.defaults, tt.args.metadata, *converter))
+			assert.Equal(t, tt.want, getDimensionUpdateFromMetadata(tt.args.defaults, tt.args.metadata, "-_."))
 		})
 	}
 }
@@ -204,4 +191,38 @@ func getMapToPointers(m map[string]string) map[string]*string {
 	}
 
 	return out
+}
+
+func TestFilterKeyChars(t *testing.T) {
+	tests := []struct {
+		name                    string
+		nonAlphanumericDimChars string
+		dim                     string
+		want                    string
+	}{
+		{
+			name:                    "periods_replaced_with_underscores",
+			nonAlphanumericDimChars: "_-",
+			dim:                     "d.i.m",
+			want:                    "d_i_m",
+		},
+		{
+			name:                    "periods_allowed_when_specified",
+			nonAlphanumericDimChars: "_-.",
+			dim:                     "d.i.m",
+			want:                    "d.i.m",
+		},
+		{
+			name:                    "multiple_special_chars_replaced",
+			nonAlphanumericDimChars: "_",
+			dim:                     "my-dim.name",
+			want:                    "my_dim_name",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FilterKeyChars(tt.dim, tt.nonAlphanumericDimChars)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }
