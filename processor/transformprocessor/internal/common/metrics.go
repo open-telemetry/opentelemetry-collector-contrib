@@ -112,6 +112,7 @@ func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, resourc
 				return err
 			}
 		}
+		tCtx.Close()
 	}
 	return nil
 }
@@ -131,6 +132,7 @@ func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, reso
 				return err
 			}
 		}
+		tCtx.Close()
 	}
 	return nil
 }
@@ -150,6 +152,7 @@ func (d dataPointStatements) handleExponentialHistogramDataPoints(ctx context.Co
 				return err
 			}
 		}
+		tCtx.Close()
 	}
 	return nil
 }
@@ -169,6 +172,7 @@ func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, resour
 				return err
 			}
 		}
+		tCtx.Close()
 	}
 	return nil
 }

@@ -49,6 +49,7 @@ func invertHasResourceOrSpanWithCondition(
 			if isd {
 				return samplingpolicy.NotSampled
 			}
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			return samplingpolicy.InvertNotSampled
 		}
 
@@ -56,6 +57,7 @@ func invertHasResourceOrSpanWithCondition(
 			if isd {
 				return samplingpolicy.NotSampled
 			}
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			return samplingpolicy.InvertNotSampled
 		}
 	}
@@ -63,6 +65,7 @@ func invertHasResourceOrSpanWithCondition(
 	if isd {
 		return samplingpolicy.Sampled
 	}
+	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 	return samplingpolicy.InvertSampled
 }
 

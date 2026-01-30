@@ -1,0 +1,38 @@
+{
+  "records": [
+    {
+      "time": "2025-04-23T09:17:17.0000000Z",
+      "resourceId": "/SUBSCRIPTIONS/123CA/RESOURCEGROUPS/OPENTELEMETRY/PROVIDERS/MICROSOFT.CDN/PROFILES/OPENTELEMETRY-CDN-PROFILE",
+      "category": "AzureCdnAccessLog",
+      "operationName": "Microsoft.Cdn/Profiles/AccessLog/Write",
+      "properties": {
+        "trackingReference": "20250423T091717Z-r1b8867f7999cdtwhP1CO1urpg00000000mg000000001s5s",
+        "httpMethod": "GET",
+        "httpVersion": "1.1.0.0",
+        "requestUri": "https://opentelemetry-cdn-endpoint.azureedge.net:443/favicon.ico",
+        "sni": "N/A",
+        "requestBytes": "1572",
+        "responseBytes": "2027",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "clientIp": "13.83.128.90",
+        "clientPort": "37908",
+        "socketIp": "147.243.241.243",
+        "timeToFirstByte": "0.154",
+        "timeTaken": "0.154",
+        "requestProtocol": "HTTPS",
+        "securityProtocol": "TLS 1.3",
+        "rulesEngineMatchNames": [],
+        "httpStatusCode": "404",
+        "httpStatusDetails": "404",
+        "pop": "CO",
+        "cacheStatus": "MISS",
+        "errorInfo": "NoError",
+        "ErrorInfo": "NoError",
+        "result": "N/A",
+        "endpoint": "opentelemetry-cdn-endpoint.azureedge.net",
+        "isReceivedFromClient": false,
+        "backendHostname": "example.com:443"
+      }
+    }
+  ]
+}

@@ -577,6 +577,152 @@ func TestProcessWithDockerTime(t *testing.T) {
 	}
 }
 
+func TestProcessWithIfCondition(t *testing.T) {
+	cases := []struct {
+		name           string
+		op             func() (operator.Operator, error)
+		input          *entry.Entry
+		expectedOutput *entry.Entry
+	}{
+		{
+			"if_condition_false_skips_non_container_log",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = false
+				cfg.IfExpr = `attributes["log.file.name"] == "k8s.log"`
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			&entry.Entry{
+				Body: `a random non-k8s log`,
+				Attributes: map[string]any{
+					"log.file.name": "non-k8s.log",
+				},
+			},
+			&entry.Entry{
+				Body: `a random non-k8s log`,
+				Attributes: map[string]any{
+					"log.file.name": "non-k8s.log",
+				},
+			},
+		},
+		{
+			"if_condition_true_processes_container_log",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = false
+				cfg.IfExpr = `attributes["log.file.name"] == "k8s.log"`
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			&entry.Entry{
+				Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
+				Attributes: map[string]any{
+					"log.file.name": "k8s.log",
+				},
+			},
+			&entry.Entry{
+				Body: "INFO: log line here",
+				Attributes: map[string]any{
+					"log.file.name": "k8s.log",
+					"log.iostream":  "stdout",
+				},
+				Timestamp: time.Date(2029, time.March, 30, 8, 31, 20, 545192187, time.UTC),
+			},
+		},
+		{
+			"if_condition_false_skips_docker_format_detection",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = false
+				cfg.Format = "docker"
+				cfg.IfExpr = `attributes["process"] == "true"`
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			&entry.Entry{
+				Body: `invalid docker log that would fail parsing`,
+				Attributes: map[string]any{
+					"process": "false",
+				},
+			},
+			&entry.Entry{
+				Body: `invalid docker log that would fail parsing`,
+				Attributes: map[string]any{
+					"process": "false",
+				},
+			},
+		},
+		{
+			"if_condition_false_skips_crio_format_detection",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = false
+				cfg.IfExpr = `attributes["process"] == "true"`
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			&entry.Entry{
+				Body: `invalid crio log that would fail parsing`,
+				Attributes: map[string]any{
+					"process": "false",
+				},
+			},
+			&entry.Entry{
+				Body: `invalid crio log that would fail parsing`,
+				Attributes: map[string]any{
+					"process": "false",
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			op, err := tc.op()
+			require.NoError(t, err)
+			defer func() { require.NoError(t, op.Stop()) }()
+
+			err = op.Process(t.Context(), tc.input)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedOutput, tc.input)
+		})
+	}
+}
+
+func TestProcessWithOnErrorSendQuiet(t *testing.T) {
+	t.Run("on_error_send_quiet_respects_if_condition", func(t *testing.T) {
+		// This test verifies that when an 'if' condition filters out an entry,
+		// it doesn't attempt format detection (which would fail for non-container logs)
+		// and just passes the entry through unchanged
+		cfg := NewConfigWithID("test_id")
+		cfg.AddMetadataFromFilePath = false
+		cfg.OnError = "send_quiet"
+		cfg.IfExpr = `attributes["is_container"] == "true"`
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, op.Stop()) }()
+
+		input := &entry.Entry{
+			Body: `a random non-container log`,
+			Attributes: map[string]any{
+				"is_container": "false",
+			},
+		}
+
+		err = op.Process(t.Context(), input)
+		require.NoError(t, err)
+		// Entry passes through unchanged because if condition filtered it
+		require.Equal(t, &entry.Entry{
+			Body: `a random non-container log`,
+			Attributes: map[string]any{
+				"is_container": "false",
+			},
+		}, input)
+	})
+}
+
 func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 	cases := []struct {
 		name           string

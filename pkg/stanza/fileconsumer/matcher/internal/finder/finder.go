@@ -9,16 +9,7 @@ import (
 	"slices"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
-)
-
-var WindowsCaseInsensitiveFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"filelog.windows.caseInsensitive",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("On Windows, make matching patterns in include/exclude case insensitive."),
-	featuregate.WithRegisterFromVersion("v0.142.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777"),
 )
 
 func Validate(globs []string) error {
@@ -55,6 +46,10 @@ func FindFiles(includes, excludes []string) ([]string, error) {
 			if pathExcluded(excludes, match) {
 				continue
 			}
+
+			// Fix UNC path corruption on Windows: if the include pattern starts with \\
+			// but the match only has \, restore the UNC prefix
+			match = fixUNCPath(include, match)
 
 			allSet[match] = struct{}{}
 		}

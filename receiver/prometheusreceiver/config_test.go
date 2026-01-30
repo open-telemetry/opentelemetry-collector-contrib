@@ -52,9 +52,7 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.(*Config)
 	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
 	assert.Equal(t, 5*time.Second, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval))
-	assert.True(t, r1.UseStartTimeMetric)
 	assert.True(t, r1.TrimMetricSuffixes)
-	assert.Equal(t, "^(.+_)*process_start_time_seconds$", r1.StartTimeMetricRegex)
 	assert.True(t, r1.ReportExtraScrapeMetrics)
 
 	ta := r1.TargetAllocator.Get()
@@ -383,7 +381,7 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	assert.NotNil(t, r0.PrometheusConfig)
 	assert.True(t, r0.APIServer.Enabled)
 	assert.NotNil(t, r0.APIServer.ServerConfig)
-	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.Endpoint)
+	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.NetAddr.Endpoint)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIDisabled").String())
 	require.NoError(t, err)

@@ -19,7 +19,6 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -28,15 +27,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	mdata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.RemoveStartTimeAdjustment",
-	featuregate.StageStable,
-	featuregate.WithRegisterFromVersion("v0.121.0"),
-	featuregate.WithRegisterToVersion("v0.142.0"),
-	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
-		" leave the start time unset. Use the new metricstarttime processor instead."),
 )
 
 type resourceKey struct {
@@ -107,7 +97,7 @@ func newTransaction(
 	}
 }
 
-// Append always returns 0 to disable label caching.
+// Append returns a stable series reference to enable Prometheus staleness tracking.
 func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
 	t.addingNativeHistogram = false
 	t.addingNHCB = false
@@ -183,6 +173,7 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	curMF := t.getOrCreateMetricFamily(*rKey, scope, metricName)
 
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
+	cacheRef := ls.Hash()
 	err = curMF.addSeries(seriesRef, metricName, ls, atMs, val)
 	if err != nil {
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
@@ -192,8 +183,8 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	}
 
 	// never return errors, as that fails the whole scrape
-	// return ref==1 indicating that the series was added and needs staleness tracking
-	return 1, nil
+	// return a stable ref so Prometheus can track series staleness
+	return storage.SeriesRef(cacheRef), nil
 }
 
 // detectAndStoreNativeHistogramStaleness returns true if it detects
@@ -246,6 +237,11 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		fn := mn
 		if _, ok := t.mc.GetMetadata(mn); !ok {
 			fn = normalizeMetricName(mn)
+			// NB (eriksywu): see https://github.com/prometheus/prometheus/issues/14823
+			if isCounterCreatedLine(mn, fn, t.mc) {
+				fn += metricSuffixTotal
+			}
+			// END NB (eriksywu)
 		}
 		fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
 		mf, ok := t.families[key][scope][fnKey]
@@ -356,13 +352,13 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	return 1, nil
 }
 
-func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
+func (t *transaction) AppendSTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, stMs int64) (storage.SeriesRef, error) {
 	t.addingNativeHistogram = false
 	t.addingNHCB = false
-	return t.setCreationTimestamp(ls, atMs, ctMs)
+	return t.setStartTimestamp(ls, atMs, stMs)
 }
 
-func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
+func (t *transaction) AppendHistogramSTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, stMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
 	var schema int32
 	if h != nil {
 		schema = h.Schema
@@ -371,10 +367,10 @@ func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, ls labels
 	}
 	t.addingNativeHistogram = true
 	t.addingNHCB = schema == -53
-	return t.setCreationTimestamp(ls, atMs, ctMs)
+	return t.setStartTimestamp(ls, atMs, stMs)
 }
 
-func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
+func (t *transaction) setStartTimestamp(ls labels.Labels, atMs, stMs int64) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -410,7 +406,7 @@ func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64) (
 	curMF := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
 
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
-	curMF.addCreationTimestamp(seriesRef, ls, atMs, ctMs)
+	curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
 
 	return storage.SeriesRef(seriesRef), nil
 }

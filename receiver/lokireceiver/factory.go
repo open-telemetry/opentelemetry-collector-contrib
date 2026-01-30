@@ -41,7 +41,10 @@ func createDefaultConfig() component.Config {
 				},
 			},
 			HTTP: &confighttp.ServerConfig{
-				Endpoint: defaultHTTPEndpoint,
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  defaultHTTPEndpoint,
+				},
 			},
 		},
 	}

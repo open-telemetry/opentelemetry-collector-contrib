@@ -70,7 +70,7 @@ var _ component.Config = (*Config)(nil)
 // Validate checks if the extension configuration is valid
 func (c *Config) Validate() error {
 	if !c.UseV2 {
-		if c.Endpoint == "" {
+		if c.NetAddr.Endpoint == "" {
 			return ErrHTTPEndpointRequired
 		}
 		if !strings.HasPrefix(c.Path, "/") {
@@ -84,7 +84,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.HTTPConfig != nil {
-		if c.HTTPConfig.Endpoint == "" {
+		if c.HTTPConfig.NetAddr.Endpoint == "" {
 			return ErrHTTPEndpointRequired
 		}
 		if c.HTTPConfig.Status.Enabled && !strings.HasPrefix(c.HTTPConfig.Status.Path, "/") {
@@ -111,7 +111,10 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if conf.IsSet(httpConfigKey) {
 		c.HTTPConfig = &http.Config{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: endpointForPort(DefaultHTTPPort),
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  endpointForPort(DefaultHTTPPort),
+					Transport: confignet.TransportTypeTCP,
+				},
 			},
 			Status: http.PathConfig{
 				Enabled: true,
@@ -156,13 +159,19 @@ func NewDefaultConfig() component.Config {
 	return &Config{
 		LegacyConfig: http.LegacyConfig{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: endpointForPort(DefaultHTTPPort),
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  endpointForPort(DefaultHTTPPort),
+					Transport: "tcp",
+				},
 			},
 			Path: "/",
 		},
 		HTTPConfig: &http.Config{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: endpointForPort(DefaultHTTPPort),
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  endpointForPort(DefaultHTTPPort),
+					Transport: "tcp",
+				},
 			},
 			Status: http.PathConfig{
 				Enabled: true,

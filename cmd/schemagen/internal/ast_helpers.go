@@ -4,56 +4,12 @@
 package internal
 
 import (
-	"errors"
 	"go/ast"
-	"net/url"
-	"os/exec"
-	"path/filepath"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 )
-
-func ExtractNameFromTag(field *ast.Field) (string, bool) {
-	if field.Tag == nil {
-		return "", false
-	}
-
-	tagLiteral := field.Tag.Value
-	if tagLiteral == "" {
-		return "", false
-	}
-
-	unquoted, err := strconv.Unquote(tagLiteral)
-	if err != nil {
-		unquoted = strings.Trim(tagLiteral, "`")
-	}
-	if unquoted == "" {
-		return "", false
-	}
-
-	tag := reflect.StructTag(unquoted)
-
-	if name := normalizeTagValue(tag.Get("mapstructure")); name != "" {
-		return name, true
-	}
-
-	return "", false
-}
-
-func normalizeTagValue(value string) string {
-	if value == "" {
-		return ""
-	}
-	if idx := strings.IndexByte(value, ','); idx >= 0 {
-		value = value[:idx]
-	}
-	value = strings.TrimSpace(value)
-	if value == "" || value == "-" {
-		return ""
-	}
-	return value
-}
 
 func ExtractDescriptionFromComment(group *ast.CommentGroup) (string, bool) {
 	if group == nil {
@@ -74,70 +30,83 @@ func ExtractDescriptionFromComment(group *ast.CommentGroup) (string, bool) {
 	return strings.Join(comments, " "), true
 }
 
-func goPrimitiveToSchemaType(typeName string) SchemaType {
+func goPrimitiveToSchemaType(typeName string) (SchemaType, bool) {
 	switch typeName {
 	case "string":
-		return SchemaTypeString
-	case "int", "int8", "int16", "int32", "int64":
-		return SchemaTypeInteger
+		return SchemaTypeString, false
+	case "rune", "byte":
+		return SchemaTypeString, true
+	case "int", "uint", "int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64":
+		return SchemaTypeInteger, typeName != "int"
 	case "float32", "float64":
-
-		return SchemaTypeNumber
+		return SchemaTypeNumber, true
 	case "bool":
-		return SchemaTypeBoolean
+		return SchemaTypeBoolean, false
 	case "any":
-		return ""
+		return SchemaTypeAny, true
 	default:
-		return SchemaTypeNull
+		return SchemaTypeUnknown, false
 	}
 }
 
-func GetSchemaID(file *ast.File, cfg *Config) (string, error) {
-	absolutePath, _ := filepath.Abs(cfg.DirPath)
-	basePath, err := getBasePath(absolutePath)
-	relPath := ""
-	if err == nil {
-		relPath, _ = filepath.Rel(basePath, absolutePath)
+var importRegExp = regexp.MustCompile(`^(.+?)(?:/([^/"]+))?$`)
+
+func ParseImport(imp *ast.ImportSpec) (string, string) {
+	importStr := imp.Path.Value
+	if unquoted, err := strconv.Unquote(imp.Path.Value); err == nil {
+		importStr = unquoted
 	}
 
-	if cfg.SchemaIDPrefix != "" {
-		id, e := url.JoinPath(cfg.SchemaIDPrefix, relPath, filepath.Base(cfg.SchemaPath))
-		if e != nil {
-			return "", e
-		}
-		return filepath.ToSlash(id), nil
+	matches := importRegExp.FindStringSubmatch(importStr)
+	full := matches[0]
+	name := matches[2]
+	if name == "" {
+		name = full
 	}
-
-	packageImportPath, err := getPackageImportPath(file)
-	if err == nil {
-		rootURL := strings.TrimSuffix(packageImportPath, filepath.ToSlash(relPath))
-		id, e := url.JoinPath("https://", rootURL, "blob/main", relPath, filepath.Base(cfg.SchemaPath))
-		if e != nil {
-			return "", e
-		}
-		return filepath.ToSlash(id), nil
+	if imp.Name != nil {
+		name = imp.Name.Name
 	}
-
-	return "", err
+	return full, name
 }
 
-func getBasePath(path string) (string, error) {
-	cmd := exec.Command("git", "-C", path, "rev-parse", "--show-toplevel")
-	output, err := cmd.Output()
+type TagInfo struct {
+	Name      string
+	OmitEmpty bool
+	Squash    bool
+}
+
+func ParseTag(tag *ast.BasicLit) (*TagInfo, bool) {
+	if tag == nil {
+		return nil, false
+	}
+	unquoted, err := strconv.Unquote(tag.Value)
 	if err != nil {
-		return "", err
+		unquoted = strings.Trim(tag.Value, "`")
 	}
-	return strings.Trim(filepath.ToSlash(string(output)), "\n"), nil
-}
+	if unquoted == "" {
+		return nil, false
+	}
 
-func getPackageImportPath(file *ast.File) (string, error) {
-	for _, commentGroup := range file.Comments {
-		for _, comment := range commentGroup.List {
-			importPrefix := "// import "
-			if len(comment.Text) > len(importPrefix) && comment.Text[:len(importPrefix)] == importPrefix {
-				return comment.Text[len(importPrefix)+1 : len(comment.Text)-1], nil
-			}
+	structTag := reflect.StructTag(unquoted)
+	mapstructureTag := structTag.Get("mapstructure")
+	if mapstructureTag == "" {
+		return nil, false
+	}
+
+	parts := strings.Split(mapstructureTag, ",")
+	info := &TagInfo{
+		Name: parts[0],
+	}
+	if info.Name == "-" {
+		return nil, false
+	}
+	for _, part := range parts[1:] {
+		if part == "omitempty" {
+			info.OmitEmpty = true
+		}
+		if part == "squash" {
+			info.Squash = true
 		}
 	}
-	return "", errors.New("could not find import path, please provide SchemaIDPrefix with the flag")
+	return info, true
 }

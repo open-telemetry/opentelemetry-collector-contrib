@@ -7,7 +7,7 @@ import "go.opentelemetry.io/collector/featuregate"
 
 var disableInvertDecisions = featuregate.GlobalRegistry().MustRegister(
 	"processor.tailsamplingprocessor.disableinvertdecisions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, sampling policy 'invert_match' will result in a SAMPLED or NOT SAMPLED decision instead of INVERT SAMPLED or INVERT NOT SAMPLED."),
 )
 

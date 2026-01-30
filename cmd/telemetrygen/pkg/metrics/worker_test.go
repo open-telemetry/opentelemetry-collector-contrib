@@ -647,6 +647,52 @@ func TestUniqueSumTimeseries(t *testing.T) {
 	}
 }
 
+// TestBatching tests the basic batching functionality
+func TestBatching(t *testing.T) {
+	mockExp := &mockExporter{}
+	w := &worker{
+		batchSize:    3,
+		metricBuffer: make([]metricdata.ResourceMetrics, 0),
+		bufferMutex:  sync.Mutex{},
+		logger:       zap.NewNop(),
+	}
+
+	metric1 := metricdata.ResourceMetrics{ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: []metricdata.Metrics{{Name: "test1"}}}}}
+	metric2 := metricdata.ResourceMetrics{ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: []metricdata.Metrics{{Name: "test2"}}}}}
+	metric3 := metricdata.ResourceMetrics{ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: []metricdata.Metrics{{Name: "test3"}}}}}
+
+	w.addToBuffer(metric1, mockExp)
+	w.addToBuffer(metric2, mockExp)
+
+	assert.Empty(t, mockExp.rms, "Should not export until batch size reached")
+	assert.Len(t, w.metricBuffer, 2, "Should have 2 metrics in buffer")
+
+	w.addToBuffer(metric3, mockExp)
+
+	assert.Len(t, mockExp.rms, 1, "Should have exported 1 batch")
+	assert.Empty(t, w.metricBuffer, "Buffer should be cleared after export")
+}
+
+// TestBatchSizeOne tests that batch size 1 works like direct export
+func TestBatchSizeOne(t *testing.T) {
+	mockExp := &mockExporter{}
+	w := &worker{
+		batchSize:    1,
+		metricBuffer: make([]metricdata.ResourceMetrics, 0),
+		bufferMutex:  sync.Mutex{},
+		logger:       zap.NewNop(),
+	}
+
+	metric1 := metricdata.ResourceMetrics{ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: []metricdata.Metrics{{Name: "test1"}}}}}
+	metric2 := metricdata.ResourceMetrics{ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: []metricdata.Metrics{{Name: "test2"}}}}}
+
+	w.addToBuffer(metric1, mockExp)
+	w.addToBuffer(metric2, mockExp)
+
+	assert.Len(t, mockExp.rms, 2, "Should export each metric individually with batch size 1")
+	assert.Empty(t, w.metricBuffer, "Buffer should be empty after each export")
+}
+
 func TestMetricsWithLoadSize(t *testing.T) {
 	// arrange
 	cfg := &Config{
