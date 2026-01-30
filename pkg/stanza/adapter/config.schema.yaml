@@ -6,7 +6,7 @@ $defs:
       operators:
         type: array
         items:
-          $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator.config
+          x-customType: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator.Config
       retry_on_failure:
         $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.config
       storage:
