@@ -529,11 +529,11 @@ collecting metrics and logs signals from the target Pods/containers.
 
 `io.opentelemetry.discovery.metrics/config`
 
-For `"endpoint"` setting specifically, it sticks to urls that include
-```"`endpoint`"``` as it comes from the Port endpoint which is
-in form of `pod_ip:container_port`. This is to ensure that each Pod can only
-generate configuration that targets itself and not others.
-If no endpoint is provided the Pod's endpoint will be used (in form of `pod_ip:container_port`).
+To ensure that each Pod can only generate configuration that targets itself and not others, discovered receivers are validated against the Pod's endpoint (`pod_ip:container_port`).
+
+Receivers can implement the `Discoverable` interface to provide custom validation for their specific configuration structure (e.g., receivers that use `targets[].endpoint` instead of a top-level `endpoint` field). Receivers that do not implement this interface will fall back to validating the top-level `endpoint` field.
+
+For the `endpoint` setting specifically, it must include `endpoint` which resolves to the Pod's `pod_ip:container_port`. If no endpoint is provided, the Pod's endpoint will be used automatically.
 
 **Example:**
 
