@@ -295,3 +295,35 @@ filter/empty_flat_style:
   log_conditions:
     -
     -
+
+# action identifier
+filter/action_advance:
+  action: drop
+  log_conditions:
+    - action: keep
+      conditions:
+        - resource.attributes["test"] == "pass"
+  metric_conditions:
+    - action: keep
+      conditions:
+        - resource.attributes["test"] == "pass"
+  trace_conditions:
+    - action: keep
+      conditions:
+        - resource.attributes["test"] == "pass"
+  profile_conditions:
+    - action: keep
+      conditions:
+        - resource.attributes["test"] == "pass"
+filter/action_flat:
+  action: keep
+  log_conditions:
+    - resource.attributes["test"] == "pass"
+  metric_conditions:
+    - resource.attributes["test"] == "pass"
+  trace_conditions:
+    - resource.attributes["test"] == "pass"
+  profile_conditions:
+    - resource.attributes["test"] == "pass"
+filter/action_invalid:
+  action: whatever

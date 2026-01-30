@@ -897,9 +897,10 @@ func TestLogSeverity_severityValidate(t *testing.T) {
 
 func TestLoadingConfigOTTL(t *testing.T) {
 	tests := []struct {
-		id           component.ID
-		expected     *Config
-		errorMessage string
+		id              component.ID
+		expected        *Config
+		errorMessage    string
+		unmarshalErrMsg string
 	}{
 		{
 			id: component.MustNewIDWithName("filter", "ottl"),
@@ -1185,6 +1186,69 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "bad_syntax_context_inferred_profile"),
 			errorMessage: `condition has invalid syntax: 1:11: unexpected token "condition" (expected <opcomparison> Value)`,
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "action_advance"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionDrop,
+				LogConditions: []condition.ContextConditions{
+					{
+						Action:     condition.ActionKeep,
+						Conditions: []string{`resource.attributes["test"] == "pass"`},
+					},
+				},
+				MetricConditions: []condition.ContextConditions{
+					{
+						Action:     condition.ActionKeep,
+						Conditions: []string{`resource.attributes["test"] == "pass"`},
+					},
+				},
+				TraceConditions: []condition.ContextConditions{
+					{
+						Action:     condition.ActionKeep,
+						Conditions: []string{`resource.attributes["test"] == "pass"`},
+					},
+				},
+				ProfileConditions: []condition.ContextConditions{
+					{
+						Action:     condition.ActionKeep,
+						Conditions: []string{`resource.attributes["test"] == "pass"`},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "action_flat"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				Action:    condition.ActionKeep,
+				LogConditions: []condition.ContextConditions{
+					{
+						Conditions: []string{`resource.attributes["test"] == "pass"`},
+					},
+				},
+				MetricConditions: []condition.ContextConditions{
+					{
+						Conditions: []string{`resource.attributes["test"] == "pass"`},
+					},
+				},
+				TraceConditions: []condition.ContextConditions{
+					{
+						Conditions: []string{`resource.attributes["test"] == "pass"`},
+					},
+				},
+				ProfileConditions: []condition.ContextConditions{
+					{
+						Conditions: []string{`resource.attributes["test"] == "pass"`},
+					},
+				},
+			},
+		},
+		{
+			id:              component.NewIDWithName(metadata.Type, "action_invalid"),
+			errorMessage:    `whatever`,
+			unmarshalErrMsg: `'action' unknown action "whatever"`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1197,6 +1261,11 @@ func TestLoadingConfigOTTL(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
+
+			if tt.unmarshalErrMsg != "" {
+				require.ErrorContains(t, sub.Unmarshal(cfg), tt.unmarshalErrMsg)
+				return
+			}
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
@@ -1291,5 +1360,50 @@ func getConditionStrings(prefix string) []string {
 	return []string{
 		fmt.Sprintf(`%sattributes["test"] == "pass"`, prefix),
 		fmt.Sprintf(`%sattributes["another"] == "pass"`, prefix),
+	}
+}
+
+func TestAction_UnmarshalText(t *testing.T) {
+	testCases := []struct {
+		name        string
+		input       string
+		expected    condition.Action
+		expectedErr bool
+	}{
+		{
+			name:     "valid drop action lowercase",
+			input:    "drop",
+			expected: condition.ActionDrop,
+		},
+		{
+			name:     "valid keep action lowercase",
+			input:    "keep",
+			expected: condition.ActionKeep,
+		},
+		{
+			name:        "empty action",
+			input:       "",
+			expectedErr: true,
+		},
+		{
+			name:        "unknown action",
+			input:       "delete",
+			expectedErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var action condition.Action
+			err := action.UnmarshalText([]byte(tc.input))
+
+			if tc.expectedErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "unknown action")
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expected, action)
+			}
+		})
 	}
 }
