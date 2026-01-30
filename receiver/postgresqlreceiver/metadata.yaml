@@ -28,8 +28,8 @@ resource_attributes:
     description: The table name.
     enabled: true
     type: string
-  server.host:
-    description: The hostname of the PostgreSQL server.
+  server.address:
+    description: The address of the PostgreSQL server.
     enabled: true
     type: string
   server.port:

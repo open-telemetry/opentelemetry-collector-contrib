@@ -17,7 +17,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
-			rb.SetServerHost("server.host-val")
+			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
 			rb.SetServiceName("service.name-val")
@@ -57,10 +57,10 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.Equal(t, "postgresql.table.name-val", val.Str())
 			}
-			val, ok = res.Attributes().Get("server.host")
+			val, ok = res.Attributes().Get("server.address")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "server.host-val", val.Str())
+				assert.Equal(t, "server.address-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("server.port")
 			assert.True(t, ok)

@@ -49,10 +49,10 @@ func (rb *ResourceBuilder) SetPostgresqlTableName(val string) {
 	}
 }
 
-// SetServerHost sets provided value as "server.host" attribute.
-func (rb *ResourceBuilder) SetServerHost(val string) {
-	if rb.config.ServerHost.Enabled {
-		rb.res.Attributes().PutStr("server.host", val)
+// SetServerAddress sets provided value as "server.address" attribute.
+func (rb *ResourceBuilder) SetServerAddress(val string) {
+	if rb.config.ServerAddress.Enabled {
+		rb.res.Attributes().PutStr("server.address", val)
 	}
 }
 

@@ -730,9 +730,9 @@ func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder, d
 	// Set constant service.name
 	rb.SetServiceName("postgresql")
 
-	// Set server.host and server.port by extracting from serviceInstanceID (format: host:port)
+	// Set server.address and server.port by extracting from serviceInstanceID (format: host:port)
 	if idx := strings.LastIndex(p.serviceInstanceID, ":"); idx != -1 {
-		rb.SetServerHost(p.serviceInstanceID[:idx])
+		rb.SetServerAddress(p.serviceInstanceID[:idx])
 		if port, err := strconv.Atoi(p.serviceInstanceID[idx+1:]); err == nil {
 			rb.SetServerPort(int64(port))
 		}

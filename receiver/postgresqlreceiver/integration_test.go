@@ -111,7 +111,7 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceAttributeValue("service.instance.id"),
 			pmetrictest.IgnoreResourceAttributeValue("service.name"),
-			pmetrictest.IgnoreResourceAttributeValue("server.host"),
+			pmetrictest.IgnoreResourceAttributeValue("server.address"),
 			pmetrictest.IgnoreResourceAttributeValue("server.port"),
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(
