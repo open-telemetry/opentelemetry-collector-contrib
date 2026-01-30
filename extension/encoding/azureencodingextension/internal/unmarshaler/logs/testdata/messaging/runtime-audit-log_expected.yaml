@@ -1,0 +1,72 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/XXXX-YYYY-ZZZZ/RESOURCEGROUPS/TESTGROUP/PROVIDERS/MICROSOFT.SERVICEBUS/NAMESPACES/NAMESPACE
+        - key: cloud.region
+          value:
+            stringValue: West India
+        - key: service.namespace
+          value:
+            stringValue: namespace
+        - key: service.name
+          value:
+            stringValue: sbq
+        - key: deployment.environment.name
+          value:
+            stringValue: PROD
+        - key: cloud.account.id
+          value:
+            stringValue: XXXX-YYYY-ZZZZ
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: RuntimeAuditLogs
+              - key: azure.autoscale.unit
+                value:
+                  stringValue: PROD-BM1-401
+              - key: log.record.uid
+                value:
+                  stringValue: eb21994e-ecf5-4d41-86ad-74cc21488f6f
+              - key: azure.operation.name
+                value:
+                  stringValue: SendMessage
+              - key: messaging.system
+                value:
+                  stringValue: servicebus
+              - key: azure.messaging.task.name
+                value:
+                  stringValue: RuntimeAuditLogShoebox
+              - key: network.protocol.name
+                value:
+                  stringValue: amqp
+              - key: azure.auth.type
+                value:
+                  stringValue: SAS
+              - key: azure.auth.id
+                value:
+                  stringValue: policy
+              - key: network.connection.type
+                value:
+                  stringValue: Public
+              - key: client.address
+                value:
+                  stringValue: 8.8.8.8
+              - key: messaging.message.count
+                value:
+                  intValue: "56"
+            body:
+              stringValue: '{}'
+            timeUnixNano: "1609533606000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

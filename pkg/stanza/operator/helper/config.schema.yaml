@@ -1,0 +1,153 @@
+$defs:
+  attributer_config:
+    description: AttributerConfig is the configuration of a attributer
+    type: object
+    properties:
+      attributes:
+        type: object
+        additionalProperties:
+          $ref: expr_string_config
+  basic_config:
+    description: BasicConfig provides a basic implemention for an operator config.
+    type: object
+    properties:
+      id:
+        type: string
+      type:
+        type: string
+  byte_size:
+    type: integer
+    x-customType: int64
+  expr_string_config:
+    description: ExprStringConfig is a string that represents an expression
+    type: string
+  identifier_config:
+    description: IdentifierConfig is the configuration of a resource identifier
+    type: object
+    properties:
+      resource:
+        type: object
+        additionalProperties:
+          $ref: expr_string_config
+  input_config:
+    description: InputConfig provides a basic implementation of an input operator config.
+    type: object
+    allOf:
+      - $ref: attributer_config
+      - $ref: identifier_config
+      - $ref: writer_config
+  output_config:
+    description: OutputConfig provides a basic implementation of an output operator config.
+    type: object
+    allOf:
+      - $ref: basic_config
+  parser_config:
+    description: ParserConfig provides the basic implementation of a parser config.
+    type: object
+    properties:
+      body:
+        x-pointer: true
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+      parse_from:
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+      parse_to:
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.rootable_field
+      scope_name:
+        x-pointer: true
+        $ref: scope_name_parser
+      severity:
+        x-pointer: true
+        $ref: severity_config
+      timestamp:
+        x-pointer: true
+        $ref: time_parser
+      trace:
+        x-pointer: true
+        $ref: trace_parser
+    allOf:
+      - $ref: transformer_config
+  scope_name_parser:
+    description: ScopeNameParser is a helper that parses severity onto an entry.
+    type: object
+    properties:
+      parse_from:
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+  severity_config:
+    description: SeverityConfig allows users to specify how to parse a severity from a field.
+    type: object
+    properties:
+      mapping:
+        type: object
+        additionalProperties:
+          x-customType: any
+      overwrite_text:
+        type: boolean
+      parse_from:
+        x-pointer: true
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+      preset:
+        type: string
+  span_id_config:
+    type: object
+    properties:
+      parse_from:
+        x-pointer: true
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+  time_parser:
+    description: TimeParser is a helper that parses time onto an entry.
+    type: object
+    properties:
+      layout:
+        type: string
+      layout_type:
+        type: string
+      location:
+        type: string
+      parse_from:
+        x-pointer: true
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+  trace_flags_config:
+    type: object
+    properties:
+      parse_from:
+        x-pointer: true
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+  trace_id_config:
+    type: object
+    properties:
+      parse_from:
+        x-pointer: true
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+  trace_parser:
+    description: TraceParser is a helper that parses trace spans (and flags) onto an entry.
+    type: object
+    properties:
+      span_id:
+        x-pointer: true
+        $ref: span_id_config
+      trace_flags:
+        x-pointer: true
+        $ref: trace_flags_config
+      trace_id:
+        x-pointer: true
+        $ref: trace_id_config
+  transformer_config:
+    description: TransformerConfig provides a basic implementation of a transformer config.
+    type: object
+    properties:
+      if:
+        type: string
+      on_error:
+        type: string
+    allOf:
+      - $ref: writer_config
+  writer_config:
+    description: WriterConfig is the configuration of a writer operator.
+    type: object
+    properties:
+      output:
+        type: array
+        items:
+          type: string
+    allOf:
+      - $ref: basic_config
