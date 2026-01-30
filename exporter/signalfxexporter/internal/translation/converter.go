@@ -160,11 +160,7 @@ func resourceToDimensions(res pcommon.Resource) []*sfxpb.Dimension {
 }
 
 func (c *MetricsConverter) ConvertDimension(dim string) string {
-	res := dim
-	if c.metricTranslator != nil {
-		res = c.metricTranslator.translateDimension(dim)
-	}
-	return filterKeyChars(res, c.datapointValidator.nonAlphanumericDimChars)
+	return filterKeyChars(dim, c.datapointValidator.nonAlphanumericDimChars)
 }
 
 func (c *MetricsConverter) Shutdown() {

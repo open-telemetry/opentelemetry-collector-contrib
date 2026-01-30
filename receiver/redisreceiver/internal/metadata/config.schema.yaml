@@ -1,0 +1,176 @@
+$defs:
+  attribute_cluster_state:
+    description: AttributeClusterState specifies the value cluster_state attribute.
+    type: integer
+  attribute_mode:
+    description: AttributeMode specifies the value mode attribute.
+    type: integer
+  attribute_percentile:
+    description: AttributePercentile specifies the value percentile attribute.
+    type: integer
+  attribute_role:
+    description: AttributeRole specifies the value role attribute.
+    type: integer
+  attribute_state:
+    description: AttributeState specifies the value state attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for redis metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for redis metrics.
+    type: object
+    properties:
+      redis.clients.blocked:
+        $ref: metric_config
+      redis.clients.connected:
+        $ref: metric_config
+      redis.clients.max_input_buffer:
+        $ref: metric_config
+      redis.clients.max_output_buffer:
+        $ref: metric_config
+      redis.cluster.cluster_enabled:
+        $ref: metric_config
+      redis.cluster.known_nodes:
+        $ref: metric_config
+      redis.cluster.links_buffer_limit_exceeded.count:
+        $ref: metric_config
+      redis.cluster.node.count:
+        $ref: metric_config
+      redis.cluster.node.uptime:
+        $ref: metric_config
+      redis.cluster.slots_assigned:
+        $ref: metric_config
+      redis.cluster.slots_fail:
+        $ref: metric_config
+      redis.cluster.slots_ok:
+        $ref: metric_config
+      redis.cluster.slots_pfail:
+        $ref: metric_config
+      redis.cluster.state:
+        $ref: metric_config
+      redis.cluster.stats_messages_received:
+        $ref: metric_config
+      redis.cluster.stats_messages_sent:
+        $ref: metric_config
+      redis.cluster.uptime:
+        $ref: metric_config
+      redis.cmd.calls:
+        $ref: metric_config
+      redis.cmd.latency:
+        $ref: metric_config
+      redis.cmd.usec:
+        $ref: metric_config
+      redis.commands:
+        $ref: metric_config
+      redis.commands.processed:
+        $ref: metric_config
+      redis.connections.received:
+        $ref: metric_config
+      redis.connections.rejected:
+        $ref: metric_config
+      redis.cpu.time:
+        $ref: metric_config
+      redis.db.avg_ttl:
+        $ref: metric_config
+      redis.db.expires:
+        $ref: metric_config
+      redis.db.keys:
+        $ref: metric_config
+      redis.keys.evicted:
+        $ref: metric_config
+      redis.keys.expired:
+        $ref: metric_config
+      redis.keyspace.hits:
+        $ref: metric_config
+      redis.keyspace.misses:
+        $ref: metric_config
+      redis.latest_fork:
+        $ref: metric_config
+      redis.maxmemory:
+        $ref: metric_config
+      redis.memory.fragmentation_ratio:
+        $ref: metric_config
+      redis.memory.lua:
+        $ref: metric_config
+      redis.memory.peak:
+        $ref: metric_config
+      redis.memory.rss:
+        $ref: metric_config
+      redis.memory.used:
+        $ref: metric_config
+      redis.memory.used_memory_overhead:
+        $ref: metric_config
+      redis.memory.used_memory_startup:
+        $ref: metric_config
+      redis.mode:
+        $ref: metric_config
+      redis.net.input:
+        $ref: metric_config
+      redis.net.output:
+        $ref: metric_config
+      redis.rdb.changes_since_last_save:
+        $ref: metric_config
+      redis.replication.backlog_first_byte_offset:
+        $ref: metric_config
+      redis.replication.offset:
+        $ref: metric_config
+      redis.replication.replica_offset:
+        $ref: metric_config
+      redis.role:
+        $ref: metric_config
+      redis.sentinel.masters:
+        $ref: metric_config
+      redis.sentinel.running_scripts:
+        $ref: metric_config
+      redis.sentinel.scripts_queue_length:
+        $ref: metric_config
+      redis.sentinel.simulate_failure_flags:
+        $ref: metric_config
+      redis.sentinel.tilt_since_seconds:
+        $ref: metric_config
+      redis.sentinel.total_tilt:
+        $ref: metric_config
+      redis.slaves.connected:
+        $ref: metric_config
+      redis.tracking_total_keys:
+        $ref: metric_config
+      redis.uptime:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for redis resource attributes.
+    type: object
+    properties:
+      redis.version:
+        $ref: resource_attribute_config
+      server.address:
+        $ref: resource_attribute_config
+      server.port:
+        $ref: resource_attribute_config
