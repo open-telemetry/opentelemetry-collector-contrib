@@ -153,10 +153,8 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 
 	// Peek into the first 64 bytes to determine the type of CloudTrail log
 	peekBytes, err := bufferedReader.Peek(64)
-	if err != nil {
-		if !errors.Is(err, io.EOF) {
-			return plog.Logs{}, fmt.Errorf("failed to peek into CloudTrail log: %w", err)
-		}
+	if err != nil && !errors.Is(err, io.EOF) {
+		return plog.Logs{}, fmt.Errorf("failed to peek into CloudTrail log: %w", err)
 	}
 
 	firstKey, err := extractFirstKey(peekBytes)
@@ -164,20 +162,25 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 		return plog.Logs{}, fmt.Errorf("failed to extract the first JSON key: %w", err)
 	}
 
-	// CloudWatch subscription filter format
-	if firstKey == "messageType" {
-		return u.fromCloudWatch(bufferedReader)
-	}
-
 	decoder := gojson.NewDecoder(bufferedReader)
 
-	// Records indicates a CloudTrail log file from S3
+	// Determine format based on the first key:
+	// 1. S3 CloudTrail: first key is "Records"
+	// 2. CloudWatch: first key is one of the known CloudWatch envelope keys
+	// 3. Digest: Try to decode as a CloudTrail digest record
+
+	// Check for S3 CloudTrail log format (most common)
 	if firstKey == "Records" {
 		return u.fromS3(decoder)
 	}
 
-	// Try to parse as a CloudTrail digest record
-	// Note - Digest files are relatively small and has fields at root level.
+	// Check for CloudWatch subscription filter format
+	// Known CloudWatch envelope keys: messageType, owner, logGroup, logStream, subscriptionFilters, logEvents
+	if isCloudWatchKey(firstKey) {
+		return u.fromCloudWatch(bufferedReader)
+	}
+
+	// Otherwise, assume it's a CloudTrail digest record and attempt to decode
 	var cloudTrailDigest CloudTrailDigest
 	if err := decoder.Decode(&cloudTrailDigest); err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as a CloudTrail digest: %w", err)
@@ -644,4 +647,17 @@ func extractFirstKey(data []byte) (string, error) {
 	}
 
 	return "", errors.New("invalid JSON payload")
+}
+
+// isCloudWatchKey checks if the given key is a known CloudWatch Logs subscription filter envelope key.
+// CloudWatch envelope keys are documented at:
+// https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html
+func isCloudWatchKey(key string) bool {
+	// Known CloudWatch envelope keys that appear at the root level
+	switch key {
+	case "messageType", "owner", "logGroup", "logStream", "subscriptionFilters", "logEvents":
+		return true
+	default:
+		return false
+	}
 }
