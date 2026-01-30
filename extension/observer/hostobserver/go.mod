@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver
 
-go 1.24.0
+go 1.25.5
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.144.0
