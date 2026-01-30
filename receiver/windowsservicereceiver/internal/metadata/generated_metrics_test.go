@@ -72,7 +72,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordWindowsServiceStatusDataPoint(ts, 1, "name-val", AttributeStartupModeBootStart)
 			if tt.name == "reaggregate_set" {
-				mb.RecordWindowsServiceStatusDataPoint(ts, 3, "name-val-2", AttributeStartupModeSystemStart)
+				mb.RecordWindowsServiceStatusDataPoint(ts, 3, "name-val", AttributeStartupModeBootStart)
 			}
 
 			res := pcommon.NewResource()

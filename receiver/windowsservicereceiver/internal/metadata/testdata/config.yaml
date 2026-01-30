@@ -8,7 +8,7 @@ reaggregate_set:
   metrics:
     windows.service.status:
       enabled: true
-      attributes: []
+      attributes: ["name","startup_mode"]
 none_set:
   metrics:
     windows.service.status:
