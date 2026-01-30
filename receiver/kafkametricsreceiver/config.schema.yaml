@@ -1,0 +1,25 @@
+description: Config represents user settings for kafkametrics receiver
+type: object
+properties:
+  cluster_alias:
+    description: Alias name of the kafka cluster
+    type: string
+  group_match:
+    description: GroupMatch consumer groups to collect on
+    type: string
+  refresh_frequency:
+    description: 'Cluster metadata refresh frequency Configures the refresh frequency to update cached cluster metadata Defaults to 10 minutes from Sarama library If Metadata.RefreshInterval is set, this will be ignored. Deprecated [v0.122.0]: use Metadata.RefreshInterval instead.'
+    type: string
+    format: duration
+  scrapers:
+    description: Scrapers defines which metric data points to be captured from kafka
+    type: array
+    items:
+      type: string
+  topic_match:
+    description: TopicMatch topics to collect metrics on
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka.client_config
+  - $ref: ./internal/metadata.metrics_builder_config
