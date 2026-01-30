@@ -211,7 +211,7 @@ func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, 
 	case constants.FormatVPCFlowLog:
 		switch e.cfg.VPCFlowLogConfig.FileFormat {
 		case constants.FileFormatParquet:
-			return parquetEncoding, nil, fmt.Errorf("%q still needs to be implemented", constants.FileFormatParquet)
+			return parquetEncoding, bytes.NewReader(buf), nil
 		case constants.FileFormatPlainText:
 			return e.getReaderForData(buf)
 		default:

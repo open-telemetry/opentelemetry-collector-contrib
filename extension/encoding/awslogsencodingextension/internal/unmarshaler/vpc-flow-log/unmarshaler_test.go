@@ -135,6 +135,28 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 	}
 }
 
+func TestUnmarshalLogs_Parquet(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata"
+	config := Config{
+		FileFormat: constants.FileFormatParquet,
+	}
+	u, err := NewVPCFlowLogUnmarshaler(config, component.BuildInfo{}, zap.NewNop(), false)
+	require.NoError(t, err)
+
+	logInputReader := readLogFile(t, dir, "valid_flow_log.parquet")
+	logs, err := u.UnmarshalAWSLogs(logInputReader)
+	require.NoError(t, err)
+
+	// To generate the golden file, uncomment the following line:
+	// golden.WriteLogsToFile(filepath.Join(dir, "valid_flow_log_parquet_expected.yaml"), logs)
+
+	expectedLogs, err := golden.ReadLogs(filepath.Join(dir, "valid_flow_log_parquet_expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
+}
+
 func TestHandleAddresses(t *testing.T) {
 	t.Parallel()
 
