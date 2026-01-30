@@ -274,8 +274,7 @@ func TestDeepCopyHostMetadata(t *testing.T) {
 	}
 
 	// Deep copy the payload
-	copied, err := deepCopyHostMetadata(original)
-	require.NoError(t, err)
+	copied := deepCopyHostMetadata(original)
 
 	// Verify the copy has the same values
 	assert.Equal(t, original.InternalHostname, copied.InternalHostname)
