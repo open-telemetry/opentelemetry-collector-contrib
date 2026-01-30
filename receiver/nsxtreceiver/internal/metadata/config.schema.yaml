@@ -1,0 +1,73 @@
+$defs:
+  attribute_class:
+    description: AttributeClass specifies the value class attribute.
+    type: integer
+  attribute_direction:
+    description: AttributeDirection specifies the value direction attribute.
+    type: integer
+  attribute_disk_state:
+    description: AttributeDiskState specifies the value disk_state attribute.
+    type: integer
+  attribute_packet_type:
+    description: AttributePacketType specifies the value packet.type attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for nsxt metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for nsxt metrics.
+    type: object
+    properties:
+      nsxt.node.cpu.utilization:
+        $ref: metric_config
+      nsxt.node.filesystem.usage:
+        $ref: metric_config
+      nsxt.node.filesystem.utilization:
+        $ref: metric_config
+      nsxt.node.memory.cache.usage:
+        $ref: metric_config
+      nsxt.node.memory.usage:
+        $ref: metric_config
+      nsxt.node.network.io:
+        $ref: metric_config
+      nsxt.node.network.packet.count:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for nsxt resource attributes.
+    type: object
+    properties:
+      device.id:
+        $ref: resource_attribute_config
+      nsxt.node.id:
+        $ref: resource_attribute_config
+      nsxt.node.name:
+        $ref: resource_attribute_config
+      nsxt.node.type:
+        $ref: resource_attribute_config
