@@ -1,0 +1,55 @@
+$defs:
+  config:
+    description: Config is the configuration of a file input operator
+    type: object
+    properties:
+      acquire_fs_lock:
+        type: boolean
+      compression:
+        type: string
+      delete_after_read:
+        type: boolean
+      encoding:
+        type: string
+      fingerprint_size:
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.byte_size
+      force_flush_period:
+        type: string
+        format: duration
+      header:
+        x-pointer: true
+        $ref: header_config
+      include_file_record_number:
+        type: boolean
+      include_file_record_offset:
+        type: boolean
+      initial_buffer_size:
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.byte_size
+      max_batches:
+        type: integer
+      max_concurrent_files:
+        type: integer
+      max_log_size:
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.byte_size
+      multiline:
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split.config
+      poll_interval:
+        type: string
+        format: duration
+      polls_to_archive:
+        type: integer
+      start_at:
+        type: string
+    allOf:
+      - $ref: ./matcher.criteria
+      - $ref: ./attrs.resolver
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim.config
+  header_config:
+    type: object
+    properties:
+      metadata_operators:
+        type: array
+        items:
+          x-customType: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator.Config
+      pattern:
+        type: string

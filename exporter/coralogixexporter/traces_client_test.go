@@ -168,6 +168,11 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 			cfg := &Config{
 				Domain:     "test.domain.com",
 				PrivateKey: "test-key",
+				Traces: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint: "ingress.test.domain.com:443",
+					},
+				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   tt.configEnabled,
 					Threshold: 1,
