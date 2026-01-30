@@ -15,16 +15,9 @@ import (
 )
 
 func TestGetDimensionUpdateFromMetadata(t *testing.T) {
-	translator, _ := translation.NewMetricTranslator([]translation.Rule{
-		{
-			Action:  translation.ActionRenameDimensionKeys,
-			Mapping: map[string]string{"name": "translated_name"},
-		},
-	}, 1, make(chan struct{}))
 	type args struct {
-		defaults         map[string]string
-		metadata         metadata.MetadataUpdate
-		metricTranslator *translation.MetricTranslator
+		defaults map[string]string
+		metadata metadata.MetadataUpdate
 	}
 	tests := []struct {
 		name string
@@ -47,7 +40,6 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 						MetadataToUpdate: map[string]string{},
 					},
 				},
-				metricTranslator: nil,
 			},
 			&DimensionUpdate{
 				Name:       "name",
@@ -78,7 +70,6 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 						},
 					},
 				},
-				metricTranslator: nil,
 			},
 			&DimensionUpdate{
 				Name:  "name",
@@ -113,7 +104,6 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 						},
 					},
 				},
-				metricTranslator: nil,
 			},
 			&DimensionUpdate{
 				Name:  "name",
@@ -122,44 +112,6 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 					"prope/rty1": "value1",
 					"prope.rty2": "",
 					"prope_rty3": "value33",
-					"prope.rty4": "",
-				}),
-				Tags: map[string]bool{
-					"ta.g1": true,
-					"ta/g2": false,
-				},
-			},
-		},
-		{
-			"Test dimensions translation",
-			args{
-				metadata: metadata.MetadataUpdate{
-					ResourceIDKey: "name",
-					ResourceID:    "val",
-					MetadataDelta: metadata.MetadataDelta{
-						MetadataToAdd: map[string]string{
-							"prope/rty1": "value1",
-							"ta.g1":      "",
-						},
-						MetadataToRemove: map[string]string{
-							"prope_rty2": "value2",
-							"ta/g2":      "",
-						},
-						MetadataToUpdate: map[string]string{
-							"prope.rty3": "value33",
-							"prope.rty4": "",
-						},
-					},
-				},
-				metricTranslator: translator,
-			},
-			&DimensionUpdate{
-				Name:  "translated_name",
-				Value: "val",
-				Properties: getMapToPointers(map[string]string{
-					"prope/rty1": "value1",
-					"prope_rty2": "",
-					"prope.rty3": "value33",
 					"prope.rty4": "",
 				}),
 				Tags: map[string]bool{
@@ -183,7 +135,6 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 						},
 					},
 				},
-				metricTranslator: nil,
 			},
 			&DimensionUpdate{
 				Name:       "name",
@@ -211,7 +162,6 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 						},
 					},
 				},
-				metricTranslator: nil,
 			},
 			&DimensionUpdate{
 				Name:  "name",
@@ -228,7 +178,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			converter, err := translation.NewMetricsConverter(
 				zap.NewNop(),
-				tt.args.metricTranslator,
+				nil,
 				nil,
 				nil,
 				"-_.",

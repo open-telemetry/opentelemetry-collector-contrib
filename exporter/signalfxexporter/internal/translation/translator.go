@@ -20,11 +20,6 @@ import (
 type Action string
 
 const (
-	// ActionRenameDimensionKeys renames dimension keys using Rule.Mapping.
-	// The rule can be applied only to particular metrics if MetricNames are provided,
-	// otherwise applied to all metrics.
-	ActionRenameDimensionKeys Action = "rename_dimension_keys"
-
 	// ActionRenameMetrics renames metrics using Rule.Mapping.
 	ActionRenameMetrics Action = "rename_metrics"
 
@@ -204,7 +199,7 @@ type Rule struct {
 	// existing SFx content for desired metric name.  This will duplicate the dimension value and isn't a rename.
 	CopyDimensions map[string]string `mapstructure:"copy_dimensions"`
 
-	// MetricNames is used by "rename_dimension_keys" and "drop_metrics" translation rules.
+	// MetricNames is used by "drop_metrics" translation rule.
 	MetricNames map[string]bool `mapstructure:"metric_names"`
 
 	Operand1Metric string         `mapstructure:"operand1_metric"`
@@ -220,9 +215,6 @@ type Rule struct {
 
 type MetricTranslator struct {
 	rules []Rule
-
-	// Additional map to be used only for dimension renaming in metadata
-	dimensionsMap map[string]string
 
 	deltaTranslator *deltaTranslator
 }
@@ -240,26 +232,14 @@ func NewMetricTranslator(rules []Rule, ttl int64, done chan struct{}) (*MetricTr
 
 	return &MetricTranslator{
 		rules:           rules,
-		dimensionsMap:   createDimensionsMap(rules),
 		deltaTranslator: newDeltaTranslator(ttl, done),
 	}, nil
 }
 
 func validateTranslationRules(rules []Rule) error {
-	var renameDimensionKeysFound bool
 	for i := range rules {
 		tr := &rules[i]
 		switch tr.Action {
-		case ActionRenameDimensionKeys:
-			if tr.Mapping == nil {
-				return fmt.Errorf("field \"mapping\" is required for %q translation rule", tr.Action)
-			}
-			if len(tr.MetricNames) == 0 {
-				if renameDimensionKeysFound {
-					return fmt.Errorf("only one %q translation rule without \"metric_names\" can be specified", tr.Action)
-				}
-				renameDimensionKeysFound = true
-			}
 		case ActionRenameMetrics:
 			if tr.Mapping == nil {
 				return fmt.Errorf("field \"mapping\" is required for %q translation rule", tr.Action)
@@ -350,18 +330,6 @@ func validateTranslationRules(rules []Rule) error {
 	return nil
 }
 
-// createDimensionsMap creates an additional map for dimensions
-// from ActionRenameDimensionKeys actions in rules.
-func createDimensionsMap(rules []Rule) map[string]string {
-	for i := range rules {
-		tr := &rules[i]
-		if tr.Action == ActionRenameDimensionKeys {
-			return tr.Mapping
-		}
-	}
-	return nil
-}
-
 func processRules(rules []Rule) error {
 	for i := range rules {
 		tr := &rules[i]
@@ -409,17 +377,6 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 	for i := range mp.rules {
 		tr := &mp.rules[i]
 		switch tr.Action {
-		case ActionRenameDimensionKeys:
-			for _, dp := range processedDataPoints {
-				if len(tr.MetricNames) > 0 && !tr.MetricNames[dp.Metric] {
-					continue
-				}
-				for _, d := range dp.Dimensions {
-					if newKey, ok := tr.Mapping[d.Key]; ok {
-						d.Key = newKey
-					}
-				}
-			}
 		case ActionRenameMetrics:
 			var additionalDimensions []*sfxpb.Dimension
 			if tr.AddDimensions != nil {
@@ -668,13 +625,6 @@ func ptToFloatVal(pt *sfxpb.DataPoint) *float64 {
 		return nil
 	}
 	return &f
-}
-
-func (mp *MetricTranslator) translateDimension(orig string) string {
-	if translated, ok := mp.dimensionsMap[orig]; ok {
-		return translated
-	}
-	return orig
 }
 
 // aggregateDatapoints aggregates datapoints assuming that they have
