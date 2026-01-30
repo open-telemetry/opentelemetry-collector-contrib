@@ -1,0 +1,7 @@
+description: Config defines configuration for Cisco OS receiver.
+type: object
+properties:
+  device:
+    $ref: ./internal/connection.device_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
