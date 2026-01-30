@@ -6,8 +6,8 @@
 | Stability     | [beta]: metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fmongodbatlas%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fmongodbatlas) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fmongodbatlas%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fmongodbatlas) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_mongodbatlas)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_mongodbatlas&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@justinianvoss22](https://www.github.com/justinianvoss22) \| Seeking more code owners! |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_mongodb_atlas)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_mongodb_atlas&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@justinianvoss22](https://www.github.com/justinianvoss22), [@dyl10s](https://www.github.com/dyl10s) \| Seeking more code owners! |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -108,7 +108,7 @@ Receive metrics:
 
 ```yaml
 receivers:
-  mongodbatlas:
+  mongodb_atlas:
     public_key: ${env:MONGODB_ATLAS_PUBLIC_KEY}
     private_key: ${env:MONGODB_ATLAS_PRIVATE_KEY}
 ```
@@ -117,7 +117,7 @@ Listen for alerts (default mode):
 
 ```yaml
 receivers:
-  mongodbatlas:
+  mongodb_atlas:
     alerts:
       enabled: true
       secret: "some_secret"
@@ -128,7 +128,7 @@ Poll alerts from API:
 
 ```yaml
 receivers:
-  mongodbatlas:
+  mongodb_atlas:
     public_key: <redacted>
     private_key: <redacted>
     alerts:
@@ -146,7 +146,7 @@ Receive logs:
 
 ```yaml
 receivers:
-  mongodbatlas:
+  mongodb_atlas:
     logs:
       enabled: true
       projects: 
@@ -159,7 +159,7 @@ Receive events:
 
 ```yaml
 receivers:
-  mongodbatlas:
+  mongodb_atlas:
     events:
       projects:
         - name: "project 1"
@@ -176,7 +176,7 @@ Poll Access Logs from API:
 
 ```yaml
 receivers:
-  mongodbatlas:
+  mongodb_atlas:
     public_key: <redacted>
     private_key: <redacted>
     logs:
