@@ -1,0 +1,34 @@
+$defs:
+  attribute_leap_status:
+    description: AttributeLeapStatus specifies the value leap.status attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for chrony metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+  metrics_config:
+    description: MetricsConfig provides config for chrony metrics.
+    type: object
+    properties:
+      ntp.frequency.offset:
+        $ref: metric_config
+      ntp.skew:
+        $ref: metric_config
+      ntp.stratum:
+        $ref: metric_config
+      ntp.time.correction:
+        $ref: metric_config
+      ntp.time.last_offset:
+        $ref: metric_config
+      ntp.time.rms_offset:
+        $ref: metric_config
+      ntp.time.root_delay:
+        $ref: metric_config

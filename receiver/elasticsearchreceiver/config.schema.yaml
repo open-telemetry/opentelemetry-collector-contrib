@@ -1,0 +1,26 @@
+description: Config is the configuration for the elasticsearch receiver
+type: object
+properties:
+  indices:
+    description: Indices defines the indices to scrape. See https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html#index-stats-api-path-params for which names are viable. If Indices is empty, no indices will be scraped.
+    type: array
+    items:
+      type: string
+  nodes:
+    description: Nodes defines the nodes to scrape. See https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes for which selectors may be used here. If Nodes is empty, no nodes will be scraped.
+    type: array
+    items:
+      type: string
+  password:
+    description: Password is the password used when making REST calls to elasticsearch. Must be specified if Username is. Not required.
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  skip_cluster_metrics:
+    description: SkipClusterMetrics indicates whether cluster level metrics from /_cluster/* endpoints should be scraped or not.
+    type: boolean
+  username:
+    description: Username is the username used when making REST calls to elasticsearch. Must be specified if Password is. Not required.
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: ./internal/metadata.metrics_builder_config

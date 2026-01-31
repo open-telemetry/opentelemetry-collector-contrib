@@ -5,7 +5,6 @@ package idbatcher
 
 import (
 	"encoding/binary"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -20,16 +19,14 @@ func TestBatcherNew(t *testing.T) {
 		name                      string
 		numBatches                uint64
 		newBatchesInitialCapacity uint64
-		batchChannelSize          uint64
 		wantErr                   error
 	}{
-		{"invalid numBatches", 0, 0, 1, ErrInvalidNumBatches},
-		{"invalid batchChannelSize", 1, 0, 0, ErrInvalidBatchChannelSize},
-		{"valid", 1, 0, 1, nil},
+		{"invalid numBatches", 0, 0, ErrInvalidNumBatches},
+		{"valid", 1, 0, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.numBatches, tt.newBatchesInitialCapacity, tt.batchChannelSize)
+			got, err := New(tt.numBatches, tt.newBatchesInitialCapacity)
 			require.ErrorIs(t, err, tt.wantErr)
 			if got != nil {
 				got.Stop()
@@ -39,19 +36,19 @@ func TestBatcherNew(t *testing.T) {
 }
 
 func TestTypicalConfig(t *testing.T) {
-	concurrencyTest(t, 10, 100, uint64(4*runtime.NumCPU()))
+	concurrencyTest(t, 10, 100)
 }
 
 func TestMinBufferedChannels(t *testing.T) {
-	concurrencyTest(t, 1, 0, 1)
+	concurrencyTest(t, 1, 0)
 }
 
 func BenchmarkConcurrentEnqueue(b *testing.B) {
 	ids := generateSequentialIDs(1)
-	batcher, err := New(10, 100, uint64(4*runtime.NumCPU()))
+	batcher, err := New(10, 100)
 	require.NoError(b, err, "Failed to create Batcher")
 
-	ticker := time.NewTicker(100 * time.Millisecond)
+	ticker := time.NewTicker(time.Millisecond)
 	var wg sync.WaitGroup
 	defer func() {
 		batcher.Stop()
@@ -82,28 +79,35 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 	})
 }
 
-func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchChannelSize uint64) {
-	batcher, err := New(numBatches, newBatchesInitialCapacity, batchChannelSize)
+func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity uint64) {
+	batcher, err := New(numBatches, newBatchesInitialCapacity)
 	require.NoError(t, err, "Failed to create Batcher: %v", err)
 
-	ticker := time.NewTicker(100 * time.Millisecond)
-	stopTicker := make(chan bool)
-	var got Batch
+	ticker := time.NewTicker(time.Millisecond)
+	got := Batch{}
+	duplicateIDs := 0
+	asyncDequesComplete := make(chan bool)
 	go func() {
+		defer func() {
+			asyncDequesComplete <- true
+		}()
+
 		var completedDequeues uint64
-	outer:
-		for {
-			select {
-			case <-ticker.C:
-				g, _ := batcher.CloseCurrentAndTakeFirstBatch()
-				completedDequeues++
-				if completedDequeues <= numBatches && len(g) != 0 {
-					t.Error("Some of the first batches were not empty")
-					return
+		for range ticker.C {
+			g, more := batcher.CloseCurrentAndTakeFirstBatch()
+			completedDequeues++
+			if completedDequeues <= numBatches && len(g) != 0 {
+				t.Error("Some of the first batches were not empty")
+				return
+			}
+			for id := range g {
+				if _, ok := got[id]; ok {
+					duplicateIDs++
 				}
-				got = append(got, g...)
-			case <-stopTicker:
-				break outer
+				got[id] = struct{}{}
+			}
+			if !more {
+				return
 			}
 		}
 	}()
@@ -125,28 +129,17 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 	}
 
 	wg.Wait()
-	stopTicker <- true
-	ticker.Stop()
 	batcher.Stop()
+	// Wait for async process to be complete which will process all traces.
+	<-asyncDequesComplete
+	ticker.Stop()
 
-	// Get all ids added to the batcher
-	for {
-		batch, ok := batcher.CloseCurrentAndTakeFirstBatch()
-		got = append(got, batch...)
-		if !ok {
-			break
-		}
-	}
-
+	require.Zero(t, duplicateIDs, "Found duplicate ids in batcher")
 	require.Len(t, got, len(ids), "Batcher got incorrect count of traces from batches")
 
-	idSeen := make(map[[16]byte]bool, len(ids))
-	for _, id := range got {
-		idSeen[id] = true
-	}
-
-	for i := range ids {
-		require.True(t, idSeen[ids[i]], "want id %v but id was not seen", ids[i])
+	for _, id := range ids {
+		_, ok := got[id]
+		require.True(t, ok, "want id %v but id was not seen", id)
 	}
 }
 

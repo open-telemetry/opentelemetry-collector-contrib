@@ -56,7 +56,7 @@ func run(args []string) error {
 		if insertErr := insertDefault(&receiverConfig.HTTP); insertErr != nil {
 			return insertErr
 		}
-		receiverConfig.HTTP.Get().ServerConfig.Endpoint = cfg.OTLPHTTPEndoint
+		receiverConfig.HTTP.Get().ServerConfig.NetAddr.Endpoint = cfg.OTLPHTTPEndoint
 	}
 
 	if cfg.OTLPEndpoint != "" {

@@ -1,0 +1,42 @@
+mappings:
+  time:
+    Time:
+      schemaType: string
+      format: date-time
+      skipAnnotation: true
+    Duration:
+      schemaType: string
+      format: duration
+      skipAnnotation: true
+  go.opentelemetry.io/collector/component:
+    ID:
+      schemaType: string
+  github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator:
+    Config:
+      schemaType: ""
+  golang.org/x/time/rate:
+    Limit:
+      schemaType: number
+  k8s.io/apimachinery/pkg/watch:
+    EventType:
+      schemaType: string
+allowedRefs:
+  - go.opentelemetry.io/collector
+  - github.com/open-telemetry/opentelemetry-collector-contrib
+componentOverrides:
+  receiver/namedpipe:
+    configName: 'NamedPipeConfig'
+  receiver/filelog:
+    configName: 'FileLogConfig'
+  receiver/journald:
+    configName: 'JournaldConfig'
+  receiver/syslog:
+    configName: 'SysLogConfig'
+  receiver/tcplog:
+    configName: 'TCPLogConfig'
+  receiver/udplog:
+    configName: 'UDPLogConfig'
+  receiver/windowseventlog:
+    configName: 'WindowsLogConfig'
+  connector/signaltometrics:
+    configName: 'config.Config'

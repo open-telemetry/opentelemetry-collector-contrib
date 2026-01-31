@@ -365,8 +365,8 @@ run-changed-tests:
 		fi \
 	fi
 
-SRC ?= $(CURDIR)
-FLAGS ?=
+SRC ?= '$(CURDIR)'
+FLAGS ?= '-o=$(CURDIR)/'
 
 .PHONY: schemagen
 schemagen: $(SCHEMAGEN)

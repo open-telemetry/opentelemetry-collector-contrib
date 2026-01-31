@@ -5,8 +5,27 @@ googlecloudstorage:
     name: test-bucket
     project_id: test-project-id
 
+googlecloudstorage/with_partition:
+  encoding: test
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+    partition:
+      format: year=%Y
+      prefix: my-logs
+
 googlecloudstorage/empty_bucket_name:
   encoding: test
   bucket:
     region: test-region
     project_id: test-project-id
+
+googlecloudstorage/invalid_partition_format:
+  encoding: test
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+    partition:
+      format: year=%invalid

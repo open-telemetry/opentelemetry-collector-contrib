@@ -4,6 +4,7 @@
 package grpc
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
@@ -699,7 +700,13 @@ func TestCheck(t *testing.T) {
 				status.NewAggregator(internalhelpers.ErrPriority(tc.componentHealthSettings)),
 			)
 			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
-			t.Cleanup(func() { require.NoError(t, server.Shutdown(t.Context())) })
+			t.Cleanup(func() {
+				// Use Background context for cleanup to avoid cancellation issues
+				//nolint:usetesting // cleanup functions may run after test context is cancelled
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				require.NoError(t, server.Shutdown(ctx))
+			})
 
 			cc, err := grpc.NewClient(
 				addr,
@@ -1535,7 +1542,13 @@ func TestWatch(t *testing.T) {
 				status.NewAggregator(internalhelpers.ErrPriority(tc.componentHealthSettings)),
 			)
 			require.NoError(t, server.Start(t.Context(), componenttest.NewNopHost()))
-			t.Cleanup(func() { require.NoError(t, server.Shutdown(t.Context())) })
+			t.Cleanup(func() {
+				// Use Background context for cleanup to avoid cancellation issues
+				//nolint:usetesting // cleanup functions may run after test context is cancelled
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				require.NoError(t, server.Shutdown(ctx))
+			})
 
 			cc, err := grpc.NewClient(
 				addr,
