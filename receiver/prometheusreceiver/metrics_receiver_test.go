@@ -1640,9 +1640,9 @@ func newTestReceiverSettings(t *testing.T, cfg *Config, set receiver.Settings) (
 
 	ctx := t.Context()
 	require.NoError(t, receiver.start(ctx, componenttest.NewNopHost(),
-		prometheusComponentOptions{
-			discovery: prometheusDiscoveryOptions{updatert: 50 * time.Millisecond},
-			scrape:    prometheusScrapeOptions{discoveryReloadInterval: 50 * time.Millisecond},
+		prometheusComponentTestOptions{
+			discovery: prometheusDiscoveryTestOptions{updatert: 50 * time.Millisecond},
+			scrape:    prometheusScrapeTestOptions{discoveryReloadInterval: 50 * time.Millisecond},
 		},
 	))
 	t.Cleanup(func() {

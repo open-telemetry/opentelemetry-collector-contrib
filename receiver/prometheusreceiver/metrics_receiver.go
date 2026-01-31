@@ -114,10 +114,10 @@ func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Met
 // Start is the method that starts Prometheus scraping. It
 // is controlled by having previously defined a Configuration using perhaps New.
 func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
-	return r.start(ctx, host, prometheusComponentOptions{})
+	return r.start(ctx, host, prometheusComponentTestOptions{})
 }
 
-func (r *pReceiver) start(ctx context.Context, host component.Host, opts prometheusComponentOptions) error {
+func (r *pReceiver) start(ctx context.Context, host component.Host, opts prometheusComponentTestOptions) error {
 	discoveryCtx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
 
@@ -150,7 +150,7 @@ func (r *pReceiver) start(ctx context.Context, host component.Host, opts prometh
 
 func (r *pReceiver) initPrometheusComponents(
 	ctx context.Context, logger *slog.Logger, host component.Host,
-	opts prometheusComponentOptions,
+	opts prometheusComponentTestOptions,
 ) error {
 	// Some SD mechanisms use the "refresh" package, which has its own metrics.
 	refreshSdMetrics := discovery.NewRefreshMetrics(r.registerer)
@@ -161,11 +161,11 @@ func (r *pReceiver) initPrometheusComponents(
 		return fmt.Errorf("failed to register service discovery metrics: %w", err)
 	}
 
-	var discoveryManagerOptions []func(*discovery.Manager)
+	var discoveryManagerTestOptions []func(*discovery.Manager)
 	if opts.discovery.updatert > 0 {
-		discoveryManagerOptions = append(discoveryManagerOptions, discovery.Updatert(opts.discovery.updatert))
+		discoveryManagerTestOptions = append(discoveryManagerTestOptions, discovery.Updatert(opts.discovery.updatert))
 	}
-	r.discoveryManager = discovery.NewManager(ctx, logger, r.registerer, sdMetrics, discoveryManagerOptions...)
+	r.discoveryManager = discovery.NewManager(ctx, logger, r.registerer, sdMetrics, discoveryManagerTestOptions...)
 	if r.discoveryManager == nil {
 		// NewManager can sometimes return nil if it encountered an error, but
 		// the error message is logged separately.
@@ -230,7 +230,7 @@ func (r *pReceiver) initPrometheusComponents(
 	return nil
 }
 
-func (r *pReceiver) initScrapeOptions(o prometheusScrapeOptions) *scrape.Options {
+func (r *pReceiver) initScrapeOptions(o prometheusScrapeTestOptions) *scrape.Options {
 	opts := &scrape.Options{
 		DiscoveryReloadInterval: model.Duration(o.discoveryReloadInterval),
 		PassMetadataInContext:   true,
@@ -450,12 +450,12 @@ func (r *pReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-type prometheusComponentOptions struct {
+type prometheusComponentTestOptions struct {
 	discovery prometheusDiscoveryOptions
 	scrape    prometheusScrapeOptions
 }
 
-type prometheusDiscoveryOptions struct {
+type prometheusDiscoveryTestOptions struct {
 	// updatert is the interval for updating targets.
 	//
 	// If zero, the default (5s) from Prometheus is used.
@@ -463,7 +463,7 @@ type prometheusDiscoveryOptions struct {
 	updatert time.Duration
 }
 
-type prometheusScrapeOptions struct {
+type prometheusScrapetestOptions struct {
 	// discoveryReloadInterval is the interval for reloading
 	// scrape configurations.
 	//
