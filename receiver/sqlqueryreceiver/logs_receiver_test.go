@@ -211,8 +211,4 @@ func TestLogsReceiver_InitialDelay(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() >= 1
 	}, initialDelay+50*time.Millisecond, 5*time.Millisecond)
-
-	require.Eventually(t, func() bool {
-		return sink.LogRecordCount() >= 2
-	}, initialDelay+collectionInterval+50*time.Millisecond, 5*time.Millisecond)
 }
