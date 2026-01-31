@@ -451,8 +451,8 @@ func (r *pReceiver) Shutdown(ctx context.Context) error {
 }
 
 type prometheusComponentTestOptions struct {
-	discovery prometheusDiscoveryOptions
-	scrape    prometheusScrapeOptions
+	discovery prometheusDiscoveryTestOptions
+	scrape    prometheusScrapeTestOptions
 }
 
 type prometheusDiscoveryTestOptions struct {
@@ -463,7 +463,7 @@ type prometheusDiscoveryTestOptions struct {
 	updatert time.Duration
 }
 
-type prometheusScrapetestOptions struct {
+type prometheusScrapeTestOptions struct {
 	// discoveryReloadInterval is the interval for reloading
 	// scrape configurations.
 	//
