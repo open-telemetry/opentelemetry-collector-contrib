@@ -1,0 +1,160 @@
+$defs:
+  attribute_connection_type:
+    description: AttributeConnectionType specifies the value connection_type attribute.
+    type: integer
+  attribute_lock_mode:
+    description: AttributeLockMode specifies the value lock_mode attribute.
+    type: integer
+  attribute_lock_type:
+    description: AttributeLockType specifies the value lock_type attribute.
+    type: integer
+  attribute_memory_type:
+    description: AttributeMemoryType specifies the value memory_type attribute.
+    type: integer
+  attribute_operation:
+    description: AttributeOperation specifies the value operation attribute.
+    type: integer
+  attribute_operation_latency:
+    description: AttributeOperationLatency specifies the value operation_latency attribute.
+    type: integer
+  attribute_type:
+    description: AttributeType specifies the value type attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for mongodb metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for mongodb metrics.
+    type: object
+    properties:
+      mongodb.active.reads:
+        $ref: metric_config
+      mongodb.active.writes:
+        $ref: metric_config
+      mongodb.cache.operations:
+        $ref: metric_config
+      mongodb.collection.count:
+        $ref: metric_config
+      mongodb.commands.rate:
+        $ref: metric_config
+      mongodb.connection.count:
+        $ref: metric_config
+      mongodb.cursor.count:
+        $ref: metric_config
+      mongodb.cursor.timeout.count:
+        $ref: metric_config
+      mongodb.data.size:
+        $ref: metric_config
+      mongodb.database.count:
+        $ref: metric_config
+      mongodb.deletes.rate:
+        $ref: metric_config
+      mongodb.document.operation.count:
+        $ref: metric_config
+      mongodb.extent.count:
+        $ref: metric_config
+      mongodb.flushes.rate:
+        $ref: metric_config
+      mongodb.getmores.rate:
+        $ref: metric_config
+      mongodb.global_lock.time:
+        $ref: metric_config
+      mongodb.health:
+        $ref: metric_config
+      mongodb.index.access.count:
+        $ref: metric_config
+      mongodb.index.count:
+        $ref: metric_config
+      mongodb.index.size:
+        $ref: metric_config
+      mongodb.inserts.rate:
+        $ref: metric_config
+      mongodb.lock.acquire.count:
+        $ref: metric_config
+      mongodb.lock.acquire.time:
+        $ref: metric_config
+      mongodb.lock.acquire.wait_count:
+        $ref: metric_config
+      mongodb.lock.deadlock.count:
+        $ref: metric_config
+      mongodb.memory.usage:
+        $ref: metric_config
+      mongodb.network.io.receive:
+        $ref: metric_config
+      mongodb.network.io.transmit:
+        $ref: metric_config
+      mongodb.network.request.count:
+        $ref: metric_config
+      mongodb.object.count:
+        $ref: metric_config
+      mongodb.operation.count:
+        $ref: metric_config
+      mongodb.operation.latency.time:
+        $ref: metric_config
+      mongodb.operation.repl.count:
+        $ref: metric_config
+      mongodb.operation.time:
+        $ref: metric_config
+      mongodb.page_faults:
+        $ref: metric_config
+      mongodb.queries.rate:
+        $ref: metric_config
+      mongodb.repl_commands_per_sec:
+        $ref: metric_config
+      mongodb.repl_deletes_per_sec:
+        $ref: metric_config
+      mongodb.repl_getmores_per_sec:
+        $ref: metric_config
+      mongodb.repl_inserts_per_sec:
+        $ref: metric_config
+      mongodb.repl_queries_per_sec:
+        $ref: metric_config
+      mongodb.repl_updates_per_sec:
+        $ref: metric_config
+      mongodb.session.count:
+        $ref: metric_config
+      mongodb.storage.size:
+        $ref: metric_config
+      mongodb.updates.rate:
+        $ref: metric_config
+      mongodb.uptime:
+        $ref: metric_config
+      mongodb.wtcache.bytes.read:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for mongodb resource attributes.
+    type: object
+    properties:
+      database:
+        $ref: resource_attribute_config
+      server.address:
+        $ref: resource_attribute_config
+      server.port:
+        $ref: resource_attribute_config

@@ -33,6 +33,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
 - `string_attribute`: Sample based on string attributes (resource and record) value matches, both exact and regex value matches are supported
 - `trace_state`: Sample based on [TraceState](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracestate) value matches
+- `trace_flags`: Sample if the [sampled trace flag](https://www.w3.org/TR/trace-context-2/#sampled-flag) was set on any span in the trace
 - `rate_limiting`: Sample based on the rate of spans per second.
 - `bytes_limiting`: Sample based on the rate of bytes per second using a token bucket algorithm implemented by golang.org/x/time/rate. This allows for burst traffic up to a configurable capacity while maintaining the average rate over time. The bucket is refilled continuously at the specified rate and has a maximum capacity for burst handling.
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
@@ -66,6 +67,7 @@ The following configuration options can also be modified:
 - `sample_on_first_match`: Make decision as soon as a policy matches
 - `drop_pending_traces_on_shutdown`: Drop pending traces on shutdown instead of making a decision with the partial data
   already ingested.
+- `maximum_trace_size_bytes`: The maximum size a trace can reach in bytes, traces larger than this size will be immediately dropped from the tail sampling processor in order to protect the system.
 
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:

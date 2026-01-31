@@ -49,6 +49,8 @@ const (
 	OTTLCondition PolicyType = "ottl_condition"
 	// BytesLimiting allows all traces until the specified byte limits are satisfied.
 	BytesLimiting PolicyType = "bytes_limiting"
+	// TraceFlags sample traces which have specific trace flags set.
+	TraceFlags PolicyType = "trace_flags"
 )
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
@@ -326,4 +328,8 @@ type Config struct {
 	// DropPendingTracesOnShutdown will drop all traces that are part of batches that have not yet reached the decision
 	// wait when the processor is shutdown.
 	DropPendingTracesOnShutdown bool `mapstructure:"drop_pending_traces_on_shutdown"`
+	// MaximumTraceSizeBytes is the largest size of a trace a decision will be made for.
+	// If the trace size exceeds this it will be dropped before the decision period to keep memory more predictable.
+	// A 0 value disables dropping large traces early.
+	MaximumTraceSizeBytes uint64 `mapstructure:"maximum_trace_size_bytes"`
 }
