@@ -180,6 +180,7 @@ components:
     - pkg/winperfcounters
     - pkg/xk8stest
     - processor/akamaidetector
+    - processor/alibabaecsdetector
     - processor/attributes
     - processor/azuredetector
     - processor/coralogix
