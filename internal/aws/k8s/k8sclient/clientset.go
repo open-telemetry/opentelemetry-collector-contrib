@@ -135,17 +135,6 @@ func Get(logger *zap.Logger, options ...Option) *K8sClient {
 	return optionsToK8sClient[strOptions]
 }
 
-// DisableInformers prevents starting Kubernetes informers.
-// Intended for unit tests that only validate client lifecycle.
-func DisableInformers() Option {
-	return Option{
-		name: "disableInformers",
-		set: func(kc *K8sClient) {
-			kc.disableInformers = true
-		},
-	}
-}
-
 type epClientWithStopper interface {
 	EpClient
 	stopper
@@ -175,8 +164,6 @@ type K8sClient struct {
 	kubeConfigPath       string
 	initSyncPollInterval time.Duration
 	initSyncPollTimeout  time.Duration
-
-	disableInformers bool
 
 	clientSet kubernetes.Interface
 
@@ -253,10 +240,6 @@ func (c *K8sClient) GetEpClient() EpClient {
 			epSyncCheckerOption(c.syncChecker),
 		}
 
-		if c.disableInformers {
-			opts = append(opts, disableEndpointInformers())
-		}
-
 		c.ep = newEpClient(c.clientSet, c.logger, opts...)
 	}
 
@@ -276,10 +259,6 @@ func (c *K8sClient) GetPodClient() PodClient {
 	if c.pod == nil {
 		opts := []podClientOption{
 			podSyncCheckerOption(c.syncChecker),
-		}
-
-		if c.disableInformers {
-			opts = append(opts, disablePodInformers())
 		}
 
 		c.pod = newPodClient(
@@ -305,9 +284,6 @@ func (c *K8sClient) GetNodeClient() NodeClient {
 		opts := []nodeClientOption{
 			nodeSyncCheckerOption(c.syncChecker),
 		}
-		if c.disableInformers {
-			opts = append(opts, disableNodeInformers())
-		}
 		c.node = newNodeClient(c.clientSet, c.logger, opts...)
 	}
 	return c.node
@@ -326,9 +302,6 @@ func (c *K8sClient) GetJobClient() JobClient {
 	if c.job == nil {
 		opts := []jobClientOption{
 			jobSyncCheckerOption(c.syncChecker),
-		}
-		if c.disableInformers {
-			opts = append(opts, disableJobInformers())
 		}
 		c.job, err = newJobClient(c.clientSet, c.logger, opts...)
 		if err != nil {
@@ -352,9 +325,6 @@ func (c *K8sClient) GetReplicaSetClient() ReplicaSetClient {
 	if c.replicaSet == nil || reflect.ValueOf(c.replicaSet).IsNil() {
 		opts := []replicaSetClientOption{
 			replicaSetSyncCheckerOption(c.syncChecker),
-		}
-		if c.disableInformers {
-			opts = append(opts, disableReplicaSetInformers())
 		}
 		c.replicaSet, err = newReplicaSetClient(c.clientSet, c.logger, opts...)
 		if err != nil {

@@ -22,7 +22,6 @@ func TestGetShutdown(t *testing.T) {
 		KubeConfigPath(tmpConfigPath),
 		InitSyncPollInterval(10*time.Nanosecond),
 		InitSyncPollTimeout(20*time.Nanosecond),
-		DisableInformers(), 
 	)
 
 	assert.Len(t, optionsToK8sClient, 1)

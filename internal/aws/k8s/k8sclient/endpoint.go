@@ -47,23 +47,16 @@ func epSyncCheckerOption(checker initialSyncChecker) epClientOption {
 	}
 }
 
-func disableEndpointInformers() epClientOption {
-	return func(e *epClient) {
-		e.disableInformers = true
-	}
-}
-
 type epClient struct {
 	stopChan chan struct{}
 	store    *ObjStore
-
-	disableInformers bool
 
 	stopped bool
 
 	syncChecker initialSyncChecker
 
 	mu                      sync.RWMutex
+	wg                      sync.WaitGroup
 	podKeyToServiceNamesMap map[string][]string
 	serviceToPodNumMap      map[Service]int // only running pods will show behind endpoints
 }
@@ -143,9 +136,12 @@ func newEpClient(clientSet kubernetes.Interface, logger *zap.Logger, options ...
 	lw := c.createEndpointListWatch(clientSet, metav1.NamespaceAll)
 	reflector := cache.NewReflector(lw, &discoveryv1.EndpointSlice{}, c.store, 0)
 
-	if !c.disableInformers {
-		go reflector.Run(c.stopChan)
-	}
+	// start reflector in a goroutine tracked by the wait group
+	go func() {
+		c.wg.Add(1)
+		defer c.wg.Done()
+		reflector.Run(c.stopChan)
+	}()
 
 	if c.syncChecker != nil {
 		// check the init sync for potential connection issue
@@ -158,6 +154,9 @@ func newEpClient(clientSet kubernetes.Interface, logger *zap.Logger, options ...
 func (c *epClient) shutdown() {
 	close(c.stopChan)
 	c.stopped = true
+
+	// wait for reflector goroutine(s) to exit
+	c.wg.Wait()
 }
 
 func transformFuncEndpoint(obj any) (any, error) {

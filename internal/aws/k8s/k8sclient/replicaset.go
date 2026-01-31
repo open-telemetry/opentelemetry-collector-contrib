@@ -44,22 +44,15 @@ func replicaSetSyncCheckerOption(checker initialSyncChecker) replicaSetClientOpt
 	}
 }
 
-func disableReplicaSetInformers() replicaSetClientOption {
-	return func(r *replicaSetClient) {
-		r.disableInformers = true
-	}
-}
-
 type replicaSetClient struct {
 	stopChan chan struct{}
 	store    *ObjStore
-
-	disableInformers bool
 
 	stopped     bool
 	syncChecker initialSyncChecker
 
 	mu                        sync.RWMutex
+	wg                        sync.WaitGroup
 	cachedReplicaSetMap       map[string]time.Time
 	replicaSetToDeploymentMap map[string]string
 }
@@ -127,9 +120,12 @@ func newReplicaSetClient(clientSet kubernetes.Interface, logger *zap.Logger, opt
 
 	lw := createReplicaSetListWatch(clientSet, metav1.NamespaceAll)
 	reflector := cache.NewReflector(lw, &appsv1.ReplicaSet{}, c.store, 0)
-	if !c.disableInformers {
-		go reflector.Run(c.stopChan)
-	}
+	// start reflector in a goroutine tracked by the wait group
+	go func() {
+		c.wg.Add(1)
+		defer c.wg.Done()
+		reflector.Run(c.stopChan)
+	}()
 
 	if c.syncChecker != nil {
 		// check the init sync for potential connection issue
@@ -145,6 +141,9 @@ func (c *replicaSetClient) shutdown() {
 
 	close(c.stopChan)
 	c.stopped = true
+
+	// wait for reflector goroutine(s) to exit
+	c.wg.Wait()
 }
 
 func transformFuncReplicaSet(obj any) (any, error) {
