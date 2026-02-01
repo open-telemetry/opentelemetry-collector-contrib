@@ -117,7 +117,7 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 		helper.PutExprEnv(env)
 		if err != nil {
 			if handleErr := t.HandleEntryErrorWithWrite(ctx, e, err, collectWrite); handleErr != nil {
-				if t.OnError != helper.DropOnErrorQuiet && t.OnError != helper.SendOnErrorQuiet {
+				if !t.isQuietMode() {
 					errs = append(errs, handleErr)
 				}
 			}
@@ -140,7 +140,7 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 		case matches && t.matchFirstLine:
 			// Flush the existing batch
 			if err := t.flushSource(ctx, s, collectWrite); err != nil {
-				if t.OnError != helper.DropOnErrorQuiet && t.OnError != helper.SendOnErrorQuiet {
+				if !t.isQuietMode() {
 					errs = append(errs, err)
 				}
 			}
@@ -149,7 +149,7 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 		case matches && !t.matchFirstLine:
 			t.addToBatch(ctx, e, s, matches, collectWrite)
 			if err := t.flushSource(ctx, s, collectWrite); err != nil {
-				if t.OnError != helper.DropOnErrorQuiet && t.OnError != helper.SendOnErrorQuiet {
+				if !t.isQuietMode() {
 					errs = append(errs, err)
 				}
 			}
@@ -182,7 +182,7 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	m, err := expr.Run(t.prog, env)
 	if err != nil {
 		handleErr := t.HandleEntryError(ctx, e, err)
-		if t.OnError == helper.DropOnErrorQuiet || t.OnError == helper.SendOnErrorQuiet {
+		if t.isQuietMode() {
 			return nil
 		}
 		return handleErr
@@ -206,7 +206,7 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	case matches && t.matchFirstLine:
 		// Flush the existing batch
 		if err := t.flushSource(ctx, s, t.Write); err != nil {
-			if t.OnError == helper.DropOnErrorQuiet || t.OnError == helper.SendOnErrorQuiet {
+			if t.isQuietMode() {
 				return nil
 			}
 			return err
@@ -219,7 +219,7 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	case matches && !t.matchFirstLine:
 		t.addToBatch(ctx, e, s, matches, t.Write)
 		if err := t.flushSource(ctx, s, t.Write); err != nil {
-			if t.OnError == helper.DropOnErrorQuiet || t.OnError == helper.SendOnErrorQuiet {
+			if t.isQuietMode() {
 				return nil
 			}
 			return err
@@ -329,4 +329,9 @@ func (t *Transformer) removeBatch(source string) {
 	batch := t.batchMap[source]
 	delete(t.batchMap, source)
 	t.batchPool.Put(batch)
+}
+
+// isQuietMode returns true if the operator is configured to use quiet mode
+func (t *Transformer) isQuietMode() bool {
+	return t.OnError == helper.DropOnErrorQuiet || t.OnError == helper.SendOnErrorQuiet
 }
