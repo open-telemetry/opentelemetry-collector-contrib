@@ -9,8 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -27,6 +25,30 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
 )
 
+// Test data file names for pipeline events (additional constants for traces_receiver_test.go)
+const (
+	testDataPipelineWithoutFinishedAt     = "without_finished_at.json"
+	testDataPipelineRunningWithFinishedAt = "running_with_finished_at.json"
+	testDataPipelinePendingWithFinishedAt = "pending_with_finished_at.json"
+	testDataPipelineCreatedWithFinishedAt = "created_with_finished_at.json"
+	testDataPipelineWaitingForResource    = "waiting_for_resource_with_finished_at.json"
+	testDataPipelinePreparing             = "preparing_with_finished_at.json"
+	testDataPipelineScheduled             = "scheduled_with_finished_at.json"
+	testDataPipelineFailed                = "failed.json"
+	testDataPipelineCanceled              = "canceled.json"
+	testDataPipelineSkipped               = "skipped.json"
+	testDataPipelineUnknownStatus         = "unknown_status.json"
+	testDataPipelineMissingID             = "missing_pipeline_id.json"
+	testDataPipelineMissingCreatedAt      = "missing_created_at.json"
+	testDataPipelineMissingRef            = "missing_ref.json"
+	testDataPipelineMissingSHA            = "missing_sha.json"
+	testDataPipelineMissingProjectID      = "missing_project_id.json"
+	testDataPipelineMissingProjectPath    = "missing_project_path.json"
+	testDataPipelineMissingCommitID       = "missing_commit_id.json"
+	testDataPipelineNilCommit             = "nil_commit.json"
+	testDataPipelineNilProject            = "nil_project.json"
+	testDataPipelineEmpty                 = "empty.json"
+)
 
 // Helper function to create a gitlabReceiver
 func setupGitlabTracesReceiver(t *testing.T) *gitlabReceiver {
@@ -75,7 +97,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Issue Hook",
 			},
-			body:         "{}",
+			body:         loadPipelineEventTestData(t, testDataPipelineEmpty),
 			expectedCode: http.StatusNoContent, // Unknown event types are ignored (no handler found)
 		},
 		{
@@ -84,7 +106,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC"}}`,
+			body:         loadPipelineEventTestData(t, testDataPipelineWithoutFinishedAt),
 			expectedCode: http.StatusNoContent,
 		},
 		{
@@ -93,7 +115,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"running","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
+			body:         loadPipelineEventTestData(t, testDataPipelineRunningWithFinishedAt),
 			expectedCode: http.StatusNoContent,
 		},
 		{
@@ -102,7 +124,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"pending","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
+			body:         loadPipelineEventTestData(t, testDataPipelinePendingWithFinishedAt),
 			expectedCode: http.StatusNoContent,
 		},
 		{
@@ -111,7 +133,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"created","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
+			body:         loadPipelineEventTestData(t, testDataPipelineCreatedWithFinishedAt),
 			expectedCode: http.StatusNoContent,
 		},
 		{
@@ -120,7 +142,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"waiting_for_resource","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
+			body:         loadPipelineEventTestData(t, testDataPipelineWaitingForResource),
 			expectedCode: http.StatusNoContent,
 		},
 		{
@@ -129,7 +151,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"preparing","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
+			body:         loadPipelineEventTestData(t, testDataPipelinePreparing),
 			expectedCode: http.StatusNoContent,
 		},
 		{
@@ -138,7 +160,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"scheduled","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
+			body:         loadPipelineEventTestData(t, testDataPipelineScheduled),
 			expectedCode: http.StatusNoContent,
 		},
 		{
@@ -147,7 +169,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         loadPipelineEventTestData(t, "valid_with_jobs.json"),
+			body:         loadPipelineEventTestData(t, testDataPipelineValidWithJobs),
 			expectedCode: http.StatusOK,
 			spanCount:    1,
 		},
@@ -157,7 +179,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"failed","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			body:         loadPipelineEventTestData(t, testDataPipelineFailed),
 			expectedCode: http.StatusOK,
 			spanCount:    1,
 		},
@@ -167,7 +189,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"canceled","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			body:         loadPipelineEventTestData(t, testDataPipelineCanceled),
 			expectedCode: http.StatusOK,
 			spanCount:    1,
 		},
@@ -177,7 +199,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"skipped","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			body:         loadPipelineEventTestData(t, testDataPipelineSkipped),
 			expectedCode: http.StatusOK,
 			spanCount:    1,
 		},
@@ -187,7 +209,7 @@ func TestHandleWebhook(t *testing.T) {
 			headers: map[string]string{
 				defaultGitLabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"unknown_status","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			body:         loadPipelineEventTestData(t, testDataPipelineUnknownStatus),
 			expectedCode: http.StatusNoContent,
 		},
 	}
@@ -204,12 +226,12 @@ func TestHandleWebhook(t *testing.T) {
 			require.NoError(t, err)
 
 			receiver := &gitlabReceiver{
-				cfg:          cfg,
-				logger:       logger,
-				obsrecv:      mockObsrecv,
+				cfg:           cfg,
+				logger:        logger,
+				obsrecv:       mockObsrecv,
 				traceConsumer: new(consumertest.TracesSink),
-				gitlabClient: &gitlab.Client{},
-				eventRouter:  newEventRouter(logger, cfg),
+				gitlabClient:  &gitlab.Client{},
+				eventRouter:   newEventRouter(logger, cfg),
 			}
 
 			req := httptest.NewRequest(tt.method, "http://localhost/webhook", strings.NewReader(tt.body))
@@ -364,76 +386,66 @@ func TestValidateReq(t *testing.T) {
 func TestValidatePipelineEvent(t *testing.T) {
 	tests := []struct {
 		name            string
-		filename        string // Used for testdata files
-		jsonEvent       string // Used for inline JSON when filename is empty
+		filename        string
 		expectedErrText string
 	}{
 		{
 			name:     "valid_event",
-			filename: "valid_with_jobs.json",
+			filename: testDataPipelineValidWithJobs,
 		},
 		{
 			name:            "missing_pipeline_id",
-			jsonEvent:       `{"object_attributes":{"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			filename:        testDataPipelineMissingID,
 			expectedErrText: "missing required field: pipeline ID",
 		},
 		{
 			name:            "missing_created_at",
-			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			filename:        testDataPipelineMissingCreatedAt,
 			expectedErrText: "missing required field: pipeline created_at",
 		},
 		{
 			name:            "missing_ref",
-			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			filename:        testDataPipelineMissingRef,
 			expectedErrText: "missing required field: pipeline ref",
 		},
 		{
 			name:            "missing_sha",
-			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			filename:        testDataPipelineMissingSHA,
 			expectedErrText: "missing required field: pipeline SHA",
 		},
 		{
 			name:            "missing_project_id",
-			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"project":{"path_with_namespace":"test/project"},"commit":{"id":"abc123"}}`,
+			filename:        testDataPipelineMissingProjectID,
 			expectedErrText: "missing required field: project ID",
 		},
 		{
 			name:            "missing_project_path",
-			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"project":{"id":123},"commit":{"id":"abc123"}}`,
+			filename:        testDataPipelineMissingProjectPath,
 			expectedErrText: "missing required field: project path_with_namespace",
 		},
 		{
 			name:            "missing_commit_id",
-			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"},"commit":{}}`,
+			filename:        testDataPipelineMissingCommitID,
 			expectedErrText: "missing required field: commit ID",
 		},
 		{
 			name:            "nil_commit",
-			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
+			filename:        testDataPipelineNilCommit,
 			expectedErrText: "missing required field: commit ID",
 		},
 		{
 			name:            "nil_project",
-			jsonEvent:       `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","ref":"main","sha":"abc123"},"commit":{"id":"abc123"}}`,
+			filename:        testDataPipelineNilProject,
 			expectedErrText: "missing required field: project ID",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			jsonData := loadPipelineEventTestData(t, tt.filename)
+
 			var pipelineEvent gitlab.PipelineEvent
-			var jsonData []byte
-			var err error
-			
-			// Load from testdata if filename is provided, otherwise use inline JSON
-			if tt.filename != "" {
-				jsonData, err = os.ReadFile(filepath.Join("testdata", "events", "pipeline", tt.filename))
-				require.NoError(t, err, "failed to load test data: %s", tt.filename)
-			} else {
-				jsonData = []byte(tt.jsonEvent)
-			}
-			
-			err = json.Unmarshal(jsonData, &pipelineEvent)
+			err := json.Unmarshal([]byte(jsonData), &pipelineEvent)
 			require.NoError(t, err, "failed to unmarshal test event")
 
 			err = validatePipelineEvent(&pipelineEvent)
