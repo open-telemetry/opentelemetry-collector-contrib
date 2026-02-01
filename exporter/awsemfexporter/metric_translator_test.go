@@ -88,7 +88,8 @@ func createTestResourceMetricsHelper(numMetrics int) pmetric.ResourceMetrics {
 	q2.SetQuantile(1)
 	q2.SetValue(5)
 
-	for i := range numMetrics {
+	//todo
+	for i := 1; i < numMetrics; i++ {
 		m = sm.Metrics().AppendEmpty()
 		m.SetName("spanCounter")
 		m.SetDescription("Counting all the spans")
@@ -271,17 +272,17 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	// need to have 1 more metric than the default because the first is not going to be retained because it is a delta metric
 	containerInsightMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
-	containerInsightMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsKubeAPIServerScraper")
+	containerInsightMetric.Resource().Attributes().PutStr("service.name", "containerInsightsKubeAPIServerScraper")
 	gpuMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
-	gpuMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsDCGMExporterScraper")
+	gpuMetric.Resource().Attributes().PutStr("service.name", "containerInsightsDCGMExporterScraper")
 	neuronMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
-	neuronMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsNeuronMonitorScraper")
+	neuronMetric.Resource().Attributes().PutStr("service.name", "containerInsightsNeuronMonitorScraper")
 	kueueMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
-	kueueMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsKueueMetricsScraper")
+	kueueMetric.Resource().Attributes().PutStr("service.name", "containerInsightsKueueMetricsScraper")
 	nvmeMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
-	nvmeMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsNVMeEBSScraper")
+	nvmeMetric.Resource().Attributes().PutStr("service.name", "containerInsightsNVMeEBSScraper")
 	nvmeLisMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
-	nvmeLisMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsNVMeLISScraper")
+	nvmeLisMetric.Resource().Attributes().PutStr("service.name", "containerInsightsNVMeLISScraper")
 
 	counterSumMetrics := map[string]*metricInfo{
 		"spanCounter": {

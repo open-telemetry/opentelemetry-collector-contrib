@@ -2129,7 +2129,7 @@ func TestGetDataPoints(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetName("foo")
 		metric.SetUnit("Count")
-		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", pmetric.MetricTypeEmpty)
+		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", pmetric.MetricTypeEmpty, 0)
 		obs, logs := observer.New(zap.WarnLevel)
 		logger := zap.New(obs)
 

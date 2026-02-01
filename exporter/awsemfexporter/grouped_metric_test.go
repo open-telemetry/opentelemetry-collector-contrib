@@ -474,7 +474,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		for i := 0; i < metrics.Len(); i++ {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,
-				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
+				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
 				true,
 				nil,
 				cfg,
@@ -489,7 +489,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 				case "foo_sum", "foo_count":
 					assert.Len(t, group.metrics, 2, "sum and count should be grouped together for detailed summary metrics")
 					assert.Equal(t, "Seconds", metricInfo.unit)
-					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSummary), group.metadata)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSummary, 0), group.metadata)
 				case "foo":
 					quantileVal, ok := group.labels["quantile"]
 					assert.True(t, ok)
@@ -501,7 +501,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 					default:
 						assert.Fail(t, "Unexpected quantile value")
 					}
-					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSummary), group.metadata)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSummary, 0), group.metadata)
 				default:
 					assert.Fail(t, fmt.Sprintf("Unhandled metric %s not expected", metricName))
 				}
@@ -533,7 +533,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		err := addToGroupedMetric(
 			metrics.At(0),
 			groupedMetrics,
-			generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(0).Type()),
+			generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(0).Type(), 0),
 			true,
 			nil,
 			cfg,
@@ -607,7 +607,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			err := addToGroupedMetric(
 				metrics.At(i),
 				groupedMetrics,
-				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
+				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
 				true,
 				nil,
 				cfg,
