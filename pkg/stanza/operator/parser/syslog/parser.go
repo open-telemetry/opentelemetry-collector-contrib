@@ -48,7 +48,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 		skip, err := p.Skip(ctx, ent)
 		if err != nil {
 			if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-				if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+				if !p.isQuietMode() {
 					errs = append(errs, handleErr)
 				}
 			}
@@ -66,7 +66,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 			bytes, err = toBytes(ent.Body)
 			if err != nil {
 				if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-					if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+					if !p.isQuietMode() {
 						errs = append(errs, handleErr)
 					}
 				}
@@ -78,7 +78,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 		}
 
 		if err = p.ParseWith(ctx, ent, p.parse, write); err != nil {
-			if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+			if !p.isQuietMode() {
 				errs = append(errs, err)
 			}
 			continue
@@ -86,7 +86,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 
 		if err = callback(ent); err != nil {
 			if handleErr := p.HandleEntryErrorWithWrite(ctx, ent, err, write); handleErr != nil {
-				if p.OnError != helper.DropOnErrorQuiet && p.OnError != helper.SendOnErrorQuiet {
+				if !p.isQuietMode() {
 					errs = append(errs, handleErr)
 				}
 			}
@@ -107,7 +107,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 		bytes, err := toBytes(entry.Body)
 		if err != nil {
 			handleErr := p.HandleEntryError(ctx, entry, err)
-			if p.OnError == helper.DropOnErrorQuiet || p.OnError == helper.SendOnErrorQuiet {
+			if p.isQuietMode() {
 				return nil
 			}
 			return handleErr
@@ -393,4 +393,9 @@ func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) p
 		parser.Parse(reader)
 		return message, err
 	}
+}
+
+// isQuietMode returns true if the operator is configured to use quiet mode
+func (p *Parser) isQuietMode() bool {
+	return p.OnError == helper.DropOnErrorQuiet || p.OnError == helper.SendOnErrorQuiet
 }
