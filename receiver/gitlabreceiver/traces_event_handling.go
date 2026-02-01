@@ -81,9 +81,13 @@ func (gtr *gitlabTracesReceiver) processStageSpans(r ptrace.ResourceSpans, pipel
 	}
 
 	for _, stage := range stages {
-		err = gtr.createSpan(r, stage, traceID, parentSpanID)
-		if err != nil {
-			return nil, err
+		// Only create stage spans if they have valid timestamps
+		// Skip stages where all jobs had null timestamps (e.g., all skipped manual jobs)
+		if stage.StartedAt != "" && stage.FinishedAt != "" {
+			err = gtr.createSpan(r, stage, traceID, parentSpanID)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return stages, nil
@@ -98,8 +102,21 @@ func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPi
 			jobURL: baseJobURL + strconv.Itoa(p.Builds[i].ID),
 		}
 
-		if glJob.event.FinishedAt != "" {
-			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, glJob.event.Stage, stages[glJob.event.Stage].StartedAt)
+		// Only process jobs with valid timestamps
+		if glJob.event.StartedAt != "" && glJob.event.FinishedAt != "" {
+			stage, exists := stages[glJob.event.Stage]
+			if !exists {
+				continue
+			}
+
+			// Use stage StartedAt if available, otherwise fall back to pipeline created_at
+			stageStartedAt := stage.StartedAt
+			if stageStartedAt == "" {
+				// If stage has no valid timestamps, use pipeline created_at as fallback
+				stageStartedAt = p.ObjectAttributes.CreatedAt
+			}
+
+			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, glJob.event.Stage, stageStartedAt)
 			if err != nil {
 				return err
 			}
@@ -235,8 +252,12 @@ func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*gl
 			}
 			stages[job.Stage] = stage
 		}
-		if err := gtr.setStageTime(stage, job.StartedAt, job.FinishedAt); err != nil {
-			return nil, fmt.Errorf("updating stage timing for %s: %w", job.Stage, err)
+		// Only update stage timestamps from jobs that have valid timestamps
+		// Skip jobs with null/empty timestamps (e.g., skipped manual jobs)
+		if job.StartedAt != "" || job.FinishedAt != "" {
+			if err := gtr.setStageTime(stage, job.StartedAt, job.FinishedAt); err != nil {
+				return nil, fmt.Errorf("updating stage timing for %s: %w", job.Stage, err)
+			}
 		}
 	}
 
@@ -244,42 +265,47 @@ func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*gl
 }
 
 // setStageTime determines stage start/finish times by finding the earliest start and latest finish time
+// Only processes non-empty timestamps to avoid setting empty values
 func (*gitlabTracesReceiver) setStageTime(stage *glPipelineStage, jobStartedAt, jobFinishedAt string) error {
-	// Handle start time
-	if stage.StartedAt == "" {
-		stage.StartedAt = jobStartedAt
-	} else if jobStartedAt != "" {
-		jobStartTime, err := parseGitlabTime(jobStartedAt)
-		if err != nil {
-			return fmt.Errorf("parsing job start time: %w", err)
-		}
-
-		stageStartTime, err := parseGitlabTime(stage.StartedAt)
-		if err != nil {
-			return fmt.Errorf("parsing stage start time: %w", err)
-		}
-
-		if jobStartTime.Before(stageStartTime) {
+	// Handle start time - only process if job has a valid start time
+	if jobStartedAt != "" {
+		if stage.StartedAt == "" {
 			stage.StartedAt = jobStartedAt
+		} else {
+			jobStartTime, err := parseGitlabTime(jobStartedAt)
+			if err != nil {
+				return fmt.Errorf("parsing job start time: %w", err)
+			}
+
+			stageStartTime, err := parseGitlabTime(stage.StartedAt)
+			if err != nil {
+				return fmt.Errorf("parsing stage start time: %w", err)
+			}
+
+			if jobStartTime.Before(stageStartTime) {
+				stage.StartedAt = jobStartedAt
+			}
 		}
 	}
 
-	// Handle finish time
-	if stage.FinishedAt == "" {
-		stage.FinishedAt = jobFinishedAt
-	} else if jobFinishedAt != "" {
-		jobFinishTime, err := parseGitlabTime(jobFinishedAt)
-		if err != nil {
-			return fmt.Errorf("parsing job finish time: %w", err)
-		}
-
-		stageFinishTime, err := parseGitlabTime(stage.FinishedAt)
-		if err != nil {
-			return fmt.Errorf("parsing stage finish time: %w", err)
-		}
-
-		if jobFinishTime.After(stageFinishTime) {
+	// Handle finish time - only process if job has a valid finish time
+	if jobFinishedAt != "" {
+		if stage.FinishedAt == "" {
 			stage.FinishedAt = jobFinishedAt
+		} else {
+			jobFinishTime, err := parseGitlabTime(jobFinishedAt)
+			if err != nil {
+				return fmt.Errorf("parsing job finish time: %w", err)
+			}
+
+			stageFinishTime, err := parseGitlabTime(stage.FinishedAt)
+			if err != nil {
+				return fmt.Errorf("parsing stage finish time: %w", err)
+			}
+
+			if jobFinishTime.After(stageFinishTime) {
+				stage.FinishedAt = jobFinishedAt
+			}
 		}
 	}
 

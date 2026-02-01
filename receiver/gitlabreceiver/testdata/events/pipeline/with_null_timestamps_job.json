@@ -1,0 +1,112 @@
+{
+  "object_kind": "pipeline",
+  "object_attributes": {
+    "id": 12345,
+    "iid": 1,
+    "ref": "main",
+    "tag": false,
+    "sha": "abc123def456",
+    "before_sha": "0000000000000000000000000000000000000000",
+    "source": "web",
+    "status": "failed",
+    "detailed_status": "failed",
+    "stages": ["build", "test", "deploy"],
+    "created_at": "2026-01-29T17:25:48.819Z",
+    "finished_at": "2026-01-29T17:26:55.735Z",
+    "duration": 63,
+    "queued_duration": 2,
+    "url": "https://gitlab.com/test/project/-/pipelines/12345"
+  },
+  "user": {
+    "id": 1,
+    "name": "Test User",
+    "username": "testuser",
+    "email": "test@example.com"
+  },
+  "project": {
+    "id": 123,
+    "name": "test-project",
+    "description": "Test project",
+    "web_url": "https://gitlab.com/test/project",
+    "git_ssh_url": "git@gitlab.com:test/project.git",
+    "git_http_url": "https://gitlab.com/test/project.git",
+    "namespace": "test",
+    "visibility_level": 0,
+    "path_with_namespace": "test/project",
+    "default_branch": "main"
+  },
+  "commit": {
+    "id": "abc123def456",
+    "message": "Test commit",
+    "title": "Test commit",
+    "timestamp": "2026-01-29T17:16:07+00:00",
+    "url": "https://gitlab.com/test/project/-/commit/abc123def456",
+    "author": {
+      "name": "Test User",
+      "email": "test@example.com"
+    }
+  },
+  "builds": [
+    {
+      "id": 1,
+      "stage": "build",
+      "name": "build_job",
+      "status": "success",
+      "created_at": "2026-01-29T17:25:48.830Z",
+      "started_at": "2026-01-29T17:25:50.794Z",
+      "finished_at": "2026-01-29T17:26:22.182Z",
+      "duration": 31.387767,
+      "queued_duration": 0.316277,
+      "when": "on_success",
+      "manual": false,
+      "allow_failure": false,
+      "user": {
+        "id": 1,
+        "name": "Test User",
+        "username": "testuser",
+        "email": "test@example.com"
+      },
+      "runner": {
+        "id": 1,
+        "description": "test-runner",
+        "runner_type": "instance_type",
+        "active": true,
+        "is_shared": true,
+        "tags": []
+      },
+      "artifacts_file": {
+        "filename": null,
+        "size": null
+      },
+      "environment": null
+    },
+    {
+      "id": 2,
+      "stage": "deploy",
+      "name": "deploy_prod",
+      "status": "skipped",
+      "created_at": "2026-01-29T17:25:48.891Z",
+      "started_at": null,
+      "finished_at": null,
+      "duration": null,
+      "queued_duration": null,
+      "failure_reason": null,
+      "when": "manual",
+      "manual": true,
+      "allow_failure": true,
+      "user": {
+        "id": 1,
+        "name": "Test User",
+        "username": "testuser",
+        "email": "test@example.com"
+      },
+      "runner": null,
+      "artifacts_file": {
+        "filename": null,
+        "size": null
+      },
+      "environment": null
+    }
+  ]
+}
+

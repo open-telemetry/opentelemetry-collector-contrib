@@ -23,6 +23,7 @@ const (
 	testDataPipelineMinimal          = "minimal_valid.json"
 	testDataPipelineMulti            = "multi_pipeline.json"
 	testDataPipelineWithEnv          = "with_environment.json"
+	testDataPipelineNullTimestamps   = "with_null_timestamps_job.json"
 )
 
 // Test constants
@@ -95,6 +96,12 @@ func TestHandlePipeline(t *testing.T) {
 			jsonEvent:   loadPipelineEventTestData(t, testDataPipelineMinimal),
 			expectError: false,
 			spanCount:   1,
+		},
+		{
+			name:        "pipeline_with_null_timestamps_job",
+			jsonEvent:   loadPipelineEventTestData(t, testDataPipelineNullTimestamps),
+			expectError: false,
+			spanCount:   3, // Pipeline (1) + build stage (1) + build job (1) = 3. Deploy stage and deploy job skipped (no timestamps)
 		},
 	}
 
