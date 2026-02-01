@@ -1,4 +1,5 @@
 type: loadbalancing
+display_name: Load Balancing Exporter
 
 status:
   class: exporter

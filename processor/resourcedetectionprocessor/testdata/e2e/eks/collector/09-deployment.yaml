@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Name }}
+    spec:
+      serviceAccountName: {{ .Name }}-sa
+      automountServiceAccountToken: false
+      initContainers:
+        - name: wait-for-api
+          image: curlimages/curl:8.6.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - >
+              until curl -sk https://{{ .Name }}-eks-api.default.svc.cluster.local:8443/healthz;
+              do
+                sleep 1;
+              done
+      containers:
+        - name: ec2-metadata-mock
+          image: public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.13.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 1338
+              name: metadata
+        - name: otelcol
+          image: otelcontribcol:latest
+          imagePullPolicy: Never
+          env:
+            - name: KUBERNETES_SERVICE_HOST
+              value: "{{ .Name }}-eks-api.default.svc.cluster.local"
+            - name: KUBERNETES_SERVICE_PORT
+              value: "8443"
+            - name: KUBERNETES_PORT
+              value: "tcp://{{ .Name }}-eks-api.default.svc.cluster.local:8443"
+            - name: KUBERNETES_PORT_443_TCP
+              value: "tcp://{{ .Name }}-eks-api.default.svc.cluster.local:8443"
+            - name: KUBERNETES_PORT_443_TCP_ADDR
+              value: "{{ .Name }}-eks-api.default.svc.cluster.local"
+            - name: KUBERNETES_PORT_443_TCP_PORT
+              value: "8443"
+            - name: KUBERNETES_PORT_443_TCP_PROTO
+              value: "tcp"
+            - name: AWS_REGION
+              value: us-east-1
+            - name: AWS_ACCESS_KEY_ID
+              value: fake
+            - name: AWS_SECRET_ACCESS_KEY
+              value: fake
+            - name: AWS_EC2_METADATA_SERVICE_ENDPOINT
+              value: "http://localhost:1338"
+            - name: AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE
+              value: IPv4
+            - name: K8S_NODE_NAME
+              value: fake-node
+          args:
+            - "--config=/conf/relay"
+          ports:
+            - containerPort: 4317
+              name: otlp-grpc
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+            - name: fake-sa
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+            - name: collector-tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Name }}-config
+            items:
+              - key: relay
+                path: relay
+        - name: fake-sa
+          configMap:
+            name: {{ .Name }}-fake-sa
+            items:
+              - key: token
+                path: token
+              - key: namespace
+                path: namespace
+              - key: ca.crt
+                path: ca.crt
+        - name: collector-tmp
+          emptyDir: {}

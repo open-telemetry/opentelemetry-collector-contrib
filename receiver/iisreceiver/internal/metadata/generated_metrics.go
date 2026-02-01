@@ -192,6 +192,7 @@ func (m *metricIisApplicationPoolState) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisApplicationPoolState(cfg MetricConfig) metricIisApplicationPoolState {
 	m := metricIisApplicationPoolState{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -241,6 +242,7 @@ func (m *metricIisApplicationPoolUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisApplicationPoolUptime(cfg MetricConfig) metricIisApplicationPoolUptime {
 	m := metricIisApplicationPoolUptime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -292,6 +294,7 @@ func (m *metricIisConnectionActive) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisConnectionActive(cfg MetricConfig) metricIisConnectionActive {
 	m := metricIisConnectionActive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -343,6 +346,7 @@ func (m *metricIisConnectionAnonymous) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisConnectionAnonymous(cfg MetricConfig) metricIisConnectionAnonymous {
 	m := metricIisConnectionAnonymous{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -394,6 +398,7 @@ func (m *metricIisConnectionAttemptCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisConnectionAttemptCount(cfg MetricConfig) metricIisConnectionAttemptCount {
 	m := metricIisConnectionAttemptCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -445,6 +450,7 @@ func (m *metricIisNetworkBlocked) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisNetworkBlocked(cfg MetricConfig) metricIisNetworkBlocked {
 	m := metricIisNetworkBlocked{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -498,6 +504,7 @@ func (m *metricIisNetworkFileCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisNetworkFileCount(cfg MetricConfig) metricIisNetworkFileCount {
 	m := metricIisNetworkFileCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -551,6 +558,7 @@ func (m *metricIisNetworkIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisNetworkIo(cfg MetricConfig) metricIisNetworkIo {
 	m := metricIisNetworkIo{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -604,6 +612,7 @@ func (m *metricIisRequestCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisRequestCount(cfg MetricConfig) metricIisRequestCount {
 	m := metricIisRequestCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -653,6 +662,7 @@ func (m *metricIisRequestQueueAgeMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisRequestQueueAgeMax(cfg MetricConfig) metricIisRequestQueueAgeMax {
 	m := metricIisRequestQueueAgeMax{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -704,6 +714,7 @@ func (m *metricIisRequestQueueCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisRequestQueueCount(cfg MetricConfig) metricIisRequestQueueCount {
 	m := metricIisRequestQueueCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -755,6 +766,7 @@ func (m *metricIisRequestRejected) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisRequestRejected(cfg MetricConfig) metricIisRequestRejected {
 	m := metricIisRequestRejected{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -806,6 +818,7 @@ func (m *metricIisThreadActive) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisThreadActive(cfg MetricConfig) metricIisThreadActive {
 	m := metricIisThreadActive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -855,6 +868,7 @@ func (m *metricIisUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricIisUptime(cfg MetricConfig) metricIisUptime {
 	m := metricIisUptime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

@@ -167,6 +167,11 @@ func TestLogsExporter_PushLogs_WhenCannotSend(t *testing.T) {
 			cfg := &Config{
 				Domain:     "test.domain.com",
 				PrivateKey: "test-key",
+				Logs: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint: "ingress.test.domain.com:443",
+					},
+				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   tt.enabled,
 					Threshold: 1,
@@ -198,7 +203,7 @@ func TestLogsExporter_PushLogs_WhenCannotSend(t *testing.T) {
 			if tt.enabled {
 				assert.Contains(t, err.Error(), "rate limit exceeded")
 			} else {
-				assert.Contains(t, err.Error(), "no such host")
+				assert.Contains(t, err.Error(), "produced zero addresses")
 			}
 		})
 	}
@@ -228,6 +233,8 @@ func (m *mockLogsServer) Export(ctx context.Context, req plogotlp.ExportRequest)
 		m.t.Errorf("Expected Authorization header 'Bearer test-key', got %s", authHeader[0])
 		return plogotlp.NewExportResponse(), errors.New("invalid authorization header")
 	}
+
+	assertAcceptEncodingGzip(m.t, md)
 
 	m.recvCount += req.Logs().LogRecordCount()
 	resp := plogotlp.NewExportResponse()

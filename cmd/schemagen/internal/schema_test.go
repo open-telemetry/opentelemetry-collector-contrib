@@ -10,7 +10,9 @@ import (
 )
 
 func TestSchemaToJSON(t *testing.T) {
-	schema := CreateSchema("http://example.com/schema", "Example Schema", "An example schema for testing.")
+	schema := CreateSchema()
+	schema.Description = "An example schema for testing."
+	schema.ElementType = SchemaTypeObject
 	schema.AddProperty("name", CreateSimpleField(SchemaTypeString, "The name of the entity."))
 	schema.AddProperty("age", CreateSimpleField(SchemaTypeInteger, "The age of the entity."))
 
@@ -18,9 +20,6 @@ func TestSchemaToJSON(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := `{
-		"$schema": "https://json-schema.org/draft/2020-12/schema",
-		"id": "http://example.com/schema",
-		"title": "Example Schema",
 		"description": "An example schema for testing.",
 		"type": "object",
 		"properties": {
@@ -39,7 +38,9 @@ func TestSchemaToJSON(t *testing.T) {
 }
 
 func TestSchemaWithComplexFields(t *testing.T) {
-	schema := CreateSchema("http://example.com/schema", "Example Schema", "An example schema with nested struct.")
+	schema := CreateSchema()
+	schema.Description = "An example schema with nested struct."
+	schema.ElementType = SchemaTypeObject
 
 	addressSchema := CreateObjectField("Address object")
 	addressSchema.AddProperty("street", CreateSimpleField(SchemaTypeString, "The street address."))
@@ -53,9 +54,6 @@ func TestSchemaWithComplexFields(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := `{
-		"$schema": "https://json-schema.org/draft/2020-12/schema",
-		"id": "http://example.com/schema",
-		"title": "Example Schema",
 		"description": "An example schema with nested struct.",
 		"type": "object",
 		"properties": {
@@ -92,16 +90,16 @@ func TestSchemaWithComplexFields(t *testing.T) {
 }
 
 func TestSchemaToYAML(t *testing.T) {
-	schema := CreateSchema("http://example.com/schema", "Example Schema", "An example schema for testing.")
+	schema := CreateSchema()
+	schema.Description = "An example schema for testing."
+	schema.ElementType = SchemaTypeObject
 	schema.AddProperty("name", CreateSimpleField(SchemaTypeString, "The name of the entity."))
 	schema.AddProperty("age", CreateSimpleField(SchemaTypeInteger, "The age of the entity."))
 
 	rawYAML, err := schema.ToYAML()
 	require.NoError(t, err)
 
-	expected := `id: http://example.com/schema
-$schema: https://json-schema.org/draft/2020-12/schema
-title: Example Schema
+	expected := `
 description: An example schema for testing.
 type: object
 properties:

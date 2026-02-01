@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -41,7 +42,10 @@ func TestPrometheusExporter(t *testing.T) {
 						"code0": "one0",
 					},
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.GetAvailableLocalAddress(t),
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  testutil.GetAvailableLocalAddress(t),
+						},
 					},
 					SendTimestamps:   false,
 					MetricExpiration: 60 * time.Second,
@@ -52,7 +56,10 @@ func TestPrometheusExporter(t *testing.T) {
 			config: func() *Config {
 				return &Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:88999",
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  "localhost:88999",
+						},
 					},
 				}
 			},
@@ -103,7 +110,10 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 			"code2": "one2",
 		},
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: addr,
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  addr,
+			},
 			TLS: configoptional.Some(configtls.ServerConfig{
 				Config: configtls.Config{
 					CertFile: "./testdata/certs/server.crt",
@@ -182,7 +192,10 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 			"code1": "one1",
 		},
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: addr,
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  addr,
+			},
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -256,7 +269,10 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			"code1": "one1",
 		},
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: addr,
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  addr,
+			},
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -324,7 +340,10 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 			"code2": "one2",
 		},
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: addr,
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  addr,
+			},
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
@@ -393,7 +412,10 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 			"code2": "one2",
 		},
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: addr,
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  addr,
+			},
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
@@ -658,7 +680,10 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 			addr := testutil.GetAvailableLocalAddress(t)
 			cfg := tt.config
 			cfg.ServerConfig = confighttp.ServerConfig{
-				Endpoint: addr,
+				NetAddr: confignet.AddrConfig{
+					Transport: "tcp",
+					Endpoint:  addr,
+				},
 			}
 			cfg.MetricExpiration = 120 * time.Minute
 

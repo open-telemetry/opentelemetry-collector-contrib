@@ -57,8 +57,15 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS hostname: %w", err)
 	}
 
+	info, err := d.provider.ContainerInfo(ctx)
+	if err != nil {
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting container info: %w", err)
+	}
+
 	d.rb.SetHostName(hostname)
 	d.rb.SetOsType(osType)
+	d.rb.SetContainerName(info.Name)
+	d.rb.SetContainerImageName(info.Image)
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }

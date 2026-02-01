@@ -170,7 +170,6 @@ components:
     - pkg/translator/azurelogs
     - pkg/translator/jaeger
     - pkg/translator/loki
-    - pkg/translator/opencensus
     - pkg/translator/pprof
     - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
@@ -181,6 +180,7 @@ components:
     - pkg/winperfcounters
     - pkg/xk8stest
     - processor/akamaidetector
+    - processor/alibabaecsdetector
     - processor/attributes
     - processor/azuredetector
     - processor/coralogix
@@ -201,6 +201,7 @@ components:
     - processor/k8sattributes
     - processor/logdedup
     - processor/logstransform
+    - processor/lookup
     - processor/metricsgeneration
     - processor/metricstarttime
     - processor/metricstransform
@@ -235,8 +236,8 @@ components:
     - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
+    - receiver/azure_event_hub
     - receiver/azureblob
-    - receiver/azureeventhub
     - receiver/azuremonitor
     - receiver/bigip
     - receiver/carbon
@@ -284,7 +285,7 @@ components:
     - receiver/macosunifiedlogging
     - receiver/memcached
     - receiver/mongodb
-    - receiver/mongodbatlas
+    - receiver/mongodb_atlas
     - receiver/mysql
     - receiver/namedpipe
     - receiver/netflow
