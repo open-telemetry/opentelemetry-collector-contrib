@@ -1123,3 +1123,59 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 		})
 	}
 }
+
+func TestContainerQuietModeProcess(t *testing.T) {
+	testCases := []struct {
+		name        string
+		onError     string
+		expectError bool
+	}{
+		{
+			name:        "DropOnErrorQuiet_ReturnsNoError",
+			onError:     "drop_quiet",
+			expectError: false,
+		},
+		{
+			name:        "SendOnErrorQuiet_ReturnsNoError",
+			onError:     "send_quiet",
+			expectError: false,
+		},
+		{
+			name:        "DropOnError_ReturnsError",
+			onError:     "drop",
+			expectError: true,
+		},
+		{
+			name:        "SendOnError_ReturnsError",
+			onError:     "send",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			config := NewConfigWithID("test")
+			config.OnError = tc.onError
+			config.OutputIDs = []string{"fake"}
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := config.Build(set)
+			require.NoError(t, err)
+
+			fake := testutil.NewFakeOutput(t)
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+			// Create entry with invalid container log format that will cause parse error
+			e := entry.New()
+			e.Body = "invalid container log format"
+			e.ObservedTimestamp = time.Now()
+
+			err = op.Process(t.Context(), e)
+			if tc.expectError {
+				require.Error(t, err, "expected error in non-quiet mode")
+			} else {
+				require.NoError(t, err, "expected no error in quiet mode")
+			}
+		})
+	}
+}
