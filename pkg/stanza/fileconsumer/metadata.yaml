@@ -22,6 +22,13 @@ feature_gates:
       When enabled, allows usage of the `header` setting.
     from_version: v0.73.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198
+  - id: filelog.asyncPolling
+    stage: alpha
+    description: >-
+      When enabled, uses asynchronous polling and worker pool pattern to ensure poll_interval
+      is respected and files are processed concurrently.
+    from_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17846
   - id: filelog.decompressFingerprint
     stage: stable
     description: >-

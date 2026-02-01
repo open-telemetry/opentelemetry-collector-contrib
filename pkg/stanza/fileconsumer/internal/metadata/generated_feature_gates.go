@@ -22,6 +22,14 @@ var FilelogAllowHeaderMetadataParsingFeatureGate = featuregate.GlobalRegistry().
 	featuregate.WithRegisterFromVersion("v0.73.0"),
 )
 
+var FilelogAsyncPollingFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"filelog.asyncPolling",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, uses asynchronous polling and worker pool pattern to ensure poll_interval is respected and files are processed concurrently."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17846"),
+	featuregate.WithRegisterFromVersion("v0.145.0"),
+)
+
 var FilelogDecompressFingerprintFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.decompressFingerprint",
 	featuregate.StageStable,

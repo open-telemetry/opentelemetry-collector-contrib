@@ -35,10 +35,10 @@ import (
 //
 //nolint:unparam
 func setAsyncPolling(tb testing.TB, value bool) {
-	currentState := asyncPollingGate.IsEnabled()
-	require.NoError(tb, featuregate.GlobalRegistry().Set(asyncPollingGate.ID(), value))
+	currentState := metadata.FilelogAsyncPollingFeatureGate.IsEnabled()
+	require.NoError(tb, featuregate.GlobalRegistry().Set(metadata.FilelogAsyncPollingFeatureGate.ID(), value))
 	tb.Cleanup(func() {
-		require.NoError(tb, featuregate.GlobalRegistry().Set(asyncPollingGate.ID(), currentState))
+		require.NoError(tb, featuregate.GlobalRegistry().Set(metadata.FilelogAsyncPollingFeatureGate.ID(), currentState))
 	})
 }
 

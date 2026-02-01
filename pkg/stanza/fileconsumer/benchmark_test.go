@@ -17,9 +17,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -469,6 +471,201 @@ func BenchmarkRealisticPolling(b *testing.B) {
 				// 1. Match files (glob)
 				// 2. For each file, read fingerprint
 				// 3. Compare against all tracked files (O(N*M))
+				op.poll(b.Context())
+			}
+		})
+	}
+}
+
+// enableAsyncPollingFromEnv enables the filelog.asyncPolling feature gate if
+// the FILELOG_ASYNC_POLLING environment variable is set to "true".
+func enableAsyncPollingFromEnv(b *testing.B) {
+	b.Helper()
+	if os.Getenv("FILELOG_ASYNC_POLLING") == "true" {
+		currentState := metadata.FilelogAsyncPollingFeatureGate.IsEnabled()
+		require.NoError(b, featuregate.GlobalRegistry().Set(metadata.FilelogAsyncPollingFeatureGate.ID(), true))
+		b.Cleanup(func() {
+			require.NoError(b, featuregate.GlobalRegistry().Set(metadata.FilelogAsyncPollingFeatureGate.ID(), currentState))
+		})
+	}
+}
+
+// BenchmarkAsyncPollingPollCycle benchmarks the poll cycle.
+// Uses the current feature gate state by default (disabled).
+// Set FILELOG_ASYNC_POLLING=true to benchmark with async polling enabled.
+func BenchmarkAsyncPollingPollCycle(b *testing.B) {
+	enableAsyncPollingFromEnv(b)
+	fileCounts := []int{10, 100, 500, 1000}
+
+	for _, fileCount := range fileCounts {
+		b.Run(fmt.Sprintf("Files_%d", fileCount), func(b *testing.B) {
+			b.ReportAllocs()
+			rootDir := b.TempDir()
+
+			for i := range fileCount {
+				path := filepath.Join(rootDir, fmt.Sprintf("app%d.log", i))
+				f := filetest.OpenFile(b, path)
+				_, err := fmt.Fprintf(f, "Initial log line for file %d\n", i)
+				require.NoError(b, err)
+				require.NoError(b, f.Close())
+			}
+
+			cfg := NewConfig()
+			cfg.Include = []string{filepath.Join(rootDir, "*.log")}
+			cfg.StartAt = "beginning"
+			cfg.PollInterval = 1000 * time.Second
+			cfg.MaxConcurrentFiles = fileCount
+
+			callback := func(_ context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
+				return nil
+			}
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set, callback)
+			require.NoError(b, err)
+
+			require.NoError(b, op.Start(testutil.NewUnscopedMockPersister()))
+			defer func() {
+				require.NoError(b, op.Stop())
+			}()
+
+			// First poll to discover all files
+			op.poll(b.Context())
+
+			b.ResetTimer()
+			for b.Loop() {
+				op.poll(b.Context())
+			}
+		})
+	}
+}
+
+// BenchmarkAsyncPollingConsume benchmarks the consume() call path directly.
+// Isolates the worker-pool semaphore pattern (async) vs unbounded goroutine spawning (sync).
+// Files are pre-written and each b.Loop() iteration appends new content then calls consume().
+func BenchmarkAsyncPollingConsume(b *testing.B) {
+	enableAsyncPollingFromEnv(b)
+	fileCounts := []int{1, 10, 100}
+
+	for _, fileCount := range fileCounts {
+		b.Run(fmt.Sprintf("Files_%d", fileCount), func(b *testing.B) {
+			b.ReportAllocs()
+			rootDir := b.TempDir()
+
+			// Create files with initial content so they have unique fingerprints
+			var files []*os.File
+			for i := range fileCount {
+				path := filepath.Join(rootDir, fmt.Sprintf("file%d.log", i))
+				f := filetest.OpenFile(b, path)
+				_, err := fmt.Fprintf(f, "Initial content for file %d\n", i)
+				require.NoError(b, err)
+				require.NoError(b, f.Sync())
+				files = append(files, f)
+			}
+
+			cfg := NewConfig()
+			cfg.Include = []string{filepath.Join(rootDir, "*.log")}
+			cfg.StartAt = "beginning"
+			cfg.PollInterval = 1000 * time.Second
+			cfg.MaxConcurrentFiles = fileCount
+
+			callback := func(_ context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
+				return nil
+			}
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set, callback)
+			require.NoError(b, err)
+
+			require.NoError(b, op.Start(testutil.NewUnscopedMockPersister()))
+			defer func() {
+				require.NoError(b, op.Stop())
+			}()
+
+			// First poll to discover all files and read initial content
+			op.poll(b.Context())
+
+			// Pre-generate a line to append each iteration
+			line := string(filetest.TokenWithLength(999)) + "\n"
+
+			b.ResetTimer()
+			for b.Loop() {
+				// Append a line to each file
+				for _, f := range files {
+					_, err := f.WriteString(line)
+					assert.NoError(b, err)
+				}
+				// Measure the consume path (makeReaders + readLostFiles + concurrent ReadToEnd)
+				op.poll(b.Context())
+			}
+		})
+	}
+}
+
+// BenchmarkAsyncPollingThroughput benchmarks end-to-end throughput with the full
+// Start/poll/Stop lifecycle including ticker-based scheduling and concurrent file writing.
+// Each iteration writes content to all files and polls, measuring realistic throughput.
+func BenchmarkAsyncPollingThroughput(b *testing.B) {
+	enableAsyncPollingFromEnv(b)
+	fileCounts := []int{4, 20, 100}
+
+	for _, fileCount := range fileCounts {
+		b.Run(fmt.Sprintf("Files_%d", fileCount), func(b *testing.B) {
+			b.ReportAllocs()
+			rootDir := b.TempDir()
+
+			var files []*os.File
+			for i := range fileCount {
+				f := filetest.OpenFile(b, filepath.Join(rootDir, fmt.Sprintf("file%d.log", i)))
+				_, err := fmt.Fprintf(f, "Initial content for file %d\n", i)
+				require.NoError(b, err)
+				require.NoError(b, f.Sync())
+				files = append(files, f)
+			}
+
+			cfg := NewConfig()
+			cfg.Include = []string{filepath.Join(rootDir, "*.log")}
+			cfg.StartAt = "beginning"
+			cfg.PollInterval = 1000 * time.Second
+			cfg.MaxConcurrentFiles = fileCount
+
+			callback := func(_ context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
+				return nil
+			}
+
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set, callback)
+			require.NoError(b, err)
+
+			require.NoError(b, op.Start(testutil.NewUnscopedMockPersister()))
+			defer func() {
+				require.NoError(b, op.Stop())
+			}()
+
+			// First poll to discover files
+			op.poll(b.Context())
+
+			// Pre-generate several lines to write per iteration
+			var severalLines strings.Builder
+			for range 10 {
+				severalLines.WriteString(string(filetest.TokenWithLength(999)) + "\n")
+			}
+
+			b.ResetTimer()
+			for b.Loop() {
+				// Write content to all files concurrently
+				var wg sync.WaitGroup
+				for _, f := range files {
+					wg.Add(1)
+					go func(f *os.File) {
+						defer wg.Done()
+						_, _ = f.WriteString(severalLines.String())
+						_ = f.Sync()
+					}(f)
+				}
+				wg.Wait()
+
+				// Poll to read all new content
 				op.poll(b.Context())
 			}
 		})

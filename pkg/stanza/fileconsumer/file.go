@@ -123,7 +123,7 @@ func (m *Manager) startPoller(ctx context.Context) {
 			case <-globTicker.C:
 			}
 
-			if asyncPollingGate.IsEnabled() {
+			if metadata.FilelogAsyncPollingFeatureGate.IsEnabled() {
 				// Launch poll asynchronously to ensure poll_interval is respected
 				// regardless of how long the poll takes to complete
 				m.wg.Add(1)
@@ -142,7 +142,7 @@ func (m *Manager) startPoller(ctx context.Context) {
 // poll checks all the watched paths for new entries
 func (m *Manager) poll(ctx context.Context) {
 	// When async polling is enabled, prevent overlapping polls
-	if asyncPollingGate.IsEnabled() {
+	if metadata.FilelogAsyncPollingFeatureGate.IsEnabled() {
 		m.pollMutex.Lock()
 		if m.pollActive {
 			m.set.Logger.Warn("Previous poll still in progress, skipping this poll cycle")
@@ -208,7 +208,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 
 	// When async polling is enabled, use worker pool pattern with semaphore
 	// to ensure maxBatchFiles is used as a true concurrency limit
-	if asyncPollingGate.IsEnabled() {
+	if metadata.FilelogAsyncPollingFeatureGate.IsEnabled() {
 		// Create semaphore for worker pool to limit concurrent file operations
 		sem := make(chan struct{}, m.maxBatchFiles)
 
