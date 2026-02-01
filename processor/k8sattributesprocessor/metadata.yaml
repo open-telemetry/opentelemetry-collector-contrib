@@ -134,6 +134,14 @@ resource_attributes:
     type: string
     enabled: false
 
+feature_gates:
+  - id: k8sattr.labelsAnnotationsSingular.allow
+    stage: alpha
+    description: >-
+      When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural
+    from_version: v0.125.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774
+
 tests:
   config:
   skip_lifecycle: true

@@ -101,7 +101,7 @@ extensions:
       file_format: plain-text
 
 exporters:
-  otlphttp:
+  otlp_http:
     endpoint: "https://my-backend:443"
 
 service:
@@ -110,12 +110,12 @@ service:
   pipelines:
     logs:
       receivers: [awslambda]
-      exporters: [otlphttp]
+      exporters: [otlp_http]
 ```
 
 In this example, the `awslambdareceiver` is expected to be triggered when a VPC flow log is created at S3 bucket.
 The receiver retrieves the log file from S3 and decodes it using the `awslogs_encoding` extension with the `vpcflow` format.
-Parsed logs are forwarded to an OTLP listener via the `otlphttp` exporter.
+Parsed logs are forwarded to an OTLP listener via the `otlp_http` exporter.
 
 ### Example 2: ELB Access Logs from S3
 
@@ -132,7 +132,7 @@ extensions:
       file_format: plain-text
 
 exporters:
-  otlphttp:
+  otlp_http:
     endpoint: "https://my-backend:443"
 
 service:
@@ -141,7 +141,7 @@ service:
   pipelines:
     logs:
       receivers: [awslambda]
-      exporters: [otlphttp]
+      exporters: [otlp_http]
 ```
 
 Similar to the first example, this configuration is for collecting ELB access logs stored in S3.
@@ -153,19 +153,19 @@ receivers:
   awslambda:
 
 exporters:
-  otlphttp:
+  otlp_http:
     endpoint: "https://my-backend:443"
 
 service:
   pipelines:
     logs:
       receivers: [awslambda]
-      exporters: [otlphttp]
+      exporters: [otlp_http]
 ```
 
 For this deployment configuration, when receiver is triggered by a CloudWatch Logs subscription filter, the CloudWatch 
 messages will be extracted and converted to an OpenTelemetry log record. 
-These logs then get forwarded to an OTLP listener via the `otlphttp` exporter.
+These logs then get forwarded to an OTLP listener via the `otlp_http` exporter.
 
 ### Example 4: Arbitrary S3 content (logs or metrics)
 
@@ -174,14 +174,14 @@ receivers:
   awslambda:
 
 exporters:
-  otlphttp:
+  otlp_http:
     endpoint: "https://my-backend:443"
 
 service:
   pipelines:
     logs:
       receivers: [awslambda]
-      exporters: [otlphttp]
+      exporters: [otlp_http]
 ```
 
 For this deployment configuration, when receiver is triggered by an S3 event, 
