@@ -41,7 +41,8 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 
 	for _, ent := range entries {
 		if ent == nil {
-			return errors.New("got a nil entry, this should not happen and is potentially a bug")
+			t.Logger().Warn("got a nil entry, this should not happen and is potentially a bug")
+			continue
 		}
 
 		env := helper.GetExprEnv(ent)
