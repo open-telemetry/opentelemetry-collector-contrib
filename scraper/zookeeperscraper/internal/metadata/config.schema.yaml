@@ -1,0 +1,81 @@
+$defs:
+  attribute_direction:
+    description: AttributeDirection specifies the value direction attribute.
+    type: integer
+  attribute_state:
+    description: AttributeState specifies the value state attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for zookeeper metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for zookeeper metrics.
+    type: object
+    properties:
+      zookeeper.connection.active:
+        $ref: metric_config
+      zookeeper.data_tree.ephemeral_node.count:
+        $ref: metric_config
+      zookeeper.data_tree.size:
+        $ref: metric_config
+      zookeeper.file_descriptor.limit:
+        $ref: metric_config
+      zookeeper.file_descriptor.open:
+        $ref: metric_config
+      zookeeper.follower.count:
+        $ref: metric_config
+      zookeeper.fsync.exceeded_threshold.count:
+        $ref: metric_config
+      zookeeper.latency.avg:
+        $ref: metric_config
+      zookeeper.latency.max:
+        $ref: metric_config
+      zookeeper.latency.min:
+        $ref: metric_config
+      zookeeper.packet.count:
+        $ref: metric_config
+      zookeeper.request.active:
+        $ref: metric_config
+      zookeeper.ruok:
+        $ref: metric_config
+      zookeeper.sync.pending:
+        $ref: metric_config
+      zookeeper.watch.count:
+        $ref: metric_config
+      zookeeper.znode.count:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for zookeeper resource attributes.
+    type: object
+    properties:
+      server.state:
+        $ref: resource_attribute_config
+      zk.version:
+        $ref: resource_attribute_config
