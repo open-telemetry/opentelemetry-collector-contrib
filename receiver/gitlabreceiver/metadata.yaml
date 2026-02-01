@@ -4,6 +4,7 @@ status:
   class: receiver
   stability: 
     alpha: [traces]
+    development: [metrics]
   distributions: [contrib]
   codeowners:
     active: [adrielp, atoulme]
