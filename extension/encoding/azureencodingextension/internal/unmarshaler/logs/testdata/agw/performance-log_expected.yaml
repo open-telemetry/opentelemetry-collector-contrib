@@ -1,0 +1,47 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/PEERINGTEST/PROVIDERS/MICROSOFT.NETWORK/APPLICATIONGATEWAYS/Application-Gateway-Name
+        - key: service.instance.id
+          value:
+            stringValue: ApplicationGatewayRole_IN_1
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: ApplicationGatewayPerformanceLog
+              - key: azure.operation.name
+                value:
+                  stringValue: ApplicationGatewayPerformance
+              - key: azure.agw.backend.healthy.count
+                value:
+                  intValue: "4"
+              - key: azure.agw.backend.unhealthy.count
+                value:
+                  intValue: "0"
+              - key: azure.agw.request.count
+                value:
+                  intValue: "185"
+              - key: azure.agw.backend.latency
+                value:
+                  intValue: "0"
+              - key: azure.agw.request.failed
+                value:
+                  intValue: "0"
+              - key: azure.agw.throughput
+                value:
+                  intValue: "119427"
+            body: {}
+            timeUnixNano: "1460160000000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

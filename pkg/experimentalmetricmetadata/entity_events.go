@@ -23,7 +23,7 @@ const (
 	semconvOtelEntityInterval   = "otel.entity.interval"
 	semconvOtelEntityAttributes = "otel.entity.attributes"
 
-	semconvOtelEntityEventAsScope = "otel.entity.event_as_log"
+	SemconvOtelEntityEventAsScope = "otel.entity.event_as_log"
 )
 
 // EntityEventsSlice is a slice of EntityEvent.
@@ -34,6 +34,11 @@ type EntityEventsSlice struct {
 // NewEntityEventsSlice creates an empty EntityEventsSlice.
 func NewEntityEventsSlice() EntityEventsSlice {
 	return EntityEventsSlice{orig: plog.NewLogRecordSlice()}
+}
+
+// NewEntityEventsSliceFromLogs creates an EntityEventsSlice from a plog.LogRecordSlice.
+func NewEntityEventsSliceFromLogs(logs plog.LogRecordSlice) EntityEventsSlice {
+	return EntityEventsSlice{orig: logs}
 }
 
 // AppendEmpty will append to the end of the slice an empty EntityEvent.
@@ -65,7 +70,7 @@ func (s EntityEventsSlice) ConvertAndMoveToLogs() plog.Logs {
 	scopeLogs := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 
 	// Set the scope marker.
-	scopeLogs.Scope().Attributes().PutBool(semconvOtelEntityEventAsScope, true)
+	scopeLogs.Scope().Attributes().PutBool(SemconvOtelEntityEventAsScope, true)
 
 	// Move all events. Note that this remove all
 	s.orig.MoveAndAppendTo(scopeLogs.LogRecords())

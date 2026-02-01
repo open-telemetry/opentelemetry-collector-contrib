@@ -1,0 +1,133 @@
+$defs:
+  extract_config:
+    description: 'TODO: refactor fileconsumer and add it''s config of k8s implementation here.'
+    type: object
+    properties:
+      annotations:
+        description: Annotations represents the rules to extract from pod annotations.
+        type: array
+        items:
+          $ref: field_extract_config
+      env:
+        description: Env represents the rules to extract from container environment variables.
+        type: array
+        items:
+          $ref: field_extract_config
+      labels:
+        description: Labels represents the rules to extract from pod labels.
+        type: array
+        items:
+          $ref: field_extract_config
+      metadata:
+        description: 'Metadata represents the list of metadata fields to extract from pod. TODO: supported metadata fields and default values.'
+        type: array
+        items:
+          type: string
+  field_extract_config:
+    description: FieldExtractConfig allows specifying an extraction rule to extract a resource attribute from pod (or namespace) annotations (or labels). This is a copy of the config from the k8sattributes processor.
+    type: object
+    properties:
+      from:
+        description: 'From represents the source of the labels/annotations. Env is always from container environment variables. Supported values: - pod (default): extract from pod labels/annotations. May be supported in the future: - namespace'
+        type: string
+      key:
+        description: Key represents the key (annotation, label or etc.) name. It uses exact match.
+        type: string
+      key_regex:
+        description: KeyRegex is a regular expression used to extract a Key that matches the regex. Out of Key or KeyRegex, only one option is expected to be configured at a time.
+        type: string
+      regex:
+        description: 'Regex is an optional field used to extract a sub-string from a complex field value. The supplied regular expression must contain one named parameter with the string "value" as the name. For example, if your pod spec contains the following annotation, kubernetes.io/change-cause: 2019-08-28T18:34:33Z APP_NAME=my-app GIT_SHA=58a1e39 CI_BUILD=4120 and you''d like to extract the GIT_SHA and the CI_BUILD values as tags, then you must specify the following two extraction rules: extract: annotations: - tag_name: git.sha key: kubernetes.io/change-cause regex: GIT_SHA=(?P<value>\w+) - tag_name: ci.build key: kubernetes.io/change-cause regex: JENKINS=(?P<value>[\w]+) this will add the `git.sha` and `ci.build` resource attributes.'
+        type: string
+      tag_name:
+        description: 'TagName represents the name of the resource attribute that will be added to logs, metrics or spans. When not specified, a default tag name will be used of the format: - k8s.pod.annotations.<annotation key> - k8s.pod.labels.<label key> - k8s.pod.env.<env key> - otel.env.<env key> For example, if tag_name is not specified and the key is git_sha, then the attribute name will be `k8s.pod.annotations.git_sha`. When key_regex is present, tag_name supports back reference to both named capturing and positioned capturing. For example, if your pod spec contains the following labels, app.kubernetes.io/component: mysql app.kubernetes.io/version: 5.7.21 and you''d like to add tags for all labels with prefix app.kubernetes.io/ and also trim the prefix, then you can specify the following extraction rules: extract: labels: - tag_name: $$1 key_regex: kubernetes.io/(.*) this will add the `component` and `version` tags to the spans or metrics.'
+        type: string
+  filter_config:
+    description: FilterConfig allows specifying how to filter containers to collect logs from. By default, all containers are collected from.
+    type: object
+    properties:
+      annotations:
+        description: Annotations represents the rules to filter containers based on pod annotations.
+        type: array
+        items:
+          $ref: map_filter_config
+      containers:
+        description: Containers represents the rules to filter containers based on container names.
+        type: array
+        items:
+          $ref: value_filter_config
+      env:
+        description: Env represents the rules to filter containers based on pod environment variables.
+        type: array
+        items:
+          $ref: map_filter_config
+      labels:
+        description: Labels represents the rules to filter containers based on pod labels.
+        type: array
+        items:
+          $ref: map_filter_config
+      namespaces:
+        description: Namespaces represents the rules to filter containers based on pod namespaces.
+        type: array
+        items:
+          $ref: value_filter_config
+      pods:
+        description: Pods represents the rules to filter containers based on pod names.
+        type: array
+        items:
+          $ref: value_filter_config
+  map_filter_config:
+    description: MapFilterConfig allows specifying a filter rule to filter containers based on key value pairs, such as pod annotations, labels or environment variables. Only if all the keys match, this rule is considered to match.
+    type: object
+    properties:
+      key:
+        description: Key represents the key to compare against.
+        type: string
+      op:
+        description: 'Op represents how to compare the values. Valid values are: - "equals": (default) the value must be equal to the specified value. - "not-equals": the value must not be equal to the specified value. - "exists": the value must exist. - "not-exists": the value must not exist. - "matches": the value must match the specified regular expression. - "not-matches": the value must not match the specified regular expression.'
+        type: string
+      value:
+        description: Value represents the value to compare against. If Op is "exists" or "not-exists", this field is ignored. If any of the values match, this rule is considered to match.
+        type: string
+  source_config:
+    description: SourceConfig allows specifying how to discover containers to collect logs from.
+    type: object
+    properties:
+      filter:
+        type: array
+        items:
+          $ref: filter_config
+      host_root:
+        description: HostRoot represents the path which is used to mount the host's root filesystem.
+        type: string
+      k8s_api:
+        description: K8sAPI represents the configuration for the k8s API.
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig.api_config
+      mode:
+        description: 'Mode represents the mode of the k8slog receiver. Valid values are: - "daemonset-stdout": (default) otel is deployed as a daemonset and collects logs from stdout of containers. Will be supported in the future: - "daemonset-file": otel is deployed as a daemonset and collects logs from files inside containers. - "sidecar": otel is deployed as a sidecar and collects logs from files.'
+        type: string
+      node_from_env:
+        description: NodeFromEnv represents the environment variable which contains the node name.
+        type: string
+      runtime_apis:
+        description: RuntimeAPIs represents the configuration for the runtime APIs.
+        type: array
+        items:
+          $ref: runtime_api_config
+  value_filter_config:
+    description: ValueFilterConfig allows specifying a filter rule to filter containers based on string values, such as pod names, namespaces, container names or pod UIDs. If any of the values match, this rule is considered to match.
+    type: object
+    properties:
+      op:
+        description: 'Op represents how to compare the value. Valid values are: - "equals": (default) the value must be equal to the specified value. - "not-equals": the value must not be equal to the specified value. - "matches": the value must match the specified regular expression. - "not-matches": the value must not match the specified regular expression.'
+        type: string
+      value:
+        description: Value represents the value to compare against.
+        type: string
+description: Config is the configuration of a k8slog receiver
+type: object
+properties:
+  discovery:
+    $ref: source_config
+  extract:
+    $ref: extract_config
