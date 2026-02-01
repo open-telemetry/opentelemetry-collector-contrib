@@ -486,6 +486,22 @@ The number of slow queries.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | true | Development |
 
+### mysql.replica.is_io_thread_running
+
+Whether the I/O thread for reading the source's binary log is running (1=Yes, 0=No).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+### mysql.replica.is_sql_thread_running
+
+Whether the SQL thread for executing events in the relay log is running (1=Yes, 0=No).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
 ### mysql.replica.sql_delay
 
 The number of seconds that the replica must lag the source.

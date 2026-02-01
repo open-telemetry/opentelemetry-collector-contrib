@@ -169,6 +169,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
 
 			allMetricsCount++
+			mb.RecordMysqlReplicaIsIoThreadRunningDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMysqlReplicaIsSQLThreadRunningDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -724,6 +730,34 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "The number of slow queries.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.replica.is_io_thread_running":
+					assert.False(t, validatedMetrics["mysql.replica.is_io_thread_running"], "Found a duplicate in the metrics slice: mysql.replica.is_io_thread_running")
+					validatedMetrics["mysql.replica.is_io_thread_running"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Whether the I/O thread for reading the source's binary log is running (1=Yes, 0=No).", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.replica.is_sql_thread_running":
+					assert.False(t, validatedMetrics["mysql.replica.is_sql_thread_running"], "Found a duplicate in the metrics slice: mysql.replica.is_sql_thread_running")
+					validatedMetrics["mysql.replica.is_sql_thread_running"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Whether the SQL thread for executing events in the relay log is running (1=Yes, 0=No).", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

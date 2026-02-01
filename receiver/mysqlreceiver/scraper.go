@@ -643,6 +643,20 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 		}
 
 		m.mb.RecordMysqlReplicaSQLDelayDataPoint(now, s.sqlDelay)
+
+		// Convert "Yes"/"No" to 1/0 for IO thread status
+		ioRunning := int64(0)
+		if s.replicaIORunning == "Yes" {
+			ioRunning = 1
+		}
+		m.mb.RecordMysqlReplicaIsIoThreadRunningDataPoint(now, ioRunning)
+
+		// Convert "Yes"/"No" to 1/0 for SQL thread status
+		sqlRunning := int64(0)
+		if s.replicaSQLRunning == "Yes" {
+			sqlRunning = 1
+		}
+		m.mb.RecordMysqlReplicaIsSQLThreadRunningDataPoint(now, sqlRunning)
 	}
 }
 

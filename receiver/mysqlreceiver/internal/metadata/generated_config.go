@@ -29,54 +29,56 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for mysql metrics.
 type MetricsConfig struct {
-	MysqlBufferPoolDataPages     MetricConfig `mapstructure:"mysql.buffer_pool.data_pages"`
-	MysqlBufferPoolLimit         MetricConfig `mapstructure:"mysql.buffer_pool.limit"`
-	MysqlBufferPoolOperations    MetricConfig `mapstructure:"mysql.buffer_pool.operations"`
-	MysqlBufferPoolPageFlushes   MetricConfig `mapstructure:"mysql.buffer_pool.page_flushes"`
-	MysqlBufferPoolPages         MetricConfig `mapstructure:"mysql.buffer_pool.pages"`
-	MysqlBufferPoolUsage         MetricConfig `mapstructure:"mysql.buffer_pool.usage"`
-	MysqlClientNetworkIo         MetricConfig `mapstructure:"mysql.client.network.io"`
-	MysqlCommands                MetricConfig `mapstructure:"mysql.commands"`
-	MysqlConnectionCount         MetricConfig `mapstructure:"mysql.connection.count"`
-	MysqlConnectionErrors        MetricConfig `mapstructure:"mysql.connection.errors"`
-	MysqlDoubleWrites            MetricConfig `mapstructure:"mysql.double_writes"`
-	MysqlHandlers                MetricConfig `mapstructure:"mysql.handlers"`
-	MysqlIndexIoWaitCount        MetricConfig `mapstructure:"mysql.index.io.wait.count"`
-	MysqlIndexIoWaitTime         MetricConfig `mapstructure:"mysql.index.io.wait.time"`
-	MysqlJoins                   MetricConfig `mapstructure:"mysql.joins"`
-	MysqlLocks                   MetricConfig `mapstructure:"mysql.locks"`
-	MysqlLogOperations           MetricConfig `mapstructure:"mysql.log_operations"`
-	MysqlMaxUsedConnections      MetricConfig `mapstructure:"mysql.max_used_connections"`
-	MysqlMysqlxConnections       MetricConfig `mapstructure:"mysql.mysqlx_connections"`
-	MysqlMysqlxWorkerThreads     MetricConfig `mapstructure:"mysql.mysqlx_worker_threads"`
-	MysqlOpenedResources         MetricConfig `mapstructure:"mysql.opened_resources"`
-	MysqlOperations              MetricConfig `mapstructure:"mysql.operations"`
-	MysqlPageOperations          MetricConfig `mapstructure:"mysql.page_operations"`
-	MysqlPageSize                MetricConfig `mapstructure:"mysql.page_size"`
-	MysqlPreparedStatements      MetricConfig `mapstructure:"mysql.prepared_statements"`
-	MysqlQueryClientCount        MetricConfig `mapstructure:"mysql.query.client.count"`
-	MysqlQueryCount              MetricConfig `mapstructure:"mysql.query.count"`
-	MysqlQuerySlowCount          MetricConfig `mapstructure:"mysql.query.slow.count"`
-	MysqlReplicaSQLDelay         MetricConfig `mapstructure:"mysql.replica.sql_delay"`
-	MysqlReplicaTimeBehindSource MetricConfig `mapstructure:"mysql.replica.time_behind_source"`
-	MysqlRowLocks                MetricConfig `mapstructure:"mysql.row_locks"`
-	MysqlRowOperations           MetricConfig `mapstructure:"mysql.row_operations"`
-	MysqlSorts                   MetricConfig `mapstructure:"mysql.sorts"`
-	MysqlStatementEventCount     MetricConfig `mapstructure:"mysql.statement_event.count"`
-	MysqlStatementEventWaitTime  MetricConfig `mapstructure:"mysql.statement_event.wait.time"`
-	MysqlTableAverageRowLength   MetricConfig `mapstructure:"mysql.table.average_row_length"`
-	MysqlTableIoWaitCount        MetricConfig `mapstructure:"mysql.table.io.wait.count"`
-	MysqlTableIoWaitTime         MetricConfig `mapstructure:"mysql.table.io.wait.time"`
-	MysqlTableLockWaitReadCount  MetricConfig `mapstructure:"mysql.table.lock_wait.read.count"`
-	MysqlTableLockWaitReadTime   MetricConfig `mapstructure:"mysql.table.lock_wait.read.time"`
-	MysqlTableLockWaitWriteCount MetricConfig `mapstructure:"mysql.table.lock_wait.write.count"`
-	MysqlTableLockWaitWriteTime  MetricConfig `mapstructure:"mysql.table.lock_wait.write.time"`
-	MysqlTableRows               MetricConfig `mapstructure:"mysql.table.rows"`
-	MysqlTableSize               MetricConfig `mapstructure:"mysql.table.size"`
-	MysqlTableOpenCache          MetricConfig `mapstructure:"mysql.table_open_cache"`
-	MysqlThreads                 MetricConfig `mapstructure:"mysql.threads"`
-	MysqlTmpResources            MetricConfig `mapstructure:"mysql.tmp_resources"`
-	MysqlUptime                  MetricConfig `mapstructure:"mysql.uptime"`
+	MysqlBufferPoolDataPages       MetricConfig `mapstructure:"mysql.buffer_pool.data_pages"`
+	MysqlBufferPoolLimit           MetricConfig `mapstructure:"mysql.buffer_pool.limit"`
+	MysqlBufferPoolOperations      MetricConfig `mapstructure:"mysql.buffer_pool.operations"`
+	MysqlBufferPoolPageFlushes     MetricConfig `mapstructure:"mysql.buffer_pool.page_flushes"`
+	MysqlBufferPoolPages           MetricConfig `mapstructure:"mysql.buffer_pool.pages"`
+	MysqlBufferPoolUsage           MetricConfig `mapstructure:"mysql.buffer_pool.usage"`
+	MysqlClientNetworkIo           MetricConfig `mapstructure:"mysql.client.network.io"`
+	MysqlCommands                  MetricConfig `mapstructure:"mysql.commands"`
+	MysqlConnectionCount           MetricConfig `mapstructure:"mysql.connection.count"`
+	MysqlConnectionErrors          MetricConfig `mapstructure:"mysql.connection.errors"`
+	MysqlDoubleWrites              MetricConfig `mapstructure:"mysql.double_writes"`
+	MysqlHandlers                  MetricConfig `mapstructure:"mysql.handlers"`
+	MysqlIndexIoWaitCount          MetricConfig `mapstructure:"mysql.index.io.wait.count"`
+	MysqlIndexIoWaitTime           MetricConfig `mapstructure:"mysql.index.io.wait.time"`
+	MysqlJoins                     MetricConfig `mapstructure:"mysql.joins"`
+	MysqlLocks                     MetricConfig `mapstructure:"mysql.locks"`
+	MysqlLogOperations             MetricConfig `mapstructure:"mysql.log_operations"`
+	MysqlMaxUsedConnections        MetricConfig `mapstructure:"mysql.max_used_connections"`
+	MysqlMysqlxConnections         MetricConfig `mapstructure:"mysql.mysqlx_connections"`
+	MysqlMysqlxWorkerThreads       MetricConfig `mapstructure:"mysql.mysqlx_worker_threads"`
+	MysqlOpenedResources           MetricConfig `mapstructure:"mysql.opened_resources"`
+	MysqlOperations                MetricConfig `mapstructure:"mysql.operations"`
+	MysqlPageOperations            MetricConfig `mapstructure:"mysql.page_operations"`
+	MysqlPageSize                  MetricConfig `mapstructure:"mysql.page_size"`
+	MysqlPreparedStatements        MetricConfig `mapstructure:"mysql.prepared_statements"`
+	MysqlQueryClientCount          MetricConfig `mapstructure:"mysql.query.client.count"`
+	MysqlQueryCount                MetricConfig `mapstructure:"mysql.query.count"`
+	MysqlQuerySlowCount            MetricConfig `mapstructure:"mysql.query.slow.count"`
+	MysqlReplicaIsIoThreadRunning  MetricConfig `mapstructure:"mysql.replica.is_io_thread_running"`
+	MysqlReplicaIsSQLThreadRunning MetricConfig `mapstructure:"mysql.replica.is_sql_thread_running"`
+	MysqlReplicaSQLDelay           MetricConfig `mapstructure:"mysql.replica.sql_delay"`
+	MysqlReplicaTimeBehindSource   MetricConfig `mapstructure:"mysql.replica.time_behind_source"`
+	MysqlRowLocks                  MetricConfig `mapstructure:"mysql.row_locks"`
+	MysqlRowOperations             MetricConfig `mapstructure:"mysql.row_operations"`
+	MysqlSorts                     MetricConfig `mapstructure:"mysql.sorts"`
+	MysqlStatementEventCount       MetricConfig `mapstructure:"mysql.statement_event.count"`
+	MysqlStatementEventWaitTime    MetricConfig `mapstructure:"mysql.statement_event.wait.time"`
+	MysqlTableAverageRowLength     MetricConfig `mapstructure:"mysql.table.average_row_length"`
+	MysqlTableIoWaitCount          MetricConfig `mapstructure:"mysql.table.io.wait.count"`
+	MysqlTableIoWaitTime           MetricConfig `mapstructure:"mysql.table.io.wait.time"`
+	MysqlTableLockWaitReadCount    MetricConfig `mapstructure:"mysql.table.lock_wait.read.count"`
+	MysqlTableLockWaitReadTime     MetricConfig `mapstructure:"mysql.table.lock_wait.read.time"`
+	MysqlTableLockWaitWriteCount   MetricConfig `mapstructure:"mysql.table.lock_wait.write.count"`
+	MysqlTableLockWaitWriteTime    MetricConfig `mapstructure:"mysql.table.lock_wait.write.time"`
+	MysqlTableRows                 MetricConfig `mapstructure:"mysql.table.rows"`
+	MysqlTableSize                 MetricConfig `mapstructure:"mysql.table.size"`
+	MysqlTableOpenCache            MetricConfig `mapstructure:"mysql.table_open_cache"`
+	MysqlThreads                   MetricConfig `mapstructure:"mysql.threads"`
+	MysqlTmpResources              MetricConfig `mapstructure:"mysql.tmp_resources"`
+	MysqlUptime                    MetricConfig `mapstructure:"mysql.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -163,6 +165,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MysqlQuerySlowCount: MetricConfig{
+			Enabled: false,
+		},
+		MysqlReplicaIsIoThreadRunning: MetricConfig{
+			Enabled: false,
+		},
+		MysqlReplicaIsSQLThreadRunning: MetricConfig{
 			Enabled: false,
 		},
 		MysqlReplicaSQLDelay: MetricConfig{

@@ -919,6 +919,24 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
+          - description: Whether the I/O thread for reading the source's binary log is running (1=Yes, 0=No).
+            name: mysql.replica.is_io_thread_running
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+          - description: Whether the SQL thread for executing events in the relay log is running (1=Yes, 0=No).
+            name: mysql.replica.is_sql_thread_running
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
           - description: The number of seconds that the replica must lag the source.
             name: mysql.replica.sql_delay
             sum:
