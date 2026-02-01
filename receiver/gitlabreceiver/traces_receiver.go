@@ -25,21 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
 )
 
-const (
-	// Completed pipeline statuses
-	pipelineStatusSuccess  = "success"
-	pipelineStatusFailed   = "failed"
-	pipelineStatusCanceled = "canceled"
-	pipelineStatusSkipped  = "skipped"
-
-	// In-progress pipeline statuses
-	pipelineStatusRunning            = "running"
-	pipelineStatusPending            = "pending"
-	pipelineStatusCreated            = "created"
-	pipelineStatusWaitingForResource = "waiting_for_resource"
-	pipelineStatusPreparing          = "preparing"
-	pipelineStatusScheduled          = "scheduled"
-)
+// Pipeline and job status constants are now in constants.go
 
 var (
 	// Error messages
@@ -52,7 +38,7 @@ var (
 	errMissingRequiredField = errors.New("missing required field")
 )
 
-const healthyResponse = `{"text": "GitLab receiver webhook is healthy"}`
+// HealthyResponse is now in constants.go
 
 // gitlabReceiver is the main receiver that handles both traces and metrics
 // It uses a shared component pattern to support multiple signal types
@@ -201,7 +187,7 @@ func (gtr *gitlabReceiver) handleHealthCheck(w http.ResponseWriter, r *http.Requ
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	_, _ = w.Write([]byte(healthyResponse))
+		_, _ = w.Write([]byte(HealthyResponse))
 }
 
 // handleWebhook handles incoming request sent to the webhook endpoint

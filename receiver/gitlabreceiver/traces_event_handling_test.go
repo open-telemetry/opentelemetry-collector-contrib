@@ -5,6 +5,8 @@ package gitlabreceiver
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,8 +15,34 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+// Test data file names for pipeline events
+const (
+	testDataPipelineValidWithJobs    = "valid_with_jobs.json"
+	testDataPipelineValidWithoutJobs = "valid_without_jobs.json"
+	testDataPipelineInvalidMissing   = "invalid_missing_finished_at.json"
+	testDataPipelineMinimal          = "minimal_valid.json"
+	testDataPipelineMulti            = "multi_pipeline.json"
+	testDataPipelineWithEnv          = "with_environment.json"
+)
+
+// Test constants
+const (
+	attrServiceName      = "service.name"
+	testMsgTraceIDsMatch = "trace IDs should match"
+	testMsgValidInput    = "valid input"
+	testTimestamp        = "2022-01-01 12:00:00 UTC"
+	testMsgInvalidTS     = "invalid timestamp"
+)
+
+// loadPipelineEventTestData loads a pipeline event test data file from testdata
+func loadPipelineEventTestData(t *testing.T, filename string) string {
+	data, err := os.ReadFile(filepath.Join("testdata", "events", "pipeline", filename))
+	require.NoError(t, err, "failed to load test data: %s", filename)
+	return string(data)
+}
+
 // Helper function to parse a PipelineEvent from JSON for the remaining tests
-func setupTestPipelineFromJSON(t *testing.T, event string) (*gitlabTracesReceiver, *gitlab.PipelineEvent, pcommon.TraceID, pcommon.SpanID) {
+func setupTestPipelineFromJSON(t *testing.T, event string) (*gitlabReceiver, *gitlab.PipelineEvent, pcommon.TraceID, pcommon.SpanID) {
 	receiver := setupGitlabTracesReceiver(t)
 
 	var pipelineEvent gitlab.PipelineEvent
@@ -45,26 +73,26 @@ func TestHandlePipeline(t *testing.T) {
 	}{
 		{
 			name:        "simple_pipeline_no_jobs",
-			jsonEvent:   validPipelineWebhookEventWithoutJobs,
+			jsonEvent:   loadPipelineEventTestData(t, testDataPipelineValidWithoutJobs),
 			expectError: false,
 			spanCount:   1, // Only pipeline span
 		},
 		{
 			name:        "pipeline_with_jobs",
-			jsonEvent:   validPipelineWebhookEvent,
+			jsonEvent:   loadPipelineEventTestData(t, testDataPipelineValidWithJobs),
 			expectError: false,
 			spanCount:   5, // Pipeline (1) + stages (2) + jobs (2) = 5 spans
 		},
 		{
 			name:            "invalid_pipeline_missing_finished_at",
-			jsonEvent:       invalidPipelineWebhookEventMissingFinishedAt,
+			jsonEvent:       loadPipelineEventTestData(t, testDataPipelineInvalidMissing),
 			expectError:     true,
 			expectedErrText: "invalid finishedAt timestamp: time is empty",
 			spanCount:       0,
 		},
 		{
 			name:        "pipeline_with_minimal_fields",
-			jsonEvent:   minimalValidPipelineWebhookEvent,
+			jsonEvent:   loadPipelineEventTestData(t, testDataPipelineMinimal),
 			expectError: false,
 			spanCount:   1,
 		},
@@ -74,7 +102,12 @@ func TestHandlePipeline(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			receiver, pipeline, _, _ := setupTestPipelineFromJSON(t, tt.jsonEvent)
 
-			traces, err := receiver.handlePipeline(pipeline)
+			// Create gitlabTracesReceiver instance to use handlePipeline method
+			gtr := &gitlabTracesReceiver{
+				logger: receiver.logger,
+				cfg:    receiver.cfg,
+			}
+			traces, err := gtr.handlePipeline(pipeline)
 
 			if tt.expectError {
 				require.Error(t, err)
@@ -91,7 +124,7 @@ func TestHandlePipeline(t *testing.T) {
 
 			if spanCount > 0 {
 				resource := traces.ResourceSpans().At(0).Resource()
-				serviceName, found := resource.Attributes().Get("service.name")
+				serviceName, found := resource.Attributes().Get(attrServiceName)
 				require.True(t, found, "service.name attribute should be present")
 				require.Equal(t, pipeline.Project.PathWithNamespace, serviceName.Str())
 			}
@@ -100,13 +133,19 @@ func TestHandlePipeline(t *testing.T) {
 }
 
 func TestProcessPipelineSpan(t *testing.T) {
-	receiver, pipeline, traceID, spanID := setupTestPipelineFromJSON(t, validPipelineWebhookEvent)
+	receiver, pipeline, traceID, spanID := setupTestPipelineFromJSON(t, loadPipelineEventTestData(t, testDataPipelineValidWithJobs))
 	glPipeline := &glPipeline{pipeline}
+
+	// Create gitlabTracesReceiver instance to use processPipelineSpan method
+	gtr := &gitlabTracesReceiver{
+		logger: receiver.logger,
+		cfg:    receiver.cfg,
+	}
 
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
 
-	err := receiver.processPipelineSpan(resourceSpans, glPipeline, traceID, spanID)
+	err := gtr.processPipelineSpan(resourceSpans, glPipeline, traceID, spanID)
 	require.NoError(t, err)
 
 	// Verify the pipeline span was created
@@ -123,13 +162,19 @@ func TestProcessPipelineSpan(t *testing.T) {
 }
 
 func TestProcessStageSpans(t *testing.T) {
-	receiver, pipeline, traceID, parentSpanID := setupTestPipelineFromJSON(t, validPipelineWebhookEvent)
+	receiver, pipeline, traceID, parentSpanID := setupTestPipelineFromJSON(t, loadPipelineEventTestData(t, testDataPipelineValidWithJobs))
 	glPipeline := &glPipeline{pipeline}
+
+	// Create gitlabTracesReceiver instance to use processStageSpans method
+	gtr := &gitlabTracesReceiver{
+		logger: receiver.logger,
+		cfg:    receiver.cfg,
+	}
 
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
 
-	stages, err := receiver.processStageSpans(resourceSpans, glPipeline, traceID, parentSpanID)
+	stages, err := gtr.processStageSpans(resourceSpans, glPipeline, traceID, parentSpanID)
 	require.NoError(t, err)
 	require.Len(t, stages, 2, "should have two stages")
 
@@ -140,22 +185,28 @@ func TestProcessStageSpans(t *testing.T) {
 		require.Equal(t, 1, scopeSpans.Spans().Len(), "each scope span should have one span")
 
 		span := scopeSpans.Spans().At(0)
-		require.Equal(t, traceID, span.TraceID(), "trace IDs should match")
+		require.Equal(t, traceID, span.TraceID(), testMsgTraceIDsMatch)
 		require.Equal(t, parentSpanID, span.ParentSpanID(), "parent span IDs should match")
 	}
 }
 
 func TestProcessJobSpans(t *testing.T) {
-	receiver, pipeline, traceID, _ := setupTestPipelineFromJSON(t, validPipelineWebhookEvent)
+	receiver, pipeline, traceID, _ := setupTestPipelineFromJSON(t, loadPipelineEventTestData(t, testDataPipelineValidWithJobs))
 	glPipeline := &glPipeline{pipeline}
+
+	// Create gitlabTracesReceiver instance to use processJobSpans method
+	gtr := &gitlabTracesReceiver{
+		logger: receiver.logger,
+		cfg:    receiver.cfg,
+	}
 
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
 
-	stages, err := receiver.newStages(glPipeline)
+	stages, err := gtr.newStages(glPipeline)
 	require.NoError(t, err)
 
-	err = receiver.processJobSpans(resourceSpans, glPipeline, traceID, stages)
+	err = gtr.processJobSpans(resourceSpans, glPipeline, traceID, stages)
 	require.NoError(t, err)
 
 	// Verify the job spans were created
@@ -165,7 +216,7 @@ func TestProcessJobSpans(t *testing.T) {
 		require.Equal(t, 1, scopeSpans.Spans().Len(), "each scope span should have one span")
 
 		span := scopeSpans.Spans().At(0)
-		require.Equal(t, traceID, span.TraceID(), "trace IDs should match")
+		require.Equal(t, traceID, span.TraceID(), testMsgTraceIDsMatch)
 
 		// Get the job's stage to check the parent span ID
 		job := pipeline.Builds[i]
@@ -184,15 +235,15 @@ func TestNewTraceID(t *testing.T) {
 		expectErr  bool
 	}{
 		{
-			name:       "valid input",
+			name:       testMsgValidInput,
 			id:         12345,
-			finishedAt: "2022-01-01 12:00:00 UTC",
+			finishedAt: testTimestamp,
 			expectErr:  false,
 		},
 		{
-			name:       "invalid timestamp",
+			name:       testMsgInvalidTS,
 			id:         12345,
-			finishedAt: "invalid timestamp",
+			finishedAt: testMsgInvalidTS,
 			expectErr:  true,
 		},
 		{
@@ -225,15 +276,15 @@ func TestNewPipelineSpanID(t *testing.T) {
 		expectErr  bool
 	}{
 		{
-			name:       "valid input",
+			name:       testMsgValidInput,
 			id:         12345,
-			finishedAt: "2022-01-01 12:00:00 UTC",
+			finishedAt: testTimestamp,
 			expectErr:  false,
 		},
 		{
-			name:       "invalid timestamp",
+			name:       testMsgInvalidTS,
 			id:         12345,
-			finishedAt: "invalid timestamp",
+			finishedAt: testMsgInvalidTS,
 			expectErr:  true,
 		},
 		{
@@ -270,21 +321,21 @@ func TestNewStageSpanID(t *testing.T) {
 			name:      "valid input",
 			id:        12345,
 			stage:     "build",
-			startedAt: "2022-01-01 12:00:00 UTC",
+			startedAt: testTimestamp,
 			expectErr: false,
 		},
 		{
 			name:      "invalid timestamp",
 			id:        12345,
 			stage:     "build",
-			startedAt: "invalid timestamp",
+			startedAt: testMsgInvalidTS,
 			expectErr: true,
 		},
 		{
 			name:      "empty stage",
 			id:        12345,
 			stage:     "",
-			startedAt: "2022-01-01 12:00:00 UTC",
+			startedAt: testTimestamp,
 			expectErr: true,
 		},
 	}
@@ -313,13 +364,13 @@ func TestNewJobSpanID(t *testing.T) {
 		{
 			name:      "valid input",
 			id:        12345,
-			startedAt: "2022-01-01 12:00:00 UTC",
+			startedAt: testTimestamp,
 			expectErr: false,
 		},
 		{
 			name:      "invalid timestamp",
 			id:        12345,
-			startedAt: "invalid timestamp",
+			startedAt: testMsgInvalidTS,
 			expectErr: true,
 		},
 	}
@@ -346,7 +397,7 @@ func TestParseGitlabTime(t *testing.T) {
 	}{
 		{
 			name:        "valid UTC time",
-			timeStr:     "2022-01-01 12:00:00 UTC",
+			timeStr:     testTimestamp,
 			expectError: false,
 		},
 		{
@@ -414,11 +465,18 @@ func TestIncludeUserAttributes(t *testing.T) {
 			receiver.cfg.WebHook.IncludeUserAttributes = tt.includeUserAttributes
 
 			var pipelineEvent gitlab.PipelineEvent
-			err := json.Unmarshal([]byte(validPipelineWebhookEvent), &pipelineEvent)
+			jsonData := loadPipelineEventTestData(t, testDataPipelineValidWithJobs)
+			err := json.Unmarshal([]byte(jsonData), &pipelineEvent)
 			require.NoError(t, err)
 
+			// Create gitlabTracesReceiver instance to use setResourceAttributes method
+			gtr := &gitlabTracesReceiver{
+				logger: receiver.logger,
+				cfg:    receiver.cfg,
+			}
+
 			attrs := pcommon.NewMap()
-			receiver.setResourceAttributes(attrs, &pipelineEvent)
+			gtr.setResourceAttributes(attrs, &pipelineEvent)
 
 			_, hasAuthorName := attrs.Get(AttributeVCSRefHeadRevisionAuthorName)
 			_, hasAuthorEmail := attrs.Get(AttributeVCSRefHeadRevisionAuthorEmail)
@@ -444,7 +502,7 @@ func TestIncludeUserAttributes(t *testing.T) {
 			}
 
 			// Non-sensitive attributes should always be present
-			_, hasServiceName := attrs.Get("service.name")
+			_, hasServiceName := attrs.Get(attrServiceName)
 			require.True(t, hasServiceName, "service.name should always be present")
 		})
 	}
@@ -455,11 +513,18 @@ func TestSetAttributes(t *testing.T) {
 	receiver.cfg.WebHook.IncludeUserAttributes = true
 
 	var pipelineEvent gitlab.PipelineEvent
-	err := json.Unmarshal([]byte(validPipelineWebhookEvent), &pipelineEvent)
+	jsonData := loadPipelineEventTestData(t, testDataPipelineValidWithJobs)
+	err := json.Unmarshal([]byte(jsonData), &pipelineEvent)
 	require.NoError(t, err)
 
+	// Create gitlabTracesReceiver instance to use setResourceAttributes method
+	gtr := &gitlabTracesReceiver{
+		logger: receiver.logger,
+		cfg:    receiver.cfg,
+	}
+
 	attrs := pcommon.NewMap()
-	receiver.setResourceAttributes(attrs, &pipelineEvent)
+	gtr.setResourceAttributes(attrs, &pipelineEvent)
 
 	// VCS
 	vcsProvider, _ := attrs.Get("vcs.provider.name")
@@ -522,7 +587,8 @@ func TestSetAttributes(t *testing.T) {
 
 func TestMultiPipeline(t *testing.T) {
 	var pipelineEvent gitlab.PipelineEvent
-	err := json.Unmarshal([]byte(validMultiPipelineWebhookEvent), &pipelineEvent)
+	jsonData := loadPipelineEventTestData(t, "multi_pipeline.json")
+	err := json.Unmarshal([]byte(jsonData), &pipelineEvent)
 	require.NoError(t, err)
 
 	pipelineAttrs := pcommon.NewMap()
@@ -551,10 +617,16 @@ func TestMultiPipeline(t *testing.T) {
 }
 
 func TestPipelineWithMissingOptionalFields(t *testing.T) {
-	receiver, pipeline, _, _ := setupTestPipelineFromJSON(t, minimalValidPipelineWebhookEvent)
+	receiver, pipeline, _, _ := setupTestPipelineFromJSON(t, loadPipelineEventTestData(t, testDataPipelineMinimal))
 	receiver.cfg.WebHook.IncludeUserAttributes = true
 
-	traces, err := receiver.handlePipeline(pipeline)
+	// Create gitlabTracesReceiver instance to use handlePipeline method
+	gtr := &gitlabTracesReceiver{
+		logger: receiver.logger,
+		cfg:    receiver.cfg,
+	}
+
+	traces, err := gtr.handlePipeline(pipeline)
 	require.NoError(t, err)
 
 	require.Equal(t, 1, traces.SpanCount())
@@ -563,7 +635,7 @@ func TestPipelineWithMissingOptionalFields(t *testing.T) {
 	attrs := resource.Attributes()
 
 	// Required fields should be present
-	serviceName, found := attrs.Get("service.name")
+	serviceName, found := attrs.Get(attrServiceName)
 	require.True(t, found)
 	require.Equal(t, "test/project", serviceName.Str())
 
@@ -600,7 +672,8 @@ func TestPipelineWithMissingOptionalFields(t *testing.T) {
 
 func TestEnvironmentAttributes(t *testing.T) {
 	var pipelineEvent gitlab.PipelineEvent
-	err := json.Unmarshal([]byte(validPipelineWithEnvironmentEvent), &pipelineEvent)
+	jsonData := loadPipelineEventTestData(t, testDataPipelineWithEnv)
+	err := json.Unmarshal([]byte(jsonData), &pipelineEvent)
 	require.NoError(t, err)
 
 	stagingJob := &glPipelineJob{

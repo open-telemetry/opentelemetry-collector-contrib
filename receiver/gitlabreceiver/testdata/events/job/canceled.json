@@ -1,0 +1,16 @@
+{
+  "object_kind": "build",
+  "build_id": 1979,
+  "build_name": "deploy-job",
+  "build_stage": "deploy",
+  "build_status": "canceled",
+  "build_created_at": "2021-02-23T04:00:00.000Z",
+  "build_started_at": "2021-02-23T04:01:00.000Z",
+  "build_finished_at": "2021-02-23T04:03:00.000Z",
+  "build_duration": 120.0,
+  "build_queued_duration": 0.0,
+  "pipeline_id": 2368,
+  "project_id": 380,
+  "project_name": "gitlab-org/gitlab-test"
+}
+

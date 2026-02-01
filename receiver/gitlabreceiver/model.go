@@ -4,7 +4,6 @@
 package gitlabreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver"
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -12,54 +11,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
-)
-
-const (
-	// The following attributes are not part of semconv yet, but potential candidates for future inclusion
-	// They are highly experimental and subject to change
-	AttributeVCSRepositoryVisibility = "vcs.repository.visibility"
-	AttributeVCSRepositoryRefDefault = "vcs.repository.ref.default"
-
-	AttributeVCSRefHeadRevisionMessage     = "vcs.ref.head.revision.message"
-	AttributeVCSRefHeadRevisionTimestamp   = "vcs.ref.head.revision.timestamp"
-	AttributeVCSRefHeadRevisionAuthorName  = "vcs.ref.head.revision.author.name"
-	AttributeVCSRefHeadRevisionAuthorEmail = "vcs.ref.head.revision.author.email"
-
-	AttributeCICDPipelineRunActorID   = "cicd.pipeline.run.actor.id"
-	AttributeCICDPipelineRunActorName = "cicd.pipeline.run.actor.name"
-
-	AttributeCICDTaskEnvironmentName = "cicd.pipeline.task.run.environment.name"
-
-	AttributeCICDWorkerType   = "cicd.worker.type"
-	AttributeCICDWorkerTags   = "cicd.worker.tags"
-	AttributeCICDWorkerShared = "cicd.worker.shared"
-
-	// The following attributes are EXCLUSIVE to GitLab but not listed under Vendor Extensions within Semantic Conventions yet
-	// They are highly experimental and subject to change
-	AttributeGitLabProjectNamespace = "gitlab.project.namespace"
-
-	AttributeGitLabPipelineRunActorUsername = "gitlab.pipeline.run.actor.username"
-
-	AttributeGitLabPipelineSource              = "gitlab.pipeline.source" // Source of the pipeline: https://docs.gitlab.com/ci/jobs/job_rules/#ci_pipeline_source-predefined-variable
-	AttributeGitLabPipelineSourcePipelineID    = "gitlab.pipeline.source.pipeline.id"
-	AttributeGitLabPipelineSourcePipelineJobID = "gitlab.pipeline.source.pipeline.job.id"
-
-	AttributeGitLabPipelineSourcePipelineProjectID        = "gitlab.pipeline.source.pipeline.project.id"
-	AttributeGitLabPipelineSourcePipelineProjectNamespace = "gitlab.pipeline.source.pipeline.project.namespace"
-	AttributeGitLabPipelineSourcePipelineProjectURL       = "gitlab.pipeline.source.pipeline.project.url"
-
-	AttributeGitLabJobQueuedDuration = "gitlab.job.queued_duration"
-	AttributeGitLabJobFailureReason  = "gitlab.job.failure_reason"
-	AttributeGitLabJobAllowFailure   = "gitlab.job.allow_failure"
-
-	AttributeGitLabEnvironmentAction         = "gitlab.environment.action"
-	AttributeGitLabEnvironmentDeploymentTier = "gitlab.environment.deployment_tier"
-)
-
-var (
-	errSetPipelineTimestamps = errors.New("failed to set pipeline span timestamps")
-	errSetStageTimestamps    = errors.New("failed to set stage span timestamps")
-	errSetJobTimestamps      = errors.New("failed to set job span timestamps")
 )
 
 // glPipeline is a wrapper that implements the GitlabEvent interface
@@ -79,7 +30,7 @@ func (p *glPipeline) setSpanData(span ptrace.Span) error {
 
 	err := p.setTimeStamps(span, p.ObjectAttributes.CreatedAt, p.ObjectAttributes.FinishedAt)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errSetPipelineTimestamps, err)
+		return fmt.Errorf("%w: %w", ErrSetPipelineTimestamps, err)
 	}
 
 	p.setAttributes(span.Attributes())
@@ -131,7 +82,7 @@ func (s *glPipelineStage) setSpanData(span ptrace.Span) error {
 
 	err := s.setTimeStamps(span, s.StartedAt, s.FinishedAt)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errSetStageTimestamps, err)
+		return fmt.Errorf("%w: %w", ErrSetStageTimestamps, err)
 	}
 
 	setSpanStatus(span, s.Status)
@@ -208,7 +159,7 @@ func (j *glPipelineJob) setSpanData(span ptrace.Span) error {
 
 	err := j.setTimeStamps(span, j.event.StartedAt, j.event.FinishedAt)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errSetJobTimestamps, err)
+		return fmt.Errorf("%w: %w", ErrSetJobTimestamps, err)
 	}
 
 	setSpanStatus(span, j.event.Status)

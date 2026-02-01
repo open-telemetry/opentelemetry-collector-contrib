@@ -1,0 +1,14 @@
+{
+  "object_kind": "build",
+  "build_id": 1983,
+  "build_name": "missing-timestamps",
+  "build_stage": "test",
+  "build_status": "success",
+  "build_created_at": "2021-02-23T08:00:00.000Z",
+  "build_started_at": null,
+  "build_finished_at": null,
+  "pipeline_id": 2372,
+  "project_id": 380,
+  "project_name": "gitlab-org/gitlab-test"
+}
+

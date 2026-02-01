@@ -21,14 +21,7 @@ import (
 
 // parseGitlabTime is defined in traces_event_handling.go and reused here
 
-const (
-	jobStatusSuccess  = "success"
-	jobStatusFailed   = "failed"
-	jobStatusCanceled = "canceled"
-	jobStatusSkipped  = "skipped"
-	jobStatusRunning  = "running"
-	jobStatusPending  = "pending"
-)
+// Job status constants are now in constants.go
 
 // jobEventHandler handles Job events and converts them to metrics
 type jobEventHandler struct {
@@ -116,7 +109,8 @@ func (h *jobEventHandler) Handle(ctx context.Context, event interface{}) (*event
 }
 
 func isCompletedJobStatus(status string) bool {
-	completed := []string{jobStatusSuccess, jobStatusFailed, jobStatusCanceled, jobStatusSkipped}
+	status = strings.ToLower(status)
+	completed := []string{JobStatusSuccess, JobStatusFailed, JobStatusCanceled, JobStatusSkipped}
 	for _, s := range completed {
 		if status == s {
 			return true

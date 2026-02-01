@@ -1,0 +1,16 @@
+{
+  "object_kind": "build",
+  "build_id": 1985,
+  "build_name": "no-queued-duration",
+  "build_stage": "test",
+  "build_status": "success",
+  "build_created_at": "2021-02-23T10:00:00.000Z",
+  "build_started_at": "2021-02-23T10:01:00.000Z",
+  "build_finished_at": "2021-02-23T10:05:00.000Z",
+  "build_duration": 240.0,
+  "build_queued_duration": 0.0,
+  "pipeline_id": 2374,
+  "project_id": 380,
+  "project_name": "gitlab-org/gitlab-test"
+}
+

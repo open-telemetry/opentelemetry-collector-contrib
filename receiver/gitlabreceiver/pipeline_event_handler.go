@@ -50,11 +50,11 @@ func (h *pipelineEventHandler) Handle(ctx context.Context, event interface{}) (*
 	// Process the pipeline based on its status
 	status := strings.ToLower(pipelineEvent.ObjectAttributes.Status)
 	switch status {
-	case pipelineStatusRunning, pipelineStatusPending, pipelineStatusCreated, pipelineStatusWaitingForResource, pipelineStatusPreparing, pipelineStatusScheduled:
+	case PipelineStatusRunning, PipelineStatusPending, PipelineStatusCreated, PipelineStatusWaitingForResource, PipelineStatusPreparing, PipelineStatusScheduled:
 		h.logger.Debug("pipeline not complete, skipping...",
 			zap.String("status", pipelineEvent.ObjectAttributes.Status))
 		return nil, nil
-	case pipelineStatusSuccess, pipelineStatusFailed, pipelineStatusCanceled, pipelineStatusSkipped:
+	case PipelineStatusSuccess, PipelineStatusFailed, PipelineStatusCanceled, PipelineStatusSkipped:
 		// above statuses are indicators of a completed pipeline, so we process them
 		break
 	default:
