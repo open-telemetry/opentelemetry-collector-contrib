@@ -161,17 +161,17 @@ func (se *signalfxExporter) startDimensionClient(ctx context.Context) error {
 			LogUpdates:   se.config.LogDimensionUpdates,
 			Logger:       se.logger,
 			// Duration to wait between property updates.
-			SendDelay:           se.config.DimensionClient.SendDelay,
-			MaxBuffered:         se.config.DimensionClient.MaxBuffered,
-			MetricsConverter:    *se.converter,
-			DefaultProperties:   se.config.DefaultProperties,
-			ExcludeProperties:   se.config.ExcludeProperties,
-			MaxConnsPerHost:     se.config.DimensionClient.MaxConnsPerHost,
-			MaxIdleConns:        se.config.DimensionClient.MaxIdleConns,
-			MaxIdleConnsPerHost: se.config.DimensionClient.MaxIdleConnsPerHost,
-			IdleConnTimeout:     se.config.DimensionClient.IdleConnTimeout,
-			Timeout:             se.config.DimensionClient.Timeout,
-			DropTags:            se.config.DimensionClient.DropTags,
+			SendDelay:               se.config.DimensionClient.SendDelay,
+			MaxBuffered:             se.config.DimensionClient.MaxBuffered,
+			NonAlphanumericDimChars: se.config.NonAlphanumericDimensionChars,
+			DefaultProperties:       se.config.DefaultProperties,
+			ExcludeProperties:       se.config.ExcludeProperties,
+			MaxConnsPerHost:         se.config.DimensionClient.MaxConnsPerHost,
+			MaxIdleConns:            se.config.DimensionClient.MaxIdleConns,
+			MaxIdleConnsPerHost:     se.config.DimensionClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:         se.config.DimensionClient.IdleConnTimeout,
+			Timeout:                 se.config.DimensionClient.Timeout,
+			DropTags:                se.config.DimensionClient.DropTags,
 		})
 	dimClient.Start()
 	se.dimClient = dimClient
@@ -189,27 +189,11 @@ func newEventExporter(config *Config, createSettings exporter.Settings) (*signal
 		return nil, errors.New("nil config")
 	}
 
-	// The converter is needed only for dimension updates from entity events.
-	// TODO: Refactor it to extract only the dimension update logic from the metrics converter.
-	converter, err := translation.NewMetricsConverter(
-		createSettings.Logger,
-		nil,
-		config.ExcludeMetrics,
-		config.IncludeMetrics,
-		config.NonAlphanumericDimensionChars,
-		config.DropHistogramBuckets,
-		!config.SendOTLPHistograms,
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	return &signalfxExporter{
 		config:                 config,
 		version:                createSettings.BuildInfo.Version,
 		logger:                 createSettings.Logger,
 		telemetrySettings:      createSettings.TelemetrySettings,
-		converter:              converter,
 		entityEventTransformer: dimensions.NewEntityEventTransformer(config.DefaultProperties),
 	}, nil
 }

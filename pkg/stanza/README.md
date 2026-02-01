@@ -91,6 +91,7 @@ Operators that support batching:
 
 - `add`
 - `assign_keys`
+- `container`
 - `copy`
 - `filter`
 - `flatten`
@@ -113,7 +114,6 @@ Operators that support batching:
 
 Operators that do not support batching:
 
-- `container`
 - `csv_parser`
 - `router`
 
