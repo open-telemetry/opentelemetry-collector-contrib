@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor"
@@ -36,6 +37,10 @@ func (m *mockIMDSProvider) Hostname(_ context.Context) (string, error) {
 
 func (m *mockIMDSProvider) InstanceID(_ context.Context) (string, error) {
 	return m.meta.InstanceID, m.err
+}
+
+func (m *mockIMDSProvider) GetHandlers() *request.Handlers {
+	return &request.Handlers{}
 }
 
 type mockAPIProvider struct {

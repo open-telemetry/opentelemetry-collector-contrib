@@ -4,6 +4,7 @@
 package resourcedetectionprocessor
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 

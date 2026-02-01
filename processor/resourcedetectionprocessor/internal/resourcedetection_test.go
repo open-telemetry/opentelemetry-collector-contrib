@@ -512,10 +512,10 @@ type mockHost struct {
 	extensions map[component.ID]component.Component
 }
 
-// mockDetector is a basic detector that doesn't implement HandlerProvider
-type mockDetector struct{}
+// simpleMockDetector is a basic detector that doesn't implement HandlerProvider
+type simpleMockDetector struct{}
 
-func (m *mockDetector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (m *simpleMockDetector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	return pcommon.NewResource(), "", nil
 }
 
@@ -560,9 +560,9 @@ func TestConfigureHandlers(t *testing.T) {
 
 func TestConfigureHandlersWithNonHandlerDetector(t *testing.T) {
 	testType, _ := component.NewType("awsmiddleware")
-	basicDetector := &mockDetector{}
+	basicDetector := &simpleMockDetector{}
 	logger := zap.NewNop()
-	provider := NewResourceProvider(logger, 0, nil, basicDetector)
+	provider := NewResourceProvider(logger, 0, basicDetector)
 
 	mockExt := &mockExtension{}
 	host := newMockHost()

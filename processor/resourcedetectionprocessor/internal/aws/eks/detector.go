@@ -89,7 +89,6 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	// Error is already logged in the constructor
 	if d.utils == nil {
 		return pcommon.NewResource(), "", nil
 	}
