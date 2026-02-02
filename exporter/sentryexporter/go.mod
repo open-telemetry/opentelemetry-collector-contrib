@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/getsentry/sentry-go v0.42.0
 	github.com/google/go-cmp v0.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.144.1-0.20260121161034-55399d4743af
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.145.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.51.0
 	go.opentelemetry.io/collector/component/componenttest v0.145.0
