@@ -832,8 +832,12 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					var deploymentName string
 					if c.Rules.DeploymentNameFromReplicaSet {
 						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name)
-					} else if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						deploymentName = replicaset.Deployment.Name
+					}
+					// If regex extraction failed or flag is disabled, try looking up the ReplicaSet
+					if deploymentName == "" {
+						if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
+							deploymentName = replicaset.Deployment.Name
+						}
 					}
 					if deploymentName != "" {
 						if c.Rules.DeploymentName {

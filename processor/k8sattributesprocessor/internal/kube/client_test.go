@@ -3701,6 +3701,14 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 			replicaSetName:                      "invalid-name",
 			expectedDeploymentName:              "",
 		},
+		{
+			name:                                "flag enabled - regex fails but falls back to cache (issue 45724)",
+			deploymentNameFromReplicaSetEnabled: true,
+			replicaSetInCache:                   true,
+			deploymentInRS:                      true,
+			replicaSetName:                      "my-app-weird-suffix",
+			expectedDeploymentName:              "real-deployment-name",
+		},
 	}
 
 	for _, tt := range tests {
