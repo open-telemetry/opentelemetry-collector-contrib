@@ -1001,6 +1001,7 @@ func TestMaxLogSizeRecombine(t *testing.T) {
 		})
 	}
 }
+
 func TestUnlimitedBatchSize(t *testing.T) {
 	const (
 		numPartialEntries = 1100
@@ -1031,7 +1032,7 @@ func TestUnlimitedBatchSize(t *testing.T) {
 	r.OutputOperators = []operator.Operator{fake}
 
 	input := make([]*entry.Entry, 0, numPartialEntries+1)
-	for i := 0; i < numPartialEntries; i++ {
+	for i := range numPartialEntries {
 		input = append(input, makeCRIOEntry(fmt.Sprintf("part%d", i), "P"))
 	}
 	input = append(input, makeCRIOEntry("final", "F"))
@@ -1055,7 +1056,7 @@ func TestUnlimitedBatchSize(t *testing.T) {
 
 	select {
 	case e := <-fake.Received:
-		require.FailNow(t, "Received unexpected second entry - batch was incorrectly split: %+v", e)
+		require.FailNow(t, "Received unexpected second entry - batch was incorrectly split", "entry: %+v", e)
 	default:
 	}
 }
