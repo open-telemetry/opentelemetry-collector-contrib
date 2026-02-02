@@ -227,7 +227,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.platform ("gcp_cloud_run")
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (service name)
     * faas.version (service revision)
 
@@ -237,7 +237,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.platform ("gcp_cloud_run")
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (service name)
     * gcp.cloud_run.job.execution ("my-service-ajg89")
     * gcp.cloud_run.job.task_index ("0")
@@ -248,7 +248,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.platform ("gcp_cloud_functions")
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (function name)
     * faas.version (function version)
 
@@ -259,7 +259,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
     * cloud.availability_zone (e.g. "us-central1-c")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (service name)
     * faas.version (service version)
 
