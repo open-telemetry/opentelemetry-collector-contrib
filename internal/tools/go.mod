@@ -20,8 +20,8 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.29.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.29.0
 	go.opentelemetry.io/build-tools/multimod v0.29.0
-	go.opentelemetry.io/collector/cmd/builder v0.144.1-0.20260128232850-0bb8e65fdaa4
-	go.opentelemetry.io/collector/cmd/mdatagen v0.144.1-0.20260128232850-0bb8e65fdaa4
+	go.opentelemetry.io/collector/cmd/builder v0.144.1-0.20260130192532-20cbfc09f93d
+	go.opentelemetry.io/collector/cmd/mdatagen v0.144.1-0.20260130192532-20cbfc09f93d
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.40.0
 	golang.org/x/vuln v1.1.4
@@ -265,12 +265,12 @@ require (
 	go.augendre.info/arangolint v0.3.1 // indirect
 	go.augendre.info/fatcontext v0.9.0 // indirect
 	go.opentelemetry.io/build-tools v0.29.0 // indirect
-	go.opentelemetry.io/collector/component v1.50.1-0.20260128232850-0bb8e65fdaa4 // indirect
-	go.opentelemetry.io/collector/confmap v1.50.1-0.20260128232850-0bb8e65fdaa4 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.50.1-0.20260128232850-0bb8e65fdaa4 // indirect
-	go.opentelemetry.io/collector/featuregate v1.50.1-0.20260128232850-0bb8e65fdaa4 // indirect
-	go.opentelemetry.io/collector/filter v0.144.1-0.20260128232850-0bb8e65fdaa4 // indirect
-	go.opentelemetry.io/collector/pdata v1.50.1-0.20260128232850-0bb8e65fdaa4 // indirect
+	go.opentelemetry.io/collector/component v1.50.1-0.20260130192532-20cbfc09f93d // indirect
+	go.opentelemetry.io/collector/confmap v1.50.1-0.20260130192532-20cbfc09f93d // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.50.1-0.20260130192532-20cbfc09f93d // indirect
+	go.opentelemetry.io/collector/featuregate v1.50.1-0.20260130192532-20cbfc09f93d // indirect
+	go.opentelemetry.io/collector/filter v0.144.1-0.20260130192532-20cbfc09f93d // indirect
+	go.opentelemetry.io/collector/pdata v1.50.1-0.20260130192532-20cbfc09f93d // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
