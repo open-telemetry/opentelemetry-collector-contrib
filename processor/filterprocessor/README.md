@@ -358,5 +358,5 @@ service:
 
 In general, understand your data before using the filter processor.
 
-- When using the filterprocessor make sure you understand the look of your incoming data and test the configuration thoroughly. In general, use as specific a configuration as possible to lower the risk of the wrong data being dropped.
+- When using the Filter Processor make sure you understand the look of your incoming data and test the configuration thoroughly. In general, use as specific a configuration as possible to lower the risk of the wrong data being dropped.
 - [Orphaned Telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#orphaned-telemetry): The processor allows dropping spans. Dropping a span may lead to orphaned spans if the dropped span is a parent. Dropping a span may lead to orphaned logs if the log references the dropped span.
