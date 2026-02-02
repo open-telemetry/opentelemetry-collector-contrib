@@ -1635,3 +1635,27 @@ scrape_configs:
 	require.Contains(t, gotUA, set.BuildInfo.Command)
 	require.Contains(t, gotUA, set.BuildInfo.Version)
 }
+
+func TestPrometheusReceiverForcesClassicHistogramConversionToNHCB(t *testing.T) {
+	cfg, err := promConfig.Load(`
+global:
+  convert_classic_histograms_to_nhcb: false
+scrape_configs:
+  - job_name: "test"
+    convert_classic_histograms_to_nhcb: false
+    static_configs:
+      - targets: ["localhost:8080"]
+`, promslog.NewNopLogger())
+	require.NoError(t, err)
+
+	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
+		PrometheusConfig: (*PromConfig)(cfg),
+	}, new(consumertest.MetricsSink))
+	require.NoError(t, err)
+
+	gotCfg := receiver.cfg.PrometheusConfig
+	assert.True(t, gotCfg.GlobalConfig.ConvertClassicHistogramsToNHCB)
+	require.Len(t, gotCfg.ScrapeConfigs, 1)
+	require.NotNil(t, gotCfg.ScrapeConfigs[0].ConvertClassicHistogramsToNHCB)
+	assert.True(t, *gotCfg.ScrapeConfigs[0].ConvertClassicHistogramsToNHCB)
+}

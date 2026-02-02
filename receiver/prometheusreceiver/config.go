@@ -194,7 +194,27 @@ func reloadPromConfig(dst *PromConfig, src any) error {
 	}
 	copyStaticConfig((*PromConfig)(newCfg), src)
 	*dst = PromConfig(*newCfg)
+	forceClassicHistogramConversionToNHCB(dst)
 	return nil
+}
+
+func forceClassicHistogramConversionToNHCB(cfg *PromConfig) {
+	if cfg == nil {
+		return
+	}
+
+	// Force NHCB conversion and disable classic histogram scraping for performance reasons.
+	// Both classic histograms and NHCBs produce the same OTLP Explicit Histogram output,
+	// but NHCB conversion is significantly more efficient.
+	cfg.GlobalConfig.ConvertClassicHistogramsToNHCB = true
+	cfg.GlobalConfig.AlwaysScrapeClassicHistograms = false
+
+	enabled := true
+	disabled := false
+	for _, sc := range cfg.ScrapeConfigs {
+		sc.ConvertClassicHistogramsToNHCB = &enabled
+		sc.AlwaysScrapeClassicHistograms = &disabled
+	}
 }
 
 func validateHTTPClientConfig(cfg *commonconfig.HTTPClientConfig) error {
