@@ -481,7 +481,7 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, accepted, refused int64) {
 	var got metricdata.Metrics
 	var err error
-	assert.EventuallyWithT(t, func(c *assert.CollectT){
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		got, err = tt.GetMetric("otelcol_receiver_accepted_spans")
 		assert.NoError(c, err)
 	}, 5*time.Second, 100*time.Millisecond)
@@ -504,7 +504,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 			},
 		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	assert.EventuallyWithT(t, func(c *assert.CollectT){
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		got, err = tt.GetMetric("otelcol_receiver_refused_spans")
 		assert.NoError(c, err)
 	}, 5*time.Second, 100*time.Millisecond)
