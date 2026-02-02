@@ -32,7 +32,7 @@ type signalToMetrics struct {
 	spanMetricDefs    []model.MetricDef[*ottlspan.TransformContext]
 	dpMetricDefs      []model.MetricDef[*ottldatapoint.TransformContext]
 	logMetricDefs     []model.MetricDef[*ottllog.TransformContext]
-	profileMetricDefs []model.MetricDef[ottlprofile.TransformContext]
+	profileMetricDefs []model.MetricDef[*ottlprofile.TransformContext]
 
 	component.StartFunc
 	component.ShutdownFunc
@@ -262,7 +262,7 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(profiles.ResourceProfiles().Len())
-	aggregator := aggregator.NewAggregator[ottlprofile.TransformContext](processedMetrics)
+	aggregator := aggregator.NewAggregator[*ottlprofile.TransformContext](processedMetrics)
 
 	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 		resourceProfile := profiles.ResourceProfiles().At(i)
@@ -283,21 +283,25 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 
 					// The transform context is created from original attributes so that the
 					// OTTL expressions are also applied on the original attributes.
-					tCtx := ottlprofile.NewTransformContext(profile, profiles.Dictionary(), scopeProfile.Scope(), resourceProfile.Resource(), scopeProfile, resourceProfile)
+					tCtx := ottlprofile.NewTransformContextPtr(resourceProfile, scopeProfile, profile, profiles.Dictionary())
 					if md.Conditions != nil {
 						match, err := md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
+							tCtx.Close()
 							return fmt.Errorf("failed to evaluate conditions: %w", err)
 						}
 						if !match {
 							sm.logger.Debug("condition not matched, skipping", zap.String("name", md.Key.Name))
+							tCtx.Close()
 							continue
 						}
 					}
 					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
 					if err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredProfileAttrs, 1); err != nil {
+						tCtx.Close()
 						return err
 					}
+					tCtx.Close()
 				}
 			}
 		}

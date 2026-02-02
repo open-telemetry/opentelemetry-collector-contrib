@@ -223,3 +223,19 @@ func AssertEqualProcessorTailSamplingSamplingTracesOnMemory(t *testing.T, tt *co
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
+
+func AssertEqualProcessorTailSamplingTracesDroppedTooLarge(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_traces_dropped_too_large",
+		Description: "Count of traces that were dropped because they were too large [Development]",
+		Unit:        "{traces}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_processor_tail_sampling_traces_dropped_too_large")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}

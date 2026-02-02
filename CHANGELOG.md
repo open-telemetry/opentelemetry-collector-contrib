@@ -73,7 +73,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `processor/k8sattributes`: Bumnp version of semconv to v1.39.0 (#45447)
 - `processor/redaction`: Add `sanitize_span_name` option to URL and DB sanitization configs. (#44228)
 - `processor/redaction`: Add `ignored_key_patterns` configuration option to allow ignoring keys by regex pattern (#44657)
-- `processor/resourcedetection`: Add optional docker attributes (#44898)
+- `processor/resourcedetection`: Add optional docker attributes (#44898). **Note**: Because of [opentelemetry-collector-releases#1350](https://github.com/open-telemetry/opentelemetry-collector-releases/issues/1350) this change is not available on the v0.144.0 binary releases. v0.145.0 will include this change.
   Add `container.image.name` and `container.name` optional resource attributes with the docker detector.
   
 - `processor/tail_sampling`: Provide an option, `decision_wait_after_root_received`, to make quicker decisions after a root span is received. (#43876)
@@ -121,8 +121,8 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   which is more reliable and not affected by filepath.Clean() issues.
   
 - `pkg/stanza`: Ensure `container` parser respects the `if` condition and `on_error` settings when format detection fails (#41508)
-- `processor/resourcedetection`: Prevent the resource detection processor from panicking when detectors return a zero-valued pdata resource. (#41934)
-- `processor/resourcedetection`: Fix nil pointer panic when HTTP client creation fails in Start method (#45220)
+- `processor/resourcedetection`: Prevent the resource detection processor from panicking when detectors return a zero-valued pdata resource. (#41934) **Note**: Because of [opentelemetry-collector-releases#1350](https://github.com/open-telemetry/opentelemetry-collector-releases/issues/1350) this change is not available on the v0.144.0 binary releases. v0.145.0 will include this change.
+- `processor/resourcedetection`: Fix nil pointer panic when HTTP client creation fails in Start method (#45220) **Note**: Because of [opentelemetry-collector-releases#1350](https://github.com/open-telemetry/opentelemetry-collector-releases/issues/1350) this change is not available on the v0.144.0 binary releases. v0.145.0 will include this change.
 - `receiver/awslambda`: Fix S3 key usage in AWS Lambda Receiver (#45364)
 - `receiver/datadog`: Fix service check endpoint to handle both array and single object payloads (#44986)
   The `/api/v1/check_run` endpoint now uses defensive parsing to handle both array `[{...}]` and single object `{...}` payloads.
@@ -3336,11 +3336,11 @@ This functionality is disabled by default, you can enable it by passing the foll
 ### 🚩 Deprecations 🚩
 
 - `sapmexporter`: Deprecate SAPM exporter (#36028)
-  The SAPM exporter is being marked as deprecated. Please use the `otlphttp` exporter with the configuration shown
+  The SAPM exporter is being marked as deprecated. Please use the `otlp_http` exporter with the configuration shown
   below. Also update your pipeline configuration for Traces accordingly.
   ```yaml
     exporters:
-        otlphttp:
+        otlp_http:
             traces_endpoint: "${SPLUNK_INGEST_URL}/v2/trace/otlp"
             headers:
                 "X-SF-Token": "${SPLUNK_ACCESS_TOKEN}"
