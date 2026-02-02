@@ -22,7 +22,7 @@ import (
 
 type EncodeArguments[K any] struct {
 	Target      ottl.Getter[K]
-	Encoding    string
+	Encoding    ottl.StringGetter[K]
 	Replacement ottl.Optional[ottl.StringGetter[K]]
 }
 
@@ -39,9 +39,13 @@ func createEncodeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	return Encode(args.Target, args.Encoding, args.Replacement)
 }
 
-func Encode[K any](target ottl.Getter[K], encoding string, replacementCharset ottl.Optional[ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
+func Encode[K any](target ottl.Getter[K], encoding ottl.StringGetter[K], replacementCharset ottl.Optional[ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		encodingVal, err := encoding.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +81,7 @@ func Encode[K any](target ottl.Getter[K], encoding string, replacementCharset ot
 			replacementStr = string(utf8.RuneError)
 		}
 
-		switch encoding {
+		switch encodingVal {
 		case "base64":
 			return base64.StdEncoding.EncodeToString([]byte(stringValue)), nil
 		case "base64-raw":
@@ -94,7 +98,7 @@ func Encode[K any](target ottl.Getter[K], encoding string, replacementCharset ot
 			// This is correct for decoding because ASCII is a subset of UTF-8, but not for encoding.
 			return encodeASCII(stringValue)
 		default:
-			e, err := textutils.LookupEncoding(encoding)
+			e, err := textutils.LookupEncoding(encodingVal)
 			if err != nil {
 				return nil, err
 			}

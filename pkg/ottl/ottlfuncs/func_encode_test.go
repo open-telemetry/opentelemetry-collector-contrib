@@ -262,7 +262,11 @@ func TestEncode(t *testing.T) {
 						return tt.value, nil
 					},
 				},
-				Encoding: tt.encoding,
+				Encoding: &ottl.StandardStringGetter[any]{
+					Getter: func(context.Context, any) (any, error) {
+						return tt.encoding, nil
+					},
+				},
 			}
 
 			if tt.replacement != "" {
