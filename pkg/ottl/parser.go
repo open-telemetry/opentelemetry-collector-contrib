@@ -34,7 +34,7 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	condition, err := s.condition.Eval(ctx, tCtx)
 	defer func() {
 		if s.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
-			s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", s.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
+			s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", s.origText), zap.Bool("condition matched", condition), newTransformContextField(tCtx))
 		}
 	}()
 	if err != nil {
@@ -472,7 +472,7 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	for _, condition := range c.conditions {
 		match, err := condition.Eval(ctx, tCtx)
 		if c.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
-			c.telemetrySettings.Logger.Debug("condition evaluation result", zap.String("condition", condition.origText), zap.Bool("match", match), zap.Any("TransformContext", tCtx))
+			c.telemetrySettings.Logger.Debug("condition evaluation result", zap.String("condition", condition.origText), zap.Bool("match", match), newTransformContextField(tCtx))
 		}
 		if err != nil {
 			if c.errorMode == PropagateError {
