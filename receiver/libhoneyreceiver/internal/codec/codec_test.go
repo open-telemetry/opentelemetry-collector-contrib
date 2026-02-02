@@ -685,21 +685,6 @@ func TestBuildLibhoneyEventFromMap_NativeTimeValue(t *testing.T) {
 			"timestamp should match the original time.Time value")
 	})
 
-	t.Run("time.Time value in data fallback", func(t *testing.T) {
-		rawEvent := map[string]any{
-			"data": map[string]any{
-				"field1": "value1",
-				"time":   expectedTime,
-			},
-			"samplerate": int64(1),
-		}
-
-		event := buildLibhoneyEventFromMap(rawEvent)
-		require.NotNil(t, event.MsgPackTimestamp, "MsgPackTimestamp should be set from data time.Time value")
-		assert.Equal(t, expectedTime, event.MsgPackTimestamp.UTC(),
-			"timestamp should match the data time.Time value")
-	})
-
 	t.Run("distinct time.Time values in batch produce distinct timestamps", func(t *testing.T) {
 		t1 := time.Date(2026, 1, 30, 9, 36, 48, 0, time.UTC)
 		t2 := time.Date(2026, 1, 30, 9, 36, 49, 0, time.UTC)

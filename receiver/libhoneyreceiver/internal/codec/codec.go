@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/vmihailenco/msgpack/v5"
@@ -241,30 +240,6 @@ func wrapFlatEventIfNeeded(rawEvent map[string]any) map[string]any {
 	return wrappedEvent
 }
 
-// timeValueToString converts a time value to a string for eventtime.GetEventTime.
-// Handles string, float64, int64, uint64, int, and time.Time types.
-// The time.Time case is needed because the msgpack library decodes timestamp
-// extension types as time.Time values in map[string]any.
-func timeValueToString(v any) string {
-	switch t := v.(type) {
-	case string:
-		return t
-	case float64:
-		return strconv.FormatFloat(t, 'f', -1, 64)
-	case int64:
-		return strconv.FormatInt(t, 10)
-	case uint64:
-		return strconv.FormatUint(t, 10)
-	case int:
-		return strconv.Itoa(t)
-	case time.Time:
-		if !t.IsZero() {
-			return t.UTC().Format(time.RFC3339Nano)
-		}
-	}
-	return ""
-}
-
 // buildLibhoneyEventFromMap constructs a LibhoneyEvent from a raw map
 func buildLibhoneyEventFromMap(rawEvent map[string]any) libhoneyevent.LibhoneyEvent {
 	event := libhoneyevent.LibhoneyEvent{
@@ -286,32 +261,27 @@ func buildLibhoneyEventFromMap(rawEvent map[string]any) libhoneyevent.LibhoneyEv
 		}
 	}
 
-	// Extract data first so we can check data["time"] as fallback
-	if data, ok := rawEvent["data"].(map[string]any); ok {
-		event.Data = data
-	}
-
-	// Extract time from top-level, falling back to data["time"]
-	timeStr := timeValueToString(rawEvent["time"])
-	if timeStr == "" && event.Data != nil {
-		timeStr = timeValueToString(event.Data["time"])
-	}
-
-	if timeStr != "" {
-		event.Time = timeStr
-		propertime := eventtime.GetEventTime(timeStr)
-		if !propertime.IsZero() {
+	// Extract time
+	if t, ok := rawEvent["time"]; ok {
+		switch v := t.(type) {
+		case string:
+			event.Time = v
+			propertime := eventtime.GetEventTime(v)
 			event.MsgPackTimestamp = &propertime
+		case *time.Time:
+			event.MsgPackTimestamp = v
+		case time.Time:
+			event.MsgPackTimestamp = &v
 		}
-	} else if t, ok := rawEvent["time"].(*time.Time); ok {
-		event.MsgPackTimestamp = t
-	} else if t, ok := rawEvent["time"].(time.Time); ok && !t.IsZero() {
-		utc := t.UTC()
-		event.MsgPackTimestamp = &utc
 	}
 	if event.MsgPackTimestamp == nil {
 		tnow := time.Now()
 		event.MsgPackTimestamp = &tnow
+	}
+
+	// Extract data
+	if data, ok := rawEvent["data"].(map[string]any); ok {
+		event.Data = data
 	}
 
 	return event
