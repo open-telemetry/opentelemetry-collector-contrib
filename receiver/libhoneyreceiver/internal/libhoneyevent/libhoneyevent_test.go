@@ -1008,7 +1008,6 @@ func TestToPTraceSpan_TimestampPreservation(t *testing.T) {
 		assert.NotEqual(t, spans[1].StartTimestamp(), spans[2].StartTimestamp(),
 			"span 2 and span 3 should have different start timestamps")
 	})
-
 }
 
 func TestLibhoneyEvent_UnmarshalMsgpack(t *testing.T) {
