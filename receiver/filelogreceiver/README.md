@@ -122,7 +122,7 @@ Many parsers operators can be configured to embed certain followup operations su
 
 ### Time parameters
 
-All time parameters must have the unit of time specified. e.g.: `200ms`, `1s`, `1m`. 
+All time parameters must have the unit of time specified. e.g.: `200ms`, `1s`, `1m`.
 
 ### Log Rotation
 
@@ -142,7 +142,7 @@ When a file is rotated and the rotated filename continues to match the `include`
 
 Example: With `include: /var/log/pods/*/*/*.log*`, when `0.log` is rotated to `0.log.20260115-120000`, logs from the rotated file will report `log.file.name=0.log.20260115-120000`.
 
-For more details, see [issue #38454](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38454). 
+For more details, see [issue #38454](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38454).
 
 ## Example - Tailing a simple json file
 
@@ -241,7 +241,7 @@ Exactly how this information is serialized depends on the type of storage being 
 
 ### Archiving
 
-If `polls_to_archive` setting is used in conjunction with `storage` setting, file offsets older than three poll cycles are stored on disk rather than being discarded. This feature enables the receiver to remember file for a longer period and also aims to use limited amount of memory. 
+If `polls_to_archive` setting is used in conjunction with `storage` setting, file offsets older than three poll cycles are stored on disk rather than being discarded. This feature enables the receiver to remember file for a longer period and also aims to use limited amount of memory.
 
 This is useful when `exclude_older_than` setting is used and the user wants the receiver to remember offsets of files for longer period of times. This helps prevent duplication if a file is modified after the `exclude_older_than` duration has passed.
 
@@ -250,7 +250,7 @@ Note that if the `polls_to_archive` setting is used without specifying `storage`
 ## Troubleshooting
 
 ### Tracking symlinked files
-If the receiver is being used to track a symlinked file and the symlink target is expected to change frequently, make sure 
+If the receiver is being used to track a symlinked file and the symlink target is expected to change frequently, make sure
 to set the value of the `poll_interval` setting to something lower than the symlink update frequency.
 
 ### Telemetry metrics
@@ -260,6 +260,16 @@ Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_re
 are provided.
 
 ## Feature Gates
+
+### `filelog.asyncPolling`
+
+When this feature gate is enabled, the receiver uses asynchronous polling and worker pool pattern to ensure `poll_interval` is respected and files are processed concurrently. This prevents slow file processing from delaying subsequent polls and avoids one slow file from blocking faster files in the same batch.
+
+This is particularly useful for environments with rapid file rotation (e.g., Kubernetes with small log rotation sizes).
+
+Schedule for this feature gate is:
+
+- Introduce as `Alpha` (disabled by default) - (disabled by default) in `v0.143.0`
 
 ### `filelog.decompressFingerprint`
 
@@ -271,4 +281,4 @@ Schedule for this feature gate is:
 
 - Introduce as `Alpha` (disabled by default) in `v0.128.0`
 - Move to `Beta` (enabled by default) in `v0.133.0`
-- Move to `Stable` (cannot be disabled) in `v0.142.0` 
+- Move to `Stable` (cannot be disabled) in `v0.142.0`

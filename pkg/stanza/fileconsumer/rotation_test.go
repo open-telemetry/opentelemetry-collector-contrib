@@ -86,10 +86,133 @@ func TestCopyTruncate(t *testing.T) {
 	wg.Wait()
 }
 
+// TestCopyTruncateAsync tests copy-truncate rotation with async polling enabled
+func TestCopyTruncateAsync(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
+
+	setAsyncPolling(t, true)
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.PollInterval = 10 * time.Millisecond
+	operator, sink := testManager(t, cfg)
+
+	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
+	fileName := func(f, k int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.rot%d.log", f, k)) }
+	baseFileName := func(f int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.log", f)) }
+
+	numFiles := 3
+	numMessages := 300
+	numRotations := 3
+
+	expected := make([][]byte, 0, numFiles*numMessages*numRotations)
+	for i := range numFiles {
+		for j := range numMessages {
+			for k := range numRotations {
+				expected = append(expected, []byte(getMessage(i, k, j)))
+			}
+		}
+	}
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	var wg sync.WaitGroup
+	for fileNum := range numFiles {
+		wg.Add(1)
+		go func(fn int) {
+			defer wg.Done()
+
+			file := filetest.OpenFile(t, baseFileName(fn))
+			for rotationNum := range numRotations {
+				for messageNum := range numMessages {
+					filetest.WriteString(t, file, getMessage(fn, rotationNum, messageNum)+"\n")
+					time.Sleep(10 * time.Millisecond)
+				}
+				assert.NoError(t, file.Sync())
+				_, err := file.Seek(0, 0)
+				assert.NoError(t, err)
+				dst := filetest.OpenFile(t, fileName(fn, rotationNum))
+				_, err = io.Copy(dst, file)
+				assert.NoError(t, err)
+				assert.NoError(t, dst.Close())
+				assert.NoError(t, file.Truncate(0))
+				_, err = file.Seek(0, 0)
+				assert.NoError(t, err)
+			}
+		}(fileNum)
+	}
+
+	sink.ExpectTokens(t, expected...)
+	wg.Wait()
+}
+
 func TestMoveCreate(t *testing.T) {
 	if runtime.GOOS == windowsOS {
 		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
 	}
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+
+	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
+	fileName := func(f, k int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.rot%d.log", f, k)) }
+	baseFileName := func(f int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.log", f)) }
+
+	numFiles := 3
+	numMessages := 30
+	numRotations := 3
+
+	expected := make([][]byte, 0, numFiles*numMessages*numRotations)
+	for i := range numFiles {
+		for j := range numMessages {
+			for k := range numRotations {
+				expected = append(expected, []byte(getMessage(i, k, j)))
+			}
+		}
+	}
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	var wg sync.WaitGroup
+	for fileNum := range numFiles {
+		wg.Add(1)
+		go func(fn int) {
+			defer wg.Done()
+
+			for rotationNum := range numRotations {
+				file := filetest.OpenFile(t, baseFileName(fn))
+				for messageNum := range numMessages {
+					filetest.WriteString(t, file, getMessage(fn, rotationNum, messageNum)+"\n")
+					time.Sleep(10 * time.Millisecond)
+				}
+				assert.NoError(t, file.Close())
+				assert.NoError(t, os.Rename(baseFileName(fn), fileName(fn, rotationNum)))
+			}
+		}(fileNum)
+	}
+
+	sink.ExpectTokens(t, expected...)
+	wg.Wait()
+}
+
+// TestMoveCreateAsync tests move-create rotation with async polling enabled
+func TestMoveCreateAsync(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
+
+	setAsyncPolling(t, true)
+
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
