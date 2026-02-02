@@ -702,7 +702,7 @@ generate-gh-issue-templates:
 SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
 
 .PHONY: generate-schemas
-generate-schemas:
+generate-schemas: $(SCHEMAGEN)
 	@$(foreach dir,$(SCHEMA_DIRS), $(SCHEMAGEN) $(dir) -o $(dir);)
 
 .PHONY: checks
