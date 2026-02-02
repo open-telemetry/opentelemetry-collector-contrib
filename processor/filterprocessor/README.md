@@ -101,18 +101,18 @@ processors:
   filter:
     error_mode: propagate
     trace_conditions:
-      - 'span.attributes["container.name"] == "app_container_1"'
-      - 'resource.attributes["host.name"] == "localhost"'
-      - 'span.name == "app_3"'
+      - span.attributes["container.name"] == "app_container_1"
+      - resource.attributes["host.name"] == "localhost"
+      - span.name == "app_3"
     metric_conditions:
-      - 'metric.name == "my.metric" and resource.attributes["my_label"] == "abc123"'
-      - 'metric.type == METRIC_DATA_TYPE_HISTOGRAM'
-      - 'resource.attributes["service.name"] == "my_service_name"'
+      - metric.name == "my.metric" and resource.attributes["my_label"] == "abc123"
+      - metric.type == METRIC_DATA_TYPE_HISTOGRAM
+      - resource.attributes["service.name"] == "my_service_name"
     log_conditions:
-      - 'IsMatch(log.body, ".*password.*")'
-      - 'log.severity_number < SEVERITY_NUMBER_WARN'
+      - IsMatch(log.body, ".*password.*")
+      - log.severity_number < SEVERITY_NUMBER_WARN
     profile_conditions:
-      - 'profile.duration_nanos > 3000'
+      - profile.duration_unix_nano > 3000
 ```
 
 #### Context Inference
