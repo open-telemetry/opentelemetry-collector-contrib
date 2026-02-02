@@ -31,6 +31,16 @@ override the resource value in telemetry data with this information.
 > $ otelcol --config=config.yaml --feature-gates=-processor.resourcedetection.propagateerrors
 > ```
 
+## Feature gates
+
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
+
+Feature gates can be enabled using the `--feature-gates` flag:
+
+```shell
+"--feature-gates=<feature-gate>"
+```
+
 ## Supported detectors
 
 ### Environment Variable
@@ -782,6 +792,16 @@ processors:
     detectors: ["vultr"]
 ```
 
+The Vultr detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/vultr:
+    detectors: ["vultr"]
+    vultr:
+      fail_on_missing_metadata: true
+```
+
 ### Digital Ocean
 
 Uses the [Digital Ocean metadata API](https://docs.digitalocean.com/reference/api/metadata/) to read resource information from the instance metadata service and populate related resource attributes.
@@ -794,16 +814,6 @@ Akamai custom configuration example:
 processors:
   resourcedetection/digitalocean:
     detectors: ["digitalocean"]
-```
-
-The Vultr detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resourcedetection/vultr:
-    detectors: ["vultr"]
-    vultr:
-      fail_on_missing_metadata: true
 ```
 
 ### Openstack Nova
@@ -837,10 +847,34 @@ processors:
       fail_on_missing_metadata: true
 ```
 
+### Alibaba Cloud ECS
+
+Uses the [Alibaba Cloud metadata API](https://www.alibabacloud.com/help/en/ecs/user-guide/view-instance-metadata/?spm=a2c63.p38356.help-menu-25365.d_0_1_3_4_6.7d2848cfJpcLdU#393b14378evdm) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Alibaba Cloud ECS Detector Resource Attributes](./internal/alibaba/ecs/documentation.md).
+
+Alibaba Cloud ECS custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/alibaba_ecs:
+    detectors: ["alibaba_ecs"]
+```
+
+The Alibaba Cloud ECS detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/alibaba_ecs:
+    detectors: ["alibaba_ecs"]
+    alibaba_ecs:
+      fail_on_missing_metadata: true
+```
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

@@ -1,0 +1,30 @@
+{
+    "records": [
+        {
+            "Level": 5,
+            "category": "Security",
+            "location": "centralus",
+            "resourceId": "/SUBSCRIPTIONS/11111111-1111-1111-1111-111111111111/PROVIDERS/MICROSOFT.SECURITY/LOCATIONS/CENTRALUS/ALERTS/2518939942613820660_A48F8653-3FC6-4166-9F19-914F030A13D3",
+            "time": "2017-10-18T06:02:18.6179339Z",
+            "level": "Informational",
+            "correlationId": "aaaaaaaa-bbbb-cccc-dddd-555555555555",
+            "operationName": "MICROSOFT.SECURITY/LOCATIONS/ALERTS/ACTIVATE/ACTION",
+            "resultType": "Active",
+            "properties": {
+                "accountLogonId": "0x2r4",
+                "commandLine": "c:\\mydirectory\\doubleetension.pdf.exe",
+                "domainName": "hpc",
+                "parentProcess": "unknown",
+                "parentProcess id": "0",
+                "processId": "6988",
+                "processName": "c:\\mydirectory\\doubleetension.pdf.exe",
+                "userName": "exampleUser",
+                "UserSID": "S-3-2-12",
+                "ActionTaken": "Detected",
+                "Severity": "High",
+                "eventCategory": "Security"
+            },
+            "tenantId": "22222222-2222-2222-2222-222222222222"
+        }
+    ]
+}

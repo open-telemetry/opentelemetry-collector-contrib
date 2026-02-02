@@ -95,6 +95,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	require.NotNil(t, logExp)
 
 	assert.NoError(t, exp.Shutdown(t.Context()))
+	assert.NoError(t, logExp.Shutdown(t.Context()))
 }
 
 func TestCreateMetrics_CustomConfig(t *testing.T) {
