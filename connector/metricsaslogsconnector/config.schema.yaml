@@ -1,0 +1,6 @@
+type: object
+properties:
+  include_resource_attributes:
+    type: boolean
+  include_scope_info:
+    type: boolean
