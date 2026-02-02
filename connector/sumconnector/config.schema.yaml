@@ -1,0 +1,47 @@
+$defs:
+  attribute_config:
+    type: object
+    properties:
+      default_value:
+        x-customType: any
+      key:
+        type: string
+  metric_info:
+    description: MetricInfo for a data type
+    type: object
+    properties:
+      attributes:
+        type: array
+        items:
+          $ref: attribute_config
+      conditions:
+        type: array
+        items:
+          type: string
+      description:
+        type: string
+      source_attribute:
+        type: string
+description: Config for the connector
+type: object
+properties:
+  datapoints:
+    type: object
+    additionalProperties:
+      $ref: metric_info
+  logs:
+    type: object
+    additionalProperties:
+      $ref: metric_info
+  metrics:
+    type: object
+    additionalProperties:
+      $ref: metric_info
+  spanevents:
+    type: object
+    additionalProperties:
+      $ref: metric_info
+  spans:
+    type: object
+    additionalProperties:
+      $ref: metric_info
