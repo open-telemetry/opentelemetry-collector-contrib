@@ -12,6 +12,7 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 )
@@ -52,7 +53,7 @@ func (*Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeType
 		out = datadogV2.METRICINTAKETYPE_GAUGE
 	}
 
-	return
+	return out
 }
 
 // runningMetrics gets the running metrics for the exporter.
@@ -81,7 +82,7 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 		series = append(series, runningMetric...)
 	}
 
-	return
+	return series
 }
 
 // All gets all metrics (consumed metrics and running metrics).
@@ -148,4 +149,24 @@ func (c *Consumer) ConsumeHost(host string) {
 // ConsumeTag implements the metrics.TagsConsumer interface.
 func (c *Consumer) ConsumeTag(tag string) {
 	c.seenTags[tag] = struct{}{}
+}
+
+// ConsumeExplicitBoundHistogram implements the metrics.ExplicitBoundHistogramConsumer interface.
+// This is a no-op implementation as we use sketch-based histograms.
+func (*Consumer) ConsumeExplicitBoundHistogram(
+	_ context.Context,
+	_ *metrics.Dimensions,
+	_ pmetric.HistogramDataPointSlice,
+) {
+	// No-op: we use sketch-based histograms
+}
+
+// ConsumeExponentialHistogram implements the metrics.ExponentialHistogramConsumer interface.
+// This is a no-op implementation as we use sketch-based histograms.
+func (*Consumer) ConsumeExponentialHistogram(
+	_ context.Context,
+	_ *metrics.Dimensions,
+	_ pmetric.ExponentialHistogramDataPointSlice,
+) {
+	// No-op: we use sketch-based histograms
 }

@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
@@ -62,9 +61,8 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:     configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   queueCfg,
+		QueueSettings:   configoptional.Some(queueCfg),
 		ClientConfig: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
 			// Default to zstd compression
 			Compression: configcompression.TypeZstd,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.

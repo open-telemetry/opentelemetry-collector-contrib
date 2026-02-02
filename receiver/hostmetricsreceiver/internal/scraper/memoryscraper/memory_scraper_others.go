@@ -24,5 +24,5 @@ func (s *memoryScraper) recordMemoryUtilizationMetric(now pcommon.Timestamp, mem
 	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Inactive)/float64(memInfo.Total), metadata.AttributeStateInactive)
 }
 
-func (s *memoryScraper) recordSystemSpecificMetrics(_ pcommon.Timestamp, _ *mem.VirtualMemoryStat) {
+func (*memoryScraper) recordSystemSpecificMetrics(_ pcommon.Timestamp, _ *mem.VirtualMemoryStat) {
 }

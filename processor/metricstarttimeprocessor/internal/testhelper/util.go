@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -46,8 +46,8 @@ func MetricsFromResourceMetrics(metrics ...pmetric.ResourceMetrics) pmetric.Metr
 
 func ResourceMetrics(job, instance string, metrics ...pmetric.Metric) pmetric.ResourceMetrics {
 	mr := pmetric.NewResourceMetrics()
-	mr.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), job)
-	mr.Resource().Attributes().PutStr(string(semconv.ServiceInstanceIDKey), instance)
+	mr.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), job)
+	mr.Resource().Attributes().PutStr(string(conventions.ServiceInstanceIDKey), instance)
 	ms := mr.ScopeMetrics().AppendEmpty().Metrics()
 
 	for _, metric := range metrics {
@@ -207,7 +207,7 @@ func ExponentialHistogramPointSimplified(attributes []*KV, startTimestamp, times
 	return hdp
 }
 
-func DoublePointRaw(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
+func NumberPointRaw(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
 	ndp := pmetric.NewNumberDataPoint()
 	ndp.SetStartTimestamp(startTimestamp)
 	ndp.SetTimestamp(timestamp)
@@ -220,13 +220,19 @@ func DoublePointRaw(attributes []*KV, startTimestamp, timestamp pcommon.Timestam
 }
 
 func DoublePoint(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp, value float64) pmetric.NumberDataPoint {
-	ndp := DoublePointRaw(attributes, startTimestamp, timestamp)
+	ndp := NumberPointRaw(attributes, startTimestamp, timestamp)
 	ndp.SetDoubleValue(value)
 	return ndp
 }
 
+func IntPoint(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp, value int64) pmetric.NumberDataPoint {
+	ndp := NumberPointRaw(attributes, startTimestamp, timestamp)
+	ndp.SetIntValue(value)
+	return ndp
+}
+
 func DoublePointNoValue(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
-	ndp := DoublePointRaw(attributes, startTimestamp, timestamp)
+	ndp := NumberPointRaw(attributes, startTimestamp, timestamp)
 	ndp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	return ndp
 }

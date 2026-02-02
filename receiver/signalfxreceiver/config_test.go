@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -37,7 +38,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:9943",
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "localhost:9943",
+					},
 				},
 			},
 		},
@@ -45,7 +49,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "tls"),
 			expected: &Config{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:9943",
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "localhost:9943",
+					},
 					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "/test.crt",
@@ -75,7 +82,7 @@ func TestLoadConfig(t *testing.T) {
 func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = ""
+	cfg.NetAddr.Endpoint = ""
 
 	err := cfg.Validate()
 	assert.EqualError(t, err, "empty endpoint")
@@ -84,7 +91,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 func TestCreateNoPortEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:"
+	cfg.NetAddr.Endpoint = "localhost:"
 
 	err := cfg.Validate()
 	assert.EqualError(t, err, `endpoint port is not a number: strconv.ParseInt: parsing "": invalid syntax`)
@@ -93,7 +100,7 @@ func TestCreateNoPortEndpoint(t *testing.T) {
 func TestCreateLargePortEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:65536"
+	cfg.NetAddr.Endpoint = "localhost:65536"
 
 	err := cfg.Validate()
 	assert.EqualError(t, err, "port number must be between 1 and 65535")

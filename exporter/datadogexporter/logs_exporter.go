@@ -46,11 +46,18 @@ func newLogsAgentExporter(
 		agentcomponents.WithLogsDefaults(),
 		agentcomponents.WithProxy(cfg),
 	)
+	hostnameComponent := logs.NewHostnameService(sourceProvider)
 	logsAgentConfig := &logsagentexporter.Config{
 		OtelSource:    otelSource,
 		LogSourceName: logSourceName,
+		OrchestratorConfig: logsagentexporter.OrchestratorConfig{
+			Hostname: hostnameComponent,
+			Key:      string(cfg.API.Key),
+			Site:     cfg.API.Site,
+			Endpoint: cfg.OrchestratorExplorer.Endpoint,
+			Enabled:  cfg.OrchestratorExplorer.Enabled,
+		},
 	}
-	hostnameComponent := logs.NewHostnameService(sourceProvider)
 	logsAgent := logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
 		Log:          logComponent,
 		Config:       cfgComponent,

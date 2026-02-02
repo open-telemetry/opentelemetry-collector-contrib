@@ -6,7 +6,7 @@ package geoipprocessor
 import (
 	"context"
 	"errors"
-	"net"
+	"net/netip"
 	"path/filepath"
 	"testing"
 
@@ -37,7 +37,7 @@ type providerFactoryMock struct {
 }
 
 type providerMock struct {
-	LocationF func(context.Context, net.IP) (attribute.Set, error)
+	LocationF func(context.Context, netip.Addr) (attribute.Set, error)
 	CloseF    func(context.Context) error
 }
 
@@ -58,7 +58,7 @@ func (fm *providerFactoryMock) CreateGeoIPProvider(ctx context.Context, settings
 	return fm.CreateGeoIPProviderF(ctx, settings, cfg)
 }
 
-func (pm *providerMock) Location(ctx context.Context, ip net.IP) (attribute.Set, error) {
+func (pm *providerMock) Location(ctx context.Context, ip netip.Addr) (attribute.Set, error) {
 	return pm.LocationF(ctx, ip)
 }
 
@@ -67,7 +67,7 @@ func (pm *providerMock) Close(ctx context.Context) error {
 }
 
 var baseMockProvider = providerMock{
-	LocationF: func(context.Context, net.IP) (attribute.Set, error) {
+	LocationF: func(context.Context, netip.Addr) (attribute.Set, error) {
 		return attribute.Set{}, nil
 	},
 	CloseF: func(context.Context) error {
@@ -85,7 +85,7 @@ var baseMockFactory = providerFactoryMock{
 }
 
 var baseProviderMock = providerMock{
-	LocationF: func(context.Context, net.IP) (attribute.Set, error) {
+	LocationF: func(context.Context, netip.Addr) (attribute.Set, error) {
 		return attribute.Set{}, nil
 	},
 	CloseF: func(context.Context) error {
@@ -216,8 +216,8 @@ func TestProcessor(t *testing.T) {
 		return &baseProviderMock, nil
 	}
 
-	baseProviderMock.LocationF = func(_ context.Context, sourceIP net.IP) (attribute.Set, error) {
-		if sourceIP.Equal(net.IPv4(1, 2, 3, 4)) {
+	baseProviderMock.LocationF = func(_ context.Context, sourceIP netip.Addr) (attribute.Set, error) {
+		if sourceIP.Compare(netip.AddrFrom4([4]byte{1, 2, 3, 4})) == 0 {
 			return attribute.NewSet([]attribute.KeyValue{
 				attribute.String(conventions.AttributeGeoCityName, "Boxford"),
 				attribute.String(conventions.AttributeGeoContinentCode, "EU"),

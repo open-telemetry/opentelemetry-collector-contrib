@@ -18,7 +18,7 @@ import (
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -37,6 +37,7 @@ type collector struct {
 	constLabels      prometheus.Labels
 	metricFamilies   sync.Map
 	metricExpiration time.Duration
+	withoutScopeInfo bool
 
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
@@ -57,6 +58,7 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 		sendTimestamps:   config.SendTimestamps,
 		constLabels:      config.ConstLabels,
 		metricExpiration: config.MetricExpiration,
+		withoutScopeInfo: config.WithoutScopeInfo,
 		metricNamer:      configureMetricNamer(config),
 		labelNamer:       labelNamer,
 	}
@@ -181,11 +183,101 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 		return c.convertSum(metric, resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
 	case pmetric.MetricTypeHistogram:
 		return c.convertDoubleHistogram(metric, resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
+	case pmetric.MetricTypeExponentialHistogram:
+		return c.convertExponentialHistogram(metric, resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
 	case pmetric.MetricTypeSummary:
 		return c.convertSummary(metric, resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
 	}
 
 	return nil, errUnknownMetricType
+}
+
+// defaultZeroThreshold matches the remote-write translator's default for native histograms
+// when an explicit zero threshold is not provided in the datapoint.
+const (
+	defaultZeroThreshold = 1e-128
+	cbnhScale            = -53
+)
+
+func bucketsToNativeMap(buckets pmetric.ExponentialHistogramDataPointBuckets, scaleDown int32) map[int]int64 {
+	counts := buckets.BucketCounts()
+	if counts.Len() == 0 {
+		return nil
+	}
+	out := make(map[int]int64, counts.Len())
+	baseOffset := buckets.Offset()
+	for i := 0; i < counts.Len(); i++ {
+		// Effective bucket index after downscaling: ((offset + i) >> scaleDown) + 1
+		idx := (int32(i) + baseOffset) >> scaleDown
+		idx++
+		out[int(idx)] += int64(counts.At(i))
+	}
+	return out
+}
+
+func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (prometheus.Metric, error) {
+	dp := metric.ExponentialHistogram().DataPoints().At(0)
+
+	// Build metadata/labels first.
+	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_HISTOGRAM.Enum(), dp.Attributes(), resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
+	if err != nil {
+		return nil, err
+	}
+
+	schema := dp.Scale()
+
+	// TODO: implement custom bucket native histograms #43981
+	if schema == cbnhScale {
+		return nil, errors.New("custom bucket native histograms (CBNH) are still not implemented")
+	}
+	if schema < -4 {
+		return nil, fmt.Errorf("cannot convert exponential to native histogram: scale must be >= -4, was %d", schema)
+	}
+	var scaleDown int32
+	if schema > 8 {
+		scaleDown = schema - 8
+		schema = 8
+	}
+
+	pos := bucketsToNativeMap(dp.Positive(), scaleDown)
+	neg := bucketsToNativeMap(dp.Negative(), scaleDown)
+
+	zeroThresh := dp.ZeroThreshold()
+	if zeroThresh == 0 {
+		zeroThresh = defaultZeroThreshold
+	}
+
+	// Use created timestamp if start time is set (> 0), else zero value.
+	created := time.Time{}
+	if dp.StartTimestamp().AsTime().Unix() > 0 {
+		created = dp.StartTimestamp().AsTime()
+	}
+
+	sumVal := 0.0
+	if dp.HasSum() {
+		sumVal = dp.Sum()
+	}
+
+	m, err := prometheus.NewConstNativeHistogram(
+		desc,
+		dp.Count(),
+		sumVal,
+		pos,
+		neg,
+		dp.ZeroCount(),
+		schema,
+		zeroThresh,
+		created,
+		attributes...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if c.sendTimestamps {
+		return prometheus.NewMetricWithTimestamp(dp.Timestamp().AsTime(), m), nil
+	}
+	return m, nil
 }
 
 func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes, resourceAttrs pcommon.Map, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map) (*prometheus.Desc, []string, error) {
@@ -212,22 +304,24 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 		values = append(values, v.AsString())
 	}
 
-	for k, v := range scopeAttributes.All() {
-		labelName, err := c.labelNamer.Build("otel_scope_" + k)
-		if err != nil {
-			multiErrs = multierr.Append(multiErrs, err)
-			continue
+	if !c.withoutScopeInfo {
+		for k, v := range scopeAttributes.All() {
+			labelName, err := c.labelNamer.Build("otel_scope_" + k)
+			if err != nil {
+				multiErrs = multierr.Append(multiErrs, err)
+				continue
+			}
+			keys = append(keys, labelName)
+			values = append(values, v.AsString())
 		}
-		keys = append(keys, labelName)
-		values = append(values, v.AsString())
-	}
 
-	keys = append(keys, "otel_scope_name")
-	values = append(values, scopeName)
-	keys = append(keys, "otel_scope_version")
-	values = append(values, scopeVersion)
-	keys = append(keys, "otel_scope_schema_url")
-	values = append(values, scopeSchemaURL)
+		keys = append(keys, "otel_scope_name")
+		values = append(values, scopeName)
+		keys = append(keys, "otel_scope_version")
+		values = append(values, scopeVersion)
+		keys = append(keys, "otel_scope_schema_url")
+		values = append(values, scopeSchemaURL)
+	}
 
 	if job, ok := extractJob(resourceAttrs); ok {
 		keys = append(keys, model.JobLabel)

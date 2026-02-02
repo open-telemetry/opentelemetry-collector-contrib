@@ -19,10 +19,8 @@ import (
 const (
 	podNodeField            = "spec.nodeName"
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
-	tagNodeName             = "k8s.node.name"
 	tagStartTime            = "k8s.pod.start_time"
 	tagHostName             = "k8s.pod.hostname"
-	tagClusterUID           = "k8s.cluster.uid"
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
@@ -262,8 +260,9 @@ type ExtractionRules struct {
 	ServiceVersion            bool
 	ServiceInstanceID         bool
 
-	Annotations []FieldExtractionRule
-	Labels      []FieldExtractionRule
+	Annotations                  []FieldExtractionRule
+	Labels                       []FieldExtractionRule
+	DeploymentNameFromReplicaSet bool
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
@@ -398,7 +397,6 @@ type Associations struct {
 
 // Association represents one association rule
 type Association struct {
-	Name    string
 	Sources []AssociationSource
 }
 

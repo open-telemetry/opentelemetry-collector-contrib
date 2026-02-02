@@ -1,0 +1,272 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: redis.version
+          value:
+            stringValue: 8.2.1
+    scopeMetrics:
+      - metrics:
+          - description: Number of clients pending on a blocking call
+            name: redis.clients.blocked
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            unit: "{client}"
+          - description: Number of client connections (excluding connections from replicas)
+            name: redis.clients.connected
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            unit: "{client}"
+          - description: Biggest input buffer among current client connections
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            name: redis.clients.max_input_buffer
+            unit: By
+          - description: Longest output list among current client connections
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            name: redis.clients.max_output_buffer
+            unit: By
+          - description: Number of commands processed per second
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            name: redis.commands
+            unit: "{ops}/s"
+          - description: Total number of commands processed by the server
+            name: redis.commands.processed
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: "{command}"
+          - description: Total number of connections accepted by the server
+            name: redis.connections.received
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: "{connection}"
+          - description: Number of connections rejected because of maxclients limit
+            name: redis.connections.rejected
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: "{connection}"
+          - description: System CPU consumed by the Redis server in seconds since server start
+            name: redis.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.31895
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: sys
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+                - asDouble: 0.004504
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: sys_children
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+                - asDouble: 0.31858
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: sys_main_thread
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+                - asDouble: 1.101488
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+                - asDouble: 0.004405
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: user_children
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+                - asDouble: 1.100888
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: user_main_thread
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: s
+          - description: Number of evicted keys due to maxmemory limit
+            name: redis.keys.evicted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: "{key}"
+          - description: Total number of key expiration events
+            name: redis.keys.expired
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: "{event}"
+          - description: Number of successful lookup of keys in the main dictionary
+            name: redis.keyspace.hits
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: "{hit}"
+          - description: Number of failed lookup of keys in the main dictionary
+            name: redis.keyspace.misses
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: "{miss}"
+          - description: Duration of the latest fork operation in microseconds
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            name: redis.latest_fork
+            unit: us
+          - description: Redis server mode
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: mode
+                      value:
+                        stringValue: sentinel
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            name: redis.mode
+            unit: "{mode}"
+          - description: The total number of bytes read from the network
+            name: redis.net.input
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "458"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: By
+          - description: The total number of bytes written to the network
+            name: redis.net.output
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "42172"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: By
+          - description: Number of masters monitored by Sentinel.
+            name: redis.sentinel.masters
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            unit: "{master}"
+          - description: Number of running Sentinel scripts.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            name: redis.sentinel.running_scripts
+            unit: "{script}"
+          - description: Length of Sentinel scripts queue.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            name: redis.sentinel.scripts_queue_length
+            unit: "{script}"
+          - description: Simulated failure flags bitmask.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            name: redis.sentinel.simulate_failure_flags
+            unit: "{flag}"
+          - description: Duration in seconds of current TILT, or -1 if not in TILT mode.
+            gauge:
+              dataPoints:
+                - asInt: "-1"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+            name: redis.sentinel.tilt_since_seconds
+            unit: s
+          - description: Total TILT occurrences since start.
+            name: redis.sentinel.total_tilt
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: "{event}"
+          - description: Number of seconds since Redis server start
+            name: redis.uptime
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "156"
+                  startTimeUnixNano: "1687339331739210000"
+                  timeUnixNano: "1687339332739210000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver
+          version: latest

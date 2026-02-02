@@ -1,9 +1,69 @@
 default:
 all_set:
   metrics:
-    system.nfs.net.count:
+    nfs.client.net.count:
+      enabled: true
+    nfs.client.net.tcp.connection.accepted:
+      enabled: true
+    nfs.client.operation.count:
+      enabled: true
+    nfs.client.procedure.count:
+      enabled: true
+    nfs.client.rpc.authrefresh.count:
+      enabled: true
+    nfs.client.rpc.count:
+      enabled: true
+    nfs.client.rpc.retransmit.count:
+      enabled: true
+    nfs.server.fh.stale.count:
+      enabled: true
+    nfs.server.io:
+      enabled: true
+    nfs.server.net.count:
+      enabled: true
+    nfs.server.net.tcp.connection.accepted:
+      enabled: true
+    nfs.server.operation.count:
+      enabled: true
+    nfs.server.procedure.count:
+      enabled: true
+    nfs.server.repcache.requests:
+      enabled: true
+    nfs.server.rpc.count:
+      enabled: true
+    nfs.server.thread.count:
       enabled: true
 none_set:
   metrics:
-    system.nfs.net.count:
+    nfs.client.net.count:
+      enabled: false
+    nfs.client.net.tcp.connection.accepted:
+      enabled: false
+    nfs.client.operation.count:
+      enabled: false
+    nfs.client.procedure.count:
+      enabled: false
+    nfs.client.rpc.authrefresh.count:
+      enabled: false
+    nfs.client.rpc.count:
+      enabled: false
+    nfs.client.rpc.retransmit.count:
+      enabled: false
+    nfs.server.fh.stale.count:
+      enabled: false
+    nfs.server.io:
+      enabled: false
+    nfs.server.net.count:
+      enabled: false
+    nfs.server.net.tcp.connection.accepted:
+      enabled: false
+    nfs.server.operation.count:
+      enabled: false
+    nfs.server.procedure.count:
+      enabled: false
+    nfs.server.repcache.requests:
+      enabled: false
+    nfs.server.rpc.count:
+      enabled: false
+    nfs.server.thread.count:
       enabled: false

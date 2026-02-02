@@ -8,7 +8,7 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fpostgresql%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fpostgresql) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fpostgresql%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fpostgresql) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_postgresql)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_postgresql&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@antonblock](https://www.github.com/antonblock), [@ishleenk17](https://www.github.com/ishleenk17), [@Caleb-Hurshman](https://www.github.com/Caleb-Hurshman) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -23,6 +23,32 @@ This receiver queries the PostgreSQL [statistics collector](https://www.postgres
 See PostgreSQL documentation for [supported versions](https://www.postgresql.org/support/versioning).
 
 The monitoring user must be granted `SELECT` on `pg_stat_database`.
+
+> [!NOTE]
+> The feature gate `receiver.postgresql.separateSchemaAttr` addresses an inconsistency in how schema names
+> are reported across different metric types. When enabled, schema names are consistently reported in a
+> dedicated `postgresql.schema.name` resource attribute.
+>
+> **Status:** Alpha (disabled by default)
+>
+> **When disabled (default behavior):**
+> - Table metrics: `postgresql.table.name = "schema_name.table_name"` (schema included)
+> - Index metrics: `postgresql.table.name = "table_name"` (schema **missing**)
+> - Function metrics: Schema reported separately in some cases
+>
+> **When enabled (recommended for consistency):**
+> - All metrics consistently use:
+>   - `postgresql.schema.name = "schema_name"`
+>   - `postgresql.table.name = "table_name"`
+>
+> This ensures reliable correlation of metrics when tables with identical names exist across different schemas.
+> To enable:
+>
+> ```bash
+> otelcol-contrib --feature-gates=receiver.postgresql.separateSchemaAttr
+> ```
+>
+> See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559 for more details.
 
 ## Configuration
 

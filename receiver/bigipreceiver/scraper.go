@@ -49,7 +49,7 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *bi
 // start initializes a new big-ip client for the scraper
 func (s *bigipScraper) start(ctx context.Context, host component.Host) (err error) {
 	s.client, err = newClient(ctx, s.cfg, host, s.settings, s.logger)
-	return
+	return err
 }
 
 // scrape collects and creates OTEL metrics from a Big-IP environment

@@ -33,6 +33,8 @@ type redaction struct {
 	allowList map[string]string
 	// Attribute keys ignored in a span
 	ignoreList map[string]string
+	// Attribute key patterns ignored in a span
+	ignoreKeyRegexList map[string]*regexp.Regexp
 	// Attribute values blocked in a span
 	blockRegexList map[string]*regexp.Regexp
 	// Attribute values allowed in a span
@@ -55,6 +57,11 @@ type redaction struct {
 func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*redaction, error) {
 	allowList := makeAllowList(config)
 	ignoreList := makeIgnoreList(config)
+	ignoreKeysRegexList, err := makeRegexList(ctx, config.IgnoredKeyPatterns)
+	if err != nil {
+		// TODO: Placeholder for an error metric in the next PR
+		return nil, fmt.Errorf("failed to process ignore keys list: %w", err)
+	}
 	blockRegexList, err := makeRegexList(ctx, config.BlockedValues)
 	if err != nil {
 		// TODO: Placeholder for an error metric in the next PR
@@ -82,16 +89,17 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 	dbObfuscator := db.NewObfuscator(config.DBSanitizer)
 
 	return &redaction{
-		allowList:         allowList,
-		ignoreList:        ignoreList,
-		blockRegexList:    blockRegexList,
-		allowRegexList:    allowRegexList,
-		blockKeyRegexList: blockKeysRegexList,
-		hashFunction:      config.HashFunction,
-		config:            config,
-		logger:            logger,
-		urlSanitizer:      urlSanitizer,
-		dbObfuscator:      dbObfuscator,
+		allowList:          allowList,
+		ignoreList:         ignoreList,
+		ignoreKeyRegexList: ignoreKeysRegexList,
+		blockRegexList:     blockRegexList,
+		allowRegexList:     allowRegexList,
+		blockKeyRegexList:  blockKeysRegexList,
+		hashFunction:       config.HashFunction,
+		config:             config,
+		logger:             logger,
+		urlSanitizer:       urlSanitizer,
+		dbObfuscator:       dbObfuscator,
 	}, nil
 }
 
@@ -144,7 +152,18 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 			s.processSpanEvents(ctx, span.Events())
 
 			if s.shouldRedactSpanName(&span) {
-				span.SetName(s.urlSanitizer.SanitizeURL(span.Name()))
+				name := span.Name()
+				if s.shouldSanitizeSpanNameForURL() {
+					name = s.urlSanitizer.SanitizeURL(name)
+				}
+				if s.shouldSanitizeSpanNameForDB() {
+					var err error
+					name, err = s.dbObfuscator.Obfuscate(name)
+					if err != nil {
+						s.logger.Error(err.Error())
+					}
+				}
+				span.SetName(name)
 			}
 		}
 	}
@@ -426,7 +445,7 @@ func (s *redaction) processStringValueForAttribute(strVal, attributeKey string) 
 		strVal = s.urlSanitizer.SanitizeAttributeURL(strVal, attributeKey)
 	}
 
-	if s.dbObfuscator != nil {
+	if s.dbObfuscator.HasObfuscators() {
 		obfuscatedQuery, err := s.dbObfuscator.ObfuscateAttribute(strVal, attributeKey)
 		if err != nil {
 			return strVal
@@ -450,7 +469,7 @@ func (s *redaction) processStringValueForLogBody(strVal string) string {
 		strVal = s.urlSanitizer.SanitizeURL(strVal)
 	}
 
-	if s.dbObfuscator != nil {
+	if s.dbObfuscator.HasObfuscators() {
 		obfuscatedQuery, err := s.dbObfuscator.Obfuscate(strVal)
 		if err != nil {
 			return strVal
@@ -485,6 +504,12 @@ func (s *redaction) shouldIgnoreKey(k string) bool {
 	if _, ignored := s.ignoreList[k]; ignored {
 		return true
 	}
+	// Check if key matches any of the ignored key patterns
+	for _, compiledRE := range s.ignoreKeyRegexList {
+		if compiledRE.MatchString(k) {
+			return true
+		}
+	}
 	return false
 }
 
@@ -498,7 +523,9 @@ func (s *redaction) shouldRedactKey(k string) bool {
 }
 
 func (s *redaction) shouldRedactSpanName(span *ptrace.Span) bool {
-	if s.urlSanitizer == nil {
+	shouldSanitizeDB := s.shouldSanitizeSpanNameForDB()
+
+	if !s.shouldSanitizeSpanNameForURL() && !shouldSanitizeDB {
 		return false
 	}
 	spanKind := span.Kind()
@@ -507,10 +534,31 @@ func (s *redaction) shouldRedactSpanName(span *ptrace.Span) bool {
 	}
 
 	spanName := span.Name()
-	if !strings.Contains(spanName, "/") {
+	if !strings.Contains(spanName, "/") && !shouldSanitizeDB {
 		return false
 	}
 	return !s.shouldAllowValue(spanName)
+}
+
+func (s *redaction) shouldSanitizeSpanNameForURL() bool {
+	if s.urlSanitizer == nil {
+		return false
+	}
+
+	if s.config.URLSanitization.SanitizeSpanName == nil {
+		return true
+	}
+	return *s.config.URLSanitization.SanitizeSpanName
+}
+
+func (s *redaction) shouldSanitizeSpanNameForDB() bool {
+	if !s.dbObfuscator.HasObfuscators() {
+		return false
+	}
+	if s.config.DBSanitizer.SanitizeSpanName == nil {
+		return true
+	}
+	return *s.config.DBSanitizer.SanitizeSpanName
 }
 
 const (

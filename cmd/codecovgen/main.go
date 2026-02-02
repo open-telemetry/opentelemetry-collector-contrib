@@ -98,19 +98,19 @@ func main() {
 	}
 }
 
-// Component represents a component in the Codecov configuration.
-type Component struct {
+// component represents a component in the Codecov configuration.
+type component struct {
 	ComponentID string   `yaml:"component_id"`
 	Name        string   `yaml:"name"`
 	Paths       []string `yaml:"paths"`
 }
 
-type ComponentManagement struct {
-	IndividualComponents []Component `yaml:"individual_components"`
+type componentManagement struct {
+	IndividualComponents []component `yaml:"individual_components"`
 }
 
-type CodecovConfig struct {
-	ComponentManagement ComponentManagement `yaml:"component_management"`
+type codecovConfig struct {
+	ComponentManagement componentManagement `yaml:"component_management"`
 }
 
 var (
@@ -145,8 +145,8 @@ func generateComponentID(moduleName string, cli Args) (string, error) {
 }
 
 // walkTree uses filepath.Walk to recursively traverse the base directory looking for go.mod files
-func walkTree(cli Args) (*CodecovConfig, error) {
-	config := &CodecovConfig{}
+func walkTree(cli Args) (*codecovConfig, error) {
+	config := &codecovConfig{}
 
 	err := filepath.WalkDir(cli.Dir, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
@@ -187,13 +187,13 @@ func walkTree(cli Args) (*CodecovConfig, error) {
 		if err != nil {
 			return err
 		}
-		component := Component{
+		cmp := component{
 			ComponentID: componentID,
 			Name:        componentID,
 			Paths:       []string{relativePath + "/**"},
 		}
 
-		config.ComponentManagement.IndividualComponents = append(config.ComponentManagement.IndividualComponents, component)
+		config.ComponentManagement.IndividualComponents = append(config.ComponentManagement.IndividualComponents, cmp)
 
 		return nil
 	})
@@ -231,7 +231,7 @@ const (
 
 var matchComponentSection = regexp.MustCompile("(?s)" + startComponentList + ".*" + endComponentList)
 
-func addComponentList(config *CodecovConfig) error {
+func addComponentList(config *codecovConfig) error {
 	var buf bytes.Buffer
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(2)

@@ -16,7 +16,7 @@
 
 ## Overview
 
-AWS Container Insights Receiver (`awscontainerinsightreceiver`) is an AWS specific receiver that supports [CloudWatch Container Insights](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html). CloudWatch Container Insights collect, aggregate, 
+AWS Container Insights Receiver (`awscontainerinsight`) is an AWS specific receiver that supports [CloudWatch Container Insights](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html). CloudWatch Container Insights collect, aggregate, 
 and summarize metrics and logs from your containerized applications and microservices. Data are collected as as performance log events 
 using [embedded metric format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format.html). From the EMF data, Amazon CloudWatch can create the aggregated CloudWatch metrics at the cluster, node, pod, task, and service level.
 
@@ -33,7 +33,7 @@ See the [design doc](./design.md)
 Example configuration:
 ```
 receivers:
-  awscontainerinsightreceiver:
+  awscontainerinsight:
     # all parameters are optional
     collection_interval: 60s
     container_orchestrator: eks
@@ -64,7 +64,7 @@ The "PodName" attribute is set based on the name of the relevant controllers lik
 The "FullPodName" attribute is the pod name including suffix. If false FullPodName label is not added. The default value is false
 
 ## Sample configuration for Container Insights 
-This is a sample configuration for AWS Container Insights using the `awscontainerinsightreceiver` and `awsemfexporter` for an EKS cluster:
+This is a sample configuration for AWS Container Insights using the `awscontainerinsight` and `awsemfexporter` for an EKS cluster:
 ```
 # create namespace
 apiVersion: v1
@@ -137,11 +137,7 @@ data:
       health_check:
 
     receivers:
-      awscontainerinsightreceiver:
-
-    processors:
-      batch/metrics:
-        timeout: 60s
+      awscontainerinsight:
 
     exporters:
       awsemf:
@@ -152,6 +148,9 @@ data:
           enabled: true
         dimension_rollup_option: NoDimensionRollup
         parse_json_encoded_attr_values: [Sources, kubernetes]
+        sending_queue:
+          batch:
+            flush_timeout: 60s
         metric_declarations:
           # node metrics
           - dimensions: [[NodeName, InstanceId, ClusterName]]
@@ -222,8 +221,7 @@ data:
     service:
       pipelines:
         metrics:
-          receivers: [awscontainerinsightreceiver]
-          processors: [batch/metrics]
+          receivers: [awscontainerinsight]
           exporters: [awsemf]
 
       extensions: [health_check]
@@ -674,16 +672,12 @@ kubectl apply -f config.yaml
 
 The attribute `container_status_reason` is present only when `container_status` is in "Waiting" or "Terminated" State. The attribute `container_last_termination_reason` is present only when `container_status` is in "Terminated" State.
 
-This is a sample configuration for AWS Container Insights using the `awscontainerinsightreceiver` and `awsemfexporter` for an ECS cluster to collect the instance level metrics:
+This is a sample configuration for AWS Container Insights using the `awscontainerinsight` and `awsemfexporter` for an ECS cluster to collect the instance level metrics:
 ```
 receivers:
-  awscontainerinsightreceiver:
+  awscontainerinsight:
     collection_interval: 10s
     container_orchestrator: ecs
-
-processors:
-  batch/metrics:
-    timeout: 60s
 
 exporters:
   awsemf:
@@ -694,6 +688,9 @@ exporters:
       enabled: true
     dimension_rollup_option: NoDimensionRollup
     parse_json_encoded_attr_values: [Sources]
+    sending_queue:
+      batch:
+        flush_timeout: 60s
     metric_declarations:
       # instance metrics
       - dimensions: [ [ ContainerInstanceId, InstanceId, ClusterName] ]
@@ -722,8 +719,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [awscontainerinsightreceiver]
-      processors: [batch/metrics]
+      receivers: [awscontainerinsight]
       exporters: [awsemf,debug]
 ```
 To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/setup/ecs#3-setup-the-aws-otel-collector-for-ecs-ec2-instance-metrics) for details

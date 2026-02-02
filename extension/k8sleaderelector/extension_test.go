@@ -67,9 +67,9 @@ func TestExtension(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, lease)
 		require.Equal(t, expectedLeaseDurationSeconds, lease.Spec.LeaseDurationSeconds)
+		require.True(t, onStartLeadingInvoked.Load())
 	}, 10*time.Second, 100*time.Millisecond)
 
-	require.True(t, onStartLeadingInvoked.Load())
 	require.NoError(t, leaderElection.Shutdown(ctx))
 }
 

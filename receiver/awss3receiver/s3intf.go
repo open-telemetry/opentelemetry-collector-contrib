@@ -40,7 +40,7 @@ func newS3Client(ctx context.Context, cfg S3DownloaderConfig) (ListObjectsAPI, G
 	}
 	awsCfg, err := config.LoadDefaultConfig(ctx, optionsFuncs...)
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
+		log.Printf("unable to load SDK config: %v", err)
 		return nil, nil, err
 	}
 	s3OptionFuncs := make([]func(options *s3.Options), 0)

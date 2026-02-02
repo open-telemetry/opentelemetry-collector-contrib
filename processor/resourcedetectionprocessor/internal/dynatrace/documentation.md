@@ -7,4 +7,5 @@
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | dt.entity.host | The Dynatrace host entity | Any Str | true |
+| dt.smartscape.host | The Dynatrace Smartscape host | Any Str | true |
 | host.name | The hostname | Any Str | true |

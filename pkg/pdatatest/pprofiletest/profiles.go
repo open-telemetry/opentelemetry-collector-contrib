@@ -5,7 +5,6 @@ package pprofiletest // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -252,10 +251,6 @@ func CompareProfile(expectedDic, actualDic pprofile.ProfilesDictionary, expected
 		errs = multierr.Append(errs, fmt.Errorf("profileID does not match expected '%s', actual '%s'", expected.ProfileID().String(), actual.ProfileID().String()))
 	}
 
-	if !reflect.DeepEqual(expected.CommentStrindices(), actual.CommentStrindices()) {
-		errs = multierr.Append(errs, errors.New("comment does not match expected"))
-	}
-
 	if expected.Time() != actual.Time() {
 		errs = multierr.Append(errs, fmt.Errorf("time doesn't match expected: %d, actual: %d", expected.Time(), actual.Time()))
 	}
@@ -268,8 +263,8 @@ func CompareProfile(expectedDic, actualDic pprofile.ProfilesDictionary, expected
 		errs = multierr.Append(errs, fmt.Errorf("keepFrames does not match expected '%s', actual '%s'", expected.OriginalPayload().AsRaw(), actual.OriginalPayload().AsRaw()))
 	}
 
-	if expected.Duration() != actual.Duration() {
-		errs = multierr.Append(errs, fmt.Errorf("duration doesn't match expected: %d, actual: %d", expected.Duration(), actual.Duration()))
+	if expected.DurationNano() != actual.DurationNano() {
+		errs = multierr.Append(errs, fmt.Errorf("duration doesn't match expected: %d, actual: %d", expected.DurationNano(), actual.DurationNano()))
 	}
 
 	if expected.Period() != actual.Period() {
@@ -277,25 +272,23 @@ func CompareProfile(expectedDic, actualDic pprofile.ProfilesDictionary, expected
 	}
 
 	if expected.PeriodType().TypeStrindex() != actual.PeriodType().TypeStrindex() ||
-		expected.PeriodType().UnitStrindex() != actual.PeriodType().UnitStrindex() ||
-		expected.PeriodType().AggregationTemporality() != actual.PeriodType().AggregationTemporality() {
-		errs = multierr.Append(errs, fmt.Errorf("periodType does not match expected 'unit: %d, type: %d, aggregationTemporality: %d', actual 'unit: %d, type: %d,"+
-			"aggregationTemporality: %d'", expected.PeriodType().UnitStrindex(), expected.PeriodType().TypeStrindex(), expected.PeriodType().AggregationTemporality(),
-			actual.PeriodType().UnitStrindex(), actual.PeriodType().TypeStrindex(), actual.PeriodType().AggregationTemporality()))
+		expected.PeriodType().UnitStrindex() != actual.PeriodType().UnitStrindex() {
+		errs = multierr.Append(errs, fmt.Errorf("periodType does not match expected 'unit: %d, type: %d', actual 'unit: %d, type: %d,", expected.PeriodType().UnitStrindex(), expected.PeriodType().TypeStrindex(),
+			actual.PeriodType().UnitStrindex(), actual.PeriodType().TypeStrindex()))
 	}
 
 	errs = multierr.Append(errs, internal.AddErrPrefix("sampleType", CompareProfileValueType(expected.SampleType(), actual.SampleType())))
 
-	errs = multierr.Append(errs, internal.AddErrPrefix("sample", CompareProfileSampleSlice(expected.Sample(), actual.Sample())))
+	errs = multierr.Append(errs, internal.AddErrPrefix("sample", CompareProfileSampleSlice(expected.Samples(), actual.Samples())))
 
 	return errs
 }
 
 func CompareProfileValueType(expected, actual pprofile.ValueType) error {
 	if !isValueTypeEqual(expected, actual) {
-		return fmt.Errorf(`expected valueType "unit: %d, type: %d, aggregationTemporality: %d",`+
-			`got "unit: %d, type: %d, aggregationTemporality: %d"`, expected.UnitStrindex(), expected.TypeStrindex(), expected.AggregationTemporality(),
-			actual.UnitStrindex(), actual.TypeStrindex(), actual.AggregationTemporality())
+		return fmt.Errorf(`expected valueType "unit: %d, type: %d",`+
+			`got "unit: %d, type: %d"`, expected.UnitStrindex(), expected.TypeStrindex(),
+			actual.UnitStrindex(), actual.TypeStrindex())
 	}
 
 	return nil
@@ -303,8 +296,7 @@ func CompareProfileValueType(expected, actual pprofile.ValueType) error {
 
 func isValueTypeEqual(expected, actual pprofile.ValueType) bool {
 	return expected.TypeStrindex() == actual.TypeStrindex() &&
-		expected.UnitStrindex() == actual.UnitStrindex() &&
-		expected.AggregationTemporality() == actual.AggregationTemporality()
+		expected.UnitStrindex() == actual.UnitStrindex()
 }
 
 func CompareProfileSampleSlice(expected, actual pprofile.SampleSlice) error {
@@ -383,6 +375,14 @@ func CompareProfileSample(expected, actual pprofile.Sample) error {
 
 	if !reflect.DeepEqual(expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()) {
 		errs = multierr.Append(errs, fmt.Errorf("expected attributes '%v', got '%v'", expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()))
+	}
+
+	if !reflect.DeepEqual(expected.LinkIndex(), actual.LinkIndex()) {
+		errs = multierr.Append(errs, fmt.Errorf("expected link_index '%v', got '%v'", expected.LinkIndex(), actual.LinkIndex()))
+	}
+
+	if !reflect.DeepEqual(expected.StackIndex(), actual.StackIndex()) {
+		errs = multierr.Append(errs, fmt.Errorf("expected stack_index '%v', got '%v'", expected.StackIndex(), actual.StackIndex()))
 	}
 
 	return errs
@@ -591,7 +591,7 @@ func CompareProfileLocation(expected, actual pprofile.Location) error {
 	}
 
 	errPrefix := fmt.Sprintf(`line of location with "attributes: %v"`, expected.AttributeIndices().AsRaw())
-	errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfileLineSlice(expected.Line(), actual.Line())))
+	errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfileLineSlice(expected.Lines(), actual.Lines())))
 
 	return errs
 }

@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 type SplittingStrategy string
@@ -32,7 +33,7 @@ type Config struct {
 	// HealthPath for health API, default is '/services/collector/health'
 	HealthPath string `mapstructure:"health_path"`
 	// HecToOtelAttrs creates a mapping from HEC metadata to attributes.
-	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
+	HecToOtelAttrs translator.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
 }
 
 // Ack defines configuration for the ACK functionality of the HEC receiver

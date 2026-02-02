@@ -18,15 +18,15 @@ var _ ParserConfig = (*PlaintextConfig)(nil)
 // BuildParser creates a new Parser instance that receives plaintext
 // Carbon data.
 func (*PlaintextConfig) BuildParser() (Parser, error) {
-	pathParser := &PlaintextPathParser{}
-	return NewParser(pathParser)
+	pathParser := &plaintextPathParser{}
+	return newParser(pathParser)
 }
 
-// PlaintextPathParser converts a line of https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol,
+// plaintextPathParser converts a line of https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol,
 // treating tags per spec at https://graphite.readthedocs.io/en/latest/tags.html#carbon.
-type PlaintextPathParser struct{}
+type plaintextPathParser struct{}
 
-// ParsePath converts the <metric_path> of a Carbon line (see Parse function for
+// parsePath converts the <metric_path> of a Carbon line (see Parse function for
 // description of the full line). The metric path is expected to be in the
 // following format:
 //
@@ -37,7 +37,7 @@ type PlaintextPathParser struct{}
 //
 // tag is of the form "key=val", where key can contain any char except ";!^=" and
 // val can contain any char except ";~".
-func (*PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) error {
+func (*plaintextPathParser) parsePath(path string, parsedPath *parsedPath) error {
 	parts := strings.SplitN(path, ";", 2)
 	if len(parts) < 1 || parts[0] == "" {
 		return fmt.Errorf("empty metric name extracted from path [%s]", path)

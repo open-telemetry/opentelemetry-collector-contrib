@@ -13,6 +13,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -28,7 +29,7 @@ type Config struct {
 
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
@@ -110,7 +111,7 @@ func createDefaultConfig() component.Config {
 		collectorVersion: "unknown",
 
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
-		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		ConnectionParams: map[string]string{},
 		Database:         defaultDatabase,
@@ -210,7 +211,13 @@ func (cfg *Config) buildClickHouseOptions() (*clickhouse.Options, error) {
 		return nil, fmt.Errorf("failed to parse DSN: %w", err)
 	}
 
-	if cfg.TLS.CertFile != "" || cfg.TLS.KeyFile != "" {
+	// Load TLS config if any TLS-related field is set (not just cert/key).
+	if cfg.TLS.CertFile != "" ||
+		cfg.TLS.KeyFile != "" ||
+		cfg.TLS.CAFile != "" ||
+		cfg.TLS.ServerName != "" ||
+		cfg.TLS.Insecure ||
+		cfg.TLS.InsecureSkipVerify {
 		opt.TLS, err = cfg.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, fmt.Errorf("failed to load TLS config: %w", err)

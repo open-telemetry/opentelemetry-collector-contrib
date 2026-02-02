@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/api"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/api"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/credentials"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/metadata"
 )
 
@@ -1604,6 +1604,8 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
+
+	se.host = componenttest.NewNopHost()
 
 	httpClient, err := se.getHTTPClient(t.Context(), se.conf.ClientConfig, api.OpenRegisterResponsePayload{})
 	require.NoError(t, err)

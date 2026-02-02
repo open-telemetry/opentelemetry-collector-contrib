@@ -149,3 +149,156 @@ func TestGetThrottleDuration(t *testing.T) {
 		})
 	}
 }
+
+func TestShouldRetryHTTP(t *testing.T) {
+	tests := []struct {
+		name             string
+		statusCode       int
+		expectedRetry    bool
+		expectedThrottle bool
+	}{
+		{
+			name:             "OK status should not retry",
+			statusCode:       200,
+			expectedRetry:    false,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Bad Request is permanent error",
+			statusCode:       400,
+			expectedRetry:    false,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Unauthorized triggers rate limit flag",
+			statusCode:       401,
+			expectedRetry:    false,
+			expectedThrottle: true,
+		},
+		{
+			name:             "Forbidden triggers rate limit flag",
+			statusCode:       403,
+			expectedRetry:    false,
+			expectedThrottle: true,
+		},
+		{
+			name:             "Not Found is permanent error",
+			statusCode:       404,
+			expectedRetry:    false,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Method Not Allowed is permanent error",
+			statusCode:       405,
+			expectedRetry:    false,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Request Timeout is retryable",
+			statusCode:       408,
+			expectedRetry:    true,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Unprocessable Entity is permanent error",
+			statusCode:       422,
+			expectedRetry:    false,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Too Many Requests is retryable",
+			statusCode:       429,
+			expectedRetry:    true,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Bad Gateway is retryable",
+			statusCode:       502,
+			expectedRetry:    true,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Service Unavailable is retryable",
+			statusCode:       503,
+			expectedRetry:    true,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Gateway Timeout is retryable",
+			statusCode:       504,
+			expectedRetry:    true,
+			expectedThrottle: false,
+		},
+		{
+			name:             "Unknown status code defaults to no retry",
+			statusCode:       418,
+			expectedRetry:    false,
+			expectedThrottle: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			retry, throttle := shouldRetryHTTP(tt.statusCode)
+			assert.Equal(t, tt.expectedRetry, retry)
+			assert.Equal(t, tt.expectedThrottle, throttle)
+		})
+	}
+}
+
+func TestGetHTTPThrottleDuration(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		headers    map[string]string
+		expected   time.Duration
+	}{
+		{
+			name:       "Non-429 status returns 0",
+			statusCode: 503,
+			headers:    map[string]string{"Retry-After": "30"},
+			expected:   0,
+		},
+		{
+			name:       "429 without Retry-After returns 0",
+			statusCode: 429,
+			headers:    map[string]string{},
+			expected:   0,
+		},
+		{
+			name:       "429 with integer Retry-After",
+			statusCode: 429,
+			headers:    map[string]string{"Retry-After": "30"},
+			expected:   30 * time.Second,
+		},
+		{
+			name:       "429 with invalid Retry-After",
+			statusCode: 429,
+			headers:    map[string]string{"Retry-After": "invalid"},
+			expected:   0,
+		},
+		{
+			name:       "429 with zero seconds",
+			statusCode: 429,
+			headers:    map[string]string{"Retry-After": "0"},
+			expected:   0,
+		},
+		{
+			name:       "429 with negative seconds",
+			statusCode: 429,
+			headers:    map[string]string{"Retry-After": "-10"},
+			expected:   0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			headers := make(map[string][]string)
+			for k, v := range tt.headers {
+				headers[k] = []string{v}
+			}
+			result := getHTTPThrottleDuration(tt.statusCode, headers)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

@@ -12,9 +12,9 @@ metrics:
     enabled: false
 ```
 
-### cisco.device.connected
+### cisco.device.up
 
-Device connectivity status (1=connected, 0=disconnected)
+Device availability (1 = up, 0 = down)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -22,6 +22,34 @@ Device connectivity status (1=connected, 0=disconnected)
 
 #### Attributes
 
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| target | The target network device hostname/IP | Any Str | false |
+
+### system.cpu.utilization
+
+Percentage of CPU time in use.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
-| host | The Cisco device hostname or IP address | Any Str | false |
+| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | false |
+
+### system.memory.utilization
+
+Percentage of memory bytes in use.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| target | The target network device hostname/IP (used for K8s node correlation) | Any Str | false |

@@ -18,7 +18,7 @@ Number of brokers in the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {brokers} | Sum | Int | Cumulative | false | development |
+| {brokers} | Sum | Int | Cumulative | false | Development |
 
 ### kafka.consumer_group.lag
 
@@ -26,15 +26,15 @@ Current approximate lag of consumer group at partition of topic
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| group | The ID (string) of a consumer group | Any Str | false |
-| topic | The ID (integer) of a topic | Any Str | false |
-| partition | The number (integer) of the partition | Any Int | false |
+| group | The ID (string) of a consumer group | Any Str | Recommended |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
+| partition | The number (integer) of the partition | Any Int | Recommended |
 
 ### kafka.consumer_group.lag_sum
 
@@ -42,14 +42,14 @@ Current approximate sum of consumer group lag across all partitions of topic
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| group | The ID (string) of a consumer group | Any Str | false |
-| topic | The ID (integer) of a topic | Any Str | false |
+| group | The ID (string) of a consumer group | Any Str | Recommended |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
 
 ### kafka.consumer_group.members
 
@@ -57,13 +57,13 @@ Count of members in the consumer group
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {members} | Sum | Int | Cumulative | false | development |
+| {members} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| group | The ID (string) of a consumer group | Any Str | false |
+| group | The ID (string) of a consumer group | Any Str | Recommended |
 
 ### kafka.consumer_group.offset
 
@@ -71,15 +71,15 @@ Current offset of the consumer group at partition of topic
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| group | The ID (string) of a consumer group | Any Str | false |
-| topic | The ID (integer) of a topic | Any Str | false |
-| partition | The number (integer) of the partition | Any Int | false |
+| group | The ID (string) of a consumer group | Any Str | Recommended |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
+| partition | The number (integer) of the partition | Any Int | Recommended |
 
 ### kafka.consumer_group.offset_sum
 
@@ -87,14 +87,14 @@ Sum of consumer group offset across partitions of topic
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| group | The ID (string) of a consumer group | Any Str | false |
-| topic | The ID (integer) of a topic | Any Str | false |
+| group | The ID (string) of a consumer group | Any Str | Recommended |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
 
 ### kafka.partition.current_offset
 
@@ -102,14 +102,14 @@ Current offset of partition of topic.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| topic | The ID (integer) of a topic | Any Str | false |
-| partition | The number (integer) of the partition | Any Int | false |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
+| partition | The number (integer) of the partition | Any Int | Recommended |
 
 ### kafka.partition.oldest_offset
 
@@ -117,14 +117,14 @@ Oldest offset of partition of topic
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| topic | The ID (integer) of a topic | Any Str | false |
-| partition | The number (integer) of the partition | Any Int | false |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
+| partition | The number (integer) of the partition | Any Int | Recommended |
 
 ### kafka.partition.replicas
 
@@ -132,14 +132,14 @@ Number of replicas for partition of topic
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {replicas} | Sum | Int | Cumulative | false | development |
+| {replicas} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| topic | The ID (integer) of a topic | Any Str | false |
-| partition | The number (integer) of the partition | Any Int | false |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
+| partition | The number (integer) of the partition | Any Int | Recommended |
 
 ### kafka.partition.replicas_in_sync
 
@@ -147,14 +147,14 @@ Number of synchronized replicas of partition
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {replicas} | Sum | Int | Cumulative | false | development |
+| {replicas} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| topic | The ID (integer) of a topic | Any Str | false |
-| partition | The number (integer) of the partition | Any Int | false |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
+| partition | The number (integer) of the partition | Any Int | Recommended |
 
 ### kafka.topic.partitions
 
@@ -162,13 +162,13 @@ Number of partitions in topic.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {partitions} | Sum | Int | Cumulative | false | development |
+| {partitions} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| topic | The ID (integer) of a topic | Any Str | false |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
 
 ## Optional Metrics
 
@@ -186,13 +186,13 @@ log retention time (s) of a broker.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| broker | The ID of the kafka broker | Any Str | false |
+| broker | The ID of the kafka broker | Any Str | Recommended |
 
 ### kafka.topic.log_retention_period
 
@@ -200,13 +200,13 @@ log retention period of a topic (s).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | development |
+| s | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| topic | The ID (integer) of a topic | Any Str | false |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
 
 ### kafka.topic.log_retention_size
 
@@ -214,13 +214,13 @@ log retention size of a topic in Bytes, The value (-1) indicates infinite size.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| By | Gauge | Int | development |
+| By | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| topic | The ID (integer) of a topic | Any Str | false |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
 
 ### kafka.topic.min_insync_replicas
 
@@ -228,13 +228,13 @@ minimum in-sync replicas of a topic.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {replicas} | Gauge | Int | development |
+| {replicas} | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| topic | The ID (integer) of a topic | Any Str | false |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
 
 ### kafka.topic.replication_factor
 
@@ -242,13 +242,13 @@ replication factor of a topic.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | development |
+| 1 | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| topic | The ID (integer) of a topic | Any Str | false |
+| topic | The ID (integer) of a topic | Any Str | Recommended |
 
 ## Resource Attributes
 

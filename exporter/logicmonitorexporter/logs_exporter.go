@@ -46,7 +46,7 @@ func newLogsExporter(_ context.Context, cfg component.Config, set exporter.Setti
 }
 
 func (e *logExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.ToClient(ctx, host, e.settings)
+	client, err := e.config.ToClient(ctx, host.GetExtensions(), e.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %w", err)
 	}
@@ -105,10 +105,11 @@ func (e *logExporter) shutdown(_ context.Context) error {
 }
 
 func buildLogIngestOpts(config *Config, client *http.Client) []lmsdklogs.Option {
+	authHeader, _ := config.Headers.Get("Authorization")
 	authParams := utils.AuthParams{
 		AccessID:    config.APIToken.AccessID,
 		AccessKey:   string(config.APIToken.AccessKey),
-		BearerToken: string(config.Headers["Authorization"]),
+		BearerToken: string(authHeader),
 	}
 
 	opts := []lmsdklogs.Option{

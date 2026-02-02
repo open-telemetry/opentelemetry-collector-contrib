@@ -77,7 +77,7 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 	cfg.Auth = configoptional.None[configauth.Config]()
 	httpSettings := cfg.ClientConfig
 	host := componenttest.NewNopHost()
-	client, err := httpSettings.ToClient(t.Context(), host, componenttest.NewNopTelemetrySettings())
+	client, err := httpSettings.ToClient(t.Context(), host.GetExtensions(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	if err != nil {
 		return nil

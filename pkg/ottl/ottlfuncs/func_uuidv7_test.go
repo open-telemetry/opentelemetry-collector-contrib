@@ -7,14 +7,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_UUIDv7(t *testing.T) {
 	exprFunc, err := uuid[any]()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	value, err := exprFunc(nil, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.IsType(t, "", value)
 	assert.NotEmpty(t, value)
 }

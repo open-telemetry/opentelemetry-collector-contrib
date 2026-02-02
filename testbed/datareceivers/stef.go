@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -20,6 +21,7 @@ import (
 type StefDataReceiver struct {
 	testbed.DataReceiverBase
 	receiver receiver.Metrics
+	Logger   *zap.Logger
 }
 
 // Ensure StefDataReceiver implements MetricDataSender.
@@ -38,7 +40,11 @@ func (sr *StefDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ cons
 	config := f.CreateDefaultConfig()
 	config.(*stefreceiver.Config).NetAddr.Endpoint = fmt.Sprintf("127.0.0.1:%d", sr.Port)
 
-	sr.receiver, err = f.CreateMetrics(context.Background(), receivertest.NewNopSettings(f.Type()), config, mc)
+	set := receivertest.NewNopSettings(f.Type())
+	if sr.Logger != nil {
+		set.Logger = sr.Logger
+	}
+	sr.receiver, err = f.CreateMetrics(context.Background(), set, config, mc)
 	if err != nil {
 		return err
 	}

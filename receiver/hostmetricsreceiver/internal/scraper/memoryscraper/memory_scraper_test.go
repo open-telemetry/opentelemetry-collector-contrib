@@ -132,7 +132,7 @@ func TestScrape(t *testing.T) {
 					memUsageIdx = i
 				}
 			}
-			assert.NotEqual(t, memUsageIdx, -1)
+			assert.NotEqual(t, -1, memUsageIdx)
 			assertMemoryUsageMetricValid(t, metrics.At(memUsageIdx), "system.memory.usage")
 
 			if runtime.GOOS == "linux" {

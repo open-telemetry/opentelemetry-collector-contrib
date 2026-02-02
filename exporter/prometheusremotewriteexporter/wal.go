@@ -168,6 +168,7 @@ func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
 	log, err := wal.Open(walPath, &wal.Options{
 		SegmentCacheSize: wc.bufferSize(),
 		NoCopy:           true,
+		AllowEmpty:       true,
 	})
 	if err != nil {
 		return nil, "", fmt.Errorf("prometheusremotewriteexporter: failed to open WAL: %w", err)
@@ -227,12 +228,12 @@ func (prweWAL *prweWAL) run(ctx context.Context) (err error) {
 	var logger *zap.Logger
 	logger, err = loggerFromContext(ctx)
 	if err != nil {
-		return
+		return err
 	}
 
 	if err = prweWAL.retrieveWALIndices(); err != nil {
 		logger.Error("unable to start write-ahead log", zap.Error(err))
-		return
+		return err
 	}
 
 	runCtx, cancel := context.WithCancel(ctx)

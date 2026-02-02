@@ -235,9 +235,9 @@ func Test_Time(t *testing.T) {
 				localeOptional = ottl.NewTestingOptional(tt.locale)
 			}
 			exprFunc, err := Time(tt.time, tt.format, locationOptional, localeOptional)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected.UnixNano(), result.(time.Time).UnixNano())
 		})
 	}
@@ -522,11 +522,11 @@ func Benchmark_Time(t *testing.B) {
 			locOptional = ottl.NewTestingOptional(tt.location)
 		}
 		exprFunc, err := Time(tt.time, tt.format, locOptional, ottl.Optional[string]{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		t.Run(tt.name, func(t *testing.B) {
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tt.expected.UnixNano(), result.(time.Time).UnixNano())
 		})
 	}

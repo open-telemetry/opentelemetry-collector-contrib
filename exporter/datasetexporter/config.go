@@ -14,6 +14,7 @@ import (
 	datasetConfig "github.com/scalyr/dataset-go/pkg/config"
 	"github.com/scalyr/dataset-go/pkg/server_host_config"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -169,8 +170,8 @@ type Config struct {
 	LogsSettings              `mapstructure:"logs"`
 	ServerHostSettings        `mapstructure:"server_host"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
-	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:"timeout"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig                             `mapstructure:"timeout"`
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {

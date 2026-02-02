@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 func Test_splunkV2ToMetricsData(t *testing.T) {
@@ -24,8 +24,8 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 	sec := float64(msecInt64) / 1e3
 	nanos := int64(sec * 1e9)
 
-	buildDefaultSplunkDataPt := func() *splunk.Event {
-		return &splunk.Event{
+	buildDefaultSplunkDataPt := func() *translator.Event {
+		return &translator.Event{
 			Time:       sec,
 			Host:       "localhost",
 			Source:     "source",
@@ -43,7 +43,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 
 	tests := []struct {
 		name                  string
-		splunkDataPoint       *splunk.Event
+		splunkDataPoint       *translator.Event
 		wantMetricsData       pmetric.Metrics
 		wantDroppedTimeseries int
 		hecConfig             *Config
@@ -56,7 +56,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "int_gauge_v7",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				delete(pt.Fields, "metric_name:single")
 				pt.Fields["metric_name"] = "single"
@@ -68,7 +68,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "multiple",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				pt.Fields["metric_name:yetanother"] = int64Ptr(14)
 				pt.Fields["metric_name:yetanotherandanother"] = int64Ptr(15)
@@ -102,7 +102,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "double_gauge",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				pt.Fields["metric_name:single"] = float64Ptr(13.13)
 				return pt
@@ -124,7 +124,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "int_counter_pointer",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				return pt
 			}(),
@@ -133,7 +133,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "int_counter",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				pt.Fields["metric_name:single"] = int64(13)
 				return pt
@@ -143,7 +143,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "custom_hec",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				pt.Fields["metric_name:single"] = int64(13)
 				return pt
@@ -168,7 +168,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				return metrics
 			}(),
 			hecConfig: &Config{
-				HecToOtelAttrs: splunk.HecToOtelAttrs{
+				HecToOtelAttrs: translator.HecToOtelAttrs{
 					Source:     "mysource",
 					SourceType: "mysourcetype",
 					Index:      "myindex",
@@ -178,7 +178,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "double_counter",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				pt.Fields["metric_name:single"] = float64Ptr(13.13)
 				return pt
@@ -200,7 +200,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "double_counter_as_string_pointer",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				pt.Fields["metric_name:single"] = strPtr("13.13")
 				return pt
@@ -222,7 +222,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "double_counter_as_string",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				pt.Fields["metric_name:single"] = "13.13"
 				return pt
@@ -244,7 +244,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "zero_timestamp",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				pt.Time = 0
 				return pt
@@ -256,7 +256,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "empty_dimension_value",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				pt.Fields["k0"] = ""
 				return pt
@@ -270,7 +270,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "invalid_point",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				pt.Fields["metric_name:single"] = "foo"
 				return pt
@@ -281,7 +281,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "cannot_convert_string",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				value := "foo"
 				pt.Fields["metric_name:single"] = &value
@@ -293,7 +293,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		},
 		{
 			name: "nil_dimension_ignored",
-			splunkDataPoint: func() *splunk.Event {
+			splunkDataPoint: func() *translator.Event {
 				pt := buildDefaultSplunkDataPt()
 				pt.Fields["k4"] = nil
 				pt.Fields["k5"] = nil
@@ -307,7 +307,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), []*splunk.Event{tt.splunkDataPoint}, func(pcommon.Resource) {}, tt.hecConfig)
+			md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), []*translator.Event{tt.splunkDataPoint}, func(pcommon.Resource) {}, tt.hecConfig)
 			assert.Equal(t, tt.wantDroppedTimeseries, numDroppedTimeseries)
 			assert.NoError(t, pmetrictest.CompareMetrics(tt.wantMetricsData, md, pmetrictest.IgnoreMetricsOrder()))
 		})
@@ -321,7 +321,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 	msecInt64 := now.UnixNano() / 1e6
 	sec := float64(msecInt64) / 1e3
 	nanoseconds := int64(sec * 1e9)
-	events := []*splunk.Event{
+	events := []*translator.Event{
 		{
 			Time:       sec,
 			Host:       "1",

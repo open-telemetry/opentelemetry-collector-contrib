@@ -14,37 +14,15 @@ attributes:
     description: The state of a connection
     type: string
     enum:
-    - active
-    - reading
-    - writing
-    - waiting
+      - active
+      - reading
+      - writing
+      - waiting
 
 metrics:
-  nginx.requests:
-    enabled: true
-    description: Total number of requests made to the server since it started
-    stability:
-      level: development
-    unit: requests
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: []
   nginx.connections_accepted:
     enabled: true
     description: The total number of accepted client connections
-    stability:
-      level: development
-    unit: connections
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation_temporality: cumulative
-    attributes: []
-  nginx.connections_handled:
-    enabled: true
-    description: The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).
     stability:
       level: development
     unit: connections
@@ -64,3 +42,25 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [state]
+  nginx.connections_handled:
+    enabled: true
+    description: The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).
+    stability:
+      level: development
+    unit: connections
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+  nginx.requests:
+    enabled: true
+    description: Total number of requests made to the server since it started
+    stability:
+      level: development
+    unit: requests
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []

@@ -157,3 +157,7 @@ func (o *Obfuscator) ObfuscateAttribute(attributeValue, attributeKey string) (st
 func (o *Obfuscator) HasSpecificAttributes() bool {
 	return o.processAttributesEnabled
 }
+
+func (o *Obfuscator) HasObfuscators() bool {
+	return len(o.obfuscators) > 0
+}

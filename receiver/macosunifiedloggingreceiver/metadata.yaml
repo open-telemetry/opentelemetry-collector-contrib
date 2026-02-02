@@ -1,0 +1,10 @@
+type: macosunifiedlogging
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  codeowners:
+    active: [Caleb-Hurshman, atoulme]
+  distributions: [contrib]
+  unsupported_platforms: [linux, windows]

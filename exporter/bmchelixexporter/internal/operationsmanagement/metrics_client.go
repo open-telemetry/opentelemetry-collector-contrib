@@ -26,7 +26,7 @@ type MetricsClient struct {
 
 // NewMetricsClient creates a new MetricsClient
 func NewMetricsClient(ctx context.Context, clientConfig confighttp.ClientConfig, apiKey configopaque.String, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (*MetricsClient, error) {
-	httpClient, err := clientConfig.ToClient(ctx, host, settings)
+	httpClient, err := clientConfig.ToClient(ctx, host.GetExtensions(), settings)
 	if err != nil {
 		return nil, err
 	}

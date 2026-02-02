@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
@@ -164,7 +163,7 @@ func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
 func generateTraceData() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "test")
+	rs.Resource().Attributes().PutStr("service.name", "test")
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 	span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0})

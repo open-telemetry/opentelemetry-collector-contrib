@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
 )
 
@@ -236,6 +237,7 @@ func TestRedactSummaryDebug(t *testing.T) {
 			AllowedKeys:        []string{"id", "group", "name", "group.id", "member (id)", "token_some", "api_key_some", "email"},
 			BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?"},
 			IgnoredKeys:        []string{"safe_attribute"},
+			IgnoredKeyPatterns: []string{"safeRE_attribute.*"},
 			BlockedKeyPatterns: []string{".*(token|api_key).*"},
 			AllowedValues:      []string{".+@mycompany.com"},
 			Summary:            "debug",
@@ -249,7 +251,9 @@ func TestRedactSummaryDebug(t *testing.T) {
 			"name": pcommon.NewValueStr("placeholder 4111111111111111"),
 		},
 		ignored: map[string]pcommon.Value{
-			"safe_attribute": pcommon.NewValueStr("harmless 4111111111111112"),
+			"safe_attribute":          pcommon.NewValueStr("harmless 4111111111111112"),
+			"safeRE_attribute_id":     pcommon.NewValueStr("safe id"),
+			"safeRE_attribute_source": pcommon.NewValueStr("safe source"),
 		},
 		redacted: map[string]pcommon.Value{
 			"credit_card": pcommon.NewValueStr("4111111111111111"),
@@ -381,6 +385,7 @@ func TestRedactSummaryDebugHashMD5(t *testing.T) {
 			BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?"},
 			HashFunction:       MD5,
 			IgnoredKeys:        []string{"safe_attribute"},
+			IgnoredKeyPatterns: []string{"safeRE_attribute.*"},
 			BlockedKeyPatterns: []string{".*token.*", ".*api_key.*"},
 			Summary:            "debug",
 		},
@@ -393,7 +398,9 @@ func TestRedactSummaryDebugHashMD5(t *testing.T) {
 			"name": pcommon.NewValueStr("placeholder 4111111111111111"),
 		},
 		ignored: map[string]pcommon.Value{
-			"safe_attribute": pcommon.NewValueStr("harmless 4111111111111112"),
+			"safe_attribute":          pcommon.NewValueStr("harmless 4111111111111112"),
+			"safeRE_attribute_id":     pcommon.NewValueStr("safe id"),
+			"safeRE_attribute_source": pcommon.NewValueStr("safe source"),
 		},
 		redacted: map[string]pcommon.Value{
 			"credit_card": pcommon.NewValueStr("4111111111111111"),
@@ -483,17 +490,20 @@ func TestRedactSummaryDebugHashMD5(t *testing.T) {
 func TestRedactSummaryInfo(t *testing.T) {
 	tc := testConfig{
 		config: &Config{
-			AllowedKeys:   []string{"id", "name", "group", "email"},
-			BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
-			IgnoredKeys:   []string{"safe_attribute"},
-			AllowedValues: []string{".+@mycompany.com"},
-			Summary:       "info",
+			AllowedKeys:        []string{"id", "name", "group", "email"},
+			BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?"},
+			IgnoredKeys:        []string{"safe_attribute"},
+			IgnoredKeyPatterns: []string{"safeRE_attribute.*"},
+			AllowedValues:      []string{".+@mycompany.com"},
+			Summary:            "info",
 		},
 		allowed: map[string]pcommon.Value{
 			"id": pcommon.NewValueInt(5),
 		},
 		ignored: map[string]pcommon.Value{
-			"safe_attribute": pcommon.NewValueStr("harmless but suspicious 4111111111111141"),
+			"safe_attribute":          pcommon.NewValueStr("harmless but suspicious 4111111111111141"),
+			"safeRE_attribute_id":     pcommon.NewValueStr("safe id"),
+			"safeRE_attribute_source": pcommon.NewValueStr("safe source"),
 		},
 		masked: map[string]pcommon.Value{
 			"name": pcommon.NewValueStr("placeholder 4111111111111111"),
@@ -569,9 +579,13 @@ func TestRedactSummaryInfo(t *testing.T) {
 
 		ignoredKeyCount, ok := attr.Get(redactionIgnoredCount)
 		assert.True(t, ok)
-		assert.Equal(t, int64(1), ignoredKeyCount.Int())
+		assert.Equal(t, int64(3), ignoredKeyCount.Int())
 		value, _ = attr.Get("safe_attribute")
 		assert.Equal(t, "harmless but suspicious 4111111111111141", value.Str())
+		value, _ = attr.Get("safeRE_attribute_id")
+		assert.Equal(t, "safe id", value.Str())
+		value, _ = attr.Get("safeRE_attribute_source")
+		assert.Equal(t, "safe source", value.Str())
 	}
 }
 
@@ -1789,5 +1803,459 @@ func TestURLSanitizationSpanNameWithBlockedValues(t *testing.T) {
 
 		// CLIENT span should be sanitized (has slash and is CLIENT/SERVER kind)
 		assert.Equal(t, "GET /api/v1/payments/*", spans.At(0).Name())
+	})
+}
+
+func TestDBObfuscationSpanName(t *testing.T) {
+	t.Run("span name with SQL query should be obfuscated when SQL config enabled", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				DBSanitizer: db.DBSanitizerConfig{
+					SQLConfig: db.SQLConfig{
+						Enabled: true,
+					},
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("SELECT * FROM users WHERE id = 123")
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		// SQL query should be obfuscated (numbers replaced)
+		assert.Contains(t, outSpan.Name(), "SELECT * FROM users WHERE id = ?")
+	})
+
+	t.Run("span name with Redis command should be obfuscated when Redis config enabled", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				DBSanitizer: db.DBSanitizerConfig{
+					RedisConfig: db.RedisConfig{
+						Enabled: true,
+					},
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("SET user:12345 value")
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		// Redis SET command should have value removed but key retained
+		assert.Equal(t, "SET user:12345 ?", outSpan.Name())
+	})
+
+	t.Run("span name without slash should be obfuscated when DB obfuscator enabled", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				DBSanitizer: db.DBSanitizerConfig{
+					SQLConfig: db.SQLConfig{
+						Enabled: true,
+					},
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		// No slash in span name
+		span.SetName("SELECT count(*) FROM orders WHERE status = 'pending'")
+		span.SetKind(ptrace.SpanKindServer)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		// Should be obfuscated even without slash
+		assert.Contains(t, outSpan.Name(), "SELECT count(*) FROM orders WHERE status = ?")
+	})
+
+	t.Run("span name should be processed by both URL sanitizer and DB obfuscator when both enabled", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled: true,
+				},
+				DBSanitizer: db.DBSanitizerConfig{
+					SQLConfig: db.SQLConfig{
+						Enabled: true,
+					},
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		// Span name that could benefit from both sanitizers
+		span.SetName("/api/users/123")
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		// URL should be sanitized by URL sanitizer
+		assert.Equal(t, "/api/users/*", outSpan.Name())
+	})
+
+	t.Run("span name should not be obfuscated when span kind is INTERNAL", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				DBSanitizer: db.DBSanitizerConfig{
+					SQLConfig: db.SQLConfig{
+						Enabled: true,
+					},
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("SELECT * FROM users WHERE id = 123")
+		span.SetKind(ptrace.SpanKindInternal)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		// Should NOT be obfuscated because span kind is INTERNAL
+		assert.Equal(t, "SELECT * FROM users WHERE id = 123", outSpan.Name())
+	})
+
+	t.Run("span name with no enabled DB configs should not be DB obfuscated", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				DBSanitizer: db.DBSanitizerConfig{
+					SQLConfig: db.SQLConfig{
+						Enabled: false,
+					},
+					RedisConfig: db.RedisConfig{
+						Enabled: false,
+					},
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		// SQL query without slash
+		span.SetName("SELECT * FROM users WHERE id = 123")
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		// Should NOT be obfuscated because no DB configs are enabled and no slash for URL sanitization
+		assert.Equal(t, "SELECT * FROM users WHERE id = 123", outSpan.Name())
+	})
+
+	t.Run("span name with Mongo query should be obfuscated when Mongo config enabled", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				DBSanitizer: db.DBSanitizerConfig{
+					MongoConfig: db.MongoConfig{
+						Enabled: true,
+					},
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName(`{"find":"users","filter":{"_id":"507f1f77bcf86cd799439011"}}`)
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		// Mongo query should be obfuscated (all values replaced with ?)
+		assert.Contains(t, outSpan.Name(), `"find":"?"`)
+		assert.Contains(t, outSpan.Name(), `"filter":{"_id":"?"}`)
+	})
+
+	t.Run("span name with multiple database types enabled should be processed sequentially", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				DBSanitizer: db.DBSanitizerConfig{
+					SQLConfig: db.SQLConfig{
+						Enabled: true,
+					},
+					RedisConfig: db.RedisConfig{
+						Enabled: true,
+					},
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("SELECT * FROM cache WHERE key = 'user:123'")
+		span.SetKind(ptrace.SpanKindServer)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		// Should be processed by all enabled obfuscators
+		assert.NotEqual(t, "SELECT * FROM cache WHERE key = 'user:123'", outSpan.Name())
+	})
+}
+
+func TestSanitizeSpanNameFlag(t *testing.T) {
+	t.Run("URL/default behavior", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled: true,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("/users/123/profile")
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		assert.Equal(t, "/users/*/profile", outSpan.Name())
+	})
+
+	t.Run("URL/disabled", func(t *testing.T) {
+		sanitizeSpanName := false
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled:          true,
+					SanitizeSpanName: &sanitizeSpanName,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("/users/123/profile")
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		assert.Equal(t, "/users/123/profile", outSpan.Name())
+	})
+
+	t.Run("URL/explicitly enabled", func(t *testing.T) {
+		sanitizeSpanName := true
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled:          true,
+					SanitizeSpanName: &sanitizeSpanName,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("/users/123/profile")
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		assert.Equal(t, "/users/*/profile", outSpan.Name())
+	})
+
+	t.Run("DB/default behavior", func(t *testing.T) {
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				DBSanitizer: db.DBSanitizerConfig{
+					SQLConfig: db.SQLConfig{
+						Enabled: true,
+					},
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("SELECT * FROM users WHERE id = 123")
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		assert.Equal(t, "SELECT * FROM users WHERE id = ?", outSpan.Name())
+	})
+
+	t.Run("DB/disabled", func(t *testing.T) {
+		sanitizeSpanName := false
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				DBSanitizer: db.DBSanitizerConfig{
+					SQLConfig: db.SQLConfig{
+						Enabled: true,
+					},
+					SanitizeSpanName: &sanitizeSpanName,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("SELECT * FROM users WHERE id = 123")
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		assert.Equal(t, "SELECT * FROM users WHERE id = 123", outSpan.Name())
+	})
+
+	t.Run("DB/explicitly enabled", func(t *testing.T) {
+		sanitizeSpanName := true
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				DBSanitizer: db.DBSanitizerConfig{
+					SQLConfig: db.SQLConfig{
+						Enabled: true,
+					},
+					SanitizeSpanName: &sanitizeSpanName,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("SELECT * FROM users WHERE id = 123")
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		assert.Equal(t, "SELECT * FROM users WHERE id = ?", outSpan.Name())
+	})
+
+	t.Run("both URL and DB flags work independently", func(t *testing.T) {
+		urlSanitizeSpanName := false
+		dbSanitizeSpanName := false
+		tc := testConfig{
+			config: &Config{
+				AllowAllKeys: true,
+				URLSanitization: url.URLSanitizationConfig{
+					Enabled:          true,
+					SanitizeSpanName: &urlSanitizeSpanName,
+				},
+				DBSanitizer: db.DBSanitizerConfig{
+					SQLConfig: db.SQLConfig{
+						Enabled: true,
+					},
+					SanitizeSpanName: &dbSanitizeSpanName,
+				},
+			},
+		}
+
+		inBatch := ptrace.NewTraces()
+		rs := inBatch.ResourceSpans().AppendEmpty()
+		ils := rs.ScopeSpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName("/api/users/123")
+		span.SetKind(ptrace.SpanKindClient)
+
+		processor, err := newRedaction(t.Context(), tc.config, zaptest.NewLogger(t))
+		require.NoError(t, err)
+		outTraces, err := processor.processTraces(t.Context(), inBatch)
+		require.NoError(t, err)
+
+		outSpan := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		assert.Equal(t, "/api/users/123", outSpan.Name())
 	})
 }

@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"time"
@@ -147,7 +148,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	var resources pcommon.Resource
 	switch s.sqlQuery {
 	case getSQLServerQueryTextAndPlanQuery():
-		if s.lastExecutionTimestamp.Add(s.config.TopQueryCollection.CollectionInterval).After(time.Now()) {
+		if int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(s.config.TopQueryCollection.CollectionInterval.Seconds()) {
 			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
 			return plog.NewLogs(), nil
 		}
@@ -643,9 +644,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 	rows, err := s.client.QueryRows(
 		ctx,
-		sql.Named("lookbackTime", -s.config.LookbackTime),
-		sql.Named("topNValue", s.config.TopQueryCount),
-		sql.Named("instanceName", s.config.InstanceName),
+		sql.Named("lookbackTime", -int(s.config.EffectiveLookbackTime().Seconds())),
+		sql.Named("maxSampleCount", s.config.MaxQuerySampleCount),
 	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
@@ -686,12 +686,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	timestamp := pcommon.NewTimestampFromTime(now)
 	s.lastExecutionTimestamp = now
 	for i, row := range rows {
-		// skipping the rest of the rows as totalElapsedTimeDiffs is sorted in descending order
-		if totalElapsedTimeDiffsMicrosecond[i] == 0 {
-			break
-		}
-		totalElapsedTimeVal := float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000
-
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
@@ -754,6 +748,11 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			totalWorkerTimeInSecVal = float64(totalWorkerTimeVal.(int64)) / 1_000_000
 		}
 
+		totalElapsedTimeVal := float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000
+		if count, ok := executionCountVal.(int64); !ok || count == 0 || totalElapsedTimeVal == 0 {
+			continue
+		}
+
 		s.logger.Debug(fmt.Sprintf("QueryHash: %v, PlanHash: %v, DataRow: %v", queryHashVal, queryPlanHashVal, row))
 
 		if !resourcesAdded {
@@ -813,13 +812,12 @@ func (s *sqlServerScraperHelper) cacheAndDiff(queryHash, queryPlanHash, column s
 	key := queryHash + "-" + queryPlanHash + "-" + column
 
 	cached, ok := s.cache.Get(key)
+	s.cache.Add(key, val)
 	if !ok {
-		s.cache.Add(key, val)
 		return false, val
 	}
 
 	if val > cached {
-		s.cache.Add(key, val)
 		return true, val - cached
 	}
 

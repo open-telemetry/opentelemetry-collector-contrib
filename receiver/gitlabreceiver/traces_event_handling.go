@@ -15,7 +15,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 var (
@@ -352,39 +352,39 @@ func setSpanStatus(span ptrace.Span, status string) {
 
 func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *gitlab.PipelineEvent) {
 	// Service
-	attrs.PutStr(string(semconv.ServiceNameKey), e.Project.PathWithNamespace)
+	attrs.PutStr(string(conventions.ServiceNameKey), e.Project.PathWithNamespace)
 
 	// CICD
-	attrs.PutStr(string(semconv.CICDPipelineNameKey), e.ObjectAttributes.Name)
-	attrs.PutStr(string(semconv.CICDPipelineResultKey), e.ObjectAttributes.Status)
-	attrs.PutInt(string(semconv.CICDPipelineRunIDKey), int64(e.ObjectAttributes.ID))
-	attrs.PutStr(string(semconv.CICDPipelineRunURLFullKey), e.ObjectAttributes.URL)
+	attrs.PutStr(string(conventions.CICDPipelineNameKey), e.ObjectAttributes.Name)
+	attrs.PutStr(string(conventions.CICDPipelineResultKey), e.ObjectAttributes.Status)
+	attrs.PutInt(string(conventions.CICDPipelineRunIDKey), int64(e.ObjectAttributes.ID))
+	attrs.PutStr(string(conventions.CICDPipelineRunURLFullKey), e.ObjectAttributes.URL)
 
 	// Resource attributes for workers are not applicable for GitLab, because GitLab provides worker information on job level
 	// One pipeline can have multiple jobs, and each job can have a different worker
 	// Therefore we set the worker attributes on job level
 
 	// VCS
-	attrs.PutStr(string(semconv.VCSProviderNameGitlab.Key), semconv.VCSProviderNameGitlab.Value.AsString())
+	attrs.PutStr(string(conventions.VCSProviderNameGitlab.Key), conventions.VCSProviderNameGitlab.Value.AsString())
 
-	attrs.PutStr(string(semconv.VCSRepositoryNameKey), e.Project.Name)
-	attrs.PutStr(string(semconv.VCSRepositoryURLFullKey), e.Project.WebURL)
+	attrs.PutStr(string(conventions.VCSRepositoryNameKey), e.Project.Name)
+	attrs.PutStr(string(conventions.VCSRepositoryURLFullKey), e.Project.WebURL)
 
-	attrs.PutStr(string(semconv.VCSRefHeadNameKey), e.ObjectAttributes.Ref)
-	refType := semconv.VCSRefTypeBranch.Value.AsString()
+	attrs.PutStr(string(conventions.VCSRefHeadNameKey), e.ObjectAttributes.Ref)
+	refType := conventions.VCSRefTypeBranch.Value.AsString()
 	if e.ObjectAttributes.Tag {
-		refType = semconv.VCSRefTypeTag.Value.AsString()
+		refType = conventions.VCSRefTypeTag.Value.AsString()
 	}
-	attrs.PutStr(string(semconv.VCSRefHeadTypeKey), refType)
-	attrs.PutStr(string(semconv.VCSRefHeadRevisionKey), e.ObjectAttributes.SHA)
+	attrs.PutStr(string(conventions.VCSRefHeadTypeKey), refType)
+	attrs.PutStr(string(conventions.VCSRefHeadRevisionKey), e.ObjectAttributes.SHA)
 
 	// Merge Request attributes (only for MR-triggered pipelines)
 	if e.MergeRequest.ID != 0 {
-		attrs.PutStr(string(semconv.VCSChangeIDKey), strconv.Itoa(e.MergeRequest.ID))
-		attrs.PutStr(string(semconv.VCSChangeStateKey), e.MergeRequest.State)
-		attrs.PutStr(string(semconv.VCSChangeTitleKey), e.MergeRequest.Title)
-		attrs.PutStr(string(semconv.VCSRefBaseNameKey), e.MergeRequest.TargetBranch)
-		attrs.PutStr(string(semconv.VCSRefBaseTypeKey), semconv.VCSRefTypeBranch.Value.AsString())
+		attrs.PutStr(string(conventions.VCSChangeIDKey), strconv.Itoa(e.MergeRequest.ID))
+		attrs.PutStr(string(conventions.VCSChangeStateKey), e.MergeRequest.State)
+		attrs.PutStr(string(conventions.VCSChangeTitleKey), e.MergeRequest.Title)
+		attrs.PutStr(string(conventions.VCSRefBaseNameKey), e.MergeRequest.TargetBranch)
+		attrs.PutStr(string(conventions.VCSRefBaseTypeKey), conventions.VCSRefTypeBranch.Value.AsString())
 	}
 
 	// ---------- The following attributes are not part of semconv yet ----------

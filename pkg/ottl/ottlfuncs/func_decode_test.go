@@ -204,7 +204,11 @@ func TestDecode(t *testing.T) {
 						return tt.value, nil
 					},
 				},
-				Encoding: tt.encoding,
+				Encoding: ottl.StandardStringGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return tt.encoding, nil
+					},
+				},
 			})
 
 			require.NoError(t, err)

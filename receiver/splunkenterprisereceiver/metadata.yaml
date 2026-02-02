@@ -306,6 +306,8 @@ metrics:
     attributes: [splunk.kvstore.storage.engine, splunk.kvstore.external, splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]
   splunk.license.expiration.seconds_remaining:
     enabled: false
+    stability:
+      level: development
     description: Gauge tracking the seconds remaining on any given Splunk License found via Splunk API. **Note:** This will only work on a Cluster Manager.
     unit: "{seconds}"
     gauge:

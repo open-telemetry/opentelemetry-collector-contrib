@@ -1,0 +1,57 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: aws.networkfirewall.name
+          value:
+            stringValue: test-firewall
+        - key: cloud.availability_zone
+          value:
+            stringValue: us-east-1a
+    scopeLogs:
+      - scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+          version: ""
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.networkfirewall
+        logRecords:
+          - observedTimeUnixNano: "0"
+            timeUnixNano: "1760956245123000000"
+            attributes:
+              - key: aws.networkfirewall.event.type
+                value:
+                  stringValue: tls
+              - key: aws.networkfirewall.flow_id
+                value:
+                  intValue: "1234567892"
+              - key: source.address
+                value:
+                  stringValue: 192.168.1.100
+              - key: source.port
+                value:
+                  intValue: "54323"
+              - key: destination.address
+                value:
+                  stringValue: 10.0.1.52
+              - key: destination.port
+                value:
+                  intValue: "443"
+              - key: network.transport
+                value:
+                  stringValue: TCP
+              - key: server.address
+                value:
+                  stringValue: example.com
+              - key: tls.client.subject
+                value:
+                  stringValue: CN=example.com
+              - key: tls.client.issuer
+                value:
+                  stringValue: CN=Let's Encrypt Authority X3,O=Let's Encrypt,C=US
+              - key: tls.resumed
+                value:
+                  boolValue: true

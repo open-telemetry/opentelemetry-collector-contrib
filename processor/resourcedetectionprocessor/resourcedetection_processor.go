@@ -5,10 +5,10 @@ package resourcedetectionprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -19,66 +19,81 @@ import (
 
 type resourceDetectionProcessor struct {
 	provider           *internal.ResourceProvider
-	resource           pcommon.Resource
-	schemaURL          string
 	override           bool
 	httpClientSettings confighttp.ClientConfig
+	refreshInterval    time.Duration
 	telemetrySettings  component.TelemetrySettings
 }
 
 // Start is invoked during service startup.
 func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component.Host) error {
-	client, _ := rdp.httpClientSettings.ToClient(ctx, host, rdp.telemetrySettings)
+	client, err := rdp.httpClientSettings.ToClient(ctx, host.GetExtensions(), rdp.telemetrySettings)
+	if err != nil {
+		return err
+	}
 	ctx = internal.ContextWithClient(ctx, client)
-	var err error
-	rdp.resource, rdp.schemaURL, err = rdp.provider.Get(ctx, client)
-	return err
+
+	// Perform initial resource detection
+	err = rdp.provider.Refresh(ctx, client)
+	if err != nil {
+		return err
+	}
+
+	// Start periodic refresh if configured
+	rdp.provider.StartRefreshing(rdp.refreshInterval, client)
+	return nil
+}
+
+// Shutdown is invoked during service shutdown.
+func (rdp *resourceDetectionProcessor) Shutdown(_ context.Context) error {
+	rdp.provider.StopRefreshing()
+	return nil
 }
 
 // processTraces implements the ProcessTracesFunc type.
-func (rdp *resourceDetectionProcessor) processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (rdp *resourceDetectionProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	res, schemaURL, _ := rdp.provider.Get(ctx, nil)
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		rss := rs.At(i)
-		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), rdp.schemaURL))
-		res := rss.Resource()
-		internal.MergeResource(res, rdp.resource, rdp.override)
+		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), schemaURL))
+		internal.MergeResource(rss.Resource(), res, rdp.override)
 	}
 	return td, nil
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
-func (rdp *resourceDetectionProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+func (rdp *resourceDetectionProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	res, schemaURL, _ := rdp.provider.Get(ctx, nil)
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		rss := rm.At(i)
-		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), rdp.schemaURL))
-		res := rss.Resource()
-		internal.MergeResource(res, rdp.resource, rdp.override)
+		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), schemaURL))
+		internal.MergeResource(rss.Resource(), res, rdp.override)
 	}
 	return md, nil
 }
 
 // processLogs implements the ProcessLogsFunc type.
-func (rdp *resourceDetectionProcessor) processLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
+func (rdp *resourceDetectionProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+	res, schemaURL, _ := rdp.provider.Get(ctx, nil)
 	rl := ld.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
 		rss := rl.At(i)
-		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), rdp.schemaURL))
-		res := rss.Resource()
-		internal.MergeResource(res, rdp.resource, rdp.override)
+		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), schemaURL))
+		internal.MergeResource(rss.Resource(), res, rdp.override)
 	}
 	return ld, nil
 }
 
 // processProfiles implements the ProcessProfilesFunc type.
-func (rdp *resourceDetectionProcessor) processProfiles(_ context.Context, ld pprofile.Profiles) (pprofile.Profiles, error) {
+func (rdp *resourceDetectionProcessor) processProfiles(ctx context.Context, ld pprofile.Profiles) (pprofile.Profiles, error) {
+	res, schemaURL, _ := rdp.provider.Get(ctx, nil)
 	rl := ld.ResourceProfiles()
 	for i := 0; i < rl.Len(); i++ {
 		rss := rl.At(i)
-		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), rdp.schemaURL))
-		res := rss.Resource()
-		internal.MergeResource(res, rdp.resource, rdp.override)
+		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), schemaURL))
+		internal.MergeResource(rss.Resource(), res, rdp.override)
 	}
 	return ld, nil
 }

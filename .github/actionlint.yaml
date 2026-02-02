@@ -1,7 +1,6 @@
 self-hosted-runner:
   labels:
     - oracle-bare-metal-64cpu-512gb-x86-64
-    - windows-11-arm
 
 config-variables: null
 

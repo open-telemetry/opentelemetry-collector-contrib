@@ -7,17 +7,20 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
+	"google.golang.org/grpc/encoding/gzip"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
@@ -36,26 +39,38 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-		DomainSettings: configgrpc.ClientConfig{
-			Compression: configcompression.TypeGzip,
+		DomainSettings: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Compression: configcompression.TypeGzip,
+			},
+			AcceptEncoding: gzip.Name,
 		},
 		// Traces GRPC client
-		Traces: configgrpc.ClientConfig{
-			Endpoint:    "https://",
-			Compression: configcompression.TypeGzip,
+		Traces: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint:    "https://",
+				Compression: configcompression.TypeGzip,
+			},
+			AcceptEncoding: gzip.Name,
 		},
-		Metrics: configgrpc.ClientConfig{
-			Endpoint: "https://",
-			// Default to gzip compression
-			Compression:     configcompression.TypeGzip,
-			WriteBufferSize: 512 * 1024,
+		Metrics: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: "https://",
+				// Default to gzip compression
+				Compression:     configcompression.TypeGzip,
+				WriteBufferSize: 512 * 1024,
+			},
+			AcceptEncoding: gzip.Name,
 		},
-		Logs: configgrpc.ClientConfig{
-			Endpoint:    "https://",
-			Compression: configcompression.TypeGzip,
+		Logs: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint:    "https://",
+				Compression: configcompression.TypeGzip,
+			},
+			AcceptEncoding: gzip.Name,
 		},
 		PrivateKey: "",
 		AppName:    "",
@@ -64,6 +79,7 @@ func createDefaultConfig() component.Config {
 			Threshold: 10,
 			Duration:  time.Minute,
 		},
+		Protocol: grpcProtocol,
 	}
 }
 
@@ -151,6 +167,11 @@ func createProfilesExporter(
 	config component.Config,
 ) (xexporter.Profiles, error) {
 	cfg := config.(*Config)
+
+	// Validate that HTTP protocol is not used with profiles
+	if cfg.Protocol == "http" {
+		return nil, errors.New("profiles signal is not supported with HTTP protocol, use gRPC protocol (default) instead")
+	}
 
 	oce, err := newProfilesExporter(cfg, set)
 	if err != nil {

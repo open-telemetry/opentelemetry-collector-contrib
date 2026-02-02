@@ -18,7 +18,7 @@ Time difference between local and NTP server clocks
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ns | Gauge | Int | development |
+| ns | Gauge | Int | Development |
 
 ## Resource Attributes
 

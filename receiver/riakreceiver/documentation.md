@@ -18,7 +18,7 @@ The amount of memory allocated to the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| By | Sum | Int | Cumulative | false | development |
+| By | Sum | Int | Cumulative | false | Development |
 
 ### riak.node.operation.count
 
@@ -26,13 +26,13 @@ The number of operations performed by the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operation} | Sum | Int | Cumulative | true | development |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| request | The request operation type. | Str: ``put``, ``get`` | false |
+| request | The request operation type. | Str: ``put``, ``get`` | Recommended |
 
 ### riak.node.operation.time.mean
 
@@ -40,13 +40,13 @@ The mean time between request and response for operations performed by the node 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| us | Gauge | Int | development |
+| us | Gauge | Int | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| request | The request operation type. | Str: ``put``, ``get`` | false |
+| request | The request operation type. | Str: ``put``, ``get`` | Recommended |
 
 ### riak.node.read_repair.count
 
@@ -54,7 +54,7 @@ The number of read repairs performed by the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {read_repair} | Sum | Int | Cumulative | true | development |
+| {read_repair} | Sum | Int | Cumulative | true | Development |
 
 ### riak.vnode.index.operation.count
 
@@ -62,13 +62,13 @@ The number of index operations performed by vnodes on the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operation} | Sum | Int | Cumulative | false | development |
+| {operation} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| operation | The operation type for index operations. | Str: ``read``, ``write``, ``delete`` | false |
+| operation | The operation type for index operations. | Str: ``read``, ``write``, ``delete`` | Recommended |
 
 ### riak.vnode.operation.count
 
@@ -76,13 +76,13 @@ The number of operations performed by vnodes on the node.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {operation} | Sum | Int | Cumulative | true | development |
+| {operation} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| request | The request operation type. | Str: ``put``, ``get`` | false |
+| request | The request operation type. | Str: ``put``, ``get`` | Recommended |
 
 ## Resource Attributes
 

@@ -1,0 +1,39 @@
+{
+  "insertId": "148k2lhev8mmr",
+  "jsonPayload": {
+    "@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
+    "connection": {
+      "clientIp": "68.168.189.182",
+      "clientPort": 52900,
+      "protocol": 6,
+      "serverIp": "35.209.164.189",
+      "serverPort": 80
+    },
+    "endTime": "2025-11-17T22:21:57.500505Z",
+    "serverBytesReceived": "83",
+    "serverBytesSent": "853",
+    "startTime": "2025-11-17T22:21:57.480419Z"
+  },
+  "logName": "projects/elastic-logstash/logs/loadbalancing.googleapis.com%2Fconnections",
+  "receiveTimestamp": "2025-11-17T22:22:04.929901696Z",
+  "resource": {
+    "labels": {
+      "backend_name": "andrewvc-cloudtest-nlb-backend-mig",
+      "backend_scope": "us-central1-b",
+      "backend_scope_type": "ZONE",
+      "backend_target_name": "andrewvc-cloudtest-nlb-backend-service",
+      "backend_target_type": "BACKEND_SERVICE",
+      "backend_type": "INSTANCE_GROUP",
+      "forwarding_rule_name": "andrewvc-cloudtest-nlb-forwarding-rule",
+      "load_balancing_scheme": "EXTERNAL_MANAGED",
+      "network_name": "andrewvc-cloudtest-nlb-network",
+      "project_id": "elastic-logstash",
+      "protocol": "TCP",
+      "region": "us-central1",
+      "target_proxy_name": "andrewvc-cloudtest-nlb-tcp-proxy"
+    },
+    "type": "l4_proxy_rule"
+  },
+  "severity": "INFO",
+  "timestamp": "2025-11-17T22:21:57.480419Z"
+}

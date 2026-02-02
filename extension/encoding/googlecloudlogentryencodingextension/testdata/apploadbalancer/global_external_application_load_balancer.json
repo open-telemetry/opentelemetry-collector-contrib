@@ -1,0 +1,47 @@
+{
+    "httpRequest": {
+      "latency": "0.005192s",
+      "remoteIp": "79.117.34.252",
+      "requestMethod": "GET",
+      "requestSize": "29",
+      "requestUrl": "https://35.227.246.6/",
+      "responseSize": "780",
+      "serverIp": "10.20.0.4",
+      "status": 200,
+      "userAgent": "curl/8.7.1"
+    },
+    "insertId": "h91ql8g1lpdqh2",
+    "jsonPayload": {
+      "@type": "type.googleapis.com/google.cloud.loadbalancing.type.LoadBalancerLogEntry",
+      "backendTargetProjectNumber": "projects/8560181848",
+      "cacheDecision": [
+        "RESPONSE_HAS_ETAG",
+        "RESPONSE_HAS_LAST_MODIFIED",
+        "RESPONSE_HAS_CONTENT_TYPE",
+        "CACHE_MODE_USE_ORIGIN_HEADERS"
+      ],
+      "remoteIp": "79.117.34.252",
+      "statusDetails": "response_sent_by_backend",
+      "tls": {
+        "cipher": "TLS_CHACHA20_POLY1305_SHA256",
+        "protocol": "TLSv1.3"
+      }
+    },
+    "logName": "projects/elastic-observability/logs/requests",
+    "receiveTimestamp": "2025-11-20T13:35:28.360361140Z",
+    "resource": {
+      "labels": {
+        "backend_service_name": "gcp-fixture-alb-backend-service",
+        "forwarding_rule_name": "gcp-fixture-alb-forwarding-rule",
+        "project_id": "elastic-observability",
+        "target_proxy_name": "gcp-fixture-alb-https-proxy",
+        "url_map_name": "gcp-fixture-alb-url-map",
+        "zone": "global"
+      },
+      "type": "http_load_balancer"
+    },
+    "severity": "INFO",
+    "spanId": "e9004ce8eccc7c2d",
+    "timestamp": "2025-11-20T13:35:27.558637Z",
+    "trace": "projects/elastic-observability/traces/5334e0e7aee6ec1b1a8c34db601241ab"
+}

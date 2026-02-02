@@ -1,0 +1,68 @@
+{
+  "insertId": "4qnfbvepj6ec",
+  "jsonPayload": {
+    "src_vpc": {
+      "subnetwork_name": "default",
+      "project_id": "test-project-id",
+      "subnetwork_region": "asia-south1",
+      "vpc_name": "default"
+    },
+    "reporter": "SRC",
+    "dest_location": {
+      "continent": "Asia",
+      "asn": 137718,
+      "country": "chn"
+    },
+    "bytes_sent": "19680",
+    "start_time": "2025-09-27T21:12:57.083366649Z",
+    "src_instance": {
+      "vm_name": "test-vm-2",
+      "project_id": "test-project-id",
+      "region": "asia-south1",
+      "zone": "asia-south1-c"
+    },
+    "connection": {
+      "dest_port": 52388,
+      "src_ip": "192.0.2.2",
+      "src_port": 22,
+      "dest_ip": "203.0.113.2",
+      "protocol": 6
+    },
+    "end_time": "2025-09-27T21:12:58.512821056Z",
+    "internet_routing_details": {
+      "egress_as_path": [
+        {
+          "as_details": [
+            {
+              "asn": 58453
+            },
+            {
+              "asn": 9808
+            },
+            {
+              "asn": 38019
+            },
+            {
+              "asn": 137718
+            }
+          ]
+        }
+      ]
+    },
+    "packets_sent": "60"
+  },
+  "resource": {
+    "type": "vpc_flow_logs_config",
+    "labels": {
+      "name": "test-flow-logs-config",
+      "location": "global",
+      "resource_container": "projects/123456789012"
+    }
+  },
+  "timestamp": "2025-09-27T21:13:04.502203447Z",
+  "labels": {
+    "target_resource_name": "projects/123456789012/global/networks/default"
+  },
+  "logName": "projects/test-project-id/logs/networkmanagement.googleapis.com%2Fvpc_flows",
+  "receiveTimestamp": "2025-09-27T21:13:04.502203447Z"
+}

@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -249,12 +248,12 @@ func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetada
 			ResourceIDKey: "k8s.pod.uid",
 			ResourceID:    experimentalmetricmetadata.ResourceID(podUIDLabel),
 			Metadata: map[string]string{
-				kindNameLabel:                      kindObjName,
-				kindUIDLabel:                       kindObjUID,
-				string(conventions.K8SNodeNameKey): "test-node",
-				"k8s.pod.name":                     podNameLabel,
-				"k8s.pod.phase":                    "Unknown", // Default value when phase is not set.
-				"k8s.namespace.name":               namespaceLabel,
+				kindNameLabel:        kindObjName,
+				kindUIDLabel:         kindObjUID,
+				"k8s.node.name":      "test-node",
+				"k8s.pod.name":       podNameLabel,
+				"k8s.pod.phase":      "Unknown", // Default value when phase is not set.
+				"k8s.namespace.name": namespaceLabel,
 			},
 		},
 	}
@@ -354,7 +353,8 @@ func podWithOwnerReference(kind string) *corev1.Pod {
 }
 
 func TestTransform(t *testing.T) {
-	containerState := corev1.ContainerState{Running: &corev1.ContainerStateRunning{StartedAt: v1.Now()}}
+	waitingContainerState := corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{Reason: "ImagePullBackOff"}}
+	runningContainerState := corev1.ContainerState{Running: &corev1.ContainerStateRunning{StartedAt: v1.Now()}}
 	originalPod := &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "my-pod",
@@ -384,6 +384,34 @@ func TestTransform(t *testing.T) {
 				FSGroup:    func() *int64 { gid := int64(3000); return &gid }(),
 			},
 			Containers: []corev1.Container{
+				{
+					Name:            "my-failing-container",
+					Image:           "redis:latest",
+					ImagePullPolicy: corev1.PullAlways,
+					Ports: []corev1.ContainerPort{
+						{
+							Name:          "http",
+							ContainerPort: 6379,
+							Protocol:      corev1.ProtocolTCP,
+						},
+					},
+					Env: []corev1.EnvVar{
+						{
+							Name:  "MY_ENV",
+							Value: "my-value",
+						},
+					},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("500m"),
+							corev1.ResourceMemory: resource.MustParse("1Gi"),
+						},
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("1"),
+							corev1.ResourceMemory: resource.MustParse("2Gi"),
+						},
+					},
+				},
 				{
 					Name:            "my-container",
 					Image:           "nginx:latest",
@@ -427,9 +455,11 @@ func TestTransform(t *testing.T) {
 			StartTime: &v1.Time{Time: v1.Now().Add(-5 * time.Minute)},
 			ContainerStatuses: []corev1.ContainerStatus{
 				{
-					Name:         "invalid-container",
+					Name:         "my-failing-container",
 					Image:        "redis:latest",
 					RestartCount: 1,
+					Ready:        false,
+					State:        waitingContainerState,
 				},
 				{
 					Name:         "my-container",
@@ -437,7 +467,7 @@ func TestTransform(t *testing.T) {
 					ContainerID:  "abc12345",
 					RestartCount: 2,
 					Ready:        true,
-					State:        containerState,
+					State:        runningContainerState,
 				},
 			},
 		},
@@ -454,6 +484,19 @@ func TestTransform(t *testing.T) {
 		Spec: corev1.PodSpec{
 			NodeName: "node-1",
 			Containers: []corev1.Container{
+				{
+					Name: "my-failing-container",
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("500m"),
+							corev1.ResourceMemory: resource.MustParse("1Gi"),
+						},
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("1"),
+							corev1.ResourceMemory: resource.MustParse("2Gi"),
+						},
+					},
+				},
 				{
 					Name: "my-container",
 					Resources: corev1.ResourceRequirements{
@@ -474,12 +517,20 @@ func TestTransform(t *testing.T) {
 			Reason: "Evicted",
 			ContainerStatuses: []corev1.ContainerStatus{
 				{
+					Name:         "my-failing-container",
+					Image:        "redis:latest",
+					ContainerID:  "",
+					RestartCount: 1,
+					Ready:        false,
+					State:        waitingContainerState,
+				},
+				{
 					Name:         "my-container",
 					Image:        "nginx:latest",
 					ContainerID:  "abc12345",
 					RestartCount: 2,
 					Ready:        true,
-					State:        containerState,
+					State:        runningContainerState,
 				},
 			},
 		},
@@ -501,17 +552,17 @@ func TestPodMetadata(t *testing.T) {
 			statusPhase:  corev1.PodFailed,
 			statusReason: "Evicted",
 			expectedMetadata: map[string]string{
-				"k8s.pod.name":                     "test-pod-0",
-				"k8s.namespace.name":               "test-namespace",
-				"k8s.pod.phase":                    "Failed",
-				"k8s.pod.status_reason":            "Evicted",
-				"k8s.workload.kind":                "Deployment",
-				"k8s.workload.name":                "test-deployment-0",
-				"k8s.replicaset.name":              "test-replicaset-0",
-				"k8s.replicaset.uid":               "test-replicaset-0-uid",
-				"k8s.deployment.name":              "test-deployment-0",
-				"k8s.deployment.uid":               "test-deployment-0-uid",
-				string(conventions.K8SNodeNameKey): "test-node",
+				"k8s.pod.name":          "test-pod-0",
+				"k8s.namespace.name":    "test-namespace",
+				"k8s.pod.phase":         "Failed",
+				"k8s.pod.status_reason": "Evicted",
+				"k8s.workload.kind":     "Deployment",
+				"k8s.workload.name":     "test-deployment-0",
+				"k8s.replicaset.name":   "test-replicaset-0",
+				"k8s.replicaset.uid":    "test-replicaset-0-uid",
+				"k8s.deployment.name":   "test-deployment-0",
+				"k8s.deployment.uid":    "test-deployment-0-uid",
+				"k8s.node.name":         "test-node",
 			},
 		},
 		{
@@ -519,16 +570,16 @@ func TestPodMetadata(t *testing.T) {
 			statusPhase:  corev1.PodRunning,
 			statusReason: "",
 			expectedMetadata: map[string]string{
-				"k8s.pod.name":                     "test-pod-0",
-				"k8s.namespace.name":               "test-namespace",
-				"k8s.pod.phase":                    "Running",
-				"k8s.workload.kind":                "Deployment",
-				"k8s.workload.name":                "test-deployment-0",
-				"k8s.replicaset.name":              "test-replicaset-0",
-				"k8s.replicaset.uid":               "test-replicaset-0-uid",
-				"k8s.deployment.name":              "test-deployment-0",
-				"k8s.deployment.uid":               "test-deployment-0-uid",
-				string(conventions.K8SNodeNameKey): "test-node",
+				"k8s.pod.name":        "test-pod-0",
+				"k8s.namespace.name":  "test-namespace",
+				"k8s.pod.phase":       "Running",
+				"k8s.workload.kind":   "Deployment",
+				"k8s.workload.name":   "test-deployment-0",
+				"k8s.replicaset.name": "test-replicaset-0",
+				"k8s.replicaset.uid":  "test-replicaset-0-uid",
+				"k8s.deployment.name": "test-deployment-0",
+				"k8s.deployment.uid":  "test-deployment-0-uid",
+				"k8s.node.name":       "test-node",
 			},
 		},
 	}
@@ -620,4 +671,79 @@ func TestPodContainerReasonMetrics(t *testing.T) {
 		pmetrictest.IgnoreScopeMetricsOrder(),
 	),
 	)
+}
+
+func TestGetIDForCache(t *testing.T) {
+	ns := "namespace"
+	resName := "resName"
+
+	actual := getIDForCache(ns, resName)
+
+	require.Equal(t, ns+"/"+resName, actual)
+}
+
+func TestGetObjectFromStore_ObjectInClusterWideStore(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	ms.Setup(gvk.Job, metadata.ClusterWideInformerKey, store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := getObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.NoError(t, err)
+	require.NotNil(t, obj)
+}
+
+func TestGetObjectFromStore_ObjectInNamespacedStore(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	ms.Setup(gvk.Job, "test-namespace", store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := getObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.NoError(t, err)
+	require.NotNil(t, obj)
+}
+
+func TestGetObjectFromStore_ObjectNotFound(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	ms.Setup(gvk.Job, "other-test-namespace", store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := getObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.NoError(t, err)
+	require.Nil(t, obj)
+}
+
+func TestGetObjectFromStore_ReturnsError(t *testing.T) {
+	ms := metadata.NewStore()
+
+	store := &testutils.MockStore{
+		Cache: map[string]any{},
+	}
+
+	store.WantErr = true
+
+	ms.Setup(gvk.Job, "test-namespace", store)
+	store.Cache["test-namespace/test-job-0"] = testutils.NewJob("0")
+
+	obj, err := getObjectFromStore("test-namespace", "test-job-0", ms.Get(gvk.Job))
+
+	require.Error(t, err)
+	require.Nil(t, obj)
 }

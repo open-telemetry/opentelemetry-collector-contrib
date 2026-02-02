@@ -226,11 +226,6 @@ receivers:
           - json_path: "$.status"
             equals: "ok"
           - max_size: 1024
-processors:
-  batch:
-    send_batch_max_size: 1000
-    send_batch_size: 100
-    timeout: 10s
 exporters:
   debug:
     verbosity: detailed
@@ -238,7 +233,6 @@ service:
   pipelines:
     metrics:
       receivers: [httpcheck]
-      processors: [batch]
       exporters: [debug]
 ```
 

@@ -35,7 +35,7 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 		logger.Warn("Could not get OS Hostname", zap.Error(err))
 	}
 
-	return
+	return hostInfo
 }
 
 // GetHostname gets the hostname provided by the system

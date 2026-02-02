@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.18.0"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
@@ -300,7 +300,7 @@ func swStringToUUID(s string, extra uint32) (dst [16]byte) {
 	// uid = UUID(start) XOR [4]byte(extra)
 
 	if len(s) < 32 {
-		return
+		return dst
 	}
 
 	t := unsafeGetBytes(s)
@@ -311,7 +311,9 @@ func swStringToUUID(s string, extra uint32) (dst [16]byte) {
 	}
 
 	for i := range 4 {
-		uid[i] ^= byte(extra)
+		if i < len(uid) {
+			uid[i] ^= byte(extra)
+		}
 		extra >>= 8
 	}
 
@@ -322,17 +324,17 @@ func swStringToUUID(s string, extra uint32) (dst [16]byte) {
 	index1 := bytes.IndexByte(t, '.')
 	index2 := bytes.LastIndexByte(t, '.')
 	if index1 != 32 || index2 < 0 {
-		return
+		return dst
 	}
 
 	mid, err := strconv.Atoi(s[index1+1 : index2])
 	if err != nil {
-		return
+		return dst
 	}
 
 	last, err := strconv.Atoi(s[index2+1:])
 	if err != nil {
-		return
+		return dst
 	}
 
 	for i := 4; i < 8; i++ {
@@ -352,7 +354,9 @@ func uuidTo8Bytes(uuid [16]byte) [8]byte {
 	// high bit XOR low bit
 	var dst [8]byte
 	for i := range 8 {
-		dst[i] = uuid[i] ^ uuid[i+8]
+		if i < len(dst) && i+8 < len(uuid) {
+			dst[i] = uuid[i] ^ uuid[i+8]
+		}
 	}
 	return dst
 }

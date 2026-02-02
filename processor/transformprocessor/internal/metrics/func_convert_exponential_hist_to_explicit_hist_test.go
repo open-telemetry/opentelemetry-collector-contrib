@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -251,12 +252,13 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input().CopyTo(metric)
 
-			ctx := ottlmetric.NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			defer ctx.Close()
 
 			exprFunc, err := convertExponentialHistToExplicitHist(tt.distribution, tt.arg)
-			assert.NoError(t, err)
-			_, err = exprFunc(nil, ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
+			_, err = exprFunc(t.Context(), ctx)
+			require.NoError(t, err)
 
 			expected := pmetric.NewMetric()
 			tt.want(expected)
@@ -433,12 +435,13 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input().CopyTo(metric)
 
-			ctx := ottlmetric.NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			defer ctx.Close()
 
 			exprFunc, err := convertExponentialHistToExplicitHist(tt.distribution, tt.arg)
-			assert.NoError(t, err)
-			_, err = exprFunc(nil, ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
+			_, err = exprFunc(t.Context(), ctx)
+			require.NoError(t, err)
 
 			expected := pmetric.NewMetric()
 			tt.want(expected)
@@ -562,12 +565,13 @@ func TestUniform_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input().CopyTo(metric)
 
-			ctx := ottlmetric.NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			defer ctx.Close()
 
 			exprFunc, err := convertExponentialHistToExplicitHist(tt.distribution, tt.arg)
-			assert.NoError(t, err)
-			_, err = exprFunc(nil, ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
+			_, err = exprFunc(t.Context(), ctx)
+			require.NoError(t, err)
 
 			expected := pmetric.NewMetric()
 			tt.want(expected)
@@ -691,12 +695,13 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input().CopyTo(metric)
 
-			ctx := ottlmetric.NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			defer ctx.Close()
 
 			exprFunc, err := convertExponentialHistToExplicitHist(tt.distribution, tt.arg)
-			assert.NoError(t, err)
-			_, err = exprFunc(nil, ctx)
-			assert.NoError(t, err)
+			require.NoError(t, err)
+			_, err = exprFunc(t.Context(), ctx)
+			require.NoError(t, err)
 
 			expected := pmetric.NewMetric()
 			tt.want(expected)

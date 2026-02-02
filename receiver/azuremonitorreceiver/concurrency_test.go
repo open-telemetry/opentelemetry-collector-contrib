@@ -25,18 +25,18 @@ func BenchmarkConcurrentMapImpl(b *testing.B) {
 }
 
 func BenchmarkSyncMapImpl(b *testing.B) {
-	m := NewSyncMapImpl[int]()
+	m := newSyncMapImpl[int]()
 	benchmarkMapImpl(b, m)
 }
 
 func BenchmarkMutexMapImpl(b *testing.B) {
-	m := NewMutexMapImpl[int]()
+	m := newMutexMapImpl[int]()
 	benchmarkMapImpl(b, m)
 }
 
 func benchmarkMapImplLarge(b *testing.B, m concurrentMetricsBuilderMap[int]) {
 	// Pre-fill with 1 million entries
-	for i := 0; i < 1_000_000; i++ {
+	for i := range 1_000_000 {
 		key := strconv.Itoa(i)
 		m.Set(key, i)
 	}
@@ -63,11 +63,11 @@ func BenchmarkConcurrentMapImplLarge(b *testing.B) {
 }
 
 func BenchmarkSyncMapImplLarge(b *testing.B) {
-	m := NewSyncMapImpl[int]()
+	m := newSyncMapImpl[int]()
 	benchmarkMapImplLarge(b, m)
 }
 
 func BenchmarkMutexMapImplLarge(b *testing.B) {
-	m := NewMutexMapImpl[int]()
+	m := newMutexMapImpl[int]()
 	benchmarkMapImplLarge(b, m)
 }

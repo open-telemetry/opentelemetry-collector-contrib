@@ -37,7 +37,10 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						},
 					},
 					Path: "/",
 				},
@@ -48,7 +51,10 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:13",
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  "localhost:13",
+						},
 						TLS: configoptional.Some(configtls.ServerConfig{
 							Config: configtls.Config{
 								CAFile:   "/path/to/ca",
@@ -81,13 +87,19 @@ func TestLoadConfig(t *testing.T) {
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
 					UseV2: true,
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						},
 					},
 					Path: "/",
 				},
 				HTTPConfig: &healthcheck.HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						},
 					},
 					Status: healthcheck.PathConfig{
 						Enabled: true,
@@ -119,13 +131,19 @@ func TestLoadConfig(t *testing.T) {
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
 					UseV2: true,
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						},
 					},
 					Path: "/",
 				},
 				HTTPConfig: &healthcheck.HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:13",
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  "localhost:13",
+						},
 					},
 					Status: healthcheck.PathConfig{
 						Enabled: true,
@@ -148,7 +166,10 @@ func TestLoadConfig(t *testing.T) {
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
 					UseV2: true,
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						},
 					},
 					Path: "/",
 				},

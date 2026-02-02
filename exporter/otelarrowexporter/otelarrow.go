@@ -117,14 +117,14 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		dialOpts = append(dialOpts, configgrpc.WithGrpcDialOption(opt))
 	}
 
-	if e.clientConn, err = e.config.ToClientConn(ctx, host, e.settings.TelemetrySettings, dialOpts...); err != nil {
+	if e.clientConn, err = e.config.ToClientConn(ctx, host.GetExtensions(), e.settings.TelemetrySettings, dialOpts...); err != nil {
 		return err
 	}
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	headers := map[string]string{}
-	for k, v := range e.config.Headers {
+	for k, v := range e.config.Headers.Iter {
 		headers[k] = string(v)
 	}
 	headerMetadata := metadata.New(headers)

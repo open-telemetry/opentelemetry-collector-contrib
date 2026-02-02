@@ -11,18 +11,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
 )
 
 func TestClientSpanWithStatementAttribute(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
-	attributes[string(conventionsv112.DBSystemKey)] = pcommon.NewValueStr("mysql")
-	attributes[string(conventionsv112.DBNameKey)] = pcommon.NewValueStr("customers")
-	attributes[string(conventionsv112.DBStatementKey)] = pcommon.NewValueStr("SELECT * FROM user WHERE user_id = ?")
-	attributes[string(conventionsv112.DBUserKey)] = pcommon.NewValueStr("readonly_user")
-	attributes[string(conventionsv112.DBConnectionStringKey)] = pcommon.NewValueStr("mysql://db.example.com:3306")
-	attributes[string(conventionsv112.NetPeerNameKey)] = pcommon.NewValueStr("db.example.com")
-	attributes[string(conventionsv112.NetPeerPortKey)] = pcommon.NewValueStr("3306")
+	attributes["db.system"] = pcommon.NewValueStr("mysql")
+	attributes["db.name"] = pcommon.NewValueStr("customers")
+	attributes["db.statement"] = pcommon.NewValueStr("SELECT * FROM user WHERE user_id = ?")
+	attributes["db.user"] = pcommon.NewValueStr("readonly_user")
+	attributes["db.connection_string"] = pcommon.NewValueStr("mysql://db.example.com:3306")
+	attributes["net.peer.name"] = pcommon.NewValueStr("db.example.com")
+	attributes["net.peer.port"] = pcommon.NewValueStr("3306")
 	span := constructSQLSpan(attributes)
 
 	filtered, sqlData := makeSQL(span, attributes)
@@ -39,13 +38,13 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 
 func TestClientSpanWithNonSQLDatabase(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
-	attributes[string(conventionsv112.DBSystemKey)] = pcommon.NewValueStr("redis")
-	attributes[string(conventionsv112.DBNameKey)] = pcommon.NewValueStr("0")
-	attributes[string(conventionsv112.DBStatementKey)] = pcommon.NewValueStr("SET key value")
-	attributes[string(conventionsv112.DBUserKey)] = pcommon.NewValueStr("readonly_user")
-	attributes[string(conventionsv112.DBConnectionStringKey)] = pcommon.NewValueStr("redis://db.example.com:3306")
-	attributes[string(conventionsv112.NetPeerNameKey)] = pcommon.NewValueStr("db.example.com")
-	attributes[string(conventionsv112.NetPeerPortKey)] = pcommon.NewValueStr("3306")
+	attributes["db.system"] = pcommon.NewValueStr("redis")
+	attributes["db.name"] = pcommon.NewValueStr("0")
+	attributes["db.statement"] = pcommon.NewValueStr("SET key value")
+	attributes["db.user"] = pcommon.NewValueStr("readonly_user")
+	attributes["db.connection_string"] = pcommon.NewValueStr("redis://db.example.com:3306")
+	attributes["net.peer.name"] = pcommon.NewValueStr("db.example.com")
+	attributes["net.peer.port"] = pcommon.NewValueStr("3306")
 	span := constructSQLSpan(attributes)
 
 	filtered, sqlData := makeSQL(span, attributes)
@@ -55,13 +54,13 @@ func TestClientSpanWithNonSQLDatabase(t *testing.T) {
 
 func TestClientSpanWithoutDBurlAttribute(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
-	attributes[string(conventionsv112.DBSystemKey)] = pcommon.NewValueStr("postgresql")
-	attributes[string(conventionsv112.DBNameKey)] = pcommon.NewValueStr("customers")
-	attributes[string(conventionsv112.DBStatementKey)] = pcommon.NewValueStr("SELECT * FROM user WHERE user_id = ?")
-	attributes[string(conventionsv112.DBUserKey)] = pcommon.NewValueStr("readonly_user")
-	attributes[string(conventionsv112.DBConnectionStringKey)] = pcommon.NewValueStr("")
-	attributes[string(conventionsv112.NetPeerNameKey)] = pcommon.NewValueStr("db.example.com")
-	attributes[string(conventionsv112.NetPeerPortKey)] = pcommon.NewValueStr("3306")
+	attributes["db.system"] = pcommon.NewValueStr("postgresql")
+	attributes["db.name"] = pcommon.NewValueStr("customers")
+	attributes["db.statement"] = pcommon.NewValueStr("SELECT * FROM user WHERE user_id = ?")
+	attributes["db.user"] = pcommon.NewValueStr("readonly_user")
+	attributes["db.connection_string"] = pcommon.NewValueStr("")
+	attributes["net.peer.name"] = pcommon.NewValueStr("db.example.com")
+	attributes["net.peer.port"] = pcommon.NewValueStr("3306")
 	span := constructSQLSpan(attributes)
 
 	filtered, sqlData := makeSQL(span, attributes)

@@ -13,14 +13,16 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	awsunmarshaler "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
-	cloudtraillog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
 	elbaccesslogs "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/elb-access-log"
+	networkfirewall "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/network-firewall-log"
 	s3accesslog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
@@ -33,15 +35,34 @@ const (
 	parquetEncoding = "parquet"
 )
 
+var (
+	vpcFlowStartISO8601FormatFeatureGate    *featuregate.Gate
+	cloudTrailUserIdentityPrefixFeatureGate *featuregate.Gate
+)
+
+func init() {
+	vpcFlowStartISO8601FormatFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		constants.VPCFlowStartISO8601FormatID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, aws.vpc.flow.start field will be formatted as ISO-8601 string instead of seconds since epoch integer."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43390"),
+	)
+
+	cloudTrailUserIdentityPrefixFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		constants.CloudTrailEnableUserIdentityPrefixID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, CloudTrail log userIdentity attributes will use 'aws.user_identity' prefix. This helps to preserve the attribute origin."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45459"))
+}
+
 var _ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
 
 type encodingExtension struct {
+	cfg *Config
+
 	unmarshaler awsunmarshaler.AWSUnmarshaler
 	format      string
 	gzipPool    sync.Pool
-	// if format is VPC, then content can be in parquet or
-	// gzip encoding
-	vpcFormat string
 }
 
 func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
@@ -58,24 +79,22 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			format:      constants.FormatCloudWatchLogsSubscriptionFilter,
 		}, nil
 	case constants.FormatVPCFlowLog, constants.FormatVPCFlowLogV1:
-		var fileFormat string
 		if cfg.Format == constants.FormatVPCFlowLogV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
 				zap.String("old_format", string(constants.FormatVPCFlowLogV1)),
 				zap.String("new_format", string(constants.FormatVPCFlowLog)),
 			)
-			fileFormat = cfg.VPCFlowLogConfigV1.FileFormat
-		} else {
-			fileFormat = cfg.VPCFlowLogConfig.FileFormat
 		}
+
 		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
-			fileFormat,
+			cfg.VPCFlowLogConfig,
 			settings.BuildInfo,
 			settings.Logger,
+			vpcFlowStartISO8601FormatFeatureGate.IsEnabled(),
 		)
 		return &encodingExtension{
+			cfg:         cfg,
 			unmarshaler: unmarshaler,
-			vpcFormat:   fileFormat,
 			format:      constants.FormatVPCFlowLog,
 		}, err
 	case constants.FormatS3AccessLog, constants.FormatS3AccessLogV1:
@@ -108,8 +127,10 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			)
 		}
 		return &encodingExtension{
-			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(settings.BuildInfo),
-			format:      constants.FormatCloudTrailLog,
+			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(
+				settings.BuildInfo,
+				cloudTrailUserIdentityPrefixFeatureGate.IsEnabled()),
+			format: constants.FormatCloudTrailLog,
 		}, nil
 	case constants.FormatELBAccessLog, constants.FormatELBAccessLogV1:
 		if cfg.Format == constants.FormatELBAccessLogV1 {
@@ -124,6 +145,11 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 				settings.Logger,
 			),
 			format: constants.FormatELBAccessLog,
+		}, nil
+	case constants.FormatNetworkFirewallLog:
+		return &encodingExtension{
+			unmarshaler: networkfirewall.NewNetworkFirewallLogUnmarshaler(settings.BuildInfo),
+			format:      constants.FormatNetworkFirewallLog,
 		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
@@ -176,23 +202,23 @@ func (e *encodingExtension) getReaderForData(buf []byte) (string, io.Reader, err
 
 func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, error) {
 	switch e.format {
-	case constants.FormatWAFLog, constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudTrailLog, constants.FormatELBAccessLog:
+	case constants.FormatWAFLog, constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudTrailLog, constants.FormatELBAccessLog, constants.FormatNetworkFirewallLog:
 		return e.getReaderForData(buf)
 
 	case constants.FormatS3AccessLog:
 		return bytesEncoding, bytes.NewReader(buf), nil
 
 	case constants.FormatVPCFlowLog:
-		switch e.vpcFormat {
+		switch e.cfg.VPCFlowLogConfig.FileFormat {
 		case constants.FileFormatParquet:
-			return parquetEncoding, nil, fmt.Errorf("%q still needs to be implemented", e.vpcFormat)
+			return parquetEncoding, nil, fmt.Errorf("%q still needs to be implemented", constants.FileFormatParquet)
 		case constants.FileFormatPlainText:
 			return e.getReaderForData(buf)
 		default:
 			// should not be possible
 			return "", nil, fmt.Errorf(
 				"unsupported file fileFormat %q for VPC flow log, expected one of %q",
-				e.vpcFormat,
+				e.cfg.VPCFlowLogConfig.FileFormat,
 				supportedVPCFlowLogFileFormat,
 			)
 		}

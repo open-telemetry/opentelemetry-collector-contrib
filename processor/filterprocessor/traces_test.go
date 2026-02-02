@@ -146,7 +146,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 			caps := fmp.Capabilities()
 			require.True(t, caps.MutatesData)
 
-			require.NoError(t, fmp.Start(ctx, nil))
+			require.NoError(t, fmp.Start(ctx, componenttest.NewNopHost()))
 
 			cErr := fmp.ConsumeTraces(ctx, test.inTraces)
 			require.NoError(t, cErr)
@@ -201,6 +201,16 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 		want             func(td ptrace.Traces)
 		errorMode        ottl.ErrorMode
 	}{
+		{
+			name: "drop resource",
+			conditions: TraceFilters{
+				ResourceConditions: []string{
+					`attributes["host.name"] == "localhost"`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
 		{
 			name: "drop spans",
 			conditions: TraceFilters{

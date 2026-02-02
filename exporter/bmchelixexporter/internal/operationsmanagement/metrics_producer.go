@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 )
 
@@ -473,8 +473,8 @@ func toPercentMetricName(originalName string) string {
 		return originalName // already transformed
 	}
 
-	if strings.HasSuffix(originalName, "ratio") {
-		return strings.TrimSuffix(originalName, "ratio") + "percent"
+	if trimmed, ok := strings.CutSuffix(originalName, "ratio"); ok {
+		return trimmed + "percent"
 	}
 
 	return originalName + ".percent"

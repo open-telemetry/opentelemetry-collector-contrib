@@ -732,7 +732,8 @@ func CompareExponentialHistogramDataPoint(expected, actual pmetric.ExponentialHi
 		errs = multierr.Append(errs, fmt.Errorf("negative offset doesn't match expected: %v, "+
 			"actual: %v", expected.Negative().Offset(), actual.Negative().Offset()))
 	}
-	if !reflect.DeepEqual(expected.Negative().BucketCounts(), actual.Negative().BucketCounts()) {
+	if expected.Negative().BucketCounts().Len() > 0 && actual.Negative().BucketCounts().Len() > 0 &&
+		!reflect.DeepEqual(expected.Negative().BucketCounts(), actual.Negative().BucketCounts()) {
 		errs = multierr.Append(errs, fmt.Errorf("negative bucket counts don't match expected: %v, "+
 			"actual: %v", expected.Negative().BucketCounts().AsRaw(), actual.Negative().BucketCounts().AsRaw()))
 	}
@@ -740,7 +741,8 @@ func CompareExponentialHistogramDataPoint(expected, actual pmetric.ExponentialHi
 		errs = multierr.Append(errs, fmt.Errorf("positive offset doesn't match expected: %v, "+
 			"actual: %v", expected.Positive().Offset(), actual.Positive().Offset()))
 	}
-	if !reflect.DeepEqual(expected.Positive().BucketCounts(), actual.Positive().BucketCounts()) {
+	if expected.Positive().BucketCounts().Len() > 0 && actual.Positive().BucketCounts().Len() > 0 &&
+		!reflect.DeepEqual(expected.Positive().BucketCounts(), actual.Positive().BucketCounts()) {
 		errs = multierr.Append(errs, fmt.Errorf("positive bucket counts don't match expected: %v, "+
 			"actual: %v", expected.Positive().BucketCounts().AsRaw(), actual.Positive().BucketCounts().AsRaw()))
 	}

@@ -46,8 +46,10 @@ func TestNewLogsExporter(t *testing.T) {
 		{
 			name: "Valid logs endpoint config",
 			cfg: &Config{
-				Logs: configgrpc.ClientConfig{
-					Endpoint: "localhost:4317",
+				Logs: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint: "localhost:4317",
+					},
 				},
 				PrivateKey: "test-key",
 			},
@@ -80,9 +82,6 @@ func TestLogsExporter_Start(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Logs: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
-		},
 	}
 
 	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -91,8 +90,9 @@ func TestLogsExporter_Start(t *testing.T) {
 	err = exp.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	assert.NotNil(t, exp.clientConn)
-	assert.NotNil(t, exp.logExporter)
-	assert.Contains(t, exp.config.Logs.Headers, "Authorization")
+	assert.NotNil(t, exp.grpcLogsExporter)
+	_, ok := exp.config.Logs.Headers.Get("Authorization")
+	assert.True(t, ok)
 
 	// Test shutdown
 	err = exp.shutdown(t.Context())
@@ -103,9 +103,11 @@ func TestLogsExporter_EnhanceContext(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Logs: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{
-				"test-header": "test-value",
+		Logs: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Headers: configopaque.MapList{
+					{Name: "test-header", Value: "test-value"},
+				},
 			},
 		},
 	}
@@ -122,9 +124,6 @@ func TestLogsExporter_PushLogs(t *testing.T) {
 	cfg := &Config{
 		Domain:     "test.domain.com",
 		PrivateKey: "test-key",
-		Logs: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
-		},
 	}
 
 	exp, err := newLogsExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
@@ -168,8 +167,10 @@ func TestLogsExporter_PushLogs_WhenCannotSend(t *testing.T) {
 			cfg := &Config{
 				Domain:     "test.domain.com",
 				PrivateKey: "test-key",
-				Logs: configgrpc.ClientConfig{
-					Headers: map[string]configopaque.String{},
+				Logs: TransportConfig{
+					ClientConfig: configgrpc.ClientConfig{
+						Endpoint: "ingress.test.domain.com:443",
+					},
 				},
 				RateLimiter: RateLimiterConfig{
 					Enabled:   tt.enabled,
@@ -202,7 +203,7 @@ func TestLogsExporter_PushLogs_WhenCannotSend(t *testing.T) {
 			if tt.enabled {
 				assert.Contains(t, err.Error(), "rate limit exceeded")
 			} else {
-				assert.Contains(t, err.Error(), "no such host")
+				assert.Contains(t, err.Error(), "produced zero addresses")
 			}
 		})
 	}
@@ -232,6 +233,8 @@ func (m *mockLogsServer) Export(ctx context.Context, req plogotlp.ExportRequest)
 		m.t.Errorf("Expected Authorization header 'Bearer test-key', got %s", authHeader[0])
 		return plogotlp.NewExportResponse(), errors.New("invalid authorization header")
 	}
+
+	assertAcceptEncodingGzip(m.t, md)
 
 	m.recvCount += req.Logs().LogRecordCount()
 	resp := plogotlp.NewExportResponse()
@@ -264,12 +267,13 @@ func BenchmarkLogsExporter_PushLogs(b *testing.B) {
 	defer stopFn()
 
 	cfg := &Config{
-		Logs: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Logs: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 	}
@@ -317,12 +321,13 @@ func TestLogsExporter_PushLogs_PartialSuccess(t *testing.T) {
 	defer stopFn()
 
 	cfg := &Config{
-		Logs: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Logs: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 	}
@@ -386,12 +391,13 @@ func TestLogsExporter_PushLogs_Performance(t *testing.T) {
 	defer stopFn()
 
 	cfg := &Config{
-		Logs: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Logs: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
 			},
-			Headers: map[string]configopaque.String{},
 		},
 		PrivateKey: "test-key",
 		RateLimiter: RateLimiterConfig{
@@ -515,10 +521,12 @@ func TestLogsExporter_RateLimitErrorCountReset(t *testing.T) {
 	defer stopFn()
 
 	cfg := &Config{
-		Logs: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Logs: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
 			},
 		},
 		PrivateKey: "test-key",
@@ -571,10 +579,12 @@ func TestLogsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 	defer stopFn()
 
 	cfg := &Config{
-		Logs: configgrpc.ClientConfig{
-			Endpoint: endpoint,
-			TLS: configtls.ClientConfig{
-				Insecure: true,
+		Logs: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
 			},
 		},
 		PrivateKey: "test-key",

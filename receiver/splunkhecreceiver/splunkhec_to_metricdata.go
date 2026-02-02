@@ -12,13 +12,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 // splunkHecToMetricsData converts Splunk HEC metric points to
 // pmetric.Metrics. Returning the converted data and the number of
 // dropped time series.
-func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (pmetric.Metrics, int) {
+func splunkHecToMetricsData(logger *zap.Logger, events []*translator.Event, resourceCustomizer func(pcommon.Resource), config *Config) (pmetric.Metrics, int) {
 	numDroppedTimeSeries := 0
 	md := pmetric.NewMetrics()
 	scopeMetricsMap := make(map[[4]string]pmetric.ScopeMetrics)

@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -327,19 +328,20 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 
 // Helper function to generate a unique key for a resource based on its attributes
 func generateResourceKey(resourceType string, labels map[string]string, timeSeries *monitoringpb.TimeSeries) string {
-	key := resourceType
+	var key strings.Builder
+	key.WriteString(resourceType)
 	for k, v := range labels {
-		key += k + v
+		key.WriteString(k + v)
 	}
 	if timeSeries != nil {
 		for k, v := range timeSeries.Metric.Labels {
-			key += k + v
+			key.WriteString(k + v)
 		}
 		if timeSeries.Resource.Labels != nil {
 			for k, v := range timeSeries.Resource.Labels {
-				key += k + v
+				key.WriteString(k + v)
 			}
 		}
 	}
-	return key
+	return key.String()
 }

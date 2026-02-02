@@ -112,9 +112,9 @@ func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, le.Capabilities().MutatesData)
 
-	config.QueueSettings = exporterhelper.NewDefaultQueueConfig()
-	config.QueueSettings.Sizer = exporterhelper.RequestSizerTypeItems
-	config.QueueSettings.Batch = configoptional.Some(exporterhelper.BatchConfig{
+	config.QueueSettings = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+	config.QueueSettings.Get().Sizer = exporterhelper.RequestSizerTypeItems
+	config.QueueSettings.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
 		FlushTimeout: 200 * time.Millisecond,
 		MinSize:      8192,
 	})

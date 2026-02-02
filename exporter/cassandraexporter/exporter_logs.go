@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gocql/gocql"
+	gocql "github.com/apache/cassandra-gocql-driver/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -45,11 +45,11 @@ func initializeLogKernel(cfg *Config) error {
 
 	defer session.Close()
 
-	createDatabaseError := session.Query(parseCreateDatabaseSQL(cfg)).WithContext(ctx).Exec()
+	createDatabaseError := session.Query(parseCreateDatabaseSQL(cfg)).ExecContext(ctx)
 	if createDatabaseError != nil {
 		return createDatabaseError
 	}
-	createLogTableError := session.Query(parseCreateLogTableSQL(cfg)).WithContext(ctx).Exec()
+	createLogTableError := session.Query(parseCreateLogTableSQL(cfg)).ExecContext(ctx)
 	if createLogTableError != nil {
 		return createLogTableError
 	}
@@ -135,7 +135,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					string(bodyByte),
 					resAttr,
 					logAttr,
-				).WithContext(ctx).Exec()
+				).ExecContext(ctx)
 
 				if insertLogError != nil {
 					e.logger.Error("insert log error", zap.Error(insertLogError))

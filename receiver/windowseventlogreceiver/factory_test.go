@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
@@ -42,7 +41,7 @@ func TestCreateAndShutdown(t *testing.T) {
 
 	if runtime.GOOS != "windows" {
 		assert.Error(t, err)
-		assert.IsType(t, pipeline.ErrSignalNotSupported, err)
+		assert.ErrorContains(t, err, "windows eventlog receiver is only supported on Windows")
 		assert.Nil(t, receiver)
 	} else {
 		assert.NoError(t, err)

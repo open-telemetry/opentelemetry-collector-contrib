@@ -20,6 +20,8 @@ import (
 
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -173,6 +175,19 @@ type OpAMPServer struct {
 	_ struct{}
 }
 
+func (o OpAMPServer) OpaqueHeaders() map[string][]configopaque.String {
+	opaque := make(map[string][]configopaque.String, len(o.Headers))
+
+	for key, values := range o.Headers {
+		opaque[key] = make([]configopaque.String, len(values))
+		for i, val := range values {
+			opaque[key][i] = configopaque.String(val)
+		}
+	}
+
+	return opaque
+}
+
 func (o OpAMPServer) Validate() error {
 	if o.Endpoint == "" {
 		return errors.New("server::endpoint must be specified")
@@ -293,7 +308,7 @@ type HealthCheck struct {
 }
 
 func (h HealthCheck) Port() int64 {
-	_, port, err := net.SplitHostPort(h.Endpoint)
+	_, port, err := net.SplitHostPort(h.NetAddr.Endpoint)
 	if err != nil {
 		return 0
 	}
@@ -371,6 +386,13 @@ func DefaultSupervisor() Supervisor {
 				Level:            zapcore.InfoLevel,
 				OutputPaths:      []string{"stdout"},
 				ErrorOutputPaths: []string{"stderr"},
+			},
+		},
+		HealthCheck: HealthCheck{
+			ServerConfig: confighttp.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+				},
 			},
 		},
 	}

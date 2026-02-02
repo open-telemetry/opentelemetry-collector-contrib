@@ -198,14 +198,16 @@ func (v *vcenterMetricScraper) buildHostMetrics(
 		v.recordHostPerformanceMetrics(hostPerfMetrics)
 	}
 
-	if hs.Config == nil || hs.Config.VsanHostConfig == nil || hs.Config.VsanHostConfig.ClusterInfo == nil {
-		v.logger.Info("couldn't determine UUID necessary for vSAN metrics for host " + hs.Name)
-		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
-		return vmRefToComputeRef, nil
-	}
-	vSANMetrics := v.scrapeData.hostVSANMetricsByUUID[hs.Config.VsanHostConfig.ClusterInfo.NodeUuid]
-	if vSANMetrics != nil {
-		v.recordHostVSANMetrics(vSANMetrics)
+	if v.hasEnabledVSANMetrics() {
+		if hs.Config == nil || hs.Config.VsanHostConfig == nil || hs.Config.VsanHostConfig.ClusterInfo == nil {
+			v.logger.Info("couldn't determine UUID necessary for vSAN metrics for host " + hs.Name)
+			v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+			return vmRefToComputeRef, nil
+		}
+		vSANMetrics := v.scrapeData.hostVSANMetricsByUUID[hs.Config.VsanHostConfig.ClusterInfo.NodeUuid]
+		if vSANMetrics != nil {
+			v.recordHostVSANMetrics(vSANMetrics)
+		}
 	}
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
@@ -332,9 +334,11 @@ func (v *vcenterMetricScraper) buildVMMetrics(
 		v.recordVMPerformanceMetrics(perfMetrics)
 	}
 
-	vSANMetrics := v.scrapeData.vmVSANMetricsByUUID[vm.Config.InstanceUuid]
-	if vSANMetrics != nil {
-		v.recordVMVSANMetrics(vSANMetrics)
+	if v.hasEnabledVSANMetrics() {
+		vSANMetrics := v.scrapeData.vmVSANMetricsByUUID[vm.Config.InstanceUuid]
+		if vSANMetrics != nil {
+			v.recordVMVSANMetrics(vSANMetrics)
+		}
 	}
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
@@ -380,16 +384,19 @@ func (v *vcenterMetricScraper) buildClusterMetrics(
 	}
 	// Record and emit Cluster metric data points
 	v.recordClusterStats(ts, cr, vmGroupInfo)
-	vSANConfig := cr.ConfigurationEx.(*types.ClusterConfigInfoEx).VsanConfigInfo
-	if vSANConfig == nil || vSANConfig.Enabled == nil || !*vSANConfig.Enabled || vSANConfig.DefaultConfig == nil {
-		v.logger.Info("couldn't determine UUID necessary for vSAN metrics for cluster " + cr.Name)
-		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
-		return err
-	}
 
-	vSANMetrics := v.scrapeData.clusterVSANMetricsByUUID[vSANConfig.DefaultConfig.Uuid]
-	if vSANMetrics != nil {
-		v.recordClusterVSANMetrics(vSANMetrics)
+	if v.hasEnabledVSANMetrics() {
+		vSANConfig := cr.ConfigurationEx.(*types.ClusterConfigInfoEx).VsanConfigInfo
+		if vSANConfig == nil || vSANConfig.Enabled == nil || !*vSANConfig.Enabled || vSANConfig.DefaultConfig == nil {
+			v.logger.Info("couldn't determine UUID necessary for vSAN metrics for cluster " + cr.Name)
+			v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+			return err
+		}
+
+		vSANMetrics := v.scrapeData.clusterVSANMetricsByUUID[vSANConfig.DefaultConfig.Uuid]
+		if vSANMetrics != nil {
+			v.recordClusterVSANMetrics(vSANMetrics)
+		}
 	}
 
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))

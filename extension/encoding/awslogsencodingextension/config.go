@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
+	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 )
 
 var _ xconfmap.Validator = (*Config)(nil)
@@ -23,6 +24,7 @@ var (
 		constants.FormatWAFLog,
 		constants.FormatCloudTrailLog,
 		constants.FormatELBAccessLog,
+		constants.FormatNetworkFirewallLog,
 		// Legacy format values (for backward compatibility)
 		constants.FormatCloudWatchLogsSubscriptionFilterV1,
 		constants.FormatVPCFlowLogV1,
@@ -44,24 +46,14 @@ type Config struct {
 	// - waf
 	// - cloudtrail
 	// - elbaccess
+	// - networkfirewall
 	//
 	Format string `mapstructure:"format"`
 
-	VPCFlowLogConfig VPCFlowLogConfig `mapstructure:"vpcflow"`
+	VPCFlowLogConfig vpcflowlog.Config `mapstructure:"vpcflow"`
 	// Deprecated: use VPCFlowLogConfig instead. It will be removed in v0.138.0
-	VPCFlowLogConfigV1 VPCFlowLogConfig `mapstructure:"vpc_flow_log"`
+	VPCFlowLogConfigV1 vpcflowlog.Config `mapstructure:"vpc_flow_log"`
 
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-type VPCFlowLogConfig struct {
-	// VPC flow logs sent to S3 have support
-	// for file format in plain text or
-	// parquet. Default is plain text.
-	//
-	// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-s3-path.html.
-	FileFormat string `mapstructure:"file_format"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -84,6 +76,7 @@ func (cfg *Config) Validate() error {
 	case constants.FormatCloudTrailLog: // valid
 	case constants.FormatELBAccessLogV1: // valid
 	case constants.FormatELBAccessLog: // valid
+	case constants.FormatNetworkFirewallLog: // valid
 	default:
 		errs = append(errs, fmt.Errorf("unsupported format %q, expected one of %q", cfg.Format, supportedLogFormats))
 	}

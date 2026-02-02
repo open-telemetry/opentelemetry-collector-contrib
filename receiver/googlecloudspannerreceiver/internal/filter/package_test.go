@@ -10,5 +10,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/jellydator/ttlcache/v3.(*Cache).checkExpirationCallback"))
+	goleak.VerifyTestMain(m,
+		// Ignore ttlcache goroutines - cache.Start() may not return immediately after Stop()
+		// Using IgnoreTopFunction with the full signature including generics placeholder
+		goleak.IgnoreTopFunction("github.com/jellydator/ttlcache/v3.(*Cache[...]).Start"),
+	)
 }

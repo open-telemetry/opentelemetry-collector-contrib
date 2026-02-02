@@ -95,7 +95,7 @@ statsdTestMetric1:20|c|@0.25|#mykey:myvalue
 
 When the receiver receives valid sample rate (greater than 0 and less than 1), we covert the count value to float, divide by the sample rate and then covert back to integer.
 
-The official [doc](https://github.com/statsd/statsd/blob/master/docs/metric_types.md#counting) does not support negative counter, we follow this pattern at this time. There are some requests for negative counters, we need to ake a look if we want to support later. For example:
+The official [doc](https://github.com/statsd/statsd/blob/master/docs/metric_types.md#counting) does not support negative counter, we follow this pattern at this time. There are some requests for negative counters, we need to take a look if we want to support later. For example:
 https://github.com/influxdata/telegraf/issues/1898
 https://thenewstack.io/collecting-metrics-using-statsd-a-standard-for-real-time-monitoring/
 https://docs.datadoghq.com/developers/metrics/dogstatsd_metrics_submission/#count
@@ -119,8 +119,9 @@ General format is:
 
 `<name>:<value>|c|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
-It supports sample rate.
-TODO: Need to change the implementation part for sample rate after OTLP supports sample rate as a parameter later.
+It supports sample rate. When a sample rate is provided (between 0 and 1), the receiver divides the counter value by the sample rate during aggregation to estimate the actual count. For example, a counter value of `20` with sample rate `0.25` results in an estimated count of `80` (20 ÷ 0.25).
+
+**Note**: Currently, the sample rate is applied during aggregation and the adjusted value is exported. If OTLP adds native support for sample rate as a metric parameter in the future, the implementation may be updated to preserve the original sample rate information.
 
 
 ### Gauge

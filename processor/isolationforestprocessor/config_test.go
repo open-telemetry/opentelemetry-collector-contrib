@@ -6,6 +6,7 @@ package isolationforestprocessor
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,8 +42,24 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Contains(t, cfg.Features.Metrics, "value")
 	assert.Contains(t, cfg.Features.Logs, "severity_number")
 
+	// NEW: Verify adaptive window defaults
+	require.NotNil(t, cfg.AdaptiveWindow, "Default config should have adaptive window configuration")
+	assert.False(t, cfg.AdaptiveWindow.Enabled, "Adaptive window should be disabled by default")
+	assert.Equal(t, 1000, cfg.AdaptiveWindow.MinWindowSize, "Default min window size should be 1000")
+	assert.Equal(t, 100000, cfg.AdaptiveWindow.MaxWindowSize, "Default max window size should be 100000")
+	assert.Equal(t, 256, cfg.AdaptiveWindow.MemoryLimitMB, "Default memory limit should be 256MB")
+	assert.Equal(t, 0.1, cfg.AdaptiveWindow.AdaptationRate, "Default adaptation rate should be 0.1")
+	assert.Equal(t, 50.0, cfg.AdaptiveWindow.VelocityThreshold, "Default velocity threshold should be 50")
+	assert.Equal(t, "5m", cfg.AdaptiveWindow.StabilityCheckInterval, "Default stability check interval should be 5m")
+
+	// NEW: Test adaptive window helper methods
+	assert.False(t, cfg.IsAdaptiveWindowEnabled(), "IsAdaptiveWindowEnabled should return false by default")
+	interval, err := cfg.GetStabilityCheckInterval()
+	require.NoError(t, err, "GetStabilityCheckInterval should not error with default config")
+	assert.Equal(t, 5*time.Minute, interval, "Default stability check interval should be 5 minutes")
+
 	// Most importantly, verify the configuration validates
-	err := cfg.Validate()
+	err = cfg.Validate()
 	require.NoError(t, err, "Default configuration should be valid")
 }
 
@@ -240,6 +257,241 @@ func TestConfigurationValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+// NEW: Test adaptive window configuration validation
+func TestAdaptiveWindowValidation(t *testing.T) {
+	tests := []struct {
+		name          string
+		modifyConfig  func(*Config)
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "valid adaptive window config",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+			},
+			expectError: false,
+		},
+		{
+			name: "nil adaptive window config",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow = nil
+			},
+			expectError: false,
+		},
+		{
+			name: "zero min window size",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.MinWindowSize = 0
+			},
+			expectError:   true,
+			errorContains: "min_window_size must be positive",
+		},
+		{
+			name: "negative min window size",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.MinWindowSize = -100
+			},
+			expectError:   true,
+			errorContains: "min_window_size must be positive",
+		},
+		{
+			name: "max window size less than min",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.MinWindowSize = 2000
+				cfg.AdaptiveWindow.MaxWindowSize = 1000
+			},
+			expectError:   true,
+			errorContains: "max_window_size must be greater than min_window_size",
+		},
+		{
+			name: "max window size equal to min",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.MinWindowSize = 1000
+				cfg.AdaptiveWindow.MaxWindowSize = 1000
+			},
+			expectError:   true,
+			errorContains: "max_window_size must be greater than min_window_size",
+		},
+		{
+			name: "min window size less than min samples",
+			modifyConfig: func(cfg *Config) {
+				cfg.MinSamples = 2000
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.MinWindowSize = 1000
+			},
+			expectError:   true,
+			errorContains: "adaptive_window.min_window_size (1000) should be >= min_samples (2000) for consistency",
+		},
+		{
+			name: "zero memory limit",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.MemoryLimitMB = 0
+			},
+			expectError:   true,
+			errorContains: "memory_limit_mb must be positive",
+		},
+		{
+			name: "negative memory limit",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.MemoryLimitMB = -100
+			},
+			expectError:   true,
+			errorContains: "memory_limit_mb must be positive",
+		},
+		{
+			name: "memory limit exceeds processor max",
+			modifyConfig: func(cfg *Config) {
+				cfg.Performance.MaxMemoryMB = 256
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.MemoryLimitMB = 512
+			},
+			expectError:   true,
+			errorContains: "adaptive_window.memory_limit_mb (512) should not exceed performance.max_memory_mb (256)",
+		},
+		{
+			name: "adaptation rate too low",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.AdaptationRate = -0.1
+			},
+			expectError:   true,
+			errorContains: "adaptation_rate must be between 0.0 and 1.0",
+		},
+		{
+			name: "adaptation rate too high",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.AdaptationRate = 1.5
+			},
+			expectError:   true,
+			errorContains: "adaptation_rate must be between 0.0 and 1.0",
+		},
+		{
+			name: "adaptation rate boundary - minimum",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.AdaptationRate = 0.0
+			},
+			expectError: false,
+		},
+		{
+			name: "adaptation rate boundary - maximum",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.AdaptationRate = 1.0
+			},
+			expectError: false,
+		},
+		{
+			name: "negative velocity threshold",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.VelocityThreshold = -10
+			},
+			expectError:   true,
+			errorContains: "velocity_threshold must be non-negative",
+		},
+		{
+			name: "zero velocity threshold (valid)",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.VelocityThreshold = 0
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid stability check interval",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.StabilityCheckInterval = "invalid_duration"
+			},
+			expectError:   true,
+			errorContains: "stability_check_interval is not a valid duration",
+		},
+		{
+			name: "empty stability check interval (valid - uses default)",
+			modifyConfig: func(cfg *Config) {
+				cfg.AdaptiveWindow.Enabled = true
+				cfg.AdaptiveWindow.StabilityCheckInterval = ""
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			raw := createDefaultConfig()
+			cfg, ok := raw.(*Config)
+			require.True(t, ok, "createDefaultConfig should return *Config")
+
+			tt.modifyConfig(cfg)
+			err := cfg.Validate()
+			if tt.expectError {
+				require.Error(t, err, "Expected validation error for %s", tt.name)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				require.NoError(t, err, "Expected no validation error for %s", tt.name)
+			}
+		})
+	}
+}
+
+// Test adaptive window helper methods
+func TestAdaptiveWindowHelperMethods(t *testing.T) {
+	raw := createDefaultConfig()
+	cfg, ok := raw.(*Config)
+	require.True(t, ok, "createDefaultConfig should return *Config")
+
+	// Test IsAdaptiveWindowEnabled with default config (disabled)
+	assert.False(t, cfg.IsAdaptiveWindowEnabled(), "Should return false when adaptive window is disabled")
+
+	// Test IsAdaptiveWindowEnabled with enabled config
+	cfg.AdaptiveWindow.Enabled = true
+	assert.True(t, cfg.IsAdaptiveWindowEnabled(), "Should return true when adaptive window is enabled")
+
+	// Test IsAdaptiveWindowEnabled with nil adaptive config
+	cfg.AdaptiveWindow = nil
+	assert.False(t, cfg.IsAdaptiveWindowEnabled(), "Should return false when adaptive window config is nil")
+
+	// Test GetStabilityCheckInterval with valid duration
+	cfg.AdaptiveWindow = &AdaptiveWindowConfig{
+		StabilityCheckInterval: "10m",
+	}
+	interval, err := cfg.GetStabilityCheckInterval()
+	require.NoError(t, err, "Should not error with valid duration")
+	assert.Equal(t, 10*time.Minute, interval, "Should return correct duration")
+
+	// Test GetStabilityCheckInterval with empty duration (uses default)
+	cfg.AdaptiveWindow.StabilityCheckInterval = ""
+	interval, err = cfg.GetStabilityCheckInterval()
+	require.NoError(t, err, "Should not error with empty duration")
+	assert.Equal(t, 5*time.Minute, interval, "Should return default duration")
+
+	// Test GetStabilityCheckInterval with nil adaptive config
+	cfg.AdaptiveWindow = nil
+	interval, err = cfg.GetStabilityCheckInterval()
+	require.NoError(t, err, "Should not error with nil adaptive config")
+	assert.Equal(t, 5*time.Minute, interval, "Should return default duration when nil")
+
+	// Test GetStabilityCheckInterval with invalid duration
+	cfg.AdaptiveWindow = &AdaptiveWindowConfig{
+		StabilityCheckInterval: "invalid_duration",
+	}
+	_, err = cfg.GetStabilityCheckInterval()
+	require.Error(t, err, "Should error with invalid duration")
+
+	assert.Contains(t, err.Error(), "invalid duration", "Should contain duration error message")
 }
 
 func TestMultiModelConfiguration(t *testing.T) {

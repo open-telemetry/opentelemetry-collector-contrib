@@ -21,10 +21,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -139,15 +141,11 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 	exporterCfg.WaitForReady = true
 	exporterCfg.TLS.Insecure = true
 	exporterCfg.TimeoutSettings.Timeout = time.Minute
-	exporterCfg.QueueSettings.Enabled = false
+	exporterCfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
 	exporterCfg.RetryConfig.Enabled = true
 	exporterCfg.Arrow.NumStreams = 1
 	exporterCfg.Arrow.MaxStreamLifetime = 5 * time.Second
 	exporterCfg.Arrow.DisableDowngrade = true
-
-	// The default exporter setting enables the memory queue; we
-	// disable to avoid flaky tests.
-	exporterCfg.QueueSettings.WaitForResult = true
 
 	if cfgF != nil {
 		cfgF(exporterCfg, receiverCfg)
@@ -397,7 +395,7 @@ func countMemoryLimitErrors(msgs []string) (cnt int) {
 			cnt++
 		}
 	}
-	return
+	return cnt
 }
 
 func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer, _ [][]ptrace.Traces) (rops, eops map[string]int) {
@@ -423,7 +421,7 @@ func countAdmissionLimitErrors(msgs []string) (cnt int) {
 			cnt++
 		}
 	}
-	return
+	return cnt
 }
 
 func failureAdmissionLimitEnding(t *testing.T, _ testParams, testCon *testConsumer, _ [][]ptrace.Traces) (rops, eops map[string]int) {
@@ -528,7 +526,7 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 						cnt++
 					}
 				}
-				return
+				return cnt
 			}
 			rcnt := cf(test.recvSpans.GetSpans())
 			ecnt := cf(test.expSpans.GetSpans())

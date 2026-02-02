@@ -36,9 +36,9 @@ resourceProfiles:
             periodType:
               typeStrindex: 2
               unitStrindex: 3
-            sample:
-              - timestampsUnixNano:
-                  - "0"
             sampleType:
               unitStrindex: 1
+            samples:
+              - timestampsUnixNano:
+                  - "0"
         scope: {}

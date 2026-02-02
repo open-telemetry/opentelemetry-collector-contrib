@@ -22,11 +22,11 @@ type extractSumMetricArguments struct {
 	Suffix    ottl.Optional[string]
 }
 
-func newExtractSumMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
+func newExtractSumMetricFactory() ottl.Factory[*ottlmetric.TransformContext] {
 	return ottl.NewFactory(sumFuncName, &extractSumMetricArguments{}, createExtractSumMetricFunction)
 }
 
-func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*extractSumMetricArguments)
 
 	if !ok {
@@ -46,12 +46,12 @@ type SumCountDataPoint interface {
 	Timestamp() pcommon.Timestamp
 }
 
-func extractSumMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func extractSumMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	metricNameSuffix := "_sum"
 	if !suffix.IsEmpty() {
 		metricNameSuffix = suffix.Get()
 	}
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+	return func(_ context.Context, tCtx *ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		aggTemp := getAggregationTemporality(metric)
 		if aggTemp == pmetric.AggregationTemporalityUnspecified {

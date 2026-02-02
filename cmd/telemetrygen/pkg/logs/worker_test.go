@@ -14,7 +14,7 @@ import (
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -30,11 +30,13 @@ const (
 )
 
 type mockExporter struct {
-	logs []sdklog.Record
+	logs        []sdklog.Record
+	exportCalls [][]sdklog.Record // tracks each export call separately
 }
 
 func (m *mockExporter) Export(_ context.Context, records []sdklog.Record) error {
 	m.logs = append(m.logs, records...)
+	m.exportCalls = append(m.exportCalls, records)
 	return nil
 }
 
@@ -48,7 +50,7 @@ func (*mockExporter) ForceFlush(context.Context) error {
 
 func TestFixedNumberOfLogs(t *testing.T) {
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount: 1,
 		},
 		NumLogs:        5,
@@ -73,7 +75,7 @@ func TestFixedNumberOfLogs(t *testing.T) {
 
 func TestDurationInf(t *testing.T) {
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			TotalDuration: types.DurationWithInf(-1),
 		},
 		SeverityText:   "Info",
@@ -90,7 +92,7 @@ func TestDurationInf(t *testing.T) {
 
 func TestRateOfLogs(t *testing.T) {
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			Rate:          10,
 			TotalDuration: types.DurationWithInf(time.Second / 2),
 			WorkerCount:   1,
@@ -115,7 +117,7 @@ func TestRateOfLogs(t *testing.T) {
 
 func TestUnthrottled(t *testing.T) {
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			TotalDuration: types.DurationWithInf(1 * time.Second),
 			WorkerCount:   1,
 		},
@@ -138,7 +140,7 @@ func TestCustomBody(t *testing.T) {
 	cfg := &Config{
 		Body:    "custom body",
 		NumLogs: 1,
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount: 1,
 		},
 		SeverityText:   "Info",
@@ -266,6 +268,62 @@ func TestLogsWithTraceIDAndSpanID(t *testing.T) {
 	}
 }
 
+func TestBatching(t *testing.T) {
+	cfg := &Config{
+		NumLogs:        5,
+		SeverityText:   "Info",
+		SeverityNumber: 9,
+	}
+	cfg.WorkerCount = 1
+	cfg.Batch = true
+	cfg.BatchSize = 3
+	m := &mockExporter{}
+	expFunc := func() (sdklog.Exporter, error) {
+		return m, nil
+	}
+
+	// test
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	// verify that logs were batched correctly
+	assert.Len(t, m.logs, 5, "should have received all 5 logs")
+
+	// verify batching behavior: should have 2 export calls
+	// First call: 3 logs (batch size reached)
+	// Second call: 2 logs (remaining logs flushed at end)
+	assert.Len(t, m.exportCalls, 2, "should have made 2 export calls")
+	assert.Len(t, m.exportCalls[0], 3, "first batch should have 3 logs")
+	assert.Len(t, m.exportCalls[1], 2, "second batch should have 2 logs")
+}
+
+func TestNoBatching(t *testing.T) {
+	cfg := &Config{
+		NumLogs:        5,
+		SeverityText:   "Info",
+		SeverityNumber: 9,
+	}
+	cfg.WorkerCount = 1
+	cfg.Batch = false // batching disabled
+	m := &mockExporter{}
+	expFunc := func() (sdklog.Exporter, error) {
+		return m, nil
+	}
+
+	// test
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	// verify that logs were sent immediately (no batching)
+	assert.Len(t, m.logs, 5, "should have received all 5 logs")
+
+	// verify no batching behavior: should have 5 export calls, each with 1 log
+	assert.Len(t, m.exportCalls, 5, "should have made 5 export calls (one per log)")
+	for i, call := range m.exportCalls {
+		assert.Len(t, call, 1, "export call %d should have exactly 1 log", i)
+	}
+}
+
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -275,7 +333,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "No duration, NumLogs",
 			cfg: &Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				TraceID: "123",
@@ -285,7 +343,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "TraceID invalid",
 			cfg: &Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumLogs: 5,
@@ -296,7 +354,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "SpanID invalid",
 			cfg: &Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumLogs: 5,
@@ -308,7 +366,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "LoadSize negative",
 			cfg: &Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 					LoadSize:    -1,
 				},
@@ -333,7 +391,7 @@ func configWithNoAttributes(qty int, body string) *Config {
 	return &Config{
 		Body:    body,
 		NumLogs: qty,
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount:         1,
 			TelemetryAttributes: nil,
 		},
@@ -346,9 +404,9 @@ func configWithOneAttribute(qty int, body string) *Config {
 	return &Config{
 		Body:    body,
 		NumLogs: qty,
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount:         1,
-			TelemetryAttributes: common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
+			TelemetryAttributes: config.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
 		},
 		SeverityText:   "Info",
 		SeverityNumber: 9,
@@ -356,7 +414,7 @@ func configWithOneAttribute(qty int, body string) *Config {
 }
 
 func configWithMultipleAttributes(qty int, body string) *Config {
-	kvs := common.KeyValue{
+	kvs := config.KeyValue{
 		telemetryAttrKeyOne:     telemetryAttrValueOne,
 		telemetryAttrKeyTwo:     telemetryAttrValueTwo,
 		telemetryAttrIntKeyOne:  telemetryAttrIntValueOne,
@@ -365,7 +423,7 @@ func configWithMultipleAttributes(qty int, body string) *Config {
 	return &Config{
 		Body:    body,
 		NumLogs: qty,
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount:         1,
 			TelemetryAttributes: kvs,
 		},
@@ -377,7 +435,7 @@ func configWithMultipleAttributes(qty int, body string) *Config {
 func TestLogsWithLoadSize(t *testing.T) {
 	// arrange
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount: 1,
 			LoadSize:    2, // 2MB of load data
 		},
@@ -409,11 +467,11 @@ func TestLogsWithLoadSize(t *testing.T) {
 	logRecord.WalkAttributes(func(attr log.KeyValue) bool {
 		if attr.Key == "load-0" {
 			load0Found = true
-			assert.Len(t, attr.Value.AsString(), common.CharactersPerMB, "load-0 should have 1MB of data")
+			assert.Len(t, attr.Value.AsString(), config.CharactersPerMB, "load-0 should have 1MB of data")
 		}
 		if attr.Key == "load-1" {
 			load1Found = true
-			assert.Len(t, attr.Value.AsString(), common.CharactersPerMB, "load-1 should have 1MB of data")
+			assert.Len(t, attr.Value.AsString(), config.CharactersPerMB, "load-1 should have 1MB of data")
 		}
 		return true
 	})
@@ -451,7 +509,7 @@ func TestLogsWithDefaultLoadSize(t *testing.T) {
 func TestLogsWithZeroLoadSize(t *testing.T) {
 	// arrange
 	cfg := &Config{
-		Config: common.Config{
+		Config: config.Config{
 			WorkerCount: 1,
 			LoadSize:    0, // Disable load size
 		},

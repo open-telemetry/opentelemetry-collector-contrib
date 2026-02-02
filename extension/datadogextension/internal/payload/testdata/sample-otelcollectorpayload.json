@@ -53,7 +53,9 @@
       "version": "0.125.0"
     },
     "full_configuration": "{\"receivers\":{\"otlp\":{}},\"exporters\":{\"debug\":{}},\"service\":{\"pipelines\":{\"metrics\":{\"receivers\":[\"otlp\"],\"exporters\":[\"debug\"]}}}}",
-    "health_status": "{\"status\":\"healthy\"}"
+    "health_status": "{\"status\":\"healthy\"}",
+    "collector_resource_attributes": {},
+    "collector_deployment_type": "gateway"
   },
   "uuid": "123e4567-e89b-12d3-a456-426614174000"
 }

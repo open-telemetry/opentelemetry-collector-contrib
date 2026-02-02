@@ -144,7 +144,7 @@ func pushConcurrentlyNoError(t *testing.T, fn func() error) {
 	)
 
 	wg.Add(count)
-	for i := 0; i < count; i++ {
+	for range count {
 		go func() {
 			defer wg.Done()
 			err := fn()
@@ -165,12 +165,12 @@ var telemetryTimestamp = time.Unix(1703498029, 0).UTC()
 func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 	c, chEnv, err := createClickhouseContainer(clickhouseImage)
 	if err != nil {
-		t.Fatal(fmt.Errorf("failed to create ClickHouse container \"%s\": %w", clickhouseImage, err))
+		t.Fatalf("failed to create ClickHouse container %q: %v", clickhouseImage, err)
 	}
 	defer func(c testcontainers.Container) {
 		err := c.Terminate(t.Context())
 		if err != nil {
-			fmt.Println(fmt.Errorf("failed to terminate ClickHouse container \"%s\": %w", clickhouseImage, err))
+			t.Logf("failed to terminate ClickHouse container %q: %v", clickhouseImage, err)
 		}
 	}(c)
 
@@ -217,10 +217,13 @@ func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 	}
 
 	t.Run("TestLogsExporter", testProtocolsMapBody(testLogsExporter))
+	t.Run("TestLogsExporterSchemaFeatures", testProtocolsMapBody(testLogsExporterSchemaFeatures))
 	t.Run("TestTracesExporter", testProtocols(testTracesExporter, false))
 	t.Run("TestMetricsExporter", testProtocols(testMetricsExporter, false))
 	t.Run("TestLogsJSONExporter", testProtocolsMapBody(testLogsJSONExporter))
+	t.Run("TestLogsJSONExporterSchemaFeatures", testProtocolsMapBody(testLogsJSONExporterSchemaFeatures))
 	t.Run("TestTracesJSONExporter", testProtocols(testTracesJSONExporter, false))
+	t.Run("TestTracesJSONExporterSchemaFeatures", testProtocols(testTracesJSONExporterSchemaFeatures, false))
 
 	t.Run("TestCertAuth", testProtocols(func(t *testing.T, dsn string) {
 		applyTLS := func(config *Config) {
@@ -254,10 +257,10 @@ func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 func TestIntegration(t *testing.T) {
 	// Update versions according to oldest and newest supported here: https://github.com/clickhouse/clickhouse/security
 	t.Run("25.8", func(t *testing.T) {
-		testIntegrationWithImage(t, "clickhouse/clickhouse-server:25.6-alpine")
+		testIntegrationWithImage(t, "clickhouse/clickhouse-server:25.8-alpine")
 	})
 	t.Run("25.3", func(t *testing.T) {
-		testIntegrationWithImage(t, "clickhouse/clickhouse-server:24.11-alpine")
+		testIntegrationWithImage(t, "clickhouse/clickhouse-server:25.3-alpine")
 	})
 
 	// Verify all integration tests, ignoring test container reaper

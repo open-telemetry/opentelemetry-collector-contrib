@@ -7,10 +7,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-
-	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
@@ -20,6 +19,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.OtelcolK8sPodAssociation.Add(context.Background(), 1)
 	tb.OtelsvcK8sDaemonsetAdded.Add(context.Background(), 1)
 	tb.OtelsvcK8sDaemonsetDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sDaemonsetUpdated.Add(context.Background(), 1)
@@ -46,6 +46,9 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.OtelsvcK8sStatefulsetAdded.Add(context.Background(), 1)
 	tb.OtelsvcK8sStatefulsetDeleted.Add(context.Background(), 1)
 	tb.OtelsvcK8sStatefulsetUpdated.Add(context.Background(), 1)
+	AssertEqualOtelcolK8sPodAssociation(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualOtelsvcK8sDaemonsetAdded(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())

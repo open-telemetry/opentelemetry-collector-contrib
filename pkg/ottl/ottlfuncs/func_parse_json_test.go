@@ -164,7 +164,7 @@ func Test_ParseJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := parseJSON(tt.target)
 			result, err := exprFunc(t.Context(), nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			if tt.wantMap != nil {
 				resultMap, ok := result.(pcommon.Map)

@@ -207,3 +207,16 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestDirectoryPermissionsWithoutCreateDirectory(t *testing.T) {
+	t.Parallel()
+	cfg := &Config{
+		Path:                 "./foo",
+		FormatType:           formatTypeJSON,
+		CreateDirectory:      false,
+		DirectoryPermissions: "0755",
+	}
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "directory_permissions requires create_directory")
+}

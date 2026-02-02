@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -36,8 +37,8 @@ func TestScale(t *testing.T) {
 			},
 			args: ScaleArguments{
 				Multiplier: 10.0,
-				Unit: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-					Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
+				Unit: ottl.NewTestingOptional[ottl.StringGetter[*ottlmetric.TransformContext]](ottl.StandardStringGetter[*ottlmetric.TransformContext]{
+					Getter: func(context.Context, *ottlmetric.TransformContext) (any, error) {
 						return "kWh", nil
 					},
 				}),
@@ -160,14 +161,8 @@ func TestScale(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target := ottlmetric.NewTransformContext(
-				tt.valueFunc(),
-				pmetric.NewMetricSlice(),
-				pcommon.NewInstrumentationScope(),
-				pcommon.NewResource(),
-				pmetric.NewScopeMetrics(),
-				pmetric.NewResourceMetrics(),
-			)
+			target := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), tt.valueFunc())
+			defer target.Close()
 
 			expressionFunc, _ := Scale(tt.args)
 			_, err := expressionFunc(t.Context(), target)
@@ -175,7 +170,7 @@ func TestScale(t *testing.T) {
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 			assert.Equal(t, tt.wantFunc(), target.GetMetric())
 		})

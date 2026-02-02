@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
 
@@ -36,7 +36,7 @@ func TestDurationAndTracesInteraction(t *testing.T) {
 		{
 			name: "Default behavior - respects traces parameter",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumTraces: 3,
@@ -47,7 +47,7 @@ func TestDurationAndTracesInteraction(t *testing.T) {
 		{
 			name: "Finite duration overrides traces",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(100 * time.Millisecond),
 				},
@@ -59,7 +59,7 @@ func TestDurationAndTracesInteraction(t *testing.T) {
 		{
 			name: "Infinite duration overrides traces",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.MustDurationWithInf("Inf"),
 				},
@@ -71,7 +71,7 @@ func TestDurationAndTracesInteraction(t *testing.T) {
 		{
 			name: "Zero duration with traces",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(0),
 				},
@@ -83,7 +83,7 @@ func TestDurationAndTracesInteraction(t *testing.T) {
 		{
 			name: "Negative duration with traces",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(-100 * time.Millisecond),
 				},
@@ -176,7 +176,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Valid config with traces",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumTraces: 5,
@@ -187,7 +187,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Valid config with finite duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(1 * time.Second),
 				},
@@ -199,7 +199,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Valid config with infinite duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.MustDurationWithInf("Inf"), // inf
 				},
@@ -211,7 +211,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Invalid config - no traces and no duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumTraces: 0,
@@ -222,7 +222,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Invalid config - negative traces",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumTraces: -5,
@@ -233,7 +233,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Valid config with span links",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumTraces:    5,
@@ -267,7 +267,7 @@ func TestWorkerBehavior(t *testing.T) {
 		{
 			name: "Worker with finite traces and no duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount: 1,
 				},
 				NumTraces: 2,
@@ -278,7 +278,7 @@ func TestWorkerBehavior(t *testing.T) {
 		{
 			name: "Worker with infinite duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.MustDurationWithInf("Inf"), // inf
 				},
@@ -290,7 +290,7 @@ func TestWorkerBehavior(t *testing.T) {
 		{
 			name: "Worker with finite duration",
 			config: Config{
-				Config: common.Config{
+				Config: config.Config{
 					WorkerCount:   1,
 					TotalDuration: types.DurationWithInf(100 * time.Millisecond),
 				},
@@ -323,11 +323,11 @@ func TestHTTPExporterOptions_TLS(t *testing.T) {
 	}{
 		"Insecure": {
 			tls: false,
-			cfg: Config{Config: common.Config{Insecure: true}},
+			cfg: Config{Config: config.Config{Insecure: true}},
 		},
 		"InsecureSkipVerify": {
 			tls: true,
-			cfg: Config{Config: common.Config{InsecureSkipVerify: true}},
+			cfg: Config{Config: config.Config{InsecureSkipVerify: true}},
 		},
 		"InsecureSkipVerifyDisabled": {
 			tls:                  true,
@@ -388,12 +388,12 @@ func TestHTTPExporterOptions_HTTP(t *testing.T) {
 		expectedHeader   http.Header
 	}{
 		"HTTPPath": {
-			cfg:              Config{Config: common.Config{HTTPPath: "/foo"}},
+			cfg:              Config{Config: config.Config{HTTPPath: "/foo"}},
 			expectedHTTPPath: "/foo",
 		},
 		"Headers": {
 			cfg: Config{
-				Config: common.Config{Headers: map[string]any{"a": "b"}},
+				Config: config.Config{Headers: map[string]any{"a": "b"}},
 			},
 			expectedHTTPPath: "/v1/traces",
 			expectedHeader:   http.Header{"a": []string{"b"}},

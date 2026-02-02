@@ -18,7 +18,7 @@ Measures the duration of SSH connection.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
+| ms | Gauge | Int | Development |
 
 ### sshcheck.error
 
@@ -26,13 +26,13 @@ Records errors occurring during SSH check.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {error} | Sum | Int | Cumulative | false | development |
+| {error} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| error.message | Error message recorded during check | Any Str | false |
+| error.message | Error message recorded during check | Any Str | Recommended |
 
 ### sshcheck.status
 
@@ -40,7 +40,7 @@ Records errors occurring during SSH check.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 ## Optional Metrics
 
@@ -58,7 +58,7 @@ Measures SFTP request duration.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| ms | Gauge | Int | development |
+| ms | Gauge | Int | Development |
 
 ### sshcheck.sftp_error
 
@@ -66,13 +66,13 @@ Records errors occurring during SFTP check.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {error} | Sum | Int | Cumulative | false | development |
+| {error} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
-| Name | Description | Values | Optional |
+| Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| error.message | Error message recorded during check | Any Str | false |
+| error.message | Error message recorded during check | Any Str | Recommended |
 
 ### sshcheck.sftp_status
 
@@ -80,7 +80,7 @@ Records errors occurring during SFTP check.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| 1 | Sum | Int | Cumulative | false | development |
+| 1 | Sum | Int | Cumulative | false | Development |
 
 ## Resource Attributes
 

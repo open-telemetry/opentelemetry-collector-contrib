@@ -1,0 +1,7 @@
+{
+    "trace_id": "1-5f187253-6a106696d56b1f4ef9eba2ed",
+    "id": "5cc4a447f5d4d696",
+    "name": "segment",
+    "start_time": 1595437651.680097,
+    "parent_id": "bda182a644eee9b3"
+}

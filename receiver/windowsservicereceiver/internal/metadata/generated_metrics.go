@@ -108,6 +108,7 @@ func (m *metricWindowsServiceStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricWindowsServiceStatus(cfg MetricConfig) metricWindowsServiceStatus {
 	m := metricWindowsServiceStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

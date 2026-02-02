@@ -45,18 +45,19 @@ type getExporters interface {
 }
 
 func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.Host) error {
-	if err := kr.resourceWatcher.initialize(); err != nil {
-		return err
-	}
-
 	ge, ok := host.(getExporters)
 	if !ok {
 		return errors.New("unable to get exporters")
 	}
 	exporters := ge.GetExporters()
 
+	// Setup metadata exporters before initializing watchers to avoid concurrent access
 	if err := kr.resourceWatcher.setupMetadataExporters(
 		exporters[pipeline.SignalMetrics], kr.config.MetadataExporters); err != nil {
+		return err
+	}
+
+	if err := kr.resourceWatcher.initialize(); err != nil {
 		return err
 	}
 

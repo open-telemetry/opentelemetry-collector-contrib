@@ -36,6 +36,7 @@ The following settings are optional:
 * `split_logs_at_json_boundary` (default: false): If true, the receiver will parse the request body to JSON and send each object as a log. Splitting on new line overrides json boundary so only enable one at a time.
 * `convert_headers_to_attributes` (optional): add all request headers (excluding `required_header` if also set) log attributes
 * `header_attribute_regex` (optional): add headers matching supplied regex as log attributes. Header attributes will be prefixed with `header.`
+* `max_request_body_size` (default comes from [confighttp module](https://github.com/open-telemetry/opentelemetry-collector/blob/7258150320ae4c3b489aa58bd2939ba358b23ae1/config/confighttp/server.go#L31)): Maximum size in bytes for request body. Requests exceeding this limit will be rejected with an error.
 
 ### Split logs at newline example
 
@@ -91,6 +92,7 @@ receivers:
             key: "required-header-key"
             value: "required-header-value"
         split_logs_at_newline: false
+        max_request_body_size: 1000000000
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with a detailed sample configuration in [testdata/config.yaml](./testdata/config.yaml)

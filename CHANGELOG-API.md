@@ -7,6 +7,187 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.144.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: add unix socket support to HTTP server components (#45308)
+  HTTP server components (namely receivers) now support listening
+  on Unix domain sockets in addition to TCP addresses, by configuring
+  `transport: unix` and setting `endpoint` to a Unix socket path.
+  
+  This is a breaking change to the config structs, but is not breaking
+  for end users. Existing YAML configuration options remain unchanged.
+  
+- `receiver/aerospike`: Move mock structs to internal package. (#43995)
+
+<!-- previous-version -->
+
+## v0.143.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Delete the package pkg/translator/opencensus (#45083)
+  The opencensus translator is no longer used by the project.
+  It was previously deprecated, and is now deleted.
+  
+- `exporter/sapm`: Deprecate the SAPM exporter code ahead of its removal. (#45062)
+  This exporter has been deprecated since 2024-12-19.
+  Please use the OTLP exporter instead.
+  With this change, the Go module is declared deprecated.
+  
+- `pkg/ottl`: Make BoolExpr to be private to allow extending and implementing literals support. (#44954, #45096)
+  Improve BoolExpr evaluation by evaluating literals at compile time.
+- `pkg/ottl`: Remove deprecated NewTransformContext funcs (#45043)
+- `processor/tail_sampling`: Add support for caching the policy name involved in a sampling decision. (#45040)
+  This change allows the `tailsampling.policy` attribute to be set on the spans in a trace when a sampling decision is cached.
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate stanza/errors Wrap function in favor of standard fmt.Errorf (#44949)
+
+### 🚀 New components 🚀
+
+- `pkg/translator/splunk`: Introduce package for translating OTel to HEC format (#45011)
+
+### 💡 Enhancements 💡
+
+- `receiver/awscloudwatch`: Add support for filtering log groups by account ID. (#38391)
+
+<!-- previous-version -->
+
+## v0.142.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: It's recommended to change the field type in your component configuration to be `configoptional.Optional[exporterhelper.QueueBatchConfig]` to keep the `enabled` subfield. Use configoptional.Some(exporterhelper.NewDefaultQueueConfig()) to enable by default. Use configoptional.Default(exporterhelper.NewDefaultQueueConfig()) to disable by default. (#44320)
+- `pkg/pdatatest`: apply recent breaking changes to pprofiletest (#44758)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/ottl`: Use pointer when passing TransformContext around or calling into. (#44541)
+  Change Expr/Parser/Getter/Setter and all ottl related funcs to accept pointers to avoid unnecessary copy of a large
+  TransformContext(96B). Avoid allocating a new pcommon.Map every time a new context is created by using a Borrow/Return
+  pattern and reuse objects between calls. Deprecated funcs are:
+  - `ottldatapoint.NewTransformContext` in favor of `ottldatapoint.NewTransformContextPtr`;
+  - `ottllog.NewTransformContext` in favor of `ottllog.NewTransformContextPtr`;
+  - `ottlmetric.NewTransformContext` in favor of `ottlmetric.NewTransformContextPtr`;
+  - `ottlspan.NewTransformContext` in favor of `ottlspan.NewTransformContextPtr`;
+  - `ottlspanevent.NewTransformContext` in favor of `ottlspanevent.NewTransformContextPtr`;
+  - `filterprocessor.WithResourceFunctions` in favor of `filterprocessor.WithResourceFunctionsNew`
+  - `filterprocessor.DefaultDataPointFunctions` in favor of `filtermprocessor.DefaultDataPointFunctionsNew`
+  - `filterprocessor.WithDataPointFunctions` in favor of `filterprocessor.WithDataPointFunctionsNew`
+  - `filterprocessor.DefaultLogFunctions` in favor of `filterprocessor.DefaultLogFunctionsNew`
+  - `filterprocessor.WithLogFunctions` in favor of `filterprocessor.WithLogFunctionsNew`
+  - `filterprocessor.DefaultMetricFunctions` in favor of `filterprocessor.DefaultMetricFunctionsNew`
+  - `filterprocessor.WithMetricFunctions` in favor of `filterprocessor.WithMetricFunctionsNew`
+  - `filterprocessor.DefaultSpanFunctions` in favor of `filterprocessor.DefaultSpanFunctionsNew`
+  - `filterprocessor.WithSpanFunctions` in favor of `filterprocessor.WithSpanFunctionsNew`
+  - `filtermprocessor.DefaultSpanEventFunctions` in favor of `filtermprocessor.DefaultSpanEventFunctionsNew`
+  - `filtermprocessor.WithSpanEventFunctions` in favor of `filtermprocessor.WithSpanEventFunctionsNew`
+  - `transformprocessor.DefaultDataPointFunctions` in favor of `transformprocessor.DefaultDataPointFunctionsNew`
+  - `transformprocessor.WithDataPointFunctions` in favor of `transformprocessor.WithDataPointFunctionsNew`
+  - `transformprocessor.DefaultLogFunctions` in favor of `transformprocessor.DefaultLogFunctionsNew`
+  - `transformprocessor.WithLogFunctions` in favor of `transformprocessor.WithLogFunctionsNew`
+  - `transformprocessor.DefaultMetricFunctions` in favor of `transformprocessor.DefaultMetricFunctionsNew`
+  - `transformprocessor.WithMetricFunctions` in favor of `transformprocessor.WithMetricFunctionsNew`
+  - `transformprocessor.DefaultSpanFunctions` in favor of `transformprocessor.DefaultSpanFunctionsNew`
+  - `transformprocessor.WithSpanFunctions` in favor of `transformprocessor.WithSpanFunctionsNew`
+  - `transformprocessor.DefaultSpanEventFunctions` in favor of `transformprocessor.DefaultSpanEventFunctionsNew`
+  - `transformprocessor.WithSpanEventFunctions` in favor of `transformprocessor.WithSpanEventFunctionsNew`
+  
+
+### 💡 Enhancements 💡
+
+- `exporter/datadog`: introduce a container tags buffer in the stats writer, which is disabled by default. (#44661)
+- `pkg/ottl`: Add PSliceGetSetter interface to allow OTTL functions to accept typed accessors for `pcommon.Slice` paths. (#44421)
+
+<!-- previous-version -->
+
+## v0.141.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: fix pprofile DurationNano to be a TypeUint64 (#44397)
+- `processor/tail_sampling`: Remove only internally relevant fields from samplingpolicy.TraceData. (#44435)
+- `processor/tail_sampling`: Simplify the locking used by the tail sampling (#41656, #43671)
+  There are two small breaking changes as part of this work:
+  1. Pending traces are now passed through the decision logic during shutdown by default. If this is not desired it can be turned off using `drop_pending_traces_on_shutdown`.
+  2. The mutex in `samplingpolicy.TraceData` has been removed and `samplingpolicy.SpanCount` is now an `int64` instead of `*atomic.Int64`. Custom extensions using these fields will need to be updated.
+  
+
+### 🚩 Deprecations 🚩
+
+- `pkg/translator/opencensus`: Deprecate the package (#44641)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/ottl`: Return errors when OTTL context setters receive values of the wrong type (#40198)
+  Introduces `ctxutil.ExpectType` and updates log, metric, and scope setters to surface type assertion failures.
+  
+
+<!-- previous-version -->
+
+## v0.140.1
+
+<!-- previous-version -->
+
+## v0.140.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/carbon`: unexport structs ParsedPath, PlaintextPathParser, function NewParser (#43966)
+- `receiver/carbon`: Unexport PathParserHelper (#43997)
+- `receiver/googlecloudpubsub`: Delete and inline functions used for tests (#43964)
+
+### 💡 Enhancements 💡
+
+- `pkg/datadog`: add orchestrator explorer support in pkg/datadog/config (#44105)
+- `pkg/datadog`: Expose NewConnectorFactory method to instantiate the Datadog connector with injected dependencies. (#43980)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/translator/zipkin`: Restore Zipkin->OTLP translation API (#44004)
+- `receiver/vcenter`: Skip vSAN collection and logging when all vSAN metrics are disabled (#38489)
+
+<!-- previous-version -->
+
+## v0.139.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/opampsupervisor`: Remove common package, moving code where it is used instead. (#43885)
+- `extension/sumologic`: Move api and credentials packages to internal (#43789)
+- `pkg/translator/zipkin`: Unexport ToTranslator (#43852)
+- `receiver/aerospike`: Unexport mocks (#43788)
+- `receiver/azuremonitor`: unexport NewMutexMapImpl and NewSyncMapImpl (#43925)
+- `receiver/jmx`: unexport InsertDefault (#43965)
+
+<!-- previous-version -->
+
+## v0.138.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/tencentcloud_logservice`: Unexport Log_Content, LogTag, Log, LogGroupList, LogGroup (#43138)
+- `pkg/datadog`: Move feature gates ReceiveResourceSpansV2FeatureGate, OperationAndResourceNameV2FeatureGate, and MetricRemappingDisabledFeatureGate from pkg/datadog to new submodule pkg/datadog/featuregates (#43631)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/datadog`: Remove `logs::dump_payloads` config option from `pkg/datadog` config. (#43427)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add support for literal getters (#40222)
+  This enhancement introduces the `ottl.GetLiteralValue` function to OTTL, enabling compile-time optimization for getters that 
+  contain literal values. When a getter is identified as containing a literal value, OTTL functions can now access that value 
+  at build time rather than runtime, improving performance for common use cases like pattern matching with static strings.
+  
+- `processor/filter`: Add profiles support (#42762)
+- `receiver/hostmetrics`: Add metrics, Linux scraper, and tests to hostmetricsreceiver's nfsscraper (#40134)
+
+<!-- previous-version -->
+
 ## v0.137.0
 
 ### 🛑 Breaking changes 🛑

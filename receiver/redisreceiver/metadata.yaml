@@ -35,6 +35,13 @@ attributes:
   db:
     description: Redis database identifier
     type: string
+  mode:
+    description: Redis server mode
+    type: string
+    enum:
+      - cluster
+      - sentinel
+      - standalone
   percentile:
     description: Percentile
     type: string
@@ -79,7 +86,6 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
 
-
   redis.clients.connected:
     enabled: true
     description: Number of client connections (excluding connections from replicas)
@@ -106,6 +112,15 @@ metrics:
     stability:
       level: development
     unit: "By"
+    gauge:
+      value_type: int
+
+  redis.cluster.cluster_enabled:
+    enabled: false
+    description: "Indicate Redis cluster is enabled"
+    stability:
+      level: development
+    unit: "1"
     gauge:
       value_type: int
 
@@ -146,7 +161,6 @@ metrics:
     unit: "s"
     gauge:
       value_type: int
-
 
   redis.cluster.slots_assigned:
     enabled: false
@@ -193,6 +207,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [cluster_state]
+
   redis.cluster.stats_messages_received:
     enabled: false
     description: "Total number of messages received by the cluster"
@@ -257,6 +272,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [cmd]
+
   redis.commands:
     enabled: true
     description: Number of commands processed per second
@@ -330,6 +346,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [db]
+
   redis.db.keys:
     enabled: true
     description: "Number of keyspace keys"
@@ -339,6 +356,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [db]
+
   redis.keys.evicted:
     enabled: true
     description: Number of evicted keys due to maxmemory limit
@@ -383,6 +401,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+
 
   redis.latest_fork:
     enabled: true
@@ -446,6 +465,38 @@ metrics:
     unit: By
     gauge:
       value_type: int
+
+  redis.memory.used_memory_overhead:
+    enabled: false
+    description: "The sum in bytes of all overheads that the server allocated for managing its internal data structures"
+    stability:
+      level: development
+    unit: By
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  redis.memory.used_memory_startup:
+    enabled: false
+    description: "Initial amount of memory consumed by Redis at startup in bytes"
+    stability:
+      level: development
+    unit: By
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  redis.mode:
+    enabled: false
+    description: Redis server mode
+    stability:
+      level: development
+    unit: "{mode}"
+    gauge:
+      value_type: int
+    attributes: [mode]
 
   redis.net.input:
     enabled: true
@@ -519,6 +570,63 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [role]
+
+  redis.sentinel.masters:
+    enabled: false
+    description: Number of masters monitored by Sentinel.
+    stability:
+      level: development
+    unit: "{master}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.running_scripts:
+    enabled: false
+    description: Number of running Sentinel scripts.
+    stability:
+      level: development
+    unit: "{script}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.scripts_queue_length:
+    enabled: false
+    description: Length of Sentinel scripts queue.
+    stability:
+      level: development
+    unit: "{script}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.simulate_failure_flags:
+    enabled: false
+    description: Simulated failure flags bitmask.
+    stability:
+      level: development
+    unit: "{flag}"
+    gauge:
+      value_type: int
+
+  redis.sentinel.tilt_since_seconds:
+    enabled: false
+    description: Duration in seconds of current TILT, or -1 if not in TILT mode.
+    stability:
+      level: development
+    unit: "s"
+    gauge:
+      value_type: int
+
+  redis.sentinel.total_tilt:
+    enabled: false
+    description: Total TILT occurrences since start.
+    stability:
+      level: development
+    unit: "{event}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+
   redis.slaves.connected:
     enabled: true
     description: Number of connected replicas
@@ -530,6 +638,16 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
 
+  redis.tracking_total_keys:
+    enabled: false
+    description: "Number of keys being tracked by the server"
+    stability:
+      level: development
+    unit: "{key}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
 
   redis.uptime:
     enabled: true

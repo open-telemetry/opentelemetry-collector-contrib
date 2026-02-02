@@ -1,0 +1,21 @@
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event"> - <System>
+        <Provider Name="Microsoft-Windows-Security-Auditing"
+            Guid="{54849625-5478-4994-a5ba-3e3b0328c30d}" />
+        <EventID>4624</EventID>
+        <Version>2</Version>
+        <Level>0</Level>
+        <Task>12544</Task>
+        <Opcode>0</Opcode>
+        <Keywords>0x8020000000000000</Keywords>
+        <TimeCreated SystemTime="2025-12-02T23:33:05.2167526Z" />
+        <EventRecordID>13177</EventRecordID>
+        <Correlation ActivityID="{11111111-1111-1111-1111-111111111111}" RelatedActivityID="{22222222-2222-2222-2222-222222222222}" />
+        <Execution ProcessID="800" ThreadID="7852" />
+        <Channel>Security</Channel>
+        <Computer>computer</Computer>
+        <Security />
+    </System>
+    <EventData>
+        <Data Name="SubjectDomainName">WORKGROUP</Data>
+    </EventData>
+</Event>

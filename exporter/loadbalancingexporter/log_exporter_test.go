@@ -21,9 +21,15 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/attribute"
+	metricnoop "go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	tracenoop "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -153,6 +159,95 @@ func TestConsumeLogs(t *testing.T) {
 
 	// verify
 	assert.NoError(t, res)
+}
+
+func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
+	ctx := t.Context()
+	shutdownCtx := context.Background() //nolint:usetesting // Context must outlive test for cleanup
+	telemetry := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, telemetry.Shutdown(shutdownCtx))
+	})
+
+	parentParams := exportertest.NewNopSettings(metadata.Type)
+	parentParams.TelemetrySettings = telemetry.NewTelemetrySettings()
+
+	cfg := simpleConfig()
+	logsExporter, err := newLogsExporter(parentParams, cfg)
+	require.NoError(t, err)
+
+	otlpFactory := otlpexporter.NewFactory()
+	var childSettings []exporter.Settings
+	logsExporter.loadBalancer.componentFactory = func(createCtx context.Context, endpoint string) (component.Component, error) {
+		childCfg := buildExporterConfig(cfg, endpoint)
+		childParams := buildExporterSettings(otlpFactory.Type(), parentParams, endpoint)
+		childSettings = append(childSettings, childParams)
+
+		return exporterhelper.NewLogs(createCtx, childParams, &childCfg, func(context.Context, plog.Logs) error {
+			return nil
+		})
+	}
+	wrappedExporter, err := exporterhelper.NewLogs(
+		ctx,
+		parentParams,
+		cfg,
+		logsExporter.ConsumeLogs,
+		exporterhelper.WithStart(logsExporter.Start),
+		exporterhelper.WithShutdown(logsExporter.Shutdown),
+		exporterhelper.WithCapabilities(logsExporter.Capabilities()),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, wrappedExporter.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, wrappedExporter.Shutdown(ctx))
+	})
+
+	logs := generateSingleLogRecord()
+	require.NoError(t, wrappedExporter.ConsumeLogs(ctx, logs))
+
+	metric, err := telemetry.GetMetric("otelcol_exporter_sent_log_records")
+	require.NoError(t, err)
+	sum, ok := metric.Data.(metricdata.Sum[int64])
+	require.True(t, ok)
+
+	exporterKey := attribute.Key("exporter")
+	var loadbalancingTotal int64
+	for _, dp := range sum.DataPoints {
+		attr, found := dp.Attributes.Value(exporterKey)
+		require.True(t, found, "exporter attribute must be present")
+		if attr.AsString() != parentParams.ID.String() {
+			assert.Failf(t, "unexpected exporter attribute", "got %s", attr.AsString())
+			continue
+		}
+		loadbalancingTotal += dp.Value
+	}
+
+	assert.Equal(t, int64(logs.LogRecordCount()), loadbalancingTotal)
+
+	loadbalancerMetric, err := telemetry.GetMetric("otelcol_loadbalancer_backend_outcome")
+	require.NoError(t, err)
+	lbSum, ok := loadbalancerMetric.Data.(metricdata.Sum[int64])
+	require.True(t, ok)
+	var totalBackendOutcome int64
+	for _, dp := range lbSum.DataPoints {
+		totalBackendOutcome += dp.Value
+	}
+	assert.Equal(t, int64(1), totalBackendOutcome)
+
+	require.Len(t, childSettings, 1)
+	assert.IsType(t, metricnoop.NewMeterProvider(), childSettings[0].MeterProvider)
+	assert.IsType(t, tracenoop.NewTracerProvider(), childSettings[0].TracerProvider)
+}
+
+func generateSingleLogRecord() plog.Logs {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	logRecord := sl.LogRecords().AppendEmpty()
+	logRecord.Body().SetStr("test log")
+	logRecord.SetTimestamp(pcommon.Timestamp(123))
+	return logs
 }
 
 func TestConsumeLogsUnexpectedExporterType(t *testing.T) {

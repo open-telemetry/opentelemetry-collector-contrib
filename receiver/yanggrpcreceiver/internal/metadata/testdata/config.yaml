@@ -1,0 +1,25 @@
+default:
+all_set:
+  resource_attributes:
+    cisco.device_type:
+      enabled: true
+    cisco.encoding_path:
+      enabled: true
+    cisco.node_id:
+      enabled: true
+    cisco.subscription_id:
+      enabled: true
+    cisco.yang_module:
+      enabled: true
+none_set:
+  resource_attributes:
+    cisco.device_type:
+      enabled: false
+    cisco.encoding_path:
+      enabled: false
+    cisco.node_id:
+      enabled: false
+    cisco.subscription_id:
+      enabled: false
+    cisco.yang_module:
+      enabled: false

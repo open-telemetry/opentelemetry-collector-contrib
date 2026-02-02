@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -57,10 +56,10 @@ func TestSyncMetadata(t *testing.T) {
 			},
 			hostStatErr: nil,
 			pushFail:    false,
-			metricsData: generateSampleMetricsData(map[string]string{string(conventions.HostNameKey): "host1"}),
+			metricsData: generateSampleMetricsData(map[string]string{"host.name": "host1"}),
 			wantMetadataUpdate: []*metadata.MetadataUpdate{
 				{
-					ResourceIDKey: string(conventions.HostNameKey),
+					ResourceIDKey: "host.name",
 					ResourceID:    "host1",
 					MetadataDelta: metadata.MetadataDelta{
 						MetadataToUpdate: map[string]string{
@@ -96,10 +95,10 @@ func TestSyncMetadata(t *testing.T) {
 			hostStat:    host.InfoStat{},
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
-			metricsData: generateSampleMetricsData(map[string]string{string(conventions.HostNameKey): "host1"}),
+			metricsData: generateSampleMetricsData(map[string]string{"host.name": "host1"}),
 			wantMetadataUpdate: []*metadata.MetadataUpdate{
 				{
-					ResourceIDKey: string(conventions.HostNameKey),
+					ResourceIDKey: "host.name",
 					ResourceID:    "host1",
 					MetadataDelta: metadata.MetadataDelta{
 						MetadataToUpdate: map[string]string{
@@ -127,10 +126,10 @@ func TestSyncMetadata(t *testing.T) {
 			hostStat:    host.InfoStat{},
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
-			metricsData: generateSampleMetricsData(map[string]string{string(conventions.HostNameKey): "host1"}),
+			metricsData: generateSampleMetricsData(map[string]string{"host.name": "host1"}),
 			wantMetadataUpdate: []*metadata.MetadataUpdate{
 				{
-					ResourceIDKey: string(conventions.HostNameKey),
+					ResourceIDKey: "host.name",
 					ResourceID:    "host1",
 					MetadataDelta: metadata.MetadataDelta{
 						MetadataToUpdate: map[string]string{
@@ -152,7 +151,7 @@ func TestSyncMetadata(t *testing.T) {
 			memStatErr:         errors.New("failed"),
 			hostStat:           host.InfoStat{},
 			hostStatErr:        errors.New("failed"),
-			metricsData:        generateSampleMetricsData(map[string]string{string(conventions.HostNameKey): "host1"}),
+			metricsData:        generateSampleMetricsData(map[string]string{"host.name": "host1"}),
 			wantMetadataUpdate: nil,
 			wantLogs: []string{
 				"Failed to scrape host hostCPU metadata",
@@ -174,7 +173,7 @@ func TestSyncMetadata(t *testing.T) {
 			},
 			hostStatErr:        nil,
 			pushFail:           true,
-			metricsData:        generateSampleMetricsData(map[string]string{string(conventions.HostNameKey): "host1"}),
+			metricsData:        generateSampleMetricsData(map[string]string{"host.name": "host1"}),
 			wantMetadataUpdate: nil,
 			wantLogs:           []string{"Failed to push host metadata update"},
 		},
@@ -190,9 +189,9 @@ func TestSyncMetadata(t *testing.T) {
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
 			metricsData: generateSampleMetricsData(map[string]string{
-				string(conventions.CloudProviderKey):  conventions.CloudProviderGCP.Value.AsString(),
-				string(conventions.CloudAccountIDKey): "1234",
-				string(conventions.HostIDKey):         "i-abc",
+				"cloud.provider":   "gcp",
+				"cloud.account.id": "1234",
+				"host.id":          "i-abc",
 			}),
 			wantMetadataUpdate: []*metadata.MetadataUpdate{
 				{

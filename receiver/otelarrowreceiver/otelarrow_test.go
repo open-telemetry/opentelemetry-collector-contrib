@@ -142,7 +142,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_spans",
-			Description: "Number of spans successfully pushed into the pipeline. [alpha]",
+			Description: "Number of spans successfully pushed into the pipeline. [Alpha]",
 			Unit:        "{spans}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -163,7 +163,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_spans",
-			Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
+			Description: "Number of spans that could not be pushed into the pipeline. [Alpha]",
 			Unit:        "{spans}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,

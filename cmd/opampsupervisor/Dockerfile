@@ -1,6 +1,6 @@
 FROM otelcontribcol AS col
 
-FROM alpine:latest@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1 AS prep
+FROM alpine:latest@sha256:865b95f46d98cf867a156fe4a135ad3fe50d2056aa3f25ed31662dff6da4eb62 AS prep
 RUN apk --update add ca-certificates
 RUN mkdir -p /etc/otel/supervisor-data/
 

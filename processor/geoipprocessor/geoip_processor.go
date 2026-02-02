@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
+	"net/netip"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -20,7 +20,6 @@ import (
 
 var (
 	errIPNotFound        = errors.New("no IP address found in the resource attributes")
-	errParseIP           = errors.New("could not parse IP address")
 	errUnspecifiedIP     = errors.New("unspecified address")
 	errUnspecifiedSource = errors.New("no source attributes defined")
 )
@@ -42,36 +41,36 @@ func newGeoIPProcessor(processorConfig *Config, providers []provider.GeoIPProvid
 }
 
 // parseIP parses a string to a net.IP type and returns an error if the IP is invalid or unspecified.
-func parseIP(strIP string) (net.IP, error) {
-	ip := net.ParseIP(strIP)
-	if ip == nil {
-		return nil, fmt.Errorf("%w address: %s", errParseIP, strIP)
+func parseIP(strIP string) (netip.Addr, error) {
+	ip, err := netip.ParseAddr(strIP)
+	if err != nil {
+		return netip.Addr{}, err
 	} else if ip.IsUnspecified() {
-		return nil, fmt.Errorf("%w address: %s", errUnspecifiedIP, strIP)
+		return netip.Addr{}, fmt.Errorf("%w address: %s", errUnspecifiedIP, strIP)
 	}
 	return ip, nil
 }
 
 // ipFromAttributes extracts an IP address from the given attributes based on the specified fields.
 // It returns the first IP address if found, or an error if no valid IP address is found.
-func ipFromAttributes(attributes []attribute.Key, resource pcommon.Map) (net.IP, error) {
+func ipFromAttributes(attributes []attribute.Key, resource pcommon.Map) (netip.Addr, error) {
 	for _, attr := range attributes {
 		if ipField, found := resource.Get(string(attr)); found {
 			// The attribute might contain a domain name. Skip any net.ParseIP error until we have a fine-grained error propagation strategy.
 			// TODO: propagate an error once error_mode configuration option is available (e.g. transformprocessor)
 			ipAttribute, err := parseIP(ipField.AsString())
-			if err == nil && ipAttribute != nil {
+			if err == nil {
 				return ipAttribute, nil
 			}
 		}
 	}
 
-	return nil, errIPNotFound
+	return netip.Addr{}, errIPNotFound
 }
 
 // geoLocation fetches geolocation information for the given IP address using the configured providers.
 // It returns a set of attributes containing the geolocation data, or an error if the location could not be determined.
-func (g *geoIPProcessor) geoLocation(ctx context.Context, ip net.IP) (attribute.Set, error) {
+func (g *geoIPProcessor) geoLocation(ctx context.Context, ip netip.Addr) (attribute.Set, error) {
 	allAttributes := &attribute.Set{}
 	for _, geoProvider := range g.providers {
 		geoAttributes, err := geoProvider.Location(ctx, ip)

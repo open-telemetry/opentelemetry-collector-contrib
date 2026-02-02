@@ -641,7 +641,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{vacuums}'
+            unit: '{vacuum}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
@@ -801,7 +801,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{vacuums}'
+            unit: '{vacuum}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
@@ -961,7 +961,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{vacuums}'
+            unit: '{vacuum}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
@@ -1121,7 +1121,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{vacuums}'
+            unit: '{vacuum}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest

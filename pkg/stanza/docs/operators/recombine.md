@@ -13,9 +13,9 @@ The `recombine` operator combines consecutive logs into single logs based on sim
 | `is_last_entry`                |                             | An [expression](../types/expression.md) that returns true if the entry being processed is the last entry in a multiline series. |
 | `combine_field`                | required                    | The [field](../types/field.md) from all the entries that will be recombined. |
 | `combine_with`                 | `"\n"`                      | The string that is put between the combined entries. This can be an empty string as well. When using special characters like `\n`, be sure to enclose the value in double quotes: `"\n"`. |
-| `max_batch_size`               | 1000                        | The maximum number of consecutive entries that will be combined into a single entry. |
+| `max_batch_size`               | 1000                        | The maximum number of consecutive entries that will be combined into a single entry. Set to `0` for unlimited batching (no size limit based on entry count). |
 | `max_unmatched_batch_size`     | 100                         | The maximum number of consecutive entries that will be combined into a single entry before the match occurs (with `is_first_entry` or `is_last_entry`), e.g. `max_unmatched_batch_size=0` - all entries combined, `max_unmatched_batch_size=1` - all entries uncombined until the match occurs, `max_unmatched_batch_size=100` - entries combined into 100-entry-packages until the match occurs  |
-| `overwrite_with`               | `newest`                    | Whether to use the fields from the `oldest` or the `newest` entry for all the fields that are not combined. |
+| `overwrite_with`               | `oldest`                    | Whether to use the fields from the `oldest` or the `newest` entry for all the fields that are not combined. |
 | `force_flush_period`           | `5s`                        | Flush timeout after which entries will be flushed aborting the wait for their sub parts to be merged with. |
 | `source_identifier`            | attributes["log.file.path"] | The [field](../types/field.md) to separate one source of logs from others when combining them. |
 | `max_sources`                  | 1000                        | The maximum number of unique sources allowed concurrently to be tracked for combining separately. |

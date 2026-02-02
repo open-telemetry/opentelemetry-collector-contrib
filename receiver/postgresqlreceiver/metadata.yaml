@@ -7,7 +7,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [antonblock, ishleenk17]
+    active: [antonblock, ishleenk17, Caleb-Hurshman]
     seeking_new: true
     emeritus: [djaglowski]
 
@@ -26,6 +26,10 @@ resource_attributes:
     type: string
   postgresql.table.name:
     description: The table name.
+    enabled: true
+    type: string
+  service.instance.id:
+    description: A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value).
     enabled: true
     type: string
 
@@ -477,7 +481,7 @@ metrics:
     stability:
       level: development
     enabled: true
-    unit: "{vacuums}"
+    unit: "{vacuum}"
     sum:
       aggregation_temporality: cumulative
       monotonic: true

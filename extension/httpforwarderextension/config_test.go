@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -26,8 +27,8 @@ func TestLoadConfig(t *testing.T) {
 
 	egressCfg := confighttp.NewDefaultClientConfig()
 	egressCfg.Endpoint = "http://target/"
-	egressCfg.Headers = map[string]configopaque.String{
-		"otel_http_forwarder": "dev",
+	egressCfg.Headers = configopaque.MapList{
+		{Name: "otel_http_forwarder", Value: "dev"},
 	}
 	egressCfg.MaxIdleConns = maxIdleConns
 	egressCfg.IdleConnTimeout = idleConnTimeout
@@ -45,7 +46,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
 				Ingress: confighttp.ServerConfig{
-					Endpoint: "http://localhost:7070",
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "http://localhost:7070",
+					},
 				},
 				Egress: egressCfg,
 			},

@@ -1,4 +1,5 @@
 type: servicegraph
+display_name: Service Graph Connector
 
 status:
   class: connector
@@ -22,15 +23,6 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    connector_servicegraph_total_edges:
-      description: Total number of unique edges
-      unit: "1"
-      enabled: true
-      stability:
-        level: development
-      sum:
-        value_type: int
-        monotonic: true
     connector_servicegraph_expired_edges:
       description: Number of edges that expired before finding its matching span
       unit: "1"
@@ -40,4 +32,12 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-
+    connector_servicegraph_total_edges:
+      description: Total number of unique edges
+      unit: "1"
+      enabled: true
+      stability:
+        level: development
+      sum:
+        value_type: int
+        monotonic: true

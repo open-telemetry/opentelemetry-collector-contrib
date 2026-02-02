@@ -10,10 +10,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-func ResourceFunctions() map[string]ottl.Factory[ottlresource.TransformContext] {
-	return ottlfuncs.StandardFuncs[ottlresource.TransformContext]()
+func ResourceFunctions() map[string]ottl.Factory[*ottlresource.TransformContext] {
+	return ottlfuncs.StandardFuncs[*ottlresource.TransformContext]()
 }
 
-func ScopeFunctions() map[string]ottl.Factory[ottlscope.TransformContext] {
-	return ottlfuncs.StandardFuncs[ottlscope.TransformContext]()
+func ScopeFunctions() map[string]ottl.Factory[*ottlscope.TransformContext] {
+	return ottlfuncs.StandardFuncs[*ottlscope.TransformContext]()
 }
