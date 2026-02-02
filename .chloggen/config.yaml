@@ -179,6 +179,7 @@ components:
     - pkg/translator/zipkin
     - pkg/winperfcounters
     - pkg/xk8stest
+    - pkg/xstreamencoding
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
