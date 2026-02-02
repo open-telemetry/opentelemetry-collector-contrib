@@ -1,10 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension
 
-go 1.24.0
+go 1.24.4
 
 require (
 	github.com/goccy/go-json v0.10.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.145.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/xstream v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.145.0
 	github.com/stretchr/testify v1.11.1
@@ -59,6 +60,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/xstream => ../xstream
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../../pkg/pdatautil
 
