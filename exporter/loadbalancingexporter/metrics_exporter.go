@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/metric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
@@ -73,6 +74,8 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 		metricExporter.routingKey = metricNameRouting
 	case streamIDRoutingStr:
 		metricExporter.routingKey = streamIDRouting
+	case exemplarTraceIDRoutingStr:
+		metricExporter.routingKey = exemplarTraceIDRouting
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: %q", cfg.(*Config).RoutingKey)
 	}
@@ -115,6 +118,11 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		batches = splitMetricsByMetricName(md)
 	case streamIDRouting:
 		batches = splitMetricsByStreamID(md)
+	case exemplarTraceIDRouting:
+		batches = splitMetricsByExemplarTraceID(md)
+		if len(batches) == 0 {
+			return nil // No metrics with valid exemplar trace IDs
+		}
 	}
 
 	// Now assign each batch to an exporter, and merge as we go
@@ -383,4 +391,302 @@ func cloneMetricWithoutType(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics,
 	mClone.SetUnit(m.Unit())
 
 	return md, mClone
+}
+
+// splitMetricsByExemplarTraceID splits metrics by the trace ID found in their exemplars.
+// Each backend receives only the exemplars matching its trace ID, with top-level metric
+// values recomputed from those filtered exemplars (treating exemplars as a full breakdown).
+// Metrics/data points without valid exemplar trace IDs are dropped.
+// The routing key uses raw trace ID bytes (same as trace_exporter.go) for consistent hashing.
+func splitMetricsByExemplarTraceID(md pmetric.Metrics) map[string]pmetric.Metrics {
+	results := map[string]pmetric.Metrics{}
+
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				splitMetricByExemplarTraceID(rm, sm, m, results)
+			}
+		}
+	}
+
+	return results
+}
+
+// splitMetricByExemplarTraceID splits a single metric by exemplar trace IDs and adds to results.
+func splitMetricByExemplarTraceID(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, results map[string]pmetric.Metrics) {
+	switch m.Type() {
+	case pmetric.MetricTypeSum:
+		splitSumByExemplarTraceID(rm, sm, m, results)
+	case pmetric.MetricTypeGauge:
+		splitGaugeByExemplarTraceID(rm, sm, m, results)
+	case pmetric.MetricTypeHistogram:
+		splitHistogramByExemplarTraceID(rm, sm, m, results)
+	case pmetric.MetricTypeExponentialHistogram:
+		splitExponentialHistogramByExemplarTraceID(rm, sm, m, results)
+	}
+}
+
+// splitSumByExemplarTraceID splits a Sum metric by exemplar trace IDs.
+// Recomputes sum value from filtered exemplars.
+func splitSumByExemplarTraceID(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, results map[string]pmetric.Metrics) {
+	sum := m.Sum()
+	for i := 0; i < sum.DataPoints().Len(); i++ {
+		dp := sum.DataPoints().At(i)
+		exemplarsByTraceID := groupExemplarsByTraceID(dp.Exemplars())
+
+		for traceID, exemplars := range exemplarsByTraceID {
+			routingKey := string(traceID[:])
+
+			existing, exists := results[routingKey]
+			if !exists {
+				existing = pmetric.NewMetrics()
+				results[routingKey] = existing
+			}
+
+			newMD, mClone := cloneMetricWithoutType(rm, sm, m)
+			sumClone := mClone.SetEmptySum()
+			sumClone.SetIsMonotonic(sum.IsMonotonic())
+			sumClone.SetAggregationTemporality(sum.AggregationTemporality())
+
+			dpClone := sumClone.DataPoints().AppendEmpty()
+			dp.Attributes().CopyTo(dpClone.Attributes())
+			dpClone.SetStartTimestamp(dp.StartTimestamp())
+			dpClone.SetTimestamp(dp.Timestamp())
+			dpClone.SetFlags(dp.Flags())
+
+			// Recompute sum from filtered exemplars
+			var total float64
+			for _, ex := range exemplars {
+				total += ex.DoubleValue()
+				newEx := dpClone.Exemplars().AppendEmpty()
+				ex.CopyTo(newEx)
+			}
+			dpClone.SetDoubleValue(total)
+
+			metrics.Merge(existing, newMD)
+		}
+	}
+}
+
+// splitGaugeByExemplarTraceID splits a Gauge metric by exemplar trace IDs.
+// Uses the most recent exemplar value (by timestamp) for the gauge value.
+func splitGaugeByExemplarTraceID(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, results map[string]pmetric.Metrics) {
+	gauge := m.Gauge()
+	for i := 0; i < gauge.DataPoints().Len(); i++ {
+		dp := gauge.DataPoints().At(i)
+		exemplarsByTraceID := groupExemplarsByTraceID(dp.Exemplars())
+
+		for traceID, exemplars := range exemplarsByTraceID {
+			routingKey := string(traceID[:])
+
+			existing, exists := results[routingKey]
+			if !exists {
+				existing = pmetric.NewMetrics()
+				results[routingKey] = existing
+			}
+
+			newMD, mClone := cloneMetricWithoutType(rm, sm, m)
+			gaugeClone := mClone.SetEmptyGauge()
+
+			dpClone := gaugeClone.DataPoints().AppendEmpty()
+			dp.Attributes().CopyTo(dpClone.Attributes())
+			dpClone.SetStartTimestamp(dp.StartTimestamp())
+			dpClone.SetTimestamp(dp.Timestamp())
+			dpClone.SetFlags(dp.Flags())
+
+			// Use the most recent exemplar value (by timestamp)
+			var latestTimestamp pcommon.Timestamp
+			var latestValue float64
+			for _, ex := range exemplars {
+				if ex.Timestamp() >= latestTimestamp {
+					latestTimestamp = ex.Timestamp()
+					latestValue = ex.DoubleValue()
+				}
+				newEx := dpClone.Exemplars().AppendEmpty()
+				ex.CopyTo(newEx)
+			}
+			dpClone.SetDoubleValue(latestValue)
+
+			metrics.Merge(existing, newMD)
+		}
+	}
+}
+
+// splitHistogramByExemplarTraceID splits a Histogram metric by exemplar trace IDs.
+// Recomputes histogram statistics (count, sum, min, max, buckets) from filtered exemplars.
+func splitHistogramByExemplarTraceID(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, results map[string]pmetric.Metrics) {
+	hist := m.Histogram()
+	for i := 0; i < hist.DataPoints().Len(); i++ {
+		dp := hist.DataPoints().At(i)
+		exemplarsByTraceID := groupExemplarsByTraceID(dp.Exemplars())
+
+		for traceID, exemplars := range exemplarsByTraceID {
+			routingKey := string(traceID[:])
+
+			existing, exists := results[routingKey]
+			if !exists {
+				existing = pmetric.NewMetrics()
+				results[routingKey] = existing
+			}
+
+			newMD, mClone := cloneMetricWithoutType(rm, sm, m)
+			histClone := mClone.SetEmptyHistogram()
+			histClone.SetAggregationTemporality(hist.AggregationTemporality())
+
+			dpClone := histClone.DataPoints().AppendEmpty()
+			dp.Attributes().CopyTo(dpClone.Attributes())
+			dpClone.SetStartTimestamp(dp.StartTimestamp())
+			dpClone.SetTimestamp(dp.Timestamp())
+			dpClone.SetFlags(dp.Flags())
+
+			// Copy bucket boundaries from original
+			if dp.ExplicitBounds().Len() > 0 {
+				dp.ExplicitBounds().CopyTo(dpClone.ExplicitBounds())
+			}
+
+			// Recompute histogram stats from filtered exemplars
+			var sum, min, max float64
+			count := uint64(len(exemplars))
+			bucketCounts := make([]uint64, dp.BucketCounts().Len())
+
+			for idx, ex := range exemplars {
+				val := ex.DoubleValue()
+				sum += val
+
+				if idx == 0 {
+					min = val
+					max = val
+				} else {
+					if val < min {
+						min = val
+					}
+					if val > max {
+						max = val
+					}
+				}
+
+				// Find which bucket this exemplar falls into
+				bucketIdx := findBucketIndex(val, dp.ExplicitBounds())
+				if bucketIdx < len(bucketCounts) {
+					bucketCounts[bucketIdx]++
+				}
+
+				newEx := dpClone.Exemplars().AppendEmpty()
+				ex.CopyTo(newEx)
+			}
+
+			dpClone.SetCount(count)
+			dpClone.SetSum(sum)
+			if count > 0 {
+				dpClone.SetMin(min)
+				dpClone.SetMax(max)
+			}
+			dpClone.BucketCounts().FromRaw(bucketCounts)
+
+			metrics.Merge(existing, newMD)
+		}
+	}
+}
+
+// splitExponentialHistogramByExemplarTraceID splits an ExponentialHistogram metric by exemplar trace IDs.
+// Recomputes basic statistics from filtered exemplars (exponential buckets are zeroed as they
+// require complex recomputation).
+func splitExponentialHistogramByExemplarTraceID(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, results map[string]pmetric.Metrics) {
+	expHist := m.ExponentialHistogram()
+	for i := 0; i < expHist.DataPoints().Len(); i++ {
+		dp := expHist.DataPoints().At(i)
+		exemplarsByTraceID := groupExemplarsByTraceID(dp.Exemplars())
+
+		for traceID, exemplars := range exemplarsByTraceID {
+			routingKey := string(traceID[:])
+
+			existing, exists := results[routingKey]
+			if !exists {
+				existing = pmetric.NewMetrics()
+				results[routingKey] = existing
+			}
+
+			newMD, mClone := cloneMetricWithoutType(rm, sm, m)
+			expHistClone := mClone.SetEmptyExponentialHistogram()
+			expHistClone.SetAggregationTemporality(expHist.AggregationTemporality())
+
+			dpClone := expHistClone.DataPoints().AppendEmpty()
+			dp.Attributes().CopyTo(dpClone.Attributes())
+			dpClone.SetStartTimestamp(dp.StartTimestamp())
+			dpClone.SetTimestamp(dp.Timestamp())
+			dpClone.SetFlags(dp.Flags())
+			dpClone.SetScale(dp.Scale())
+			dpClone.SetZeroThreshold(dp.ZeroThreshold())
+
+			// Recompute basic stats from filtered exemplars
+			var sum, min, max float64
+			count := uint64(len(exemplars))
+			var zeroCount uint64
+
+			for idx, ex := range exemplars {
+				val := ex.DoubleValue()
+				sum += val
+
+				if idx == 0 {
+					min = val
+					max = val
+				} else {
+					if val < min {
+						min = val
+					}
+					if val > max {
+						max = val
+					}
+				}
+
+				if val == 0 || (val > -dp.ZeroThreshold() && val < dp.ZeroThreshold()) {
+					zeroCount++
+				}
+
+				newEx := dpClone.Exemplars().AppendEmpty()
+				ex.CopyTo(newEx)
+			}
+
+			dpClone.SetCount(count)
+			dpClone.SetSum(sum)
+			if count > 0 {
+				dpClone.SetMin(min)
+				dpClone.SetMax(max)
+			}
+			dpClone.SetZeroCount(zeroCount)
+			// Note: Exponential bucket recomputation is complex; leave empty
+			// The consumer should rely on exemplars for detailed breakdown
+
+			metrics.Merge(existing, newMD)
+		}
+	}
+}
+
+// groupExemplarsByTraceID groups exemplars by their trace ID.
+// Exemplars without valid trace IDs are dropped.
+func groupExemplarsByTraceID(exemplars pmetric.ExemplarSlice) map[[16]byte][]pmetric.Exemplar {
+	result := make(map[[16]byte][]pmetric.Exemplar, 2)
+	for i := 0; i < exemplars.Len(); i++ {
+		ex := exemplars.At(i)
+		tid := ex.TraceID()
+		if !tid.IsEmpty() {
+			result[tid] = append(result[tid], ex)
+		}
+	}
+	return result
+}
+
+// findBucketIndex finds the bucket index for a value given explicit bounds.
+// Returns the index of the bucket where value <= bound.
+func findBucketIndex(value float64, bounds pcommon.Float64Slice) int {
+	for i := 0; i < bounds.Len(); i++ {
+		if value <= bounds.At(i) {
+			return i
+		}
+	}
+	// Value is greater than all bounds, goes in the last bucket
+	return bounds.Len()
 }

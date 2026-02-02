@@ -284,6 +284,10 @@ func TestSplitMetrics(t *testing.T) {
 			name:      "duplicate_stream_id",
 			splitFunc: splitMetricsByStreamID,
 		},
+		{
+			name:      "basic_exemplar_trace_id",
+			splitFunc: splitMetricsByExemplarTraceID,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -327,6 +331,10 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 		{
 			name:       "stream_id",
 			routingKey: streamIDRoutingStr,
+		},
+		{
+			name:       "exemplar_trace_id",
+			routingKey: exemplarTraceIDRoutingStr,
 		},
 	}
 
@@ -947,6 +955,16 @@ func randomMetrics(t require.TestingT, rmCount, smCount, mCount, dpCount int) pm
 						"datapoint.key": fmt.Sprintf("dp-%d", rand.IntN(512)),
 					})
 					require.NoError(t, err)
+
+					// Add exemplar with random trace ID for exemplarTraceID routing benchmarks
+					exemplar := dp.Exemplars().AppendEmpty()
+					var traceID [16]byte
+					for i := range traceID {
+						traceID[i] = byte(rand.IntN(256))
+					}
+					exemplar.SetTraceID(pcommon.TraceID(traceID))
+					exemplar.SetDoubleValue(float64(value))
+					exemplar.SetTimestamp(timeStamp)
 				}
 			}
 		}
@@ -1015,6 +1033,9 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 		},
 		{
 			routingKey: streamIDRoutingStr,
+		},
+		{
+			routingKey: exemplarTraceIDRoutingStr,
 		},
 	}
 
@@ -1132,4 +1153,220 @@ func (e *mockMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Met
 		return e.consumeErr
 	}
 	return e.ConsumeMetricsFn(ctx, md)
+}
+
+// Tests for exemplarTraceID routing
+
+func exemplarTraceIDBasedRoutingConfig() *Config {
+	return &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}}),
+		},
+		RoutingKey: exemplarTraceIDRoutingStr,
+	}
+}
+
+func TestNewMetricsExporterWithExemplarTraceIDRouting(t *testing.T) {
+	ts, _ := getTelemetryAssets(t)
+	// test
+	_, err := newMetricsExporter(ts, exemplarTraceIDBasedRoutingConfig())
+	// verify
+	require.NoError(t, err)
+}
+
+func TestSplitMetricsByExemplarTraceID(t *testing.T) {
+	// Create a metric with exemplars having different trace IDs
+	md := metricsWithExemplars()
+
+	// Split by exemplar trace ID
+	batches := splitMetricsByExemplarTraceID(md)
+
+	// Should have 2 batches (one for each trace ID)
+	assert.Len(t, batches, 2)
+
+	// Verify each batch has the correct exemplars
+	for routingKey, batch := range batches {
+		rm := batch.ResourceMetrics().At(0)
+		sm := rm.ScopeMetrics().At(0)
+		m := sm.Metrics().At(0)
+
+		// Verify it's a Sum metric
+		assert.Equal(t, pmetric.MetricTypeSum, m.Type())
+
+		sum := m.Sum()
+		assert.Equal(t, 1, sum.DataPoints().Len())
+
+		dp := sum.DataPoints().At(0)
+
+		// All exemplars in this batch should have the same trace ID
+		for i := 0; i < dp.Exemplars().Len(); i++ {
+			ex := dp.Exemplars().At(i)
+			tid := ex.TraceID()
+			assert.Equal(t, routingKey, string(tid[:]))
+		}
+	}
+}
+
+func TestSplitMetricsByExemplarTraceIDRecomputesSum(t *testing.T) {
+	// Create a Sum metric with exemplars
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_sum")
+
+	sum := m.SetEmptySum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+	dp := sum.DataPoints().AppendEmpty()
+	dp.SetDoubleValue(100.0) // Original value (should be ignored)
+
+	// Add exemplars with different trace IDs and values
+	traceID1 := [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	traceID2 := [16]byte{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}
+
+	ex1 := dp.Exemplars().AppendEmpty()
+	ex1.SetTraceID(pcommon.TraceID(traceID1))
+	ex1.SetDoubleValue(10.0)
+
+	ex2 := dp.Exemplars().AppendEmpty()
+	ex2.SetTraceID(pcommon.TraceID(traceID1))
+	ex2.SetDoubleValue(20.0)
+
+	ex3 := dp.Exemplars().AppendEmpty()
+	ex3.SetTraceID(pcommon.TraceID(traceID2))
+	ex3.SetDoubleValue(30.0)
+
+	// Split by exemplar trace ID
+	batches := splitMetricsByExemplarTraceID(md)
+
+	// Should have 2 batches
+	assert.Len(t, batches, 2)
+
+	// Check that sum values are recomputed from exemplars
+	routingKey1 := string(traceID1[:])
+	routingKey2 := string(traceID2[:])
+
+	batch1 := batches[routingKey1]
+	sum1 := batch1.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
+	dp1 := sum1.DataPoints().At(0)
+	assert.Equal(t, 30.0, dp1.DoubleValue()) // 10 + 20
+	assert.Equal(t, 2, dp1.Exemplars().Len())
+
+	batch2 := batches[routingKey2]
+	sum2 := batch2.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
+	dp2 := sum2.DataPoints().At(0)
+	assert.Equal(t, 30.0, dp2.DoubleValue()) // 30
+	assert.Equal(t, 1, dp2.Exemplars().Len())
+}
+
+func TestSplitMetricsByExemplarTraceIDRecomputesHistogram(t *testing.T) {
+	// Create a Histogram metric with exemplars
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_histogram")
+
+	hist := m.SetEmptyHistogram()
+	hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+	dp := hist.DataPoints().AppendEmpty()
+	dp.SetCount(1000)      // Original values (should be ignored)
+	dp.SetSum(5000.0)
+	dp.ExplicitBounds().FromRaw([]float64{10, 50, 100})
+	dp.BucketCounts().FromRaw([]uint64{100, 200, 300, 400})
+
+	// Add exemplars with different trace IDs
+	traceID1 := [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+
+	ex1 := dp.Exemplars().AppendEmpty()
+	ex1.SetTraceID(pcommon.TraceID(traceID1))
+	ex1.SetDoubleValue(5.0) // Falls in bucket 0 (<=10)
+
+	ex2 := dp.Exemplars().AppendEmpty()
+	ex2.SetTraceID(pcommon.TraceID(traceID1))
+	ex2.SetDoubleValue(25.0) // Falls in bucket 1 (<=50)
+
+	ex3 := dp.Exemplars().AppendEmpty()
+	ex3.SetTraceID(pcommon.TraceID(traceID1))
+	ex3.SetDoubleValue(75.0) // Falls in bucket 2 (<=100)
+
+	// Split by exemplar trace ID
+	batches := splitMetricsByExemplarTraceID(md)
+
+	// Should have 1 batch
+	assert.Len(t, batches, 1)
+
+	routingKey := string(traceID1[:])
+	batch := batches[routingKey]
+	histResult := batch.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram()
+	dpResult := histResult.DataPoints().At(0)
+
+	// Verify recomputed values
+	assert.Equal(t, uint64(3), dpResult.Count())
+	assert.Equal(t, 105.0, dpResult.Sum()) // 5 + 25 + 75
+	assert.Equal(t, 5.0, dpResult.Min())
+	assert.Equal(t, 75.0, dpResult.Max())
+
+	// Verify bucket counts
+	buckets := dpResult.BucketCounts().AsRaw()
+	assert.Equal(t, []uint64{1, 1, 1, 0}, buckets) // One exemplar in each of first 3 buckets
+
+	// Verify exemplars are preserved
+	assert.Equal(t, 3, dpResult.Exemplars().Len())
+}
+
+func TestSplitMetricsByExemplarTraceIDNoExemplars(t *testing.T) {
+	// Create a metric without exemplars
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_sum")
+
+	sum := m.SetEmptySum()
+	dp := sum.DataPoints().AppendEmpty()
+	dp.SetDoubleValue(100.0)
+	// No exemplars added
+
+	// Split by exemplar trace ID
+	batches := splitMetricsByExemplarTraceID(md)
+
+	// Should have 0 batches (metrics without exemplars are dropped)
+	assert.Len(t, batches, 0)
+}
+
+func metricsWithExemplars() pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_metric")
+
+	sum := m.SetEmptySum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+	dp := sum.DataPoints().AppendEmpty()
+	dp.SetDoubleValue(100.0)
+
+	// Add exemplars with different trace IDs
+	traceID1 := [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	traceID2 := [16]byte{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}
+
+	ex1 := dp.Exemplars().AppendEmpty()
+	ex1.SetTraceID(pcommon.TraceID(traceID1))
+	ex1.SetDoubleValue(10.0)
+
+	ex2 := dp.Exemplars().AppendEmpty()
+	ex2.SetTraceID(pcommon.TraceID(traceID2))
+	ex2.SetDoubleValue(20.0)
+
+	return md
 }

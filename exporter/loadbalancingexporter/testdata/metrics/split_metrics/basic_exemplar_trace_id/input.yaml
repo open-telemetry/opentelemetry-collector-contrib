@@ -1,0 +1,30 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: test-service
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+        metrics:
+          - name: test.sum.metric
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 100
+                  exemplars:
+                    - timeUnixNano: 50
+                      asDouble: 10
+                      traceId: "0102030405060708090a0b0c0d0e0f10"
+                    - timeUnixNano: 51
+                      asDouble: 20
+                      traceId: "0102030405060708090a0b0c0d0e0f10"
+                    - timeUnixNano: 52
+                      asDouble: 30
+                      traceId: "100f0e0d0c0b0a090807060504030201"
