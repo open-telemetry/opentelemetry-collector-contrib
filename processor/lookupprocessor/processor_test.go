@@ -30,17 +30,23 @@ func TestProcessorLookup(t *testing.T) {
 	factory := NewFactoryWithOptions(WithSources(mockMapSourceFactory(mappings)))
 	cfg := &Config{
 		Source: SourceConfig{Type: "mockmap"},
-		Attributes: []AttributeConfig{
+		Lookups: []LookupConfig{
 			{
-				Key:           "user.name",
-				FromAttribute: "user.id",
-				Default:       "Unknown User",
-				Context:       ContextRecord,
+				Key:     `log.attributes["user.id"]`,
+				Context: ContextRecord,
+				Attributes: []AttributeMapping{
+					{
+						Destination: "user.name",
+						Default:     "Unknown User",
+					},
+				},
 			},
 			{
-				Key:           "service.display_name",
-				FromAttribute: "service.name",
-				Context:       ContextResource,
+				Key:     `resource.attributes["service.name"]`,
+				Context: ContextResource,
+				Attributes: []AttributeMapping{
+					{Destination: "service.display_name"},
+				},
 			},
 		},
 	}
@@ -51,65 +57,189 @@ func TestProcessorLookup(t *testing.T) {
 	proc, err := factory.CreateLogs(t.Context(), settings, cfg, sink)
 	require.NoError(t, err)
 
-	// Start the processor
 	host := &testHost{}
 	require.NoError(t, proc.Start(t.Context(), host))
 	defer func() { _ = proc.Shutdown(t.Context()) }()
 
-	// Create test logs
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().PutStr("service.name", "svc-frontend")
 
 	sl := rl.ScopeLogs().AppendEmpty()
 
-	// Log 1: user001 should resolve to "Alice Johnson"
 	log1 := sl.LogRecords().AppendEmpty()
 	log1.Body().SetStr("User logged in")
 	log1.Attributes().PutStr("user.id", "user001")
 
-	// Log 2: user999 should get default "Unknown User"
 	log2 := sl.LogRecords().AppendEmpty()
 	log2.Body().SetStr("User performed action")
 	log2.Attributes().PutStr("user.id", "user999")
 
-	// Log 3: user002 should resolve to "Bob Smith"
 	log3 := sl.LogRecords().AppendEmpty()
 	log3.Body().SetStr("User logged out")
 	log3.Attributes().PutStr("user.id", "user002")
 
-	// Process the logs
 	err = proc.ConsumeLogs(t.Context(), logs)
 	require.NoError(t, err)
 
-	// Verify the results
 	require.Len(t, sink.AllLogs(), 1)
 	processedLogs := sink.AllLogs()[0]
 
-	// Check resource attributes
 	resource := processedLogs.ResourceLogs().At(0).Resource()
 	serviceName, ok := resource.Attributes().Get("service.display_name")
-	assert.True(t, ok, "service.display_name should be added")
+	assert.True(t, ok, "service.display_name should be set")
 	assert.Equal(t, "Frontend Web App", serviceName.Str())
 
-	// Check log record attributes
 	logRecords := processedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	require.Equal(t, 3, logRecords.Len())
 
-	// Log 1: user001 -> "Alice Johnson"
 	userName1, ok := logRecords.At(0).Attributes().Get("user.name")
 	assert.True(t, ok)
 	assert.Equal(t, "Alice Johnson", userName1.Str())
 
-	// Log 2: user999 -> "Unknown User" (default)
 	userName2, ok := logRecords.At(1).Attributes().Get("user.name")
 	assert.True(t, ok)
 	assert.Equal(t, "Unknown User", userName2.Str())
 
-	// Log 3: user002 -> "Bob Smith"
 	userName3, ok := logRecords.At(2).Attributes().Get("user.name")
 	assert.True(t, ok)
 	assert.Equal(t, "Bob Smith", userName3.Str())
+}
+
+func TestProcessorMapResult(t *testing.T) {
+	// Source returns map[string]any for 1:N lookups
+	mapSource := lookupsource.NewSourceFactory(
+		"mapresult",
+		func() lookupsource.SourceConfig { return &mockSourceConfig{} },
+		func(_ context.Context, _ lookupsource.CreateSettings, _ lookupsource.SourceConfig) (lookupsource.Source, error) {
+			return lookupsource.NewSource(
+				func(_ context.Context, key string) (any, bool, error) {
+					if key == "user001" {
+						return map[string]any{
+							"name":  "Alice Johnson",
+							"email": "alice@example.com",
+							"role":  "admin",
+						}, true, nil
+					}
+					return nil, false, nil
+				},
+				func() string { return "mapresult" },
+				nil,
+				nil,
+			), nil
+		},
+	)
+
+	factory := NewFactoryWithOptions(WithSources(mapSource))
+	cfg := &Config{
+		Source: SourceConfig{Type: "mapresult"},
+		Lookups: []LookupConfig{
+			{
+				Key: `log.attributes["user.id"]`,
+				Attributes: []AttributeMapping{
+					{Source: "name", Destination: "user.name", Default: "Unknown"},
+					{Source: "email", Destination: "user.email"},
+					{Source: "role", Destination: "user.role", Context: ContextResource},
+				},
+			},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	settings := processortest.NewNopSettings(metadata.Type)
+
+	proc, err := factory.CreateLogs(t.Context(), settings, cfg, sink)
+	require.NoError(t, err)
+
+	host := &testHost{}
+	require.NoError(t, proc.Start(t.Context(), host))
+	defer func() { _ = proc.Shutdown(t.Context()) }()
+
+	// Test with found key
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	lr.Attributes().PutStr("user.id", "user001")
+
+	err = proc.ConsumeLogs(t.Context(), logs)
+	require.NoError(t, err)
+
+	processedLogs := sink.AllLogs()[0]
+	record := processedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	resourceAttrs := processedLogs.ResourceLogs().At(0).Resource().Attributes()
+
+	name, ok := record.Attributes().Get("user.name")
+	assert.True(t, ok)
+	assert.Equal(t, "Alice Johnson", name.Str())
+
+	email, ok := record.Attributes().Get("user.email")
+	assert.True(t, ok)
+	assert.Equal(t, "alice@example.com", email.Str())
+
+	role, ok := resourceAttrs.Get("user.role")
+	assert.True(t, ok)
+	assert.Equal(t, "admin", role.Str())
+}
+
+func TestProcessorMapResultNotFound(t *testing.T) {
+	mapSource := lookupsource.NewSourceFactory(
+		"mapresult",
+		func() lookupsource.SourceConfig { return &mockSourceConfig{} },
+		func(_ context.Context, _ lookupsource.CreateSettings, _ lookupsource.SourceConfig) (lookupsource.Source, error) {
+			return lookupsource.NewSource(
+				func(_ context.Context, _ string) (any, bool, error) {
+					return nil, false, nil
+				},
+				func() string { return "mapresult" },
+				nil,
+				nil,
+			), nil
+		},
+	)
+
+	factory := NewFactoryWithOptions(WithSources(mapSource))
+	cfg := &Config{
+		Source: SourceConfig{Type: "mapresult"},
+		Lookups: []LookupConfig{
+			{
+				Key: `log.attributes["user.id"]`,
+				Attributes: []AttributeMapping{
+					{Source: "name", Destination: "user.name", Default: "Unknown"},
+					{Source: "email", Destination: "user.email"},
+				},
+			},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	settings := processortest.NewNopSettings(metadata.Type)
+
+	proc, err := factory.CreateLogs(t.Context(), settings, cfg, sink)
+	require.NoError(t, err)
+
+	host := &testHost{}
+	require.NoError(t, proc.Start(t.Context(), host))
+	defer func() { _ = proc.Shutdown(t.Context()) }()
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	lr.Attributes().PutStr("user.id", "unknown-user")
+
+	err = proc.ConsumeLogs(t.Context(), logs)
+	require.NoError(t, err)
+
+	processedLogs := sink.AllLogs()[0]
+	record := processedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	// Default should be applied for "name"
+	name, ok := record.Attributes().Get("user.name")
+	assert.True(t, ok)
+	assert.Equal(t, "Unknown", name.Str())
+
+	// No default for "email" — should not be set
+	_, ok = record.Attributes().Get("user.email")
+	assert.False(t, ok)
 }
 
 func TestProcessorNoSourceAttribute(t *testing.T) {
@@ -117,11 +247,12 @@ func TestProcessorNoSourceAttribute(t *testing.T) {
 
 	cfg := &Config{
 		Source: SourceConfig{Type: "mock"},
-		Attributes: []AttributeConfig{
+		Lookups: []LookupConfig{
 			{
-				Key:           "result",
-				FromAttribute: "nonexistent",
-				Context:       ContextRecord,
+				Key: `log.attributes["nonexistent"]`,
+				Attributes: []AttributeMapping{
+					{Destination: "result"},
+				},
 			},
 		},
 	}

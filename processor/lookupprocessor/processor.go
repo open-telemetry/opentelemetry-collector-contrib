@@ -6,27 +6,27 @@ package lookupprocessor // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/lookupsource"
 )
 
 type lookupProcessor struct {
-	source     lookupsource.Source
-	attributes []AttributeConfig
-	logger     *zap.Logger
+	source  lookupsource.Source
+	lookups []parsedLookup
+	logger  *zap.Logger
 }
 
-func newLookupProcessor(source lookupsource.Source, cfg *Config, logger *zap.Logger) *lookupProcessor {
+func newLookupProcessor(source lookupsource.Source, lookups []parsedLookup, logger *zap.Logger) *lookupProcessor {
 	return &lookupProcessor{
-		source:     source,
-		attributes: cfg.Attributes,
-		logger:     logger,
+		source:  source,
+		lookups: lookups,
+		logger:  logger,
 	}
 }
 
@@ -44,14 +44,6 @@ func (p *lookupProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.L
 		rl := resourceLogs.At(i)
 		resourceAttrs := rl.Resource().Attributes()
 
-		// Process resource-level attributes
-		for _, attrCfg := range p.attributes {
-			if attrCfg.GetContext() == ContextResource {
-				p.processAttribute(ctx, resourceAttrs, attrCfg)
-			}
-		}
-
-		// Process log records
 		scopeLogs := rl.ScopeLogs()
 		for j := 0; j < scopeLogs.Len(); j++ {
 			sl := scopeLogs.At(j)
@@ -60,11 +52,13 @@ func (p *lookupProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.L
 				lr := logRecords.At(k)
 				logAttrs := lr.Attributes()
 
-				for _, attrCfg := range p.attributes {
-					if attrCfg.GetContext() == ContextRecord {
-						p.processAttribute(ctx, logAttrs, attrCfg)
-					}
+				tCtx := ottllog.NewTransformContextPtr(rl, sl, lr)
+
+				for li := range p.lookups {
+					p.processLookup(ctx, tCtx, &p.lookups[li], logAttrs, resourceAttrs)
 				}
+
+				tCtx.Close()
 			}
 		}
 	}
@@ -72,36 +66,83 @@ func (p *lookupProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.L
 	return ld, nil
 }
 
-func (p *lookupProcessor) processAttribute(ctx context.Context, attrs pcommon.Map, cfg AttributeConfig) {
-	sourceVal, exists := attrs.Get(cfg.FromAttribute)
-	if !exists {
+func (p *lookupProcessor) processLookup(
+	ctx context.Context,
+	tCtx *ottllog.TransformContext,
+	lookup *parsedLookup,
+	logAttrs pcommon.Map,
+	resourceAttrs pcommon.Map,
+) {
+	rawKey, err := lookup.keyExpr.Eval(ctx, tCtx)
+	if err != nil {
+		p.logger.Debug("failed to evaluate key expression", zap.Error(err))
+		return
+	}
+	if rawKey == nil {
 		return
 	}
 
-	key := valueToString(sourceVal)
+	key := anyToString(rawKey)
 	if key == "" {
 		return
 	}
 
 	result, found, err := p.source.Lookup(ctx, key)
 	if err != nil {
-		p.logger.Debug("lookup failed",
-			zap.String("key", key),
-			zap.String("from_attribute", cfg.FromAttribute),
-			zap.Error(err),
-		)
+		p.logger.Debug("lookup failed", zap.String("key", key), zap.Error(err))
 		return
 	}
 
-	if !found {
-		if cfg.Default == "" {
-			return
+	for ai := range lookup.attributes {
+		attr := &lookup.attributes[ai]
+		attrCtx := attr.GetContext(lookup.context)
+
+		var attrs pcommon.Map
+		if attrCtx == ContextResource {
+			attrs = resourceAttrs
+		} else {
+			attrs = logAttrs
 		}
-		attrs.PutStr(cfg.Key, cfg.Default)
-		return
+
+		value, ok := extractValue(result, found, attr)
+		if !ok {
+			continue
+		}
+
+		putAny(attrs, attr.Destination, value)
+	}
+}
+
+// extractValue gets the value to write for a given attribute mapping.
+// Returns (value, shouldWrite).
+func extractValue(result any, found bool, attr *AttributeMapping) (any, bool) {
+	if !found {
+		if attr.Default == "" {
+			return nil, false
+		}
+		return attr.Default, true
 	}
 
-	putAny(attrs, cfg.Key, result)
+	if attr.Source == "" {
+		// 1:1 scalar lookup — use entire result
+		return result, true
+	}
+
+	// 1:N map lookup — extract the named field
+	m, ok := result.(map[string]any)
+	if !ok {
+		return nil, false
+	}
+
+	val, exists := m[attr.Source]
+	if !exists {
+		if attr.Default == "" {
+			return nil, false
+		}
+		return attr.Default, true
+	}
+
+	return val, true
 }
 
 func putAny(attrs pcommon.Map, key string, v any) {
@@ -121,17 +162,19 @@ func putAny(attrs pcommon.Map, key string, v any) {
 	}
 }
 
-func valueToString(v pcommon.Value) string {
-	switch v.Type() {
-	case pcommon.ValueTypeStr:
-		return v.Str()
-	case pcommon.ValueTypeInt:
-		return strconv.FormatInt(v.Int(), 10)
-	case pcommon.ValueTypeDouble:
-		return strconv.FormatFloat(v.Double(), 'g', -1, 64)
-	case pcommon.ValueTypeBool:
-		return strconv.FormatBool(v.Bool())
+func anyToString(v any) string {
+	switch val := v.(type) {
+	case string:
+		return val
+	case []byte:
+		return string(val)
+	case int64:
+		return fmt.Sprintf("%d", val)
+	case float64:
+		return fmt.Sprintf("%g", val)
+	case bool:
+		return fmt.Sprintf("%t", val)
 	default:
-		return v.AsString()
+		return fmt.Sprintf("%v", v)
 	}
 }

@@ -14,7 +14,6 @@ import (
 )
 
 // ContextID specifies where to apply the lookup.
-// Matches the semantic used by geoipprocessor.
 type ContextID string
 
 const (
@@ -36,9 +35,10 @@ func (c *ContextID) UnmarshalText(text []byte) error {
 type Config struct {
 	Source SourceConfig `mapstructure:"source"`
 
-	// Attributes defines the attribute enrichment rules.
-	// Each rule specifies how to look up a value and where to store the result.
-	Attributes []AttributeConfig `mapstructure:"attributes"`
+	// Lookups defines the lookup rules.
+	// Each rule specifies a key expression to extract the lookup value,
+	// and one or more attribute mappings for where to write the results.
+	Lookups []LookupConfig `mapstructure:"lookups"`
 }
 
 type SourceConfig struct {
@@ -54,50 +54,82 @@ type SourceConfig struct {
 	ParsedConfig lookupsource.SourceConfig `mapstructure:"-"`
 }
 
-// AttributeConfig defines a single attribute enrichment rule.
-type AttributeConfig struct {
-	// Key is the name of the attribute to set with the lookup result.
+// LookupConfig defines a single lookup rule.
+type LookupConfig struct {
+	// Key is an OTTL value expression for extracting the lookup key.
+	// Examples: attributes["user.id"], Trim(attributes["raw.id"]),
+	//           resource.attributes["service.name"]
 	// Required.
 	Key string `mapstructure:"key"`
 
-	// FromAttribute is the name of the attribute containing the lookup key.
-	// The value of this attribute will be used to query the source.
+	// Context is the default context for destination attributes.
+	// Valid values: "record", "resource".
+	// Default: "record"
+	Context ContextID `mapstructure:"context"`
+
+	// Attributes defines where to write lookup results.
+	// Required: at least one mapping.
+	Attributes []AttributeMapping `mapstructure:"attributes"`
+}
+
+// AttributeMapping defines where to write a lookup result.
+type AttributeMapping struct {
+	// Source is the field name in the lookup result for map results.
+	// Leave empty for 1:1 scalar lookups.
+	// Optional.
+	Source string `mapstructure:"source"`
+
+	// Destination is the attribute key to write the result to.
 	// Required.
-	FromAttribute string `mapstructure:"from_attribute"`
+	Destination string `mapstructure:"destination"`
 
 	// Default is the value to use when the lookup returns no result.
-	// If not set and the lookup fails, no attribute is added.
+	// If not set and the lookup fails, no attribute is written.
 	// Optional.
 	Default string `mapstructure:"default"`
 
-	// Context specifies where to read the source attribute and write the result.
-	// Valid values: "record" (log record attributes), "resource" (resource attributes).
-	// Default: "record"
+	// Context overrides the parent LookupConfig context for this mapping.
+	// Valid values: "record", "resource".
+	// Default: inherits from parent LookupConfig.
 	Context ContextID `mapstructure:"context"`
 }
 
 var _ component.Config = (*Config)(nil)
 
 func (cfg *Config) Validate() error {
-	if len(cfg.Attributes) == 0 {
-		return errors.New("at least one attribute mapping must be configured")
+	if len(cfg.Lookups) == 0 {
+		return errors.New("at least one lookup must be configured")
 	}
 
-	for i, attr := range cfg.Attributes {
-		if attr.Key == "" {
-			return fmt.Errorf("attributes[%d]: key is required", i)
+	for i, lookup := range cfg.Lookups {
+		if lookup.Key == "" {
+			return fmt.Errorf("lookups[%d]: key is required", i)
 		}
-		if attr.FromAttribute == "" {
-			return fmt.Errorf("attributes[%d]: from_attribute is required", i)
+		if len(lookup.Attributes) == 0 {
+			return fmt.Errorf("lookups[%d]: at least one attribute mapping is required", i)
+		}
+		for j, attr := range lookup.Attributes {
+			if attr.Destination == "" {
+				return fmt.Errorf("lookups[%d].attributes[%d]: destination is required", i, j)
+			}
 		}
 	}
 
 	return nil
 }
 
-func (a *AttributeConfig) GetContext() ContextID {
-	if a.Context == "" {
+// GetContext returns the context for this lookup, defaulting to ContextRecord.
+func (l *LookupConfig) GetContext() ContextID {
+	if l.Context == "" {
 		return ContextRecord
 	}
-	return a.Context
+	return l.Context
+}
+
+// GetContext returns the context for this mapping, falling back to the parent context.
+func (m *AttributeMapping) GetContext(parent ContextID) ContextID {
+	if m.Context == "" {
+		return parent
+	}
+	return m.Context
 }

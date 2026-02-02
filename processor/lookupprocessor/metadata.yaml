@@ -7,3 +7,11 @@ status:
   distributions: []
   codeowners:
     active: [jsvd, dehaansa, VihasMakwana]
+
+tests:
+  config:
+    lookups:
+      - key: log.attributes["test.key"]
+        attributes:
+          - destination: test.result
+            default: "not-found"

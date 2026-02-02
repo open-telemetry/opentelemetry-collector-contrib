@@ -13,6 +13,9 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/noop"
 	yamlsource "github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/yaml"
@@ -110,7 +113,21 @@ func (f *lookupProcessorFactory) createLogsProcessor(
 		return nil, err
 	}
 
-	proc := newLookupProcessor(source, processorCfg, set.Logger)
+	parser, err := ottllog.NewParser(
+		ottlfuncs.StandardConverters[*ottllog.TransformContext](),
+		set.TelemetrySettings,
+		ottllog.EnablePathContextNames(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create OTTL parser: %w", err)
+	}
+
+	lookups, err := parseLookups(parser, processorCfg.Lookups)
+	if err != nil {
+		return nil, err
+	}
+
+	proc := newLookupProcessor(source, lookups, set.Logger)
 
 	return processorhelper.NewLogs(
 		ctx,
@@ -122,6 +139,29 @@ func (f *lookupProcessorFactory) createLogsProcessor(
 		processorhelper.WithStart(proc.Start),
 		processorhelper.WithShutdown(proc.Shutdown),
 	)
+}
+
+// parsedLookup holds a lookup config with its pre-parsed OTTL key expression.
+type parsedLookup struct {
+	keyExpr    *ottl.ValueExpression[*ottllog.TransformContext]
+	context    ContextID
+	attributes []AttributeMapping
+}
+
+func parseLookups(parser ottl.Parser[*ottllog.TransformContext], configs []LookupConfig) ([]parsedLookup, error) {
+	lookups := make([]parsedLookup, len(configs))
+	for i, cfg := range configs {
+		keyExpr, err := parser.ParseValueExpression(cfg.Key)
+		if err != nil {
+			return nil, fmt.Errorf("lookups[%d]: failed to parse key expression %q: %w", i, cfg.Key, err)
+		}
+		lookups[i] = parsedLookup{
+			keyExpr:    keyExpr,
+			context:    cfg.GetContext(),
+			attributes: cfg.Attributes,
+		}
+	}
+	return lookups, nil
 }
 
 func (f *lookupProcessorFactory) createSource(

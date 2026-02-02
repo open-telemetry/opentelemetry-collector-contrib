@@ -16,10 +16,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/lookupsource"
 )
 
-func testAttributeConfig() AttributeConfig {
-	return AttributeConfig{
-		Key:           "test.result",
-		FromAttribute: "test.key",
+func testLookupConfig() LookupConfig {
+	return LookupConfig{
+		Key: `log.attributes["test.key"]`,
+		Attributes: []AttributeMapping{
+			{Destination: "test.result"},
+		},
 	}
 }
 
@@ -56,7 +58,7 @@ func TestNewFactoryWithOptions(t *testing.T) {
 
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Source.Type = "mock"
-	cfg.Attributes = []AttributeConfig{testAttributeConfig()}
+	cfg.Lookups = []LookupConfig{testLookupConfig()}
 
 	settings := processortest.NewNopSettings(metadata.Type)
 	sink := consumertest.NewNop()
@@ -74,7 +76,7 @@ func TestFactoryCreatesLogsProcessor(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Attributes = []AttributeConfig{testAttributeConfig()}
+	cfg.Lookups = []LookupConfig{testLookupConfig()}
 
 	settings := processortest.NewNopSettings(metadata.Type)
 
@@ -91,7 +93,7 @@ func TestFactoryRejectsTracesProcessor(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Attributes = []AttributeConfig{testAttributeConfig()}
+	cfg.Lookups = []LookupConfig{testLookupConfig()}
 	settings := processortest.NewNopSettings(metadata.Type)
 
 	_, err := factory.CreateTraces(t.Context(), settings, cfg, consumertest.NewNop())
@@ -102,7 +104,7 @@ func TestFactoryRejectsMetricsProcessor(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Attributes = []AttributeConfig{testAttributeConfig()}
+	cfg.Lookups = []LookupConfig{testLookupConfig()}
 	settings := processortest.NewNopSettings(metadata.Type)
 
 	_, err := factory.CreateMetrics(t.Context(), settings, cfg, consumertest.NewNop())
@@ -114,7 +116,7 @@ func TestFactoryUnknownSourceType(t *testing.T) {
 
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Source.Type = "unknown"
-	cfg.Attributes = []AttributeConfig{testAttributeConfig()}
+	cfg.Lookups = []LookupConfig{testLookupConfig()}
 
 	settings := processortest.NewNopSettings(metadata.Type)
 
@@ -143,7 +145,8 @@ func TestWithSourcesReplacesDefaults(t *testing.T) {
 	factory := NewFactoryWithOptions(WithSources(customFactory))
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Attributes = []AttributeConfig{testAttributeConfig()}
+	cfg.Lookups = []LookupConfig{testLookupConfig()}
+
 	// noop should not be available anymore
 	cfg.Source.Type = "noop"
 
@@ -166,31 +169,46 @@ func TestConfigValidation(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name:    "no attributes",
+			name:    "no lookups",
 			cfg:     &Config{},
-			wantErr: "at least one attribute mapping",
+			wantErr: "at least one lookup",
 		},
 		{
 			name: "missing key",
 			cfg: &Config{
-				Attributes: []AttributeConfig{{FromAttribute: "test"}},
+				Lookups: []LookupConfig{{
+					Attributes: []AttributeMapping{{Destination: "test"}},
+				}},
 			},
 			wantErr: "key is required",
 		},
 		{
-			name: "missing from_attribute",
+			name: "missing attributes",
 			cfg: &Config{
-				Attributes: []AttributeConfig{{Key: "test"}},
+				Lookups: []LookupConfig{{Key: `log.attributes["test"]`}},
 			},
-			wantErr: "from_attribute is required",
+			wantErr: "at least one attribute mapping",
+		},
+		{
+			name: "missing destination",
+			cfg: &Config{
+				Lookups: []LookupConfig{{
+					Key:        `log.attributes["test"]`,
+					Attributes: []AttributeMapping{{Source: "field"}},
+				}},
+			},
+			wantErr: "destination is required",
 		},
 		{
 			name: "valid config",
 			cfg: &Config{
 				Source: SourceConfig{Type: "noop"},
-				Attributes: []AttributeConfig{
-					{Key: "test.result", FromAttribute: "test.key"},
-				},
+				Lookups: []LookupConfig{{
+					Key: `log.attributes["test.key"]`,
+					Attributes: []AttributeMapping{
+						{Destination: "test.result"},
+					},
+				}},
 			},
 			wantErr: "",
 		},
@@ -198,14 +216,22 @@ func TestConfigValidation(t *testing.T) {
 			name: "valid config with all options",
 			cfg: &Config{
 				Source: SourceConfig{Type: "noop"},
-				Attributes: []AttributeConfig{
-					{
-						Key:           "user.name",
-						FromAttribute: "user.id",
-						Default:       "Unknown",
-						Context:       ContextRecord,
+				Lookups: []LookupConfig{{
+					Key:     `log.attributes["user.id"]`,
+					Context: ContextRecord,
+					Attributes: []AttributeMapping{
+						{
+							Source:      "name",
+							Destination: "user.name",
+							Default:     "Unknown",
+						},
+						{
+							Source:      "role",
+							Destination: "user.role",
+							Context:     ContextResource,
+						},
 					},
-				},
+				}},
 			},
 			wantErr: "",
 		},
@@ -252,4 +278,21 @@ func TestContextIDUnmarshalText(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInvalidKeyExpression(t *testing.T) {
+	factory := NewFactory()
+
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Lookups = []LookupConfig{{
+		Key: `invalid!!!expression`,
+		Attributes: []AttributeMapping{
+			{Destination: "test.result"},
+		},
+	}}
+
+	settings := processortest.NewNopSettings(metadata.Type)
+	_, err := factory.CreateLogs(t.Context(), settings, cfg, consumertest.NewNop())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse key expression")
 }

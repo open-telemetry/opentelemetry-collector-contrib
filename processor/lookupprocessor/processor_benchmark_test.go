@@ -23,37 +23,40 @@ func BenchmarkProcessorLookup(b *testing.B) {
 	benchmarks := []struct {
 		name          string
 		numLogRecords int
-		numAttributes int
+		numLookups    int
 	}{
-		{"1_log_1_attr", 1, 1},
-		{"10_logs_1_attr", 10, 1},
-		{"100_logs_1_attr", 100, 1},
-		{"100_logs_3_attrs", 100, 3},
-		{"1000_logs_1_attr", 1000, 1},
+		{"1_log_1_lookup", 1, 1},
+		{"10_logs_1_lookup", 10, 1},
+		{"100_logs_1_lookup", 100, 1},
+		{"100_logs_3_lookups", 100, 3},
+		{"1000_logs_1_lookup", 1000, 1},
 	}
 
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
-			runLookupBenchmark(b, bm.numLogRecords, bm.numAttributes)
+			runLookupBenchmark(b, bm.numLogRecords, bm.numLookups)
 		})
 	}
 }
 
-func runLookupBenchmark(b *testing.B, numLogRecords, numAttributes int) {
-	attrs := make([]AttributeConfig, numAttributes)
-	for i := range numAttributes {
-		attrs[i] = AttributeConfig{
-			Key:           fmt.Sprintf("result.%d", i),
-			FromAttribute: fmt.Sprintf("lookup.key.%d", i),
-			Default:       "default-value", // noop returns not found, so use default
-			Context:       ContextRecord,
+func runLookupBenchmark(b *testing.B, numLogRecords, numLookups int) {
+	lookups := make([]LookupConfig, numLookups)
+	for i := range numLookups {
+		lookups[i] = LookupConfig{
+			Key: fmt.Sprintf(`log.attributes["lookup.key.%d"]`, i),
+			Attributes: []AttributeMapping{
+				{
+					Destination: fmt.Sprintf("result.%d", i),
+					Default:     "default-value", // noop returns not found, so default is applied
+				},
+			},
 		}
 	}
 
 	factory := NewFactory()
 	cfg := &Config{
-		Source:     SourceConfig{Type: "noop"},
-		Attributes: attrs,
+		Source:  SourceConfig{Type: "noop"},
+		Lookups: lookups,
 	}
 
 	p, err := factory.CreateLogs(b.Context(), processortest.NewNopSettings(metadata.Type), cfg, dropLogsSink{})
@@ -64,7 +67,7 @@ func runLookupBenchmark(b *testing.B, numLogRecords, numAttributes int) {
 		require.NoError(b, p.Shutdown(b.Context()))
 	}()
 
-	logs := generateLogs(numLogRecords, numAttributes)
+	logs := generateLogs(numLogRecords, numLookups)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -84,12 +87,15 @@ func BenchmarkProcessorThroughput(b *testing.B) {
 	factory := NewFactory()
 	cfg := &Config{
 		Source: SourceConfig{Type: "noop"},
-		Attributes: []AttributeConfig{
+		Lookups: []LookupConfig{
 			{
-				Key:           "user.name",
-				FromAttribute: "user.id",
-				Default:       "Unknown",
-				Context:       ContextRecord,
+				Key: `log.attributes["lookup.key.0"]`,
+				Attributes: []AttributeMapping{
+					{
+						Destination: "user.name",
+						Default:     "Unknown",
+					},
+				},
 			},
 		},
 	}
@@ -119,48 +125,37 @@ func BenchmarkProcessorThroughput(b *testing.B) {
 	})
 }
 
-// BenchmarkValueToString benchmarks the value conversion function.
-func BenchmarkValueToString(b *testing.B) {
-	logs := plog.NewLogs()
-	lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
+// BenchmarkAnyToString benchmarks the value conversion function.
+func BenchmarkAnyToString(b *testing.B) {
 	b.Run("string", func(b *testing.B) {
-		lr.Attributes().PutStr("key", "test-value")
-		val, _ := lr.Attributes().Get("key")
 		b.ReportAllocs()
 		b.ResetTimer()
 		for b.Loop() {
-			_ = valueToString(val)
+			_ = anyToString("test-value")
 		}
 	})
 
-	b.Run("int", func(b *testing.B) {
-		lr.Attributes().PutInt("key", 12345)
-		val, _ := lr.Attributes().Get("key")
+	b.Run("int64", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for b.Loop() {
-			_ = valueToString(val)
+			_ = anyToString(int64(12345))
 		}
 	})
 
-	b.Run("double", func(b *testing.B) {
-		lr.Attributes().PutDouble("key", 123.456)
-		val, _ := lr.Attributes().Get("key")
+	b.Run("float64", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for b.Loop() {
-			_ = valueToString(val)
+			_ = anyToString(123.456)
 		}
 	})
 
 	b.Run("bool", func(b *testing.B) {
-		lr.Attributes().PutBool("key", true)
-		val, _ := lr.Attributes().Get("key")
 		b.ReportAllocs()
 		b.ResetTimer()
 		for b.Loop() {
-			_ = valueToString(val)
+			_ = anyToString(true)
 		}
 	})
 }

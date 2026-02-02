@@ -9,9 +9,11 @@
 
 ## Description
 
-The lookup processor enriches telemetry signals by performing external lookups to retrieve additional data. It reads an attribute value, uses it as a key to query a lookup source, and sets the result as a new attribute.
+The lookup processor enriches telemetry signals by performing external lookups to retrieve additional data. It evaluates an [OTTL] value expression to extract a lookup key, queries a lookup source, and writes the results as new attributes.
 
 Currently supports logs, with metrics and traces support planned.
+
+[OTTL]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md
 
 ## Configuration
 
@@ -21,11 +23,11 @@ processors:
     source:
       type: yaml
       path: /etc/otel/mappings.yaml
-    attributes:
-      - key: user.name
-        from_attribute: user.id
-        default: "Unknown User"
-        context: record
+    lookups:
+      - key: log.attributes["user.id"]
+        attributes:
+          - destination: user.name
+            default: "Unknown User"
 ```
 
 ### Full Configuration
@@ -33,23 +35,101 @@ processors:
 | Field | Description | Default |
 | ----- | ----------- | ------- |
 | `source.type` | The source type identifier (`noop`, `yaml`) | `noop` |
-| `attributes` | List of attribute enrichment rules (required) | - |
+| `lookups` | List of lookup rules (required, at least one) | - |
 
-### Attribute Configuration
+### Lookup Configuration
 
-Each entry in `attributes` defines a lookup rule:
+Each entry in `lookups` defines a lookup rule:
 
 | Field | Description | Default |
 | ----- | ----------- | ------- |
-| `key` | Name of the attribute to set with the lookup result (required) | - |
-| `from_attribute` | Name of the attribute containing the lookup key (required) | - |
-| `default` | Value to use when lookup returns no result | - |
-| `context` | Where to read/write attributes: `record`, `resource` | `record` |
+| `key` | OTTL value expression for extracting the lookup key (required) | - |
+| `context` | Default context for destination attributes: `record`, `resource` | `record` |
+| `attributes` | List of attribute mappings for writing results (required, at least one) | - |
+
+The `key` field supports any [OTTL value expression], including paths across contexts and converters:
+
+- `log.attributes["user.id"]` — record attribute
+- `resource.attributes["service.name"]` — resource attribute
+- `Trim(log.attributes["raw.id"])` — apply a converter
+
+[OTTL value expression]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md#value-expressions
+
+### Attribute Mapping
+
+Each entry in `attributes` defines where to write a lookup result:
+
+| Field | Description | Default |
+| ----- | ----------- | ------- |
+| `source` | Field name in the lookup result (for map results, leave empty for scalar) | - |
+| `destination` | Attribute key to write the result to (required) | - |
+| `default` | Value to use when the lookup returns no result | - |
+| `context` | Override the key's context for this attribute | inherited from key's context (`record` if unset) |
+
+## Examples
+
+### Scalar Lookup (1:1)
+
+When the source returns a single value per key, leave the `source` field empty:
+
+```yaml
+processors:
+  lookup:
+    source:
+      type: yaml
+      path: /etc/otel/mappings.yaml
+    lookups:
+      - key: log.attributes["user.id"]
+        attributes:
+          - destination: user.name
+            default: "Unknown User"
+```
+
+### Map Lookup (1:N)
+
+When the source returns a map of fields per key, use the `source` field to extract individual values:
+
+```yaml
+processors:
+  lookup:
+    source:
+      type: yaml
+      path: /etc/otel/user-details.yaml
+    lookups:
+      - key: log.attributes["user.id"]
+        attributes:
+          - source: name
+            destination: user.name
+            default: "Unknown"
+          - source: email
+            destination: user.email
+          - source: role
+            destination: user.role
+            context: resource
+```
+
+### OTTL Converter on Key
+
+The `key` field supports OTTL converters for transforming the lookup key before querying the source:
+
+```yaml
+processors:
+  lookup:
+    source:
+      type: yaml
+      path: /etc/otel/mappings.yaml
+    lookups:
+      - key: Trim(log.attributes["raw.id"])
+        attributes:
+          - destination: display.name
+```
 
 ### Context
 
 - **record**: Read from and write to record-level attributes (log records, spans, metric data points) (default)
 - **resource**: Read from and write to resource attributes
+
+The `context` field on a key sets the default for all its destination attributes. Each attribute mapping can override this with its own `context` field.
 
 ## Built-in Sources
 
@@ -62,69 +142,58 @@ processors:
   lookup:
     source:
       type: noop
-    attributes:
-      - key: result
-        from_attribute: key
-        default: "not-found"
+    lookups:
+      - key: log.attributes["key"]
+        attributes:
+          - destination: result
+            default: "not-found"
 ```
 
 ### yaml
 
-Loads key-value mappings from a YAML file. The file should contain a flat map of string keys to values.
+Loads key-value mappings from a YAML file.
 
 | Field | Description | Default |
 | ----- | ----------- | ------- |
 | `path` | Path to the YAML file (required) | - |
+
+For scalar lookups, the file should contain a flat map of string keys to values:
+
+```yaml
+# mappings.yaml
+svc-frontend: "Frontend Web App"
+svc-backend: "Backend API Service"
+svc-worker: "Background Worker"
+```
+
+For map lookups, the file should contain a map of string keys to objects:
+
+```yaml
+# user-details.yaml
+user001:
+  name: "Alice Johnson"
+  email: "alice@example.com"
+  role: "admin"
+user002:
+  name: "Bob Smith"
+  email: "bob@example.com"
+  role: "viewer"
+```
 
 ```yaml
 processors:
   lookup:
     source:
       type: yaml
-      path: /etc/otel/mappings.yaml
-    attributes:
-      - key: service.display_name
-        from_attribute: service.name
+      path: /etc/otel/user-details.yaml
+    lookups:
+      - key: log.attributes["user.id"]
+        attributes:
+          - source: name
+            destination: user.name
+          - source: email
+            destination: user.email
 ```
-
-Example mappings file (`mappings.yaml`):
-
-```yaml
-svc-frontend: "Frontend Web App"
-svc-backend: "Backend API Service"
-svc-worker: "Background Worker"
-```
-
-## Benchmarks
-
-Run benchmarks with:
-
-```bash
-make benchmark
-```
-
-### Processor Performance
-
-Measures the full processing pipeline including pdata operations, attribute iteration, value conversion, and telemetry. Uses noop source to isolate processor overhead from source implementation (Apple M4 Pro):
-
-| Scenario | ns/op | B/op | allocs/op |
-|----------|-------|------|-----------|
-| 1 log, 1 attribute | 323 | 696 | 20 |
-| 10 logs, 1 attribute | 1,274 | 3,216 | 74 |
-| 100 logs, 1 attribute | 11,076 | 28,512 | 614 |
-| 100 logs, 3 attributes | 21,604 | 54,113 | 1,014 |
-| 1000 logs, 1 attribute | 122,447 | 280,617 | 6,014 |
-
-### YAML Source Performance
-
-Measures only the source lookup operation (map access), isolated from processor overhead:
-
-| Map Size | ns/op | allocs/op |
-|----------|-------|-----------|
-| 10 entries | 1,418 | 0 |
-| 100 entries | 1,355 | 0 |
-| 1,000 entries | 1,317 | 0 |
-| 10,000 entries | 1,319 | 0 |
 
 ## Custom Sources
 
@@ -195,3 +264,33 @@ func createSource(
 }
 ```
 
+## Benchmarks
+
+Run benchmarks with:
+
+```bash
+make benchmark
+```
+
+### Processor Performance
+
+Measures the full processing pipeline including OTTL key evaluation, source lookup, value conversion, and attribute writes. Uses noop source to isolate processor overhead from source implementation (Apple M4 Pro):
+
+| Scenario | ns/op | B/op | allocs/op |
+|----------|-------|------|-----------|
+| 1 log, 1 lookup | 396 | 728 | 22 |
+| 10 logs, 1 lookup | 1,829 | 3,538 | 94 |
+| 100 logs, 1 lookup | 17,577 | 31,732 | 814 |
+| 100 logs, 3 lookups | 34,993 | 63,752 | 1,614 |
+| 1000 logs, 1 lookup | 183,558 | 312,844 | 8,014 |
+
+### YAML Source Performance
+
+Measures only the source lookup operation (map access), isolated from processor overhead:
+
+| Map Size | ns/op | allocs/op |
+|----------|-------|-----------|
+| 10 entries | 1,462 | 0 |
+| 100 entries | 1,415 | 0 |
+| 1,000 entries | 1,388 | 0 |
+| 10,000 entries | 1,368 | 0 |
