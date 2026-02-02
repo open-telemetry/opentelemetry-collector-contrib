@@ -1,0 +1,56 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: aws.networkfirewall.name
+          value:
+            stringValue: test-firewall
+        - key: cloud.availability_zone
+          value:
+            stringValue: us-east-1b
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: aws.networkfirewall.event.type
+                value:
+                  stringValue: alert
+              - key: aws.networkfirewall.flow_id
+                value:
+                  intValue: "1582438383425873"
+              - key: source.address
+                value:
+                  stringValue: 203.0.113.4
+              - key: source.port
+                value:
+                  intValue: "55555"
+              - key: destination.address
+                value:
+                  stringValue: 192.0.2.16
+              - key: destination.port
+                value:
+                  intValue: "111"
+              - key: network.transport
+                value:
+                  stringValue: TCP
+              - key: aws.networkfirewall.alert.action
+                value:
+                  stringValue: allowed
+              - key: aws.networkfirewall.alert.signature
+                value:
+                  stringValue: test_tcp
+              - key: aws.networkfirewall.alert.signature_id
+                value:
+                  intValue: "5"
+              - key: aws.networkfirewall.alert.severity
+                value:
+                  intValue: "1"
+            body: {}
+            timeUnixNano: "1760956245123000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.networkfirewall
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

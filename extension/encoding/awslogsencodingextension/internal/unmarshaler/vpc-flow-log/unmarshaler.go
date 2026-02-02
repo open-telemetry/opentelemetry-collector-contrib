@@ -20,9 +20,11 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
 )
 
 var (
@@ -92,7 +94,22 @@ func NewVPCFlowLogUnmarshaler(
 func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
 	switch v.cfg.FileFormat {
 	case constants.FileFormatPlainText:
-		return v.unmarshalPlainTextLogs(reader)
+		streamUnmarshaler, err := v.NewStreamUnmarshaler(reader)
+		if err != nil {
+			return plog.Logs{}, err
+		}
+		logs, err := streamUnmarshaler.DecodeLogs()
+		if err != nil {
+			//nolint:errorlint
+			if err == io.EOF {
+				// EOF indicates no logs were found, return any logs that's available
+				return logs, nil
+			}
+
+			return plog.Logs{}, err
+		}
+
+		return logs, nil
 	case constants.FileFormatParquet:
 		// TODO
 		return plog.Logs{}, errors.New("still needs to be implemented")
@@ -100,6 +117,83 @@ func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, e
 		// not possible, prevent by NewVPCFlowLogUnmarshaler
 		return plog.Logs{}, nil
 	}
+}
+
+func (v *vpcFlowLogUnmarshaler) NewStreamUnmarshaler(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	if v.cfg.FileFormat == constants.FileFormatParquet {
+		return nil, errors.New("streaming parquet VPC flow logs is not yet implemented")
+	}
+
+	// use buffered reader for efficiency and to avoid any size restrictions
+	bufReader := bufio.NewReader(reader)
+
+	firstByte, err := bufReader.Peek(1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read first byte: %w", err)
+	}
+
+	var isEOF bool
+	if firstByte[0] == '{' {
+		// Dealing with a JSON logs, so check for CW bound trigger
+		// Read all and return with EOF
+		var cwLogs plog.Logs
+		cwLogs, err = v.fromCloudWatch(v.cfg.parsedFormat, bufReader)
+		if err != nil {
+			return nil, err
+		}
+
+		return xstreamencoding.LogsDecoderFunc(func() (plog.Logs, error) {
+			if isEOF {
+				return plog.Logs{}, io.EOF
+			}
+
+			isEOF = true
+			return cwLogs, nil
+		}), nil
+	}
+
+	line, err := bufReader.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("failed to read first line of VPC logs from S3: %w", err)
+	}
+
+	fields := strings.Fields(line)
+	batchHelper := xstreamencoding.NewBatchHelper(options...)
+
+	return xstreamencoding.LogsDecoderFunc(func() (plog.Logs, error) {
+		logs, resourceLogs, scopeLogs := v.createLogs()
+		for {
+			line, err = bufReader.ReadString('\n')
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					return plog.Logs{}, fmt.Errorf("error reading VPC logs: %w", err)
+				}
+
+				if line == "" {
+					break
+				}
+			}
+			batchHelper.IncrementBytes(int64(len(line)) + 1)
+			batchHelper.IncrementItems(1)
+
+			// Trim spaces and new lines
+			line = strings.TrimSpace(line)
+			if err := v.addToLogs(resourceLogs, scopeLogs, fields, line); err != nil {
+				return plog.Logs{}, err
+			}
+
+			if batchHelper.ShouldFlush() {
+				batchHelper.Reset()
+				break
+			}
+		}
+
+		if scopeLogs.LogRecords().Len() == 0 {
+			return logs, io.EOF
+		}
+
+		return logs, nil
+	}), nil
 }
 
 func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.Logs, error) {

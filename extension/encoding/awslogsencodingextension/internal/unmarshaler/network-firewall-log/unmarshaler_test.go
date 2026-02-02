@@ -5,6 +5,8 @@ package networkfirewall
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -103,6 +106,44 @@ func TestUnmarshalLogs(t *testing.T) {
 			require.NoError(t, plogtest.CompareLogs(expected, logs))
 		})
 	}
+}
+
+func TestGetStreamUnmarshaler(t *testing.T) {
+	directory := "testdata/stream"
+	expectPattern := "alert_log_multi_%d.yaml"
+
+	data, err := os.ReadFile(filepath.Join(directory, "alert_log_multi.json"))
+	require.NoError(t, err)
+	reader := compressToGZIPReader(t, data)
+
+	networkUnmarshal := NewNetworkFirewallLogUnmarshaler(component.BuildInfo{})
+
+	// Flush after every log for testing purposes
+	streamer, err := networkUnmarshal.NewStreamUnmarshaler(reader, encoding.WithFlushItems(1))
+	require.NoError(t, err)
+
+	var i int
+	for {
+		var logs plog.Logs
+		logs, err = streamer.DecodeLogs()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			t.Errorf("failed to unmarshal log %d: %v", i, err)
+		}
+
+		i++
+		var expectedLogs plog.Logs
+		expectedLogs, err = golden.ReadLogs(filepath.Join(directory, fmt.Sprintf(expectPattern, i)))
+		require.NoError(t, err)
+		require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+	}
+
+	// expect EOF after all logs are read
+	_, err = streamer.DecodeLogs()
+	require.ErrorIs(t, err, io.EOF)
 }
 
 func TestSetResourceAttributes(t *testing.T) {
