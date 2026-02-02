@@ -228,15 +228,15 @@ func TestOptionsWithAuthMechanismOnly(t *testing.T) {
 
 	// Test primary connection options
 	clientOptions := cfg.ClientOptions(false)
-	require.Equal(t, "", clientOptions.Auth.Username)
-	require.Equal(t, "", clientOptions.Auth.Password)
+	require.Empty(t, clientOptions.Auth.Username)
+	require.Empty(t, clientOptions.Auth.Password)
 	require.Equal(t, "MONGODB-X509", clientOptions.Auth.AuthMechanism)
 	require.Equal(t, "$external", clientOptions.Auth.AuthSource)
 
 	// Test secondary connection options
 	secondaryOptions := cfg.ClientOptions(true)
-	require.Equal(t, "", secondaryOptions.Auth.Username)
-	require.Equal(t, "", secondaryOptions.Auth.Password)
+	require.Empty(t, secondaryOptions.Auth.Username)
+	require.Empty(t, secondaryOptions.Auth.Password)
 	require.Equal(t, "MONGODB-X509", secondaryOptions.Auth.AuthMechanism)
 	require.Equal(t, "$external", secondaryOptions.Auth.AuthSource)
 }
