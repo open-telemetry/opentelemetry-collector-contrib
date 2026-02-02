@@ -185,8 +185,8 @@ processors:
     gcp:
       # A list of regex's to match label keys to add as resource attributes can be specified
       labels:
-        - ^tag1$
-        - ^tag2$
+        - ^label1$
+        - ^label2$
         - ^label.*$
 ```
 
