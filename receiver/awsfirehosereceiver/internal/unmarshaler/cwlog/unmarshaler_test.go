@@ -200,8 +200,8 @@ func TestUnmarshalExtractedFields_TwoRecords(t *testing.T) {
 	testCases := map[string]struct {
 		filename          string
 		wantResourceCount int
-		record1          recordExpectation
-		record2          recordExpectation
+		record1           recordExpectation
+		record2           recordExpectation
 	}{
 		"SameExtractedFields": {
 			filename:          "two_records_same_extracted_fields",
@@ -289,7 +289,7 @@ func TestUnmarshalExtractedFields_TwoRecords(t *testing.T) {
 			} else {
 				// Records in separate ResourceLogs - verify each one
 				require.Equal(t, 2, got.ResourceLogs().Len())
-				
+
 				// Verify record 1
 				rm1 := got.ResourceLogs().At(0)
 				attrs1 := rm1.Resource().Attributes()
