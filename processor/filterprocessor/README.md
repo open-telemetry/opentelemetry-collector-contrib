@@ -62,7 +62,7 @@ See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-c
 
 For conditions that apply to the same signal, such as spans and span events, if the "higher" level telemetry matches a condition and is dropped, the "lower" level condition will not be checked.
 This means that if a span is dropped but a span event condition was defined, the span event condition will not be checked for that span.
-The same relationship applies to logs, metrics and datapoints.
+The same relationship applies to other signals.
 
 If all span events for a span are dropped, the span will be left intact.
 If all datapoints for a metric are dropped, the metric will also be dropped.
