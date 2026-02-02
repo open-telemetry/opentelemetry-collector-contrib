@@ -148,8 +148,37 @@ tests:
   goleak:
     skip: true
 
+attributes:
+  otelcol.signal:
+    description: The signal type the telemetry metric is associated with
+    type: string
+    enum:
+      - metrics
+      - traces
+      - logs
+      - profiles
+  pod_identifier:
+    description: The pod identifier value(s) used for the association attempt
+    type: string
+  status:
+    description: The status of the pod association operation
+    type: string
+    enum:
+      - success
+      - error
+
 telemetry:
   metrics:
+    otelcol.k8s.pod.association:
+      enabled: false
+      description: Number of pod associations' evaluations
+      stability:
+        level: development
+      unit: "{resources}"
+      attributes: [status, pod_identifier, otelcol.signal]
+      sum:
+        value_type: int
+        monotonic: true
     otelsvc_k8s_daemonset_added:
       enabled: false
       description: Number of daemonset add events received
