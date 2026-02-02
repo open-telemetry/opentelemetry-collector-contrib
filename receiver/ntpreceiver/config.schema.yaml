@@ -1,0 +1,10 @@
+description: Config is the configuration for the NSX receiver
+type: object
+properties:
+  endpoint:
+    type: string
+  version:
+    type: integer
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config
