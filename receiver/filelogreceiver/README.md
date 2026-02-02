@@ -126,7 +126,7 @@ All time parameters must have the unit of time specified. e.g.: `200ms`, `1s`, `
 
 ### Log Rotation
 
-File Log Receiver can read files that are being rotated.
+File Log Receiver can read files that are being rotated. When a file is rotated (renamed), the receiver continues reading from the open file descriptor because it tracks files by their internal identity (inode), not by name. This means the receiver will read remaining data from a rotated file even if the new filename no longer matches the `include` pattern.
 
 #### File Attribute Behavior During Rotation
 
