@@ -1,0 +1,46 @@
+$defs:
+  config:
+    description: Config is the configuration of a journald input operator
+    type: object
+    properties:
+      all:
+        type: boolean
+      convert_message_bytes:
+        type: boolean
+      directory:
+        x-pointer: true
+        type: string
+      dmesg:
+        type: boolean
+      files:
+        type: array
+        items:
+          type: string
+      grep:
+        type: string
+      identifiers:
+        type: array
+        items:
+          type: string
+      journalctl_path:
+        type: string
+      matches:
+        type: array
+        items:
+          $ref: match_config
+      merge:
+        type: boolean
+      namespace:
+        type: string
+      priority:
+        type: string
+      root_path:
+        type: string
+      start_at:
+        type: string
+      units:
+        type: array
+        items:
+          type: string
+    allOf:
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.input_config
