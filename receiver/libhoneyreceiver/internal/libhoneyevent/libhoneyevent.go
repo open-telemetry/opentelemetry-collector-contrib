@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -63,29 +64,65 @@ type LibhoneyEvent struct {
 	Data             map[string]any `json:"data" msgpack:"data"`
 }
 
-// UnmarshalJSON overrides the unmarshall to make sure the MsgPackTimestamp is set
-func (l *LibhoneyEvent) UnmarshalJSON(j []byte) error {
-	type _libhoneyEvent LibhoneyEvent
-	tstr := eventtime.GetEventTimeDefaultString()
-	tzero := time.Time{}
-	tmp := _libhoneyEvent{Time: "none", MsgPackTimestamp: &tzero, Samplerate: 1}
+// timeStringFromValue converts a time value (string or numeric) to a string
+// suitable for eventtime.GetEventTime parsing.
+func timeStringFromValue(v any) string {
+	switch t := v.(type) {
+	case string:
+		return t
+	case float64:
+		return strconv.FormatFloat(t, 'f', -1, 64)
+	}
+	return ""
+}
 
+// UnmarshalJSON overrides the unmarshall to make sure the MsgPackTimestamp is set.
+// It handles the time field as string, numeric (epoch), or nested inside data.
+func (l *LibhoneyEvent) UnmarshalJSON(j []byte) error {
+	// Use a flexible temp struct where Time is any, so numeric JSON time
+	// values (e.g. epoch seconds) don't cause unmarshal failure.
+	type flexEvent struct {
+		Samplerate int            `json:"samplerate"`
+		Time       any            `json:"time"`
+		Data       map[string]any `json:"data"`
+	}
+
+	tmp := flexEvent{Samplerate: 1}
 	err := json.Unmarshal(j, &tmp)
 	if err != nil {
 		return err
 	}
-	if tmp.MsgPackTimestamp == nil || tmp.MsgPackTimestamp.IsZero() {
-		if tmp.Time == "none" {
-			tmp.Time = tstr
-			tnow := time.Now()
-			tmp.MsgPackTimestamp = &tnow
-		} else {
-			propertime := eventtime.GetEventTime(tmp.Time)
-			tmp.MsgPackTimestamp = &propertime
+
+	l.Samplerate = tmp.Samplerate
+	l.Data = tmp.Data
+
+	// Try to extract time from the top-level "time" field
+	timeStr := timeStringFromValue(tmp.Time)
+
+	// If no top-level time, check data["time"] as fallback
+	if timeStr == "" && tmp.Data != nil {
+		if dataTime, ok := tmp.Data["time"]; ok {
+			timeStr = timeStringFromValue(dataTime)
 		}
 	}
 
-	*l = LibhoneyEvent(tmp)
+	if timeStr != "" {
+		l.Time = timeStr
+		propertime := eventtime.GetEventTime(timeStr)
+		if !propertime.IsZero() {
+			l.MsgPackTimestamp = &propertime
+		} else {
+			// Time string was present but unparseable
+			tnow := time.Now()
+			l.MsgPackTimestamp = &tnow
+		}
+	} else {
+		// No time found anywhere, use current time
+		l.Time = eventtime.GetEventTimeDefaultString()
+		tnow := time.Now()
+		l.MsgPackTimestamp = &tnow
+	}
+
 	return nil
 }
 
@@ -276,8 +313,8 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 	} else {
 		// Parse time from Time field or use current time
 		if l.Time != "" {
-			parsedTime, err := time.Parse(time.RFC3339, l.Time)
-			if err == nil {
+			parsedTime := eventtime.GetEventTime(l.Time)
+			if !parsedTime.IsZero() {
 				timeNs = parsedTime.UnixNano()
 			} else {
 				timeNs = time.Now().UnixNano()
@@ -382,8 +419,8 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 	} else {
 		// Parse time from Time field or use current time
 		if l.Time != "" {
-			parsedTime, err := time.Parse(time.RFC3339, l.Time)
-			if err == nil {
+			parsedTime := eventtime.GetEventTime(l.Time)
+			if !parsedTime.IsZero() {
 				timeNs = parsedTime.UnixNano()
 			} else {
 				timeNs = time.Now().UnixNano()
