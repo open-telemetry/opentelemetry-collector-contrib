@@ -226,6 +226,11 @@ func (b *bearerTokenAuth) Authenticate(ctx context.Context, headers map[string][
 	// Use canonical header key to match how Go's HTTP server stores headers
 	auth, ok := headers[http.CanonicalHeaderKey(b.header)]
 
+	// Also check lower-case header key to support gRPC metadata format
+	if !ok {
+		auth, ok = headers[strings.ToLower(b.header)]
+	}
+
 	if !ok || len(auth) == 0 {
 		return ctx, fmt.Errorf("missing or empty authorization header: %s", b.header)
 	}
