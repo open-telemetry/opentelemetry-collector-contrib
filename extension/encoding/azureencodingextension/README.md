@@ -90,6 +90,8 @@ Following list of Azure Logs Categories are supported as a Trace source:
 * [Dependencies](https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appdependencies)
 * [Requests](https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/apprequests)
 
+[Transformation rules form Azure Traces fields to OpenTelemetry](./internal/unmarshaler/traces/README.md)
+
 ***time_formats (Optional)***
 
 List of time formats that should be applied during Timestamp parsing of incoming traces records.
