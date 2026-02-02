@@ -4,6 +4,7 @@
 package oauth2clientauthextension
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -18,9 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
-	grpcOAuth "google.golang.org/grpc/credentials/oauth"
 )
 
 func TestOAuthClientCredentialsSettingsConfig(t *testing.T) {
@@ -284,19 +283,64 @@ func TestRoundTripper(t *testing.T) {
 			}
 
 			assert.NotNil(t, oauth2Authenticator)
-			roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
+			rt, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
 			assert.NoError(t, err)
 
-			// test roundTripper is an OAuth RoundTripper
-			oAuth2Transport, ok := roundTripper.(*oauth2.Transport)
-			assert.True(t, ok)
+			roundTripper, ok := rt.(*roundTripper)
+			require.True(t, ok)
 
 			// test oAuthRoundTripper wrapped the base roundTripper properly
-			wrappedRoundTripper, ok := oAuth2Transport.Base.(*testRoundTripper)
+			wrappedRoundTripper, ok := roundTripper.base.(*testRoundTripper)
 			assert.True(t, ok)
 			assert.Equal(t, wrappedRoundTripper.testString, testString)
 		})
 	}
+}
+
+func TestToken(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"access_token": "test-token",
+			"token_type":   "Bearer",
+		})
+	}))
+	defer server.Close()
+
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
+		ClientID:                 "testclient",
+		ClientCertificateKeyFile: "testdata/client.key",
+		GrantType:                "urn:ietf:params:oauth:grant-type:jwt-bearer",
+		TokenURL:                 server.URL,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	token, err := oauth2Authenticator.Token(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, "test-token", token.AccessToken)
+	assert.Equal(t, "Bearer", token.TokenType)
+}
+
+func TestToken_Cancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		<-t.Context().Done()
+	}))
+	defer server.Close()
+
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
+		ClientID:     "testclient",
+		ClientSecret: "testsecret",
+		TokenURL:     server.URL,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	_, err = oauth2Authenticator.Token(ctx)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.Canceled)
 }
 
 func TestOAuth2PerRPCCredentials(t *testing.T) {
@@ -340,10 +384,9 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			perRPCCredentials, err := oauth2Authenticator.PerRPCCredentials()
+			creds, err := oauth2Authenticator.PerRPCCredentials()
 			assert.NoError(t, err)
-			// test perRPCCredentials is an grpc OAuthTokenSource
-			_, ok := perRPCCredentials.(grpcOAuth.TokenSource)
+			_, ok := creds.(*perRPCCredentials)
 			assert.True(t, ok)
 		})
 	}
