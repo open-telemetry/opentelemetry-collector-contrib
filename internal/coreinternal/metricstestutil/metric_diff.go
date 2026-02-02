@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package metricstestutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+package metricstestutil // import "github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 
 import (
 	"fmt"

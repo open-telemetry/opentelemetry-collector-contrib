@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package consumerretry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
+package consumerretry // import "github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 
 import "time"
 

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package tracetranslator // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+package tracetranslator // import "github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 
 import (
 	"go.opentelemetry.io/collector/pdata/ptrace"

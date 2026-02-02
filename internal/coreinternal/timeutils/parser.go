@@ -13,7 +13,7 @@ import (
 
 	"github.com/elastic/lunes"
 
-	strptime "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt"
+	strptime "github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt"
 )
 
 var invalidFractionalSecondsGoTime = regexp.MustCompile(`[^.,9]9+`)

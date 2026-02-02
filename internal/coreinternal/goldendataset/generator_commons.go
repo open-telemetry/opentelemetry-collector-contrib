@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package goldendataset // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
+package goldendataset // import "github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 
 import (
 	"encoding/csv"

@@ -7,7 +7,7 @@
 // Use of this source code is governed by MIT license
 // that can be found in the LICENSE file.
 
-package ctimefmt // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt"
+package ctimefmt // import "github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal/timeutils/internal/ctimefmt"
 
 import (
 	"errors"

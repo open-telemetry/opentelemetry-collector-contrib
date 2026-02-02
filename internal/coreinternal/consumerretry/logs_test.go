@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestConsumeLogs(t *testing.T) {

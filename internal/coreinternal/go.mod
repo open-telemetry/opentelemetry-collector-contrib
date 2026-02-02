@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal
+module github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal
 
 go 1.25.0
 

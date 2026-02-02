@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package attraction // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+package attraction // import "github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 
 import (
 	"strconv"

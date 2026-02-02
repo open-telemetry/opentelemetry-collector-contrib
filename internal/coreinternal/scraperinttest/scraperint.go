@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package scraperinttest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
+package scraperinttest // import "github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 
 import (
 	"context"

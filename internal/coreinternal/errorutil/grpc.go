@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package errorutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
+package errorutil // import "github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 
 import (
 	"go.opentelemetry.io/collector/consumer/consumererror"

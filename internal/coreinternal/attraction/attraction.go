@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package attraction // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+package attraction // import "github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/clientutil"
+	"github.com/cloudoperators/opentelemetry-collector-contrib/internal/coreinternal/clientutil"
 )
 
 // Settings specifies the processor settings.
