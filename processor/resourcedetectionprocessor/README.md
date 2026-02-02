@@ -218,7 +218,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.platform ("gcp_cloud_run")
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (service name)
     * faas.version (service revision)
 
@@ -228,7 +228,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.platform ("gcp_cloud_run")
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (service name)
     * gcp.cloud_run.job.execution ("my-service-ajg89")
     * gcp.cloud_run.job.task_index ("0")
@@ -239,7 +239,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.platform ("gcp_cloud_functions")
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (function name)
     * faas.version (function version)
 
@@ -250,7 +250,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
     * cloud.availability_zone (e.g. "us-central1-c")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (service name)
     * faas.version (service version)
 
@@ -847,10 +847,34 @@ processors:
       fail_on_missing_metadata: true
 ```
 
+### Alibaba Cloud ECS
+
+Uses the [Alibaba Cloud metadata API](https://www.alibabacloud.com/help/en/ecs/user-guide/view-instance-metadata/?spm=a2c63.p38356.help-menu-25365.d_0_1_3_4_6.7d2848cfJpcLdU#393b14378evdm) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Alibaba Cloud ECS Detector Resource Attributes](./internal/alibaba/ecs/documentation.md).
+
+Alibaba Cloud ECS custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/alibaba_ecs:
+    detectors: ["alibaba_ecs"]
+```
+
+The Alibaba Cloud ECS detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/alibaba_ecs:
+    detectors: ["alibaba_ecs"]
+    alibaba_ecs:
+      fail_on_missing_metadata: true
+```
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
