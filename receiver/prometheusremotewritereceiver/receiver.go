@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -37,15 +36,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
-const defaultMaxRequestBodySize = 10 * 1024 * 1024 // 10MiB
-
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	cache, err := lru.New[uint64, pmetric.ResourceMetrics](1000)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
-	}
-	if cfg.MaxRequestBodySize <= 0 {
-		cfg.MaxRequestBodySize = defaultMaxRequestBodySize
 	}
 	return &prometheusRemoteWriteReceiver{
 		settings:     settings,
@@ -188,21 +182,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	buf := prw.bodyBufferPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	defer prw.bodyBufferPool.Put(buf)
-	maxRequestBodySize := prw.config.MaxRequestBodySize
-	limitedReader := io.LimitReader(req.Body, int64(maxRequestBodySize)+1)
-	n, err := buf.ReadFrom(limitedReader)
-	if err != nil {
-		prw.settings.Logger.Error("Error reading remote-write request body", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if n > maxRequestBodySize {
-		prw.settings.Logger.Warn("Request body exceeded max size",
-			zapcore.Field{Key: "max_size", Type: zapcore.Int64Type, Integer: maxRequestBodySize},
-			zapcore.Field{Key: "actual_size", Type: zapcore.Int64Type, Integer: n})
-		http.Error(w, fmt.Sprintf("request body exceeds max size of %d bytes (got %d bytes)", maxRequestBodySize, n), http.StatusRequestEntityTooLarge)
-		return
-	}
+	_, err = buf.ReadFrom(req.Body)
 
 	var prw2Req writev2.Request
 	if err = proto.Unmarshal(buf.Bytes(), &prw2Req); err != nil {
