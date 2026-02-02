@@ -167,6 +167,22 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 	return mp, (*PromConfig)(pCfg), err
 }
 
+func setupMockPrometheusWithExtraScrapeMetrics(globalExtra, scrapeExtra *bool, tds ...*testData) (*mockPrometheus, *PromConfig, error) {
+	mp, cfg, err := setupMockPrometheus(tds...)
+	if err != nil {
+		return mp, cfg, err
+	}
+
+	if globalExtra != nil {
+		cfg.GlobalConfig.ExtraScrapeMetrics = globalExtra
+	}
+	for _, sc := range cfg.ScrapeConfigs {
+		sc.ExtraScrapeMetrics = scrapeExtra
+	}
+
+	return mp, cfg, nil
+}
+
 func waitForScrapeResults(t *testing.T, targets []*testData, cms *consumertest.MetricsSink) {
 	assert.Eventually(t, func() bool {
 		// This is the receiver's pov as to what should have been collected from the server

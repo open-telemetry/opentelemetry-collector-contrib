@@ -203,7 +203,7 @@ receivers:
 
 The `target_allocator` section embeds the full [confighttp client configuration][confighttp].
 
-[confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration
+[confighttp]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#client-configuration
 
 ## Exemplars
 This receiver accepts exemplars coming in Prometheus format and converts it to OTLP format.
@@ -248,46 +248,12 @@ More info about querying `/api/v1/` and the data format that is returned can be 
 
 ## Feature gates
 
-- `receiver.prometheusreceiver.EnableReportExtraScrapeMetrics`: Extra Prometheus scrape metrics 
-  can be reported by setting this feature gate option. This replaces the deprecated
-  `report_extra_scrape_metrics` configuration flag:
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this receiver.
+
+Feature gates can be enabled using the `--feature-gates` flag:
 
 ```shell
-"--feature-gates=receiver.prometheusreceiver.EnableReportExtraScrapeMetrics"
-```
-
-- `receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig`: When enabled, the
-  `report_extra_scrape_metrics` configuration option is ignored, and extra scrape metrics are
-  controlled solely by the `EnableReportExtraScrapeMetrics` feature gate. The intention is
-  to have extra scrape metrics all the time in the future:
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig"
-```
-
-- `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion`: Enables the Prometheus feature flag [created-timestamps-zero-injection](https://prometheus.io/docs/prometheus/latest/feature_flags/#created-timestamps-zero-injection). Currently, this behaviour is disabled by default due to worse CPU performance with higher metric volumes. To enable it, use the following feature gate option:
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion"
-```
-- `receiver.prometheusreceiver.EnableNativeHistograms` (Stable, enabled by default): Converts scraped native histogram metrics into OpenTelemetry exponential histograms. **Note:** You still need to configure `scrape_native_histograms: true` in your Prometheus scrape config to actually scrape native histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
-
-- `receiver.prometheusreceiver.UseCollectorStartTimeFallback`:  enables using
-  the collector start time as the metric start time if the
-  process_start_time_seconds metric yields no result (for example if targets
-  expose no process_start_time_seconds metric). This is useful when the collector
-  start time is a good approximation of the process start time - for example in
-  serverless workloads when the collector is deployed as a sidecar. To enable it,
-  use the following feature gate option:
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.UseCollectorStartTimeFallback"
-```
-
-- `receiver.prometheusreceiver.RemoveStartTimeAdjustment`: If enabled, the prometheus receiver no longer sets the start timestamp of metrics if it is not known. Use the `metricstarttime` processor instead if you need this functionality.
-
-```shell
-"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment"
+"--feature-gates=<feature-gate>"
 ```
 
 ## Troubleshooting and Best Practices
@@ -578,5 +544,5 @@ Monitor the Prometheus receiver itself to ensure it's operating correctly:
 ### Additional Resources
 
 - [Prometheus Configuration Documentation](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
-- [OpenTelemetry Collector Best Practices](https://opentelemetry.io/docs/collector/best-practices/)
+- [OpenTelemetry Collector Documentation](https://opentelemetry.io/docs/collector/)
 - [Design Document](DESIGN.md) for implementation details

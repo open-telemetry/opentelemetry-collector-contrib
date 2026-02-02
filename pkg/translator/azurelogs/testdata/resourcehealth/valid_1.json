@@ -1,0 +1,22 @@
+{
+    "records": [
+        {
+            "time": "2025-04-24T12:49:14.6241035Z",
+            "correlationId": "aaaaaaaa-bbbb-cccc-dddd-444444444444",
+            "level": "Informational",
+            "resultType": "Active",
+            "operationName": "Microsoft.Resourcehealth/healthevent/Activated/action",
+            "resourceId": "/SUBSCRIPTIONS/11111111-1111-1111-1111-111111111111/RESOURCEGROUPS/EXAMPLE-FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/EXAMPLE-FRONTDOOR-PROFILE",
+            "properties": {
+                "title": "Unknown",
+                "details": "Unknown",
+                "currentHealthStatus": "Unavailable",
+                "previousHealthStatus": "Available",
+                "type": "Downtime",
+                "cause": "Unknown"
+            },
+            "category": "ResourceHealth",
+            "location": "global"
+        }
+    ]
+}

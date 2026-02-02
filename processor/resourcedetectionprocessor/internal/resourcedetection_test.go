@@ -126,10 +126,10 @@ func TestDetectResource_DetectorFactoryError(t *testing.T) {
 }
 
 func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set(allowErrorPropagationFeatureGate.ID(), true)
+	err := featuregate.GlobalRegistry().Set(metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.ID(), true)
 	assert.NoError(t, err)
 	defer func() {
-		_ = featuregate.GlobalRegistry().Set(allowErrorPropagationFeatureGate.ID(), false)
+		_ = featuregate.GlobalRegistry().Set(metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.ID(), false)
 	}()
 
 	md1 := &mockDetector{}

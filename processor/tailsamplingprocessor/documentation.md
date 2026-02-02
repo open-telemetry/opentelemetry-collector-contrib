@@ -150,3 +150,11 @@ Tracks the number of traces current on memory [Development]
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {traces} | Gauge | Int | Development |
+
+### otelcol_processor_tail_sampling_traces_dropped_too_large
+
+Count of traces that were dropped because they were too large [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {traces} | Sum | Int | true | Development |
