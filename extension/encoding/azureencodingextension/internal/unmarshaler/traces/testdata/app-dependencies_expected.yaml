@@ -1,0 +1,169 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/AAAA0A0A-BB1B-CC2C-DD3D-EEEEEE4E4E4E/RESOURCEGROUPS/RG-001/PROVIDERS/MICROSOFT.INSIGHTS/COMPONENTS/APPI1
+        - key: service.name
+          value:
+            stringValue: func1
+        - key: service.instance.id
+          value:
+            stringValue: 1e09daf0e46df8e4a91c6d1f2c5122246ba8f742455aaf150059835395822db6
+        - key: telemetry.sdk.name
+          value:
+            stringValue: fli_java
+        - key: telemetry.sdk.version
+          value:
+            stringValue: 3.7.2
+    scopeSpans:
+      - scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+        spans:
+          - attributes:
+              - key: geo.locality.name
+                value:
+                  stringValue: Phoenix
+              - key: geo.country.name
+                value:
+                  stringValue: United States
+              - key: geo.state.name
+                value:
+                  stringValue: Arizona
+              - key: device.type
+                value:
+                  stringValue: PC
+              - key: azure.operation.name
+                value:
+                  stringValue: Method1
+              - key: azure.category
+                value:
+                  stringValue: AppDependencies
+              - key: azure.dependency.type
+                value:
+                  stringValue: Queue Message | kafka
+              - key: azure.dependency.target
+                value:
+                  stringValue: kafka.topic1
+            endTimeUnixNano: "1681808580004131999"
+            kind: 4
+            name: kafka.topic1 publish
+            parentSpanId: 56d86b8fef4f1c6c
+            spanId: 4821911c2c909251
+            startTimeUnixNano: "1681808580000000000"
+            status: {}
+            traceId: 28aad6f31b49a543549b6721bde89c81
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/AAAA0A0A-BB1B-CC2C-DD3D-EEEEEE4E4E4E/RESOURCEGROUPS/RG-001/PROVIDERS/MICROSOFT.INSIGHTS/COMPONENTS/APPI1
+        - key: service.name
+          value:
+            stringValue: func2
+        - key: service.instance.id
+          value:
+            stringValue: 1e09daf0e46df8e4a91c6d1f2c5122246ba8f742455aaf150059835395822db6
+        - key: telemetry.sdk.name
+          value:
+            stringValue: fli_java
+        - key: telemetry.sdk.version
+          value:
+            stringValue: 3.7.2
+    scopeSpans:
+      - scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+        spans:
+          - attributes:
+              - key: geo.locality.name
+                value:
+                  stringValue: Phoenix
+              - key: geo.country.name
+                value:
+                  stringValue: United States
+              - key: geo.state.name
+                value:
+                  stringValue: Arizona
+              - key: device.type
+                value:
+                  stringValue: PC
+              - key: azure.operation.name
+                value:
+                  stringValue: HTTPHandler2
+              - key: azure.category
+                value:
+                  stringValue: AppDependencies
+              - key: azure.dependency.type
+                value:
+                  stringValue: HTTP
+              - key: azure.dependency.target
+                value:
+                  stringValue: example.org
+              - key: http.response.status_code
+                value:
+                  intValue: 200
+              - key: url.full
+                value:
+                  stringValue: https://example.org/
+              - key: url.domain
+                value:
+                  stringValue: example.org
+              - key: url.path
+                value:
+                  stringValue: /
+              - key: url.scheme
+                value:
+                  stringValue: https
+              - key: _MS.ProcessedByMetricExtractors
+                value:
+                  stringValue: "True"
+            endTimeUnixNano: "1681808580003456000"
+            kind: 3
+            name: GET /
+            parentSpanId: cae37f4843773c4e
+            spanId: 1476270bb7b15343
+            startTimeUnixNano: "1681808580000000000"
+            status: {}
+            traceId: cc7064043e4a1d650f04ba163829412e
+          - attributes:
+              - key: geo.locality.name
+                value:
+                  stringValue: Phoenix
+              - key: geo.country.name
+                value:
+                  stringValue: United States
+              - key: geo.state.name
+                value:
+                  stringValue: Arizona
+              - key: device.type
+                value:
+                  stringValue: PC
+              - key: azure.operation.name
+                value:
+                  stringValue: InternalMethod1
+              - key: azure.category
+                value:
+                  stringValue: AppDependencies
+              - key: azure.dependency.type
+                value:
+                  stringValue: InProc
+              - key: azure.dependency.target
+                value:
+                  stringValue: func2.InternalMethod1
+            endTimeUnixNano: "1681808580015295000"
+            kind: 1
+            name: func2.InternalMethod1
+            parentSpanId: 41a61091bc8f6d61
+            spanId: c0e2306cb5b0f392
+            startTimeUnixNano: "1681808580000000000"
+            status:
+              code: 2
+            traceId: e8d2be206a1570bf29c183905e0ef117
