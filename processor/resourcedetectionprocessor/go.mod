@@ -18,7 +18,6 @@ require (
 	github.com/hetznercloud/hcloud-go/v2 v2.36.0
 	github.com/linode/go-metadata v0.2.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.144.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.144.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.144.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.144.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.144.0
@@ -128,6 +127,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.144.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.144.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect

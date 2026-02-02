@@ -9,6 +9,6 @@ This component has the following feature gates:
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `processor.resourcedetection.propagateerrors` | beta | When enabled, allows errors returned from resource detectors to propagate in the Start() method and stop the collector. | v0.121.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37961) |
-| `processor.resourcedetection.removeGCPFaasID` | beta | Remove faas.id from the GCP detector. Use faas.instance instead. | v0.87.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/26486) |
+| `processor.resourcedetection.removeGCPFaasID` | stable | Remove faas.id from the GCP detector. Use faas.instance instead. | v0.87.0 | v0.145.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/26486) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

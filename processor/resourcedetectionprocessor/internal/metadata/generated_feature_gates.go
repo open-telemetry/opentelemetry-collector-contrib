@@ -16,8 +16,9 @@ var ProcessorResourcedetectionPropagateerrorsFeatureGate = featuregate.GlobalReg
 
 var ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.resourcedetection.removeGCPFaasID",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Remove faas.id from the GCP detector. Use faas.instance instead."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/26486"),
 	featuregate.WithRegisterFromVersion("v0.87.0"),
+	featuregate.WithRegisterToVersion("v0.145.0"),
 )
