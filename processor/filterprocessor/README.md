@@ -79,7 +79,7 @@ If not specified, `propagate` will be used.
 
 ### Basic Config
 
-The basic configuration style allows you to configure OTTL conditions as a flat list, without worrying about extra configurations.
+The basic configuration style allows you to configure OTTL conditions as a flat, OR-ed list, without worrying about extra configurations.
 
 **This is the simplest way to configure the Filter Processor.** If you need explicit context specification or specific error modes, see [Advanced Config](#advanced-config).
 
