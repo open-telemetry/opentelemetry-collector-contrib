@@ -91,6 +91,7 @@ extension/encoding/jsonlogencodingextension extension/encoding/jsonlogencoding
 extension/encoding/otlpencodingextension extension/encoding/otlpencoding
 extension/encoding/skywalkingencodingextension extension/encoding/skywalkingencoding
 extension/encoding/textencodingextension extension/encoding/textencoding
+extension/encoding/xstream extension/encoding/xstream
 extension/encoding/zipkinencodingextension extension/encoding/zipkinencoding
 extension/googleclientauthextension extension/googleclientauth
 extension/headerssetterextension extension/headerssetter
