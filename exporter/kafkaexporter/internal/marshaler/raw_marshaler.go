@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package marshaler // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
+package marshaler // import "github.com/cloudoperators/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
 
 import (
 	"encoding/json"

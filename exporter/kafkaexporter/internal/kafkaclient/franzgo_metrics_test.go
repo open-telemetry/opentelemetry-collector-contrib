@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kafkaclient // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
+package kafkaclient // import "github.com/cloudoperators/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 
 import (
 	"errors"
@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadatatest"
+	"github.com/cloudoperators/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
+	"github.com/cloudoperators/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadatatest"
 )
 
 func TestFranzProducerMetrics(t *testing.T) {

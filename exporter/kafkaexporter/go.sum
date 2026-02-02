@@ -123,6 +123,10 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJ
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee h1:W5t00kpgFdJifH4BDsTlE89Zl93FEloxaWZfGcifgq8=
 github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.144.0 h1:Qv3nLVGKJ9LQCGwxteJxjSNyQ5CP99QRvYPFn6d8Y60=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.144.0/go.mod h1:O2rZKRXk1WeYhzfJBVXES/g7+PlIds/TzPZW/4NfTNA=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.144.0 h1:alGgzpr+mc8Ltq8CCtYWcehRrOeZC8eKvLdPt+kBhzA=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.144.0/go.mod h1:y7X5q/tV3enb0UgXDDumfegbOKZeVPTP87EM+zr58p4=
 github.com/openzipkin/zipkin-go v0.4.3 h1:9EGwpqkgnwdEIJ+Od7QVSEIH+ocmm5nPat0G7sjsSdg=
 github.com/openzipkin/zipkin-go v0.4.3/go.mod h1:M9wCJZFWCo2RiY+o1eBCEMe0Dp2S5LDHcMZmk3RmK7c=
 github.com/pierrec/lz4/v4 v4.1.15/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=

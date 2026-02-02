@@ -3,4 +3,4 @@
 
 // Package kafkaclient provides implementations of Kafka producers using
 // different client libraries.
-package kafkaclient // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
+package kafkaclient // import "github.com/cloudoperators/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
