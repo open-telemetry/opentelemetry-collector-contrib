@@ -146,10 +146,10 @@ func createProfilesToMetrics(
 		return nil, fmt.Errorf("failed to create OTTL statement parser for profiles: %w", err)
 	}
 
-	metricDefs := make([]model.MetricDef[ottlprofile.TransformContext], 0, len(c.Profiles))
+	metricDefs := make([]model.MetricDef[*ottlprofile.TransformContext], 0, len(c.Profiles))
 	for i := range c.Profiles {
 		info := c.Profiles[i]
-		var md model.MetricDef[ottlprofile.TransformContext]
+		var md model.MetricDef[*ottlprofile.TransformContext]
 		if err := md.FromMetricInfo(info, parser, set.TelemetrySettings); err != nil {
 			return nil, fmt.Errorf("failed to parse provided metric information; %w", err)
 		}

@@ -1,0 +1,22 @@
+$defs:
+  config:
+    type: object
+    properties:
+      collector_id:
+        type: string
+      http_scrape_config:
+        x-pointer: true
+        $ref: prom_http_client_config
+      http_sd_config:
+        x-pointer: true
+        $ref: prom_httpsd_config
+      interval:
+        type: string
+        format: duration
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  prom_http_client_config:
+    x-customType: github.com/prometheus/common/config.http_client_config
+  prom_httpsd_config:
+    description: PromHTTPSDConfig is a redeclaration of promHTTP.SDConfig because we need custom unmarshaling as prometheus "config" uses `yaml` tags.
+    x-customType: github.com/prometheus/prometheus/discovery/http.sd_config
