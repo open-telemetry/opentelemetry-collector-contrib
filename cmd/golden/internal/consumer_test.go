@@ -109,7 +109,7 @@ func TestConsumeMetrics_ErrorsClearedOnSuccess(t *testing.T) {
 	require.NoError(t, err)
 
 	// Errors should be cleared after success
-	require.Len(t, s.Errors, 0, "errors should be cleared on successful comparison")
+	require.Empty(t, s.Errors, "errors should be cleared on successful comparison")
 }
 
 func TestConsumeMetrics_AttemptCounterIncrementsCorrectly(t *testing.T) {
@@ -134,7 +134,7 @@ func TestConsumeMetrics_AttemptCounterIncrementsCorrectly(t *testing.T) {
 	}
 
 	require.Len(t, s.Errors, 5)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		require.Equal(t, i+1, s.Errors[i].AttemptNumber, "attempt number should increment correctly")
 	}
 }
