@@ -16,7 +16,6 @@
 
 ## COMMON & SHARED components
 internal/common
-config/confighttp
 
 ## DEPRECATED components
 

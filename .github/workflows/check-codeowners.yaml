@@ -1,7 +1,9 @@
 name: codeowners
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'aws-cwa-*'
     paths:
       - ".github/CODEOWNERS"
       - "**/metadata.yaml"
@@ -34,25 +36,25 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector-contrib' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         id: go-setup
         with:
-          go-version: "1.24.11"
+          go-version: oldstable
           cache-dependency-path: "**/*.sum"
 
       - name: Install tools
         run: |
           make install-tools
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
           path: pr
 
-      - uses: actions/create-github-app-token@v2.2.1
+      - uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}

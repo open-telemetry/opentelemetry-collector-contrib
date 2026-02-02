@@ -9,7 +9,9 @@ on:
   schedule:
     - cron: "39 1 * * 3"
   push:
-    branches: ["main"]
+    branches:
+      - "main"
+      - 'aws-cwa-*'
 
 # Declare default permissions as read only.
 permissions: read-all

@@ -17,8 +17,6 @@ env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
-  # renovate: datasource=github-releases depName=tcort/markdown-link-check
-  MD_LINK_CHECK_VERSION: "3.12.2"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -32,14 +30,14 @@ jobs:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           # Fetch complete history depth only if the PR is not a chore.
           fetch-depth: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]') && '0' || '1' }}
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         with:
-          go-version: "1.24.11"
+          go-version: oldstable
           cache-dependency-path: "**/*.sum"
 
       - name: Ensure no changes to the CHANGELOG.md or CHANGELOG-API.md
