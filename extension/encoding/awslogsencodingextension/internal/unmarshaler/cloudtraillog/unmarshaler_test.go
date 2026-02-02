@@ -22,27 +22,64 @@ const filesDirectory = "testdata"
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_Valid(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
-	reader := readLogFile(t, filesDirectory, "cloudtrail_log.json")
-	logs, err := unmarshaler.UnmarshalAWSLogs(reader)
-	require.NoError(t, err)
 
-	// Read the expected logs from the file
-	expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, "cloudtrail_log_expected.yaml"))
-	require.NoError(t, err)
-
-	compareOptions := []plogtest.CompareLogsOption{
-		plogtest.IgnoreResourceLogsOrder(),
-		plogtest.IgnoreScopeLogsOrder(),
-		plogtest.IgnoreLogRecordsOrder(),
+	tests := []struct {
+		name           string
+		inputLogsFile  string
+		outputLogsFile string
+		userIDFeature  bool
+	}{
+		{
+			name:           "Valid with CloudTrailUserIdentityPrefixFeatureGate disabled",
+			inputLogsFile:  "cloudtrail_log.json",
+			outputLogsFile: "cloudtrail_log_expected.yaml",
+			userIDFeature:  false,
+		},
+		{
+			name:           "Valid with CloudTrailUserIdentityPrefixFeatureGate enabled",
+			inputLogsFile:  "cloudtrail_log.json",
+			outputLogsFile: "cloudtrail_log_expected_with_uid_feature.yaml",
+			userIDFeature:  true,
+		},
+		{
+			name:           "Valid CloudWatch subscription filter format",
+			inputLogsFile:  "cloudtrail_log_cw.json",
+			outputLogsFile: "cloudtrail_log_cw_expected.yaml",
+			userIDFeature:  true,
+		},
+		{
+			name:           "Valid CloudWatch subscription filter format with reordered keys",
+			inputLogsFile:  "cloudtrail_log_cw_reordered.json",
+			outputLogsFile: "cloudtrail_log_cw_reordered_expected.yaml",
+			userIDFeature:  true,
+		},
 	}
 
-	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareOptions...))
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, test.userIDFeature)
+			reader := readLogFile(t, filesDirectory, test.inputLogsFile)
+			logs, err := unmarshaler.UnmarshalAWSLogs(reader)
+			require.NoError(t, err)
+
+			// Read the expected logs from the file
+			expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, test.outputLogsFile))
+			require.NoError(t, err)
+
+			compareOptions := []plogtest.CompareLogsOption{
+				plogtest.IgnoreResourceLogsOrder(),
+				plogtest.IgnoreScopeLogsOrder(),
+				plogtest.IgnoreLogRecordsOrder(),
+			}
+
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, compareOptions...))
+		})
+	}
 }
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_EmptyRecords(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
 	reader := readLogFile(t, filesDirectory, "cloudtrail_log_empty.json")
 	logs, err := unmarshaler.UnmarshalAWSLogs(reader)
 	require.NoError(t, err)
@@ -80,7 +117,7 @@ func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest(t *testing.T) {
 		},
 	}
 
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -104,7 +141,7 @@ func TestCloudtrailLogUnmarshaler_UnmarshalAWSDigest(t *testing.T) {
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidJSON(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
 	reader := bytes.NewReader([]byte(`{invalid-json}`))
 	_, err := unmarshaler.UnmarshalAWSLogs(reader)
 	require.ErrorContains(t, err, "failed to extract the first JSON key")
@@ -112,7 +149,7 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidJSON(t *testing.T) {
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidTimestamp(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
 	reader := bytes.NewReader([]byte(`{
 		"Records": [{
 			"eventTime": "invalid-timestamp",
@@ -126,7 +163,7 @@ func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_InvalidTimestamp(t *testing.T
 
 func TestCloudTrailLogUnmarshaler_UnmarshalAWSLogs_ReadError(t *testing.T) {
 	t.Parallel()
-	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"})
+	unmarshaler := NewCloudTrailLogUnmarshaler(component.BuildInfo{Version: "test-version"}, false)
 	reader := &errorReader{err: errors.New("read failed")}
 	_, err := unmarshaler.UnmarshalAWSLogs(reader)
 	require.ErrorContains(t, err, "failed to peek into CloudTrail log")
@@ -214,6 +251,59 @@ func TestExtractFirstKey(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tt.expectedKey, key)
 			}
+		})
+	}
+}
+
+func TestCloudWatchKeyOrdering(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		input     string
+		expectKey string
+	}{
+		{
+			name:      "messageType first",
+			input:     `{"messageType":"DATA_MESSAGE","owner":"123456789010","logGroup":"/aws/cloudtrail/logs"}`,
+			expectKey: "messageType",
+		},
+		{
+			name:      "owner first",
+			input:     `{"owner":"123456789010","messageType":"DATA_MESSAGE","logGroup":"/aws/cloudtrail/logs"}`,
+			expectKey: "owner",
+		},
+		{
+			name:      "logGroup first",
+			input:     `{"logGroup":"/aws/cloudtrail/logs","messageType":"DATA_MESSAGE","owner":"123456789010"}`,
+			expectKey: "logGroup",
+		},
+		{
+			name:      "logStream first",
+			input:     `{"logStream":"stream","messageType":"DATA_MESSAGE","owner":"123456789010"}`,
+			expectKey: "logStream",
+		},
+		{
+			name:      "subscriptionFilters first",
+			input:     `{"subscriptionFilters":[],"messageType":"DATA_MESSAGE","owner":"123456789010"}`,
+			expectKey: "subscriptionFilters",
+		},
+		{
+			name:      "logEvents first",
+			input:     `{"logEvents":[],"messageType":"DATA_MESSAGE","owner":"123456789010"}`,
+			expectKey: "logEvents",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Verify the first key is what we expect
+			firstKey, err := extractFirstKey([]byte(tt.input))
+			require.NoError(t, err)
+			require.Equal(t, tt.expectKey, firstKey)
+
+			// Verify isCloudWatchKey recognizes it
+			require.True(t, isCloudWatchKey(firstKey), "isCloudWatchKey should return true for %s", firstKey)
 		})
 	}
 }
