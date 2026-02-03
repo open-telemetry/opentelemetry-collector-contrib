@@ -1,0 +1,137 @@
+$defs:
+  athenz:
+    type: object
+    properties:
+      key_id:
+        type: string
+      principal_header:
+        type: string
+      private_key:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      provider_domain:
+        type: string
+      tenant_domain:
+        type: string
+      tenant_service:
+        type: string
+      zts_url:
+        type: string
+  authentication:
+    type: object
+    properties:
+      athenz:
+        x-optional: true
+        $ref: athenz
+      oauth2:
+        x-optional: true
+        $ref: o_auth_2
+      tls:
+        x-optional: true
+        $ref: tls
+      token:
+        x-optional: true
+        $ref: token
+  batch_builder_type:
+    type: string
+  compression_level:
+    type: string
+  compression_type:
+    type: string
+  hashing_scheme:
+    type: string
+  o_auth_2:
+    type: object
+    properties:
+      audience:
+        type: string
+      client_id:
+        type: string
+      issuer_url:
+        type: string
+      private_key:
+        type: string
+      scope:
+        type: string
+  producer:
+    description: Producer defines configuration for producer
+    type: object
+    properties:
+      batch_builder_type:
+        $ref: batch_builder_type
+      batching_max_messages:
+        type: integer
+        x-customType: uint
+      batching_max_publish_delay:
+        type: string
+        format: duration
+      batching_max_size:
+        type: integer
+        x-customType: uint
+      compression_level:
+        $ref: compression_level
+      compression_type:
+        $ref: compression_type
+      disable_batching:
+        type: boolean
+      disable_block_if_queue_full:
+        type: boolean
+      hashing_scheme:
+        $ref: hashing_scheme
+      max_pending_messages:
+        type: integer
+      max_reconnect_broker:
+        x-pointer: true
+        type: integer
+        x-customType: uint
+      partitions_auto_discovery_interval:
+        type: string
+        format: duration
+  tls:
+    type: object
+    properties:
+      cert_file:
+        type: string
+      key_file:
+        type: string
+  token:
+    type: object
+    properties:
+      token:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+description: Config defines configuration for Pulsar exporter.
+type: object
+properties:
+  auth:
+    $ref: authentication
+  connection_timeout:
+    type: string
+    format: duration
+  encoding:
+    description: Encoding of messages (default "otlp_proto")
+    type: string
+  endpoint:
+    description: Endpoint of pulsar broker (default "pulsar://localhost:6650")
+    type: string
+  max_connections_per_broker:
+    type: integer
+  operation_timeout:
+    type: string
+    format: duration
+  producer:
+    description: Producer configuration of the Pulsar producer
+    $ref: producer
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  tls_allow_insecure_connection:
+    description: 'Configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)'
+    type: boolean
+  tls_trust_certs_file_path:
+    description: Set the path to the trusted TLS certificate file
+    type: string
+  topic:
+    description: The name of the pulsar topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

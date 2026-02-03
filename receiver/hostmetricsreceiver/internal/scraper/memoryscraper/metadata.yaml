@@ -15,6 +15,10 @@ attributes:
     description: Breakdown of memory usage by type.
     type: string
     enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
+  system.memory.linux.hugepages.state:
+    description: Breakdown of hugepages usage by state.
+    type: string
+    enum: [free, used]
 
 metrics:
   system.linux.memory.available:
@@ -38,6 +42,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+
   system.memory.limit:
     enabled: false
     description: Total bytes of memory available.
@@ -48,6 +53,68 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+
+  system.memory.linux.hugepages.limit:
+    enabled: false
+    description: Total number of hugepages available.
+    unit: "{page}"
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
+  system.memory.linux.hugepages.page_size:
+    enabled: false
+    description: System hugepage size in bytes.
+    unit: By
+    stability:
+      level: development
+    gauge:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
+  system.memory.linux.hugepages.reserved:
+    enabled: false
+    description: Number of reserved hugepages (hugepages for which a commitment to allocate has been made, but no allocation has yet been made). This is reported as a separate metric rather than a usage state because reserved pages are already counted in free pages - they represent a subset of free pages that cannot be used for non-reserved allocations.
+    unit: "{page}"
+    stability:
+      level: development
+    gauge:
+      value_type: int
+
+  system.memory.linux.hugepages.surplus:
+    enabled: false
+    description: Number of surplus hugepages (overcommitted hugepages beyond the persistent pool). This is reported as a separate metric rather than a usage state because surplus pages can be in either used or free state, and including them would break the semantic convention that usage states must sum to the limit.
+    unit: "{page}"
+    stability:
+      level: development
+    gauge:
+      value_type: int
+
+  system.memory.linux.hugepages.usage:
+    enabled: false
+    description: Number of hugepages in use by state.
+    unit: "{page}"
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [system.memory.linux.hugepages.state]
+
+  system.memory.linux.hugepages.utilization:
+    enabled: false
+    description: Percentage of hugepages in use by state.
+    unit: "1"
+    stability:
+      level: development
+    gauge:
+      value_type: double
+    attributes: [system.memory.linux.hugepages.state]
 
   system.memory.page_size:
     enabled: false

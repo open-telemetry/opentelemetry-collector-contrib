@@ -1,0 +1,46 @@
+$defs:
+  reload_intervals:
+    type: object
+    properties:
+      array:
+        type: string
+        format: duration
+      clients:
+        type: string
+        format: duration
+      usage:
+        type: string
+        format: duration
+  settings:
+    type: object
+    properties:
+      reload_intervals:
+        x-pointer: true
+        $ref: reload_intervals
+description: Config relating to Array Metric Scraper.
+type: object
+properties:
+  arrays:
+    description: Arrays represents the list of arrays to query
+    type: array
+    items:
+      $ref: ./internal.scraper_config
+  clients:
+    description: Clients represents the list of clients metrics
+    type: array
+    items:
+      $ref: ./internal.scraper_config
+  env:
+    description: Env represents the respective environment value valid to scrape
+    type: string
+  settings:
+    description: Settings contains settings for the individual scrapers
+    x-pointer: true
+    $ref: settings
+  usage:
+    description: Usage represents the list of usage to query
+    type: array
+    items:
+      $ref: ./internal.scraper_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
