@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: receiver/libhoney
+note: Fix timestamp in libhoney receiver
+issues: [45799]
+subtext: |
+  The libhoney exporter was setting the start_time for some spans to the
+  current time instead of the timestamp in the event.
+change_logs: [user]

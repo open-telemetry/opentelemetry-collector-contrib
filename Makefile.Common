@@ -251,13 +251,19 @@ fmt: $(GOFUMPT) $(GOIMPORTS)
 	$(GOIMPORTS) -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: generate-tools
-generate-tools: $(MDATAGEN) $(GENQLIENT)
+generate-tools: $(GENQLIENT)
 ifeq ($(GOOS),windows)
 	@echo Adding "exe" extensions to generate tools
 	@for f in $^; do \
 		cp -u "$$f" "$$f.exe"; \
 	done
 endif
+
+MDATAGEN_METADATA_YAML?= metadata.yaml
+
+.PHONY: mdatagen
+mdatagen: $(MDATAGEN)
+	@$(MDATAGEN) $(MDATAGEN_METADATA_YAML)
 
 # On Windows changing path with absolute path includes ':' even escaping it is not enough to get it to correctly
 # update PATH, so use a relative path when pre-pending to PATH on Windows. Unfortunately, realpath is not portable

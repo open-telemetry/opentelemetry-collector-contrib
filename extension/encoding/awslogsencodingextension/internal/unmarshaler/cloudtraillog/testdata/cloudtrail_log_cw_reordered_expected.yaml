@@ -1,0 +1,140 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: aws.log.group.names
+          value:
+            stringValue: /aws/cloudtrail/logs
+        - key: aws.log.stream.names
+          value:
+            stringValue: 123456789010_CloudTrail_us-east-1
+        - key: cloud.region
+          value:
+            stringValue: eu-west-1
+        - key: cloud.account.id
+          value:
+            stringValue: "627286350134"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: aws.cloudtrail.event_version
+                value:
+                  stringValue: "1.11"
+              - key: aws.cloudtrail.event_id
+                value:
+                  stringValue: 5cb53c22-36b5-3ca3-a389-dae3eec919df
+              - key: rpc.method
+                value:
+                  stringValue: PutObject
+              - key: rpc.system
+                value:
+                  stringValue: AwsApiCall
+              - key: rpc.service
+                value:
+                  stringValue: s3.amazonaws.com
+              - key: aws.request_id
+                value:
+                  stringValue: EH45WHPCAE9G5SX8
+              - key: aws.event.category
+                value:
+                  stringValue: Data
+              - key: aws.event.read_only
+                value:
+                  boolValue: false
+              - key: aws.event.management
+                value:
+                  boolValue: false
+              - key: source.address
+                value:
+                  stringValue: s3.amazonaws.com
+              - key: user_agent.original
+                value:
+                  stringValue: s3.amazonaws.com
+              - key: aws.user_identity.invoked_by
+                value:
+                  stringValue: s3.amazonaws.com
+              - key: aws.user_identity.principal.type
+                value:
+                  stringValue: AWSService
+              - key: aws.shared_event_id
+                value:
+                  stringValue: ed5bfe2a-b8d8-4a7a-9267-fb58ca3b2f77
+              - key: aws.request.parameters
+                value:
+                  kvlistValue:
+                    values:
+                      - key: key
+                        value:
+                          stringValue: AWSLogs/627286350134/s3/2026-01-28-09-26-59-AB82D7306CDE5EF8
+                      - key: bucketName
+                        value:
+                          stringValue: elastic-sar-bucket-fe44ff52c91b2efa4bccb8e07c85a202
+                      - key: Host
+                        value:
+                          stringValue: s3.eu-west-1.amazonaws.com
+              - key: aws.response.elements
+                value:
+                  kvlistValue:
+                    values:
+                      - key: x-amz-server-side-encryption
+                        value:
+                          stringValue: AES256
+              - key: aws.cloudtrail.additional_event_data
+                value:
+                  kvlistValue:
+                    values:
+                      - key: SSEApplied
+                        value:
+                          stringValue: Default_SSE_S3
+                      - key: AuthenticationMethod
+                        value:
+                          stringValue: AuthHeader
+                      - key: x-amz-id-2
+                        value:
+                          stringValue: 8QsIi8XYiGCTf9wDCAncwPM9QKnLiD3Suz4Gg6fcnNzKucKThMi2CYA67zvsIIF9BxHHs1ZPopka8xkHvWV1yem9xlB2NXGJ
+                      - key: bytesTransferredOut
+                        value:
+                          doubleValue: 0
+                      - key: SignatureVersion
+                        value:
+                          stringValue: SigV4
+                      - key: CipherSuite
+                        value:
+                          stringValue: TLS_AES_128_GCM_SHA256
+                      - key: bytesTransferredIn
+                        value:
+                          doubleValue: 576
+              - key: aws.resources
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: account.id
+                              value:
+                                stringValue: "627286350134"
+                            - key: type
+                              value:
+                                stringValue: AWS::S3::Bucket
+                            - key: arn
+                              value:
+                                stringValue: arn:aws:s3:::elastic-sar-bucket-fe44ff52c91b2efa4bccb8e07c85a202
+                      - kvlistValue:
+                          values:
+                            - key: type
+                              value:
+                                stringValue: AWS::S3::Object
+                            - key: arn
+                              value:
+                                stringValue: arn:aws:s3:::elastic-sar-bucket-fe44ff52c91b2efa4bccb8e07c85a202/AWSLogs/627286350134/s3/2026-01-28-09-26-59-AB82D7306CDE5EF8
+            body: {}
+            timeUnixNano: "1769592419000000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.cloudtrail
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+          version: test-version
