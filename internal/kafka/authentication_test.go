@@ -4,12 +4,10 @@
 package kafka
 
 import (
-	"net/url"
 	"testing"
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/oauth2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
@@ -56,12 +54,6 @@ func TestAuthentication(t *testing.T) {
 	saramaSASLOAUTHBEARERConfig := &sarama.Config{}
 	saramaSASLOAUTHBEARERConfig.Net.SASL.Enable = true
 	saramaSASLOAUTHBEARERConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
-	// Specify 0 seconds for the RefreshAhead, as we don't want to have it launch
-	// the background refresher goroutine - we are just verifying authentication
-	// configuration setup here.
-	saramaSASLOAUTHBEARERConfig.Net.SASL.TokenProvider, _ = NewOIDCTokenProvider(
-		t.Context(), saramaSASLOAUTHBEARERConfig.ClientID, "/etc/hosts", "http://127.0.0.1:3000/oidc",
-		[]string{"mock-scope"}, url.Values{}, oauth2.AuthStyleAutoDetect, 0)
 
 	saramaKerberosCfg := &sarama.Config{}
 	saramaKerberosCfg.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
