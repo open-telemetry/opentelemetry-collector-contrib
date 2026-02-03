@@ -86,10 +86,10 @@ Example:
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
-**Note** that with the introduction of the [semconv.k8s.receiver.k8scluster.enableStable](#semconvk8sreceiverk8sclusterenablestable) feature gate, the metrics for the allocatable resource types
+**Note** that with the introduction of the [receiver.k8scluster.EmitV1K8sConventions](#receiverk8sclusteremitv1k8sconventions) feature gate, the metrics for the allocatable resource types
 (`k8s.node.cpu.allocatable`, `k8s.node.ephemeral_storage.allocatable`, `k8s.node.memory.allocatable`, `k8s.node.pod.allocatable`) are enabled/disabled via the metrics section, and are represented by up/down counters, rather than gauges.
-To activate the feature flag, start the collector with `--feature-gates=+semconv.k8s.receiver.k8scluster.enableStable`.
-To disable the old representation of the allocatable metrics (`k8s.node.allocatable_cpu`, `k8s.node.allocatable_ephemeral_storage`, `k8s.node.allocatable_memory`, `k8s.node.allocatable_pods`) disable the [semconv.k8s.receiver.k8scluster.disableLegacy](#semconvk8sreceiverk8sclusterdisablelegacy) feature flag with `--feature-gates=-semconv.k8s.receiver.k8scluster.disableLegacy`
+To activate the feature flag, start the collector with `--feature-gates=+receiver.k8scluster.EmitV1K8sConventions`.
+To disable the old representation of the allocatable metrics (`k8s.node.allocatable_cpu`, `k8s.node.allocatable_ephemeral_storage`, `k8s.node.allocatable_memory`, `k8s.node.allocatable_pods`) enable the [receiver.k8scluster.DontEmitV0K8sConventions](#receiverk8sclusterdontemitvok8sconventions) feature gate with `--feature-gates=+receiver.k8scluster.DontEmitV0K8sConventions`
 
 ### k8s_leader_elector
 Provide name of the k8s leader elector extension defined in config. This allows multiple instances of k8s cluster
@@ -453,28 +453,28 @@ Add the following rules to your ClusterRole:
 
 ## Feature Gates
 
-### `semconv.k8s.receiver.k8scluster.enableStable`
+### `receiver.k8scluster.EmitV1K8sConventions`
 
-The `semconv.k8s.receiver.k8scluster.enableStable` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the SemConv valid format of the node allocatable metrics reported by the receiver.
+The `receiver.k8scluster.EmitV1K8sConventions` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables V1 semantic conventions for the node allocatable metrics reported by the receiver.
 The feature gate is in `alpha` stage, which means it is disabled by default.
 
-If enabled, the SemConv valid format of the node allocatable metrics are reported (if enabled via the metrics section):
+When enabled, the V1 semantic conventions format of the node allocatable metrics are reported (if enabled via the metrics section):
 
 - `k8s.node.cpu.allocatable`
 - `k8s.node.ephemeral_storage.allocatable`
 - `k8s.node.memory.allocatable`
 - `k8s.node.pod.allocatable`
 
-### `semconv.k8s.receiver.k8scluster.disableLegacy`
+### `receiver.k8scluster.DontEmitV0K8sConventions`
 
-The `semconv.k8s.receiver.k8scluster.disableLegacy` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) disables the old, non-SemConv valid format of the node allocatable metrics reported by the receiver.
+The `receiver.k8scluster.DontEmitV0K8sConventions` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) disables V0 semantic conventions for the node allocatable metrics reported by the receiver.
 The feature gate is in `alpha` stage, which means it is disabled by default.
 
-If disabled, the old format of the node allocatable metrics are reported:
+When enabled, the old format of the node allocatable metrics are not reported:
 
 - `k8s.node.allocatable_cpu`
 - `k8s.node.allocatable_ephemeral_storage`
 - `k8s.node.allocatable_memory`
 - `k8s.node.allocatable_pods`
 
-See [documentation.md](./documentation.md#feature-gates) for the complete list of feature gates supported by this processor.
+See [documentation.md](./documentation.md#feature-gates) for the complete list of feature gates supported by this receiver.

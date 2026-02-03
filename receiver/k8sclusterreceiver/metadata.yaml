@@ -707,11 +707,11 @@ feature_gates:
     stage: alpha
     description: >-
       When enabled, V0 semantic conventions are disabled.
-    from_version: v0.145.0
+    from_version: v0.146.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708
   - id: receiver.k8scluster.EmitV1K8sConventions
     stage: alpha
     description: >-
       When enabled, V1 semantic conventions are enabled.
-    from_version: v0.145.0
+    from_version: v0.146.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708

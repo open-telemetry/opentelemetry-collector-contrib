@@ -250,7 +250,7 @@ func TestReceiverFeatureGatesCombination(t *testing.T) {
 	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, observedNamespaces, component.MustNewID("foo"))
 
 	ctx := t.Context()
-	require.ErrorContains(t, r.Start(ctx, newNopHost()), "cannot disable legacy metrics without enabling stable metrics")
+	require.ErrorContains(t, r.Start(ctx, newNopHost()), "cannot disable V0 semantic conventions without enabling V1 semantic conventions")
 
 	require.NoError(t, r.Shutdown(ctx))
 }

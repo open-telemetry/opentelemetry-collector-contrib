@@ -105,7 +105,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 	ctx, kr.cancel = context.WithCancel(ctx)
 
 	if metadata.ReceiverK8sclusterDontEmitV0K8sConventionsFeatureGate.IsEnabled() && !metadata.ReceiverK8sclusterEmitV1K8sConventionsFeatureGate.IsEnabled() {
-		return errors.New("cannot disable legacy metrics without enabling stable metrics")
+		return errors.New("cannot disable V0 semantic conventions without enabling V1 semantic conventions")
 	}
 
 	// if extension is defined start with k8s leader elector

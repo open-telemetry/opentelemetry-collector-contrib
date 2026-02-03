@@ -11,7 +11,7 @@ var ReceiverK8sclusterDontEmitV0K8sConventionsFeatureGate = featuregate.GlobalRe
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, V0 semantic conventions are disabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708"),
-	featuregate.WithRegisterFromVersion("v0.145.0"),
+	featuregate.WithRegisterFromVersion("v0.146.0"),
 )
 
 var ReceiverK8sclusterEmitV1K8sConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -19,5 +19,5 @@ var ReceiverK8sclusterEmitV1K8sConventionsFeatureGate = featuregate.GlobalRegist
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, V1 semantic conventions are enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708"),
-	featuregate.WithRegisterFromVersion("v0.145.0"),
+	featuregate.WithRegisterFromVersion("v0.146.0"),
 )
