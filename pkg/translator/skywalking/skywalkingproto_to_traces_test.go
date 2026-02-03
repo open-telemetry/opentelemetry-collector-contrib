@@ -467,4 +467,3 @@ func TestGetOtSpanTagsMapping(t *testing.T) {
 		assert.Equal(t, "server.address", mapping["mq.broker"])
 	})
 }
-
