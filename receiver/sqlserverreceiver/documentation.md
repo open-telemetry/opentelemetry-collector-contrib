@@ -606,7 +606,7 @@ query sample
 | sqlserver.wait_type | Type of wait encountered by the request. Empty if none. | Any Str |
 | sqlserver.writes | Number of writes performed by the query. | Any Int |
 | user.name | Login name associated with the SQL Server session. | Any Str |
-| sqlserver.procedure_id | The SQLServer ID of the stored procedure, if any | Any Str |
+| sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str |
 
 ### db.server.top_query
@@ -632,7 +632,7 @@ top query
 | server.address | The network address of the server hosting the database. | Any Str |
 | server.port | The port number on which the server is listening. | Any Int |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
-| sqlserver.procedure_id | The SQLServer ID of the stored procedure, if any | Any Str |
+| sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str |
 
 ## Resource Attributes
