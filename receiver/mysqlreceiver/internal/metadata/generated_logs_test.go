@@ -33,7 +33,6 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	rb := lb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
 	rb.SetServiceInstanceID("service.instance.id-val")
-	rb.SetServiceName("service.name-val")
 	res := rb.Emit()
 
 	// append the first log record
@@ -139,7 +138,6 @@ func TestLogsBuilder(t *testing.T) {
 			rb := lb.NewResourceBuilder()
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
 			rb.SetServiceInstanceID("service.instance.id-val")
-			rb.SetServiceName("service.name-val")
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))
 
