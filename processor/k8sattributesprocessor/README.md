@@ -959,33 +959,7 @@ as tags.
 
 ### Kubernetes Versions
 
-| K8s Version | Status | Notes |
-|-------------|--------|-------|
-| 1.24+ | ✅ Fully supported | Recommended |
-| 1.20-1.23 | ✅ Supported | No known issues |
-| 1.19 | ⚠️ Limited support | Some features may not work |
-| <1.19 | ❌ Not supported | API compatibility issues |
-
-### OpenTelemetry Collector Versions
-
-Compatible with OpenTelemetry Collector Contrib v0.100.0 and later.
-
-### Container Runtimes
-
-| Runtime | Support | Notes |
-|---------|---------|-------|
-| containerd | ✅ Full | Recommended |
-| CRI-O | ✅ Full | All features supported |
-| Docker | ✅ Full | Via dockershim or CRI |
-
-### Cloud Provider Compatibility
-
-| Provider | Status | Special Considerations |
-|----------|--------|----------------------|
-| Amazon EKS | ✅ Tested | Use IRSA for auth in restricted environments |
-| Google GKE | ✅ Tested | Workload Identity supported |
-| Azure AKS | ✅ Tested | Works with managed identity |
-| Self-managed | ✅ Supported | Standard RBAC applies |
+This processor is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L98) workflow. These tested versions represent the officially supported Kubernetes versions for this component.
 
 ## Production Deployment Guide
 
