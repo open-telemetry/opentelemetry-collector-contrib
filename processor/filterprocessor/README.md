@@ -56,6 +56,15 @@ The filter processor also allows configuring an optional field, `error_mode`, wh
 
 If not specified, `propagate` will be used.
 
+The filter processor allows configuring an optional field, `action`, which determines the behavior when conditions match.
+
+| action | description                                                                                              |
+|--------|----------------------------------------------------------------------------------------------------------|
+| drop   | Drop signals that match the conditions and retain all others. This is the default behavior.              |
+| keep   | Retain signals that match the conditions and drop all others. This effectively inverts the `drop` logic. |
+
+If not specified, `drop` will be used.
+
 ### Examples
 
 ```yaml
@@ -63,6 +72,7 @@ processors:
   filter/ottl:
     error_mode: ignore
     traces:
+      action: drop
       span:
         - 'attributes["container.name"] == "app_container_1"'
         - 'resource.attributes["host.name"] == "localhost"'
@@ -71,6 +81,7 @@ processors:
         - 'attributes["grpc"] == true'
         - 'IsMatch(name, ".*grpc.*")'
     metrics:
+      action: drop
       metric:
           - 'name == "my.metric" and resource.attributes["my_label"] == "abc123"'
           - 'type == METRIC_DATA_TYPE_HISTOGRAM'
@@ -78,10 +89,12 @@ processors:
           - 'metric.type == METRIC_DATA_TYPE_SUMMARY'
           - 'resource.attributes["service.name"] == "my_service_name"'
     logs:
+      action: drop
       log_record:
         - 'IsMatch(body, ".*password.*")'
         - 'severity_number < SEVERITY_NUMBER_WARN'
     profiles:
+      action: drop
       profile:
         - 'duration_unix_nano > 3000'
 ```
@@ -92,6 +105,18 @@ processors:
   filter:
     error_mode: ignore
     traces:
+      action: drop
+      span:
+        - IsMatch(resource.attributes["k8s.pod.name"], "my-pod-name.*")
+```
+
+#### Keeping data based on a resource attribute
+```yaml
+processors:
+  filter:
+    error_mode: ignore
+    traces:
+      action: keep
       span:
         - IsMatch(resource.attributes["k8s.pod.name"], "my-pod-name.*")
 ```

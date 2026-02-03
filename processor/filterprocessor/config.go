@@ -67,6 +67,9 @@ type MetricFilters struct {
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *filterconfig.MetricMatchProperties `mapstructure:"exclude"`
 
+	// Action specifies the behavior when conditions match. The default is drop.
+	Action Action `mapstructure:"action"`
+
 	// RegexpConfig specifies options for the regexp match type
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`
 
@@ -88,6 +91,9 @@ type MetricFilters struct {
 
 // TraceFilters filters by OTTL conditions
 type TraceFilters struct {
+	// Action specifies the behavior when conditions match. The default is drop.
+	Action Action `mapstructure:"action"`
+
 	// ResourceConditions is a list of OTTL conditions for an ottlresource context.
 	// If any condition resolves to true, the whole resource will be dropped.
 	// Supports `and`, `or`, and `()`
@@ -114,6 +120,9 @@ type LogFilters struct {
 	// all other logs should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *LogMatchProperties `mapstructure:"exclude"`
+
+	// Action specifies the behavior when conditions match. The default is drop.
+	Action Action `mapstructure:"action"`
 
 	// ResourceConditions is a list of OTTL conditions for an ottlresource context.
 	// If any condition resolves to true, the whole resource will be dropped.
@@ -298,6 +307,9 @@ func (lmp LogSeverityNumberMatchProperties) validate() error {
 type ProfileFilters struct {
 	_ struct{} // prevent unkeyed literals
 
+	// Action specifies the behavior when conditions match. The default is drop.
+	Action Action `mapstructure:"action"`
+
 	// ResourceConditions is a list of OTTL conditions for an ottlresource context.
 	// If any condition resolves to true, the whole resource will be dropped.
 	// Supports `and`, `or`, and `()`
@@ -307,6 +319,27 @@ type ProfileFilters struct {
 	// If any condition resolves to true, the profile will be dropped.
 	// Supports `and`, `or`, and `()`
 	ProfileConditions []string `mapstructure:"profile"`
+}
+
+// Action specifies the behavior when conditions match. The default is drop.
+type Action string
+
+const (
+	// dropAction drops signals that match the conditions and retains all others.
+	dropAction = Action("drop")
+	// keepAction retains signals that match the conditions and drops all others.
+	keepAction = Action("keep")
+)
+
+func (a *Action) UnmarshalText(text []byte) error {
+	str := Action(strings.ToLower(string(text)))
+	switch str {
+	case dropAction, keepAction:
+		*a = str
+		return nil
+	default:
+		return fmt.Errorf("unknown action \"%s\": must be \"%s\" or \"%s\"", str, dropAction, keepAction)
+	}
 }
 
 var _ component.Config = (*Config)(nil)
