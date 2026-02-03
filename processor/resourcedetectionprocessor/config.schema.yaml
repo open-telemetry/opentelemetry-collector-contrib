@@ -1,0 +1,95 @@
+$defs:
+  detector_config:
+    description: DetectorConfig contains user-specified configurations unique to all individual detectors
+    type: object
+    properties:
+      akamai:
+        description: AkamaiConfig contains user-specified configurations for the akamai detector
+        $ref: ./internal/akamai.config
+      aks:
+        description: Aks contains user-specified configurations for the aks detector
+        $ref: ./internal/azure/aks.config
+      alibaba_ecs:
+        description: AlibabaECSConfig contains user-specified configurations for the Alibaba Cloud ECS detector
+        $ref: ./internal/alibaba/ecs.config
+      azure:
+        description: Azure contains user-specified configurations for the azure detector
+        $ref: ./internal/azure.config
+      consul:
+        description: ConsulConfig contains user-specified configurations for the Consul detector
+        $ref: ./internal/consul.config
+      digitalocean:
+        description: DigitalOceanConfig contains user-specified configurations for the docker detector
+        $ref: ./internal/digitalocean.config
+      docker:
+        description: DockerConfig contains user-specified configurations for the docker detector
+        $ref: ./internal/docker.config
+      ec2:
+        description: EC2Config contains user-specified configurations for the EC2 detector
+        $ref: ./internal/aws/ec2.config
+      ecs:
+        description: ECSConfig contains user-specified configurations for the ECS detector
+        $ref: ./internal/aws/ecs.config
+      eks:
+        description: EKSConfig contains user-specified configurations for the EKS detector
+        $ref: ./internal/aws/eks.config
+      elasticbeanstalk:
+        description: Elasticbeanstalk contains user-specified configurations for the elasticbeanstalk detector
+        $ref: ./internal/aws/elasticbeanstalk.config
+      gcp:
+        description: GcpConfig contains user-specified configurations for the gcp detector
+        $ref: ./internal/gcp.config
+      heroku:
+        description: HerokuConfig contains user-specified configurations for the heroku detector
+        $ref: ./internal/heroku.config
+      hetzner:
+        description: HetznerConfig contains user-specified configurations for the hetzner detector
+        $ref: ./internal/hetzner.config
+      k8snode:
+        description: K8SNode contains user-specified configurations for the K8SNode detector
+        $ref: ./internal/k8snode.config
+      kubeadm:
+        description: Kubeadm contains user-specified configurations for the Kubeadm detector
+        $ref: ./internal/kubeadm.config
+      lambda:
+        description: Lambda contains user-specified configurations for the lambda detector
+        $ref: ./internal/aws/lambda.config
+      nova:
+        description: OpenStackNovaConfig contains user-specified configurations for the OpenStackNova detector
+        $ref: ./internal/openstack/nova.config
+      openshift:
+        description: OpenShift contains user-specified configurations for the OpenShift detector
+        $ref: ./internal/openshift.config
+      oraclecloud:
+        description: OracleCloud contains user-specified configurations for the OracleCloud detector
+        $ref: ./internal/oraclecloud.config
+      scaleway:
+        description: ScalewayConfig contains user-specified configurations for the scaleway detector
+        $ref: ./internal/scaleway.config
+      system:
+        description: SystemConfig contains user-specified configurations for the System detector
+        $ref: ./internal/system.config
+      upcloud:
+        description: UpcloudConfig contains user-specified configurations for the upcloud detector
+        $ref: ./internal/upcloud.config
+      vultr:
+        description: VultrConfig contains user-specified configurations for the vultr detector
+        $ref: ./internal/vultr.config
+description: Config defines configuration for Resource processor.
+type: object
+properties:
+  detectors:
+    description: Detectors is an ordered list of named detectors that should be run to attempt to detect resource information.
+    type: array
+    items:
+      type: string
+  override:
+    description: Override indicates whether any existing resource attributes should be overridden or preserved. Defaults to true.
+    type: boolean
+  refresh_interval:
+    description: If > 0, periodically re-run detection for all configured detectors. When 0 (default), no periodic refresh occurs.
+    type: string
+    format: duration
+allOf:
+  - $ref: detector_config
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
