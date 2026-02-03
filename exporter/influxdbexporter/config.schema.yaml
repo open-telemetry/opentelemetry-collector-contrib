@@ -1,0 +1,60 @@
+$defs:
+  v_1_compatibility:
+    description: V1Compatibility is used to specify if the exporter should use the v1.X InfluxDB API schema.
+    type: object
+    properties:
+      db:
+        description: DB is used to specify the name of the V1 InfluxDB database that telemetry will be written to.
+        type: string
+      enabled:
+        description: Enabled is used to specify if the exporter should use the v1.X InfluxDB API schema
+        type: boolean
+      password:
+        description: Password is used to optionally specify the basic auth password
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      username:
+        description: Username is used to optionally specify the basic auth username
+        type: string
+description: Config defines configuration for the InfluxDB exporter.
+type: object
+properties:
+  bucket:
+    description: Bucket is the InfluxDB bucket name that telemetry will be written to.
+    type: string
+  log_record_dimensions:
+    description: 'LogRecordDimensions are log record attributes to be used as line protocol tags. These are always included as tags, if available: - trace ID - span ID The default values: - service.name Other common attributes can be found here: - https://opentelemetry.io/docs/specs/semconv/ When using InfluxDB for both logs and traces, be certain that log_record_dimensions matches the tracing span_dimensions value.'
+    type: array
+    items:
+      type: string
+  metrics_schema:
+    description: 'MetricsSchema indicates the metrics schema to emit to line protocol. Options: - telegraf-prometheus-v1 - telegraf-prometheus-v2'
+    type: string
+  org:
+    description: Org is the InfluxDB organization name of the destination bucket.
+    type: string
+  payload_max_bytes:
+    description: PayloadMaxBytes is the maximum number of line protocol bytes to POST in a single request.
+    type: integer
+  payload_max_lines:
+    description: PayloadMaxLines is the maximum number of line protocol lines to POST in a single request.
+    type: integer
+  precision:
+    description: Precision is the timestamp precision for writing data to InfluxDB.
+    type: string
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  span_dimensions:
+    description: 'SpanDimensions are span attributes to be used as line protocol tags. These are always included as tags: - trace ID - span ID The default values are strongly recommended for use with Jaeger: - service.name - span.name Other common attributes can be found here: - https://opentelemetry.io/docs/specs/semconv/'
+    type: array
+    items:
+      type: string
+  token:
+    description: Token is used to identify InfluxDB permissions within the organization.
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  v1_compatibility:
+    description: V1Compatibility is used to specify if the exporter should use the v1.X InfluxDB API schema.
+    $ref: v_1_compatibility
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
