@@ -90,7 +90,6 @@ func TestResourceAttributeScraper_HostLevel(t *testing.T) {
 
 	scraper := &resourceAttributeScraper{
 		delegate:       mock,
-		serviceName:    "hostmetrics",
 		baseInstanceID: generateServiceInstanceID("testhost"),
 		scraperType:    component.MustNewType("cpu"),
 	}
@@ -107,10 +106,6 @@ func TestResourceAttributeScraper_HostLevel(t *testing.T) {
 	// Verify resource attributes were injected
 	require.Equal(t, 1, result.ResourceMetrics().Len())
 	attrs := result.ResourceMetrics().At(0).Resource().Attributes()
-
-	serviceName, ok := attrs.Get("service.name")
-	require.True(t, ok, "service.name should be set")
-	assert.Equal(t, "hostmetrics", serviceName.Str())
 
 	instanceID, ok := attrs.Get("service.instance.id")
 	require.True(t, ok, "service.instance.id should be set")
@@ -141,7 +136,6 @@ func TestResourceAttributeScraper_ProcessLevel(t *testing.T) {
 
 	scraper := &resourceAttributeScraper{
 		delegate:       mock,
-		serviceName:    "hostmetrics",
 		baseInstanceID: baseInstanceID,
 		scraperType:    component.MustNewType("process"),
 	}
@@ -153,10 +147,6 @@ func TestResourceAttributeScraper_ProcessLevel(t *testing.T) {
 
 	// Verify first process
 	attrs1 := result.ResourceMetrics().At(0).Resource().Attributes()
-	serviceName1, ok := attrs1.Get("service.name")
-	require.True(t, ok)
-	assert.Equal(t, "hostmetrics", serviceName1.Str())
-
 	instanceID1, ok := attrs1.Get("service.instance.id")
 	require.True(t, ok)
 	expectedID1 := generateProcessServiceInstanceID(baseInstanceID, 1234)
@@ -164,10 +154,6 @@ func TestResourceAttributeScraper_ProcessLevel(t *testing.T) {
 
 	// Verify second process
 	attrs2 := result.ResourceMetrics().At(1).Resource().Attributes()
-	serviceName2, ok := attrs2.Get("service.name")
-	require.True(t, ok)
-	assert.Equal(t, "hostmetrics", serviceName2.Str())
-
 	instanceID2, ok := attrs2.Get("service.instance.id")
 	require.True(t, ok)
 	expectedID2 := generateProcessServiceInstanceID(baseInstanceID, 5678)
@@ -190,7 +176,6 @@ func TestResourceAttributeScraper_ProcessWithoutPID(t *testing.T) {
 
 	scraper := &resourceAttributeScraper{
 		delegate:       mock,
-		serviceName:    "hostmetrics",
 		baseInstanceID: baseInstanceID,
 		scraperType:    component.MustNewType("process"),
 	}
@@ -237,7 +222,6 @@ func TestResourceAttributeScraper_PartialError(t *testing.T) {
 
 	scraper := &resourceAttributeScraper{
 		delegate:       mock,
-		serviceName:    "hostmetrics",
 		baseInstanceID: generateServiceInstanceID("testhost"),
 		scraperType:    component.MustNewType("cpu"),
 	}
@@ -251,10 +235,6 @@ func TestResourceAttributeScraper_PartialError(t *testing.T) {
 	require.Equal(t, 1, result.ResourceMetrics().Len())
 	attrs := result.ResourceMetrics().At(0).Resource().Attributes()
 
-	serviceName, ok := attrs.Get("service.name")
-	require.True(t, ok, "service.name should be set even on partial error")
-	assert.Equal(t, "hostmetrics", serviceName.Str())
-
-	_, ok = attrs.Get("service.instance.id")
+	_, ok := attrs.Get("service.instance.id")
 	require.True(t, ok, "service.instance.id should be set even on partial error")
 }

@@ -142,12 +142,9 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		assert.Equal(t, "https://opentelemetry.io/schemas/1.9.0", rm.SchemaUrl(),
 			"SchemaURL is incorrect for metrics: %v", returnedMetricNames)
 
-		// Verify service.name and service.instance.id are present
+		// Verify service.instance.id is present
 		attrs := rm.Resource().Attributes()
-		serviceName, ok := attrs.Get("service.name")
-		require.True(t, ok, "service.name should be present")
-		assert.Equal(t, "hostmetrics", serviceName.Str())
-		_, ok = attrs.Get("service.instance.id")
+		_, ok := attrs.Get("service.instance.id")
 		require.True(t, ok, "service.instance.id should be present")
 
 		// Differentiate host-level metrics from process metrics by checking for process.pid

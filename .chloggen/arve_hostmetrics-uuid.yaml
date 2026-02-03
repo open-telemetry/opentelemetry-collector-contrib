@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/hostmetrics
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add service.name and service.instance.id resource attributes to all scrapers
+note: Add service.instance.id resource attribute to all scrapers
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [45548]
@@ -16,7 +16,6 @@ issues: [45548]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  service.name is set to "hostmetrics" for all scrapers.
   service.instance.id is a deterministic UUID v5 derived from hostname.
   For the process scraper, service.instance.id is unique per process.
 

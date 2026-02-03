@@ -57,7 +57,7 @@ func (evs *envVarScraper) Shutdown(ctx context.Context) error {
 }
 
 // NewResourceAttributeFactory creates a factory that wraps scrapers with resource attribute injection.
-// It adds service.name and service.instance.id to all emitted metrics.
+// It adds service.instance.id to all emitted metrics.
 func NewResourceAttributeFactory(delegate scraper.Factory, hostname string) scraper.Factory {
 	baseInstanceID := generateServiceInstanceID(hostname)
 
@@ -70,18 +70,16 @@ func NewResourceAttributeFactory(delegate scraper.Factory, hostname string) scra
 		}
 		return &resourceAttributeScraper{
 			delegate:       scrp,
-			serviceName:    "hostmetrics",
 			baseInstanceID: baseInstanceID,
 			scraperType:    delegate.Type(),
 		}, nil
 	}, delegate.MetricsStability()))
 }
 
-// resourceAttributeScraper wraps a scraper.Metrics to inject service.name and service.instance.id
-// resource attributes into all emitted metrics.
+// resourceAttributeScraper wraps a scraper.Metrics to inject service.instance.id
+// resource attribute into all emitted metrics.
 type resourceAttributeScraper struct {
 	delegate       scraper.Metrics
-	serviceName    string
 	baseInstanceID string // UUID v5 from hostname
 	scraperType    component.Type
 }
@@ -109,9 +107,6 @@ func (ras *resourceAttributeScraper) injectResourceAttributes(metrics pmetric.Me
 	for i := range metrics.ResourceMetrics().Len() {
 		rm := metrics.ResourceMetrics().At(i)
 		attrs := rm.Resource().Attributes()
-
-		// Add service.name
-		attrs.PutStr("service.name", ras.serviceName)
 
 		// Add service.instance.id
 		// For process scraper, generate unique ID per process using process.pid
