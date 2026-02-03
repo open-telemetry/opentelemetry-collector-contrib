@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -105,7 +104,6 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 func testScraperMetrics(t *testing.T, targets []*testData, featureGateEnabled bool, globalExtra, scrapeExtra *bool, expectExtraScrapeMetrics bool) {
 	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPrometheusreceiverEnableReportExtraScrapeMetricsFeatureGate, featureGateEnabled)()
 
-	ctx := t.Context()
 	mp, cfg, err := setupMockPrometheusWithExtraScrapeMetrics(globalExtra, scrapeExtra, targets...)
 	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
@@ -115,19 +113,16 @@ func testScraperMetrics(t *testing.T, targets []*testData, featureGateEnabled bo
 
 	// Use signaling sink for deterministic synchronization.
 	cms := newSignalingSink(expectedScrapes)
-	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
-		PrometheusConfig: cfg,
-	}, cms)
-	require.NoError(t, err, "Failed to create Prometheus receiver: %v", err)
-
-	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
-	// verify state after shutdown is called
-	t.Cleanup(func() {
-		// verify state after shutdown is called
-		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-		require.NoError(t, receiver.Shutdown(t.Context()))
-		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()), "expected scrape manager to have no targets")
-	})
+	set := receivertest.NewNopSettings(metadata.Type)
+	receiver := newTestReceiverSettingsConsumer(t, &Config{PrometheusConfig: cfg}, set, cms)
+	defer func() {
+		// Check targets prior to shutdown. The cleanup installed by newTestReceiver
+		// will check that there are no running targets after shutdown.
+		assert.Lenf(t,
+			flattenTargets(receiver.scrapeManager.TargetsAll()),
+			len(targets), "expected %v targets to be running", len(targets),
+		)
+	}()
 
 	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
 	mp.wg.Wait()

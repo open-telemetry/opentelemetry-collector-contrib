@@ -29,7 +29,6 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -197,8 +196,8 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 		job := make(map[string]any)
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
-		job["scrape_interval"] = "1s"
-		job["scrape_timeout"] = "500ms"
+		job["scrape_interval"] = "100ms"
+		job["scrape_timeout"] = "50ms"
 		job["static_configs"] = []map[string]any{{"targets": []string{u.Host}}}
 		jobs = append(jobs, job)
 	}
@@ -808,7 +807,6 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
 func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config), cfgMuts ...func(*PromConfig)) {
-	ctx := t.Context()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	for _, cfgMut := range cfgMuts {
 		cfgMut(cfg)
@@ -818,6 +816,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 
 	config := &Config{
 		PrometheusConfig: cfg,
+		skipOffsetting:   true,
 	}
 	if alterConfig != nil {
 		alterConfig(config)
@@ -825,21 +824,18 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 
 	// Calculate expected scrapes (pages that will return metrics, not 404s).
 	expectedScrapes := countExpectedScrapes(targets)
-
 	// Use signaling sink for deterministic synchronization.
 	cms := newSignalingSink(expectedScrapes)
-	receiver, err := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), config, cms)
-	require.NoError(t, err, "Failed to create Prometheus receiver")
-	receiver.skipOffsetting = true
-
-	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
-	// verify state after shutdown is called
-	t.Cleanup(func() {
-		// verify state after shutdown is called
-		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-		require.NoError(t, receiver.Shutdown(t.Context()))
-		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()), "expected scrape manager to have no targets")
-	})
+	set := receivertest.NewNopSettings(metadata.Type)
+	receiver := newTestReceiverSettingsConsumer(t, config, set, cms)
+	defer func() {
+		// Check targets prior to shutdown. The cleanup installed by newTestReceiver
+		// will check that there are no running targets after shutdown.
+		assert.Lenf(t,
+			flattenTargets(receiver.scrapeManager.TargetsAll()),
+			len(targets), "expected %v targets to be running", len(targets),
+		)
+	}()
 
 	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
 	mp.wg.Wait()
