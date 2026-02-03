@@ -222,7 +222,7 @@ func ConstructTraceSender(t *testing.T, receiver string) testbed.DataSender {
 func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSender {
 	var sender testbed.MetricDataSender
 	switch receiver {
-	case "otlp_grpc":
+	case "otlp":
 		sender = testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	case "stef":
 		s := datasenders.NewStefDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
@@ -240,7 +240,7 @@ func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSen
 func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	var receiver testbed.DataReceiver
 	switch exporter {
-	case "otlp":
+	case "otlp_grpc":
 		receiver = testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 	case "stef":
 		r := datareceivers.NewStefDataReceiver(testutil.GetAvailablePort(t))
