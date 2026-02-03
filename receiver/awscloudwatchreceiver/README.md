@@ -51,6 +51,8 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
     - Only one of `prefix` or `pattern` can be specified. If both are omitted, all log streams up to the limit are collected.
   - `pattern`: (optional) A case-sensitive substring (not a regular expression) that must be present in the log group names, used to limit the number of log groups discovered.
     - Only one of `prefix` or `pattern` can be specified. If both are omitted, all log streams up to the limit are collected.
+  - `account_identifiers`: (optional) A list of AWS account IDs to filter log groups by. Only log groups from the specified accounts will be discovered.
+  - `include_linked_accounts`: (optional; default = false) When using a monitoring account, set this to `true` to have autodiscovery return log groups in the accounts listed in `account_identifiers`. If this is `true` and `account_identifiers` contains a `null` value, all log groups in the monitoring account and in all linked source accounts are returned (behavior is handled by the AWS CloudWatch Logs API).
   - `streams`: (optional) If `streams` is omitted, then all streams will be attempted to retrieve events from.
     - `names`: A list of full log stream names to filter the discovered log groups to collect from.
     - `prefixes`: A list of prefixes to filter the discovered log groups to collect from.
@@ -73,6 +75,21 @@ awscloudwatch:
         prefix: /aws/eks/
         streams:
           prefixes: [kube-api-controller]
+```
+
+#### Autodiscovery with Account ID Filtering Example
+
+```yaml
+awscloudwatch:
+  region: us-west-1
+  logs:
+    poll_interval: 1m
+    groups:
+      autodiscover:
+        limit: 100
+        account_identifiers: ["123456789012", "987654321098"]
+        include_linked_accounts: true
+        prefix: /aws/lambda/
 ```
 
 #### Named Example

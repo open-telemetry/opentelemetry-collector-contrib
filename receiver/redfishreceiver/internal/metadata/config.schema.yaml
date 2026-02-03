@@ -1,0 +1,41 @@
+$defs:
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for redfish metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+  metrics_config:
+    description: MetricsConfig provides config for redfish metrics.
+    type: object
+    properties:
+      chassis.powerstate:
+        $ref: metric_config
+      chassis.status.health:
+        $ref: metric_config
+      chassis.status.state:
+        $ref: metric_config
+      fan.reading:
+        $ref: metric_config
+      fan.status.health:
+        $ref: metric_config
+      fan.status.state:
+        $ref: metric_config
+      system.powerstate:
+        $ref: metric_config
+      system.status.health:
+        $ref: metric_config
+      system.status.state:
+        $ref: metric_config
+      temperature.reading:
+        $ref: metric_config
+      temperature.status.health:
+        $ref: metric_config
+      temperature.status.state:
+        $ref: metric_config

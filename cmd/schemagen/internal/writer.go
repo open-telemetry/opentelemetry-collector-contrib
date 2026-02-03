@@ -6,10 +6,11 @@ package internal
 import (
 	"errors"
 	"os"
+	"path/filepath"
 )
 
-func WriteSchemaToFile(schema *Schema, config *Config) error {
-	schemaPath := config.SchemaPath
+func WriteSchemaToFile(schema *Schema, config *Config) (string, error) {
+	schemaPath := createOutputFilePath(config)
 	var (
 		err error
 		raw []byte
@@ -20,14 +21,25 @@ func WriteSchemaToFile(schema *Schema, config *Config) error {
 	case "json":
 		raw, err = schema.ToJSON()
 	default:
-		err = errors.New("unknown output file type; use json or yaml: " + config.FilePath)
+		err = errors.New("unknown output file type; use json or yaml")
 	}
 	if err != nil {
-		return err
+		return "", err
 	}
-	return writeFile(schemaPath, raw)
+
+	err = writeFile(schemaPath, raw)
+	if err != nil {
+		return "", err
+	}
+
+	return schemaPath, nil
 }
 
 func writeFile(path string, data []byte) error {
 	return os.WriteFile(path, data, 0o600)
+}
+
+func createOutputFilePath(config *Config) string {
+	fileName := "config.schema." + config.FileType
+	return filepath.Join(config.OutputFolder, fileName)
 }

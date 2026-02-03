@@ -24,6 +24,7 @@ import (
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"github.com/twmb/franz-go/plugin/kzap"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
 
@@ -38,7 +39,10 @@ const (
 )
 
 // NewFranzSyncProducer creates a new Kafka client using the franz-go library.
-func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfig,
+func NewFranzSyncProducer(
+	ctx context.Context,
+	host component.Host,
+	clientCfg configkafka.ClientConfig,
 	cfg configkafka.ProducerConfig,
 	timeout time.Duration,
 	logger *zap.Logger,
@@ -50,7 +54,7 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 	default:
 		codec = codec.WithLevel(int(cfg.CompressionParams.Level))
 	}
-	opts, err := commonOpts(ctx, clientCfg, logger, append(
+	opts, err := commonOpts(ctx, host, clientCfg, logger, append(
 		opts,
 		kgo.ProduceRequestTimeout(timeout),
 		kgo.ProducerBatchCompression(codec),
@@ -86,14 +90,17 @@ func NewFranzSyncProducer(ctx context.Context, clientCfg configkafka.ClientConfi
 }
 
 // NewFranzConsumerGroup creates a new Kafka consumer client using the franz-go library.
-func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConfig,
+func NewFranzConsumerGroup(
+	ctx context.Context,
+	host component.Host,
+	clientCfg configkafka.ClientConfig,
 	consumerCfg configkafka.ConsumerConfig,
 	topics []string,
 	excludeTopics []string,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
-	opts, err := commonOpts(ctx, clientCfg, logger, append([]kgo.Opt{
+	opts, err := commonOpts(ctx, host, clientCfg, logger, append([]kgo.Opt{
 		kgo.ConsumeTopics(topics...),
 		kgo.ConsumerGroup(consumerCfg.GroupID),
 		kgo.SessionTimeout(consumerCfg.SessionTimeout),
@@ -152,13 +159,12 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 
 	// Configure rebalance strategy
 	switch consumerCfg.GroupRebalanceStrategy {
-	case "range": // Sarama default.
+	case "range":
 		opts = append(opts, kgo.Balancers(kgo.RangeBalancer()))
 	case "roundrobin":
 		opts = append(opts, kgo.Balancers(kgo.RoundRobinBalancer()))
 	case "sticky":
 		opts = append(opts, kgo.Balancers(kgo.StickyBalancer()))
-	// NOTE(marclop): This is a new type of balancer, document accordingly.
 	case "cooperative-sticky":
 		opts = append(opts, kgo.Balancers(kgo.CooperativeStickyBalancer()))
 	}
@@ -168,11 +174,12 @@ func NewFranzConsumerGroup(ctx context.Context, clientCfg configkafka.ClientConf
 // NewFranzClient creates a franz-go client using the same commonOpts used for producer/consumer.
 func NewFranzClient(
 	ctx context.Context,
+	host component.Host,
 	clientCfg configkafka.ClientConfig,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
-	opts, err := commonOpts(ctx, clientCfg, logger, opts...)
+	opts, err := commonOpts(ctx, host, clientCfg, logger, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -182,23 +189,22 @@ func NewFranzClient(
 // NewFranzClusterAdminClient creates a kadm admin client from a freshly created franz client.
 func NewFranzClusterAdminClient(
 	ctx context.Context,
+	host component.Host,
 	clientCfg configkafka.ClientConfig,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kadm.Client, *kgo.Client, error) {
-	cl, err := NewFranzClient(ctx, clientCfg, logger, opts...)
+	cl, err := NewFranzClient(ctx, host, clientCfg, logger, opts...)
 	if err != nil {
 		return nil, nil, err
 	}
 	return kadm.NewClient(cl), cl, nil
 }
 
-// NewFranzAdminFromClient returns a kadm admin bound to an existing kgo client.
-func NewFranzAdminFromClient(cl *kgo.Client) *kadm.Client {
-	return kadm.NewClient(cl)
-}
-
-func commonOpts(ctx context.Context, clientCfg configkafka.ClientConfig,
+func commonOpts(
+	ctx context.Context,
+	_ component.Host,
+	clientCfg configkafka.ClientConfig,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) ([]kgo.Opt, error) {

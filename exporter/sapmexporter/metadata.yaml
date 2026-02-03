@@ -1,4 +1,5 @@
 type: sapm
+display_name: SAPM Exporter
 
 status:
   class: exporter

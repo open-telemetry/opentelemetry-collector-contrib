@@ -139,21 +139,13 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 		return errors.New("unexpected signal config type")
 	}
 
-	var transportConfig *TransportConfig
-	if !isEmpty(e.config.Domain) && isEmpty(signalConfig.GetEndpoint()) {
-		// TODO: Remove this function call, already done in Unmarshal, see github.com/open-telemetry/opentelemetry-collector-contrib/issues/44731
-		transportConfig = setMergedTransportConfig(e.config, &e.config.DomainSettings, signalConfigWrapper.config)
-	} else {
-		transportConfig = signalConfigWrapper.config
-	}
-
 	if e.config.Protocol == httpProtocol {
-		e.clientHTTP, err = transportConfig.ToHTTPClient(ctx, host, e.settings)
+		e.clientHTTP, err = signalConfigWrapper.config.ToHTTPClient(ctx, host, e.settings)
 		if err != nil {
 			return err
 		}
 	} else {
-		if e.clientConn, err = transportConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
+		if e.clientConn, err = signalConfigWrapper.config.ToClientConn(ctx, host.GetExtensions(), e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 		callOptions := []grpc.CallOption{
