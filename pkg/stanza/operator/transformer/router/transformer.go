@@ -52,7 +52,6 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 			matches, err := vm.Run(route.Expression, env)
 			if err != nil {
 				t.Logger().Warn("Running expression returned an error", zapAttributes(ent, err)...)
-				helper.PutExprEnv(env)
 				continue
 			}
 
@@ -60,8 +59,7 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 			if matches.(bool) {
 				if err = route.Attribute(ent); err != nil {
 					t.Logger().Error("Failed to label entry", zapAttributes(ent, err)...)
-					helper.PutExprEnv(env)
-					return err
+					break
 				}
 				routeIdx = idx
 				break
