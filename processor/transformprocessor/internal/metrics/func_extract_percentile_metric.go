@@ -186,13 +186,11 @@ func calculateFromZeroBucket(dp pmetric.ExponentialHistogramDataPoint, negativeB
 	zeroBucketLower := -dp.ZeroThreshold()
 	zeroBucketUpper := dp.ZeroThreshold()
 
-	// If only positive buckets exist, assume zero bucket lower bound is 0
 	if !negativeBuckets && positiveBuckets {
+		// If only positive buckets exist, assume zero bucket lower bound is 0
 		zeroBucketLower = 0
-	}
-
-	// If only negative buckets exist, assume zero bucket upper bound is 0
-	if !positiveBuckets && negativeBuckets {
+	} else if !positiveBuckets && negativeBuckets {
+		// If only negative buckets exist, assume zero bucket upper bound is 0
 		zeroBucketUpper = 0
 	}
 
