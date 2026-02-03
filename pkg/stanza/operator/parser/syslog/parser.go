@@ -421,9 +421,9 @@ func newOctetCountingRFC3164ParseFunc(location *time.Location, maxOctets int) pa
 
 		// Parse as RFC3164
 		return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(location)).Parse(msgBytes)
-  }
+	}
 }
-  
+
 // isQuietMode returns true if the operator is configured to use quiet mode
 func (p *Parser) isQuietMode() bool {
 	return p.OnError == helper.DropOnErrorQuiet || p.OnError == helper.SendOnErrorQuiet
