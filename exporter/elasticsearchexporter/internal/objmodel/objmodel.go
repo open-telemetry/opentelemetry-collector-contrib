@@ -232,17 +232,16 @@ func (doc *Document) sort() {
 
 // Dedup removes fields from the document, that have duplicate keys.
 // The filtering only keeps the last value for a key.
-// protectedFields is an optional list of field paths that should never get .value suffix.
+// protectedSet is an optional map of field paths that should never get .value suffix.
 //
 // Dedup ensure that keys are sorted.
-func (doc *Document) Dedup(protectedFields ...string) {
+func (doc *Document) Dedup(protectedSet map[string]bool) {
 	// 1. Always ensure the fields are sorted, Dedup support requires
 	// Fields to be sorted.
 	doc.sort()
 
-	protectedSet := make(map[string]bool, len(protectedFields))
-	for _, field := range protectedFields {
-		protectedSet[field] = true
+	if protectedSet == nil {
+		protectedSet = make(map[string]bool)
 	}
 
 	// 2. rename fields if a primitive value is overwritten by an object,
@@ -298,7 +297,7 @@ func (doc *Document) Dedup(protectedFields ...string) {
 
 	// 4. fix objects that might be stored in arrays
 	for i := range doc.fields {
-		doc.fields[i].value.Dedup(protectedFields...)
+		doc.fields[i].value.Dedup(protectedSet)
 	}
 }
 
@@ -313,8 +312,8 @@ func newJSONVisitor(w io.Writer) *json.Visitor {
 // Serialize writes the document to the given writer. The document fields will be
 // deduplicated and, if dedot is true, turned into nested objects prior to
 // serialization.
-func (doc *Document) Serialize(w io.Writer, dedot bool) error {
-	doc.Dedup()
+func (doc *Document) Serialize(w io.Writer, dedot bool, protectedSet map[string]bool) error {
+	doc.Dedup(protectedSet)
 	v := newJSONVisitor(w)
 	return doc.iterJSON(v, dedot)
 }
@@ -513,13 +512,13 @@ func (v *Value) sort() {
 }
 
 // Dedup recursively dedups keys in stored documents.
-func (v *Value) Dedup(protectedFields ...string) {
+func (v *Value) Dedup(protectedSet map[string]bool) {
 	switch v.kind {
 	case KindObject:
-		v.doc.Dedup(protectedFields...)
+		v.doc.Dedup(protectedSet)
 	case KindArr:
 		for i := range v.arr {
-			v.arr[i].Dedup(protectedFields...)
+			v.arr[i].Dedup(protectedSet)
 		}
 	}
 }

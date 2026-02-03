@@ -32,8 +32,9 @@ type conversionEntry struct {
 	skipIfExists     bool
 }
 
-// collectECSFields extracts all target ECS field paths from conversion maps.
-func collectECSFields(maps ...map[string]conversionEntry) []string {
+// collectECSFields extracts all target ECS field paths from conversion maps
+// and returns them as a set (map) for efficient lookups.
+func collectECSFields(maps ...map[string]conversionEntry) map[string]bool {
 	fields := make(map[string]bool)
 	for _, m := range maps {
 		for _, entry := range m {
@@ -42,11 +43,7 @@ func collectECSFields(maps ...map[string]conversionEntry) []string {
 			}
 		}
 	}
-	result := make([]string, 0, len(fields))
-	for field := range fields {
-		result = append(result, field)
-	}
-	return result
+	return fields
 }
 
 // resourceAttrsConversionMap contains conversions for resource-level attributes
@@ -203,7 +200,7 @@ func (e legacyModeEncoder) encodeLog(ec encodingContext, record plog.LogRecord, 
 	document.AddAttributes("Scope", scopeToAttributes(ec.scope))
 	encodeAttributes(e.attributesPrefix, &document, record.Attributes(), idx)
 
-	return document.Serialize(buf, false)
+	return document.Serialize(buf, false, nil)
 }
 
 func (ecsModeEncoder) encodeLog(
@@ -227,9 +224,9 @@ func (ecsModeEncoder) encodeLog(
 
 	protectedFields := collectECSFields(resourceAttrsConversionMap, scopeAttrsConversionMap, recordAttrsConversionMap)
 
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, protectedFields...)
-	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, protectedFields...)
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
+	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
@@ -249,8 +246,7 @@ func (ecsModeEncoder) encodeLog(
 		document.AddAttribute("message", record.Body())
 	}
 
-	document.Dedup(protectedFields...)
-	return document.Serialize(buf, true)
+	return document.Serialize(buf, true, protectedFields)
 }
 
 func (ecsModeEncoder) encodeSpan(
@@ -272,9 +268,9 @@ func (ecsModeEncoder) encodeSpan(
 
 	protectedFields := collectECSFields(resourceAttrsConversionMap, scopeAttrsConversionMap, spanAttrsConversionMap)
 
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap, protectedFields...)
-	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap, protectedFields...)
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
+	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
 	encodeHostOsTypeECSMode(&document, ec.resource)
 	addDataStreamAttributes(&document, "", idx)
 
@@ -293,8 +289,7 @@ func (ecsModeEncoder) encodeSpan(
 		document.AddString("span.kind", spanKind)
 	}
 
-	document.Dedup(protectedFields...)
-	return document.Serialize(buf, true)
+	return document.Serialize(buf, true, protectedFields)
 }
 
 // spanKindToECSStr converts an OTel SpanKind to its ECS equivalent string representation defined here:
@@ -454,7 +449,7 @@ func (e nonOTelSpanEncoder) encodeSpan(
 	document.AddAttributes("Scope", scopeToAttributes(ec.scope))
 	encodeAttributes(e.attributesPrefix, &document, span.Attributes(), idx)
 	document.AddEvents(e.eventsPrefix, span.Events())
-	return document.Serialize(buf, e.dedot)
+	return document.Serialize(buf, e.dedot, nil)
 }
 
 type ecsDataPointsEncoder struct{}
@@ -471,7 +466,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 
 	protectedFields := collectECSFields(resourceAttrsConversionMap)
 
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap, protectedFields...)
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
 	addDataStreamAttributes(&document, "", idx)
@@ -485,8 +480,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 		document.AddAttribute(dp.Metric().Name(), value)
 	}
 
-	document.Dedup(protectedFields...)
-	err := document.Serialize(buf, true)
+	err := document.Serialize(buf, true, protectedFields)
 
 	return document.DynamicTemplates(), err
 }
@@ -547,12 +541,9 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 	return attrs
 }
 
-func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]conversionEntry, protectedFields ...string) {
+func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]conversionEntry) {
 	if len(conversionMap) == 0 {
 		for k, v := range attrs.All() {
-			if shouldSkipAttribute(k, protectedFields) {
-				continue
-			}
 			document.AddAttribute(k, v)
 		}
 		return
@@ -576,23 +567,8 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 			continue
 		}
 
-		if shouldSkipAttribute(k, protectedFields) {
-			continue
-		}
-
 		document.AddAttribute(k, v)
 	}
-}
-
-func shouldSkipAttribute(attrKey string, protectedFields []string) bool {
-	for _, protectedField := range protectedFields {
-		if len(attrKey) > len(protectedField) &&
-			attrKey[:len(protectedField)] == protectedField &&
-			attrKey[len(protectedField)] == '.' {
-			return true
-		}
-	}
-	return false
 }
 
 func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Resource) {
