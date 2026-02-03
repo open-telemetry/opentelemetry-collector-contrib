@@ -83,6 +83,14 @@ $defs:
         $ref: metric_config
       k8s.node.condition:
         $ref: metric_config
+      k8s.node.cpu.allocatable:
+        $ref: metric_config
+      k8s.node.ephemeral_storage.allocatable:
+        $ref: metric_config
+      k8s.node.memory.allocatable:
+        $ref: metric_config
+      k8s.node.pod.allocatable:
+        $ref: metric_config
       k8s.pod.phase:
         $ref: metric_config
       k8s.pod.status_reason:
