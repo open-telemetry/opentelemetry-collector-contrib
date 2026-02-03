@@ -133,7 +133,7 @@ processors:
         action: upsert
 
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: otel-collector:4317
     tls:
       insecure: false
@@ -146,7 +146,7 @@ service:
     metrics:
       receivers: [prometheus]
       processors: [resource, batch]
-      exporters: [otlp, prometheusremotewrite]
+      exporters: [otlp_grpc, prometheusremotewrite]
 ```
 
 This configuration:
@@ -471,7 +471,7 @@ processors:
         action: upsert
 
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: otel-collector:4317
     tls:
       insecure: false

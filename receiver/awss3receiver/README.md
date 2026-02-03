@@ -120,18 +120,18 @@ receivers:
       region: "us-east-1"
 
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: otelcol:4317
 
 service:
   pipelines:
     traces:
       receivers: [awss3/traces]
-      exporters: [otlp]
+      exporters: [otlp_grpc]
       
     traces/sqs:
       receivers: [awss3/sqs_traces]
-      exporters: [otlp]
+      exporters: [otlp_grpc]
 ```
 
 ## Notifications

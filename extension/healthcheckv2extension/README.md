@@ -221,7 +221,7 @@ response body such as:
             "error": "rpc error: code = ResourceExhausted desc = resource exhausted",
             "status_time": "2024-01-18T17:27:32.572301-08:00",
             "components": {
-                "exporter:otlp/staging": {
+                "exporter:otlp_grpc/staging": {
                     "healthy": true,
                     "status": "StatusRecoverableError",
                     "error": "rpc error: code = ResourceExhausted desc = resource exhausted",
@@ -268,7 +268,7 @@ response body such as:
 Note the following based on this response:
 - The overall status is `StatusRecoverableError` but the status healthy because `include_recoverable_errors`
   is set to `false` or it is `true` and the recovery duration has not yet passed.
-- `pipeline:metrics/grpc` has a matching status, as does `exporter:otlp/staging`. This implicates
+- `pipeline:metrics/grpc` has a matching status, as does `exporter:otlp_grpc/staging`. This implicates
   the exporter as the root cause for the pipeline and overall collector status.
 - `pipeline:traces/http` is completely healthy.
 
