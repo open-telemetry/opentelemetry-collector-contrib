@@ -131,7 +131,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.54.0 // indirect
-	github.com/DataDog/datadog-go/v5 v5.8.2 // indirect
+	github.com/DataDog/datadog-go/v5 v5.8.3 // indirect
 	github.com/DataDog/go-sqllexer v0.1.12 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
@@ -256,7 +256,7 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
-	github.com/shirou/gopsutil/v4 v4.25.12 // indirect
+	github.com/shirou/gopsutil/v4 v4.26.1 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
