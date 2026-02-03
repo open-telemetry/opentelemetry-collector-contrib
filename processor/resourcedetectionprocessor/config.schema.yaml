@@ -9,6 +9,9 @@ $defs:
       aks:
         description: Aks contains user-specified configurations for the aks detector
         $ref: ./internal/azure/aks.config
+      alibaba_ecs:
+        description: AlibabaECSConfig contains user-specified configurations for the Alibaba Cloud ECS detector
+        $ref: ./internal/alibaba/ecs.config
       azure:
         description: Azure contains user-specified configurations for the azure detector
         $ref: ./internal/azure.config
