@@ -5,7 +5,6 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"hash/fnv"
 	"strings"
@@ -301,12 +300,9 @@ func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt
 		})
 	case OAUTHBEARER:
 		extMap := host.GetExtensions()
-		extType, _ := component.NewType(component.KindExtension.String())
-
-		oauthExtID := component.NewIDWithName(extType, "oauth2client")
-		oauthExt, exists := extMap[oauthExtID]
+		oauthExt, exists := extMap[cfg.OAuthBearerTokenSource]
 		if !exists {
-			return nil, errors.New("oauth2client extension is not configured")
+			return nil, fmt.Errorf("extension %s is not configured", cfg.OAuthBearerTokenSource.Name())
 		}
 
 		m = oauth.Oauth(func(_ context.Context) (oauth.Auth, error) {
