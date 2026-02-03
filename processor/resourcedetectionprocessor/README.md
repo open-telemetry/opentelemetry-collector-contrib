@@ -171,6 +171,9 @@ to read resource information from the [metadata server](https://cloud.google.com
 application is running on, and detect the appropriate attributes for that platform. Regardless
 of the GCP platform the application is running on, use the gcp detector:
 
+It also can optionally gather labels for the GCE instance that the collector is running on.
+Note that in order to fetch GCE labels, the service account assigned to the GCE instance must have the `roles/compute.viewer` role.
+
 Example:
 
 ```yaml
@@ -179,6 +182,12 @@ processors:
     detectors: [env, gcp]
     timeout: 2s
     override: false
+    gcp:
+      # A list of regex's to match label keys to add as resource attributes can be specified
+      labels:
+        - ^label1$
+        - ^label2$
+        - ^label.*$
 ```
 
 The list of the populated resource attributes can be found at [GCP Detector Resource Attributes](./internal/gcp/documentation.md).
@@ -218,7 +227,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.platform ("gcp_cloud_run")
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (service name)
     * faas.version (service revision)
 
@@ -228,7 +237,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.platform ("gcp_cloud_run")
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (service name)
     * gcp.cloud_run.job.execution ("my-service-ajg89")
     * gcp.cloud_run.job.task_index ("0")
@@ -239,7 +248,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.platform ("gcp_cloud_functions")
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (function name)
     * faas.version (function version)
 
@@ -250,7 +259,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
     * cloud.availability_zone (e.g. "us-central1-c")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (service name)
     * faas.version (service version)
 
