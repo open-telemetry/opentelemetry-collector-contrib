@@ -323,6 +323,308 @@ The `raw` mapping mode is identical to `none`, except for two differences:
 | Metrics   | :no_entry_sign:    |
 | Profiles  | :no_entry_sign:    |
 
+### Indexed Document Structure
+
+This section shows example document structures indexed to Elasticsearch under different mapping modes.
+Understanding these structures helps with querying, visualization, and troubleshooting.
+
+#### OTel Mode Document Structure
+
+In `otel` mapping mode, documents closely follow the OTLP event structure:
+
+**Logs:**
+```json
+{
+  "@timestamp": "1721314113467.654123",
+  "observed_timestamp": "1721314113467.654123",
+  "severity_text": "INFO",
+  "severity_number": 9,
+  "trace_id": "01020304050607080807060504030201",
+  "span_id": "1920212223242526",
+  "event_name": "user-login",
+  "dropped_attributes_count": 0,
+  "data_stream": {
+    "type": "logs",
+    "dataset": "generic.otel",
+    "namespace": "default"
+  },
+  "resource": {
+    "attributes": {
+      "service.name": "my-service",
+      "host.name": "my-host"
+    },
+    "schema_url": "https://opentelemetry.io/schemas/1.21.0"
+  },
+  "scope": {
+    "name": "my-instrumentation",
+    "version": "1.0.0",
+    "attributes": {
+      "scope.attribute": "value"
+    }
+  },
+  "attributes": {
+    "log.attribute": "value",
+    "user.id": "12345"
+  },
+  "body": {
+    "text": "User logged in successfully"
+  }
+}
+```
+
+**Traces (Spans):**
+```json
+{
+  "@timestamp": "2023-04-19T03:04:05.000000006Z",
+  "trace_id": "01020304050607080807060504030201",
+  "span_id": "1920212223242526",
+  "parent_span_id": "0102030405060708",
+  "name": "HTTP GET /api/users",
+  "kind": "SPAN_KIND_SERVER",
+  "status": {
+    "code": "STATUS_CODE_OK"
+  },
+  "start_time": "2023-04-19T03:04:05.000000006Z",
+  "end_time": "2023-04-19T03:04:06.000000006Z",
+  "duration": 1000000,
+  "data_stream": {
+    "type": "traces",
+    "dataset": "generic.otel",
+    "namespace": "default"
+  },
+  "resource": {
+    "attributes": {
+      "service.name": "api-service"
+    }
+  },
+  "scope": {
+    "name": "io.opentelemetry.http",
+    "version": "1.0.0"
+  },
+  "attributes": {
+    "http.method": "GET",
+    "http.url": "/api/users"
+  },
+  "events": [
+    {
+      "name": "exception",
+      "timestamp": "2023-04-19T03:04:05.500000000Z",
+      "attributes": {
+        "exception.type": "NullPointerException"
+      }
+    }
+  ],
+  "links": [
+    {
+      "trace_id": "11121314151617181817161514131211",
+      "span_id": "2122232425262728"
+    }
+  ]
+}
+```
+
+**Metrics:**
+```json
+{
+  "@timestamp": "2024-06-12T10:20:16.419290690Z",
+  "data_stream": {
+    "type": "metrics",
+    "dataset": "generic.otel",
+    "namespace": "default"
+  },
+  "resource": {
+    "attributes": {
+      "host.name": "my-host",
+      "service.name": "my-service"
+    }
+  },
+  "scope": {
+    "name": "otelcol/hostmetricsreceiver"
+  },
+  "attributes": {
+    "cpu": "cpu0",
+    "state": "idle"
+  },
+  "metrics": {
+    "system.cpu.time": {
+      "value": 440.23,
+      "unit": "s",
+      "type": "sum"
+    }
+  }
+}
+```
+
+#### ECS Mode Document Structure
+
+In `ecs` mapping mode, OpenTelemetry Semantic Conventions are mapped to Elastic Common Schema:
+
+**Logs:**
+```json
+{
+  "@timestamp": "2024-03-12T20:00:41.123456789Z",
+  "agent": {
+    "name": "opentelemetry/java",
+    "version": "1.30.0"
+  },
+  "service": {
+    "name": "my-service",
+    "version": "1.0.0",
+    "environment": "production",
+    "node": {
+      "name": "instance-1"
+    }
+  },
+  "host": {
+    "name": "my-host",
+    "hostname": "my-host.example.com",
+    "architecture": "x86_64",
+    "os": {
+      "platform": "linux",
+      "name": "Ubuntu",
+      "version": "22.04"
+    }
+  },
+  "cloud": {
+    "provider": "aws",
+    "region": "us-east-1",
+    "service": {
+      "name": "ec2"
+    }
+  },
+  "kubernetes": {
+    "namespace": "default",
+    "pod": {
+      "name": "my-pod-abc123",
+      "uid": "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff"
+    },
+    "deployment": {
+      "name": "my-deployment"
+    }
+  },
+  "event": {
+    "action": "user-login"
+  },
+  "message": "User logged in successfully"
+}
+```
+
+**Traces (Spans):**
+```json
+{
+  "@timestamp": "2023-04-19T03:04:05.000000006Z",
+  "trace": {
+    "id": "01020304050607080807060504030201"
+  },
+  "span": {
+    "id": "1920212223242526",
+    "name": "HTTP GET /api/users",
+    "kind": "SERVER",
+    "db": {
+      "type": "postgresql",
+      "instance": "users_db",
+      "statement": "SELECT * FROM users"
+    },
+    "links": [
+      {
+        "trace": { "id": "11121314151617181817161514131211" },
+        "span": { "id": "2122232425262728" }
+      }
+    ]
+  },
+  "parent": {
+    "id": "0102030405060708"
+  },
+  "event": {
+    "outcome": "success"
+  },
+  "service": {
+    "name": "api-service",
+    "environment": "production"
+  }
+}
+```
+
+#### None/Raw Mode Document Structure
+
+In `none` and `raw` mapping modes, documents preserve original OTLP field names.
+The difference is that `none` mode adds `Attributes.` and `Events.` prefixes.
+
+**Logs (none mode):**
+```json
+{
+  "@timestamp": "2023-04-19T03:04:05.000000006Z",
+  "Body": "User logged in",
+  "SeverityNumber": 9,
+  "TraceFlags": 0,
+  "Resource.service.name": "my-service",
+  "Resource.host.name": "my-host",
+  "Scope.name": "my-scope",
+  "Scope.version": "1.0.0",
+  "Attributes.user.id": "12345",
+  "Attributes.log.level": "info"
+}
+```
+
+**Logs (raw mode):**
+```json
+{
+  "@timestamp": "2023-04-19T03:04:05.000000006Z",
+  "Body": "User logged in",
+  "SeverityNumber": 9,
+  "TraceFlags": 0,
+  "Resource.service.name": "my-service",
+  "Resource.host.name": "my-host",
+  "Scope.name": "my-scope",
+  "Scope.version": "1.0.0",
+  "user.id": "12345",
+  "log.level": "info"
+}
+```
+
+**Traces (none mode):**
+```json
+{
+  "@timestamp": "2023-04-19T03:04:05.000000006Z",
+  "TraceId": "01020304050607080807060504030201",
+  "SpanId": "1920212223242526",
+  "Name": "client span",
+  "Kind": "SPAN_KIND_CLIENT",
+  "Duration": 1000000,
+  "EndTimestamp": "2023-04-19T03:04:06.000000006Z",
+  "TraceStatus": 2,
+  "TraceStatusDescription": "OK",
+  "Link": "[{\"traceID\":\"...\",\"spanID\":\"...\"}]",
+  "Resource.service.name": "my-service",
+  "Scope.name": "my-scope",
+  "Scope.version": "1.0.0",
+  "Attributes.http.method": "GET",
+  "Events.myEvent.time": "2023-04-19T03:04:05.000000006Z",
+  "Events.myEvent.message": "Something happened"
+}
+```
+
+#### Bodymap Mode Document Structure
+
+In `bodymap` mode, the log record body is used as-is as the Elasticsearch document.
+This mode is for cases where the client needs complete control over the document structure.
+
+**Logs:**
+```json
+{
+  "custom_timestamp": "2024-01-15T10:30:00Z",
+  "custom_field": "my_value",
+  "nested": {
+    "field": "value"
+  },
+  "array_field": [1, 2, 3]
+}
+```
+
+> [!NOTE]
+> In `bodymap` mode, the log record body must be a map type. Other body types will result in an error.
+
+
 ### Elasticsearch ingest pipeline
 
 Documents may be optionally passed through an [Elasticsearch Ingest pipeline] prior to indexing.
