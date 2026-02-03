@@ -1,0 +1,272 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "627286350134"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-0ff69b625ddfea230
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752618"
+            body: {}
+            timeUnixNano: "1769752649000000000"
+          - attributes:
+              - key: network.interface.name
+                value:
+                  stringValue: eni-00ff71573dbe08ef7
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752608"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+            body: {}
+            timeUnixNano: "1769752639000000000"
+          - attributes:
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-0ff69b625ddfea230
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752648"
+            body: {}
+            timeUnixNano: "1769752679000000000"
+          - attributes:
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-023880b732bdfeeba
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752643"
+            body: {}
+            timeUnixNano: "1769752674000000000"
+          - attributes:
+              - key: network.interface.name
+                value:
+                  stringValue: eni-0ff69b625ddfea230
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752653"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+            body: {}
+            timeUnixNano: "1769752684000000000"
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-023880b732bdfeeba
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752660"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+            body: {}
+            timeUnixNano: "1769752691000000000"
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-0ff69b625ddfea230
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752645"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+            body: {}
+            timeUnixNano: "1769752678000000000"
+          - attributes:
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-00ff71573dbe08ef7
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752642"
+            body: {}
+            timeUnixNano: "1769752673000000000"
+          - attributes:
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752659"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-00ff71573dbe08ef7
+            body: {}
+            timeUnixNano: "1769752690000000000"
+          - attributes:
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752651"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-00ff71573dbe08ef7
+            body: {}
+            timeUnixNano: "1769752680000000000"
+          - attributes:
+              - key: network.interface.name
+                value:
+                  stringValue: eni-00ff71573dbe08ef7
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752668"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+            body: {}
+            timeUnixNano: "1769752699000000000"
+          - attributes:
+              - key: network.interface.name
+                value:
+                  stringValue: eni-023880b732bdfeeba
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752657"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+            body: {}
+            timeUnixNano: "1769752688000000000"
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-0ff69b625ddfea230
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752676"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+            body: {}
+            timeUnixNano: "1769752706000000000"
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-00ff71573dbe08ef7
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752664"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+            body: {}
+            timeUnixNano: "1769752694000000000"
+          - attributes:
+              - key: network.interface.name
+                value:
+                  stringValue: eni-010e1a8943d05d625
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752615"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+            body: {}
+            timeUnixNano: "1769752679000000000"
+          - attributes:
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-0ff69b625ddfea230
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752678"
+            body: {}
+            timeUnixNano: "1769752709000000000"
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "7"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-023880b732bdfeeba
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1769752654"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+            body: {}
+            timeUnixNano: "1769752708000000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.vpcflow
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

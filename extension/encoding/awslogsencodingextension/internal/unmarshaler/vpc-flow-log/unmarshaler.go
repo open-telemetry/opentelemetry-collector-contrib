@@ -5,6 +5,7 @@ package vpcflowlog // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	gojson "github.com/goccy/go-json"
+	"github.com/parquet-go/parquet-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -26,8 +28,28 @@ import (
 )
 
 var (
-	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
-	defaultFormat                 = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
+	supportedVPCFlowLogFileFormat = []string{
+		constants.FileFormatPlainText,
+		constants.FileFormatParquet,
+	}
+
+	// Note: order is important.
+	defaultFormat = []string{
+		"version",
+		"account-id",
+		"interface-id",
+		"srcaddr",
+		"dstaddr",
+		"srcport",
+		"dstport",
+		"protocol",
+		"packets",
+		"bytes",
+		"start",
+		"end",
+		"action",
+		"log-status",
+	}
 )
 
 type Config struct {
@@ -69,9 +91,7 @@ func NewVPCFlowLogUnmarshaler(
 	}
 
 	switch cfg.FileFormat {
-	case constants.FileFormatParquet:
-		// TODO
-		return nil, errors.New("still needs to be implemented")
+	case constants.FileFormatParquet: // valid
 	case constants.FileFormatPlainText: // valid
 	default:
 		return nil, fmt.Errorf(
@@ -94,8 +114,7 @@ func (v *vpcFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, e
 	case constants.FileFormatPlainText:
 		return v.unmarshalPlainTextLogs(reader)
 	case constants.FileFormatParquet:
-		// TODO
-		return plog.Logs{}, errors.New("still needs to be implemented")
+		return v.unmarshalParquetLogs(reader)
 	default:
 		// not possible, prevent by NewVPCFlowLogUnmarshaler
 		return plog.Logs{}, nil
@@ -195,39 +214,23 @@ func (v *vpcFlowLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog
 	return logs, resourceLogs, scopeLogs
 }
 
-// addToLogs parses the log line and creates
-// a new record log. The record log is added
-// to the scope logs of the resource identified
-// by the resourceKey created from the values.
+// addToLogs parses the space-separated log line using the given field order and sets plog attributes directly.
+// Too few or too many fields returns an error.
 func (v *vpcFlowLogUnmarshaler) addToLogs(
 	resourceLogs plog.ResourceLogs,
 	scopeLogs plog.ScopeLogs,
 	fields []string,
 	logLine string,
 ) error {
-	record := scopeLogs.LogRecords().AppendEmpty()
-	addr := &address{}
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+	var addr address
 	for _, field := range fields {
 		if logLine == "" {
 			return errors.New("log line has less fields than the ones expected")
 		}
 		var value string
 		value, logLine, _ = strings.Cut(logLine, " ")
-
-		if value == "-" {
-			// If a field is not applicable or could not be computed for a
-			// specific record, the record displays a '-' symbol for that entry.
-			//
-			// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html.
-			continue
-		}
-
-		if strings.HasPrefix(field, "ecs-") {
-			v.logger.Warn("currently there is no support for ECS fields")
-			continue
-		}
-
-		found, err := v.handleField(field, value, resourceLogs, record, addr)
+		found, err := v.handleField(field, value, resourceLogs, logRecord, &addr)
 		if err != nil {
 			return err
 		}
@@ -238,14 +241,85 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 			)
 		}
 	}
-
 	if logLine != "" {
 		return errors.New("log line has more fields than the ones expected")
 	}
-
-	// Add the address fields with the correct conventions to the log record
-	v.handleAddresses(addr, record)
+	v.handleAddresses(&addr, logRecord)
 	return nil
+}
+
+func (v *vpcFlowLogUnmarshaler) unmarshalParquetLogs(reader io.Reader) (plog.Logs, error) {
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to read parquet data: %w", err)
+	}
+	r := bytes.NewReader(data)
+	size := int64(len(data))
+
+	file, err := parquet.OpenFile(r, size)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to open parquet file: %w", err)
+	}
+
+	columnPaths := file.Schema().Columns()
+	fields := make([]string, len(columnPaths))
+	for i, columnPath := range columnPaths {
+		// Convert underscores to hyphens to match the JSON encoding field names.
+		fields[i] = strings.ReplaceAll(strings.Join(columnPath, "."), "_", "-")
+	}
+
+	logs, resourceLogs, scopeLogs := v.createLogs()
+	var rowBuf [10]parquet.Row
+	for _, rowGroup := range file.RowGroups() {
+		rowReader := rowGroup.Rows()
+		for {
+			n, err := rowReader.ReadRows(rowBuf[:])
+			for _, row := range rowBuf[:n] {
+				logRecord := scopeLogs.LogRecords().AppendEmpty()
+				var addr address
+				var columnErr error // set below if any column processing fails
+				row.Range(func(columnIndex int, columnValues []parquet.Value) bool {
+					if len(columnValues) == 0 {
+						return true
+					}
+					val := columnValues[0]
+					if val.IsNull() {
+						return true
+					}
+					if columnIndex >= len(columnPaths) {
+						return true
+					}
+
+					field := fields[columnIndex]
+					switch val.Kind() {
+					case parquet.Int32:
+						_, err = v.handleInt64Field(field, int64(val.Int32()), resourceLogs, logRecord, &addr)
+					case parquet.Int64:
+						_, err = v.handleInt64Field(field, val.Int64(), resourceLogs, logRecord, &addr)
+					default:
+						_, err = v.handleStringField(field, val.String(), resourceLogs, logRecord, &addr)
+					}
+					return columnErr == nil
+				})
+				if columnErr != nil {
+					err = columnErr
+					break
+				}
+				v.handleAddresses(&addr, logRecord)
+			}
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				_ = rowReader.Close()
+				return plog.Logs{}, fmt.Errorf("failed to read parquet rows: %w", err)
+			}
+		}
+		if err := rowReader.Close(); err != nil {
+			return plog.Logs{}, fmt.Errorf("failed to close parquet row reader: %w", err)
+		}
+	}
+	return logs, nil
 }
 
 // handleAddresses creates adds the addresses to the log record
@@ -282,10 +356,8 @@ func (v *vpcFlowLogUnmarshaler) handleAddresses(addr *address, record plog.LogRe
 	}
 }
 
-// handleField analyzes the given field and it either
-// adds its value to the resourceKey or puts the
-// field and its value in the attributes map. If the
-// field is not recognized, it returns false.
+// handleField parses the string value and delegates to handleStringField or handleInt64Field.
+// If the field is not recognized, it returns false.
 func (v *vpcFlowLogUnmarshaler) handleField(
 	field string,
 	value string,
@@ -293,26 +365,33 @@ func (v *vpcFlowLogUnmarshaler) handleField(
 	record plog.LogRecord,
 	addr *address,
 ) (bool, error) {
-	// convert string to number
-	getNumber := func(value string) (int64, error) {
+	if value == "-" {
+		return true, nil
+	}
+	// Integer fields: parse and call handleInt64Field
+	switch field {
+	case "version", "srcport", "dstport", "protocol", "packets", "bytes", "tcp-flags", "traffic-path", "start", "end":
 		n, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			return -1, fmt.Errorf("%q field in log file is not a number", field)
+			return false, fmt.Errorf("%q field in log file is not a number", field)
 		}
-		return n, nil
+		return v.handleInt64Field(field, n, resourceLogs, record, addr)
 	}
+	return v.handleStringField(field, value, resourceLogs, record, addr)
+}
 
-	// convert string to number and add the
-	// value to an attribute
-	addNumber := func(field, value, attrName string) error {
-		n, err := getNumber(value)
-		if err != nil {
-			return fmt.Errorf("%q field in log file is not a number", field)
-		}
-		record.Attributes().PutInt(attrName, n)
-		return nil
+// handleStringField applies a string value for the given field to resource/record/addr.
+// If the field is not recognized, it returns false.
+func (*vpcFlowLogUnmarshaler) handleStringField(
+	field string,
+	value string,
+	resourceLogs plog.ResourceLogs,
+	record plog.LogRecord,
+	addr *address,
+) (bool, error) {
+	if value == "-" {
+		return true, nil
 	}
-
 	switch field {
 	case "srcaddr":
 		// handled later
@@ -326,7 +405,6 @@ func (v *vpcFlowLogUnmarshaler) handleField(
 	case "pkt-dstaddr":
 		// handled later
 		addr.pktDestination = value
-
 	case "account-id":
 		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudAccountIDKey), value)
 	case "vpc-id":
@@ -338,26 +416,7 @@ func (v *vpcFlowLogUnmarshaler) handleField(
 	case "az-id":
 		record.Attributes().PutStr("aws.az.id", value)
 	case "interface-id":
-		// TODO Replace with conventions variable once it becomes available
-		record.Attributes().PutStr("network.interface.name", value)
-	case "srcport":
-		if err := addNumber(field, value, string(conventions.SourcePortKey)); err != nil {
-			return false, err
-		}
-	case "dstport":
-		if err := addNumber(field, value, string(conventions.DestinationPortKey)); err != nil {
-			return false, err
-		}
-	case "protocol":
-		n, err := getNumber(value)
-		if err != nil {
-			return false, err
-		}
-		protocolNumber := int(n)
-		if protocolNumber < 0 || protocolNumber >= len(protocolNames) {
-			return false, fmt.Errorf("protocol number %d does not have a protocol name", protocolNumber)
-		}
-		record.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), protocolNames[protocolNumber])
+		record.Attributes().PutStr(string(conventions.NetworkInterfaceNameKey), value)
 	case "type":
 		record.Attributes().PutStr(string(conventions.NetworkTypeKey), strings.ToLower(value))
 	case "region":
@@ -371,38 +430,6 @@ func (v *vpcFlowLogUnmarshaler) handleField(
 		default:
 			return true, fmt.Errorf("value %s not valid for field %s", value, field)
 		}
-	case "version":
-		if err := addNumber(field, value, "aws.vpc.flow.log.version"); err != nil {
-			return false, err
-		}
-	case "packets":
-		if err := addNumber(field, value, "aws.vpc.flow.packets"); err != nil {
-			return false, err
-		}
-	case "bytes":
-		if err := addNumber(field, value, "aws.vpc.flow.bytes"); err != nil {
-			return false, err
-		}
-	case "start":
-		unixSeconds, err := getNumber(value)
-		if err != nil {
-			return true, fmt.Errorf("value %s for field %s does not correspond to a valid timestamp", value, field)
-		}
-		if v.vpcFlowStartISO8601FormatEnabled {
-			// New behavior: ISO-8601 format (RFC3339Nano)
-			timestamp := time.Unix(unixSeconds, 0).UTC()
-			record.Attributes().PutStr("aws.vpc.flow.start", timestamp.Format(time.RFC3339Nano))
-		} else {
-			// Legacy behavior: Unix timestamp as integer
-			record.Attributes().PutInt("aws.vpc.flow.start", unixSeconds)
-		}
-	case "end":
-		unixSeconds, err := getNumber(value)
-		if err != nil {
-			return true, fmt.Errorf("value %s for field %s does not correspond to a valid timestamp", value, field)
-		}
-		timestamp := time.Unix(unixSeconds, 0)
-		record.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 	case "action":
 		record.Attributes().PutStr("aws.vpc.flow.action", value)
 	case "log-status":
@@ -444,7 +471,51 @@ func (v *vpcFlowLogUnmarshaler) handleField(
 	default:
 		return false, nil
 	}
+	return true, nil
+}
 
+// handleInt64Field applies an int64 value for the given field to resource/record.
+// Returns (true, nil) when the field is recognized, (false, nil) when unknown, or (_, err) on error.
+func (v *vpcFlowLogUnmarshaler) handleInt64Field(
+	field string,
+	value int64,
+	_ plog.ResourceLogs,
+	record plog.LogRecord,
+	_ *address,
+) (bool, error) {
+	switch field {
+	case "version":
+		record.Attributes().PutInt("aws.vpc.flow.log.version", value)
+	case "srcport":
+		record.Attributes().PutInt(string(conventions.SourcePortKey), value)
+	case "dstport":
+		record.Attributes().PutInt(string(conventions.DestinationPortKey), value)
+	case "protocol":
+		protocolNumber := int(value)
+		if protocolNumber < 0 || protocolNumber >= len(protocolNames) {
+			return false, fmt.Errorf("protocol number %d does not have a protocol name", protocolNumber)
+		}
+		record.Attributes().PutStr(string(conventions.NetworkProtocolNameKey), protocolNames[protocolNumber])
+	case "packets":
+		record.Attributes().PutInt("aws.vpc.flow.packets", value)
+	case "bytes":
+		record.Attributes().PutInt("aws.vpc.flow.bytes", value)
+	case "start":
+		if v.vpcFlowStartISO8601FormatEnabled {
+			timestamp := time.Unix(value, 0).UTC()
+			record.Attributes().PutStr("aws.vpc.flow.start", timestamp.Format(time.RFC3339Nano))
+		} else {
+			record.Attributes().PutInt("aws.vpc.flow.start", value)
+		}
+	case "end":
+		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(value, 0)))
+	case "tcp-flags":
+		record.Attributes().PutStr("network.tcp.flags", strconv.FormatInt(value, 10))
+	case "traffic-path":
+		record.Attributes().PutStr("aws.vpc.flow.traffic_path", strconv.FormatInt(value, 10))
+	default:
+		return false, nil
+	}
 	return true, nil
 }
 
