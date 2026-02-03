@@ -1,0 +1,27 @@
+$defs:
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for resourcedetectionprocessor/heroku resource attributes.
+    type: object
+    properties:
+      cloud.provider:
+        $ref: resource_attribute_config
+      heroku.app.id:
+        $ref: resource_attribute_config
+      heroku.dyno.id:
+        $ref: resource_attribute_config
+      heroku.release.commit:
+        $ref: resource_attribute_config
+      heroku.release.creation_timestamp:
+        $ref: resource_attribute_config
+      service.instance.id:
+        $ref: resource_attribute_config
+      service.name:
+        $ref: resource_attribute_config
+      service.version:
+        $ref: resource_attribute_config
