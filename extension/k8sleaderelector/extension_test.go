@@ -60,6 +60,9 @@ func TestExtension(t *testing.T) {
 
 	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
 
+	// Signal that the collector is ready - callbacks are only invoked after this.
+	require.NoError(t, leaderElection.Ready())
+
 	expectedLeaseDurationSeconds := ptr.To(int32(15))
 
 	require.EventuallyWithT(t, func(t *assert.CollectT) {
@@ -101,20 +104,20 @@ func TestExtension_WithDelay(t *testing.T) {
 
 	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
 
-	// Simulate a delay of setting up callbacks after the leader has been elected.
+	// Wait for leadership to be acquired first.
 	expectedLeaseDurationSeconds := ptr.To(int32(15))
-	// TODO: Remove time.Sleep below, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42460
-	time.Sleep(100 * time.Millisecond)
 	require.Eventually(t, func() bool {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, lease)
-		require.NotNil(t, lease.Spec.AcquireTime)
-		require.NotNil(t, lease.Spec.HolderIdentity)
-		require.Equal(t, expectedLeaseDurationSeconds, lease.Spec.LeaseDurationSeconds)
-		return true
+		if err != nil {
+			return false
+		}
+		return lease.Spec.AcquireTime != nil &&
+			lease.Spec.HolderIdentity != nil &&
+			*lease.Spec.LeaseDurationSeconds == *expectedLeaseDurationSeconds
 	}, 10*time.Second, 100*time.Millisecond)
 
+	// Now set up callbacks after leadership is acquired but before Ready().
+	// The callback should NOT be invoked yet because Ready() hasn't been called.
 	leaderElection.SetCallBackFuncs(
 		func(_ context.Context) {
 			onStartLeadingInvoked.Store(true)
@@ -125,6 +128,12 @@ func TestExtension_WithDelay(t *testing.T) {
 		},
 	)
 
-	require.True(t, onStartLeadingInvoked.Load())
+	// Callback should not be invoked yet (not ready).
+	require.False(t, onStartLeadingInvoked.Load(), "callback should not be invoked before Ready()")
+
+	// Signal that the collector is ready - callback should be invoked now.
+	require.NoError(t, leaderElection.Ready())
+
+	require.True(t, onStartLeadingInvoked.Load(), "callback should be invoked after Ready()")
 	require.NoError(t, leaderElection.Shutdown(ctx))
 }

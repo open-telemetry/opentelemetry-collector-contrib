@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 )
@@ -41,35 +42,51 @@ type leaderElectionExtension struct {
 
 	callBackFuncs []callBackFuncs
 
+	// ready is true after the collector signals that all extensions and pipelines
+	// are initialized. Callbacks are only invoked after this is set.
+	ready bool
+	// isLeader is true when this instance holds the leader lease.
 	isLeader bool
+	// leaderCtx is the context passed to startedLeading, stored for use in Ready()
+	// if leadership was acquired before the collector was ready.
+	leaderCtx context.Context
 
 	mu sync.Mutex
 }
 
+var _ extensioncapabilities.PipelineWatcher = (*leaderElectionExtension)(nil)
+
 // SetCallBackFuncs set the functions that can be invoked when the leader wins or loss the election
 func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallback, onStopLeading StopCallback) {
-	// Have a write lock while setting the callbacks.
 	lee.mu.Lock()
 	defer lee.mu.Unlock()
-	callBack := callBackFuncs{
+
+	lee.callBackFuncs = append(lee.callBackFuncs, callBackFuncs{
 		onStartLeading: onStartLeading,
 		onStopLeading:  onStopLeading,
-	}
+	})
 
-	lee.callBackFuncs = append(lee.callBackFuncs, callBack)
-
-	if lee.isLeader {
-		// Immediately invoke the callback since we are already leader
-		onStartLeading(context.Background())
+	// Only invoke immediately if both ready and leader. If leader but not ready,
+	// the callback will be invoked when Ready() is called.
+	if lee.ready && lee.isLeader {
+		onStartLeading(lee.leaderCtx)
 	}
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader wins the election
 func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
-	// Have read lock so that we no new callbacks can be added while we are invoking the callbacks.
 	lee.mu.Lock()
 	defer lee.mu.Unlock()
+
 	lee.isLeader = true
+	lee.leaderCtx = ctx
+
+	// Only invoke callbacks if the collector is ready. If not ready yet,
+	// callbacks will be invoked when Ready() is called.
+	if !lee.ready {
+		return
+	}
+
 	for _, callback := range lee.callBackFuncs {
 		callback.onStartLeading(ctx)
 	}
@@ -83,6 +100,10 @@ func (lee *leaderElectionExtension) stoppedLeading() {
 	defer lee.mu.Unlock()
 
 	lee.isLeader = false
+	if !lee.ready {
+		return
+	}
+
 	for _, callback := range lee.callBackFuncs {
 		callback.onStopLeading()
 	}
@@ -126,5 +147,26 @@ func (lee *leaderElectionExtension) Shutdown(context.Context) error {
 		lee.cancel()
 	}
 	lee.waitGroup.Wait()
+	return nil
+}
+
+// Ready is called by the collector when all extensions and pipelines are initialized.
+// If leadership was acquired before this, the onStartLeading callbacks are invoked now.
+func (lee *leaderElectionExtension) Ready() error {
+	lee.mu.Lock()
+	defer lee.mu.Unlock()
+
+	lee.ready = true
+
+	if lee.isLeader {
+		for _, callback := range lee.callBackFuncs {
+			callback.onStartLeading(lee.leaderCtx)
+		}
+	}
+	return nil
+}
+
+// NotReady is called by the collector before shutdown.
+func (*leaderElectionExtension) NotReady() error {
 	return nil
 }
