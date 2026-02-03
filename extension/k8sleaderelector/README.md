@@ -18,7 +18,15 @@ This extension enables OpenTelemetry components to run in HA mode across a Kuber
 
 ## How It Works
 
-The extension uses k8s.io/client-go/tools/leaderelection to perform leader election. The component that owns the lease becomes the leader and runs the function defined in onStartedLeading. If the leader loses the lease, it runs the function defined in onStoppedLeading, stops its operation, and waits to acquire the lease again.
+The extension uses k8s.io/client-go/tools/leaderelection to perform leader election. The component that owns the lease becomes the leader and runs the function defined in `onStartedLeading`. If the leader loses the lease, it runs the function defined in `onStoppedLeading`, stops its operation, and waits to acquire the lease again.
+
+### Callback Timing
+
+The extension implements `PipelineWatcher` to ensure callbacks are only invoked after the collector signals that all extensions and pipelines are fully initialized. This prevents race conditions where callbacks might use other extensions before they finish starting.
+
+- If leadership is acquired before the collector is ready, the `onStartedLeading` callback is deferred until `Ready()` is called.
+- If leadership is acquired after the collector is ready, the callback is invoked immediately.
+- The `onStoppedLeading` callback is invoked immediately when leadership is lost, provided the collector is in the ready state. If leadership is lost before the collector is ready, the callback is not invoked.
 
 ## Configuration
 
