@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -1635,7 +1636,11 @@ func newTestReceiver(t *testing.T, cfg *Config) (*pReceiver, *consumertest.Metri
 
 func newTestReceiverSettings(t *testing.T, cfg *Config, set receiver.Settings) (*pReceiver, *consumertest.MetricsSink) {
 	sink := new(consumertest.MetricsSink)
-	receiver, err := newPrometheusReceiver(set, cfg, sink)
+	return newTestReceiverSettingsConsumer(t, cfg, set, sink), sink
+}
+
+func newTestReceiverSettingsConsumer(t *testing.T, cfg *Config, set receiver.Settings, next consumer.Metrics) *pReceiver {
+	receiver, err := newPrometheusReceiver(set, cfg, next)
 	require.NoError(t, err)
 
 	ctx := t.Context()
@@ -1649,5 +1654,5 @@ func newTestReceiverSettings(t *testing.T, cfg *Config, set receiver.Settings) (
 		require.NoError(t, receiver.Shutdown(context.WithoutCancel(ctx)))
 		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()))
 	})
-	return receiver, sink
+	return receiver
 }

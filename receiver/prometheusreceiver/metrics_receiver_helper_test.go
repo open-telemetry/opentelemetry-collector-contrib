@@ -5,6 +5,7 @@ package prometheusreceiver
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -31,8 +32,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 type mockPrometheusResponse struct {
@@ -103,6 +106,58 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 func (mp *mockPrometheus) Close() {
 	mp.srv.Close()
+}
+
+// signalingSink wraps MetricsSink to signal when expected scrapes are consumed.
+// This provides deterministic synchronization for tests, replacing polling-based waits.
+type signalingSink struct {
+	*consumertest.MetricsSink
+	scrapeCount atomic.Int32
+	done        chan struct{}
+	closeOnce   sync.Once
+	expected    int
+}
+
+func newSignalingSink(expectedScrapes int) *signalingSink {
+	return &signalingSink{
+		MetricsSink: new(consumertest.MetricsSink),
+		done:        make(chan struct{}),
+		expected:    expectedScrapes,
+	}
+}
+
+func (s *signalingSink) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	if err := s.MetricsSink.ConsumeMetrics(ctx, md); err != nil {
+		return err
+	}
+
+	if int(s.scrapeCount.Add(1)) >= s.expected {
+		s.closeOnce.Do(func() { close(s.done) })
+	}
+	return nil
+}
+
+func (s *signalingSink) Wait(t *testing.T, timeout time.Duration) {
+	select {
+	case <-s.done:
+		// Success - all expected scrapes received
+	case <-time.After(timeout):
+		t.Fatalf("timeout waiting for %d scrapes, got %d", s.expected, s.scrapeCount.Load())
+	}
+}
+
+// countExpectedScrapes counts the number of scrapes expected from targets.
+// Only pages that are not 404 are counted (matching mock ServerHTTP logic).
+func countExpectedScrapes(targets []*testData) int {
+	count := 0
+	for _, target := range targets {
+		for _, p := range target.pages {
+			if p.code != 404 {
+				count++
+			}
+		}
+	}
+	return count
 }
 
 // -------------------------
@@ -178,34 +233,6 @@ func setupMockPrometheusWithExtraScrapeMetrics(globalExtra, scrapeExtra *bool, t
 	}
 
 	return mp, cfg, nil
-}
-
-func waitForScrapeResults(t *testing.T, targets []*testData, cms *consumertest.MetricsSink) {
-	assert.Eventually(t, func() bool {
-		// This is the receiver's pov as to what should have been collected from the server
-		metrics := cms.AllMetrics()
-		pResults := splitMetricsByTarget(metrics)
-		for _, target := range targets {
-			want := 0
-			name := target.name
-			if target.relabeledJob != "" {
-				name = target.relabeledJob
-			}
-			scrapes := pResults[name]
-			// count the number of pages we expect for a target endpoint
-			for _, p := range target.pages {
-				if p.code != 404 {
-					// only count target pages that are not 404, matching mock ServerHTTP func response logic
-					want++
-				}
-			}
-			if len(scrapes) < want {
-				// If we don't have enough scrapes yet lets return false and wait for another tick
-				return false
-			}
-		}
-		return true
-	}, 30*time.Second, 50*time.Millisecond)
 }
 
 func verifyNumValidScrapeResults(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -794,8 +821,13 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	if alterConfig != nil {
 		alterConfig(config)
 	}
-	receiver, cms := newTestReceiver(t, config)
 
+	// Calculate expected scrapes (pages that will return metrics, not 404s).
+	expectedScrapes := countExpectedScrapes(targets)
+	// Use signaling sink for deterministic synchronization.
+	cms := newSignalingSink(expectedScrapes)
+	set := receivertest.NewNopSettings(metadata.Type)
+	receiver := newTestReceiverSettingsConsumer(t, config, set, cms)
 	defer func() {
 		// Check targets prior to shutdown. The cleanup installed by newTestReceiver
 		// will check that there are no running targets after shutdown.
@@ -808,11 +840,8 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
 	mp.wg.Wait()
 
-	// Note:waitForScrapeResult is an attempt to address a possible race between waitgroup Done() being called in the ServerHTTP function
-	//      and when the receiver actually processes the http request responses into metrics.
-	//      this is a eventually timeout,tick that just waits for some condition.
-	//      however the condition to wait for may be suboptimal and may need to be adjusted.
-	waitForScrapeResults(t, targets, cms)
+	// Wait for consumer to receive all expected scrapes (deterministic, replaces polling).
+	cms.Wait(t, 30*time.Second)
 
 	// This begins the processing of the scrapes collected by the receiver
 	metrics := cms.AllMetrics()
