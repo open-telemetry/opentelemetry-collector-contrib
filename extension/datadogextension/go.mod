@@ -48,7 +48,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.76.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.76.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/api v0.76.0-rc.3 // indirect
@@ -64,9 +64,9 @@ require (
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/fips v0.76.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/types v0.76.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.76.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.76.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/types v0.76.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.76.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.76.0-rc.3 // indirect
@@ -83,7 +83,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/executable v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.76.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.76.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/http v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/json v0.76.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.76.0-rc.3 // indirect
