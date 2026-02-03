@@ -21,14 +21,14 @@ import (
 type ProfilesConsumer struct {
 	resourceExpr expr.BoolExpr[*ottlresource.TransformContext]
 	scopeExpr    expr.BoolExpr[*ottlscope.TransformContext]
-	profileExpr  expr.BoolExpr[ottlprofile.TransformContext]
+	profileExpr  expr.BoolExpr[*ottlprofile.TransformContext]
 }
 
 // parsedProfileConditions is the type R for ParserCollection[R] that holds parsed OTTL conditions
 type parsedProfileConditions struct {
 	resourceConditions []*ottl.Condition[*ottlresource.TransformContext]
 	scopeConditions    []*ottl.Condition[*ottlscope.TransformContext]
-	profileConditions  []*ottl.Condition[ottlprofile.TransformContext]
+	profileConditions  []*ottl.Condition[*ottlprofile.TransformContext]
 	telemetrySettings  component.TelemetrySettings
 	errorMode          ottl.ErrorMode
 }
@@ -69,8 +69,9 @@ func (pc ProfilesConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Prof
 
 			if pc.profileExpr != nil {
 				sp.Profiles().RemoveIf(func(profile pprofile.Profile) bool {
-					tCtx := ottlprofile.NewTransformContext(profile, pd.Dictionary(), sp.Scope(), rp.Resource(), sp, rp)
+					tCtx := ottlprofile.NewTransformContextPtr(rp, sp, profile, pd.Dictionary())
 					cond, err := pc.profileExpr.Eval(ctx, tCtx)
+					tCtx.Close()
 					if err != nil {
 						condErr = multierr.Append(condErr, err)
 						return false
@@ -108,7 +109,7 @@ func newProfileConditionsFromScope(sc []*ottl.Condition[*ottlscope.TransformCont
 func newProfilesConsumer(ppc *parsedProfileConditions) ProfilesConsumer {
 	var rExpr expr.BoolExpr[*ottlresource.TransformContext]
 	var sExpr expr.BoolExpr[*ottlscope.TransformContext]
-	var pExpr expr.BoolExpr[ottlprofile.TransformContext]
+	var pExpr expr.BoolExpr[*ottlprofile.TransformContext]
 
 	if len(ppc.resourceConditions) > 0 {
 		cs := ottlresource.NewConditionSequence(ppc.resourceConditions, ppc.telemetrySettings, ottlresource.WithConditionSequenceErrorMode(ppc.errorMode))
@@ -136,7 +137,7 @@ type ProfileParserCollection ottl.ParserCollection[parsedProfileConditions]
 
 type ProfileParserCollectionOption ottl.ParserCollectionOption[parsedProfileConditions]
 
-func WithProfileParser(functions map[string]ottl.Factory[ottlprofile.TransformContext]) ProfileParserCollectionOption {
+func WithProfileParser(functions map[string]ottl.Factory[*ottlprofile.TransformContext]) ProfileParserCollectionOption {
 	return func(pc *ottl.ParserCollection[parsedProfileConditions]) error {
 		profileParser, err := ottlprofile.NewParser(functions, pc.Settings, ottlprofile.EnablePathContextNames())
 		if err != nil {
@@ -172,7 +173,7 @@ func NewProfileParserCollection(settings component.TelemetrySettings, options ..
 	return &ppc, nil
 }
 
-func convertProfileConditions(pc *ottl.ParserCollection[parsedProfileConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[ottlprofile.TransformContext]) (parsedProfileConditions, error) {
+func convertProfileConditions(pc *ottl.ParserCollection[parsedProfileConditions], conditions ottl.ConditionsGetter, parsedConditions []*ottl.Condition[*ottlprofile.TransformContext]) (parsedProfileConditions, error) {
 	contextConditions, err := toContextConditions(conditions)
 	if err != nil {
 		return parsedProfileConditions{}, err
@@ -198,7 +199,7 @@ func (ppc *ProfileParserCollection) ParseContextConditions(contextConditions Con
 
 	var rConditions []*ottl.Condition[*ottlresource.TransformContext]
 	var sConditions []*ottl.Condition[*ottlscope.TransformContext]
-	var pConditions []*ottl.Condition[ottlprofile.TransformContext]
+	var pConditions []*ottl.Condition[*ottlprofile.TransformContext]
 
 	for _, cc := range contextConditions.Conditions {
 		profConditions, err := pc.ParseConditions(ContextConditions{Conditions: []string{cc}})

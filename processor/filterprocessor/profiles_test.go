@@ -682,7 +682,7 @@ func Test_Profiles_NonDefaultFunctions(t *testing.T) {
 		name             string
 		conditions       []condition.ContextConditions
 		wantErrorWith    string
-		profileFunctions map[string]ottl.Factory[ottlprofile.TransformContext]
+		profileFunctions map[string]ottl.Factory[*ottlprofile.TransformContext]
 	}
 
 	tests := []testCase{
@@ -694,9 +694,9 @@ func Test_Profiles_NonDefaultFunctions(t *testing.T) {
 					Conditions: []string{`IsMatch(original_payload_format, TestProfileFunc())`},
 				},
 			},
-			profileFunctions: map[string]ottl.Factory[ottlprofile.TransformContext]{
+			profileFunctions: map[string]ottl.Factory[*ottlprofile.TransformContext]{
 				"IsMatch":         defaultProfileFunctionsMap()["IsMatch"],
-				"TestProfileFunc": NewProfileFuncFactory[ottlprofile.TransformContext](),
+				"TestProfileFunc": NewProfileFuncFactory[*ottlprofile.TransformContext](),
 			},
 		},
 		{
