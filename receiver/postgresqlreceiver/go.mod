@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.76.0-rc.2
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.11.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.144.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.144.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.144.0
