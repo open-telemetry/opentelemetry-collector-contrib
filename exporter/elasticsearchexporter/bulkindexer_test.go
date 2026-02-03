@@ -234,7 +234,7 @@ func TestBulkIndexerLogsStatusCode(t *testing.T) {
 	ctx := t.Context()
 	session := bi.StartSession(ctx)
 	// Add initial document to ensure we have at least one document to process.
-	session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate)
+	require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 	for range statuses {
 		require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 	}
