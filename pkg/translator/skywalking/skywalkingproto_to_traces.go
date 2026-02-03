@@ -11,12 +11,13 @@ import (
 	"unsafe"
 
 	"github.com/google/uuid"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking/internal/metadata"
 )
 
 const (
@@ -30,13 +31,6 @@ const (
 	AttributeSkywalkingParentSpanID    = "sw8.parent_span_id"
 	AttributeSkywalkingParentSegmentID = "sw8.parent_segment_id"
 	AttributeNetworkAddressUsedAtPeer  = "network.AddressUsedAtPeer"
-)
-
-var useStableSemconv = featuregate.GlobalRegistry().MustRegister(
-	"translator.skywalking.useStableSemconv",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, uses stable semantic conventions (v1.38.0) for attribute names (e.g., url.full, http.response.status_code, db.namespace, server.address). When disabled, uses legacy attribute names (e.g., http.url, http.status_code, db.name, net.peer.name)."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44796"),
 )
 
 var otSpanTagsMappingStable = map[string]string{
@@ -57,7 +51,7 @@ var otSpanTagsMappingLegacy = map[string]string{
 
 // getOtSpanTagsMapping returns the appropriate mapping based on the feature gate
 func getOtSpanTagsMapping() map[string]string {
-	if useStableSemconv.IsEnabled() {
+	if metadata.TranslatorSkywalkingUseStableSemconvFeatureGate.IsEnabled() {
 		return otSpanTagsMappingStable
 	}
 	return otSpanTagsMappingLegacy

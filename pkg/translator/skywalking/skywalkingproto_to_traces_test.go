@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking/internal/metadata"
 )
 
 func TestSetInternalSpanStatus(t *testing.T) {
@@ -450,10 +452,10 @@ func TestGetOtSpanTagsMapping(t *testing.T) {
 	})
 
 	t.Run("feature_gate_enabled", func(t *testing.T) {
-		previousValue := useStableSemconv.IsEnabled()
-		require.NoError(t, featuregate.GlobalRegistry().Set(useStableSemconv.ID(), true))
+		previousValue := metadata.TranslatorSkywalkingUseStableSemconvFeatureGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TranslatorSkywalkingUseStableSemconvFeatureGate.ID(), true))
 		defer func() {
-			require.NoError(t, featuregate.GlobalRegistry().Set(useStableSemconv.ID(), previousValue))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TranslatorSkywalkingUseStableSemconvFeatureGate.ID(), previousValue))
 		}()
 
 		mapping := getOtSpanTagsMapping()
