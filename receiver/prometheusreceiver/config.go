@@ -44,6 +44,7 @@ type Config struct {
 
 	// For testing only.
 	ignoreMetadata bool
+	skipOffsetting bool
 }
 
 // Validate checks the receiver configuration is valid.
