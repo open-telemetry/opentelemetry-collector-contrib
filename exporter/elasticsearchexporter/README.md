@@ -541,25 +541,10 @@ It is recommended to enrich events using the [elasticapmprocessor](https://githu
 There are ECS fields that are not mapped easily 1 to 1 but require more advanced logic.
 
 #### `agent.name`
-
-The agent name takes the form of a compound name consisting of 3 components:
-- `telemetry.sdk.name` or, if not present, defaults to `otlp`,
-- `telemetry.sdk.language`, defaulting to `unknown` in case it is missing,
-- `telemetry.distro.name`, which is allowed to be empty.
-
-These values are all valid:
-
-| `telemetry.sdk.name` | `telemetry.sdk.language` | `telemetry.distro.name` | `agent.name`           |
-|----------------------|--------------------------|-------------------------|------------------------|
-| ""                   | ""                       | ""                      | `otlp/unknown`                 |
-| ""                   | dotnet                   | ""                      | `otlp/dotnet`          |
-| opentelemetry        | dotnet                   | ""                      | `opentelemetry/dotnet` |
-| ""                   | java                     | parts-unlimited-java    | `otlp/java/parts-unlimited-java` |
-| ""                   | ""                       | parts-unlimited-java    | `otlp/unknown/parts-unlimited-java` |
+Mapping for `agent.name` will be removed in v0.146.0 since the logic exists in the [elasticapmprocessor](https://github.com/elastic/opentelemetry-collector-components/tree/main/processor/elasticapmprocessor). 
 
 #### `agent.version`
-
-Takes the value of `telemetry.distro.version` or `telemetry.sdk.version`. If both telemetry.distro.version and telemetry.sdk.version are present, telemetry.distro.version takes precedence.
+Mapping for `agent.version` will be removed in v0.146.0 since the logic exists in the [elasticapmprocessor](https://github.com/elastic/opentelemetry-collector-components/tree/main/processor/elasticapmprocessor).
 
 #### `host.name` and `host.hostname`
 
