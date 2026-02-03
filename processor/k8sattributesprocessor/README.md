@@ -955,6 +955,12 @@ as a sidecar. While this can be done, we think it is simpler to just use the kub
 downward API to inject environment variables into the pods and directly use their values
 as tags.
 
+## Compatibility
+
+### Kubernetes Versions
+
+This processor is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L98) workflow. These tested versions represent the officially supported Kubernetes versions for this component.
+
 ## Production Deployment Guide
 
 ### Scaling Considerations
