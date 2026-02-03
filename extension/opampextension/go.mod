@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opamp-go v0.22.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.144.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.144.0
-	github.com/shirou/gopsutil/v4 v4.25.12
+	github.com/shirou/gopsutil/v4 v4.26.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.50.1-0.20260130192532-20cbfc09f93d
 	go.opentelemetry.io/collector/component/componentstatus v0.144.1-0.20260130192532-20cbfc09f93d

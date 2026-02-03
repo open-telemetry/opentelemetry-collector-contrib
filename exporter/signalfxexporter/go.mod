@@ -15,7 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.144.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.144.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.144.0
-	github.com/shirou/gopsutil/v4 v4.25.12
+	github.com/shirou/gopsutil/v4 v4.26.1
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.50.1-0.20260130192532-20cbfc09f93d
