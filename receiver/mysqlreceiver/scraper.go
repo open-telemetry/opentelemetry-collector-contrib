@@ -183,7 +183,6 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	rb := m.mb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
-	rb.SetServiceName("mysql")
 	rb.SetServiceInstanceID(uuid.NewSHA1(otelNamespaceUUID, []byte(m.config.Endpoint)).String())
 	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
@@ -195,7 +194,6 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 func (m *mySQLScraper) emitLogsWithScopeAttrs(errs *scrapererror.ScrapeErrors) (plog.Logs, error) {
 	rb := m.lb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
-	rb.SetServiceName("mysql")
 	rb.SetServiceInstanceID(uuid.NewSHA1(otelNamespaceUUID, []byte(m.config.Endpoint)).String())
 	logs := m.lb.Emit(metadata.WithLogsResource(rb.Emit()))
 	m.setScopeAttributes(logs)
