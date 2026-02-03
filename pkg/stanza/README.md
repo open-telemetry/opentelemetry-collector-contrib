@@ -115,7 +115,6 @@ Operators that support batching:
 Operators that do not support batching:
 
 - `csv_parser`
-- `recombine`
 - `router`
 
 ### FAQ
