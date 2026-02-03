@@ -1,0 +1,20 @@
+[
+  {
+    "id": "redis-primary",
+    "target": "redis-primary.example.com:6379",
+    "name": "Primary Redis",
+    "labels": {
+      "service": "redis",
+      "role": "primary"
+    }
+  },
+  {
+    "id": "postgres-main",
+    "target": "postgres.example.com:5432",
+    "name": "Main PostgreSQL",
+    "labels": {
+      "service": "postgresql",
+      "role": "primary"
+    }
+  }
+]

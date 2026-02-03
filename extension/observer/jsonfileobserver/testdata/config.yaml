@@ -1,0 +1,11 @@
+jsonfile_observer:
+  path: /path/to/endpoints.json
+  refresh_interval: 30s
+jsonfile_observer/fast-refresh:
+  path: /path/to/fast.json
+  refresh_interval: 1s
+jsonfile_observer/invalid_no_path:
+  refresh_interval: 10s
+jsonfile_observer/invalid_negative_interval:
+  path: /some/path.json
+  refresh_interval: -1s
