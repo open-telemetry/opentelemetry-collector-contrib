@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/client-go/metadata"
+	clientmeta "k8s.io/client-go/metadata"
 	clientmetafake "k8s.io/client-go/metadata/fake"
 	"k8s.io/client-go/tools/cache"
 
@@ -3595,7 +3595,7 @@ func (i *trackableInformer) hasRun() bool {
 	return i.runCalled
 }
 
-func newTrackableInformer(client metadata.Interface, namespace string) cache.SharedInformer {
+func newTrackableInformer(client clientmeta.Interface, namespace string) cache.SharedInformer {
 	return &trackableInformer{
 		SharedInformer: NewFakeReplicaSetInformer(client, namespace),
 	}
@@ -4069,7 +4069,7 @@ func TestHandleJobDelete(t *testing.T) {
 func TestCreateRestConfigFailure(t *testing.T) {
 	// Simulate a failure in CreateRestConfig by returning nil for the informer
 	factory := InformersFactoryList{
-		newReplicaSetInformer: func(_ metadata.Interface, _ string) cache.SharedInformer {
+		newReplicaSetInformer: func(_ clientmeta.Interface, _ string) cache.SharedInformer {
 			return nil // Simulate failure
 		},
 	}
