@@ -193,6 +193,72 @@ func TestSyncBulkIndexer(t *testing.T) {
 	}
 }
 
+func TestBulkIndexerLogsStatusCode(t *testing.T) {
+	responseBody := `{"errors": true, "items":[
+		{"create":{"_index":"foo-200","status":200}},
+		{"create":{"_index":"foo-400","status":400,"error":{"type":"error_400","reason":"status 400"}}},
+		{"create":{"_index":"foo-401","status":401,"error":{"type":"error_401","reason":"status 401"}}},
+		{"create":{"_index":"foo-429","status":429,"error":{"type":"error_429","reason":"status 429"}}},
+		{"create":{"_index":"foo-500","status":500,"error":{"type":"error_500","reason":"status 500"}}}
+	]}`
+	statuses := []int{400, 401, 429, 500}
+
+	cfg := Config{
+		QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
+			NumConsumers: 1,
+		}),
+	}
+	esClient, err := elastictransport.New(elastictransport.Config{
+		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+		Transport: &mockTransport{
+			RoundTripFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body:       io.NopCloser(strings.NewReader(responseBody)),
+					StatusCode: http.StatusOK,
+				}, nil
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	ct := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(
+		metadatatest.NewSettings(ct).TelemetrySettings,
+	)
+	require.NoError(t, err)
+
+	core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
+	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core))
+
+	ctx := t.Context()
+	session := bi.StartSession(ctx)
+	// Add initial document to ensure we have at least one document to process.
+	session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate)
+	for range statuses {
+		require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+	}
+	require.NoError(t, session.Flush(ctx))
+	session.End()
+	assert.NoError(t, bi.Close(ctx))
+
+	messages := observed.FilterMessage("failed to index document").FilterFieldKey("status.code")
+	require.Equal(t, len(statuses), messages.Len(), "message not found; observed.All()=%v", observed.All())
+	for i, status := range statuses {
+		if i >= messages.Len() {
+			t.Errorf("expected at least %d log messages, got %d", i+1, messages.Len())
+			continue
+		}
+		msg := messages.All()[i]
+		statusCode, ok := msg.ContextMap()["status.code"]
+		if !ok {
+			t.Errorf("status.code missing in log at index %d; msg: %+v", i, msg.ContextMap())
+			continue
+		}
+		assert.Equal(t, int64(status), statusCode, "status.code does not match at index %d; msg: %s", i, msg.Message)
+	}
+}
+
 func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline"}
