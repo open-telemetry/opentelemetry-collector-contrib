@@ -1,0 +1,37 @@
+$defs:
+  signal_config:
+    type: object
+    properties:
+      datasource:
+        type: string
+description: Config defines configuration for the Tinybird exporter.
+type: object
+properties:
+  logs:
+    $ref: signal_config
+  metrics:
+    type: object
+    properties:
+      exponential_histogram:
+        $ref: signal_config
+      gauge:
+        $ref: signal_config
+      histogram:
+        $ref: signal_config
+      sum:
+        $ref: signal_config
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  token:
+    description: Tinybird API token.
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  traces:
+    $ref: signal_config
+  wait:
+    description: Wait for data to be ingested before returning a response.
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
