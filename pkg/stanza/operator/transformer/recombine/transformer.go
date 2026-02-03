@@ -140,18 +140,14 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 		case matches && t.matchFirstLine:
 			// Flush the existing batch
 			if err := t.flushSource(ctx, s, collectWrite); err != nil {
-				if !t.isQuietMode() {
-					errs = append(errs, err)
-				}
+				errs = append(errs, err)
 			}
 			// Add the current log to the new batch
 			t.addToBatch(ctx, e, s, matches, collectWrite)
 		case matches && !t.matchFirstLine:
 			t.addToBatch(ctx, e, s, matches, collectWrite)
 			if err := t.flushSource(ctx, s, collectWrite); err != nil {
-				if !t.isQuietMode() {
-					errs = append(errs, err)
-				}
+				errs = append(errs, err)
 			}
 		default:
 			// Neither first nor last entry, just add to batch
@@ -206,9 +202,6 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	case matches && t.matchFirstLine:
 		// Flush the existing batch
 		if err := t.flushSource(ctx, s, t.Write); err != nil {
-			if t.isQuietMode() {
-				return nil
-			}
 			return err
 		}
 
@@ -219,9 +212,6 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	case matches && !t.matchFirstLine:
 		t.addToBatch(ctx, e, s, matches, t.Write)
 		if err := t.flushSource(ctx, s, t.Write); err != nil {
-			if t.isQuietMode() {
-				return nil
-			}
 			return err
 		}
 		return nil
