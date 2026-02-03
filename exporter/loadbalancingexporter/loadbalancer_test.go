@@ -130,6 +130,29 @@ func TestWithDNSResolver(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestWithDNSSRVResolver(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			DNSSRV: configoptional.Some(DNSSRVResolver{
+				Hostname: "_svc._tcp.example.org",
+			}),
+		},
+	}
+
+	p, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	// test
+	res, ok := p.res.(*dnsResolver)
+
+	// verify
+	assert.NotNil(t, res)
+	assert.True(t, ok)
+	assert.Equal(t, DNSModeSRV, res.mode)
+}
+
 func TestWithDNSResolverNoEndpoints(t *testing.T) {
 	// prepare
 	ts, tb := getTelemetryAssets(t)

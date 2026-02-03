@@ -63,6 +63,7 @@ type Protocol struct {
 type ResolverSettings struct {
 	Static      configoptional.Optional[StaticResolver]      `mapstructure:"static"`
 	DNS         configoptional.Optional[DNSResolver]         `mapstructure:"dns"`
+	DNSSRV      configoptional.Optional[DNSSRVResolver]      `mapstructure:"dnssrv"`
 	K8sSvc      configoptional.Optional[K8sSvcResolver]      `mapstructure:"k8s"`
 	AWSCloudMap configoptional.Optional[AWSCloudMapResolver] `mapstructure:"aws_cloud_map"`
 	// prevent unkeyed literal initialization
@@ -80,6 +81,16 @@ type StaticResolver struct {
 type DNSResolver struct {
 	Hostname string        `mapstructure:"hostname"`
 	Port     string        `mapstructure:"port"`
+	Interval time.Duration `mapstructure:"interval"`
+	Timeout  time.Duration `mapstructure:"timeout"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// DNSSRVResolver defines the configuration for the DNS SRV resolver
+// SRV records are looked up, then A/AAAA records for each SRV target
+type DNSSRVResolver struct {
+	Hostname string        `mapstructure:"hostname"`
 	Interval time.Duration `mapstructure:"interval"`
 	Timeout  time.Duration `mapstructure:"timeout"`
 	// prevent unkeyed literal initialization
