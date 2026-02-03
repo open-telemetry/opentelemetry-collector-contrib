@@ -209,8 +209,8 @@ go.opentelemetry.io/collector/receiver/xreceiver v0.145.0 h1:vkWKqPX6g7FWPuZlgxA
 go.opentelemetry.io/collector/receiver/xreceiver v0.145.0/go.mod h1:HlEYrvW52PWoL92jRRLzlmJ2hwWaKBzaoo6FFDZpHx4=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 h1:RbKq8BG0FI8OiXhBfcRtqqHcZcka+gU3cskNuf05R18=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0/go.mod h1:h06DGIukJOevXaj/xrNjhi/2098RZzcLTbc0jDAUbsg=
-go.opentelemetry.io/ebpf-profiler v0.0.202601 h1:6GxLX+2LD2GhrbbiKjR55JSqr+3Z7thmFUi68TtnwAg=
-go.opentelemetry.io/ebpf-profiler v0.0.202601/go.mod h1:83Zc+bFPt47coVV9v2zyZoiCvk0ZoHkbN5H/cAbtCN8=
+go.opentelemetry.io/ebpf-profiler v0.0.202606 h1:M2sod84uA6iNlKXmUMK9iJH7lul/3angJ8QvkLoAgLI=
+go.opentelemetry.io/ebpf-profiler v0.0.202606/go.mod h1:juJNEKBb1n1SzMCAdIVgVeumwzPJswc62Ajd60hAfck=
 go.opentelemetry.io/otel v1.40.0 h1:oA5YeOcpRTXq6NN7frwmwFR0Cn3RhTVZvXsP4duvCms=
 go.opentelemetry.io/otel v1.40.0/go.mod h1:IMb+uXZUKkMXdPddhwAHm6UfOwJyh4ct1ybIlV14J0g=
 go.opentelemetry.io/otel/metric v1.40.0 h1:rcZe317KPftE2rstWIBitCdVp89A2HqjkxR3c11+p9g=
