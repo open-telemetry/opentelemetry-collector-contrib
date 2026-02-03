@@ -171,6 +171,9 @@ to read resource information from the [metadata server](https://cloud.google.com
 application is running on, and detect the appropriate attributes for that platform. Regardless
 of the GCP platform the application is running on, use the gcp detector:
 
+It also can optionally gather labels for the GCE instance that the collector is running on.
+Note that in order to fetch GCE labels, the service account assigned to the GCE instance must have the `roles/compute.viewer` role.
+
 Example:
 
 ```yaml
@@ -179,6 +182,12 @@ processors:
     detectors: [env, gcp]
     timeout: 2s
     override: false
+    gcp:
+      # A list of regex's to match label keys to add as resource attributes can be specified
+      labels:
+        - ^label1$
+        - ^label2$
+        - ^label.*$
 ```
 
 The list of the populated resource attributes can be found at [GCP Detector Resource Attributes](./internal/gcp/documentation.md).
