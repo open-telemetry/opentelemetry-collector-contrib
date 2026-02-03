@@ -22,6 +22,7 @@ attributes:
     enum:
       - aws
       - dns
+      - dnssrv
       - k8s
       - static
   success:

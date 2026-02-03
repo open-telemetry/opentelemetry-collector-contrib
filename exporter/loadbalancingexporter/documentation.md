@@ -46,7 +46,7 @@ Number of times the list of backends was updated.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| resolver | Resolver used | Str: ``aws``, ``dns``, ``k8s``, ``static`` |
+| resolver | Resolver used | Str: ``aws``, ``dns``, ``dnssrv``, ``k8s``, ``static`` |
 
 ### otelcol_loadbalancer_num_backends
 
@@ -60,7 +60,7 @@ Current number of backends in use.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| resolver | Resolver used | Str: ``aws``, ``dns``, ``k8s``, ``static`` |
+| resolver | Resolver used | Str: ``aws``, ``dns``, ``dnssrv``, ``k8s``, ``static`` |
 
 ### otelcol_loadbalancer_num_resolutions
 
@@ -75,4 +75,4 @@ Number of times the resolver has triggered new resolutions.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | success | Whether an outcome was successful | Any Bool |
-| resolver | Resolver used | Str: ``aws``, ``dns``, ``k8s``, ``static`` |
+| resolver | Resolver used | Str: ``aws``, ``dns``, ``dnssrv``, ``k8s``, ``static`` |

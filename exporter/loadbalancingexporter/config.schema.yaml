@@ -32,6 +32,18 @@ $defs:
       timeout:
         type: string
         format: duration
+  dnssrv_resolver:
+    description: DNSSRVResolver defines the configuration for the DNS SRV resolver SRV records are looked up, then A/AAAA records for each SRV target
+    type: object
+    properties:
+      hostname:
+        type: string
+      interval:
+        type: string
+        format: duration
+      timeout:
+        type: string
+        format: duration
   k_8_s_svc_resolver:
     description: K8sSvcResolver defines the configuration for the DNS resolver
     type: object
@@ -64,6 +76,9 @@ $defs:
       dns:
         x-optional: true
         $ref: dns_resolver
+      dnssrv:
+        x-optional: true
+        $ref: dnssrv_resolver
       k8s:
         x-optional: true
         $ref: k_8_s_svc_resolver
