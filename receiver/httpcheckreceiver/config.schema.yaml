@@ -1,0 +1,51 @@
+description: Config defines the configuration for the various elements of the receiver agent.
+type: object
+properties:
+  targets:
+    type: array
+    items:
+      x-pointer: true
+      type: object
+      properties:
+        auto_content_type:
+          type: boolean
+        body:
+          type: string
+        endpoints:
+          type: array
+          items:
+            type: string
+        method:
+          type: string
+        validations:
+          type: array
+          items:
+            type: object
+            properties:
+              contains:
+                description: String matching
+                type: string
+              equals:
+                type: string
+              json_path:
+                description: JSON path validation
+                type: string
+              max_size:
+                description: Size validation
+                x-pointer: true
+                type: integer
+                x-customType: int64
+              min_size:
+                x-pointer: true
+                type: integer
+                x-customType: int64
+              not_contains:
+                type: string
+              regex:
+                description: Regex validation
+                type: string
+      allOf:
+        - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config
