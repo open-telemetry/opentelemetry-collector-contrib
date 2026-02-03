@@ -1,0 +1,21 @@
+$defs:
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for hetznerdetector resource attributes.
+    type: object
+    properties:
+      cloud.availability_zone:
+        $ref: resource_attribute_config
+      cloud.provider:
+        $ref: resource_attribute_config
+      cloud.region:
+        $ref: resource_attribute_config
+      host.id:
+        $ref: resource_attribute_config
+      host.name:
+        $ref: resource_attribute_config
