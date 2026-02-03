@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -57,6 +58,8 @@ func (h *handler) OnAdd(objectInterface any, _ bool) {
 		endpoints = convertIngressToEndpoints(h.idNamespace, object)
 	case *v1.Node:
 		endpoints = append(endpoints, convertNodeToEndpoint(h.idNamespace, object))
+	case *unstructured.Unstructured:
+		endpoints = append(endpoints, convertUnstructuredToEndpoint(h.idNamespace, object))
 	default: // unsupported
 		return
 	}
@@ -120,6 +123,16 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 		oldEndpoint := convertNodeToEndpoint(h.idNamespace, oldObject)
 		oldEndpoints[oldEndpoint.ID] = oldEndpoint
 		newEndpoint := convertNodeToEndpoint(h.idNamespace, newNode)
+		newEndpoints[newEndpoint.ID] = newEndpoint
+	case *unstructured.Unstructured:
+		newCRD, ok := newObjectInterface.(*unstructured.Unstructured)
+		if !ok {
+			h.logger.Warn("skip updating endpoint for CRD as the update is of different type", zap.Any("oldCRD", oldObjectInterface), zap.Any("newObject", newObjectInterface))
+			return
+		}
+		oldEndpoint := convertUnstructuredToEndpoint(h.idNamespace, oldObject)
+		oldEndpoints[oldEndpoint.ID] = oldEndpoint
+		newEndpoint := convertUnstructuredToEndpoint(h.idNamespace, newCRD)
 		newEndpoints[newEndpoint.ID] = newEndpoint
 	default: // unsupported
 		return
@@ -191,6 +204,10 @@ func (h *handler) OnDelete(objectInterface any) {
 	case *v1.Node:
 		if object != nil {
 			endpoints = append(endpoints, convertNodeToEndpoint(h.idNamespace, object))
+		}
+	case *unstructured.Unstructured:
+		if object != nil {
+			endpoints = append(endpoints, convertUnstructuredToEndpoint(h.idNamespace, object))
 		}
 	default: // unsupported
 		return

@@ -8,6 +8,26 @@ k8s_observer/observe-all:
   observe_pods: true
   observe_services: true
   observe_ingresses: true
+k8s_observer/observe-crds:
+  auth_type: none
+  observe_pods: false
+  observe_crds:
+  - group: mycompany.io
+    version: v1
+    kind: MyResource
+  - group: example.com
+    version: v1alpha1
+    kind: Widget
+    namespaces:
+    - production
+    - staging
+k8s_observer/observe-crds-only:
+  auth_type: none
+  observe_pods: false
+  observe_crds:
+  - group: mycompany.io
+    version: v1
+    kind: MyResource
 k8s_observer/invalid_auth:
   auth_type: not a real auth type
 k8s_observer/invalid_no_observing:
@@ -15,3 +35,18 @@ k8s_observer/invalid_no_observing:
   observe_pods: false
   observe_services: false
   observe_ingresses: false
+k8s_observer/invalid_crd_missing_group:
+  observe_pods: false
+  observe_crds:
+  - version: v1
+    kind: MyResource
+k8s_observer/invalid_crd_missing_version:
+  observe_pods: false
+  observe_crds:
+  - group: mycompany.io
+    kind: MyResource
+k8s_observer/invalid_crd_missing_kind:
+  observe_pods: false
+  observe_crds:
+  - group: mycompany.io
+    version: v1

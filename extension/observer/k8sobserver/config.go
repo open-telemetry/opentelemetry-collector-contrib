@@ -5,9 +5,37 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
+
+// CRDConfig defines the configuration for observing a specific Custom Resource Definition.
+type CRDConfig struct {
+	// Group is the API group of the CRD (e.g., "mycompany.io").
+	Group string `mapstructure:"group"`
+	// Version is the API version of the CRD (e.g., "v1", "v1alpha1").
+	Version string `mapstructure:"version"`
+	// Kind is the kind of the CRD (e.g., "MyResource").
+	Kind string `mapstructure:"kind"`
+	// Namespaces limits the namespaces for the observed CRD. If empty, all namespaces will be observed.
+	// This overrides the global Namespaces setting for this specific CRD.
+	Namespaces []string `mapstructure:"namespaces"`
+}
+
+// Validate checks if the CRD configuration is valid.
+func (c *CRDConfig) Validate() error {
+	if c.Group == "" {
+		return errors.New("CRD group is required")
+	}
+	if c.Version == "" {
+		return errors.New("CRD version is required")
+	}
+	if c.Kind == "" {
+		return errors.New("CRD kind is required")
+	}
+	return nil
+}
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
@@ -38,14 +66,21 @@ type Config struct {
 	ObserveServices bool `mapstructure:"observe_services"`
 	// ObserveIngresses determines whether to report observer ingress. `false` by default.
 	ObserveIngresses bool `mapstructure:"observe_ingresses"`
+	// ObserveCRDs is a list of Custom Resource Definitions to observe. `nil` by default.
+	ObserveCRDs []CRDConfig `mapstructure:"observe_crds"`
 	// Namespaces limits the namespaces for the observed resources. By default, all namespaces will be observed.
 	Namespaces []string `mapstructure:"namespaces"`
 }
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if !cfg.ObservePods && !cfg.ObserveNodes && !cfg.ObserveServices && !cfg.ObserveIngresses {
-		return errors.New("one of observe_pods, observe_nodes, observe_services and observe_ingresses must be true")
+	if !cfg.ObservePods && !cfg.ObserveNodes && !cfg.ObserveServices && !cfg.ObserveIngresses && len(cfg.ObserveCRDs) == 0 {
+		return errors.New("one of observe_pods, observe_nodes, observe_services, observe_ingresses must be true, or observe_crds must be specified")
+	}
+	for i, crd := range cfg.ObserveCRDs {
+		if err := crd.Validate(); err != nil {
+			return fmt.Errorf("observe_crds[%d]: %w", i, err)
+		}
 	}
 	return nil
 }

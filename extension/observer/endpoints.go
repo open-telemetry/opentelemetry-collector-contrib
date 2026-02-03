@@ -31,6 +31,8 @@ const (
 	K8sIngressType EndpointType = "k8s.ingress"
 	// K8sNodeType is a Kubernetes Node endpoint.
 	K8sNodeType EndpointType = "k8s.node"
+	// K8sCRDType is a Kubernetes Custom Resource endpoint.
+	K8sCRDType EndpointType = "k8s.crd"
 	// HostPortType is a hostport endpoint.
 	HostPortType EndpointType = "hostport"
 	// ContainerType is a container endpoint.
@@ -44,6 +46,7 @@ var (
 	_ EndpointDetails = (*Port)(nil)
 	_ EndpointDetails = (*K8sService)(nil)
 	_ EndpointDetails = (*K8sNode)(nil)
+	_ EndpointDetails = (*K8sCRD)(nil)
 	_ EndpointDetails = (*HostPort)(nil)
 	_ EndpointDetails = (*Container)(nil)
 	_ EndpointDetails = (*KafkaTopic)(nil)
@@ -378,6 +381,49 @@ func (n *K8sNode) Env() EndpointEnv {
 
 func (*K8sNode) Type() EndpointType {
 	return K8sNodeType
+}
+
+// K8sCRD is a discovered Kubernetes Custom Resource.
+type K8sCRD struct {
+	// Name of the custom resource.
+	Name string
+	// UID is the unique ID in the cluster for the custom resource.
+	UID string
+	// Labels is a map of user-specified metadata.
+	Labels map[string]string
+	// Annotations is a map of user-specified metadata.
+	Annotations map[string]string
+	// Namespace of the custom resource (empty for cluster-scoped resources).
+	Namespace string
+	// Group is the API group of the CRD.
+	Group string
+	// Version is the API version of the CRD.
+	Version string
+	// Kind is the kind of the CRD.
+	Kind string
+	// Spec contains the spec fields of the custom resource as a map.
+	Spec map[string]any
+	// Status contains the status fields of the custom resource as a map.
+	Status map[string]any
+}
+
+func (c *K8sCRD) Env() EndpointEnv {
+	return map[string]any{
+		"uid":         c.UID,
+		"name":        c.Name,
+		"labels":      c.Labels,
+		"annotations": c.Annotations,
+		"namespace":   c.Namespace,
+		"group":       c.Group,
+		"version":     c.Version,
+		"kind":        c.Kind,
+		"spec":        c.Spec,
+		"status":      c.Status,
+	}
+}
+
+func (*K8sCRD) Type() EndpointType {
+	return K8sCRDType
 }
 
 type KafkaTopic struct{}
