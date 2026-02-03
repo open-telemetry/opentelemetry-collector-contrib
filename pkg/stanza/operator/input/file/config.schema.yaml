@@ -1,0 +1,7 @@
+$defs:
+  config:
+    description: Config is the configuration of a file input operator
+    type: object
+    allOf:
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.input_config
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer.config
