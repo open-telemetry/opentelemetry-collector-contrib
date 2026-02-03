@@ -41,6 +41,132 @@ Feature gates can be enabled using the `--feature-gates` flag:
 "--feature-gates=<feature-gate>"
 ```
 
+## Common Use Cases
+
+### Basic Local Development
+
+Detect host system information and environment variables:
+
+```yaml
+processors:
+  resourcedetection:
+    detectors: [env, system]
+    timeout: 2s
+```
+
+### AWS EKS Cluster
+
+Detect EKS-specific attributes along with EC2 instance metadata:
+
+```yaml
+processors:
+  resourcedetection:
+    detectors: [env, system, eks, ec2]
+    timeout: 15s
+    eks:
+      resource_attributes:
+        k8s.cluster.name:
+          enabled: true
+    ec2:
+      tags:
+        - ^kubernetes.io/cluster/.*$
+        - ^Environment$
+```
+
+### AWS Lambda Function
+
+Detect Lambda-specific attributes:
+
+```yaml
+processors:
+  resourcedetection:
+    detectors: [env, lambda]
+    timeout: 200ms
+```
+
+### Google Kubernetes Engine (GKE)
+
+Detect GKE and GCP metadata:
+
+```yaml
+processors:
+  resourcedetection:
+    detectors: [env, gcp, system]
+    timeout: 2s
+```
+
+### Azure AKS Cluster
+
+Detect AKS-specific attributes along with Azure metadata:
+
+```yaml
+processors:
+  resourcedetection:
+    detectors: [env, system, aks, azure]
+    timeout: 2s
+    aks:
+      resource_attributes:
+        k8s.cluster.name:
+          enabled: true
+    azure:
+      tags:
+        - ^Environment$
+        - ^Team$
+```
+
+### Docker Container
+
+Detect Docker-specific metadata (Linux only):
+
+```yaml
+processors:
+  resourcedetection:
+    detectors: [env, docker, system]
+    timeout: 2s
+```
+
+### Multi-Cloud with Fallback
+
+Safely attempt detection across multiple cloud providers:
+
+```yaml
+processors:
+  resourcedetection:
+    # Order matters: more specific detectors first
+    detectors: [env, system, eks, aks, gcp]
+    timeout: 5s
+    override: false
+ 
+    # Run with error propagation disabled to allow partial detection
+    # Command: otelcol --config=config.yaml --feature-gates=-processor.resourcedetection.propagateerrors
+```
+ 
+### Enrichment without Override
+ 
+Add resource attributes only if they don't already exist:
+ 
+```yaml
+processors:
+  resourcedetection:
+    detectors: [env, system]
+    override: false # Preserve existing attributes from instrumentation
+```
+
+### Periodic Resource Refresh
+
+Refresh resource detection every 15 minutes (use with caution):
+
+```yaml
+processors:
+  resourcedetection:
+    detectors: [ec2]
+    timeout: 5s
+    refresh_interval: 15m
+    ec2:
+      tags:
+        - ^.*$ # Refresh all tags
+```
+
 ## Supported detectors
 
 ### Environment Variable
@@ -871,16 +997,121 @@ processors:
       fail_on_missing_metadata: true
 ```
 
+## Production Guidance
+
+### Deployment Considerations
+
+The resource detection processor is designed to be stateless and safe for production use. Consider the following when deploying:
+
+#### Scaling
+
+- **Horizontal Scaling**: Each collector instance independently detects resource attributes for its own environment. No coordination between instances is required.
+- **Resource Overhead**: Detection typically occurs once at startup (unless `refresh_interval` is configured). CPU and memory overhead is minimal after initial detection.
+- **Startup Time**: Initial detection adds latency to collector startup (default timeout: 5 seconds per detector). Consider adjusting `timeout` settings based on your environment.
+
+#### Deployment Best Practices
+
+1. **Detector Selection**: Only enable detectors relevant to your deployment environment. Unnecessary detectors increase startup time without providing value.
+
+2. **Timeout Configuration**: Set appropriate timeouts based on network conditions:
+   ```yaml
+   processors:
+     resourcedetection:
+       detectors: [eks, ec2]
+       timeout: 10s # Increase for slower networks or complex environments
+   ```
+
+3. **Error Handling**: By default, detector failures prevent collector startup (when `processor.resourcedetection.propagateerrors` is enabled). To allow partial detection:
+   ```shell
+   otelcol --config=config.yaml --feature-gates=-processor.resourcedetection.propagateerrors
+   ```
+
+4. **Resource Attribute Conflicts**: When multiple detectors provide the same attribute, the first detector in the list wins. Order detectors intentionally (see [Ordering](#ordering) section).
+
+#### Periodic Refresh Considerations
+
+The `refresh_interval` parameter should be used with caution:
+
+- **Metric Cardinality Impact**: Changes to resource attributes create new time series, significantly impacting storage costs and query performance
+- **Recommended Intervals**:  
+  - Minimum practical interval: 5 minutes (1 minute or less is strongly discouraged)
+  - Default (0): No refresh; detection runs only at startup (recommended for most use cases)
+- **Use Cases**: Only enable periodic refresh when resource attributes are expected to change during collector lifetime (e.g., dynamic cloud instance tags, Kubernetes labels)
+
+### State Management
+
+This processor is **stateless** and does not require persistent storage or special shutdown procedures. Resource attributes are:
+- Detected on demand (startup or refresh cycle)
+- Stored in memory only
+- Applied to telemetry as it flows through the pipeline
+- Not persisted across restarts
+
+Graceful shutdown is handled automatically by the collector framework. No special configuration is required.
+
+### Cloud Provider Considerations
+
+#### AWS
+
+- **EC2 Tags**: Requires `ec2:DescribeTags` IAM permission
+- **EKS Cluster Name**: Requires `EC2:DescribeInstances` permission
+- **IMDS Proxy**: Exempt instance metadata endpoint (`169.254.169.254`) from proxy configuration
+- **ParallelCluster**: Ensure OTEL user has iptables access to IMDS
+
+#### Azure
+
+- **Instance Tags**: Available through IMDS; no special permissions required
+- **AKS Cluster Name**: Derived from infrastructure resource group naming convention
+
+#### GCP
+
+- **GKE Workload Identity**: When enabled, `host.name` may be unavailable. Set via downward API or Kubernetes API
+
+#### Kubernetes
+
+- **RBAC Permissions**: See detector-specific documentation for required ClusterRole/Role permissions
+- **Node Metadata**: Use downward API to pass node information via environment variables
+
 ## Configuration
 
+### Basic Configuration
+
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs"
-detectors: [ <string> ]
-# determines if existing resource attributes should be overridden or preserved, defaults to true
-override: <bool>
-# how often resource detection should be refreshed; if unset, detection runs only once at startup
-refresh_interval: <duration>
+processors:
+  resourcedetection:
+    # List of resource detectors to run
+    # Valid options: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", 
+    # "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", 
+    # "k8snode", "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", 
+    # "digitalocean", "nova", "upcloud", "alibaba_ecs"
+    detectors: [env, system]
+ 
+    # Determines if existing resource attributes should be overridden or preserved
+    # Default: true
+    override: true
+ 
+    # Timeout for each detector's detection operation
+    # Default: 5s
+    timeout: 5s
+ 
+    # How often resource detection should be refreshed
+    # Default: 0 (no refresh, detection runs only once at startup)
+    # Caution: Frequent refreshes can increase metric cardinality
+    refresh_interval: 0
 ```
+
+### All Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `detectors` | []string | `["env"]` | Ordered list of detector names to run |
+| `override` | bool | `true` | Whether to override existing resource attributes |
+| `timeout` | duration | `5s` | Maximum time to wait for detector operations |
+| `refresh_interval` | duration | `0` | Interval for periodic resource detection refresh (0 = disabled) |
+| `<detector>` | object | varies | Detector-specific configuration (see detector documentation) |
+
+For detailed detector-specific configuration options, see the individual detector sections above.
+
+### Selective Attribute Detection
 
 You have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
 
@@ -913,6 +1144,208 @@ The `refresh_interval` option allows resource attributes to be periodically refr
 
 **Recommendation**: In most environments, a single resource detection at startup is sufficient. Periodic refresh should be used only when resource attributes are expected to change during the Collector's lifetime (e.g., Kubernetes pod labels, cloud instance tags).
 
+## Feature Gates
+
+This processor uses feature gates to control certain behaviors. Feature gates can be enabled/disabled using the `--feature-gates` command-line flag.
+
+### `processor.resourcedetection.propagateerrors`
+
+**Status**: Beta (enabled by default)  
+**Since**: v0.121.0
+
+Controls whether errors returned from resource detectors propagate in the `Start()` method and prevent the collector from starting.
+
+- **When enabled (default)**: If any configured detector fails, the error propagates and stops the collector from starting. This ensures partial or incorrect resource detection is not silently ignored.
+- **When disabled**: Detector errors are logged but do not prevent collector startup. The collector will start with whatever resource attributes were successfully detected.
+
+**Usage**:
+```shell
+# Disable error propagation (allow collector to start even if detection fails)
+otelcol --config=config.yaml --feature-gates=-processor.resourcedetection.propagateerrors
+
+# Explicitly enable error propagation (default behavior)
+otelcol --config=config.yaml --feature-gates=processor.resourcedetection.propagateerrors
+```
+
+**When to use**: Disable this gate if you prefer collector availability over complete resource detection. This is useful in environments where:
+- Some detectors may intermittently fail but the collector should continue operating
+- Partial resource detection is acceptable
+- You have fallback mechanisms for resource attribution
+
+**Reference**: [Issue #37961](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37961)
+
+### `processor.resourcedetection.gcp.removefaasid`
+
+**Status**: Beta  
+**Since**: v0.115.0 (approximate)
+
+Controls whether the deprecated `faas.id` attribute is removed from GCP detector output in favor of the semantic convention-compliant `faas.instance` attribute.
+
+- **When enabled**: Only `faas.instance` is populated (recommended for new deployments)
+- **When disabled**: Both `faas.id` and `faas.instance` are populated for backward compatibility
+
+**Usage**:
+```shell
+# Enable removal of faas.id (use faas.instance only)
+otelcol --config=config.yaml --feature-gates=processor.resourcedetection.gcp.removefaasid
+```
+
+**When to use**: Enable this gate when migrating to semantic convention-compliant attribute names for GCP Cloud Functions, Cloud Run, and App Engine environments.
+
+## External Dependencies and Compatibility
+
+### Cloud Provider SDKs
+
+The resource detection processor relies on official cloud provider SDKs for metadata service interactions:
+
+| Detector | Dependency | Supported Versions | Compatibility Notes |
+|----------|------------|-------------------|---------------------|
+| **AWS** (ec2, ecs, eks, lambda, elasticbeanstalk) | [AWS SDK for Go v2](https://github.com/aws/aws-sdk-go-v2) | v1.x | Compatible with all AWS regions. Requires IMDSv2 support for EC2/EKS. |
+| **GCP** (gcp) | [Google Cloud Client Libraries](https://github.com/googleapis/google-cloud-go) | Latest stable | Compatible with GCE, GKE, Cloud Run, Cloud Functions, App Engine. |
+| **Azure** (azure, aks) | Azure Instance Metadata Service (IMDS) | API version 2021-02-01+ | Direct HTTP calls to IMDS endpoint. No SDK dependency. |
+| **Kubernetes** (k8snode, kubeadm, openshift) | [client-go](https://github.com/kubernetes/client-go) | v0.28+ | Compatible with Kubernetes 1.24+. Requires appropriate RBAC permissions. |
+
+### Metadata Service Endpoints
+
+Detectors communicate with the following endpoints. Ensure network policies allow access:
+
+| Service | Endpoint | Required Access |
+|---------|----------|----------------|
+| AWS EC2/EKS IMDS | `http://169.254.169.254` | Link-local, should not be proxied |
+| AWS ECS Task Metadata | `http://169.254.170.2`, `http://169.254.169.254/latest/meta-data/` | Set via `ECS_CONTAINER_METADATA_URI_V4` env var |
+| GCP Metadata | `http://metadata.google.internal` | GCP-internal, available on GCP instances |
+| Azure IMDS | `http://169.254.169.254` | Link-local, should not be proxied |
+| Kubernetes API | Cluster-specific (e.g., `https://kubernetes.default.svc`) | Configured via service account or kubeconfig |
+
+### Version Compatibility
+
+**Collector Compatibility**: This processor is compatible with OpenTelemetry Collector v0.100.0+
+
+**Semantic Conventions**: The processor follows [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions) for resource attributes:
+- **Current version**: 1.27.0+
+- **Breaking changes**: Monitored via feature gates (e.g., `processor.resourcedetection.gcp.removefaasid`)
+- **Upgrade path**: Feature gates provide opt-in migration for semantic convention changes
+
+**Backward Compatibility Guarantees**:
+- Configuration schema is backward compatible within major versions
+- New detectors may be added in minor versions
+- Detector behavior changes are gated behind feature flags
+- Default detector (`env`) is guaranteed stable
+
+### Network Requirements
+
+- **Firewall Rules**: Allow outbound HTTP/HTTPS to metadata service endpoints
+- **Proxy Configuration**: Exempt metadata service link-local addresses (169.254.x.x) from HTTP proxy
+- **DNS**: Some detectors (system, gcp) perform DNS lookups for hostname resolution
+- **Timeouts**: Default 5-second timeout per detector; adjust based on network latency
+
+### Security Considerations
+
+- **Credentials**: Most detectors use instance metadata without explicit credentials
+- **IAM/RBAC**: Some features require additional permissions (see detector-specific documentation)
+- **Sensitive Data**: Detector results may include internal identifiers; consider data governance policies
+- **IMDS Access**: Link-local metadata services should not be accessible from application containers in multi-tenant environments
+
+## Known Limitations and Common Pitfalls
+
+### Limitations
+
+1. **Cloud Metadata Service Availability**
+   - Detectors that query cloud metadata services (EC2, Azure, GCP, etc.) will fail if the metadata endpoint is not accessible
+   - No automatic retry mechanism exists; detection occurs only once per startup/refresh cycle
+   - **Mitigation**: Use appropriate timeouts and consider disabling error propagation feature gate if partial detection is acceptable
+
+2. **Detector Ordering Matters**
+   - When multiple detectors set the same attribute, the first detector wins
+   - No merging or conflict resolution occurs beyond first-wins
+   - **Mitigation**: Carefully order detectors in the `detectors` list (see [Ordering](#ordering) section)
+
+3. **Kubernetes RBAC Requirements**
+   - Several detectors (k8snode, kubeadm, openshift, aks) require specific RBAC permissions
+   - Permission errors are not always immediately obvious in logs
+   - **Mitigation**: Ensure proper ClusterRole/Role configurations before deploying (see detector-specific documentation)
+
+4. **GKE Workload Identity**
+   - When GKE workload identity is enabled, IMDS is unavailable and `host.name` cannot be detected via GCP detector
+   - **Mitigation**: Use downward API to pass `node.name` or fetch from Kubernetes API
+
+5. **Docker Detection on macOS**
+   - Docker detector does not work on macOS
+   - **Mitigation**: Use system detector or other appropriate detectors for local development
+
+6. **Schema URL Conflicts**
+   - If telemetry arrives with a schema URL and detection adds a different schema URL, the existing one is preserved
+   - This maintains semantic convention compatibility but may hide detection results
+   - **Mitigation**: Ensure consistent semantic convention versions across your pipeline
+
+### Common Misconfigurations
+
+1. **Enabling All Detectors**
+   ```yaml
+   # ❌ BAD: Enables detectors for all cloud providers
+   detectors: [gcp, azure, ec2, ecs, eks, aks, ...]
+   ```
+   **Problem**: Unnecessary detectors slow startup and may cause errors  
+   **Solution**: Only enable detectors for your actual environment:
+   ```yaml
+   # ✅ GOOD: Only AWS EKS detectors
+   detectors: [env, system, eks, ec2]
+   ```
+
+2. **Aggressive Refresh Intervals**
+   ```yaml
+   # ❌ BAD: Refreshes every 30 seconds
+   refresh_interval: 30s
+   ```
+   **Problem**: Creates excessive metric cardinality and API calls  
+   **Solution**: Use refresh only when necessary, with reasonable intervals:
+   ```yaml
+   # ✅ GOOD: Refresh every 10 minutes if needed at all
+   refresh_interval: 10m # or 0 to disable
+   ```
+
+3. **Ignoring Detector Failures**
+   ```yaml
+   # ❌ RISKY: Silently ignores detection errors
+   # Command: otelcol --feature-gates=-processor.resourcedetection.propagateerrors
+   ```
+   **Problem**: May run with missing or incorrect resource attributes  
+   **Solution**: Only disable error propagation if you have a specific reason and monitoring in place
+
+4. **Not Configuring Timeouts for Slow Networks**
+   ```yaml
+   # ❌ BAD: Uses default 5s timeout on slow network
+   detectors: [eks] # EKS can be slow
+   ```
+   **Problem**: Legitimate detection may time out  
+   **Solution**: Adjust timeout based on environment:
+   ```yaml
+   # ✅ GOOD: Longer timeout for complex detection
+   detectors: [eks]
+   timeout: 15s
+   ```
+
+5. **Incorrect Permission for EC2 Tags**
+   ```yaml
+   # Configuration tries to fetch EC2 tags but IAM role lacks ec2:DescribeTags
+   ```
+   **Problem**: Silent failure or logged errors; tags not populated  
+   **Solution**: Ensure IAM role/policy includes required permissions (see detector documentation)
+
+6. **Wrong Override Setting**
+   ```yaml
+   # ❌ BAD: Overrides high-quality resource attributes from instrumentation
+   override: true
+   detectors: [env, system]
+   ```
+   **Problem**: May replace accurate application-provided attributes with generic host attributes  
+   **Solution**: Use `override: false` when instrumentation provides better resource information:
+   ```yaml
+   # ✅ GOOD: Enriches without overwriting
+   override: false
+   detectors: [env, system]
+   ```
+
 ## Performance
 
 ### Benchmark Tests
@@ -931,6 +1364,184 @@ go test -bench=. -benchmem
 
 For the latest benchmark results, see the [GitHub Actions workflow runs](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml).
 
+## Self-Observability
+
+This processor emits internal telemetry to help users detect errors, data loss, and performance issues. The telemetry follows the OpenTelemetry Collector's internal observability standards.
+
+### Metrics
+
+The resourcedetection processor uses the standard `processorhelper` framework which automatically emits the following metrics for all signal types (traces, metrics, logs, profiles):
+
+#### Data Flow Metrics
+
+**Incoming Data** - Measures data received by the processor:
+- `otelcol_processor_incoming_spans` (Counter, unit: `{span}`)
+- `otelcol_processor_incoming_metric_points` (Counter, unit: `{datapoint}`)
+- `otelcol_processor_incoming_log_records` (Counter, unit: `{record}`)
+
+**Outgoing Data** - Measures data successfully processed and forwarded:
+- `otelcol_processor_outgoing_spans` (Counter, unit: `{span}`)
+- `otelcol_processor_outgoing_metric_points` (Counter, unit: `{datapoint}`)
+- `otelcol_processor_outgoing_log_records` (Counter, unit: `{record}`)
+
+**Attributes**: All metrics include:
+- `processor`: Set to `"resourcedetection"`
+- `service_name`: Collector service name
+- `service_version`: Collector version
+
+#### Error Detection
+
+**Data Loss Indicators**:
+- Difference between `incoming` and `outgoing` metrics indicates processing failures
+- The processor does **not** drop data under normal operation; all incoming data is enriched and forwarded
+- If detector errors occur during startup (when `processor.resourcedetection.propagateerrors` is enabled), the collector will not start, preventing silent data loss
+
+**Error Conditions**:
+- Detector failures during startup: Logged at ERROR level and prevent collector startup (by default)
+- Detector timeouts: Logged at WARN level
+- API failures: Logged at ERROR level with detailed error messages
+
+#### Performance Monitoring
+
+The processor has minimal performance impact:
+- **Latency**: Resource detection occurs once at startup (or on refresh intervals)
+- **Processing overhead**: Simple resource attribute enrichment per data item
+- **No queueing**: Data flows through without buffering
+
+To monitor performance:
+1. **Startup latency**: Check collector startup time; long startups indicate slow detectors
+2. **Processing throughput**: Compare `incoming` vs `outgoing` rates; should be equal under normal operation
+3. **Detection duration**: Enable collector tracing to see spans for detector execution
+
+### Logging
+
+The resource detection processor emits structured logs for important events:
+
+#### Log Levels and Messages
+
+**INFO Level** - Normal operation events:
+| Message Pattern | When Emitted | Context |
+|----------------|--------------|---------|
+| `"Detected resource attributes"` | Initial detection success | Includes detected attributes |
+| `"refreshing resource attributes"` | Periodic refresh initiated | Only when `refresh_interval` > 0 |
+| `"Starting periodic resource detection refresh"` | Refresh goroutine started | Includes refresh interval |
+
+**WARN Level** - Non-fatal issues:
+| Message Pattern | When Emitted | Action Required |
+|----------------|--------------|-----------------|
+| `"detector timed out"` | Detector exceeds timeout | Increase `timeout` configuration |
+| `"detector returned empty resource"` | Detector found no attributes | Verify detector is applicable to environment |
+| `"metadata endpoint unavailable"` | Cloud metadata service unreachable | Check network connectivity; may be expected if not in cloud |
+
+**ERROR Level** - Fatal issues (when error propagation enabled):
+| Message Pattern | When Emitted | Action Required |
+|----------------|--------------|-----------------|
+| `"failed to detect resource"` | Detector encountered error | Check detector configuration and permissions |
+| `"detector initialization failed"` | Detector cannot start | Verify detector-specific requirements (RBAC, IAM, etc.) |
+| `"periodic refresh failed"` | Refresh cycle error | Check API rate limits and permissions |
+
+#### Error Details
+
+All ERROR and WARN logs include:
+- **Detector name**: Which detector failed
+- **Error message**: Detailed error from the detector or cloud API
+- **Context**: Relevant configuration or environment details
+
+**Privacy**: Signal data (traces, metrics, logs) is never included in logs for security and privacy reasons.
+
+### Tracing
+
+When the collector's internal tracing is enabled (`traces` telemetry level), the processor emits spans for:
+
+**Startup Phase**:
+- Span: `"resourcedetection.Start"` - Overall startup operation
+- Child spans for each detector's execution
+- Attributes: detector names, detection duration, success/failure
+
+**Processing Phase**:
+- Spans for data processing operations are part of the collector's standard tracing
+- Resource attribute enrichment time is negligible and not separately traced
+
+**Refresh Phase** (if configured):
+- Span: `"resourcedetection.Refresh"` - Periodic refresh operation
+- Child spans for each detector re-run
+- Attributes: refresh interval, detector results
+
+**Trace Correlation**:
+- All detector spans belong to the same trace context
+- Failed detector spans have `error=true` attribute
+- Span duration indicates detector performance
+
+### Data Characteristics
+
+**Normal Operation**:
+- **No data loss**: All incoming data is enriched and forwarded
+- **No data creation**: Processor only adds resource attributes, does not create new telemetry
+- **No data filtering**: Processor does not drop or filter data
+- **Deterministic**: Same input + same detected attributes = same output
+
+**Discrepancies Between Input and Output**:
+- None under normal operation; `incoming` = `outgoing` always
+- If metrics show discrepancy, indicates a bug or collector pipeline issue (not expected)
+
+**Data Held by Component**:
+- **Zero buffering**: Processor does not queue or buffer data
+- **Stateless**: No data is held between processing calls
+- **Resource attributes cached**: Detected resource attributes are cached in memory (small, constant size)
+
+### Monitoring Dashboard Recommendations
+
+For production monitoring, track these key metrics:
+
+#### Health Indicators
+```promql
+# Processing rate (should be non-zero when receiving traffic)
+rate(otelcol_processor_outgoing_spans{processor="resourcedetection"}[5m])
+
+# Data flow balance (should always be 0, indicating no data loss)
+rate(otelcol_processor_incoming_spans{processor="resourcedetection"}[5m]) - 
+rate(otelcol_processor_outgoing_spans{processor="resourcedetection"}[5m])
+```
+
+#### Error Detection
+- **Alert condition**: ERROR logs matching pattern `"failed to detect resource"`
+- Indicates: Misconfiguration, permission issues, or API failures
+- Response: Check detector configuration and cloud provider permissions
+
+- **Alert condition**: Startup time > 30 seconds
+- Indicates: Slow detector or network issues
+- Response: Increase timeouts or optimize detector selection
+
+#### Performance
+- **Metric**: Collector CPU usage during startup
+- Expected: Brief spike during detection, then low baseline
+- Issue if: Sustained high CPU usage
+
+- **Metric**: Refresh cycle duration (if using `refresh_interval`)
+- Expected: < timeout value per detector
+- Issue if: Frequently exceeding timeout
+
+### Telemetry Configuration
+
+The processor respects the collector's telemetry level configuration:
+
+**Basic** (default):
+- Standard metrics: incoming/outgoing counters
+- ERROR level logs only
+- No tracing
+
+**Normal**:
+- All metrics
+- INFO, WARN, ERROR logs
+- Basic tracing
+
+**Detailed**:
+- All metrics with detailed attributes
+- All log levels with verbose context
+- Detailed tracing with all detector spans
+
+Configure via collector's `service.telemetry.logs.level` and `service.telemetry.metrics.level` settings.
+
 ## Ordering
 
 Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
@@ -945,3 +1556,65 @@ Note that if multiple detectors are inserting the same attribute name, the first
 
 The full list of settings exposed for this extension are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+## Configuration Changes and Migration
+
+This section documents configuration changes and provides migration paths for users upgrading from older versions.
+
+### Removed in v0.116.0: `attributes` Configuration Option
+
+**What changed**: The deprecated `attributes` configuration option was removed in favor of `resource_attributes`.
+
+**Migration path**:  
+
+If you were using the old `attributes` configuration:
+
+```yaml
+# ❌ OLD (removed in v0.116.0)
+processors:
+  resourcedetection:
+    detectors: [ec2]
+    ec2:
+      attributes:
+        - host.name
+        - host.id
+```
+
+Migrate to the new `resource_attributes` configuration:
+
+```yaml
+# ✅ NEW (current)
+processors:
+  resourcedetection:
+    detectors: [ec2]
+    ec2:
+      resource_attributes:
+        host.name:
+          enabled: true
+        host.id:
+          enabled: true
+```
+
+**Benefits of the new format**:
+- Explicit enable/disable control per attribute
+- Aligns with OpenTelemetry declarative configuration style
+- Consistent with other collector components
+- Better support for future attribute configuration options
+
+**Timeline**:
+- Deprecated: v0.110.0 (November 2024)
+- Removal: v0.116.0 (December 2024)
+
+For more details, see:
+- [Issue #44610](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44610)
+- [PR #44616](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44616)
+
+### Configuration Stability Guarantee
+
+As a beta component progressing toward stable:
+
+- **Backward compatibility**: Configuration schema changes follow collector stability guidelines
+- **Deprecation policy**: Deprecated options are kept for at least one minor version with warning logs
+- **Migration time**: Users have at least 6 months or N+2 versions (whichever is later) to migrate
+- **Documentation**: All breaking changes are documented in this section with clear migration paths
+
