@@ -79,7 +79,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ServerAddress:     ResourceAttributeConfig{Enabled: true},
 					ServerPort:        ResourceAttributeConfig{Enabled: true},
 					ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
-					ServiceName:       ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -140,7 +139,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ServerAddress:     ResourceAttributeConfig{Enabled: false},
 					ServerPort:        ResourceAttributeConfig{Enabled: false},
 					ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
-					ServiceName:       ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -180,7 +178,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 				ServerAddress:     ResourceAttributeConfig{Enabled: true},
 				ServerPort:        ResourceAttributeConfig{Enabled: true},
 				ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
-				ServiceName:       ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -190,7 +187,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 				ServerAddress:     ResourceAttributeConfig{Enabled: false},
 				ServerPort:        ResourceAttributeConfig{Enabled: false},
 				ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
-				ServiceName:       ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

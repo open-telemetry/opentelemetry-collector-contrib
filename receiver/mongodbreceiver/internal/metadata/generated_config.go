@@ -256,7 +256,6 @@ type ResourceAttributesConfig struct {
 	ServerAddress     ResourceAttributeConfig `mapstructure:"server.address"`
 	ServerPort        ResourceAttributeConfig `mapstructure:"server.port"`
 	ServiceInstanceID ResourceAttributeConfig `mapstructure:"service.instance.id"`
-	ServiceName       ResourceAttributeConfig `mapstructure:"service.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -271,9 +270,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		ServiceInstanceID: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ServiceName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

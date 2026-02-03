@@ -7,9 +7,6 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: 0d53bbba-e245-5e46-a385-b3cb9baa6d28
-        - key: service.name
-          value:
-            stringValue: mongodb
     scopeMetrics:
       - metrics:
           - description: The number of cache operations of the instance.
