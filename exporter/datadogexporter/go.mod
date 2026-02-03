@@ -24,7 +24,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/log v0.76.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.76.0-rc.2
 	github.com/DataDog/datadog-api-client-go/v2 v2.54.0
-	github.com/DataDog/datadog-go/v5 v5.8.2
+	github.com/DataDog/datadog-go/v5 v5.8.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.144.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.144.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.144.0
@@ -242,7 +242,7 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
-	github.com/shirou/gopsutil/v4 v4.25.12 // indirect
+	github.com/shirou/gopsutil/v4 v4.26.1 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/shoenig/test v1.7.1 // indirect
 	github.com/spf13/cast v1.10.0 // indirect

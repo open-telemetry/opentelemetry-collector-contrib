@@ -1,0 +1,57 @@
+$defs:
+  auth_config:
+    type: object
+    properties:
+      plain:
+        $ref: plain_auth
+  connection_config:
+    type: object
+    properties:
+      auth:
+        $ref: auth_config
+      connection_timeout:
+        type: string
+        format: duration
+      endpoint:
+        type: string
+      heartbeat:
+        type: string
+        format: duration
+      name:
+        type: string
+      publish_confirmation_timeout:
+        type: string
+        format: duration
+      tls:
+        x-pointer: true
+        $ref: go.opentelemetry.io/collector/config/configtls.client_config
+      vhost:
+        type: string
+  plain_auth:
+    type: object
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+  routing_config:
+    type: object
+    properties:
+      exchange:
+        type: string
+      routing_key:
+        type: string
+type: object
+properties:
+  connection:
+    $ref: connection_config
+  durable:
+    type: boolean
+  encoding_extension:
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  routing:
+    $ref: routing_config

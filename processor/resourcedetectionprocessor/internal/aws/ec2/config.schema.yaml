@@ -1,0 +1,17 @@
+description: Config defines user-specified configurations unique to the EC2 detector
+type: object
+properties:
+  fail_on_missing_metadata:
+    type: boolean
+  max_attempts:
+    type: integer
+  max_backoff:
+    type: string
+    format: duration
+  resource_attributes:
+    $ref: ./internal/metadata.resource_attributes_config
+  tags:
+    description: Tags is a list of regex's to match ec2 instance tag keys that users want to add as resource attributes to processed data
+    type: array
+    items:
+      type: string
