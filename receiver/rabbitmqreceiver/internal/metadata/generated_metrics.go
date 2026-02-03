@@ -412,6 +412,7 @@ func (m *metricRabbitmqConsumerCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqConsumerCount(cfg MetricConfig) metricRabbitmqConsumerCount {
 	m := metricRabbitmqConsumerCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -463,6 +464,7 @@ func (m *metricRabbitmqMessageAcknowledged) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqMessageAcknowledged(cfg MetricConfig) metricRabbitmqMessageAcknowledged {
 	m := metricRabbitmqMessageAcknowledged{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -516,6 +518,7 @@ func (m *metricRabbitmqMessageCurrent) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqMessageCurrent(cfg MetricConfig) metricRabbitmqMessageCurrent {
 	m := metricRabbitmqMessageCurrent{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -567,6 +570,7 @@ func (m *metricRabbitmqMessageDelivered) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqMessageDelivered(cfg MetricConfig) metricRabbitmqMessageDelivered {
 	m := metricRabbitmqMessageDelivered{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -618,6 +622,7 @@ func (m *metricRabbitmqMessageDropped) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqMessageDropped(cfg MetricConfig) metricRabbitmqMessageDropped {
 	m := metricRabbitmqMessageDropped{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -669,6 +674,7 @@ func (m *metricRabbitmqMessagePublished) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqMessagePublished(cfg MetricConfig) metricRabbitmqMessagePublished {
 	m := metricRabbitmqMessagePublished{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -720,6 +726,7 @@ func (m *metricRabbitmqNodeChannelClosed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeChannelClosed(cfg MetricConfig) metricRabbitmqNodeChannelClosed {
 	m := metricRabbitmqNodeChannelClosed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -771,6 +778,7 @@ func (m *metricRabbitmqNodeChannelClosedDetailsRate) emit(metrics pmetric.Metric
 
 func newMetricRabbitmqNodeChannelClosedDetailsRate(cfg MetricConfig) metricRabbitmqNodeChannelClosedDetailsRate {
 	m := metricRabbitmqNodeChannelClosedDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -822,6 +830,7 @@ func (m *metricRabbitmqNodeChannelCreated) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeChannelCreated(cfg MetricConfig) metricRabbitmqNodeChannelCreated {
 	m := metricRabbitmqNodeChannelCreated{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -873,6 +882,7 @@ func (m *metricRabbitmqNodeChannelCreatedDetailsRate) emit(metrics pmetric.Metri
 
 func newMetricRabbitmqNodeChannelCreatedDetailsRate(cfg MetricConfig) metricRabbitmqNodeChannelCreatedDetailsRate {
 	m := metricRabbitmqNodeChannelCreatedDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -924,6 +934,7 @@ func (m *metricRabbitmqNodeConnectionClosed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeConnectionClosed(cfg MetricConfig) metricRabbitmqNodeConnectionClosed {
 	m := metricRabbitmqNodeConnectionClosed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -975,6 +986,7 @@ func (m *metricRabbitmqNodeConnectionClosedDetailsRate) emit(metrics pmetric.Met
 
 func newMetricRabbitmqNodeConnectionClosedDetailsRate(cfg MetricConfig) metricRabbitmqNodeConnectionClosedDetailsRate {
 	m := metricRabbitmqNodeConnectionClosedDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1026,6 +1038,7 @@ func (m *metricRabbitmqNodeConnectionCreated) emit(metrics pmetric.MetricSlice) 
 
 func newMetricRabbitmqNodeConnectionCreated(cfg MetricConfig) metricRabbitmqNodeConnectionCreated {
 	m := metricRabbitmqNodeConnectionCreated{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1077,6 +1090,7 @@ func (m *metricRabbitmqNodeConnectionCreatedDetailsRate) emit(metrics pmetric.Me
 
 func newMetricRabbitmqNodeConnectionCreatedDetailsRate(cfg MetricConfig) metricRabbitmqNodeConnectionCreatedDetailsRate {
 	m := metricRabbitmqNodeConnectionCreatedDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1128,6 +1142,7 @@ func (m *metricRabbitmqNodeContextSwitches) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeContextSwitches(cfg MetricConfig) metricRabbitmqNodeContextSwitches {
 	m := metricRabbitmqNodeContextSwitches{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1179,6 +1194,7 @@ func (m *metricRabbitmqNodeContextSwitchesDetailsRate) emit(metrics pmetric.Metr
 
 func newMetricRabbitmqNodeContextSwitchesDetailsRate(cfg MetricConfig) metricRabbitmqNodeContextSwitchesDetailsRate {
 	m := metricRabbitmqNodeContextSwitchesDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1230,6 +1246,7 @@ func (m *metricRabbitmqNodeDiskFree) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeDiskFree(cfg MetricConfig) metricRabbitmqNodeDiskFree {
 	m := metricRabbitmqNodeDiskFree{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1281,6 +1298,7 @@ func (m *metricRabbitmqNodeDiskFreeAlarm) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeDiskFreeAlarm(cfg MetricConfig) metricRabbitmqNodeDiskFreeAlarm {
 	m := metricRabbitmqNodeDiskFreeAlarm{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1332,6 +1350,7 @@ func (m *metricRabbitmqNodeDiskFreeDetailsRate) emit(metrics pmetric.MetricSlice
 
 func newMetricRabbitmqNodeDiskFreeDetailsRate(cfg MetricConfig) metricRabbitmqNodeDiskFreeDetailsRate {
 	m := metricRabbitmqNodeDiskFreeDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1383,6 +1402,7 @@ func (m *metricRabbitmqNodeDiskFreeLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeDiskFreeLimit(cfg MetricConfig) metricRabbitmqNodeDiskFreeLimit {
 	m := metricRabbitmqNodeDiskFreeLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1434,6 +1454,7 @@ func (m *metricRabbitmqNodeFdTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeFdTotal(cfg MetricConfig) metricRabbitmqNodeFdTotal {
 	m := metricRabbitmqNodeFdTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1485,6 +1506,7 @@ func (m *metricRabbitmqNodeFdUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeFdUsed(cfg MetricConfig) metricRabbitmqNodeFdUsed {
 	m := metricRabbitmqNodeFdUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1536,6 +1558,7 @@ func (m *metricRabbitmqNodeFdUsedDetailsRate) emit(metrics pmetric.MetricSlice) 
 
 func newMetricRabbitmqNodeFdUsedDetailsRate(cfg MetricConfig) metricRabbitmqNodeFdUsedDetailsRate {
 	m := metricRabbitmqNodeFdUsedDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1587,6 +1610,7 @@ func (m *metricRabbitmqNodeGcBytesReclaimed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeGcBytesReclaimed(cfg MetricConfig) metricRabbitmqNodeGcBytesReclaimed {
 	m := metricRabbitmqNodeGcBytesReclaimed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1638,6 +1662,7 @@ func (m *metricRabbitmqNodeGcBytesReclaimedDetailsRate) emit(metrics pmetric.Met
 
 func newMetricRabbitmqNodeGcBytesReclaimedDetailsRate(cfg MetricConfig) metricRabbitmqNodeGcBytesReclaimedDetailsRate {
 	m := metricRabbitmqNodeGcBytesReclaimedDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1689,6 +1714,7 @@ func (m *metricRabbitmqNodeGcNum) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeGcNum(cfg MetricConfig) metricRabbitmqNodeGcNum {
 	m := metricRabbitmqNodeGcNum{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1740,6 +1766,7 @@ func (m *metricRabbitmqNodeGcNumDetailsRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeGcNumDetailsRate(cfg MetricConfig) metricRabbitmqNodeGcNumDetailsRate {
 	m := metricRabbitmqNodeGcNumDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1791,6 +1818,7 @@ func (m *metricRabbitmqNodeIoReadAvgTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeIoReadAvgTime(cfg MetricConfig) metricRabbitmqNodeIoReadAvgTime {
 	m := metricRabbitmqNodeIoReadAvgTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1842,6 +1870,7 @@ func (m *metricRabbitmqNodeIoReadAvgTimeDetailsRate) emit(metrics pmetric.Metric
 
 func newMetricRabbitmqNodeIoReadAvgTimeDetailsRate(cfg MetricConfig) metricRabbitmqNodeIoReadAvgTimeDetailsRate {
 	m := metricRabbitmqNodeIoReadAvgTimeDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1893,6 +1922,7 @@ func (m *metricRabbitmqNodeIoReadBytes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeIoReadBytes(cfg MetricConfig) metricRabbitmqNodeIoReadBytes {
 	m := metricRabbitmqNodeIoReadBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1944,6 +1974,7 @@ func (m *metricRabbitmqNodeIoReadBytesDetailsRate) emit(metrics pmetric.MetricSl
 
 func newMetricRabbitmqNodeIoReadBytesDetailsRate(cfg MetricConfig) metricRabbitmqNodeIoReadBytesDetailsRate {
 	m := metricRabbitmqNodeIoReadBytesDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1995,6 +2026,7 @@ func (m *metricRabbitmqNodeIoReadCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeIoReadCount(cfg MetricConfig) metricRabbitmqNodeIoReadCount {
 	m := metricRabbitmqNodeIoReadCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2046,6 +2078,7 @@ func (m *metricRabbitmqNodeIoReadCountDetailsRate) emit(metrics pmetric.MetricSl
 
 func newMetricRabbitmqNodeIoReadCountDetailsRate(cfg MetricConfig) metricRabbitmqNodeIoReadCountDetailsRate {
 	m := metricRabbitmqNodeIoReadCountDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2097,6 +2130,7 @@ func (m *metricRabbitmqNodeIoReopenCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeIoReopenCount(cfg MetricConfig) metricRabbitmqNodeIoReopenCount {
 	m := metricRabbitmqNodeIoReopenCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2148,6 +2182,7 @@ func (m *metricRabbitmqNodeIoReopenCountDetailsRate) emit(metrics pmetric.Metric
 
 func newMetricRabbitmqNodeIoReopenCountDetailsRate(cfg MetricConfig) metricRabbitmqNodeIoReopenCountDetailsRate {
 	m := metricRabbitmqNodeIoReopenCountDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2199,6 +2234,7 @@ func (m *metricRabbitmqNodeIoSeekAvgTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeIoSeekAvgTime(cfg MetricConfig) metricRabbitmqNodeIoSeekAvgTime {
 	m := metricRabbitmqNodeIoSeekAvgTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2250,6 +2286,7 @@ func (m *metricRabbitmqNodeIoSeekAvgTimeDetailsRate) emit(metrics pmetric.Metric
 
 func newMetricRabbitmqNodeIoSeekAvgTimeDetailsRate(cfg MetricConfig) metricRabbitmqNodeIoSeekAvgTimeDetailsRate {
 	m := metricRabbitmqNodeIoSeekAvgTimeDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2301,6 +2338,7 @@ func (m *metricRabbitmqNodeIoSeekCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeIoSeekCount(cfg MetricConfig) metricRabbitmqNodeIoSeekCount {
 	m := metricRabbitmqNodeIoSeekCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2352,6 +2390,7 @@ func (m *metricRabbitmqNodeIoSeekCountDetailsRate) emit(metrics pmetric.MetricSl
 
 func newMetricRabbitmqNodeIoSeekCountDetailsRate(cfg MetricConfig) metricRabbitmqNodeIoSeekCountDetailsRate {
 	m := metricRabbitmqNodeIoSeekCountDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2403,6 +2442,7 @@ func (m *metricRabbitmqNodeIoSyncAvgTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeIoSyncAvgTime(cfg MetricConfig) metricRabbitmqNodeIoSyncAvgTime {
 	m := metricRabbitmqNodeIoSyncAvgTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2454,6 +2494,7 @@ func (m *metricRabbitmqNodeIoSyncAvgTimeDetailsRate) emit(metrics pmetric.Metric
 
 func newMetricRabbitmqNodeIoSyncAvgTimeDetailsRate(cfg MetricConfig) metricRabbitmqNodeIoSyncAvgTimeDetailsRate {
 	m := metricRabbitmqNodeIoSyncAvgTimeDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2505,6 +2546,7 @@ func (m *metricRabbitmqNodeIoSyncCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeIoSyncCount(cfg MetricConfig) metricRabbitmqNodeIoSyncCount {
 	m := metricRabbitmqNodeIoSyncCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2556,6 +2598,7 @@ func (m *metricRabbitmqNodeIoSyncCountDetailsRate) emit(metrics pmetric.MetricSl
 
 func newMetricRabbitmqNodeIoSyncCountDetailsRate(cfg MetricConfig) metricRabbitmqNodeIoSyncCountDetailsRate {
 	m := metricRabbitmqNodeIoSyncCountDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2607,6 +2650,7 @@ func (m *metricRabbitmqNodeIoWriteAvgTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeIoWriteAvgTime(cfg MetricConfig) metricRabbitmqNodeIoWriteAvgTime {
 	m := metricRabbitmqNodeIoWriteAvgTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2658,6 +2702,7 @@ func (m *metricRabbitmqNodeIoWriteAvgTimeDetailsRate) emit(metrics pmetric.Metri
 
 func newMetricRabbitmqNodeIoWriteAvgTimeDetailsRate(cfg MetricConfig) metricRabbitmqNodeIoWriteAvgTimeDetailsRate {
 	m := metricRabbitmqNodeIoWriteAvgTimeDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2709,6 +2754,7 @@ func (m *metricRabbitmqNodeIoWriteBytes) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeIoWriteBytes(cfg MetricConfig) metricRabbitmqNodeIoWriteBytes {
 	m := metricRabbitmqNodeIoWriteBytes{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2760,6 +2806,7 @@ func (m *metricRabbitmqNodeIoWriteBytesDetailsRate) emit(metrics pmetric.MetricS
 
 func newMetricRabbitmqNodeIoWriteBytesDetailsRate(cfg MetricConfig) metricRabbitmqNodeIoWriteBytesDetailsRate {
 	m := metricRabbitmqNodeIoWriteBytesDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2811,6 +2858,7 @@ func (m *metricRabbitmqNodeIoWriteCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeIoWriteCount(cfg MetricConfig) metricRabbitmqNodeIoWriteCount {
 	m := metricRabbitmqNodeIoWriteCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2862,6 +2910,7 @@ func (m *metricRabbitmqNodeIoWriteCountDetailsRate) emit(metrics pmetric.MetricS
 
 func newMetricRabbitmqNodeIoWriteCountDetailsRate(cfg MetricConfig) metricRabbitmqNodeIoWriteCountDetailsRate {
 	m := metricRabbitmqNodeIoWriteCountDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2913,6 +2962,7 @@ func (m *metricRabbitmqNodeMemAlarm) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeMemAlarm(cfg MetricConfig) metricRabbitmqNodeMemAlarm {
 	m := metricRabbitmqNodeMemAlarm{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2964,6 +3014,7 @@ func (m *metricRabbitmqNodeMemLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeMemLimit(cfg MetricConfig) metricRabbitmqNodeMemLimit {
 	m := metricRabbitmqNodeMemLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3015,6 +3066,7 @@ func (m *metricRabbitmqNodeMemUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeMemUsed(cfg MetricConfig) metricRabbitmqNodeMemUsed {
 	m := metricRabbitmqNodeMemUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3066,6 +3118,7 @@ func (m *metricRabbitmqNodeMemUsedDetailsRate) emit(metrics pmetric.MetricSlice)
 
 func newMetricRabbitmqNodeMemUsedDetailsRate(cfg MetricConfig) metricRabbitmqNodeMemUsedDetailsRate {
 	m := metricRabbitmqNodeMemUsedDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3117,6 +3170,7 @@ func (m *metricRabbitmqNodeMnesiaDiskTxCount) emit(metrics pmetric.MetricSlice) 
 
 func newMetricRabbitmqNodeMnesiaDiskTxCount(cfg MetricConfig) metricRabbitmqNodeMnesiaDiskTxCount {
 	m := metricRabbitmqNodeMnesiaDiskTxCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3168,6 +3222,7 @@ func (m *metricRabbitmqNodeMnesiaDiskTxCountDetailsRate) emit(metrics pmetric.Me
 
 func newMetricRabbitmqNodeMnesiaDiskTxCountDetailsRate(cfg MetricConfig) metricRabbitmqNodeMnesiaDiskTxCountDetailsRate {
 	m := metricRabbitmqNodeMnesiaDiskTxCountDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3219,6 +3274,7 @@ func (m *metricRabbitmqNodeMnesiaRAMTxCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeMnesiaRAMTxCount(cfg MetricConfig) metricRabbitmqNodeMnesiaRAMTxCount {
 	m := metricRabbitmqNodeMnesiaRAMTxCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3270,6 +3326,7 @@ func (m *metricRabbitmqNodeMnesiaRAMTxCountDetailsRate) emit(metrics pmetric.Met
 
 func newMetricRabbitmqNodeMnesiaRAMTxCountDetailsRate(cfg MetricConfig) metricRabbitmqNodeMnesiaRAMTxCountDetailsRate {
 	m := metricRabbitmqNodeMnesiaRAMTxCountDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3321,6 +3378,7 @@ func (m *metricRabbitmqNodeMsgStoreReadCount) emit(metrics pmetric.MetricSlice) 
 
 func newMetricRabbitmqNodeMsgStoreReadCount(cfg MetricConfig) metricRabbitmqNodeMsgStoreReadCount {
 	m := metricRabbitmqNodeMsgStoreReadCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3372,6 +3430,7 @@ func (m *metricRabbitmqNodeMsgStoreReadCountDetailsRate) emit(metrics pmetric.Me
 
 func newMetricRabbitmqNodeMsgStoreReadCountDetailsRate(cfg MetricConfig) metricRabbitmqNodeMsgStoreReadCountDetailsRate {
 	m := metricRabbitmqNodeMsgStoreReadCountDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3423,6 +3482,7 @@ func (m *metricRabbitmqNodeMsgStoreWriteCount) emit(metrics pmetric.MetricSlice)
 
 func newMetricRabbitmqNodeMsgStoreWriteCount(cfg MetricConfig) metricRabbitmqNodeMsgStoreWriteCount {
 	m := metricRabbitmqNodeMsgStoreWriteCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3474,6 +3534,7 @@ func (m *metricRabbitmqNodeMsgStoreWriteCountDetailsRate) emit(metrics pmetric.M
 
 func newMetricRabbitmqNodeMsgStoreWriteCountDetailsRate(cfg MetricConfig) metricRabbitmqNodeMsgStoreWriteCountDetailsRate {
 	m := metricRabbitmqNodeMsgStoreWriteCountDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3525,6 +3586,7 @@ func (m *metricRabbitmqNodeProcTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeProcTotal(cfg MetricConfig) metricRabbitmqNodeProcTotal {
 	m := metricRabbitmqNodeProcTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3576,6 +3638,7 @@ func (m *metricRabbitmqNodeProcUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeProcUsed(cfg MetricConfig) metricRabbitmqNodeProcUsed {
 	m := metricRabbitmqNodeProcUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3627,6 +3690,7 @@ func (m *metricRabbitmqNodeProcUsedDetailsRate) emit(metrics pmetric.MetricSlice
 
 func newMetricRabbitmqNodeProcUsedDetailsRate(cfg MetricConfig) metricRabbitmqNodeProcUsedDetailsRate {
 	m := metricRabbitmqNodeProcUsedDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3678,6 +3742,7 @@ func (m *metricRabbitmqNodeProcessors) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeProcessors(cfg MetricConfig) metricRabbitmqNodeProcessors {
 	m := metricRabbitmqNodeProcessors{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3729,6 +3794,7 @@ func (m *metricRabbitmqNodeQueueCreated) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeQueueCreated(cfg MetricConfig) metricRabbitmqNodeQueueCreated {
 	m := metricRabbitmqNodeQueueCreated{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3780,6 +3846,7 @@ func (m *metricRabbitmqNodeQueueCreatedDetailsRate) emit(metrics pmetric.MetricS
 
 func newMetricRabbitmqNodeQueueCreatedDetailsRate(cfg MetricConfig) metricRabbitmqNodeQueueCreatedDetailsRate {
 	m := metricRabbitmqNodeQueueCreatedDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3831,6 +3898,7 @@ func (m *metricRabbitmqNodeQueueDeclared) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeQueueDeclared(cfg MetricConfig) metricRabbitmqNodeQueueDeclared {
 	m := metricRabbitmqNodeQueueDeclared{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3882,6 +3950,7 @@ func (m *metricRabbitmqNodeQueueDeclaredDetailsRate) emit(metrics pmetric.Metric
 
 func newMetricRabbitmqNodeQueueDeclaredDetailsRate(cfg MetricConfig) metricRabbitmqNodeQueueDeclaredDetailsRate {
 	m := metricRabbitmqNodeQueueDeclaredDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3933,6 +4002,7 @@ func (m *metricRabbitmqNodeQueueDeleted) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeQueueDeleted(cfg MetricConfig) metricRabbitmqNodeQueueDeleted {
 	m := metricRabbitmqNodeQueueDeleted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3984,6 +4054,7 @@ func (m *metricRabbitmqNodeQueueDeletedDetailsRate) emit(metrics pmetric.MetricS
 
 func newMetricRabbitmqNodeQueueDeletedDetailsRate(cfg MetricConfig) metricRabbitmqNodeQueueDeletedDetailsRate {
 	m := metricRabbitmqNodeQueueDeletedDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4035,6 +4106,7 @@ func (m *metricRabbitmqNodeQueueIndexReadCount) emit(metrics pmetric.MetricSlice
 
 func newMetricRabbitmqNodeQueueIndexReadCount(cfg MetricConfig) metricRabbitmqNodeQueueIndexReadCount {
 	m := metricRabbitmqNodeQueueIndexReadCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4086,6 +4158,7 @@ func (m *metricRabbitmqNodeQueueIndexReadCountDetailsRate) emit(metrics pmetric.
 
 func newMetricRabbitmqNodeQueueIndexReadCountDetailsRate(cfg MetricConfig) metricRabbitmqNodeQueueIndexReadCountDetailsRate {
 	m := metricRabbitmqNodeQueueIndexReadCountDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4137,6 +4210,7 @@ func (m *metricRabbitmqNodeQueueIndexWriteCount) emit(metrics pmetric.MetricSlic
 
 func newMetricRabbitmqNodeQueueIndexWriteCount(cfg MetricConfig) metricRabbitmqNodeQueueIndexWriteCount {
 	m := metricRabbitmqNodeQueueIndexWriteCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4188,6 +4262,7 @@ func (m *metricRabbitmqNodeQueueIndexWriteCountDetailsRate) emit(metrics pmetric
 
 func newMetricRabbitmqNodeQueueIndexWriteCountDetailsRate(cfg MetricConfig) metricRabbitmqNodeQueueIndexWriteCountDetailsRate {
 	m := metricRabbitmqNodeQueueIndexWriteCountDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4239,6 +4314,7 @@ func (m *metricRabbitmqNodeRunQueue) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeRunQueue(cfg MetricConfig) metricRabbitmqNodeRunQueue {
 	m := metricRabbitmqNodeRunQueue{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4290,6 +4366,7 @@ func (m *metricRabbitmqNodeSocketsTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeSocketsTotal(cfg MetricConfig) metricRabbitmqNodeSocketsTotal {
 	m := metricRabbitmqNodeSocketsTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4341,6 +4418,7 @@ func (m *metricRabbitmqNodeSocketsUsed) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeSocketsUsed(cfg MetricConfig) metricRabbitmqNodeSocketsUsed {
 	m := metricRabbitmqNodeSocketsUsed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4392,6 +4470,7 @@ func (m *metricRabbitmqNodeSocketsUsedDetailsRate) emit(metrics pmetric.MetricSl
 
 func newMetricRabbitmqNodeSocketsUsedDetailsRate(cfg MetricConfig) metricRabbitmqNodeSocketsUsedDetailsRate {
 	m := metricRabbitmqNodeSocketsUsedDetailsRate{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4443,6 +4522,7 @@ func (m *metricRabbitmqNodeUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRabbitmqNodeUptime(cfg MetricConfig) metricRabbitmqNodeUptime {
 	m := metricRabbitmqNodeUptime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

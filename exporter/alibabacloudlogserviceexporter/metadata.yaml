@@ -1,4 +1,5 @@
 type: alibabacloud_logservice
+display_name: AlibabaCloud LogService Exporter
 
 status:
   class: exporter

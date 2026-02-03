@@ -126,10 +126,10 @@ func TestDetectResource_DetectorFactoryError(t *testing.T) {
 }
 
 func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set(allowErrorPropagationFeatureGate.ID(), true)
+	err := featuregate.GlobalRegistry().Set(metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.ID(), true)
 	assert.NoError(t, err)
 	defer func() {
-		_ = featuregate.GlobalRegistry().Set(allowErrorPropagationFeatureGate.ID(), false)
+		_ = featuregate.GlobalRegistry().Set(metadata.ProcessorResourcedetectionPropagateerrorsFeatureGate.ID(), false)
 	}()
 
 	md1 := &mockDetector{}
@@ -198,6 +198,24 @@ func TestMergeResource(t *testing.T) {
 			assert.Equal(t, tt.expected, res1.Attributes().AsRaw())
 		})
 	}
+}
+
+func TestMergeResourceZeroValueFrom(t *testing.T) {
+	t.Parallel()
+
+	to := pcommon.NewResource()
+	require.NoError(t, to.Attributes().FromRaw(map[string]any{"keep": "me"}))
+
+	assert.NotPanics(t, func() {
+		MergeResource(to, pcommon.Resource{}, false)
+	})
+	assert.Equal(t, map[string]any{"keep": "me"}, to.Attributes().AsRaw())
+}
+
+func TestIsEmptyResourceZeroValue(t *testing.T) {
+	t.Parallel()
+
+	assert.True(t, IsEmptyResource(pcommon.Resource{}))
 }
 
 type mockParallelDetector struct {

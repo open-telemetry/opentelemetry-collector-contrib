@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"google.golang.org/grpc/encoding"
 )
 
 const (
@@ -37,6 +38,10 @@ type TransportConfig struct {
 	// The following fields are only used when protocol is "http"
 	ProxyURL string        `mapstructure:"proxy_url,omitempty"` // Used only if protocol is http
 	Timeout  time.Duration `mapstructure:"timeout,omitempty"`   // Used only if protocol is http
+
+	// AcceptEncoding specifies the compression encoding to accept for gRPC responses.
+	// Defaults to "gzip" if not set. Only used when protocol is "grpc".
+	AcceptEncoding string `mapstructure:"accept_encoding,omitempty"`
 }
 
 func (c *TransportConfig) ToHTTPClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
@@ -52,6 +57,11 @@ func (c *TransportConfig) ToHTTPClient(ctx context.Context, host component.Host,
 		Compression:     c.Compression,
 	}
 	return httpClientConfig.ToClient(ctx, host.GetExtensions(), settings)
+}
+
+// GetAcceptEncoding returns the accept encoding to use for gRPC responses.
+func (c *TransportConfig) GetAcceptEncoding() string {
+	return c.AcceptEncoding
 }
 
 // Config defines configuration for Coralogix exporter.
@@ -127,6 +137,8 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if isEmpty(c.Metrics.Endpoint) {
 		c.Metrics.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	} else if c.Protocol == httpProtocol {
+		c.Metrics.Endpoint = ensureHTTPScheme(c.Metrics.Endpoint)
 	}
 
 	if !isEmpty(c.Domain) && isEmpty(c.Traces.Endpoint) {
@@ -138,6 +150,8 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if isEmpty(c.Traces.Endpoint) {
 		c.Traces.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	} else if c.Protocol == httpProtocol {
+		c.Traces.Endpoint = ensureHTTPScheme(c.Traces.Endpoint)
 	}
 
 	if !isEmpty(c.Domain) && isEmpty(c.Logs.Endpoint) {
@@ -149,14 +163,23 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if isEmpty(c.Logs.Endpoint) {
 		c.Logs.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	} else if c.Protocol == httpProtocol {
+		c.Logs.Endpoint = ensureHTTPScheme(c.Logs.Endpoint)
 	}
 
-	if !isEmpty(c.Domain) && isEmpty(c.Profiles.Endpoint) {
+	// Only auto-populate profiles endpoint if protocol is not HTTP (profiles only support gRPC)
+	if c.Protocol != httpProtocol && !isEmpty(c.Domain) && isEmpty(c.Profiles.Endpoint) {
 		tCfg, err := setMergedTransportConfigWithConf(conf, c, &TransportConfig{ClientConfig: c.Profiles})
 		if err != nil {
 			return err
 		}
 		c.Profiles = tCfg.ClientConfig
+	}
+
+	// Only set profiles endpoint fallback if protocol is not HTTP and we have something to fallback to
+	// This avoid validation issues
+	if c.Protocol != httpProtocol && isEmpty(c.Profiles.Endpoint) && !isEmpty(c.DomainSettings.Endpoint) {
+		c.Profiles.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
 	}
 	return nil
 }
@@ -206,6 +229,38 @@ func (c *Config) Validate() error {
 	// Validate that HTTP protocol is not used with profiles
 	if c.Protocol == httpProtocol && !isEmpty(c.Profiles.Endpoint) {
 		return errors.New("profiles signal is not supported with HTTP protocol, use gRPC protocol (default) instead")
+	}
+
+	// Validate accept_encoding for gRPC protocol
+	if c.Protocol != httpProtocol {
+		if err := validateAcceptEncoding(c.DomainSettings.AcceptEncoding); err != nil {
+			return fmt.Errorf("domain_settings.accept_encoding: %w", err)
+		}
+		if err := validateAcceptEncoding(c.Traces.AcceptEncoding); err != nil {
+			return fmt.Errorf("traces.accept_encoding: %w", err)
+		}
+		if err := validateAcceptEncoding(c.Metrics.AcceptEncoding); err != nil {
+			return fmt.Errorf("metrics.accept_encoding: %w", err)
+		}
+		if err := validateAcceptEncoding(c.Logs.AcceptEncoding); err != nil {
+			return fmt.Errorf("logs.accept_encoding: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// validateAcceptEncoding checks if the given encoding is supported by gRPC.
+// Empty string is allowed (defaults to gzip).
+func validateAcceptEncoding(encodingName string) error {
+	// Empty string is valid (will default to gzip)
+	if encodingName == "" {
+		return nil
+	}
+
+	// Check if the compressor is registered in gRPC
+	if encoding.GetCompressor(encodingName) == nil {
+		return fmt.Errorf("unsupported compression encoding %q, must be a registered gRPC compressor (e.g., \"gzip\")", encodingName)
 	}
 
 	return nil
@@ -302,6 +357,9 @@ func setMergedTransportConfig(c *Config, merged, signalConfig *TransportConfig) 
 
 	if signalConfig.Compression != "" {
 		merged.Compression = signalConfig.Compression
+	}
+	if signalConfig.AcceptEncoding != "" {
+		merged.AcceptEncoding = signalConfig.AcceptEncoding
 	}
 	if signalConfig.TLS.Insecure || signalConfig.TLS.InsecureSkipVerify || signalConfig.TLS.CAFile != "" {
 		merged.TLS = signalConfig.TLS

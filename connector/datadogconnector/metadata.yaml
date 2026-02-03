@@ -1,4 +1,5 @@
 type: datadog
+display_name: Datadog Connector
 
 status:
   class: connector

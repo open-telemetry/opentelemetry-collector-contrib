@@ -1,3 +1,4 @@
+display_name: Basic Auth Authenticator Extension
 type: basicauth
 
 status:

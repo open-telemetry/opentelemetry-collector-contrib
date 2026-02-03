@@ -27,15 +27,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+          install-tools: "false"
       - name: Generate otelcontribcol files
         run: make genotelcontribcol
       - name: Build Collector
@@ -52,15 +47,10 @@ jobs:
     needs: collector-build
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+          install-tools: "false"
       - name: Download Collector Binary
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
@@ -78,15 +68,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+          install-tools: "false"
       - name: Generate otelcontribcol files
         run: make genotelcontribcol
       - name: Build Docker Image
@@ -114,6 +99,7 @@ jobs:
         component:
           - receiver/k8sclusterreceiver
           - processor/k8sattributesprocessor
+          - processor/resourcedetectionprocessor
           - receiver/kubeletstatsreceiver
           - receiver/k8sobjectsreceiver
           - extension/observer/k8sobserver
@@ -121,15 +107,10 @@ jobs:
     needs: docker-build
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
-        id: go-setup
+      - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-          cache-dependency-path: "**/*.sum"
-      - name: Install dependencies
-        if: steps.go-setup.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+          install-tools: "false"
       - name: Create kind cluster
         uses: helm/kind-action@92086f6be054225fa813e0a4b13787fc9088faab # v1.13.0
         with:

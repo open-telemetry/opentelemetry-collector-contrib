@@ -1,0 +1,69 @@
+$defs:
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for podman_stats metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for podman_stats metrics.
+    type: object
+    properties:
+      container.blockio.io_service_bytes_recursive.read:
+        $ref: metric_config
+      container.blockio.io_service_bytes_recursive.write:
+        $ref: metric_config
+      container.cpu.percent:
+        $ref: metric_config
+      container.cpu.usage.percpu:
+        $ref: metric_config
+      container.cpu.usage.system:
+        $ref: metric_config
+      container.cpu.usage.total:
+        $ref: metric_config
+      container.memory.percent:
+        $ref: metric_config
+      container.memory.usage.limit:
+        $ref: metric_config
+      container.memory.usage.total:
+        $ref: metric_config
+      container.network.io.usage.rx_bytes:
+        $ref: metric_config
+      container.network.io.usage.tx_bytes:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for podman_stats resource attributes.
+    type: object
+    properties:
+      container.id:
+        $ref: resource_attribute_config
+      container.image.name:
+        $ref: resource_attribute_config
+      container.name:
+        $ref: resource_attribute_config
+      container.runtime:
+        $ref: resource_attribute_config

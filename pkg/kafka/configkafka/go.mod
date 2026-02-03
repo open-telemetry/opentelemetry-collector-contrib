@@ -5,11 +5,11 @@ go 1.24.0
 require (
 	github.com/IBM/sarama v1.46.3
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.48.1-0.20251223191316-a9aaa99a1214
-	go.opentelemetry.io/collector/config/configcompression v1.48.1-0.20251223191316-a9aaa99a1214
-	go.opentelemetry.io/collector/config/configtls v1.48.1-0.20251223191316-a9aaa99a1214
-	go.opentelemetry.io/collector/confmap v1.48.1-0.20251223191316-a9aaa99a1214
-	go.opentelemetry.io/collector/confmap/xconfmap v0.142.1-0.20251223191316-a9aaa99a1214
+	go.opentelemetry.io/collector/component v1.50.1-0.20260130192532-20cbfc09f93d
+	go.opentelemetry.io/collector/config/configcompression v1.50.1-0.20260130192532-20cbfc09f93d
+	go.opentelemetry.io/collector/config/configtls v1.50.1-0.20260130192532-20cbfc09f93d
+	go.opentelemetry.io/collector/confmap v1.50.1-0.20260130192532-20cbfc09f93d
+	go.opentelemetry.io/collector/confmap/xconfmap v0.144.1-0.20260130192532-20cbfc09f93d
 	go.uber.org/goleak v1.3.0
 )
 
@@ -21,10 +21,10 @@ require (
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250903184740-5d135037bd4d // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-tpm v0.9.7 // indirect
+	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
@@ -36,7 +36,7 @@ require (
 	github.com/klauspost/compress v1.18.1 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.3.0 // indirect
+	github.com/knadh/koanf/v2 v2.3.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -44,9 +44,9 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.48.1-0.20251223191316-a9aaa99a1214 // indirect
-	go.opentelemetry.io/collector/featuregate v1.48.1-0.20251223191316-a9aaa99a1214 // indirect
-	go.opentelemetry.io/collector/pdata v1.48.1-0.20251223191316-a9aaa99a1214 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.50.1-0.20260130192532-20cbfc09f93d // indirect
+	go.opentelemetry.io/collector/featuregate v1.50.1-0.20260130192532-20cbfc09f93d // indirect
+	go.opentelemetry.io/collector/pdata v1.50.1-0.20260130192532-20cbfc09f93d // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect

@@ -42,7 +42,10 @@ func TestLoadConfig(t *testing.T) {
 						},
 					}),
 					ThriftHTTP: configoptional.Some(confighttp.ServerConfig{
-						Endpoint: ":3456",
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  ":3456",
+							Transport: confignet.TransportTypeTCP,
+						},
 					}),
 					ThriftCompactUDP: configoptional.Some(ProtocolUDP{
 						Endpoint: "0.0.0.0:456",
@@ -76,7 +79,10 @@ func TestLoadConfig(t *testing.T) {
 						},
 					}),
 					ThriftHTTP: configoptional.Some(confighttp.ServerConfig{
-						Endpoint: "localhost:14268",
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  "localhost:14268",
+							Transport: confignet.TransportTypeTCP,
+						},
 					}),
 					ThriftCompactUDP: configoptional.Some(ProtocolUDP{
 						Endpoint:        "localhost:6831",
@@ -106,7 +112,10 @@ func TestLoadConfig(t *testing.T) {
 
 					// defaults for ThriftHTTP and ThriftBinaryUDP
 					ThriftHTTP: configoptional.Default(confighttp.ServerConfig{
-						Endpoint: defaultHTTPEndpoint,
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  defaultHTTPEndpoint,
+							Transport: confignet.TransportTypeTCP,
+						},
 					}),
 					ThriftBinaryUDP: configoptional.Default(ProtocolUDP{
 						Endpoint:        defaultThriftBinaryEndpoint,
@@ -132,7 +141,10 @@ func TestLoadConfig(t *testing.T) {
 						}),
 					}),
 					ThriftHTTP: configoptional.Some(confighttp.ServerConfig{
-						Endpoint: ":3456",
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  ":3456",
+							Transport: confignet.TransportTypeTCP,
+						},
 					}),
 
 					// defaults for ThriftBinaryUDP and ThriftCompactUDP
@@ -200,7 +212,10 @@ func TestInvalidConfig(t *testing.T) {
 			desc: "thrift-http-no-port",
 			apply: func(cfg *Config) {
 				cfg.ThriftHTTP = configoptional.Some(confighttp.ServerConfig{
-					Endpoint: "localhost:",
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "localhost:",
+						Transport: confignet.TransportTypeTCP,
+					},
 				})
 			},
 			err: "receiver creation with no port number for Thrift HTTP must fail",

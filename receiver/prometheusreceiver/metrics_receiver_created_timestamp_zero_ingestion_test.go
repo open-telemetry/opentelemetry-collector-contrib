@@ -29,9 +29,9 @@ func TestEnableCreatedTimestampZeroIngestionGateUsage(t *testing.T) {
 	r1, err := newPrometheusReceiver(settings, cfg, mockConsumer)
 	require.NoError(t, err)
 
-	assert.True(t, enableCreatedTimestampZeroIngestionGate.IsEnabled(), "Feature gate should be enabled")
-	opts := r1.initScrapeOptions()
-	assert.True(t, opts.EnableCreatedTimestampZeroIngestion, "EnableCreatedTimestampZeroIngestion should be true when feature gate is enabled")
+	assert.True(t, metadata.ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate.IsEnabled(), "Feature gate should be enabled")
+	opts := r1.initScrapeOptions(prometheusScrapeTestOptions{})
+	assert.True(t, opts.EnableStartTimestampZeroIngestion, "EnableCreatedTimestampZeroIngestion should be true when feature gate is enabled")
 
 	// Test with feature gate disabled
 	err = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion", false)
@@ -39,9 +39,9 @@ func TestEnableCreatedTimestampZeroIngestionGateUsage(t *testing.T) {
 	r2, err := newPrometheusReceiver(settings, cfg, mockConsumer)
 	require.NoError(t, err)
 
-	assert.False(t, enableCreatedTimestampZeroIngestionGate.IsEnabled(), "Feature gate should be disabled")
-	opts = r2.initScrapeOptions()
-	assert.False(t, opts.EnableCreatedTimestampZeroIngestion, "EnableCreatedTimestampZeroIngestion should be false when feature gate is disabled")
+	assert.False(t, metadata.ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate.IsEnabled(), "Feature gate should be disabled")
+	opts = r2.initScrapeOptions(prometheusScrapeTestOptions{})
+	assert.False(t, opts.EnableStartTimestampZeroIngestion, "EnableCreatedTimestampZeroIngestion should be false when feature gate is disabled")
 
 	// Reset the feature gate and shutdown the created receivers
 	t.Cleanup(func() {
@@ -141,24 +141,9 @@ func verifyOpenMetricsCreatedTimestampZeroIngestionDisabled(t *testing.T, td *te
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
-						compareStartTimestamp(tsZero),
-						compareTimestamp(ts1),
-						compareDoubleValue(1.0),
-					},
-				},
-			},
-			nil,
-		},
-		{
-			"a_seconds_created",
-			pmetric.MetricTypeSum,
-			"s",
-			[]dataPointExpectation{
-				{
-					numberPointComparator: []numberPointComparator{
 						compareStartTimestamp(timestampFromFloat64(123.456)),
 						compareTimestamp(ts1),
-						compareDoubleValue(0),
+						compareDoubleValue(1.0),
 					},
 				},
 			},

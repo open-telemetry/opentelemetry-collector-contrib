@@ -53,6 +53,9 @@ type Config struct {
 	// Decompose OTLP Histograms into individual metrics, similar to how they're represented in Prometheus format
 	DecomposeOtlpHistograms bool `mapstructure:"decompose_otlp_histograms"`
 
+	// Decompose OTLP Summaries into individual metrics (quantiles as gauges, count/sum as counters)
+	DecomposeOtlpSummaries bool `mapstructure:"decompose_otlp_summaries"`
+
 	// Sumo specific options
 	// Name of the client
 	Client string `mapstructure:"client"`

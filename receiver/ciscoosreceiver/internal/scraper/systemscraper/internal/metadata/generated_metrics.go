@@ -76,6 +76,7 @@ func (m *metricCiscoDeviceUp) emit(metrics pmetric.MetricSlice) {
 
 func newMetricCiscoDeviceUp(cfg MetricConfig) metricCiscoDeviceUp {
 	m := metricCiscoDeviceUp{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -125,6 +126,7 @@ func (m *metricSystemCPUUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemCPUUtilization(cfg MetricConfig) metricSystemCPUUtilization {
 	m := metricSystemCPUUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -174,6 +176,7 @@ func (m *metricSystemMemoryUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemMemoryUtilization(cfg MetricConfig) metricSystemMemoryUtilization {
 	m := metricSystemMemoryUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

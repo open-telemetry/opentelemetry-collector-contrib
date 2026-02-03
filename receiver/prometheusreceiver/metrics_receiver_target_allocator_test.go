@@ -22,10 +22,8 @@ import (
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	promTG "github.com/prometheus/prometheus/discovery/targetgroup"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -65,8 +63,7 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	config := &Config{
-		PrometheusConfig:     (*PromConfig)(pCfg),
-		StartTimeMetricRegex: "",
+		PrometheusConfig: (*PromConfig)(pCfg),
 		TargetAllocator: configoptional.Some(targetallocator.Config{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: tas.srv.URL,
@@ -75,9 +72,9 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 			HTTPSDConfig: (*targetallocator.PromHTTPSDConfig)(promSDConfig),
 			Interval:     60 * time.Second,
 		}),
+		skipOffsetting: true,
 	}
 
-	cms := new(consumertest.MetricsSink)
 	settings := receivertest.NewNopSettings(metadata.Type)
 	logsOverWarn := atomic.Int64{}
 	settings.Logger, err = zap.NewDevelopment(zap.Hooks(func(logentry zapcore.Entry) error {
@@ -87,14 +84,7 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 		return nil
 	}))
 	require.NoError(t, err)
-	receiver, err := newPrometheusReceiver(settings, config, cms)
-	require.NoError(t, err, "Failed to create Prometheus receiver")
-	receiver.skipOffsetting = true
-
-	require.NoError(t, receiver.Start(t.Context(), componenttest.NewNopHost()), "Failed to start Prometheus receiver")
-	t.Cleanup(func() {
-		require.NoError(t, receiver.Shutdown(t.Context()))
-	})
+	receiver, cms := newTestReceiverSettings(t, config, settings)
 
 	metricsCount := 0
 	require.Eventually(t, func() bool {
