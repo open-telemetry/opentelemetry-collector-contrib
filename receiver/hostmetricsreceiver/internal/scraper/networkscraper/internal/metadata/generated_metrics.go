@@ -145,6 +145,7 @@ func (m *metricSystemNetworkConnections) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemNetworkConnections(cfg MetricConfig) metricSystemNetworkConnections {
 	m := metricSystemNetworkConnections{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -196,6 +197,7 @@ func (m *metricSystemNetworkConntrackCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemNetworkConntrackCount(cfg MetricConfig) metricSystemNetworkConntrackCount {
 	m := metricSystemNetworkConntrackCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -247,6 +249,7 @@ func (m *metricSystemNetworkConntrackMax) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemNetworkConntrackMax(cfg MetricConfig) metricSystemNetworkConntrackMax {
 	m := metricSystemNetworkConntrackMax{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -301,6 +304,7 @@ func (m *metricSystemNetworkDropped) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemNetworkDropped(cfg MetricConfig) metricSystemNetworkDropped {
 	m := metricSystemNetworkDropped{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -355,6 +359,7 @@ func (m *metricSystemNetworkErrors) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemNetworkErrors(cfg MetricConfig) metricSystemNetworkErrors {
 	m := metricSystemNetworkErrors{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -409,6 +414,7 @@ func (m *metricSystemNetworkIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemNetworkIo(cfg MetricConfig) metricSystemNetworkIo {
 	m := metricSystemNetworkIo{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -463,6 +469,7 @@ func (m *metricSystemNetworkPackets) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemNetworkPackets(cfg MetricConfig) metricSystemNetworkPackets {
 	m := metricSystemNetworkPackets{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

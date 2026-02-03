@@ -10,12 +10,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/lestrrat-go/strftime"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/googleapi"
 )
@@ -25,6 +28,7 @@ func TestNewStorageExporter(t *testing.T) {
 		getZone      func(context.Context) (string, error)
 		getProjectID func(context.Context) (string, error)
 		cfg          *Config
+		signal       signalType
 		expectsErr   string
 	}{
 		"region and project set": {
@@ -34,6 +38,7 @@ func TestNewStorageExporter(t *testing.T) {
 					Region:    "test",
 				},
 			},
+			signal: signalTypeLogs,
 		},
 		"region missing and provider works": {
 			getZone: func(_ context.Context) (string, error) {
@@ -44,6 +49,7 @@ func TestNewStorageExporter(t *testing.T) {
 					ProjectID: "test",
 				},
 			},
+			signal: signalTypeLogs,
 		},
 		"region missing and provider fails": {
 			getZone: func(_ context.Context) (string, error) {
@@ -54,6 +60,7 @@ func TestNewStorageExporter(t *testing.T) {
 					ProjectID: "test",
 				},
 			},
+			signal:     signalTypeLogs,
 			expectsErr: "failed to determine region",
 		},
 		"project ID missing and provider works": {
@@ -65,6 +72,7 @@ func TestNewStorageExporter(t *testing.T) {
 					Region: "test",
 				},
 			},
+			signal: signalTypeLogs,
 		},
 		"project ID missing and provider fails": {
 			getProjectID: func(_ context.Context) (string, error) {
@@ -75,7 +83,43 @@ func TestNewStorageExporter(t *testing.T) {
 					Region: "test",
 				},
 			},
+			signal:     signalTypeLogs,
 			expectsErr: "failed to determine project ID",
+		},
+		"partition format valid and provider works": {
+			cfg: &Config{
+				Bucket: bucketConfig{
+					ProjectID: "test",
+					Region:    "test",
+					Partition: partitionConfig{
+						Format: "year=%Y",
+					},
+				},
+			},
+			signal: signalTypeLogs,
+		},
+		"partition format invalid and provider fails": {
+			cfg: &Config{
+				Bucket: bucketConfig{
+					ProjectID: "test",
+					Region:    "test",
+					Partition: partitionConfig{
+						Format: "year=%invalid",
+					},
+				},
+			},
+			signal:     signalTypeLogs,
+			expectsErr: "failed to parse partition format",
+		},
+		"invalid signal type": {
+			cfg: &Config{
+				Bucket: bucketConfig{
+					ProjectID: "test",
+					Region:    "test",
+				},
+			},
+			signal:     signalType("invalid"),
+			expectsErr: "signal type \"invalid\" not recognized",
 		},
 	}
 
@@ -83,7 +127,12 @@ func TestNewStorageExporter(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			gcsExporter, err := newStorageExporter(t.Context(), test.cfg, test.getZone, test.getProjectID, zap.NewNop())
+			signal := test.signal
+			if signal == "" {
+				signal = signalTypeLogs // default
+			}
+
+			gcsExporter, err := newStorageExporter(t.Context(), test.cfg, test.getZone, test.getProjectID, zap.NewNop(), signal)
 			if test.expectsErr != "" {
 				require.ErrorContains(t, err, test.expectsErr)
 				return
@@ -102,10 +151,12 @@ func TestStart(t *testing.T) {
 
 	encodingSucceedsID := "id_success"
 	encodingFailsID := "id_fail"
+	encodingLogsOnlyID := "id_logs_only"
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
 			component.MustNewID(encodingFailsID):    nil,
-			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
+			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
+			component.MustNewID(encodingLogsOnlyID): &mockLogMarshaler{},
 		},
 	}
 
@@ -120,6 +171,7 @@ func TestStart(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.NoError(t, err)
 		require.Equal(t, &plog.JSONMarshaler{}, gcsExporter.logsMarshaler)
+		require.Equal(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
 	})
 
 	gcsExporter.cfg.Encoding = &id
@@ -133,7 +185,17 @@ func TestStart(t *testing.T) {
 	gcsExporter.cfg.Encoding = &id
 	t.Run("encoding id not a logs marshaler", func(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
-		require.ErrorContains(t, err, "is not a logs marshaler")
+		require.ErrorIs(t, err, errNotLogsMarshaler)
+	})
+
+	id = component.MustNewID(encodingLogsOnlyID)
+	gcsExporter.cfg.Encoding = &id
+	t.Run("encoding id only logs marshaler", func(t *testing.T) {
+		err := gcsExporter.Start(t.Context(), mHost)
+		require.NoError(t, err)
+		require.IsType(t, &mockLogMarshaler{}, gcsExporter.logsMarshaler)
+		// Traces marshaler remains default JSON since this is a logs exporter
+		require.Equal(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
 	})
 
 	id = component.MustNewID(encodingSucceedsID)
@@ -166,7 +228,7 @@ func TestUploadFile(t *testing.T) {
 	encodingSucceedsID := "id_success"
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
+			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
 		},
 	}
 	id := component.MustNewID(encodingSucceedsID)
@@ -190,32 +252,180 @@ func TestUploadFile(t *testing.T) {
 	})
 }
 
+func TestGenerateFilename(t *testing.T) {
+	// Fixed time for testing: 2023-10-25 14:30:00 UTC
+	fixedTime := time.Date(2023, 10, 25, 14, 30, 0, 0, time.UTC)
+
+	tests := []struct {
+		name             string
+		partitionFormat  string
+		partitionPrefix  string
+		filePrefix       string
+		uniqueID         string
+		expectedFilename string
+	}{
+		{
+			name:             "empty partition format and prefix",
+			uniqueID:         "uuid",
+			expectedFilename: "uuid",
+		},
+		{
+			name:             "file prefix set",
+			filePrefix:       "logs",
+			uniqueID:         "uuid",
+			expectedFilename: "logs_uuid",
+		},
+		{
+			name:             "file prefix with slash",
+			filePrefix:       "folder/",
+			uniqueID:         "uuid",
+			expectedFilename: "folder/uuid",
+		},
+		{
+			name:             "partition prefix set",
+			partitionPrefix:  "my-logs",
+			uniqueID:         "uuid",
+			expectedFilename: "my-logs/uuid",
+		},
+		{
+			name:             "partition format set",
+			partitionFormat:  "year=%Y",
+			uniqueID:         "uuid",
+			expectedFilename: "year=2023/uuid",
+		},
+		{
+			name:             "partition format and file prefix set",
+			partitionFormat:  "year=%Y",
+			filePrefix:       "logs",
+			uniqueID:         "uuid",
+			expectedFilename: "year=2023/logs_uuid",
+		},
+		{
+			name:             "partition format, partition prefix and file prefix set",
+			partitionFormat:  "year=%Y",
+			partitionPrefix:  "archive",
+			filePrefix:       "logs",
+			uniqueID:         "uuid",
+			expectedFilename: "archive/year=2023/logs_uuid",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var partitionFormat *strftime.Strftime
+			if tt.partitionFormat != "" {
+				var err error
+				partitionFormat, err = strftime.New(tt.partitionFormat)
+				require.NoError(t, err)
+			}
+			got := generateFilename(tt.uniqueID, tt.filePrefix, tt.partitionPrefix, partitionFormat, fixedTime)
+			require.Equal(t, tt.expectedFilename, got)
+		})
+	}
+}
+
+func TestShutdown(t *testing.T) {
+	gcsExporter := newTestGCSExporter(t, &Config{})
+	err := gcsExporter.Shutdown(t.Context())
+	require.NoError(t, err)
+}
+
+func TestCapabilities(t *testing.T) {
+	gcsExporter := newTestGCSExporter(t, &Config{})
+	require.False(t, gcsExporter.Capabilities().MutatesData)
+}
+
 func TestConsumeLogs(t *testing.T) {
 	uploadBucketName := "upload-bucket"
 	newTestStorageEmulator(t, "", uploadBucketName)
 
 	encodingSucceedsID := "id_success"
+	encodingFailsID := "id_fail"
+	encodingLogsOnlyID := "id_logs_only"
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewID(encodingSucceedsID): &mockLogMarshaler{},
+			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
+			component.MustNewID(encodingFailsID):    &mockLogMarshaler{shouldFail: true},
+			component.MustNewID(encodingLogsOnlyID): &mockLogMarshaler{},
 		},
 	}
-	id := component.MustNewID(encodingSucceedsID)
-	gcsExporter := newTestGCSExporter(t, &Config{
-		Bucket: bucketConfig{
-			Name: uploadBucketName,
+
+	tests := []struct {
+		name              string
+		id                string
+		signal            signalType
+		expectsConsumeErr string
+		expectedMarshaler any
+	}{
+		{
+			name:              "logs encoding fails",
+			id:                encodingFailsID,
+			signal:            signalTypeLogs,
+			expectsConsumeErr: "failed to marshal logs",
 		},
-		Encoding: &id,
-	})
+		{
+			name:   "logs encoding succeeds",
+			id:     encodingSucceedsID,
+			signal: signalTypeLogs,
+		},
+		{
+			name:              "traces with logs-only encoding falls back to JSON",
+			id:                encodingLogsOnlyID,
+			signal:            signalTypeTraces,
+			expectedMarshaler: &ptrace.JSONMarshaler{},
+		},
+		{
+			name:   "traces encoding succeeds",
+			id:     encodingSucceedsID,
+			signal: signalTypeTraces,
+		},
+	}
 
-	errStart := gcsExporter.Start(t.Context(), mHost)
-	require.NoError(t, errStart)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			compID := component.MustNewID(tt.id)
 
-	err := gcsExporter.ConsumeLogs(t.Context(), plog.NewLogs())
-	require.NoError(t, err)
+			gcsExporter := newTestGCSExporter(t, &Config{
+				Bucket: bucketConfig{
+					Name: uploadBucketName,
+				},
+				Encoding: &compID,
+			}, tt.signal)
+
+			errStart := gcsExporter.Start(t.Context(), mHost)
+			require.NoError(t, errStart)
+
+			if tt.expectedMarshaler != nil {
+				if tt.signal == signalTypeTraces {
+					require.IsType(t, tt.expectedMarshaler, gcsExporter.tracesMarshaler)
+				} else {
+					require.IsType(t, tt.expectedMarshaler, gcsExporter.logsMarshaler)
+				}
+			}
+
+			var err error
+			if tt.signal == signalTypeTraces {
+				err = gcsExporter.ConsumeTraces(t.Context(), ptrace.NewTraces())
+			} else {
+				err = gcsExporter.ConsumeLogs(t.Context(), plog.NewLogs())
+			}
+
+			if tt.expectsConsumeErr != "" {
+				require.ErrorContains(t, err, tt.expectsConsumeErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 
-func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
+func newTestGCSExporter(t *testing.T, cfg *Config, signal ...signalType) *storageExporter {
+	sig := signalTypeLogs
+	if len(signal) > 0 {
+		sig = signal[0]
+	}
 	exp, err := newStorageExporter(
 		t.Context(),
 		cfg,
@@ -226,6 +436,7 @@ func newTestGCSExporter(t *testing.T, cfg *Config) *storageExporter {
 			return "test", nil
 		},
 		zap.NewNop(),
+		sig,
 	)
 	require.NoError(t, err)
 	return exp
@@ -280,10 +491,41 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 
 type mockLogMarshaler struct {
 	extension.Extension
+	shouldFail bool
 }
 
-func (*mockLogMarshaler) MarshalLogs(_ plog.Logs) ([]byte, error) {
+func (m *mockLogMarshaler) MarshalLogs(_ plog.Logs) ([]byte, error) {
+	if m.shouldFail {
+		return nil, errors.New("marshaling failed")
+	}
 	return nil, nil
 }
 
 var _ plog.Marshaler = (*mockLogMarshaler)(nil)
+
+type mockTraceMarshaler struct {
+	extension.Extension
+}
+
+func (*mockTraceMarshaler) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
+	return nil, nil
+}
+
+var _ ptrace.Marshaler = (*mockTraceMarshaler)(nil)
+
+type mockBothMarshaler struct {
+	extension.Extension
+}
+
+func (*mockBothMarshaler) MarshalLogs(_ plog.Logs) ([]byte, error) {
+	return nil, nil
+}
+
+func (*mockBothMarshaler) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
+	return nil, nil
+}
+
+var (
+	_ plog.Marshaler   = (*mockBothMarshaler)(nil)
+	_ ptrace.Marshaler = (*mockBothMarshaler)(nil)
+)

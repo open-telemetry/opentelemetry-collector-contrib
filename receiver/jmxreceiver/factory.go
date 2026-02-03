@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/metadata"
 )
@@ -27,9 +28,12 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	scs := scraperhelper.NewDefaultControllerConfig()
+	scs.CollectionInterval = 10 * time.Second
+	scs.InitialDelay = 1 * time.Second
 	return &Config{
-		JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-		CollectionInterval: 10 * time.Second,
+		JARPath:          "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+		ControllerConfig: scs,
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: otlpEndpoint,
 			TimeoutSettings: exporterhelper.TimeoutConfig{

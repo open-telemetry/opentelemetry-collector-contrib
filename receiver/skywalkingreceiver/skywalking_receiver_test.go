@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/grpc"
@@ -70,7 +71,10 @@ func TestStartAndShutdown(t *testing.T) {
 	config := &configuration{
 		CollectorHTTPPort: port,
 		CollectorHTTPSettings: confighttp.ServerConfig{
-			Endpoint: fmt.Sprintf(":%d", port),
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  fmt.Sprintf(":%d", port),
+			},
 		},
 	}
 	sink := new(consumertest.TracesSink)
@@ -125,7 +129,10 @@ func TestHttpReception(t *testing.T) {
 	config := &configuration{
 		CollectorHTTPPort: 12800,
 		CollectorHTTPSettings: confighttp.ServerConfig{
-			Endpoint: fmt.Sprintf(":%d", 12800),
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  fmt.Sprintf(":%d", 12800),
+			},
 		},
 	}
 

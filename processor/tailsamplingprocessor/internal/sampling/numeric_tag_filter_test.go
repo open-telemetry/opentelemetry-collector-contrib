@@ -105,48 +105,57 @@ func TestNumericTagFilterInverted(t *testing.T) {
 		DisableInvertDecision bool
 	}{
 		{
-			Desc:     "nonmatching span attribute",
-			Trace:    newTraceIntAttrs(empty, "non_matching", math.MinInt32),
+			Desc:  "nonmatching span attribute",
+			Trace: newTraceIntAttrs(empty, "non_matching", math.MinInt32),
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			Decision: samplingpolicy.InvertSampled,
 		},
 		{
-			Desc:     "span attribute at the lower limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32),
+			Desc:  "span attribute at the lower limit",
+			Trace: newTraceIntAttrs(empty, "example", math.MinInt32),
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
-			Desc:     "resource attribute at the lower limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MinInt32}, "non_matching", math.MinInt32),
+			Desc:  "resource attribute at the lower limit",
+			Trace: newTraceIntAttrs(map[string]any{"example": math.MinInt32}, "non_matching", math.MinInt32),
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
-			Desc:     "span attribute at the upper limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32),
+			Desc:  "span attribute at the upper limit",
+			Trace: newTraceIntAttrs(empty, "example", math.MaxInt32),
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
-			Desc:     "resource attribute at the upper limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32}, "non_matching", math.MaxInt32),
+			Desc:  "resource attribute at the upper limit",
+			Trace: newTraceIntAttrs(map[string]any{"example": math.MaxInt32}, "non_matching", math.MaxInt32),
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			Decision: samplingpolicy.InvertNotSampled,
 		},
 		{
-			Desc:     "span attribute below min limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32-1),
+			Desc:  "span attribute below min limit",
+			Trace: newTraceIntAttrs(empty, "example", math.MinInt32-1),
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			Decision: samplingpolicy.InvertSampled,
 		},
 		{
-			Desc:     "resource attribute below min limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MinInt32 - 1}, "non_matching", math.MinInt32),
+			Desc:  "resource attribute below min limit",
+			Trace: newTraceIntAttrs(map[string]any{"example": math.MinInt32 - 1}, "non_matching", math.MinInt32),
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			Decision: samplingpolicy.InvertSampled,
 		},
 		{
-			Desc:     "span attribute above max limit",
-			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32+1),
+			Desc:  "span attribute above max limit",
+			Trace: newTraceIntAttrs(empty, "example", math.MaxInt32+1),
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			Decision: samplingpolicy.InvertSampled,
 		},
 		{
-			Desc:     "resource attribute above max limit",
-			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32 + 1}, "non_matching", math.MaxInt32+1),
+			Desc:  "resource attribute above max limit",
+			Trace: newTraceIntAttrs(map[string]any{"example": math.MaxInt32 + 1}, "non_matching", math.MaxInt32+1),
+			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
 			Decision: samplingpolicy.InvertSampled,
 		},
 		{
@@ -165,11 +174,11 @@ func TestNumericTagFilterInverted(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			if c.DisableInvertDecision {
-				err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", true)
+			if !c.DisableInvertDecision {
+				err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", false)
 				assert.NoError(t, err)
 				defer func() {
-					err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", false)
+					err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", true)
 					assert.NoError(t, err)
 				}()
 			}
@@ -238,7 +247,7 @@ func TestNumericTagFilterOptionalBounds(t *testing.T) {
 			max:         nil,
 			value:       200,
 			invertMatch: true,
-			want:        samplingpolicy.InvertNotSampled,
+			want:        samplingpolicy.NotSampled,
 		},
 		{
 			name:        "inverted match - only max set - value below max",
@@ -246,7 +255,7 @@ func TestNumericTagFilterOptionalBounds(t *testing.T) {
 			max:         ptr(int64(100)),
 			value:       50,
 			invertMatch: true,
-			want:        samplingpolicy.InvertNotSampled,
+			want:        samplingpolicy.NotSampled,
 		},
 	}
 

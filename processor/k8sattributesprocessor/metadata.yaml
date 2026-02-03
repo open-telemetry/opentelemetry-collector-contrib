@@ -134,14 +134,51 @@ resource_attributes:
     type: string
     enabled: false
 
+feature_gates:
+  - id: k8sattr.labelsAnnotationsSingular.allow
+    stage: alpha
+    description: >-
+      When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural
+    from_version: v0.125.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774
+
 tests:
   config:
   skip_lifecycle: true
   goleak:
     skip: true
 
+attributes:
+  otelcol.signal:
+    description: The signal type the telemetry metric is associated with
+    type: string
+    enum:
+      - metrics
+      - traces
+      - logs
+      - profiles
+  pod_identifier:
+    description: The pod identifier value(s) used for the association attempt
+    type: string
+  status:
+    description: The status of the pod association operation
+    type: string
+    enum:
+      - success
+      - error
+
 telemetry:
   metrics:
+    otelcol.k8s.pod.association:
+      enabled: false
+      description: Number of pod associations' evaluations
+      stability:
+        level: development
+      unit: "{resources}"
+      attributes: [status, pod_identifier, otelcol.signal]
+      sum:
+        value_type: int
+        monotonic: true
     otelsvc_k8s_daemonset_added:
       enabled: false
       description: Number of daemonset add events received

@@ -1,0 +1,4 @@
+description: Config holds common fields and embedded protocol-specific configurations
+type: object
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.server_config
