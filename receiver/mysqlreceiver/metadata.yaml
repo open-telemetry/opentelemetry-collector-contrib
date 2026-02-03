@@ -20,10 +20,6 @@ resource_attributes:
     description: A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint.
     enabled: true
     type: string
-  service.name:
-    description: The database management system name (mysql).
-    enabled: true
-    type: string
 
 attributes:
   buffer_pool_data:

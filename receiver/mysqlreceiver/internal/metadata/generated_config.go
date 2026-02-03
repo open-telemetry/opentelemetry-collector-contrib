@@ -301,7 +301,6 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 type ResourceAttributesConfig struct {
 	MysqlInstanceEndpoint ResourceAttributeConfig `mapstructure:"mysql.instance.endpoint"`
 	ServiceInstanceID     ResourceAttributeConfig `mapstructure:"service.instance.id"`
-	ServiceName           ResourceAttributeConfig `mapstructure:"service.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -310,9 +309,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ServiceInstanceID: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ServiceName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}
