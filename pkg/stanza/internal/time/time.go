@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated [v0.145.0]:  Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/stanzatime" instead.
 package time // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/time"
 
 import (
