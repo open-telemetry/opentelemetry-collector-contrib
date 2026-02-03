@@ -133,6 +133,13 @@ attributes:
   sqlserver.percent_complete:
     description: Percentage of work completed.
     type: double
+  # Stored Procedures
+  sqlserver.procedure_id:
+    description: The SQL Server ID of the stored procedure, if any
+    type: string
+  sqlserver.procedure_name:
+    description: The name of the stored procedure, if any
+    type: string
   sqlserver.query_hash:
     description: Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format.
     type: string
@@ -262,6 +269,8 @@ events:
       - sqlserver.wait_type
       - sqlserver.writes
       - user.name
+      - sqlserver.procedure_id
+      - sqlserver.procedure_name
 
   db.server.top_query:
     enabled: false
@@ -282,6 +291,8 @@ events:
       - server.address
       - server.port
       - db.system.name
+      - sqlserver.procedure_id
+      - sqlserver.procedure_name
 
 metrics:
   sqlserver.batch.request.rate:
