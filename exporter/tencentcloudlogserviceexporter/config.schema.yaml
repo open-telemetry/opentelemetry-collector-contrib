@@ -1,0 +1,18 @@
+description: Config defines configuration for TencentCloud Log Service exporter.
+type: object
+properties:
+  logset:
+    description: LogService's LogSet Name
+    type: string
+  region:
+    description: LogService's Region, https://cloud.tencent.com/document/product/614/18940 for TencentCloud Kubernetes(or CVM), set ap-{region}.cls.tencentyun.com, eg ap-beijing.cls.tencentyun.com; others set ap-{region}.cls.tencentcs.com, eg ap-beijing.cls.tencentcs.com
+    type: string
+  secret_id:
+    description: TencentCloud access key id
+    type: string
+  secret_key:
+    description: TencentCloud access key secret
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  topic:
+    description: LogService's Topic Name
+    type: string
