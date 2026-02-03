@@ -186,7 +186,6 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	rb := s.mb.NewResourceBuilder()
 	rb.SetServerAddress(serverAddress)
 	rb.SetServerPort(serverPort)
-	rb.SetServiceName("mongodb")
 	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort, ""))
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
@@ -206,7 +205,6 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 		rb.SetServerAddress(serverAddress)
 		rb.SetServerPort(serverPort)
 		rb.SetDatabase(dbName)
-		rb.SetServiceName("mongodb")
 		rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort, dbName))
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}

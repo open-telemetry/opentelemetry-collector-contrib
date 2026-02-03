@@ -7,9 +7,6 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: placeholder
-        - key: service.name
-          value:
-            stringValue: mongodb
     scopeMetrics:
       - metrics:
           - description: The number of cache operations of the instance.
@@ -218,9 +215,6 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: placeholder
-        - key: service.name
-          value:
-            stringValue: mongodb
     scopeMetrics:
       - metrics:
           - description: The number of collections.
@@ -388,9 +382,6 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: placeholder
-        - key: service.name
-          value:
-            stringValue: mongodb
     scopeMetrics:
       - metrics:
           - description: The number of collections.
@@ -558,9 +549,6 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: placeholder
-        - key: service.name
-          value:
-            stringValue: mongodb
     scopeMetrics:
       - metrics:
           - description: The number of collections.
@@ -715,9 +703,6 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: placeholder
-        - key: service.name
-          value:
-            stringValue: mongodb
     scopeMetrics:
       - metrics:
           - description: The number of collections.

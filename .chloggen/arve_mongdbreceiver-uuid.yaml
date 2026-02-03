@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/mongodb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add service.name and service.instance.id resource attributes to MongoDB receiver
+note: Add service.instance.id resource attribute to MongoDB receiver
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [45506]
@@ -16,7 +16,6 @@ issues: [45506]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The service.name attribute is set to "mongodb".
   The service.instance.id attribute is a deterministic UUID v5 derived from server address, port, and database name.
 
 # If your change doesn't affect end users or the exported elements of any package,
