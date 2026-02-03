@@ -49,11 +49,11 @@ require (
 	go.opentelemetry.io/collector/consumer v1.50.1-0.20260130192532-20cbfc09f93d // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.144.1-0.20260130192532-20cbfc09f93d // indirect
 	go.opentelemetry.io/collector/featuregate v1.50.1-0.20260130192532-20cbfc09f93d // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.144.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.144.1-0.20260130192532-20cbfc09f93d // indirect
 	go.opentelemetry.io/collector/pdata v1.50.1-0.20260130192532-20cbfc09f93d // indirect
-	go.opentelemetry.io/collector/pipeline v1.51.0 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.145.0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.144.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.50.1-0.20260130192532-20cbfc09f93d // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.144.1-0.20260130192532-20cbfc09f93d // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.144.1-0.20260130192532-20cbfc09f93d // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
