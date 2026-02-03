@@ -56,7 +56,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/quantile v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.76.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.76.0-rc.2 // indirect
-	github.com/DataDog/datadog-go/v5 v5.8.2 // indirect
+	github.com/DataDog/datadog-go/v5 v5.8.3 // indirect
 	github.com/DataDog/go-sqllexer v0.1.12 // indirect
 	github.com/DataDog/go-tuf v1.1.1-0.5.2 // indirect
 	github.com/DataDog/zstd v1.5.7 // indirect
@@ -103,7 +103,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
-	github.com/shirou/gopsutil/v4 v4.25.12 // indirect
+	github.com/shirou/gopsutil/v4 v4.26.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
