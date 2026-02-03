@@ -211,10 +211,7 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	// This is the last entry in a complete batch
 	case matches && !t.matchFirstLine:
 		t.addToBatch(ctx, e, s, matches, t.Write)
-		if err := t.flushSource(ctx, s, t.Write); err != nil {
-			return err
-		}
-		return nil
+		return t.flushSource(ctx, s, t.Write)
 	}
 
 	// This is neither the first entry of a new log,
