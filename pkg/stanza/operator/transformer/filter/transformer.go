@@ -25,42 +25,27 @@ type Transformer struct {
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
 	filteredEntries := make([]*entry.Entry, 0, len(entries))
-	write := func(_ context.Context, ent *entry.Entry) error {
-		filteredEntries = append(filteredEntries, ent)
-		return nil
-	}
 	var errs []error
 	for _, ent := range entries {
-		skip, err := t.Skip(ctx, ent)
-		if err != nil {
-			errs = append(errs, t.HandleEntryErrorWithWrite(ctx, ent, err, write))
-			continue
-		}
-		if skip {
-			// Write the entry without filtering
-			_ = write(ctx, ent)
-			continue
-		}
-
 		env := helper.GetExprEnv(ent)
 		matches, err := vm.Run(t.expression, env)
 		helper.PutExprEnv(env)
 
 		if err != nil {
 			t.Logger().Error("Running expressing returned an error", zap.Error(err))
-			_ = write(ctx, ent)
+			filteredEntries = append(filteredEntries, ent)
 			continue
 		}
 
 		filtered, ok := matches.(bool)
 		if !ok {
 			t.Logger().Error("Expression did not compile as a boolean")
-			_ = write(ctx, ent)
+			filteredEntries = append(filteredEntries, ent)
 			continue
 		}
 
 		if !filtered {
-			_ = write(ctx, ent)
+			filteredEntries = append(filteredEntries, ent)
 			continue
 		}
 
@@ -71,7 +56,7 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 		}
 
 		if i.Cmp(t.dropCutoff) >= 0 {
-			_ = write(ctx, ent)
+			filteredEntries = append(filteredEntries, ent)
 		}
 	}
 
