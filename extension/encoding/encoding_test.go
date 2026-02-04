@@ -10,7 +10,7 @@ import (
 )
 
 func TestStreamUnmarshalOptions(t *testing.T) {
-	opts := UnmarshalOptions{}
+	opts := DecoderOptions{}
 	WithFlushBytes(100)(&opts)
 	WithFlushItems(50)(&opts)
 	WithStreamReaderBuffer(124)(&opts)

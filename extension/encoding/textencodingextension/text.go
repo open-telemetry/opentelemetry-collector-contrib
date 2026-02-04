@@ -41,7 +41,7 @@ func (r *textLogCodec) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return logs, nil
 }
 
-func (r *textLogCodec) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOptions) (encoding.LogsDecoder, error) {
+func (r *textLogCodec) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
 	s := bufio.NewScanner(reader)
 	if r.unmarshalingSeparator != nil {
 		s.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {

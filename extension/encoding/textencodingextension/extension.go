@@ -34,7 +34,7 @@ func (e *textExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	return e.textEncoder.MarshalLogs(ld)
 }
 
-func (e *textExtension) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOptions) (encoding.LogsDecoder, error) {
+func (e *textExtension) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
 	return e.textEncoder.NewLogsDecoder(reader, options...)
 }
 

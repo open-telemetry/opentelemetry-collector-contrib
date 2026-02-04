@@ -22,7 +22,7 @@ type ScannerHelper struct {
 	scanner     *bufio.Scanner
 }
 
-func NewScannerHelper(reader io.Reader, opts ...encoding.DecoderOptions) *ScannerHelper {
+func NewScannerHelper(reader io.Reader, opts ...encoding.DecoderOption) *ScannerHelper {
 	batchHelper := NewBatchHelper(opts...)
 
 	scanner := bufio.NewScanner(reader)
@@ -84,13 +84,13 @@ func (h *ScannerHelper) scanInternal() ([]byte, bool, error) {
 // It tracks the current byte and item counts and compares them against configured thresholds.
 // Not safe for concurrent use.
 type BatchHelper struct {
-	options      encoding.UnmarshalOptions
+	options      encoding.DecoderOptions
 	currentBytes int64
 	currentItems int64
 }
 
-func NewBatchHelper(opts ...encoding.DecoderOptions) *BatchHelper {
-	options := encoding.UnmarshalOptions{}
+func NewBatchHelper(opts ...encoding.DecoderOption) *BatchHelper {
+	options := encoding.DecoderOptions{}
 	for _, o := range opts {
 		o(&options)
 	}
