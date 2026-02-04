@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	awsunmarshaler "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
-	cloudtraillog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/cloudtraillog"
 	elbaccesslogs "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/elb-access-log"
 	networkfirewall "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/network-firewall-log"
 	s3accesslog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
@@ -35,7 +35,10 @@ const (
 	parquetEncoding = "parquet"
 )
 
-var vpcFlowStartISO8601FormatFeatureGate *featuregate.Gate
+var (
+	vpcFlowStartISO8601FormatFeatureGate    *featuregate.Gate
+	cloudTrailUserIdentityPrefixFeatureGate *featuregate.Gate
+)
 
 func init() {
 	vpcFlowStartISO8601FormatFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -44,6 +47,12 @@ func init() {
 		featuregate.WithRegisterDescription("When enabled, aws.vpc.flow.start field will be formatted as ISO-8601 string instead of seconds since epoch integer."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43390"),
 	)
+
+	cloudTrailUserIdentityPrefixFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		constants.CloudTrailEnableUserIdentityPrefixID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, CloudTrail log userIdentity attributes will use 'aws.user_identity' prefix. This helps to preserve the attribute origin."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45459"))
 }
 
 var _ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
@@ -118,8 +127,10 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			)
 		}
 		return &encodingExtension{
-			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(settings.BuildInfo),
-			format:      constants.FormatCloudTrailLog,
+			unmarshaler: cloudtraillog.NewCloudTrailLogUnmarshaler(
+				settings.BuildInfo,
+				cloudTrailUserIdentityPrefixFeatureGate.IsEnabled()),
+			format: constants.FormatCloudTrailLog,
 		}, nil
 	case constants.FormatELBAccessLog, constants.FormatELBAccessLogV1:
 		if cfg.Format == constants.FormatELBAccessLogV1 {

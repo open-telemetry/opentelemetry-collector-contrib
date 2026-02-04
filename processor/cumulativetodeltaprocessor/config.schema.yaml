@@ -1,0 +1,29 @@
+$defs:
+  match_metrics:
+    type: object
+    properties:
+      metric_types:
+        type: array
+        items:
+          type: string
+      metrics:
+        type: array
+        items:
+          type: string
+    allOf:
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset.config
+description: Config defines the configuration for the processor.
+type: object
+properties:
+  exclude:
+    $ref: match_metrics
+  include:
+    description: Include specifies a filter on the metrics that should be converted. Exclude specifies a filter on the metrics that should not be converted. If neither `include` nor `exclude` are set, all metrics will be converted. Cannot be used with deprecated Metrics config option.
+    $ref: match_metrics
+  initial_value:
+    description: 'InitialValue determines how to handle the first datapoint for a given metric. Valid values: - auto: (default) send the first point iff the startime is set AND the starttime happens after the component started AND the starttime is different from the timestamp - keep: always send the first point - drop: don''t send the first point, but store it for subsequent delta calculations'
+    $ref: ./internal/tracking.initial_value
+  max_staleness:
+    description: MaxStaleness is the total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely.
+    type: string
+    format: duration
