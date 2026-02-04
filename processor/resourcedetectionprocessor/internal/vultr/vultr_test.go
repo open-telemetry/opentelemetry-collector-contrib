@@ -71,7 +71,9 @@ func TestVultrDetector_Detect_OK(t *testing.T) {
 		},
 	})
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.CloudPlatform.Enabled = true
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
@@ -81,6 +83,7 @@ func TestVultrDetector_Detect_OK(t *testing.T) {
 	got := res.Attributes().AsRaw()
 	want := map[string]any{
 		"cloud.provider": TypeStr,
+		"cloud.platform": TypeStr + ".cloud_compute",
 		"cloud.region":   strings.ToLower(region),
 		"host.id":        v2ID,
 		"host.name":      hostName,
