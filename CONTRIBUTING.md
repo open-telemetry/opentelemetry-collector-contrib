@@ -273,13 +273,14 @@ Be sure to tag the existing Code Owners, if any, within the PR to ensure they re
 
 ### Emeritus roles
 
-Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on Github. In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via GitHub, the CNCF Slack, or other available communication channels to confirm their status.
+Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on Github. In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via GitHub, the CNCF Slack, or other available communication channels (such as email or through a coworker) to confirm their status.
 
 #### Approvers and maintainers
 
 If the contributor has not replied to maintainer communications after two weeks, they may be removed from the Github review auto-assignment. If the contributor does not respond within a period of two months, they may be moved to emeritus status at the discretion of the maintainers, following a majority vote among the maintainers (possibly excluding the contributor in question).
 
 #### Code Owners
+
 The OpenTelemetry community strives to foster and maintain a high-trust community. As result, rules below are more discretionary than strictly procedural.
 
 If a Code Owner has not replied to communications from a maintainer or another Code Owner after two weeks, they may be moved to emeritus status following the majority vote of other Code Owners and with the agreement of a maintainer. If a majority cannot be reached because of unresponsive Code Owners, the active Code Owners can move the unresponsive Code Owners to emeritus status after a 6 week period with no reply, following a majority vote of known-active Code Owners and the agreement of a maintainer.
