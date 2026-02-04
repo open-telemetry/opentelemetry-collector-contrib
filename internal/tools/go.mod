@@ -10,8 +10,6 @@ require (
 	github.com/google/addlicense v1.2.0
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.145.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen v0.145.0
 	github.com/rhysd/actionlint v1.7.10
 	go.opentelemetry.io/build-tools/checkapi v0.29.0
 	go.opentelemetry.io/build-tools/checkfile v0.29.0
@@ -145,7 +143,6 @@ require (
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
-	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jgautheron/goconst v1.8.2 // indirect
@@ -302,7 +299,3 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen => ../../cmd/codecovgen
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen => ../../cmd/schemagen
