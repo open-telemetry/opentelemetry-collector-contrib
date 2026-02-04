@@ -12,9 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -113,6 +115,35 @@ func TestLogsReceiver_Start(t *testing.T) {
 			)
 		})
 	}
+}
+
+func TestLogsReceiver_Start_WithUseAWSLogsEncodingExtensionFeatureGateEnabled(t *testing.T) {
+	// Enable the feature gate and restore original value when the test ends.
+	err := featuregate.GlobalRegistry().Set(useAWSLogsEncodingExtensionForCWLogsFeatureGateID, true)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(useAWSLogsEncodingExtensionForCWLogsFeatureGateID, false)
+	})
+
+	cfg := createDefaultConfig().(*Config)
+	got, err := newLogsReceiver(
+		cfg,
+		receivertest.NewNopSettings(metadata.Type),
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	t.Cleanup(func() {
+		require.NoError(t, got.Shutdown(t.Context()))
+	})
+
+	err = got.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	// Unmarshaler should not be the built-in cwlog unmarshaler when the gate is on.
+	lc := got.(*firehoseReceiver).consumer.(*logsConsumer)
+	assert.IsNotType(t, &cwlog.Unmarshaler{}, lc.unmarshaler)
+	assert.Implements(t, new(component.Component), lc.unmarshaler)
 }
 
 func TestLogsConsumer_Errors(t *testing.T) {
