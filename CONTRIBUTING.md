@@ -247,8 +247,7 @@ Sometimes a component may be in need of a new or additional Code Owner. A few re
 
 - The existing Code Owners are actively looking for more help.
 - A previous Code Owner stepped down.
-- An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
-- The component was never assigned a Code Owner.
+- An existing Code Owner has become unresponsive.
 
 Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
 
@@ -274,11 +273,21 @@ Be sure to tag the existing Code Owners, if any, within the PR to ensure they re
 
 ### Emeritus roles
 
-Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on Github.
+Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on Github. In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via GitHub, the CNCF Slack, or other available communication channels to confirm their status.
 
-In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via both Github and the CNCF Slack to confirm their status. After two weeks, if the contributor is an approver or maintainer, they may be removed from the Github review auto-assignment.
+#### Approvers and maintainers
 
-If the contributor does not respond within a period of two months, they may be moved to emeritus status at the discretion of the maintainers, following a majority vote among the maintainers (possibly excluding the contributor in question).
+If the contributor has not replied to maintainer communications after two weeks, they may be removed from the Github review auto-assignment. If the contributor does not respond within a period of two months, they may be moved to emeritus status at the discretion of the maintainers, following a majority vote among the maintainers (possibly excluding the contributor in question).
+
+#### Code Owners
+
+If a Code Owner has not replied to communications from a maintainer or another Code Owner after two weeks, they may be moved to emeritus status following the majority vote of other Code Owners and with the agreement of a maintainer.
+
+If a component is seen as at risk of being unmaintained by maintainers, the maintainers may reach out to Code Owners to ensure they are still active. If none of a component's Code Owners respond to communication after a two week period, maintainers may add a new Code Owner to the component at their discretion. Similar to the policy in the preceding paragraph, the unresponsive Code Owners may be removed if a response has not been received after an additional four weeks. This is to ensure the ongoing maintenance of components within the repository.
+
+Following the steps outlined in the documentation for the [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#unmaintained), if no code owners are responsive for the documented period of time and there is not another contributor available to become a Code Owner, the component may be marked as unmaintained. In this situation, all existing code owners will be moved to emeritus status and the component will be open for new Code Owners.
+
+Code Owners who are moved to emeritus status without their direct involvement are welcome to request to be moved back to an active status.
 
 ## Makefile Guidelines
 
