@@ -10,7 +10,7 @@ component: exporter/elasticsearch
 note: Update the ECS mode metrics data point hasher to exclude the `elasticsearch.mapping.hints` attribute
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [45887]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
