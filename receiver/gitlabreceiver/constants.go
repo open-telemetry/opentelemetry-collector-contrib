@@ -42,9 +42,9 @@ const (
 	AttributeVCSRepositoryVisibility = "vcs.repository.visibility"
 	AttributeVCSRepositoryRefDefault = "vcs.repository.ref.default"
 
-	AttributeVCSRefHeadRevisionMessage    = "vcs.ref.head.revision.message"
-	AttributeVCSRefHeadRevisionTimestamp  = "vcs.ref.head.revision.timestamp"
-	AttributeVCSRefHeadRevisionAuthorName = "vcs.ref.head.revision.author.name"
+	AttributeVCSRefHeadRevisionMessage     = "vcs.ref.head.revision.message"
+	AttributeVCSRefHeadRevisionTimestamp   = "vcs.ref.head.revision.timestamp"
+	AttributeVCSRefHeadRevisionAuthorName  = "vcs.ref.head.revision.author.name"
 	AttributeVCSRefHeadRevisionAuthorEmail = "vcs.ref.head.revision.author.email"
 )
 
@@ -56,7 +56,7 @@ const (
 	AttributeCICDTaskEnvironmentName = "cicd.pipeline.task.run.environment.name"
 
 	AttributeCICDWorkerType   = "cicd.worker.type"
-	AttributeCICDWorkerTags  = "cicd.worker.tags"
+	AttributeCICDWorkerTags   = "cicd.worker.tags"
 	AttributeCICDWorkerShared = "cicd.worker.shared"
 )
 
@@ -78,8 +78,8 @@ const (
 
 	// Job attributes
 	AttributeGitLabJobQueuedDuration = "gitlab.job.queued_duration"
-	AttributeGitLabJobFailureReason  = "gitlab.job.failure_reason"
-	AttributeGitLabJobAllowFailure   = "gitlab.job.allow_failure"
+	// Note: failure_reason is now mapped to error.type (semantic convention)
+	AttributeGitLabJobAllowFailure = "gitlab.job.allow_failure"
 
 	// Environment attributes
 	AttributeGitLabEnvironmentAction         = "gitlab.environment.action"
@@ -109,4 +109,3 @@ var (
 	ErrSetStageTimestamps    = errors.New("failed to set stage span timestamps")
 	ErrSetJobTimestamps      = errors.New("failed to set job span timestamps")
 )
-

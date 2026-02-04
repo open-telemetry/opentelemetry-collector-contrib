@@ -149,20 +149,22 @@ func createJobDurationMetric(
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetDoubleValue(duration)
 
-	// Set attributes
+	// Set attributes using semantic conventions
 	attrs := dataPoint.Attributes()
-	attrs.PutStr("gitlab.job.id", strconv.Itoa(e.BuildID))
-	attrs.PutStr("gitlab.job.name", e.BuildName)
+	attrs.PutInt(string(conventions.CICDPipelineTaskRunIDKey), int64(e.BuildID))
+	attrs.PutStr(string(conventions.CICDPipelineTaskNameKey), e.BuildName)
+	// Stage is not yet part of semantic conventions, using custom attribute
 	attrs.PutStr("gitlab.job.stage", e.BuildStage)
-	attrs.PutStr("gitlab.job.status", status)
+	attrs.PutStr(string(conventions.CICDPipelineTaskRunResultKey), status)
 
-	// Runner info (Runner is a struct, not a pointer, so check if ID is set)
+	// Runner info using semantic conventions (Runner is a struct, not a pointer, so check if ID is set)
 	if e.Runner.ID > 0 {
-		attrs.PutInt("gitlab.job.runner.id", int64(e.Runner.ID))
+		attrs.PutInt(string(conventions.CICDWorkerIDKey), int64(e.Runner.ID))
 		if e.Runner.Description != "" {
-			attrs.PutStr("gitlab.job.runner.description", e.Runner.Description)
+			attrs.PutStr(string(conventions.CICDWorkerNameKey), e.Runner.Description)
 		}
 		if len(e.Runner.Tags) > 0 {
+			// Worker tags are not yet part of semantic conventions, using custom attribute
 			attrs.PutStr("gitlab.job.runner.tags", strings.Join(e.Runner.Tags, ","))
 		}
 	}
@@ -190,10 +192,11 @@ func createQueuedDurationMetric(
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetDoubleValue(queuedDuration)
 
-	// Set attributes
+	// Set attributes using semantic conventions
 	attrs := dataPoint.Attributes()
-	attrs.PutStr("gitlab.job.id", strconv.Itoa(e.BuildID))
-	attrs.PutStr("gitlab.job.name", e.BuildName)
+	attrs.PutInt(string(conventions.CICDPipelineTaskRunIDKey), int64(e.BuildID))
+	attrs.PutStr(string(conventions.CICDPipelineTaskNameKey), e.BuildName)
+	// Stage is not yet part of semantic conventions, using custom attribute
 	attrs.PutStr("gitlab.job.stage", e.BuildStage)
 
 	return nil

@@ -199,7 +199,10 @@ func (j *glPipelineJob) setAttributes(attrs pcommon.Map) {
 
 	// Job
 	attrs.PutDouble(AttributeGitLabJobQueuedDuration, j.event.QueuedDuration)
-	attrs.PutStr(AttributeGitLabJobFailureReason, j.event.FailureReason)
+	// Use semantic convention error.type for failure reason
+	if j.event.FailureReason != "" {
+		attrs.PutStr(string(conventions.ErrorTypeKey), j.event.FailureReason)
+	}
 	attrs.PutBool(AttributeGitLabJobAllowFailure, j.event.AllowFailure)
 
 	// Environment

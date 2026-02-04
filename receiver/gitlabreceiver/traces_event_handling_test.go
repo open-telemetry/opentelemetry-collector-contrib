@@ -13,6 +13,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 // Test data file names for pipeline events
@@ -721,7 +722,8 @@ func TestEnvironmentAttributes(t *testing.T) {
 	deploymentTier, _ = prodAttrs.Get(AttributeGitLabEnvironmentDeploymentTier)
 	require.Equal(t, "production", deploymentTier.Str())
 
-	failureReason, _ := prodAttrs.Get(AttributeGitLabJobFailureReason)
+	// Use semantic convention error.type instead of custom attribute
+	failureReason, _ := prodAttrs.Get(string(conventions.ErrorTypeKey))
 	require.Equal(t, "script_failure", failureReason.Str())
 
 	allowFailure, _ := prodAttrs.Get(AttributeGitLabJobAllowFailure)

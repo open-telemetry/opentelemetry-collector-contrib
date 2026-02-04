@@ -33,10 +33,15 @@ const (
 const (
 	metricJobDuration  = "gitlab.job.duration"
 	metricJobQueuedDur = "gitlab.job.queued_duration"
-	attrJobID          = "gitlab.job.id"
-	attrJobName        = "gitlab.job.name"
+	// Semantic convention attributes
+	attrJobID          = "cicd.pipeline.task.run.id"
+	attrJobName        = "cicd.pipeline.task.name"
+	attrJobStatus      = "cicd.pipeline.task.run.result"
+	attrWorkerID       = "cicd.worker.id"
+	attrWorkerName     = "cicd.worker.name"
+	// Custom attributes (not yet in semantic conventions)
 	attrJobStage       = "gitlab.job.stage"
-	attrJobStatus      = "gitlab.job.status"
+	attrRunnerTags     = "gitlab.job.runner.tags"
 	testProjectName    = "gitlab-org/gitlab-test"
 )
 
@@ -152,7 +157,7 @@ func TestJobEventHandlerHandle(t *testing.T) {
 				dpAttrs := dp.Attributes()
 				jobID, found := dpAttrs.Get(attrJobID)
 				require.True(t, found)
-				require.Equal(t, "1977", jobID.Str())
+				require.Equal(t, int64(1977), jobID.Int())
 				jobName, found := dpAttrs.Get(attrJobName)
 				require.True(t, found)
 				require.Equal(t, "test", jobName.Str())
@@ -162,13 +167,13 @@ func TestJobEventHandlerHandle(t *testing.T) {
 				jobStatus, found := dpAttrs.Get(attrJobStatus)
 				require.True(t, found)
 				require.Equal(t, "success", jobStatus.Str())
-				runnerID, found := dpAttrs.Get("gitlab.job.runner.id")
+				runnerID, found := dpAttrs.Get(attrWorkerID)
 				require.True(t, found)
 				require.Equal(t, int64(380987), runnerID.Int())
-				runnerDesc, found := dpAttrs.Get("gitlab.job.runner.description")
+				runnerDesc, found := dpAttrs.Get(attrWorkerName)
 				require.True(t, found)
 				require.Equal(t, "shared-runners-manager-6.gitlab.com", runnerDesc.Str())
-				runnerTags, found := dpAttrs.Get("gitlab.job.runner.tags")
+				runnerTags, found := dpAttrs.Get(attrRunnerTags)
 				require.True(t, found)
 				require.Equal(t, "linux,docker,shared-runner", runnerTags.Str())
 
@@ -254,7 +259,7 @@ func TestJobEventHandlerHandle(t *testing.T) {
 				durationMetric := metrics.At(0)
 				dp := durationMetric.Gauge().DataPoints().At(0)
 				// Runner attributes should not be present
-				_, found := dp.Attributes().Get("gitlab.job.runner.id")
+				_, found := dp.Attributes().Get(attrWorkerID)
 				require.False(t, found)
 			},
 		},
@@ -413,7 +418,7 @@ func TestCreateJobDurationMetric(t *testing.T) {
 	attrs := dp.Attributes()
 	jobID, found := attrs.Get(attrJobID)
 	require.True(t, found)
-	require.Equal(t, "1977", jobID.Str())
+	require.Equal(t, int64(1977), jobID.Int())
 	jobName, found := attrs.Get(attrJobName)
 	require.True(t, found)
 	require.Equal(t, "test", jobName.Str())
@@ -448,7 +453,7 @@ func TestCreateQueuedDurationMetric(t *testing.T) {
 	attrs := dp.Attributes()
 	jobID, found := attrs.Get(attrJobID)
 	require.True(t, found)
-	require.Equal(t, "1977", jobID.Str())
+	require.Equal(t, int64(1977), jobID.Int())
 	jobName, found := attrs.Get(attrJobName)
 	require.True(t, found)
 	require.Equal(t, "test", jobName.Str())

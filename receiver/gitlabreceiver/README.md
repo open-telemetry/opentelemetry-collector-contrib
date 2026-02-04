@@ -96,21 +96,21 @@ The receiver generates the following metrics from job events:
 - **Description**: The execution duration of a GitLab CI/CD job in seconds
 - **Unit**: `s` (seconds)
 - **Attributes**:
-  - `gitlab.job.id`: The unique job ID
-  - `gitlab.job.name`: The job name
-  - `gitlab.job.stage`: The pipeline stage the job belongs to
-  - `gitlab.job.status`: The job status (`success`, `failed`, `canceled`, `skipped`)
-  - `gitlab.job.runner.id` (optional): The runner ID if available
-  - `gitlab.job.runner.description` (optional): The runner description if available
-  - `gitlab.job.runner.tags` (optional): Comma-separated runner tags if available
+  - `cicd.pipeline.task.run.id`: The unique job ID (semantic convention)
+  - `cicd.pipeline.task.name`: The job name (semantic convention)
+  - `gitlab.job.stage`: The pipeline stage the job belongs to (custom attribute)
+  - `cicd.pipeline.task.run.result`: The job status (`success`, `failed`, `canceled`, `skipped`) (semantic convention)
+  - `cicd.worker.id` (optional): The runner ID if available (semantic convention)
+  - `cicd.worker.name` (optional): The runner description if available (semantic convention)
+  - `gitlab.job.runner.tags` (optional): Comma-separated runner tags if available (custom attribute)
 
 #### `gitlab.job.queued_duration` (Gauge)
 - **Description**: The time a job spent waiting in the queue before execution started, in seconds
 - **Unit**: `s` (seconds)
 - **Attributes**:
-  - `gitlab.job.id`: The unique job ID
-  - `gitlab.job.name`: The job name
-  - `gitlab.job.stage`: The pipeline stage the job belongs to
+  - `cicd.pipeline.task.run.id`: The unique job ID (semantic convention)
+  - `cicd.pipeline.task.name`: The job name (semantic convention)
+  - `gitlab.job.stage`: The pipeline stage the job belongs to (custom attribute)
 
 **Note**: This metric is only generated when `queued_duration` is greater than 0.
 
@@ -155,10 +155,10 @@ When a job completes, you'll receive metrics like:
 
 ```
 # gitlab.job.duration
-gitlab.job.duration{gitlab.job.id="1977", gitlab.job.name="test", gitlab.job.stage="test", gitlab.job.status="success", gitlab.job.runner.id="380987"} 210.0
+gitlab.job.duration{cicd.pipeline.task.run.id=1977, cicd.pipeline.task.name="test", gitlab.job.stage="test", cicd.pipeline.task.run.result="success", cicd.worker.id=380987} 210.0
 
 # gitlab.job.queued_duration (if > 0)
-gitlab.job.queued_duration{gitlab.job.id="1977", gitlab.job.name="test", gitlab.job.stage="test"} 1095.588715
+gitlab.job.queued_duration{cicd.pipeline.task.run.id=1977, cicd.pipeline.task.name="test", gitlab.job.stage="test"} 1095.588715
 ```
 
 ### Metrics Limitations
