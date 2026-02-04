@@ -12,12 +12,12 @@ type Config struct {
 	TranslateAttributes         bool                     `mapstructure:"translate_attributes"`
 	TranslateTelegrafAttributes bool                     `mapstructure:"translate_telegraf_attributes"`
 	NestAttributes              NestingProcessorConfig   `mapstructure:"nest_attributes"`
-	AggregateAttributes         []aggregationPair        `mapstructure:"aggregate_attributes"`
-	LogFieldsAttributes         logFieldAttributesConfig `mapstructure:"field_attributes"`
+	AggregateAttributes         []AggregationPair        `mapstructure:"aggregate_attributes"`
+	LogFieldsAttributes         LogFieldAttributesConfig `mapstructure:"field_attributes"`
 	TranslateDockerMetrics      bool                     `mapstructure:"translate_docker_metrics"`
 }
 
-type aggregationPair struct {
+type AggregationPair struct {
 	Attribute string   `mapstructure:"attribute"`
 	Prefixes  []string `mapstructure:"prefixes"`
 }
@@ -49,8 +49,8 @@ func defaultNestingExclude() []string {
 	return []string{}
 }
 
-func defaultAggregateAttributes() []aggregationPair {
-	return []aggregationPair{}
+func defaultAggregateAttributes() []AggregationPair {
+	return []AggregationPair{}
 }
 
 func createDefaultConfig() component.Config {
@@ -66,11 +66,11 @@ func createDefaultConfig() component.Config {
 			SquashSingleValues: defaultNestingSquashSingleValues,
 		},
 		AggregateAttributes: defaultAggregateAttributes(),
-		LogFieldsAttributes: logFieldAttributesConfig{
-			SeverityNumberAttribute: &logFieldAttribute{defaultAddSeverityNumberAttribute, SeverityNumberAttributeName},
-			SeverityTextAttribute:   &logFieldAttribute{defaultAddSeverityTextAttribute, SeverityTextAttributeName},
-			SpanIDAttribute:         &logFieldAttribute{defaultAddSpanIDAttribute, SpanIDAttributeName},
-			TraceIDAttribute:        &logFieldAttribute{defaultAddTraceIDAttribute, TraceIDAttributeName},
+		LogFieldsAttributes: LogFieldAttributesConfig{
+			SeverityNumberAttribute: &LogFieldAttribute{defaultAddSeverityNumberAttribute, SeverityNumberAttributeName},
+			SeverityTextAttribute:   &LogFieldAttribute{defaultAddSeverityTextAttribute, SeverityTextAttributeName},
+			SpanIDAttribute:         &LogFieldAttribute{defaultAddSpanIDAttribute, SpanIDAttributeName},
+			TraceIDAttribute:        &LogFieldAttribute{defaultAddTraceIDAttribute, TraceIDAttributeName},
 		},
 		TranslateDockerMetrics: defaultTranslateDockerMetrics,
 	}
