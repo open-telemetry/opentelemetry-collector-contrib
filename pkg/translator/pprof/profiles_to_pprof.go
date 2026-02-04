@@ -14,7 +14,7 @@ import (
 	"github.com/google/pprof/profile"
 	"github.com/zeebo/xxh3"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
 )
 
 // errNotFound is returned if something requested is not available
@@ -142,15 +142,15 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		dst.Comments = append(dst.Comments, commentStrs...)
 	}
 
-	dst.KeepFrames, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.keep_frames")
+	dst.KeepFrames, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileKeepFramesKey))
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
-	dst.DropFrames, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.drop_frames")
+	dst.DropFrames, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileDropFramesKey))
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
-	dst.DocURL, attrErr = getAttributeString(src.Dictionary(), "pprof.profile.doc_url")
+	dst.DocURL, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileDocURLKey))
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}

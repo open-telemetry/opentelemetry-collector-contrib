@@ -5,6 +5,7 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -63,6 +64,13 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
+	if metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled() && !metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		err := errors.New("processor.k8sattributes.DontEmitV0K8sConventions cannot be enabled without enabling processor.k8sattributes.EmitV1K8sConventions")
+		kp.logger.Error("Invalid feature gate combination", zap.Error(err))
+		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+		return err
+	}
+
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
 
 	for _, opt := range allOptions {
@@ -351,8 +359,16 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 	if containerSpec.ImageName != "" {
 		setResourceAttribute(attrs, string(conventions.ContainerImageNameKey), containerSpec.ImageName)
 	}
-	if containerSpec.ImageTag != "" {
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if !disableLegacy && containerSpec.ImageTag != "" {
 		setResourceAttribute(attrs, containerImageTag, containerSpec.ImageTag)
+	}
+	if enableStable && len(containerSpec.ImageTags) > 0 {
+		sliceVal := attrs.PutEmptySlice(string(conventions.ContainerImageTagsKey))
+		for _, tag := range containerSpec.ImageTags {
+			sliceVal.AppendEmpty().SetStr(tag)
+		}
 	}
 	if containerSpec.ServiceInstanceID != "" {
 		setResourceAttribute(attrs, string(conventions.ServiceInstanceIDKey), containerSpec.ServiceInstanceID)

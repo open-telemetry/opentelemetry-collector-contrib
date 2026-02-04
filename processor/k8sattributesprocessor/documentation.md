@@ -9,7 +9,8 @@
 | container.id | Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated. Requires k8s.container.restart_count. | Any Str | false |
 | container.image.name | Name of the image the container was built on. Requires container.id or k8s.container.name. | Any Str | true |
 | container.image.repo_digests | Repo digests of the container image as provided by the container runtime. | Any Slice | false |
-| container.image.tag | Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name. | Any Str | true |
+| container.image.tag | Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name. Deprecated, use container.image.tags instead. | Any Str | true |
+| container.image.tags | Container image tags. Requires container.id or k8s.container.name. | Any Slice | true |
 | k8s.cluster.uid | Gives cluster uid identified with kube-system namespace | Any Str | false |
 | k8s.container.name | The name of the Container in a Pod template. Requires container.id. | Any Str | false |
 | k8s.cronjob.name | The name of the CronJob. | Any Str | false |
@@ -159,6 +160,8 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `k8sattr.labelsAnnotationsSingular.allow` | alpha | When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural | v0.125.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774) |
+| `k8sattr.labelsAnnotationsSingular.allow` | deprecated | When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural | v0.125.0 | v0.145.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774) |
+| `processor.k8sattributes.DontEmitV0K8sConventions` | alpha | When enabled, semconv legacy attributes are disabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589) |
+| `processor.k8sattributes.EmitV1K8sConventions` | alpha | When enabled, semconv stable attributes are enabled. | v0.145.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
