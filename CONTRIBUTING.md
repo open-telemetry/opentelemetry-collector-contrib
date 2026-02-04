@@ -280,6 +280,7 @@ Contributors who are unable to meet the responsibilities of their role are encou
 If the contributor has not replied to maintainer communications after two weeks, they may be removed from the Github review auto-assignment. If the contributor does not respond within a period of two months, they may be moved to emeritus status at the discretion of the maintainers, following a majority vote among the maintainers (possibly excluding the contributor in question).
 
 #### Code Owners
+The OpenTelemetry community strives to foster and maintain a high-trust community. As result, rules below are more discretionary than strictly procedural.
 
 If a Code Owner has not replied to communications from a maintainer or another Code Owner after two weeks, they may be moved to emeritus status following the majority vote of other Code Owners and with the agreement of a maintainer. If a majority cannot be reached because of unresponsive Code Owners, the active Code Owners can move the unresponsive Code Owners to emeritus status after a 6 week period with no reply, following a majority vote of known-active Code Owners and the agreement of a maintainer.
 
