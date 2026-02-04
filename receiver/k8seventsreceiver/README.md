@@ -71,7 +71,7 @@ data:
       k8s_events:
         namespaces: [default, my_namespace]
     exporters:
-      otlp:
+      otlp_grpc:
         endpoint: <OTLP_ENDPOINT>
         tls:
           insecure: true
@@ -80,7 +80,7 @@ data:
       pipelines:
         logs:
           receivers: [k8s_events]
-          exporters: [otlp]
+          exporters: [otlp_grpc]
 EOF
 ```
 
