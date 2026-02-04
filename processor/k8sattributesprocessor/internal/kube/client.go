@@ -918,18 +918,25 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	formatterLabel := K8sPodLabelsKey
-	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-		formatterLabel = K8sPodLabelKey
-	}
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromPodMetadata(pod.Labels, tags, formatterLabel)
+		if !disableLegacy {
+			r.extractFromPodMetadata(pod.Labels, tags, K8sPodLabelsKey)
+		}
+		if enableStable {
+			r.extractFromPodMetadata(pod.Labels, tags, K8sPodLabelKey)
+		}
 	}
 
-	formatterAnnotation := K8sPodAnnotationsKey
-	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-		formatterAnnotation = K8sPodAnnotationKey
+	for _, r := range c.Rules.Annotations {
+		if !disableLegacy {
+			r.extractFromPodMetadata(pod.Annotations, tags, K8sPodAnnotationsKey)
+		}
+		if enableStable {
+			r.extractFromPodMetadata(pod.Annotations, tags, K8sPodAnnotationKey)
+		}
 	}
 
 	if c.Rules.ServiceName {
@@ -942,9 +949,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		copyLabel(pod, tags, "app.kubernetes.io/version", conventions.ServiceVersionKey)
 	}
 
-	for _, r := range c.Rules.Annotations {
-		r.extractFromPodMetadata(pod.Annotations, tags, formatterAnnotation)
-	}
 	return tags
 }
 
@@ -1163,22 +1167,25 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
 	tags := map[string]string{}
 
-	formatterLabel := K8sNamespaceLabelsKey
-	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-		formatterLabel = K8sNamespaceLabelKey
-	}
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromNamespaceMetadata(namespace.Labels, tags, formatterLabel)
-	}
-
-	formatterAnnotation := K8sNamespaceAnnotationsKey
-	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-		formatterAnnotation = K8sNamespaceAnnotationKey
+		if !disableLegacy {
+			r.extractFromNamespaceMetadata(namespace.Labels, tags, K8sNamespaceLabelsKey)
+		}
+		if enableStable {
+			r.extractFromNamespaceMetadata(namespace.Labels, tags, K8sNamespaceLabelKey)
+		}
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNamespaceMetadata(namespace.Annotations, tags, formatterAnnotation)
+		if !disableLegacy {
+			r.extractFromNamespaceMetadata(namespace.Annotations, tags, K8sNamespaceAnnotationsKey)
+		}
+		if enableStable {
+			r.extractFromNamespaceMetadata(namespace.Annotations, tags, K8sNamespaceAnnotationKey)
+		}
 	}
 
 	return tags
@@ -1187,22 +1194,25 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
 	tags := map[string]string{}
 
-	formatterLabel := K8sNodeLabelsKey
-	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-		formatterLabel = K8sNodeLabelKey
-	}
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromNodeMetadata(node.Labels, tags, formatterLabel)
-	}
-
-	formatterAnnotation := K8sNodeAnnotationsKey
-	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-		formatterAnnotation = K8sNodeAnnotationKey
+		if !disableLegacy {
+			r.extractFromNodeMetadata(node.Labels, tags, K8sNodeLabelsKey)
+		}
+		if enableStable {
+			r.extractFromNodeMetadata(node.Labels, tags, K8sNodeLabelKey)
+		}
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNodeMetadata(node.Annotations, tags, formatterAnnotation)
+		if !disableLegacy {
+			r.extractFromNodeMetadata(node.Annotations, tags, K8sNodeAnnotationsKey)
+		}
+		if enableStable {
+			r.extractFromNodeMetadata(node.Annotations, tags, K8sNodeAnnotationKey)
+		}
 	}
 	return tags
 }
