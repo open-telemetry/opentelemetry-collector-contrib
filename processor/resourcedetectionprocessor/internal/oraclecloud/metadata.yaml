@@ -2,13 +2,6 @@ type: resourcedetectionprocessor/oraclecloud
 
 parent: resourcedetection
 
-status:
-  class: processor
-  stability:
-    alpha: [traces, metrics, logs, profiles]
-  codeowners:
-    active: [dashpole]
-
 resource_attributes:
   cloud.availability_zone:
     description: The cloud.availability_zone
@@ -40,5 +33,9 @@ resource_attributes:
     type: string
   k8s.cluster.name:
     description: k8s.cluster.name
+    enabled: true
+    type: string
+  oracle_cloud.realm:
+    description: The Oracle Cloud realm
     enabled: true
     type: string

@@ -9,6 +9,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -32,6 +34,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				HostName:              ResourceAttributeConfig{Enabled: true},
 				HostType:              ResourceAttributeConfig{Enabled: true},
 				K8sClusterName:        ResourceAttributeConfig{Enabled: true},
+				OracleCloudRealm:      ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -45,6 +48,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				HostName:              ResourceAttributeConfig{Enabled: false},
 				HostType:              ResourceAttributeConfig{Enabled: false},
 				K8sClusterName:        ResourceAttributeConfig{Enabled: false},
+				OracleCloudRealm:      ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
