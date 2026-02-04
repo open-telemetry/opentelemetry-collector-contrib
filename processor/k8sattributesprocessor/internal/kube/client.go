@@ -221,14 +221,6 @@ func New(
 			return nil, errors.New("failed to create ReplicaSet informer")
 		}
 
-		err = c.replicasetInformer.SetTransform(
-			func(object any) (any, error) {
-				return removeUnnecessaryReplicaSetData(object), nil
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
@@ -1738,16 +1730,22 @@ func needContainerAttributes(rules ExtractionRules) bool {
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetAdded.Add(context.Background(), 1)
-	c.addOrUpdateReplicaSet(obj)
+	rsMeta, ok := obj.(*meta_v1.PartialObjectMetadata)
+	if !ok {
+		c.logger.Error("object received was not PartialObjectMetadata for ReplicaSet add", zap.Any("received", obj))
+		return
+	}
+	c.addOrUpdateReplicaSet(rsMeta)
 }
 
 func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
 	c.telemetryBuilder.OtelsvcK8sReplicasetUpdated.Add(context.Background(), 1)
-	if replicaset, ok := newRS.(*apps_v1.ReplicaSet); ok {
-		c.addOrUpdateReplicaSet(replicaset)
-	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", newRS))
+	rsMeta, ok := newRS.(*meta_v1.PartialObjectMetadata)
+	if !ok {
+		c.logger.Error("object received was not PartialObjectMetadata for ReplicaSet add", zap.Any("received", newRS))
+		return
 	}
+	c.addOrUpdateReplicaSet(rsMeta)
 }
 
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
@@ -1758,8 +1756,6 @@ func (c *WatchClient) handleReplicaSetDelete(obj any) {
 
 	var uid string
 	switch rs := o.(type) {
-	case *apps_v1.ReplicaSet:
-		uid = string(rs.GetUID())
 	case *meta_v1.PartialObjectMetadata:
 		uid = string(rs.GetUID())
 	default:
@@ -1782,11 +1778,6 @@ func (c *WatchClient) addOrUpdateReplicaSet(obj any) {
 	var owners []meta_v1.OwnerReference
 
 	switch rs := obj.(type) {
-	case *apps_v1.ReplicaSet:
-		name = rs.GetName()
-		namespace = rs.GetNamespace()
-		uid = string(rs.GetUID())
-		owners = rs.GetOwnerReferences()
 	case *meta_v1.PartialObjectMetadata:
 		name = rs.GetName()
 		namespace = rs.GetNamespace()
@@ -1823,16 +1814,6 @@ func (c *WatchClient) addOrUpdateReplicaSet(obj any) {
 // This function removes all data from the ReplicaSet except what is required by extraction rules
 func removeUnnecessaryReplicaSetData(obj any) any {
 	switch old := obj.(type) {
-	case *apps_v1.ReplicaSet:
-		// Transform the ReplicaSet to keep only necessary fields
-		return &apps_v1.ReplicaSet{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name:            old.GetName(),
-				Namespace:       old.GetNamespace(),
-				UID:             old.GetUID(),
-				OwnerReferences: old.GetOwnerReferences(),
-			},
-		}
 	case *meta_v1.PartialObjectMetadata:
 		// Transform the PartialObjectMetadata to keep only necessary fields
 		return &meta_v1.PartialObjectMetadata{
