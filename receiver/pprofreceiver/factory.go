@@ -5,7 +5,7 @@ package pprofreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -25,25 +25,21 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ClientConfig: confighttp.NewDefaultClientConfig(),
+		ClientConfig:       confighttp.NewDefaultClientConfig(),
+		CollectionInterval: 10 * time.Second,
 	}
 }
 
 func createProfilesReceiver(
-	context.Context,
-	receiver.Settings,
-	component.Config,
-	xconsumer.Profiles,
+	_ context.Context,
+	set receiver.Settings,
+	cfg component.Config,
+	c xconsumer.Profiles,
 ) (xreceiver.Profiles, error) {
-	return &rcvr{}, errors.New("not implemented")
-}
-
-type rcvr struct{}
-
-func (rcvr) Start(context.Context, component.Host) error {
-	return nil
-}
-
-func (rcvr) Shutdown(context.Context) error {
-	return nil
+	return &pprofReceiver{
+		consumer:          c,
+		telemetrySettings: set.TelemetrySettings,
+		config:            cfg.(*Config),
+		done:              make(chan struct{}),
+	}, nil
 }
