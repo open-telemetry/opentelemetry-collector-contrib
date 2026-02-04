@@ -37,6 +37,10 @@ type worker struct {
 	logger                 *zap.Logger                  // logger
 	index                  int                          // worker index
 	clock                  Clock                        // clock
+	batchSize              int                          // number of metrics to batch before flushing
+	metricBuffer           []metricdata.ResourceMetrics // buffer for batching metrics
+	bufferMutex            sync.Mutex                   // mutex for buffer access
+	batch                  bool                         // whether to batch metrics
 	loadSize               int                          // desired minimum size in MB of string data for each generated metric
 	allowFailures          bool                         // whether to continue on export failures
 	rand                   *rand.Rand                   // random number generator for exponential histogram generation
@@ -92,7 +96,7 @@ var histogramBucketSamples = []struct {
 	},
 }
 
-func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue, tb *timeBox) {
+func (w *worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue, tb *timeBox) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
 	startTime := w.clock.Now()
@@ -216,11 +220,15 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 			w.logger.Fatal("limiter wait failed, retry", zap.Error(err))
 		}
 
-		if err := exporter.Export(context.Background(), &rm); err != nil {
-			if w.allowFailures {
-				w.logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))
-			} else {
-				w.logger.Fatal("exporter failed", zap.Error(err))
+		if w.batch {
+			w.addToBuffer(rm, exporter)
+		} else {
+			if err := exporter.Export(context.Background(), &rm); err != nil {
+				if w.allowFailures {
+					w.logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))
+				} else {
+					w.logger.Fatal("exporter failed", zap.Error(err))
+				}
 			}
 		}
 
@@ -230,8 +238,42 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 		}
 	}
 
+	w.flushBuffer(exporter)
+
 	w.logger.Info("metrics generated", zap.Int64("metrics", i))
 	w.wg.Done()
+}
+
+func (w *worker) addToBuffer(rm metricdata.ResourceMetrics, exporter sdkmetric.Exporter) {
+	w.bufferMutex.Lock()
+	defer w.bufferMutex.Unlock()
+
+	w.metricBuffer = append(w.metricBuffer, rm)
+
+	if len(w.metricBuffer) >= w.batchSize {
+		w.flushBuffer(exporter)
+	}
+}
+
+func (w *worker) flushBuffer(exporter sdkmetric.Exporter) {
+	if len(w.metricBuffer) == 0 {
+		return
+	}
+
+	merged := w.metricBuffer[0]
+	for i := 1; i < len(w.metricBuffer); i++ {
+		for j := 0; j < len(w.metricBuffer[i].ScopeMetrics); j++ {
+			merged.ScopeMetrics = append(merged.ScopeMetrics, w.metricBuffer[i].ScopeMetrics[j])
+		}
+	}
+
+	if err := exporter.Export(context.Background(), &merged); err != nil {
+		w.logger.Error("failed to export batch", zap.Error(err), zap.Int("count", len(w.metricBuffer)))
+	} else {
+		w.logger.Debug("exported batch", zap.Int("count", len(w.metricBuffer)))
+	}
+
+	w.metricBuffer = w.metricBuffer[:0]
 }
 
 // expoHistToSDKExponentialDataPoint copies `lightstep/go-expohisto` structure.Histogram to

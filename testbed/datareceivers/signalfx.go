@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -36,7 +37,10 @@ func NewSFxMetricsDataReceiver(port int) *SFxMetricsDataReceiver {
 func (sr *SFxMetricsDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	config := signalfxreceiver.Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: fmt.Sprintf("127.0.0.1:%d", sr.Port),
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  fmt.Sprintf("127.0.0.1:%d", sr.Port),
+			},
 		},
 	}
 	var err error

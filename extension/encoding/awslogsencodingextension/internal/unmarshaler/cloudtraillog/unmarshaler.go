@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/aws/aws-lambda-go/events"
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -26,7 +27,8 @@ import (
 const readerBufferSize = 128 * 1024 // 128KB buffer size
 
 type CloudTrailLogUnmarshaler struct {
-	buildInfo component.BuildInfo
+	buildInfo         component.BuildInfo
+	uIDFeatureEnabled bool
 }
 
 var _ unmarshaler.AWSUnmarshaler = (*CloudTrailLogUnmarshaler)(nil)
@@ -139,9 +141,10 @@ type CloudTrailLog struct {
 	Records []CloudTrailRecord `json:"Records"`
 }
 
-func NewCloudTrailLogUnmarshaler(buildInfo component.BuildInfo) *CloudTrailLogUnmarshaler {
+func NewCloudTrailLogUnmarshaler(buildInfo component.BuildInfo, uIDFeatureEnabled bool) *CloudTrailLogUnmarshaler {
 	return &CloudTrailLogUnmarshaler{
-		buildInfo: buildInfo,
+		buildInfo:         buildInfo,
+		uIDFeatureEnabled: uIDFeatureEnabled,
 	}
 }
 
@@ -150,10 +153,8 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 
 	// Peek into the first 64 bytes to determine the type of CloudTrail log
 	peekBytes, err := bufferedReader.Peek(64)
-	if err != nil {
-		if !errors.Is(err, io.EOF) {
-			return plog.Logs{}, fmt.Errorf("failed to peek into CloudTrail log: %w", err)
-		}
+	if err != nil && !errors.Is(err, io.EOF) {
+		return plog.Logs{}, fmt.Errorf("failed to peek into CloudTrail log: %w", err)
 	}
 
 	firstKey, err := extractFirstKey(peekBytes)
@@ -163,13 +164,23 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 
 	decoder := gojson.NewDecoder(bufferedReader)
 
-	// Records indicates a CloudTrail log file
+	// Determine format based on the first key:
+	// 1. S3 CloudTrail: first key is "Records"
+	// 2. CloudWatch: first key is one of the known CloudWatch envelope keys
+	// 3. Digest: Try to decode as a CloudTrail digest record
+
+	// Check for S3 CloudTrail log format (most common)
 	if firstKey == "Records" {
-		return u.processRecords(decoder)
+		return u.fromS3(decoder)
 	}
 
-	// Try to parse as a CloudTrail digest record
-	// Note - Digest files are relatively small and has fields at root level.
+	// Check for CloudWatch subscription filter format
+	// Known CloudWatch envelope keys: messageType, owner, logGroup, logStream, subscriptionFilters, logEvents
+	if isCloudWatchKey(firstKey) {
+		return u.fromCloudWatch(bufferedReader)
+	}
+
+	// Otherwise, assume it's a CloudTrail digest record and attempt to decode
 	var cloudTrailDigest CloudTrailDigest
 	if err := decoder.Decode(&cloudTrailDigest); err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to unmarshal payload as a CloudTrail digest: %w", err)
@@ -178,11 +189,55 @@ func (u *CloudTrailLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs
 	return u.processDigestRecord(cloudTrailDigest)
 }
 
+// fromCloudWatch handles CloudTrail logs from CloudWatch Logs subscription filter
+func (u *CloudTrailLogUnmarshaler) fromCloudWatch(reader *bufio.Reader) (plog.Logs, error) {
+	var cwLog events.CloudwatchLogsData
+	if err := gojson.NewDecoder(reader).Decode(&cwLog); err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to unmarshal data as cloudwatch logs event: %w", err)
+	}
+
+	if len(cwLog.LogEvents) == 0 {
+		return plog.NewLogs(), nil
+	}
+
+	logs, resourceLogs, scopeLogs := u.createLogs()
+
+	// Set CloudWatch-specific resource attributes
+	resourceAttrs := resourceLogs.Resource().Attributes()
+	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
+	resourceAttrs.PutStr(string(conventions.AWSLogGroupNamesKey), cwLog.LogGroup)
+	resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwLog.LogStream)
+
+	logRecords := scopeLogs.LogRecords()
+	logRecords.EnsureCapacity(len(cwLog.LogEvents))
+
+	init := true
+
+	for _, event := range cwLog.LogEvents {
+		// Parse message as a single CloudTrail record
+		var record CloudTrailRecord
+		if err := gojson.Unmarshal([]byte(event.Message), &record); err != nil {
+			return plog.Logs{}, fmt.Errorf("failed to unmarshal CloudTrail event from message: %w", err)
+		}
+
+		// Set resource attributes from first record (region, account)
+		if init {
+			u.setResourceAttributes(resourceLogs.Resource().Attributes(), record)
+			init = false
+		}
+
+		logRecord := logRecords.AppendEmpty()
+		if err := u.setLogRecord(logRecord, &record); err != nil {
+			return plog.Logs{}, err
+		}
+	}
+
+	return logs, nil
+}
+
 // processRecords is specialized in processing CloudTrail log records.
 // Implementation works with a gojson.Decoder to efficiently stream through potentially large log files.
-func (u *CloudTrailLogUnmarshaler) processRecords(decoder *gojson.Decoder) (plog.Logs, error) {
-	logs := plog.NewLogs()
-
+func (u *CloudTrailLogUnmarshaler) fromS3(decoder *gojson.Decoder) (plog.Logs, error) {
 	// Check opening bracket
 	if token, err := decoder.Token(); err != nil || token != gojson.Delim('{') {
 		return plog.Logs{}, fmt.Errorf("expected '{': %w", err)
@@ -198,10 +253,7 @@ func (u *CloudTrailLogUnmarshaler) processRecords(decoder *gojson.Decoder) (plog
 		return plog.Logs{}, fmt.Errorf("expected '[': %w", err)
 	}
 
-	// Create a single resource logs entry for all records
-	resourceLogs := logs.ResourceLogs().AppendEmpty()
-	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-	u.setCommonScopeAttributes(scopeLogs)
+	logs, resourceLogs, scopeLogs := u.createLogs()
 
 	logRecords := scopeLogs.LogRecords()
 	// Pre-allocate space for log records to improve performance
@@ -289,6 +341,15 @@ func (u *CloudTrailLogUnmarshaler) setCommonScopeAttributes(scope plog.ScopeLogs
 	scope.Scope().Attributes().PutStr(constants.FormatIdentificationTag, "aws."+constants.FormatCloudTrailLog)
 }
 
+func (u *CloudTrailLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog.ScopeLogs) {
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	u.setCommonScopeAttributes(scopeLogs)
+	return logs, resourceLogs, scopeLogs
+}
+
 func (*CloudTrailLogUnmarshaler) setResourceAttributes(attrs pcommon.Map, record CloudTrailRecord) {
 	attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	attrs.PutStr(string(conventions.CloudRegionKey), record.AwsRegion)
@@ -305,7 +366,7 @@ func (u *CloudTrailLogUnmarshaler) setLogRecord(logRecord plog.LogRecord, record
 	return nil
 }
 
-func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
+func (u *CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
 	attrs.PutStr("aws.cloudtrail.event_version", record.EventVersion)
 	attrs.PutStr("aws.cloudtrail.event_id", record.EventID)
 
@@ -358,34 +419,11 @@ func (*CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *Clo
 			attrs.PutStr(string(conventions.UserNameKey), record.UserIdentity.UserName)
 		}
 
-		if record.UserIdentity.AccountID != "" {
-			attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
-		}
-
-		if record.UserIdentity.AccessKeyID != "" {
-			attrs.PutStr("aws.access_key.id", record.UserIdentity.AccessKeyID)
-		}
-
-		// Store the Identity Store ARN and others as custom attributes
-		// since there are no standard conventions for them
-		if record.UserIdentity.IdentityStoreARN != "" {
-			attrs.PutStr("aws.identity_store.arn", record.UserIdentity.IdentityStoreARN)
-		}
-
-		if record.UserIdentity.InvokedBy != "" {
-			attrs.PutStr("aws.user_identity.invoked_by", record.UserIdentity.InvokedBy)
-		}
-
-		if record.UserIdentity.PrincipalID != "" {
-			attrs.PutStr("aws.principal.id", record.UserIdentity.PrincipalID)
-		}
-
-		if record.UserIdentity.ARN != "" {
-			attrs.PutStr("aws.principal.arn", record.UserIdentity.ARN)
-		}
-
-		if record.UserIdentity.Type != "" {
-			attrs.PutStr("aws.principal.type", record.UserIdentity.Type)
+		// check feature flag decision
+		if u.uIDFeatureEnabled {
+			withUserIdentityPrefix(attrs, record)
+		} else {
+			defaultAttributes(attrs, record)
 		}
 
 		// Add session context details if available
@@ -499,6 +537,74 @@ func enrichWithSessionContext(attrs pcommon.Map, sessionContext *SessionContext)
 	}
 }
 
+// defaultAttributes is the legacy helper to add UserIdentity elements
+// todo : remove when feature gate constants.CloudTrailEnableUserIdentityPrefixID is deprecated
+func defaultAttributes(attrs pcommon.Map, record *CloudTrailRecord) {
+	if record.UserIdentity.AccountID != "" {
+		attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
+	}
+
+	if record.UserIdentity.AccessKeyID != "" {
+		attrs.PutStr("aws.access_key.id", record.UserIdentity.AccessKeyID)
+	}
+
+	// Store the Identity Store ARN and others as custom attributes
+	// since there are no standard conventions for them
+	if record.UserIdentity.IdentityStoreARN != "" {
+		attrs.PutStr("aws.identity_store.arn", record.UserIdentity.IdentityStoreARN)
+	}
+
+	if record.UserIdentity.InvokedBy != "" {
+		attrs.PutStr("aws.user_identity.invoked_by", record.UserIdentity.InvokedBy)
+	}
+
+	if record.UserIdentity.PrincipalID != "" {
+		attrs.PutStr("aws.principal.id", record.UserIdentity.PrincipalID)
+	}
+
+	if record.UserIdentity.ARN != "" {
+		attrs.PutStr("aws.principal.arn", record.UserIdentity.ARN)
+	}
+
+	if record.UserIdentity.Type != "" {
+		attrs.PutStr("aws.principal.type", record.UserIdentity.Type)
+	}
+}
+
+// withUserIdentityPrefix is a helper to add UserIdentity details with aws.user_identity prefix.
+// todo : remove when feature gate constants.CloudTrailEnableUserIdentityPrefixID is deprecated & move to caller
+func withUserIdentityPrefix(attrs pcommon.Map, record *CloudTrailRecord) {
+	if record.UserIdentity.AccountID != "" {
+		attrs.PutStr("aws.user_identity.account_id", record.UserIdentity.AccountID)
+	}
+
+	if record.UserIdentity.AccessKeyID != "" {
+		attrs.PutStr("aws.user_identity.access_key.id", record.UserIdentity.AccessKeyID)
+	}
+
+	// Store the Identity Store ARN and others as custom attributes
+	// since there are no standard conventions for them
+	if record.UserIdentity.IdentityStoreARN != "" {
+		attrs.PutStr("aws.user_identity.identity_store.arn", record.UserIdentity.IdentityStoreARN)
+	}
+
+	if record.UserIdentity.InvokedBy != "" {
+		attrs.PutStr("aws.user_identity.invoked_by", record.UserIdentity.InvokedBy)
+	}
+
+	if record.UserIdentity.PrincipalID != "" {
+		attrs.PutStr("aws.user_identity.principal.id", record.UserIdentity.PrincipalID)
+	}
+
+	if record.UserIdentity.ARN != "" {
+		attrs.PutStr("aws.user_identity.principal.arn", record.UserIdentity.ARN)
+	}
+
+	if record.UserIdentity.Type != "" {
+		attrs.PutStr("aws.user_identity.principal.type", record.UserIdentity.Type)
+	}
+}
+
 // extract the version number from a TLS version string (e.g. "TLSv1.2" becomes "1.2")
 func extractTLSVersion(tlsVersion string) string {
 	if len(tlsVersion) > 4 && tlsVersion[:4] == "TLSv" {
@@ -541,4 +647,17 @@ func extractFirstKey(data []byte) (string, error) {
 	}
 
 	return "", errors.New("invalid JSON payload")
+}
+
+// isCloudWatchKey checks if the given key is a known CloudWatch Logs subscription filter envelope key.
+// CloudWatch envelope keys are documented at:
+// https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html
+func isCloudWatchKey(key string) bool {
+	// Known CloudWatch envelope keys that appear at the root level
+	switch key {
+	case "messageType", "owner", "logGroup", "logStream", "subscriptionFilters", "logEvents":
+		return true
+	default:
+		return false
+	}
 }
