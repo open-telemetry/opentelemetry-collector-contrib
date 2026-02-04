@@ -1,0 +1,16 @@
+$defs:
+  resolver:
+    type: object
+    properties:
+      include_file_name:
+        type: boolean
+      include_file_name_resolved:
+        type: boolean
+      include_file_owner_group_name:
+        type: boolean
+      include_file_owner_name:
+        type: boolean
+      include_file_path:
+        type: boolean
+      include_file_path_resolved:
+        type: boolean

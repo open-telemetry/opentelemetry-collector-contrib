@@ -1,0 +1,41 @@
+$defs:
+  auth:
+    type: object
+    properties:
+      password:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      username:
+        type: string
+  compression:
+    type: object
+    properties:
+      algorithm:
+        type: string
+  replication:
+    type: object
+    properties:
+      class:
+        type: string
+      replication_factor:
+        type: integer
+type: object
+properties:
+  auth:
+    $ref: auth
+  compression:
+    $ref: compression
+  dsn:
+    type: string
+  keyspace:
+    type: string
+  logs_table:
+    type: string
+  port:
+    type: integer
+  replication:
+    $ref: replication
+  timeout:
+    type: string
+    format: duration
+  trace_table:
+    type: string

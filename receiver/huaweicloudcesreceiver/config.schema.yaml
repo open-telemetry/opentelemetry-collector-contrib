@@ -1,0 +1,48 @@
+description: Config represent a configuration for the CloudWatch logs exporter.
+type: object
+properties:
+  access_key:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  filter:
+    description: Data aggregation method. The supported values ​​are max, min, average, sum, variance.
+    type: string
+  indices:
+    description: Indices defines the indices to scrape. See https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html#index-stats-api-path-params for which names are viable. If Indices is empty, no indices will be scraped.
+    type: array
+    items:
+      type: string
+  no_verify_ssl:
+    description: Number of seconds before timing out a request.
+    type: boolean
+  nodes:
+    description: Nodes defines the nodes to scrape. See https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes for which selectors may be used here. If Nodes is empty, no nodes will be scraped.
+    type: array
+    items:
+      type: string
+  period:
+    description: 'How retrieved data from Cloud Eye is aggregated. Possible values are 1, 300, 1200, 3600, 14400, and 86400. 1: Cloud Eye performs no aggregation and displays raw data. 300: Cloud Eye aggregates data every 5 minutes. 1200: Cloud Eye aggregates data every 20 minutes. 3600: Cloud Eye aggregates data every hour. 14400: Cloud Eye aggregates data every 4 hours. 86400: Cloud Eye aggregates data every 24 hours. For details about the aggregation, see https://support.huaweicloud.com/intl/en-us/ces_faq/ces_faq_0009.html'
+    type: integer
+    x-customType: int32
+  project_id:
+    description: ProjectID is a string to reference project where metrics should be associated with. If ProjectID is not filled in, the SDK will automatically call the IAM service to query the project id corresponding to the region.
+    type: string
+  proxy_address:
+    description: Upload segments to AWS X-Ray through a proxy.
+    type: string
+  proxy_password:
+    type: string
+  proxy_user:
+    type: string
+  region_id:
+    description: RegionID is the ID of the CES region.
+    type: string
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  secret_key:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  skip_cluster_metrics:
+    description: SkipClusterMetrics indicates whether cluster level metrics from /_cluster/* endpoints should be scraped or not.
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

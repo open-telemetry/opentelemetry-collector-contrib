@@ -1,0 +1,11 @@
+$defs:
+  settings:
+    description: 'Settings defines configuration for converting resource attributes to telemetry attributes. When used, it must be embedded in the exporter configuration: type Config struct { // ... resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"` }'
+    type: object
+    properties:
+      enabled:
+        description: Enabled indicates whether to convert resource attributes to telemetry attributes. Default is `false`.
+        type: boolean
+      exclude_service_attributes:
+        description: ExcludeServiceAttributes indicates whether to exclude `service.name`, `service.instance.id` and `service.namespace` resource attributes from being converted to metric attributes. Default is `false`. When set to `true`, these attributes will not be added to metric labels since they are already mapped to Prometheus `job` and `instance` labels respectively.
+        type: boolean

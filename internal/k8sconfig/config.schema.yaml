@@ -1,0 +1,14 @@
+$defs:
+  api_config:
+    description: APIConfig contains options relevant to connecting to the K8s API
+    type: object
+    properties:
+      auth_type:
+        description: How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`.
+        $ref: auth_type
+      context:
+        description: When using auth_type `kubeConfig`, override the current context.
+        type: string
+  auth_type:
+    description: AuthType describes the type of authentication to use for the K8s API
+    type: string

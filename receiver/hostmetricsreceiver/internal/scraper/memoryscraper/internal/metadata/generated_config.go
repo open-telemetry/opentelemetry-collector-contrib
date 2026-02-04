@@ -28,13 +28,19 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for memory metrics.
 type MetricsConfig struct {
-	SystemLinuxMemoryAvailable MetricConfig `mapstructure:"system.linux.memory.available"`
-	SystemLinuxMemoryDirty     MetricConfig `mapstructure:"system.linux.memory.dirty"`
-	SystemMemoryLimit          MetricConfig `mapstructure:"system.memory.limit"`
-	SystemMemoryLinuxShared    MetricConfig `mapstructure:"system.memory.linux.shared"`
-	SystemMemoryPageSize       MetricConfig `mapstructure:"system.memory.page_size"`
-	SystemMemoryUsage          MetricConfig `mapstructure:"system.memory.usage"`
-	SystemMemoryUtilization    MetricConfig `mapstructure:"system.memory.utilization"`
+	SystemLinuxMemoryAvailable            MetricConfig `mapstructure:"system.linux.memory.available"`
+	SystemLinuxMemoryDirty                MetricConfig `mapstructure:"system.linux.memory.dirty"`
+	SystemMemoryLimit                     MetricConfig `mapstructure:"system.memory.limit"`
+	SystemMemoryLinuxHugepagesLimit       MetricConfig `mapstructure:"system.memory.linux.hugepages.limit"`
+	SystemMemoryLinuxHugepagesPageSize    MetricConfig `mapstructure:"system.memory.linux.hugepages.page_size"`
+	SystemMemoryLinuxHugepagesReserved    MetricConfig `mapstructure:"system.memory.linux.hugepages.reserved"`
+	SystemMemoryLinuxHugepagesSurplus     MetricConfig `mapstructure:"system.memory.linux.hugepages.surplus"`
+	SystemMemoryLinuxHugepagesUsage       MetricConfig `mapstructure:"system.memory.linux.hugepages.usage"`
+	SystemMemoryLinuxHugepagesUtilization MetricConfig `mapstructure:"system.memory.linux.hugepages.utilization"`
+	SystemMemoryLinuxShared               MetricConfig `mapstructure:"system.memory.linux.shared"`
+	SystemMemoryPageSize                  MetricConfig `mapstructure:"system.memory.page_size"`
+	SystemMemoryUsage                     MetricConfig `mapstructure:"system.memory.usage"`
+	SystemMemoryUtilization               MetricConfig `mapstructure:"system.memory.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -46,6 +52,24 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SystemMemoryLimit: MetricConfig{
+			Enabled: false,
+		},
+		SystemMemoryLinuxHugepagesLimit: MetricConfig{
+			Enabled: false,
+		},
+		SystemMemoryLinuxHugepagesPageSize: MetricConfig{
+			Enabled: false,
+		},
+		SystemMemoryLinuxHugepagesReserved: MetricConfig{
+			Enabled: false,
+		},
+		SystemMemoryLinuxHugepagesSurplus: MetricConfig{
+			Enabled: false,
+		},
+		SystemMemoryLinuxHugepagesUsage: MetricConfig{
+			Enabled: false,
+		},
+		SystemMemoryLinuxHugepagesUtilization: MetricConfig{
 			Enabled: false,
 		},
 		SystemMemoryLinuxShared: MetricConfig{
