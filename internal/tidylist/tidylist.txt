@@ -7,6 +7,7 @@ internal/coreinternal
 pkg/ottl
 connector/routingconnector
 internal/pdatautil
+pkg/sampling
 connector/spanmetricsconnector
 internal/grpcutil
 internal/sharedcomponent
@@ -78,7 +79,6 @@ connector/metricsaslogsconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
-pkg/sampling
 connector/signaltometricsconnector
 connector/slowsqlconnector
 connector/sumconnector
