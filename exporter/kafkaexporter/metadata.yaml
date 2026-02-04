@@ -1,4 +1,5 @@
 type: kafka
+display_name: Kafka Exporter
 
 status:
   class: exporter

@@ -273,7 +273,7 @@ service:
   pipelines:
     metrics:
       receivers: [splunkenterprise/indexer, splunkenterprise/cluster_master, splunkenterprise/monitoring_console, splunkenterprise/search_head]
-      exporters: [otlp]
+      exporters: [otlp_grpc]
 ```
 
 For a full list of settings exposed by this receiver please look in [config.go](./config.go) with a detailed configuration in [testdata/config.yaml](./testdata/config.yaml).
