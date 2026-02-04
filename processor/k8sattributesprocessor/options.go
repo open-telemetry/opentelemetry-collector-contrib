@@ -4,10 +4,8 @@
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
-	"fmt"
 	"os"
 	"regexp"
-	"strings"
 	"time"
 
 	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
@@ -240,7 +238,7 @@ func withDeploymentNameFromReplicaSet(enabled bool) option {
 // withExtractLabels allows specifying options to control extraction of pod labels.
 func withExtractLabels(labels ...FieldExtractConfig) option {
 	return func(p *kubernetesprocessor) error {
-		labels, err := extractFieldRules("labels", labels...)
+		labels, err := extractFieldRules(labels...)
 		if err != nil {
 			return err
 		}
@@ -252,7 +250,7 @@ func withExtractLabels(labels ...FieldExtractConfig) option {
 // withExtractAnnotations allows specifying options to control extraction of pod annotations tags.
 func withExtractAnnotations(annotations ...FieldExtractConfig) option {
 	return func(p *kubernetesprocessor) error {
-		annotations, err := extractFieldRules("annotations", annotations...)
+		annotations, err := extractFieldRules(annotations...)
 		if err != nil {
 			return err
 		}
@@ -261,23 +259,13 @@ func withExtractAnnotations(annotations ...FieldExtractConfig) option {
 	}
 }
 
-func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.FieldExtractionRule, error) {
+func extractFieldRules(fields ...FieldExtractConfig) ([]kube.FieldExtractionRule, error) {
 	var rules []kube.FieldExtractionRule
 	for _, a := range fields {
 		name := a.TagName
 
 		if a.From == "" {
 			a.From = kube.MetadataFromPod
-		}
-
-		if name == "" && a.Key != "" {
-			// name for KeyRegex case is set at extraction time/runtime, skipped here
-			// Use singular form when feature gate is enabled
-			fieldTypeName := fieldType
-			if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-				fieldTypeName = strings.TrimSuffix(fieldType, "s")
-			}
-			name = fmt.Sprintf("k8s.%v.%v.%v", a.From, fieldTypeName, a.Key)
 		}
 
 		var keyRegex *regexp.Regexp
