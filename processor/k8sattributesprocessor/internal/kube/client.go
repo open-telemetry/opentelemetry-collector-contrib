@@ -220,7 +220,6 @@ func New(
 		if c.replicasetInformer == nil {
 			return nil, errors.New("failed to create ReplicaSet informer")
 		}
-
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
@@ -1753,16 +1752,11 @@ func (c *WatchClient) handleReplicaSetDelete(obj any) {
 
 	// Unwrap DeletedFinalStateUnknown if present
 	o := ignoreDeletedFinalStateUnknown(obj)
-
-	var uid string
-	switch rs := o.(type) {
-	case *meta_v1.PartialObjectMetadata:
-		uid = string(rs.GetUID())
-	default:
+	rsMeta, ok := o.(*meta_v1.PartialObjectMetadata)
+	if !ok {
 		c.logger.Error("object received was not a ReplicaSet (apps_v1 or PartialObjectMetadata)", zap.Any("received", obj))
-		return
 	}
-
+	uid := string(rsMeta.GetUID())
 	if uid == "" {
 		c.logger.Warn("received ReplicaSet delete without UID")
 		return
@@ -1774,27 +1768,19 @@ func (c *WatchClient) handleReplicaSetDelete(obj any) {
 }
 
 func (c *WatchClient) addOrUpdateReplicaSet(obj any) {
-	var name, namespace, uid string
-	var owners []meta_v1.OwnerReference
-
-	switch rs := obj.(type) {
-	case *meta_v1.PartialObjectMetadata:
-		name = rs.GetName()
-		namespace = rs.GetNamespace()
-		uid = string(rs.GetUID())
-		owners = rs.GetOwnerReferences()
-	default:
+	rs, ok := obj.(*meta_v1.PartialObjectMetadata)
+	if !ok {
 		c.logger.Error("unexpected ReplicaSet object type", zap.Any("received", obj))
-		return
 	}
 
+	uid := string(rs.GetUID())
 	newReplicaSet := &ReplicaSet{
-		Name:      name,
-		Namespace: namespace,
+		Name:      rs.GetName(),
+		Namespace: rs.GetNamespace(),
 		UID:       uid,
 	}
 
-	for _, owner := range owners {
+	for _, owner := range rs.GetOwnerReferences() {
 		if owner.Kind == "Deployment" && owner.Controller != nil && *owner.Controller {
 			newReplicaSet.Deployment = Deployment{
 				Name: owner.Name,
@@ -1809,25 +1795,6 @@ func (c *WatchClient) addOrUpdateReplicaSet(obj any) {
 		c.ReplicaSets[uid] = newReplicaSet
 	}
 	c.m.Unlock()
-}
-
-// This function removes all data from the ReplicaSet except what is required by extraction rules
-func removeUnnecessaryReplicaSetData(obj any) any {
-	switch old := obj.(type) {
-	case *meta_v1.PartialObjectMetadata:
-		// Transform the PartialObjectMetadata to keep only necessary fields
-		return &meta_v1.PartialObjectMetadata{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name:            old.GetName(),
-				Namespace:       old.GetNamespace(),
-				UID:             old.GetUID(),
-				OwnerReferences: old.GetOwnerReferences(),
-			},
-		}
-	default:
-		// means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-		return obj
-	}
 }
 
 // runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete
