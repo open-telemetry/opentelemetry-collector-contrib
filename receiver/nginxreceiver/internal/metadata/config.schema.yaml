@@ -1,0 +1,28 @@
+$defs:
+  attribute_state:
+    description: AttributeState specifies the value state attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for nginx metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+  metrics_config:
+    description: MetricsConfig provides config for nginx metrics.
+    type: object
+    properties:
+      nginx.connections_accepted:
+        $ref: metric_config
+      nginx.connections_current:
+        $ref: metric_config
+      nginx.connections_handled:
+        $ref: metric_config
+      nginx.requests:
+        $ref: metric_config

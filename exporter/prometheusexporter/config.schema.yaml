@@ -1,0 +1,37 @@
+description: Config defines configuration for Prometheus exporter.
+type: object
+properties:
+  add_metric_suffixes:
+    description: 'AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true. Deprecated: Use TranslationStrategy instead. This setting is ignored when TranslationStrategy is explicitly set.'
+    type: boolean
+  const_labels:
+    description: ConstLabels are values that are applied for every exported metric.
+    x-customType: github.com/prometheus/client_golang/prometheus.labels
+  enable_open_metrics:
+    description: EnableOpenMetrics enables the use of the OpenMetrics encoding option for the prometheus exporter.
+    type: boolean
+  metric_expiration:
+    description: MetricExpiration defines how long metrics are kept without updates
+    type: string
+    format: duration
+  namespace:
+    description: Namespace if set, exports metrics under the provided value.
+    type: string
+  resource_to_telemetry_conversion:
+    description: ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry.settings
+  send_timestamps:
+    description: SendTimestamps will send the underlying scrape timestamp with the export
+    type: boolean
+  sending_queue:
+    description: QueueBatchConfig defines the queue configuration.
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  translation_strategy:
+    description: TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names. When set, this takes precedence over AddMetricSuffixes.
+    type: string
+  without_scope_info:
+    description: WithoutScopeInfo controls the addition of labels for the instrumentation scope.
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.server_config
