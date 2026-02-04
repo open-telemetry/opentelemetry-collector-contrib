@@ -26,7 +26,8 @@ const (
 	specPodHostName      = "k8s.pod.hostname"
 
 	// TODO: Should be migrated to https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/model/container/registry.yaml#L48-L57
-	containerImageTag = "container.image.tag"
+	containerImageTag  = "container.image.tag"
+	containerImageTags = "container.image.tags"
 )
 
 // option represents a configuration option that can be passes.
@@ -66,8 +67,13 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.ContainerImageRepoDigests.Enabled {
 		attributes = append(attributes, string(conventions.ContainerImageRepoDigestsKey))
 	}
-	if defaultConfig.ContainerImageTag.Enabled {
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if !disableLegacy && defaultConfig.ContainerImageTag.Enabled {
 		attributes = append(attributes, containerImageTag)
+	}
+	if enableStable && defaultConfig.ContainerImageTags.Enabled {
+		attributes = append(attributes, containerImageTags)
 	}
 	if defaultConfig.K8sContainerName.Enabled {
 		attributes = append(attributes, string(conventions.K8SContainerNameKey))
@@ -203,6 +209,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerImageRepoDigests = true
 			case containerImageTag:
 				p.rules.ContainerImageTag = true
+			case containerImageTags:
+				p.rules.ContainerImageTags = true
 			case string(conventions.K8SClusterUIDKey):
 				p.rules.ClusterUID = true
 			case string(conventions.ServiceNamespaceKey):
