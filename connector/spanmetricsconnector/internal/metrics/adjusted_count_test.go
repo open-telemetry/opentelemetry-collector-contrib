@@ -332,7 +332,7 @@ func BenchmarkGetStochasticAdjustedCount_ValidTracestate(b *testing.B) {
 	span.TraceState().FromRaw("ot=th:8")
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _ = GetStochasticAdjustedCount(&span)
 	}
 }
@@ -342,7 +342,7 @@ func BenchmarkGetStochasticAdjustedCount_EmptyTracestate(b *testing.B) {
 	span := ptrace.NewSpan()
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _ = GetStochasticAdjustedCount(&span)
 	}
 }
@@ -353,7 +353,7 @@ func BenchmarkGetStochasticAdjustedCount_NoThreshold(b *testing.B) {
 	span.TraceState().FromRaw("ot=rv:abcdabcdabcdff")
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _ = GetStochasticAdjustedCount(&span)
 	}
 }
@@ -364,7 +364,7 @@ func BenchmarkGetStochasticAdjustedCount_ComplexTracestate(b *testing.B) {
 	span.TraceState().FromRaw("ot=th:c;rv:abcdabcdabcdff,vendor1=value1,vendor2=value2")
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _ = GetStochasticAdjustedCount(&span)
 	}
 }
@@ -388,7 +388,7 @@ func BenchmarkGetStochasticAdjustedCount_Parallel(b *testing.B) {
 func BenchmarkStochasticDiv_IntegerQuotient(b *testing.B) {
 	// Benchmark stochasticDiv with integer quotient (no random needed)
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = stochasticDiv(4, 1)
 	}
 }
@@ -396,7 +396,7 @@ func BenchmarkStochasticDiv_IntegerQuotient(b *testing.B) {
 func BenchmarkStochasticDiv_FractionalQuotient(b *testing.B) {
 	// Benchmark stochasticDiv with fractional quotient (requires PRNG)
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = stochasticDiv(9, 2) // 4.5
 	}
 }
@@ -415,7 +415,7 @@ func BenchmarkXorshift64star(b *testing.B) {
 	// Benchmark the raw PRNG performance
 	var rng xorshift64star = 12345
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = rng.next()
 	}
 }
@@ -431,7 +431,7 @@ func BenchmarkGetStochasticAdjustedCount(b *testing.B) {
 
 	b.Run("NoCache", func(b *testing.B) {
 		b.ReportAllocs()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			for j := range spans {
 				GetStochasticAdjustedCount(&spans[j])
 			}
@@ -440,7 +440,7 @@ func BenchmarkGetStochasticAdjustedCount(b *testing.B) {
 
 	b.Run("WithCache", func(b *testing.B) {
 		b.ReportAllocs()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			cache := NewAdjustedCountCache()
 			for j := range spans {
 				GetStochasticAdjustedCountWithCache(&spans[j], &cache)
@@ -460,14 +460,14 @@ func BenchmarkAdjustedCountCache(b *testing.B) {
 
 		b.ReportAllocs()
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			GetStochasticAdjustedCountWithCache(&span, &cache)
 		}
 	})
 
 	b.Run("CacheMiss", func(b *testing.B) {
 		b.ReportAllocs()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			// Force cache miss by using fresh cache each time
 			cache := NewAdjustedCountCache()
 			GetStochasticAdjustedCountWithCache(&span, &cache)
