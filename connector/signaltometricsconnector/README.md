@@ -44,21 +44,25 @@ signal_to_metrics:
       description: Count of spans
       sum:
         value: Int(AdjustedCount()) # Count of total spans represented by each span
+        monotonic: true
   datapoints:
     - name: datapoint.count
       description: Count of datapoints
       sum:
         value: "1" # increment by 1 for each datapoint
+        monotonic: true
   logs:
     - name: logrecord.count
       description: Count of log records
       sum:
         value: "1" # increment by 1 for each log record
+        monotonic: true
   profiles:
     - name: profile.count
       description: Count of profiles
       sum:
         value: "1" # increment by 1 for each profile
+        monotonic: true
 ```
 
 ### Error Handling
@@ -104,6 +108,7 @@ Sum metrics have the following configurations:
 ```yaml
 sum:
   value: <ottl_value_expression>
+  monotonic: <bool>
 ```
 
 - [**Required**] `value` represents an OTTL expression to extract a value from the
@@ -111,6 +116,7 @@ sum:
   returned value determines the value type of the `sum` metric (`int` or `double`).
   [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
   can be used to transform the data.
+- [**Optional**] `monotonic` whether the generated metric is monotonic. It defaults to `false`.
 
 #### Gauge
 
