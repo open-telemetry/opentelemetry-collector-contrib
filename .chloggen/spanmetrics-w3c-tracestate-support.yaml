@@ -1,0 +1,42 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: connector/spanmetrics
+
+# A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add support for W3C tracestate-based adjusted count in span metrics with stochastic rounding
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [45539]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The span metrics connector now supports extracting sampling information from W3C tracestate 
+  to generate extrapolated span metrics with adjusted counts. This enables accurate metric 
+  aggregation for sampled traces by computing stochastic-rounded adjusted counts based on 
+  the sampling threshold (ot.th field) in the tracestate. Key features include:
+
+  - Stochastic rounding for fractional adjusted counts using integer-only operations
+  - Single-entry cache for consecutive identical tracestates (4% overhead in benchmarks)
+  - Support for mixed-mode services where some spans have tracestate and others don't
+  - New sampling.method attribute to distinguish between adjusted and non-adjusted metrics
+  - Histogram support for observing multiple events at once
+
+  Performance characteristics:
+  - ~4% overhead for traces with tracestate (3-span batch: 3684ns → 3829ns). Overhead will further diminish with larger batches.
+  - Scales linearly with trace size (500 spans: 577μs → 581μs)
+  - Zero allocations for common cases with caching enabled
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
