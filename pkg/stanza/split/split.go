@@ -150,7 +150,7 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc enc
 		}
 
 		if firstMatchEnd == len(data) {
-			// the first match goes to the end of the bufer, so don't look for a second match
+			// the first match goes to the end of the buffer, so don't look for a second match
 			return 0, nil, nil
 		}
 
@@ -221,7 +221,7 @@ func LineEndSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc encod
 			return 0, nil, nil // read more data and try again
 		}
 
-		// If the match goes up to the end of the current bufer, do another
+		// If the match goes up to the end of the current buffer, do another
 		// read until we can capture the entire match
 		if matchEnd == len(data)-1 && !atEOF {
 			return 0, nil, nil

@@ -6,7 +6,7 @@ resourceMetrics:
             stringValue: ABCD1234-5678-90EF-GHIJ-KLMNOPQRSTUV
         - key: cloud.platform
           value:
-            stringValue: akamai_cloud_platform
+            stringValue: akamai_cloud.compute
         - key: cloud.provider
           value:
             stringValue: akamai_cloud
