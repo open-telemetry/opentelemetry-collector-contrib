@@ -51,15 +51,13 @@ resourceMetrics:
         scope:
           name: io.opentelemetry.sdk.logs
       - metrics:
-          - description: Number of hint messages written to this node since [re]start
-            name: cassandra.storage.total_hints.count
-            sum:
-              aggregationTemporality: 2
+          - description: Number of threads in the thread pool
+            gauge:
               dataPoints:
                 - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{hint}'
+            name: tomcat.threads.count
+            unit: '{thread}'
         scope:
           name: io.opentelemetry.jmx

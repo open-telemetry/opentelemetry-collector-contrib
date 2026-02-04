@@ -9,16 +9,7 @@ import (
 	"slices"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
-)
-
-var WindowsCaseInsensitiveFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"filelog.windows.caseInsensitive",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("On Windows, make matching patterns in include/exclude case insensitive."),
-	featuregate.WithRegisterFromVersion("v0.142.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777"),
 )
 
 func Validate(globs []string) error {

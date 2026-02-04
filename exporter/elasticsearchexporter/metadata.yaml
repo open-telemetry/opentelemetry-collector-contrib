@@ -1,4 +1,5 @@
 type: elasticsearch
+display_name: Elasticsearch Exporter
 
 status:
   class: exporter

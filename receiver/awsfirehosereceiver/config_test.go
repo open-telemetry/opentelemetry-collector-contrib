@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -41,7 +42,10 @@ func TestLoadConfig(t *testing.T) {
 				RecordType: configType,
 				AccessKey:  "some_access_key",
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "0.0.0.0:4433",
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "0.0.0.0:4433",
+					},
 					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "server.crt",

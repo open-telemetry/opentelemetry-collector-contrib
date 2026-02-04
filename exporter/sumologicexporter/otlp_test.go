@@ -179,3 +179,179 @@ func addExpectedHistogramBuckets(metrics pmetric.MetricSlice) {
 		dataPoint.SetIntValue(bucketCount)
 	}
 }
+
+func TestSummaryDecomposeNoSummary(t *testing.T) {
+	// Test that decomposition is a no-op when no summaries are present
+	metrics := pmetric.NewMetrics()
+	resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+	resourceMetric.Resource().Attributes().PutStr("key", "value")
+	scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+	metric := scopeMetric.Metrics().AppendEmpty()
+
+	// Add a gauge metric (not a summary)
+	metric.SetEmptyGauge()
+	metric.SetName("test_gauge")
+	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(42)
+	dp.SetTimestamp(timestamp1)
+
+	decomposedMetrics := decomposeSummaries(metrics)
+	assert.Equal(t, metrics, decomposedMetrics)
+}
+
+func TestSummaryDecompose(t *testing.T) {
+	metrics := metricsWithSummary()
+	decomposedMetrics := decomposeSummaries(metrics)
+
+	// Verify resource attributes are preserved
+	assert.Equal(t, metrics.ResourceMetrics().At(0).Resource(), decomposedMetrics.ResourceMetrics().At(0).Resource())
+
+	// Build expected metrics
+	expectedMetrics := pmetric.NewMetrics()
+	expectedResourceMetric := expectedMetrics.ResourceMetrics().AppendEmpty()
+	metrics.ResourceMetrics().At(0).Resource().Attributes().CopyTo(expectedResourceMetric.Resource().Attributes())
+	expectedMetricSlice := expectedResourceMetric.ScopeMetrics().AppendEmpty().Metrics()
+
+	addExpectedSummaryQuantiles(expectedMetricSlice)
+	addExpectedSummaryCount(expectedMetricSlice)
+	addExpectedSummarySum(expectedMetricSlice)
+
+	assert.Equal(t, expectedMetrics, decomposedMetrics)
+}
+
+func metricsWithSummary() pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+	resourceMetric.Resource().Attributes().PutStr("key", "value")
+	scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+	metric := scopeMetric.Metrics().AppendEmpty()
+
+	metric.SetEmptySummary()
+	metric.SetUnit("ms")
+	metric.SetName("request_duration")
+	metric.SetDescription("Request duration summary")
+
+	// First data point
+	dp := metric.Summary().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("service", "api")
+	dp.SetTimestamp(timestamp1)
+	dp.SetCount(100)
+	dp.SetSum(1500.5)
+
+	// Add quantiles for first data point
+	qv := dp.QuantileValues().AppendEmpty()
+	qv.SetQuantile(0.5)
+	qv.SetValue(10.0)
+
+	qv = dp.QuantileValues().AppendEmpty()
+	qv.SetQuantile(0.9)
+	qv.SetValue(25.5)
+
+	qv = dp.QuantileValues().AppendEmpty()
+	qv.SetQuantile(0.99)
+	qv.SetValue(50.0)
+
+	// Second data point
+	dp = metric.Summary().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("service", "web")
+	dp.SetTimestamp(timestamp2)
+	dp.SetCount(200)
+	dp.SetSum(3000.75)
+
+	// Add quantiles for second data point
+	qv = dp.QuantileValues().AppendEmpty()
+	qv.SetQuantile(0.5)
+	qv.SetValue(12.0)
+
+	qv = dp.QuantileValues().AppendEmpty()
+	qv.SetQuantile(0.9)
+	qv.SetValue(30.0)
+
+	qv = dp.QuantileValues().AppendEmpty()
+	qv.SetQuantile(0.99)
+	qv.SetValue(75.5)
+
+	return metrics
+}
+
+func addExpectedSummaryQuantiles(metrics pmetric.MetricSlice) {
+	metric := metrics.AppendEmpty()
+	metric.SetName("request_duration")
+	metric.SetDescription("Request duration summary")
+	metric.SetUnit("ms")
+	metric.SetEmptyGauge()
+
+	// Quantiles for first data point (service=api)
+	summaryQuantiles := []struct {
+		quantile float64
+		value    float64
+	}{
+		{0.5, 10.0},
+		{0.9, 25.5},
+		{0.99, 50.0},
+	}
+	for _, pair := range summaryQuantiles {
+		dataPoint := metric.Gauge().DataPoints().AppendEmpty()
+		dataPoint.Attributes().PutStr("service", "api")
+		dataPoint.Attributes().PutDouble(prometheusQuantileTag, pair.quantile)
+		dataPoint.SetTimestamp(timestamp1)
+		dataPoint.SetDoubleValue(pair.value)
+	}
+
+	// Quantiles for second data point (service=web)
+	summaryQuantiles = []struct {
+		quantile float64
+		value    float64
+	}{
+		{0.5, 12.0},
+		{0.9, 30.0},
+		{0.99, 75.5},
+	}
+	for _, pair := range summaryQuantiles {
+		dataPoint := metric.Gauge().DataPoints().AppendEmpty()
+		dataPoint.Attributes().PutStr("service", "web")
+		dataPoint.Attributes().PutDouble(prometheusQuantileTag, pair.quantile)
+		dataPoint.SetTimestamp(timestamp2)
+		dataPoint.SetDoubleValue(pair.value)
+	}
+}
+
+func addExpectedSummaryCount(metrics pmetric.MetricSlice) {
+	metric := metrics.AppendEmpty()
+	metric.SetName("request_duration_count")
+	metric.SetDescription("Request duration summary")
+	metric.SetUnit("1")
+	metric.SetEmptySum()
+	metric.Sum().SetIsMonotonic(true)
+	metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+	dataPoint := metric.Sum().DataPoints().AppendEmpty()
+	dataPoint.Attributes().PutStr("service", "api")
+	dataPoint.SetTimestamp(timestamp1)
+	dataPoint.SetIntValue(100)
+
+	dataPoint = metric.Sum().DataPoints().AppendEmpty()
+	dataPoint.Attributes().PutStr("service", "web")
+	dataPoint.SetTimestamp(timestamp2)
+	dataPoint.SetIntValue(200)
+}
+
+func addExpectedSummarySum(metrics pmetric.MetricSlice) {
+	metric := metrics.AppendEmpty()
+	metric.SetName("request_duration_sum")
+	metric.SetDescription("Request duration summary")
+	metric.SetUnit("ms")
+	metric.SetEmptySum()
+	metric.Sum().SetIsMonotonic(true)
+	metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+	dataPoint := metric.Sum().DataPoints().AppendEmpty()
+	dataPoint.Attributes().PutStr("service", "api")
+	dataPoint.SetTimestamp(timestamp1)
+	dataPoint.SetDoubleValue(1500.5)
+
+	dataPoint = metric.Sum().DataPoints().AppendEmpty()
+	dataPoint.Attributes().PutStr("service", "web")
+	dataPoint.SetTimestamp(timestamp2)
+	dataPoint.SetDoubleValue(3000.75)
+}

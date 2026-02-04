@@ -257,20 +257,11 @@ func (ecsModeEncoder) encodeSpan(
 
 	// Finally, try to map record-level attributes to ECS fields.
 
-	// determine the correct message queue name based on the trace type (Elastic span or transaction)
-	messageQueueName := "span.message.queue.name"
-	processor, _ := span.Attributes().Get("processor.event")
-	if processor.Str() == "transaction" {
-		messageQueueName = "transaction.message.queue.name"
-	}
-
 	spanAttrsConversionMap := map[string]conversionEntry{
-		string(conventions.MessagingDestinationNameKey): {to: messageQueueName},
-		string(conventions.MessagingOperationNameKey):   {to: "span.action"},
-		string(conventionsv126.DBSystemKey):             {to: "span.db.type"},
-		string(conventions.DBNamespaceKey):              {to: "span.db.instance"},
-		string(conventions.DBQueryTextKey):              {to: "span.db.statement"},
-		string(conventions.HTTPResponseBodySizeKey):     {to: "http.response.encoded_body_size"},
+		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
+		string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
+		string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
+		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
 	}
 
 	// Handle special cases.

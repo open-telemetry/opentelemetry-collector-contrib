@@ -98,7 +98,7 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 	if err != nil {
 		// Server never started, ensure doneCh is closed so shutdown doesn't block
 		s.doneOnce.Do(func() { close(s.doneCh) })
-		return fmt.Errorf("failed to bind to address %s: %w", s.httpConfig.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", s.httpConfig.NetAddr.Endpoint, err)
 	}
 
 	s.doneWg.Add(1)

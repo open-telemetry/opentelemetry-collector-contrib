@@ -165,7 +165,7 @@ func (s *samplingServer) GetSamplingStrategy(ctx context.Context, params *api_v2
 
 func testConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPServerConfig.Endpoint = "127.0.0.1:5778"
+	cfg.HTTPServerConfig.NetAddr.Endpoint = "127.0.0.1:5778"
 	cfg.GRPCServerConfig.NetAddr.Endpoint = "127.0.0.1:14250"
 	return cfg
 }
