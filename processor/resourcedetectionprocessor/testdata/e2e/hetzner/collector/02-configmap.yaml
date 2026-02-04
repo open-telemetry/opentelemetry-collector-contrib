@@ -18,9 +18,10 @@ data:
         detectors: [hetzner]
         timeout: 2s
         override: false
-        resource_attributes:
-          cloud.platform:
-            enabled: true
+        hetzner:
+          resource_attributes:
+            cloud.platform:
+              enabled: true
     receivers:
       hostmetrics:
         collection_interval: 1s
