@@ -95,5 +95,7 @@ $defs:
   sum:
     type: object
     properties:
+      monotonic:
+        type: boolean
       value:
         type: string
