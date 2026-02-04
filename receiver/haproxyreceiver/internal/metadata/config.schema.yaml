@@ -1,0 +1,114 @@
+$defs:
+  attribute_status_code:
+    description: AttributeStatusCode specifies the value status_code attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for haproxy metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for haproxy metrics.
+    type: object
+    properties:
+      haproxy.active:
+        $ref: metric_config
+      haproxy.backup:
+        $ref: metric_config
+      haproxy.bytes.input:
+        $ref: metric_config
+      haproxy.bytes.output:
+        $ref: metric_config
+      haproxy.clients.canceled:
+        $ref: metric_config
+      haproxy.compression.bypass:
+        $ref: metric_config
+      haproxy.compression.count:
+        $ref: metric_config
+      haproxy.compression.input:
+        $ref: metric_config
+      haproxy.compression.output:
+        $ref: metric_config
+      haproxy.connections.average_time:
+        $ref: metric_config
+      haproxy.connections.errors:
+        $ref: metric_config
+      haproxy.connections.rate:
+        $ref: metric_config
+      haproxy.connections.retries:
+        $ref: metric_config
+      haproxy.connections.total:
+        $ref: metric_config
+      haproxy.downtime:
+        $ref: metric_config
+      haproxy.failed_checks:
+        $ref: metric_config
+      haproxy.requests.average_time:
+        $ref: metric_config
+      haproxy.requests.denied:
+        $ref: metric_config
+      haproxy.requests.errors:
+        $ref: metric_config
+      haproxy.requests.queued:
+        $ref: metric_config
+      haproxy.requests.rate:
+        $ref: metric_config
+      haproxy.requests.redispatched:
+        $ref: metric_config
+      haproxy.requests.total:
+        $ref: metric_config
+      haproxy.responses.average_time:
+        $ref: metric_config
+      haproxy.responses.denied:
+        $ref: metric_config
+      haproxy.responses.errors:
+        $ref: metric_config
+      haproxy.server_selected.total:
+        $ref: metric_config
+      haproxy.sessions.average:
+        $ref: metric_config
+      haproxy.sessions.count:
+        $ref: metric_config
+      haproxy.sessions.limit:
+        $ref: metric_config
+      haproxy.sessions.rate:
+        $ref: metric_config
+      haproxy.sessions.total:
+        $ref: metric_config
+      haproxy.weight:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for haproxy resource attributes.
+    type: object
+    properties:
+      haproxy.addr:
+        $ref: resource_attribute_config
+      haproxy.proxy_name:
+        $ref: resource_attribute_config
+      haproxy.service_name:
+        $ref: resource_attribute_config

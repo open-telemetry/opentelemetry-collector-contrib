@@ -1,0 +1,14 @@
+description: Config defines configuration for kubernetes events receiver.
+type: object
+properties:
+  k8s_leader_elector:
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+  namespaces:
+    description: List of ‘namespaces’ to collect events from.
+    type: array
+    items:
+      type: string
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig.api_config
