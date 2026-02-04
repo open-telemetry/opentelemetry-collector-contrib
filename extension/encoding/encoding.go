@@ -4,7 +4,6 @@
 package encoding // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 
 import (
-	"context"
 	"io"
 
 	"go.opentelemetry.io/collector/extension"
@@ -26,11 +25,11 @@ type LogsUnmarshalerExtension interface {
 	plog.Unmarshaler
 }
 
-// LogsDecoder unmarshals logs from a stream, returning one batch per call.
+// LogsDecoder unmarshals logs from a stream, returning one batch per DecodeLogs call.
 // DecodeLogs is expected to be called iteratively to read all derived plog.Logs batches from the stream.
-// The last batch of logs should be returned with a nil error; io.EOF error should follow on the subsequent call.
+// The last batch of logs should be returned with a nil error. io.EOF error should follow on the subsequent call.
 type LogsDecoder interface {
-	DecodeLogs(context.Context) (plog.Logs, error)
+	DecodeLogs() (plog.Logs, error)
 }
 
 // LogsDecoderExtension is an extension that unmarshals logs from a stream.
@@ -51,11 +50,11 @@ type MetricsUnmarshalerExtension interface {
 	pmetric.Unmarshaler
 }
 
-// MetricsDecoder unmarshals metrics from a stream, returning one batch per call.
+// MetricsDecoder unmarshals metrics from a stream, returning one batch per DecodeMetrics call.
 // DecodeMetrics is expected to be called iteratively to read all derived pmetric.Metrics batches from the stream.
-// The last batch of metrics should be returned with a nil error; io.EOF error should follow on the subsequent call.
+// The last batch of metrics should be returned with a nil error. io.EOF error should follow on the subsequent call.
 type MetricsDecoder interface {
-	DecodeMetrics(context.Context) (pmetric.Metrics, error)
+	DecodeMetrics() (pmetric.Metrics, error)
 }
 
 // MetricsDecoderExtension is an extension that unmarshals metrics from a stream.

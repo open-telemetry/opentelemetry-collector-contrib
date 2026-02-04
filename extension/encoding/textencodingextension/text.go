@@ -6,8 +6,6 @@ package textencodingextension // import "github.com/open-telemetry/opentelemetry
 import (
 	"bufio"
 	"bytes"
-	"context"
-	"errors"
 	"io"
 	"regexp"
 	"time"
@@ -33,7 +31,7 @@ func (r *textLogCodec) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, err
 	}
 
-	logs, err := decoder.DecodeLogs(context.Background())
+	logs, err := decoder.DecodeLogs()
 	if err != nil {
 		return plog.Logs{}, err
 	}
@@ -69,7 +67,7 @@ func (r *textLogCodec) NewLogsDecoder(reader io.Reader, options ...encoding.Deco
 	}
 
 	batchHelper := stream.NewBatchHelper(options...)
-	return stream.NewLogsUnmarshalerFunc(func(ctx context.Context) (plog.Logs, error) {
+	return stream.NewLogsUnmarshalerFunc(func() (plog.Logs, error) {
 		p := plog.NewLogs()
 		now := pcommon.NewTimestampFromTime(time.Now())
 
@@ -89,12 +87,6 @@ func (r *textLogCodec) NewLogsDecoder(reader io.Reader, options ...encoding.Deco
 			if batchHelper.ShouldFlush() {
 				batchHelper.Reset()
 				return p, nil
-			}
-
-			select {
-			case <-ctx.Done():
-				return plog.Logs{}, errors.New("context cancelled, exiting Test log streaming")
-			default:
 			}
 		}
 

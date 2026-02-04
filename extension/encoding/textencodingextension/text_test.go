@@ -93,25 +93,25 @@ func TestStreamDecoding_singleFlush(t *testing.T) {
 	require.NoError(t, err)
 
 	// First call should return "foo"
-	ld, err := decoder.DecodeLogs(t.Context())
+	ld, err := decoder.DecodeLogs()
 	require.NoError(t, err)
 	assert.Equal(t, 1, ld.LogRecordCount())
 	assert.Equal(t, "foo", ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
 
 	// Second call should return "bar"
-	ld, err = decoder.DecodeLogs(t.Context())
+	ld, err = decoder.DecodeLogs()
 	require.NoError(t, err)
 	assert.Equal(t, 1, ld.LogRecordCount())
 	assert.Equal(t, "bar", ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
 
 	// Third call should return "baz"
-	ld, err = decoder.DecodeLogs(t.Context())
+	ld, err = decoder.DecodeLogs()
 	require.NoError(t, err)
 	assert.Equal(t, 1, ld.LogRecordCount())
 	assert.Equal(t, "baz", ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
 
 	// Fourth call should return EOF with empty logs
-	ld, err = decoder.DecodeLogs(t.Context())
+	ld, err = decoder.DecodeLogs()
 	assert.ErrorIs(t, err, io.EOF)
 	assert.Equal(t, 0, ld.LogRecordCount())
 }
@@ -129,7 +129,7 @@ func TestStreamDecoding_flushAll(t *testing.T) {
 	require.NoError(t, err)
 
 	// First call should return all 3 records (each record in separate ResourceLogs)
-	ld, err := decoder.DecodeLogs(t.Context())
+	ld, err := decoder.DecodeLogs()
 	require.NoError(t, err)
 	assert.Equal(t, 3, ld.LogRecordCount())
 	assert.Equal(t, "foo", ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
@@ -137,7 +137,7 @@ func TestStreamDecoding_flushAll(t *testing.T) {
 	assert.Equal(t, "baz", ld.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
 
 	// Second call should return EOF with empty logs
-	ld, err = decoder.DecodeLogs(t.Context())
+	ld, err = decoder.DecodeLogs()
 	assert.ErrorIs(t, err, io.EOF)
 	assert.Equal(t, 0, ld.LogRecordCount())
 }

@@ -5,7 +5,6 @@ package stream // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bufio"
-	"context"
 	"io"
 
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -124,30 +123,30 @@ func (sh *BatchHelper) Reset() {
 
 // LogsUnmarshalerFunc is a helper to implement LogsDecoder interface with a wrapper function.
 type LogsUnmarshalerFunc struct {
-	batchUnmarshal func(context.Context) (plog.Logs, error)
+	batchUnmarshal func() (plog.Logs, error)
 }
 
-func NewLogsUnmarshalerFunc(batchUnmarshal func(context.Context) (plog.Logs, error)) *LogsUnmarshalerFunc {
+func NewLogsUnmarshalerFunc(batchUnmarshal func() (plog.Logs, error)) *LogsUnmarshalerFunc {
 	return &LogsUnmarshalerFunc{
 		batchUnmarshal: batchUnmarshal,
 	}
 }
 
-func (l *LogsUnmarshalerFunc) DecodeLogs(ctx context.Context) (plog.Logs, error) {
-	return l.batchUnmarshal(ctx)
+func (l *LogsUnmarshalerFunc) DecodeLogs() (plog.Logs, error) {
+	return l.batchUnmarshal()
 }
 
 // MetricsUnmarshalerFunc is a helper to implement MetricsDecoder interface with a wrapper function.
 type MetricsUnmarshalerFunc struct {
-	batchUnmarshal func(context.Context) (pmetric.Metrics, error)
+	batchUnmarshal func() (pmetric.Metrics, error)
 }
 
-func NewMetricsUnmarshalerFunc(batchUnmarshal func(context.Context) (pmetric.Metrics, error)) *MetricsUnmarshalerFunc {
+func NewMetricsUnmarshalerFunc(batchUnmarshal func() (pmetric.Metrics, error)) *MetricsUnmarshalerFunc {
 	return &MetricsUnmarshalerFunc{
 		batchUnmarshal: batchUnmarshal,
 	}
 }
 
-func (m *MetricsUnmarshalerFunc) DecodeMetrics(ctx context.Context) (pmetric.Metrics, error) {
-	return m.batchUnmarshal(ctx)
+func (m *MetricsUnmarshalerFunc) DecodeMetrics() (pmetric.Metrics, error) {
+	return m.batchUnmarshal()
 }
