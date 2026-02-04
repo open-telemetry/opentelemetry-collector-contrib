@@ -19,6 +19,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "3"
                   timeUnixNano: "1000000"
+              isMonotonic: true
           - description: Count total number of profiles as per profile.foo attribute
             name: profiles.foo.sum
             sum:
@@ -30,6 +31,7 @@ resourceMetrics:
                       value:
                         stringValue: foo
                   timeUnixNano: "1000000"
+              isMonotonic: true
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
   - resource:
@@ -49,5 +51,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "3"
                   timeUnixNano: "1000000"
+              isMonotonic: true
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
