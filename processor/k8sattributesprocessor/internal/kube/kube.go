@@ -372,7 +372,12 @@ func (r *FieldExtractionRule) extractFromMetadata(metadata, tags map[string]stri
 			}
 		}
 	} else if v, ok := metadata[r.Key]; ok {
-		tags[r.Name] = r.extractField(v)
+		// Use formatter to determine attribute name if no custom name was specified
+		name := r.Name
+		if name == "" {
+			name = fmt.Sprintf(formatter, r.Key)
+		}
+		tags[name] = r.extractField(v)
 	}
 }
 

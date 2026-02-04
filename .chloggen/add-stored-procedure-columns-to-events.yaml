@@ -4,18 +4,19 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: extension/opamp
+component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: This change adds support for the OpAMP AcceptsRestartCommand capability. The implementation for this capability sends a SIGHUP signal to restart the collector which will reload the config on startup.
+note: Add the `sqlserver.procedure_id` and `sqlserver.procedure_name` attributes to TopQuery and Sample Events
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [45056]
+issues: [44656]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: This functionality is behind a feature gate (extension.opampextension.RemoteRestarts) that defaults disabled. The SIGHUP signal does not work on windows systems, but might later be updated to use the SIGUSR2 signal.
+subtext: Refined query and reported events to include stored procedure information when applicable.
+  Additionally, the maximum number of active queries reported by default has been increased from 200 to 250 to account for record deaggregation introduced by this change, ensuring the effective limit remains consistent with the previous 200-query baseline.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

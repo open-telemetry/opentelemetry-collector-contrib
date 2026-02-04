@@ -30,7 +30,7 @@ func TestEnableCreatedTimestampZeroIngestionGateUsage(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.True(t, metadata.ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate.IsEnabled(), "Feature gate should be enabled")
-	opts := r1.initScrapeOptions()
+	opts := r1.initScrapeOptions(prometheusScrapeTestOptions{})
 	assert.True(t, opts.EnableStartTimestampZeroIngestion, "EnableCreatedTimestampZeroIngestion should be true when feature gate is enabled")
 
 	// Test with feature gate disabled
@@ -40,7 +40,7 @@ func TestEnableCreatedTimestampZeroIngestionGateUsage(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.False(t, metadata.ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate.IsEnabled(), "Feature gate should be disabled")
-	opts = r2.initScrapeOptions()
+	opts = r2.initScrapeOptions(prometheusScrapeTestOptions{})
 	assert.False(t, opts.EnableStartTimestampZeroIngestion, "EnableCreatedTimestampZeroIngestion should be false when feature gate is disabled")
 
 	// Reset the feature gate and shutdown the created receivers
