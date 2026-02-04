@@ -18,8 +18,6 @@ import (
 const (
 	podNodeField            = "spec.nodeName"
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
-	tagStartTime            = "k8s.pod.start_time"
-	tagHostName             = "k8s.pod.hostname"
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
@@ -38,7 +36,6 @@ const (
 
 	ResourceSource   = "resource_attribute"
 	ConnectionSource = "connection"
-	K8sIPLabelName   = "k8s.pod.ip"
 )
 
 // PodIdentifierAttribute represents AssociationSource with matching value for pod
