@@ -165,6 +165,9 @@ properties:
     description: QueueBatchConfig configures the sending queue and the batching done by the exporter. The performed batching can further be customized by configuring `metadata_keys` which will be used to partition the batches.
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  traces_dynamic_id:
+    description: TracesDynamicID configures whether span attribute `elasticsearch.document_id` is set as the document ID in ES.
+    $ref: dynamic_id_settings
   traces_dynamic_index:
     $ref: dynamic_index_setting
   traces_index:
