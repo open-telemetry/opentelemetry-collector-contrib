@@ -32,7 +32,7 @@ jobs:
         os: [ windows-latest, windows-11-arm ]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -46,7 +46,7 @@ jobs:
         os: [ windows-latest, windows-11-arm ]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -89,7 +89,7 @@ jobs:
       # The gcc installed on the Windows arm64 runner doesn't ship native ARM libraries so we need to disable CGO.
       CGO_ENABLED: ${{ matrix.os == 'windows-11-arm' && '0' || '' }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -161,7 +161,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
