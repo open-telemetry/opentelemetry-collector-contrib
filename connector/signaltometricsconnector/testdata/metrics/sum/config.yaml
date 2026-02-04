@@ -31,3 +31,10 @@ signaltometrics:
       sum:
         value: "2"
         monotonic: true
+    - name: non.monotonic.sum
+      description: A non-monotonic sum
+      conditions:
+        - metric.name == "sum-int"
+      sum:
+        value: datapoint.value_int
+        # monotonic: false by default

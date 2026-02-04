@@ -56,5 +56,13 @@ resourceMetrics:
                         stringValue: notbar
                   timeUnixNano: "1000000"
               isMonotonic: true
+          - description: A non-monotonic sum
+            name: non.monotonic.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "456"
+                  timeUnixNano: "1000000"
+              isMonotonic: false
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
