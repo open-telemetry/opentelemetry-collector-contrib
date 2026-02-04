@@ -4,7 +4,6 @@
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
-	"fmt"
 	"regexp"
 	"time"
 
@@ -314,50 +313,50 @@ type FieldExtractionRule struct {
 	From string
 }
 
-func (r *FieldExtractionRule) extractFromPodMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromPodMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	// By default if the From field is not set for labels and annotations we want to extract them from pod
 	if r.From == MetadataFromPod || r.From == "" {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromNamespace {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromNodeMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromNodeMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromNode {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromDeployment {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromStatefulSetMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromStatefulSetMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromStatefulSet {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromDaemonSet {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromJobMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.From == MetadataFromJob {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadata(metadata, tags, attrFunc)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromMetadata(metadata, tags map[string]string, formatter string) {
+func (r *FieldExtractionRule) extractFromMetadata(metadata, tags map[string]string, attrFunc AttributesFunction) {
 	if r.KeyRegex != nil {
 		for k, v := range metadata {
 			if r.KeyRegex.MatchString(k) && v != "" {
@@ -365,17 +364,19 @@ func (r *FieldExtractionRule) extractFromMetadata(metadata, tags map[string]stri
 				if r.HasKeyRegexReference {
 					var result []byte
 					name = string(r.KeyRegex.ExpandString(result, r.Name, k, r.KeyRegex.FindStringSubmatchIndex(k)))
+					tags[name] = v
 				} else {
-					name = fmt.Sprintf(formatter, k)
+					kv := attrFunc(k, v)
+					tags[string(kv.Key)] = kv.Value.AsString()
 				}
-				tags[name] = v
 			}
 		}
 	} else if v, ok := metadata[r.Key]; ok {
-		// Use formatter to determine attribute name if no custom name was specified
+		// Use attrFunc to determine attribute name if no custom name was specified
 		name := r.Name
 		if name == "" {
-			name = fmt.Sprintf(formatter, r.Key)
+			kv := attrFunc(r.Key, v)
+			name = string(kv.Key)
 		}
 		tags[name] = r.extractField(v)
 	}
