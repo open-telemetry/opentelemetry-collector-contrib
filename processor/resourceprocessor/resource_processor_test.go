@@ -149,6 +149,182 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 	}
 }
 
+func TestResourceProcessorWithDefaultValue(t *testing.T) {
+	tests := []struct {
+		name             string
+		config           *Config
+		sourceAttributes map[string]string
+		wantAttributes   map[string]string
+	}{
+		{
+			name: "default_value_used_when_from_attribute_missing",
+			config: &Config{
+				AttributesActions: []attraction.ActionKeyValue{
+					{Key: "env", FromAttribute: "environment", DefaultValue: "production", Action: attraction.INSERT},
+				},
+			},
+			sourceAttributes: map[string]string{},
+			wantAttributes: map[string]string{
+				"env": "production",
+			},
+		},
+		{
+			name: "default_value_not_used_when_from_attribute_exists",
+			config: &Config{
+				AttributesActions: []attraction.ActionKeyValue{
+					{Key: "env", FromAttribute: "environment", DefaultValue: "production", Action: attraction.INSERT},
+				},
+			},
+			sourceAttributes: map[string]string{
+				"environment": "staging",
+			},
+			wantAttributes: map[string]string{
+				"environment": "staging",
+				"env":         "staging",
+			},
+		},
+		{
+			name: "default_value_with_upsert_creates_new_attribute",
+			config: &Config{
+				AttributesActions: []attraction.ActionKeyValue{
+					{Key: "region", FromAttribute: "cloud.region", DefaultValue: "us-east-1", Action: attraction.UPSERT},
+				},
+			},
+			sourceAttributes: map[string]string{},
+			wantAttributes: map[string]string{
+				"region": "us-east-1",
+			},
+		},
+		{
+			name: "default_value_with_upsert_overwrites_existing",
+			config: &Config{
+				AttributesActions: []attraction.ActionKeyValue{
+					{Key: "region", Value: "us-west-2", DefaultValue: "us-east-1", Action: attraction.UPSERT},
+				},
+			},
+			sourceAttributes: map[string]string{
+				"region": "old-value",
+			},
+			wantAttributes: map[string]string{
+				"region": "us-west-2",
+			},
+		},
+		{
+			name: "default_value_with_update_does_not_create_new",
+			config: &Config{
+				AttributesActions: []attraction.ActionKeyValue{
+					{Key: "service.namespace", FromAttribute: "namespace", DefaultValue: "default", Action: attraction.UPDATE},
+				},
+			},
+			sourceAttributes: map[string]string{},
+			wantAttributes:   map[string]string{},
+		},
+		{
+			name: "default_value_with_update_modifies_existing",
+			config: &Config{
+				AttributesActions: []attraction.ActionKeyValue{
+					{Key: "service.namespace", FromAttribute: "namespace", DefaultValue: "default", Action: attraction.UPDATE},
+				},
+			},
+			sourceAttributes: map[string]string{
+				"service.namespace": "old",
+			},
+			wantAttributes: map[string]string{
+				"service.namespace": "default",
+			},
+		},
+		{
+			name: "multiple_attributes_with_default_values",
+			config: &Config{
+				AttributesActions: []attraction.ActionKeyValue{
+					{Key: "env", FromAttribute: "environment", DefaultValue: "prod", Action: attraction.INSERT},
+					{Key: "region", FromAttribute: "cloud.region", DefaultValue: "us-east-1", Action: attraction.INSERT},
+					{Key: "tier", Value: "frontend", Action: attraction.INSERT},
+				},
+			},
+			sourceAttributes: map[string]string{
+				"cloud.region": "eu-west-1",
+			},
+			wantAttributes: map[string]string{
+				"env":          "prod",
+				"region":       "eu-west-1",
+				"cloud.region": "eu-west-1",
+				"tier":         "frontend",
+			},
+		},
+		{
+			name: "default_value_with_different_types",
+			config: &Config{
+				AttributesActions: []attraction.ActionKeyValue{
+					{Key: "string_attr", FromAttribute: "missing", DefaultValue: "default_string", Action: attraction.INSERT},
+					{Key: "int_attr", FromAttribute: "missing", DefaultValue: 42, Action: attraction.INSERT},
+					{Key: "bool_attr", FromAttribute: "missing", DefaultValue: true, Action: attraction.INSERT},
+				},
+			},
+			sourceAttributes: map[string]string{},
+			wantAttributes: map[string]string{
+				"string_attr": "default_string",
+				"int_attr":    "42",
+				"bool_attr":   "true",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test trace consumer
+			ttn := new(consumertest.TracesSink)
+
+			factory := NewFactory()
+			rtp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, ttn)
+			require.NoError(t, err)
+			assert.True(t, rtp.Capabilities().MutatesData)
+
+			sourceTraceData := generateTraceData(tt.sourceAttributes)
+			wantTraceData := generateTraceDataWithMixedTypes(tt.wantAttributes)
+			err = rtp.ConsumeTraces(t.Context(), sourceTraceData)
+			require.NoError(t, err)
+			traces := ttn.AllTraces()
+			require.Len(t, traces, 1)
+
+			// Compare attributes
+			gotAttrs := traces[0].ResourceSpans().At(0).Resource().Attributes()
+			wantAttrs := wantTraceData.ResourceSpans().At(0).Resource().Attributes()
+			assert.Equal(t, wantAttrs.Len(), gotAttrs.Len())
+
+			// Test metrics consumer
+			tmn := new(consumertest.MetricsSink)
+			rmp, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, tmn)
+			require.NoError(t, err)
+
+			sourceMetricData := generateMetricData(tt.sourceAttributes)
+			err = rmp.ConsumeMetrics(t.Context(), sourceMetricData)
+			require.NoError(t, err)
+
+			// Test logs consumer
+			tln := new(consumertest.LogsSink)
+			rlp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), tt.config, tln)
+			require.NoError(t, err)
+
+			sourceLogData := generateLogData(tt.sourceAttributes)
+			err = rlp.ConsumeLogs(t.Context(), sourceLogData)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func generateTraceDataWithMixedTypes(attributes map[string]string) ptrace.Traces {
+	td := testdata.GenerateTracesOneSpanNoResource()
+	if attributes == nil {
+		return td
+	}
+	resource := td.ResourceSpans().At(0).Resource()
+	for k, v := range attributes {
+		resource.Attributes().PutStr(k, v)
+	}
+	return td
+}
+
 func generateTraceData(attributes map[string]string) ptrace.Traces {
 	td := testdata.GenerateTracesOneSpanNoResource()
 	if attributes == nil {
