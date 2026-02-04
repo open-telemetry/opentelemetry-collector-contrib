@@ -991,7 +991,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		removeUnnecessaryContainerData := func(c api_v1.Container) api_v1.Container {
 			transformedContainer := api_v1.Container{}
 			transformedContainer.Name = c.Name // we always need the name, it's used for identification
-			if rules.ContainerImageName || rules.ContainerImageTag || rules.ServiceVersion {
+			if rules.ContainerImageName || rules.ContainerImageTag || rules.ContainerImageTags || rules.ServiceVersion {
 				transformedContainer.Image = c.Image
 			}
 			return transformedContainer
@@ -1066,7 +1066,11 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if !needContainerAttributes(c.Rules) {
 		return containers
 	}
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag ||
+
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+
+	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.ContainerImageTags ||
 		c.Rules.ServiceVersion || c.Rules.ServiceInstanceID {
 		specs := append(pod.Spec.Containers, pod.Spec.InitContainers...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
 		for i := range specs {
@@ -1077,8 +1081,13 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 				if c.Rules.ContainerImageName {
 					container.ImageName = imageRef.Repository
 				}
-				if c.Rules.ContainerImageTag {
+				// Legacy: container.image.tag (singular, string)
+				if c.Rules.ContainerImageTag && !disableLegacy {
 					container.ImageTag = imageRef.Tag
+				}
+				// Stable: container.image.tags (plural, array)
+				if c.Rules.ContainerImageTags && enableStable {
+					container.ImageTags = []string{imageRef.Tag}
 				}
 				if c.Rules.ServiceVersion {
 					serviceVersion, err := parseServiceVersionFromImage(spec.Image)
@@ -1726,6 +1735,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 	return rules.ContainerImageName ||
 		rules.ContainerName ||
 		rules.ContainerImageTag ||
+		rules.ContainerImageTags ||
 		rules.ContainerImageRepoDigests ||
 		rules.ContainerID ||
 		rules.ServiceVersion ||
