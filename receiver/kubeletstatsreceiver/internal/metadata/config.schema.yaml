@@ -1,0 +1,188 @@
+$defs:
+  attribute_direction:
+    description: AttributeDirection specifies the value direction attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for kubeletstats metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for kubeletstats metrics.
+    type: object
+    properties:
+      container.cpu.time:
+        $ref: metric_config
+      container.cpu.usage:
+        $ref: metric_config
+      container.filesystem.available:
+        $ref: metric_config
+      container.filesystem.capacity:
+        $ref: metric_config
+      container.filesystem.usage:
+        $ref: metric_config
+      container.memory.available:
+        $ref: metric_config
+      container.memory.major_page_faults:
+        $ref: metric_config
+      container.memory.page_faults:
+        $ref: metric_config
+      container.memory.rss:
+        $ref: metric_config
+      container.memory.usage:
+        $ref: metric_config
+      container.memory.working_set:
+        $ref: metric_config
+      container.uptime:
+        $ref: metric_config
+      k8s.container.cpu.node.utilization:
+        $ref: metric_config
+      k8s.container.cpu_limit_utilization:
+        $ref: metric_config
+      k8s.container.cpu_request_utilization:
+        $ref: metric_config
+      k8s.container.memory.node.utilization:
+        $ref: metric_config
+      k8s.container.memory_limit_utilization:
+        $ref: metric_config
+      k8s.container.memory_request_utilization:
+        $ref: metric_config
+      k8s.node.cpu.time:
+        $ref: metric_config
+      k8s.node.cpu.usage:
+        $ref: metric_config
+      k8s.node.filesystem.available:
+        $ref: metric_config
+      k8s.node.filesystem.capacity:
+        $ref: metric_config
+      k8s.node.filesystem.usage:
+        $ref: metric_config
+      k8s.node.memory.available:
+        $ref: metric_config
+      k8s.node.memory.major_page_faults:
+        $ref: metric_config
+      k8s.node.memory.page_faults:
+        $ref: metric_config
+      k8s.node.memory.rss:
+        $ref: metric_config
+      k8s.node.memory.usage:
+        $ref: metric_config
+      k8s.node.memory.working_set:
+        $ref: metric_config
+      k8s.node.network.errors:
+        $ref: metric_config
+      k8s.node.network.io:
+        $ref: metric_config
+      k8s.node.uptime:
+        $ref: metric_config
+      k8s.pod.cpu.node.utilization:
+        $ref: metric_config
+      k8s.pod.cpu.time:
+        $ref: metric_config
+      k8s.pod.cpu.usage:
+        $ref: metric_config
+      k8s.pod.cpu_limit_utilization:
+        $ref: metric_config
+      k8s.pod.cpu_request_utilization:
+        $ref: metric_config
+      k8s.pod.filesystem.available:
+        $ref: metric_config
+      k8s.pod.filesystem.capacity:
+        $ref: metric_config
+      k8s.pod.filesystem.usage:
+        $ref: metric_config
+      k8s.pod.memory.available:
+        $ref: metric_config
+      k8s.pod.memory.major_page_faults:
+        $ref: metric_config
+      k8s.pod.memory.node.utilization:
+        $ref: metric_config
+      k8s.pod.memory.page_faults:
+        $ref: metric_config
+      k8s.pod.memory.rss:
+        $ref: metric_config
+      k8s.pod.memory.usage:
+        $ref: metric_config
+      k8s.pod.memory.working_set:
+        $ref: metric_config
+      k8s.pod.memory_limit_utilization:
+        $ref: metric_config
+      k8s.pod.memory_request_utilization:
+        $ref: metric_config
+      k8s.pod.network.errors:
+        $ref: metric_config
+      k8s.pod.network.io:
+        $ref: metric_config
+      k8s.pod.uptime:
+        $ref: metric_config
+      k8s.pod.volume.usage:
+        $ref: metric_config
+      k8s.volume.available:
+        $ref: metric_config
+      k8s.volume.capacity:
+        $ref: metric_config
+      k8s.volume.inodes:
+        $ref: metric_config
+      k8s.volume.inodes.free:
+        $ref: metric_config
+      k8s.volume.inodes.used:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for kubeletstats resource attributes.
+    type: object
+    properties:
+      aws.volume.id:
+        $ref: resource_attribute_config
+      container.id:
+        $ref: resource_attribute_config
+      fs.type:
+        $ref: resource_attribute_config
+      gce.pd.name:
+        $ref: resource_attribute_config
+      glusterfs.endpoints.name:
+        $ref: resource_attribute_config
+      glusterfs.path:
+        $ref: resource_attribute_config
+      k8s.container.name:
+        $ref: resource_attribute_config
+      k8s.namespace.name:
+        $ref: resource_attribute_config
+      k8s.node.name:
+        $ref: resource_attribute_config
+      k8s.persistentvolumeclaim.name:
+        $ref: resource_attribute_config
+      k8s.pod.name:
+        $ref: resource_attribute_config
+      k8s.pod.uid:
+        $ref: resource_attribute_config
+      k8s.volume.name:
+        $ref: resource_attribute_config
+      k8s.volume.type:
+        $ref: resource_attribute_config
+      partition:
+        $ref: resource_attribute_config

@@ -8,7 +8,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 // For the OpenTelemetry Collector Contrib distribution specifically, see
 // https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 
-go 1.24
+go 1.24.0
 
 retract (
 	v0.76.2
@@ -16,6 +16,3 @@ retract (
 	v0.65.0
 	v0.37.0 // Contains dependencies on v0.36.0 components, which should have been updated to v0.37.0.
 )
-
-// Can be removed after 0.144.0 release
-replace go.opentelemetry.io/collector/internal/componentalias => go.opentelemetry.io/collector/internal/componentalias v0.0.0-20260119125341-0550b08ddcc5

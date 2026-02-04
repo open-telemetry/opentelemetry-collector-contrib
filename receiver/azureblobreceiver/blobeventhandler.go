@@ -6,10 +6,19 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
+	"sync"
+	"time"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"go.uber.org/zap"
+)
+
+var (
+	defaultPollRate      = 5
+	defaultMaxPollEvents = 100
+	defaultConsumerGroup = "$Default"
 )
 
 type blobEventHandler interface {
@@ -26,8 +35,10 @@ type azureBlobEventHandler struct {
 	logsContainerName        string
 	tracesContainerName      string
 	eventHubConnectionString string
-	hub                      *eventhub.Hub
+	hub                      *azeventhubs.ConsumerClient
 	logger                   *zap.Logger
+	wg                       sync.WaitGroup
+	cancelFunc               context.CancelFunc
 }
 
 var _ blobEventHandler = (*azureBlobEventHandler)(nil)
@@ -41,29 +52,81 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 		return nil
 	}
 
-	hub, err := eventhub.NewHubFromConnectionString(p.eventHubConnectionString)
+	// The event hub name is empty because it's extracted from the connection string's EntityPath.
+	// The consumer group "$Default" is the default consumer group for Event Hubs.
+	hub, err := azeventhubs.NewConsumerClientFromConnectionString(
+		p.eventHubConnectionString,
+		"",
+		defaultConsumerGroup,
+		&azeventhubs.ConsumerClientOptions{},
+	)
 	if err != nil {
 		return err
 	}
 
 	p.hub = hub
 
-	runtimeInfo, err := hub.GetRuntimeInformation(ctx)
+	runtimeInfo, err := hub.GetEventHubProperties(ctx, &azeventhubs.GetEventHubPropertiesOptions{})
 	if err != nil {
 		return err
 	}
 
+	startAtLatest := true
+	pcCtx, cancelFunc := context.WithCancel(ctx)
+	p.cancelFunc = cancelFunc
 	for _, partitionID := range runtimeInfo.PartitionIDs {
-		_, err := hub.Receive(ctx, partitionID, p.newMessageHandler, eventhub.ReceiveWithLatestOffset())
+		p.wg.Add(1)
+		pc, err := p.hub.NewPartitionClient(partitionID, &azeventhubs.PartitionClientOptions{
+			StartPosition: azeventhubs.StartPosition{
+				Latest: &startAtLatest,
+			},
+		})
 		if err != nil {
+			p.logger.Error("error creating partition client", zap.Error(err))
 			return err
 		}
+		go p.receiveEvents(pcCtx, pc, p.newMessageHandler)
 	}
 
 	return nil
 }
 
-func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *eventhub.Event) error {
+func (p *azureBlobEventHandler) receiveEvents(
+	ctx context.Context,
+	pc *azeventhubs.PartitionClient,
+	handler func(ctx context.Context, event *azeventhubs.ReceivedEventData) error,
+) {
+	defer p.wg.Done()
+	defer pc.Close(ctx)
+	defer p.logger.Info("partition client closed")
+
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+
+		timeoutCtx, cancelCtx := context.WithTimeout(
+			ctx,
+			time.Second*time.Duration(defaultPollRate),
+		)
+		events, err := pc.ReceiveEvents(timeoutCtx, defaultMaxPollEvents, &azeventhubs.ReceiveEventsOptions{})
+		cancelCtx()
+		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
+			p.logger.Error(
+				"error receiving events from partition",
+				zap.Error(err),
+			)
+		}
+
+		for _, event := range events {
+			if handlerErr := handler(ctx, event); handlerErr != nil {
+				p.logger.Error("error handling event", zap.Error(handlerErr))
+			}
+		}
+	}
+}
+
+func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
 	type eventData struct {
 		Topic           string
 		Subject         string
@@ -75,7 +138,7 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 		EventTime       string
 	}
 	var eventDataSlice []eventData
-	marshalErr := json.Unmarshal(event.Data, &eventDataSlice)
+	marshalErr := json.Unmarshal(event.Body, &eventDataSlice)
 	if marshalErr != nil {
 		return marshalErr
 	}
@@ -109,6 +172,11 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 }
 
 func (p *azureBlobEventHandler) close(ctx context.Context) error {
+	if p.cancelFunc != nil {
+		p.cancelFunc()
+	}
+	// Wait for all partition receiver goroutines to finish
+	p.wg.Wait()
 	if p.hub != nil {
 		err := p.hub.Close(ctx)
 		if err != nil {
