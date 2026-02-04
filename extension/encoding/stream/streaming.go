@@ -5,6 +5,7 @@ package stream // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -18,21 +19,22 @@ import (
 // Not safe for concurrent use.
 type ScannerHelper struct {
 	batchHelper *BatchHelper
-	scanner     *bufio.Scanner
+	bufReader   *bufio.Reader
 }
 
 func NewScannerHelper(reader io.Reader, opts ...encoding.DecoderOption) *ScannerHelper {
 	batchHelper := NewBatchHelper(opts...)
 
-	scanner := bufio.NewScanner(reader)
-	if batchHelper.options.StreamReaderBuffer > 0 {
-		bufSize := batchHelper.options.StreamReaderBuffer
-		scanner.Buffer(make([]byte, bufSize), bufSize)
+	var bufReader *bufio.Reader
+	if br, ok := reader.(*bufio.Reader); ok {
+		bufReader = br
+	} else {
+		bufReader = bufio.NewReader(reader)
 	}
 
 	return &ScannerHelper{
 		batchHelper: batchHelper,
-		scanner:     scanner,
+		bufReader:   bufReader,
 	}
 }
 
@@ -58,25 +60,35 @@ func (h *ScannerHelper) ScanBytes() (bytes []byte, flush bool, err error) {
 }
 
 func (h *ScannerHelper) scanInternal() ([]byte, bool, error) {
-	if !h.scanner.Scan() {
-		if err := h.scanner.Err(); err != nil {
-			return nil, true, err
+	var isEOF bool
+	b, err := h.bufReader.ReadBytes('\n')
+	if err != nil {
+		if err != io.EOF {
+			return nil, false, err
 		}
+		isEOF = true
+	}
+
+	if len(b) == 0 && isEOF {
 		return nil, true, io.EOF
 	}
 
-	b := h.scanner.Bytes()
 	h.batchHelper.IncrementItems(1)
-	// +1 for the newline character that was scanned but not included in b
-	h.batchHelper.IncrementBytes(int64(len(b)) + 1)
+	h.batchHelper.IncrementBytes(int64(len(b)))
 
+	var flush bool
 	if h.batchHelper.ShouldFlush() {
 		h.batchHelper.Reset()
-
-		return b, true, nil
+		flush = true
 	}
 
-	return b, false, nil
+	b = bytes.TrimSpace(b)
+
+	if isEOF {
+		return b, flush, io.EOF
+	}
+
+	return b, flush, nil
 }
 
 // BatchHelper is a helper to determine when to flush based on configured options.
@@ -121,32 +133,32 @@ func (sh *BatchHelper) Reset() {
 	sh.currentItems = 0
 }
 
-// LogsUnmarshalerFunc is a helper to implement LogsDecoder interface with a wrapper function.
-type LogsUnmarshalerFunc struct {
+// LogsDecoderFunc is a helper to implement encoding.LogsDecoder interface with a wrapper function.
+type LogsDecoderFunc struct {
 	batchUnmarshal func() (plog.Logs, error)
 }
 
-func NewLogsUnmarshalerFunc(batchUnmarshal func() (plog.Logs, error)) *LogsUnmarshalerFunc {
-	return &LogsUnmarshalerFunc{
+func NewLogsDecoderFunc(batchUnmarshal func() (plog.Logs, error)) *LogsDecoderFunc {
+	return &LogsDecoderFunc{
 		batchUnmarshal: batchUnmarshal,
 	}
 }
 
-func (l *LogsUnmarshalerFunc) DecodeLogs() (plog.Logs, error) {
+func (l *LogsDecoderFunc) DecodeLogs() (plog.Logs, error) {
 	return l.batchUnmarshal()
 }
 
-// MetricsUnmarshalerFunc is a helper to implement MetricsDecoder interface with a wrapper function.
-type MetricsUnmarshalerFunc struct {
+// MetricsDecoderFunc is a helper to implement encoding.MetricsDecoder interface with a wrapper function.
+type MetricsDecoderFunc struct {
 	batchUnmarshal func() (pmetric.Metrics, error)
 }
 
-func NewMetricsUnmarshalerFunc(batchUnmarshal func() (pmetric.Metrics, error)) *MetricsUnmarshalerFunc {
-	return &MetricsUnmarshalerFunc{
+func NewMetricsDecoderFunc(batchUnmarshal func() (pmetric.Metrics, error)) *MetricsDecoderFunc {
+	return &MetricsDecoderFunc{
 		batchUnmarshal: batchUnmarshal,
 	}
 }
 
-func (m *MetricsUnmarshalerFunc) DecodeMetrics() (pmetric.Metrics, error) {
+func (m *MetricsDecoderFunc) DecodeMetrics() (pmetric.Metrics, error) {
 	return m.batchUnmarshal()
 }

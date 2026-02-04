@@ -89,9 +89,8 @@ type ProfilesUnmarshalerExtension interface {
 
 // DecoderOptions configures the behavior of stream decoding.
 type DecoderOptions struct {
-	FlushBytes         int64
-	FlushItems         int64
-	StreamReaderBuffer int
+	FlushBytes int64
+	FlushItems int64
 }
 
 // DecoderOption defines the functional option for DecoderOptions.
@@ -108,12 +107,5 @@ func WithFlushBytes(b int64) DecoderOption {
 func WithFlushItems(i int64) DecoderOption {
 	return func(o *DecoderOptions) {
 		o.FlushItems = i
-	}
-}
-
-// WithStreamReaderBuffer sets the size of buffer that should be used by the stream reader.
-func WithStreamReaderBuffer(size int) DecoderOption {
-	return func(o *DecoderOptions) {
-		o.StreamReaderBuffer = size
 	}
 }

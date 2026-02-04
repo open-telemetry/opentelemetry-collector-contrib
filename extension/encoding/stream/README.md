@@ -13,6 +13,7 @@ This package provides the building blocks to implement such stream processing lo
 ### ScannerHelper
 
 A helper that wraps `io.Reader` to scan newline-delimited records.
+User may forward a `bufio.Reader` with predefined buffers to optimize stream reading.
 It tracks batch metrics and signals when to flush based on configured thresholds using `encoding.UnmarshalOption` functional options.
 
 **Note:** Not safe for concurrent use.
@@ -26,8 +27,8 @@ Useful when you need custom scanning logic but still want batch tracking.
 
 ### Unmarshaler Adapters
 
-- `LogsUnmarshalerFunc` - Adapts a function to the `LogsStreamUnmarshaler` interface
-- `MetricsUnmarshalerFunc` - Adapts a function to the `MetricsStreamUnmarshaler` interface
+- `LogsDecoderFunc` - Adapts a function to the `encoding.LogsDecoder` interface
+- `MetricsDecoderFunc` - Adapts a function to the `encoding.MetricsDecoder` interface
 
 ## Usage
 
@@ -73,15 +74,6 @@ helper := stream.NewScannerHelper(reader,
 helper := stream.NewScannerHelper(reader,
     encoding.WithFlushItems(1000),
     encoding.WithFlushBytes(1024 * 1024),
-)
-```
-
-### Custom Buffer Size
-
-```go
-// Use a larger buffer size to reduce iteration overhead
-helper := stream.NewScannerHelper(reader,
-    encoding.WithStreamReaderBuffer(1024 * 1024), // 1MB buffer
 )
 ```
 

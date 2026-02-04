@@ -4,6 +4,7 @@
 package stream // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 
 import (
+	"bufio"
 	"io"
 	"strings"
 	"testing"
@@ -13,6 +14,25 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
+
+func TestStreamScannerHelper_constructor(t *testing.T) {
+	t.Run("IO reader get converted to bufio.Reader", func(t *testing.T) {
+		reader := strings.NewReader("test")
+
+		helper := NewScannerHelper(reader)
+
+		assert.IsType(t, &bufio.Reader{}, helper.bufReader)
+	})
+
+	t.Run("Bufio.Reader remains unchanged", func(t *testing.T) {
+		reader := strings.NewReader("test")
+		bufReader := bufio.NewReader(reader)
+
+		helper := NewScannerHelper(bufReader)
+
+		assert.Equal(t, bufReader, helper.bufReader)
+	})
+}
 
 func TestStreamScannerHelper_ScanString(t *testing.T) {
 	input := "line1\nline2\nline3\n"

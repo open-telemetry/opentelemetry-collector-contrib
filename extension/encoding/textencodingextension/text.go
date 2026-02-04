@@ -67,7 +67,7 @@ func (r *textLogCodec) NewLogsDecoder(reader io.Reader, options ...encoding.Deco
 	}
 
 	batchHelper := stream.NewBatchHelper(options...)
-	return stream.NewLogsUnmarshalerFunc(func() (plog.Logs, error) {
+	return stream.NewLogsDecoderFunc(func() (plog.Logs, error) {
 		p := plog.NewLogs()
 		now := pcommon.NewTimestampFromTime(time.Now())
 
