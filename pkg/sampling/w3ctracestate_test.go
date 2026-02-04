@@ -35,6 +35,26 @@ func ExampleW3CTraceState() {
 	// Other Extra: [{zz vendorcontent}]
 }
 
+// ExampleW3CTraceState_empty shows what an empty tracestate looks like.
+func ExampleW3CTraceState_empty() {
+	w3c, err := NewW3CTraceState("")
+	if err != nil {
+		panic(err)
+	}
+	ot := w3c.OTelValue()
+
+	fmt.Printf("T-Value:%s\n", ot.TValue())
+	fmt.Printf("R-Value:%s\n", ot.RValue())
+	fmt.Printf("OTel Extra:%v\n", ot.ExtraValues())
+	fmt.Printf("Other Extra:%v\n", w3c.ExtraValues())
+
+	// Output:
+	// T-Value:
+	// R-Value:
+	// OTel Extra:[]
+	// Other Extra:[]
+}
+
 // ExampleW3CTraceState_Serialize shows how to modify and serialize a
 // new W3C tracestate.
 func ExampleW3CTraceState_Serialize() {
@@ -155,6 +175,69 @@ func TestParseW3CTraceState(t *testing.T) {
 			cpy, err := NewW3CTraceState(w.String())
 			require.NoError(t, err, "with %v", w.String())
 			require.Equal(t, w3c, cpy, "with %v", w.String())
+		})
+	}
+}
+
+func TestIsValidW3CTraceState(t *testing.T) {
+	// Test that isValidW3CTraceState matches the regex behavior
+	validCases := []string{
+		"",
+		"ot=th:1",
+		" ot=th:1 ",
+		" ot=th:1,other=value ",
+		",,,",
+		" , ot=th:1, , other=value ",
+		"ot=th:100;rv:abcdabcdabcdff",
+		"ot=rv:11111111111111",
+		"vendor1=value1,vendor2=value2,vendor3=value3",
+		"tenant@system=value",
+		"a=b",
+		"abc=xyz",
+		"key_with_underscore=value",
+		"key-with-dash=value",
+		"key*with*star=value",
+		"key/with/slash=value",
+		"0tenant@system=value", // tenant can start with digit
+		"key=value ",           // trailing OWS is allowed
+		"key= value",           // space is valid value char (0x20)
+		"key=value\t",          // trailing OWS (tab) is allowed
+	}
+
+	for _, input := range validCases {
+		t.Run("valid/"+testName(input), func(t *testing.T) {
+			regexResult := w3cTracestateRe.MatchString(input)
+			noRegexResult := isValidW3CTraceState(input)
+			require.Equal(t, regexResult, noRegexResult,
+				"input %q: regex=%v, noRegex=%v", input, regexResult, noRegexResult)
+			require.True(t, noRegexResult, "expected valid: %q", input)
+		})
+	}
+
+	invalidCases := []string{
+		"-1=2",             // key starts with invalid char
+		"=",                // empty key
+		"=value",           // empty key
+		"KEY=value",        // uppercase not allowed in key
+		"key=",             // empty value
+		"1abc=value",       // simple key can't start with digit
+		"@system=value",    // empty tenant
+		"tenant@=value",    // empty system
+		"tenant@1system=v", // system must start with lcalpha
+		"key=val\x00ue",    // null char in value
+		"key=val\x1fue",    // control char in value
+		"key\x00=value",    // null char in key
+		"key=value\x7f",    // DEL char in value
+		"a b=value",        // space in key
+	}
+
+	for _, input := range invalidCases {
+		t.Run("invalid/"+testName(input), func(t *testing.T) {
+			regexResult := w3cTracestateRe.MatchString(input)
+			noRegexResult := isValidW3CTraceState(input)
+			require.Equal(t, regexResult, noRegexResult,
+				"input %q: regex=%v, noRegex=%v", input, regexResult, noRegexResult)
+			require.False(t, noRegexResult, "expected invalid: %q", input)
 		})
 	}
 }

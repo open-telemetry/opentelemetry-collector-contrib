@@ -33,37 +33,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
-const (
-	// From historical reasons some of workloads are using `*.labels.*` and `*.annotations.*` instead of
-	// `*.label.*` and `*.annotation.*`
-	// Sematic conventions define `*.label.*` and `*.annotation.*`
-	// More information - https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37957
-	K8sPodLabelsKey            = "k8s.pod.labels.%s"
-	K8sPodLabelKey             = "k8s.pod.label.%s"
-	K8sPodAnnotationsKey       = "k8s.pod.annotations.%s"
-	K8sPodAnnotationKey        = "k8s.pod.annotation.%s"
-	K8sNodeLabelsKey           = "k8s.node.labels.%s"
-	K8sNodeLabelKey            = "k8s.node.label.%s"
-	K8sNodeAnnotationsKey      = "k8s.node.annotations.%s"
-	K8sNodeAnnotationKey       = "k8s.node.annotation.%s"
-	K8sNamespaceLabelsKey      = "k8s.namespace.labels.%s"
-	K8sNamespaceLabelKey       = "k8s.namespace.label.%s"
-	K8sNamespaceAnnotationsKey = "k8s.namespace.annotations.%s"
-	K8sNamespaceAnnotationKey  = "k8s.namespace.annotation.%s"
-	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#deployment
-	K8sDeploymentLabel      = "k8s.deployment.label.%s"
-	K8sDeploymentAnnotation = "k8s.deployment.annotation.%s"
-	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#statefulset
-	K8sStatefulSetLabel      = "k8s.statefulset.label.%s"
-	K8sStatefulSetAnnotation = "k8s.statefulset.annotation.%s"
-	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#daemonset
-	K8sDaemonSetLabel      = "k8s.daemonset.label.%s"
-	K8sDaemonSetAnnotation = "k8s.daemonset.annotation.%s"
-	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#job
-	K8sJobLabel      = "k8s.job.label.%s"
-	K8sJobAnnotation = "k8s.job.annotation.%s"
-)
-
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
 	m                      sync.RWMutex
@@ -918,18 +887,25 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	formatterLabel := K8sPodLabelsKey
-	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-		formatterLabel = K8sPodLabelKey
-	}
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromPodMetadata(pod.Labels, tags, formatterLabel)
+		if !disableLegacy {
+			r.extractFromPodMetadata(pod.Labels, tags, K8SPodLabels)
+		}
+		if enableStable {
+			r.extractFromPodMetadata(pod.Labels, tags, conventions.K8SPodLabel)
+		}
 	}
 
-	formatterAnnotation := K8sPodAnnotationsKey
-	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-		formatterAnnotation = K8sPodAnnotationKey
+	for _, r := range c.Rules.Annotations {
+		if !disableLegacy {
+			r.extractFromPodMetadata(pod.Annotations, tags, K8SPodAnnotations)
+		}
+		if enableStable {
+			r.extractFromPodMetadata(pod.Annotations, tags, conventions.K8SPodAnnotation)
+		}
 	}
 
 	if c.Rules.ServiceName {
@@ -942,9 +918,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		copyLabel(pod, tags, "app.kubernetes.io/version", conventions.ServiceVersionKey)
 	}
 
-	for _, r := range c.Rules.Annotations {
-		r.extractFromPodMetadata(pod.Annotations, tags, formatterAnnotation)
-	}
 	return tags
 }
 
@@ -1163,22 +1136,25 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
 	tags := map[string]string{}
 
-	formatterLabel := K8sNamespaceLabelsKey
-	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-		formatterLabel = K8sNamespaceLabelKey
-	}
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromNamespaceMetadata(namespace.Labels, tags, formatterLabel)
-	}
-
-	formatterAnnotation := K8sNamespaceAnnotationsKey
-	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-		formatterAnnotation = K8sNamespaceAnnotationKey
+		if !disableLegacy {
+			r.extractFromNamespaceMetadata(namespace.Labels, tags, K8SNamespaceLabels)
+		}
+		if enableStable {
+			r.extractFromNamespaceMetadata(namespace.Labels, tags, conventions.K8SNamespaceLabel)
+		}
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNamespaceMetadata(namespace.Annotations, tags, formatterAnnotation)
+		if !disableLegacy {
+			r.extractFromNamespaceMetadata(namespace.Annotations, tags, K8SNamespaceAnnotations)
+		}
+		if enableStable {
+			r.extractFromNamespaceMetadata(namespace.Annotations, tags, conventions.K8SNamespaceAnnotation)
+		}
 	}
 
 	return tags
@@ -1187,22 +1163,25 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
 	tags := map[string]string{}
 
-	formatterLabel := K8sNodeLabelsKey
-	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-		formatterLabel = K8sNodeLabelKey
-	}
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromNodeMetadata(node.Labels, tags, formatterLabel)
-	}
-
-	formatterAnnotation := K8sNodeAnnotationsKey
-	if metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.IsEnabled() {
-		formatterAnnotation = K8sNodeAnnotationKey
+		if !disableLegacy {
+			r.extractFromNodeMetadata(node.Labels, tags, K8SNodeLabels)
+		}
+		if enableStable {
+			r.extractFromNodeMetadata(node.Labels, tags, conventions.K8SNodeLabel)
+		}
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNodeMetadata(node.Annotations, tags, formatterAnnotation)
+		if !disableLegacy {
+			r.extractFromNodeMetadata(node.Annotations, tags, K8SNodeAnnotations)
+		}
+		if enableStable {
+			r.extractFromNodeMetadata(node.Annotations, tags, conventions.K8SNodeAnnotation)
+		}
 	}
 	return tags
 }
@@ -1211,11 +1190,11 @@ func (c *WatchClient) extractDeploymentAttributes(d *apps_v1.Deployment) map[str
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromDeploymentMetadata(d.Labels, tags, K8sDeploymentLabel)
+		r.extractFromDeploymentMetadata(d.Labels, tags, conventions.K8SDeploymentLabel)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromDeploymentMetadata(d.Annotations, tags, K8sDeploymentAnnotation)
+		r.extractFromDeploymentMetadata(d.Annotations, tags, conventions.K8SDeploymentAnnotation)
 	}
 
 	return tags
@@ -1225,11 +1204,11 @@ func (c *WatchClient) extractStatefulSetAttributes(d *apps_v1.StatefulSet) map[s
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromStatefulSetMetadata(d.Labels, tags, K8sStatefulSetLabel)
+		r.extractFromStatefulSetMetadata(d.Labels, tags, conventions.K8SStatefulSetLabel)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromStatefulSetMetadata(d.Annotations, tags, K8sStatefulSetAnnotation)
+		r.extractFromStatefulSetMetadata(d.Annotations, tags, conventions.K8SStatefulSetAnnotation)
 	}
 
 	return tags
@@ -1239,11 +1218,11 @@ func (c *WatchClient) extractDaemonSetAttributes(d *apps_v1.DaemonSet) map[strin
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromDaemonSetMetadata(d.Labels, tags, K8sDaemonSetLabel)
+		r.extractFromDaemonSetMetadata(d.Labels, tags, conventions.K8SDaemonSetLabel)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromDaemonSetMetadata(d.Annotations, tags, K8sDaemonSetAnnotation)
+		r.extractFromDaemonSetMetadata(d.Annotations, tags, conventions.K8SDaemonSetAnnotation)
 	}
 
 	return tags
@@ -1253,11 +1232,11 @@ func (c *WatchClient) extractJobAttributes(d *batch_v1.Job) map[string]string {
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromJobMetadata(d.Labels, tags, K8sJobLabel)
+		r.extractFromJobMetadata(d.Labels, tags, conventions.K8SJobLabel)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromJobMetadata(d.Annotations, tags, K8sJobAnnotation)
+		r.extractFromJobMetadata(d.Annotations, tags, conventions.K8SJobAnnotation)
 	}
 
 	return tags
