@@ -540,12 +540,6 @@ It is recommended to enrich events using the [elasticapmprocessor](https://githu
 
 There are ECS fields that are not mapped easily 1 to 1 but require more advanced logic.
 
-#### `agent.name`
-Mapping for `agent.name` will be removed in v0.146.0 since the logic exists in the [elasticapmprocessor](https://github.com/elastic/opentelemetry-collector-components/tree/main/processor/elasticapmprocessor). 
-
-#### `agent.version`
-Mapping for `agent.version` will be removed in v0.146.0 since the logic exists in the [elasticapmprocessor](https://github.com/elastic/opentelemetry-collector-components/tree/main/processor/elasticapmprocessor).
-
 #### `host.name` and `host.hostname`
 
 Maintains the SemConv Value `host.name` as ECS Value `host.name` and maps it to ECS Value `host.hostname`, if this does not already exist.
