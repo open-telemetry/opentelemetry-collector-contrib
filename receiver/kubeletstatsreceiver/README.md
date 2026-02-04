@@ -21,6 +21,13 @@ and sends it down the metric pipeline for further processing.
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
 
+## Compatibility
+
+### Kubernetes Versions
+
+This receiver is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L98)
+workflow. These tested versions represent the officially supported Kubernetes versions for this component.
+
 ## Configuration
 
 A kubelet runs on a kubernetes node and has an API server to which this
