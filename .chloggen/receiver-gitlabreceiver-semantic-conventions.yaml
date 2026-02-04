@@ -1,0 +1,53 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: "enhancement"
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: "receiver/gitlab"
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Refactor GitLab receiver architecture and update to semantic conventions"
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [45781, 45756]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  This PR refactors the GitLab receiver to facilitate adding future webhook event handlers and includes several improvements:
+  
+  **Architectural Refactoring:**
+  - Implemented event router pattern (`event_router.go`) for extensible event handling
+  - Separated pipeline and job event handlers into dedicated files (`pipeline_event_handler.go`, `job_event_handler.go`)
+  - Makes it easy to add new GitLab webhook event handlers (push hook, deployment hook, etc.) in the future
+  
+  **Code Organization:**
+  - Moved test JSON payloads from inline code to `testdata/` directory following OpenTelemetry patterns
+  - Consolidated utility functions into `internal/utils.go` for better code organization
+  - Added comprehensive tests for job and pipeline event handlers
+  
+  **Bug Fix (Issue #45756):**
+  - Fixed handling of pipeline events with jobs containing null/empty timestamps (e.g., skipped manual jobs)
+  - Stage time calculation now only processes jobs with valid timestamps
+  - Previously caused "invalid startedAt timestamp: time is empty" errors
+  
+  **Semantic Conventions:**
+  - Updated job event metrics to use OpenTelemetry semantic convention attributes:
+    - `gitlab.job.id` → `cicd.pipeline.task.run.id`
+    - `gitlab.job.name` → `cicd.pipeline.task.name`
+    - `gitlab.job.status` → `cicd.pipeline.task.run.result`
+    - `gitlab.job.runner.id` → `cicd.worker.id`
+    - `gitlab.job.runner.description` → `cicd.worker.name`
+    - `gitlab.job.failure_reason` → `error.type` (for failed jobs in traces)
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
+
