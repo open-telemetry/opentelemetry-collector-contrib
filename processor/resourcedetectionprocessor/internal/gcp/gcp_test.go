@@ -411,6 +411,7 @@ func TestGCELabels(t *testing.T) {
 		name            string
 		instanceLabels  map[string]string
 		instanceErr     error
+		builderErr      error
 		labelRegexes    []*regexp.Regexp
 		expectedPresent map[string]string
 		expectedAbsent  []string
@@ -436,6 +437,37 @@ func TestGCELabels(t *testing.T) {
 			expectedPresent: map[string]string{},
 			expectedAbsent:  []string{"tag1"},
 		},
+		{
+			name:            "buildClient error",
+			builderErr:      errors.New("failed to create compute client"),
+			labelRegexes:    []*regexp.Regexp{mustRe("^tag1$")},
+			expectedPresent: map[string]string{},
+			expectedAbsent:  []string{"tag1"},
+		},
+		{
+			name: "no labels match regexes",
+			instanceLabels: map[string]string{
+				"foo": "bar",
+				"baz": "qux",
+			},
+			labelRegexes:    []*regexp.Regexp{mustRe("^nomatch$")},
+			expectedPresent: map[string]string{},
+			expectedAbsent:  []string{"foo", "baz"},
+		},
+		{
+			name: "wildcard regex matches multiple",
+			instanceLabels: map[string]string{
+				"env_prod": "1",
+				"env_dev":  "0",
+				"other":    "x",
+			},
+			labelRegexes: []*regexp.Regexp{mustRe("^env_")},
+			expectedPresent: map[string]string{
+				"env_prod": "1",
+				"env_dev":  "0",
+			},
+			expectedAbsent: []string{"other"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -460,6 +492,7 @@ func TestGCELabels(t *testing.T) {
 					labels: tt.instanceLabels,
 					err:    tt.instanceErr,
 				},
+				err: tt.builderErr,
 			}
 
 			res, _, err := d.Detect(t.Context())
@@ -467,12 +500,12 @@ func TestGCELabels(t *testing.T) {
 
 			attrs := res.Attributes()
 			for k, v := range tt.expectedPresent {
-				val, ok := attrs.Get(GCElabelPrefix + k)
+				val, ok := attrs.Get(gceLabelPrefix + k)
 				assert.True(t, ok, "expected %s to be present", k)
 				assert.Equal(t, v, val.Str())
 			}
 			for _, k := range tt.expectedAbsent {
-				_, ok := attrs.Get(GCElabelPrefix + k)
+				_, ok := attrs.Get(gceLabelPrefix + k)
 				assert.False(t, ok, "did not expect %s to be present", k)
 			}
 		})
@@ -666,4 +699,47 @@ func (f *fakeGCPDetector) BareMetalSolutionProjectID() (string, error) {
 		return "", f.err
 	}
 	return f.gcpBareMetalSolutionProjectID, nil
+}
+
+func TestCompileLabelRegexes(t *testing.T) {
+	tests := []struct {
+		name        string
+		labels      []string
+		expectError bool
+	}{
+		{
+			name:        "valid regexes",
+			labels:      []string{"^tag1$", "^env_"},
+			expectError: false,
+		},
+		{
+			name:        "empty labels",
+			labels:      []string{},
+			expectError: false,
+		},
+		{
+			name:        "invalid regex in config",
+			labels:      []string{"[invalid"},
+			expectError: true,
+		},
+		{
+			name:        "invalid regex among valid ones",
+			labels:      []string{"^valid$", "[also-invalid", "^another-valid$"},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{Labels: tt.labels}
+			regexes, err := compileLabelRegexes(cfg)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Nil(t, regexes)
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, regexes, len(tt.labels))
+			}
+		})
+	}
 }

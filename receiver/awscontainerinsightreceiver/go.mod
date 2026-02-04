@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/aws/aws-sdk-go-v2 v1.41.1
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.17
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.283.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.285.0
 	github.com/google/cadvisor v0.56.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.145.0
@@ -143,11 +143,11 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.51.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.145.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
-	go.opentelemetry.io/otel v1.39.0 // indirect
-	go.opentelemetry.io/otel/metric v1.39.0 // indirect
+	go.opentelemetry.io/otel v1.40.0 // indirect
+	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
-	go.opentelemetry.io/otel/trace v1.39.0 // indirect
+	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
