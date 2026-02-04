@@ -1,0 +1,20 @@
+description: Config defines configuration for AWS X-Ray exporter.
+type: object
+properties:
+  aws_log_groups:
+    type: array
+    items:
+      type: string
+  index_all_attributes:
+    description: 'Set to true to convert all OpenTelemetry attributes to X-Ray annotation (indexed) ignoring the IndexedAttributes option. Default value: false'
+    type: boolean
+  indexed_attributes:
+    description: 'By default, OpenTelemetry attributes are converted to X-Ray metadata, which are not indexed. Specify a list of attribute names to be converted to X-Ray annotations instead, which will be indexed. See annotation vs. metadata: https://docs.aws.amazon.com/xray/latest/devguide/xray-concepts.html#xray-concepts-annotations'
+    type: array
+    items:
+      type: string
+  telemetry:
+    description: TelemetryConfig contains the options for telemetry collection.
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry.config
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil.aws_session_settings

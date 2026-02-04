@@ -1,0 +1,176 @@
+$defs:
+  authentication_settings:
+    description: AuthenticationSettings defines user authentication related settings.
+    type: object
+    properties:
+      api_key:
+        description: APIKey is used to configure ApiKey based Authentication. https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      password:
+        description: Password is used to configure HTTP Basic Authentication.
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      user:
+        description: User is used to configure HTTP Basic Authentication.
+        type: string
+  discovery_settings:
+    description: DiscoverySettings defines Elasticsearch node discovery related settings. The exporter will check Elasticsearch regularly for available nodes and updates the list of hosts if discovery is enabled. Newly discovered nodes will automatically be used for load balancing. DiscoverySettings should not be enabled when operating Elasticsearch behind a proxy or load balancer. https://www.elastic.co/blog/elasticsearch-sniffing-best-practices-what-when-why-how
+    type: object
+    properties:
+      interval:
+        description: Interval instructs the exporter to renew the list of Elasticsearch URLs with the given interval. URLs will not be updated if Interval is <=0.
+        type: string
+        format: duration
+      on_start:
+        description: OnStart, if set, instructs the exporter to look for available Elasticsearch nodes the first time the exporter connects to the cluster.
+        type: boolean
+  dynamic_id_settings:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  dynamic_index_setting:
+    type: object
+    properties:
+      enabled:
+        description: 'Enabled enables dynamic index routing. Deprecated: [v0.122.0] This config is now ignored. Dynamic index routing is always done by default.'
+        type: boolean
+  dynamic_pipeline_settings:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  flush_settings:
+    description: 'FlushSettings defines settings for configuring the write buffer flushing policy in the Elasticsearch exporter. The exporter sends a bulk request with all events already serialized into the send-buffer. Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead. If this config is defined then it will be used to configure sending queue''s batch provided sending queue''s config are not explicitly defined.'
+    type: object
+    properties:
+      bytes:
+        description: Bytes sets the send buffer flushing limit. Bytes is now deprecated. Use `sending_queue::batch::{min, max}_size` with `bytes` sizer to configure batching based on bytes. If this config option is defined then it will be used to configure `sending_queue::batch::max_size` provided it is not explcitly defined.
+        type: integer
+      interval:
+        description: Interval configures the max age of a document in the send buffer. Interval is now deprecated. Use `sending-queue::batch::flush_timeout` instead. If this config option is defined then it will be used to configure `sending_queue::batch::flush_timeout` provided it is not explcitly defined.
+        type: string
+        format: duration
+  logstash_format_settings:
+    type: object
+    properties:
+      date_format:
+        type: string
+      enabled:
+        type: boolean
+      prefix_separator:
+        type: string
+  mappings_settings:
+    type: object
+    properties:
+      allowed_modes:
+        description: AllowedModes controls the allowed document mapping modes specified through X-Elastic-Mapping-Mode client metadata. If unspecified, all mapping modes are allowed.
+        type: array
+        items:
+          type: string
+      mode:
+        description: 'Mode configures the default document mapping mode. The mode may be overridden in two ways: - by the client metadata key X-Elastic-Mapping-Mode, if specified - by the scope attribute elastic.mapping.mode, if specified The order of precedence is: scope attribute > client metadata > default mode.'
+        type: string
+  retry_settings:
+    description: RetrySettings defines settings for the HTTP request retries in the Elasticsearch exporter. Failed sends are retried with exponential backoff.
+    type: object
+    properties:
+      enabled:
+        description: Enabled allows users to disable retry without having to comment out all settings.
+        type: boolean
+      initial_interval:
+        description: InitialInterval configures the initial waiting time if a request failed.
+        type: string
+        format: duration
+      max_interval:
+        description: MaxInterval configures the max waiting time if consecutive requests failed.
+        type: string
+        format: duration
+      max_requests:
+        description: 'MaxRequests configures how often an HTTP request is attempted before it is assumed to be failed. Deprecated: use MaxRetries instead.'
+        type: integer
+      max_retries:
+        description: MaxRetries configures how many times an HTTP request is retried.
+        type: integer
+      retry_on_status:
+        description: RetryOnStatus configures the status codes that trigger request or document level retries.
+        type: array
+        items:
+          type: integer
+  telemetry_settings:
+    type: object
+    properties:
+      log_failed_docs_input:
+        type: boolean
+      log_failed_docs_input_rate_limit:
+        type: string
+        format: duration
+      log_request_body:
+        type: boolean
+      log_response_body:
+        type: boolean
+description: Config defines configuration for Elastic exporter.
+type: object
+properties:
+  cloudid:
+    description: CloudID holds the cloud ID to identify the Elastic Cloud cluster to send events to. https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html This setting is required if no URL is configured.
+    type: string
+  discover:
+    $ref: discovery_settings
+  endpoints:
+    description: Endpoints holds the Elasticsearch URLs the exporter should send events to. This setting is required if CloudID is not set and if the ELASTICSEARCH_URL environment variable is not set.
+    type: array
+    items:
+      type: string
+  flush:
+    description: 'Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::batch` instead. If this config is defined then it will be used to configure sending queue''s batch provided sending queue''s config are not explicitly defined.'
+    $ref: flush_settings
+  include_source_on_error:
+    description: 'IncludeSourceOnError configures whether the bulk index responses include a part of the source document on error. Defaults to nil. This setting requires Elasticsearch 8.18+. Using it in prior versions have no effect. NOTE: The default behavior if this configuration is not set, is to discard the error reason entirely, i.e. only the error type is returned. WARNING: If set to true, the exporter may log error responses containing request payload, causing potential sensitive data to be exposed in logs. Users are expected to sanitize the responses themselves.'
+    x-pointer: true
+    type: boolean
+  logs_dynamic_id:
+    description: LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
+    $ref: dynamic_id_settings
+  logs_dynamic_index:
+    $ref: dynamic_index_setting
+  logs_dynamic_pipeline:
+    description: LogsDynamicPipeline configures whether log record attribute `elasticsearch.document_pipeline` is set as the document ingest pipeline for ES.
+    $ref: dynamic_pipeline_settings
+  logs_index:
+    description: LogsIndex configures the static index used for document routing for logs. It should be empty if dynamic document routing is preferred.
+    type: string
+  logstash_format:
+    $ref: logstash_format_settings
+  mapping:
+    $ref: mappings_settings
+  metadata_keys:
+    description: 'Experimental: MetadataKeys defines a list of client.Metadata keys that will be used as partition keys for when batcher is enabled and will be added to the exporter''s telemetry if defined. The config only applies when `sending_queue::batch` is defined or when the, now deprecated, batcher is used (set to `true` or `false`). The metadata keys are converted to lower case as key lookups for client metadata is case insensitive. This means that the metric produced by internal telemetry will also have the attribute in lower case. Keys are case-insensitive and duplicates will trigger a validation error.'
+    type: array
+    items:
+      type: string
+  metrics_dynamic_index:
+    $ref: dynamic_index_setting
+  metrics_index:
+    description: MetricsIndex configures the static index used for document routing for metrics. It should be empty if dynamic document routing is preferred.
+    type: string
+  num_workers:
+    description: 'NumWorkers configures the number of workers publishing bulk requests. Deprecated: [v0.136.0] This config is now deprecated. Use `sending_queue::num_consumers` instead. If this config is defined and `sending_queue::num_consumers` is not defined then it will be used to set `sending_queue::num_consumers`.'
+    type: integer
+  pipeline:
+    description: Pipeline configures the ingest node pipeline name that should be used to process the events. https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html
+    type: string
+  retry:
+    $ref: retry_settings
+  sending_queue:
+    description: QueueBatchConfig configures the sending queue and the batching done by the exporter. The performed batching can further be customized by configuring `metadata_keys` which will be used to partition the batches.
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  traces_dynamic_index:
+    $ref: dynamic_index_setting
+  traces_index:
+    description: TracesIndex configures the static index used for document routing for metrics. It should be empty if dynamic document routing is preferred.
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: authentication_settings
+  - $ref: telemetry_settings
