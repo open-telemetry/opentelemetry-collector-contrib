@@ -14,7 +14,7 @@ import (
 	"github.com/google/pprof/profile"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
 )
 
 var (
@@ -95,7 +95,8 @@ type lookupTables struct {
 	lastStackTableIdx int32
 }
 
-func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
+// ConvertPprofToProfiles converts a pprof profile to OTLP profiles format.
+func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 	if err := src.CheckValid(); err != nil {
 		return nil, fmt.Errorf("%w: %w", err, errPprofInvalid)
 	}
@@ -191,11 +192,11 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		// is no 1 to 1 mapping here.
 
 		// pprof.Profile.drop_frames
-		dropFramesIdx := lts.getIdxForAttribute("pprof.profile.drop_frames", src.DropFrames)
+		dropFramesIdx := lts.getIdxForAttribute(string(semconv.PprofProfileDropFramesKey), src.DropFrames)
 		p.AttributeIndices().Append(dropFramesIdx)
 
 		// pprof.Profile.keep_frames
-		keepFramesIdx := lts.getIdxForAttribute("pprof.profile.keep_frames", src.KeepFrames)
+		keepFramesIdx := lts.getIdxForAttribute(string(semconv.PprofProfileKeepFramesKey), src.KeepFrames)
 		p.AttributeIndices().Append(keepFramesIdx)
 
 		// pprof.Profile.time_nanos
@@ -223,7 +224,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		// As OTel pprofile uses a single Sample Type, it is implicit its default type.
 
 		// pprof.Profile.doc_url
-		docURLIdx := lts.getIdxForAttribute("pprof.profile.doc_url", src.DocURL)
+		docURLIdx := lts.getIdxForAttribute(string(semconv.PprofProfileDocURLKey), src.DocURL)
 		p.AttributeIndices().Append(docURLIdx)
 	}
 
@@ -330,26 +331,23 @@ func (lts *lookupTables) getIdxForMMAttributes(m *profile.Mapping) []int32 {
 	ids = append(ids, buildIDIdx)
 
 	// pprof.Mapping.has_*
-	// The current Go release of SemConv does not yet include the changes from
-	// https://github.com/open-telemetry/semantic-conventions/pull/2522
-	// Therefore hardcode the values in the meantime.
 	if m.HasFunctions {
-		idx := lts.getIdxForAttribute("pprof.mapping.has_functions", true)
+		idx := lts.getIdxForAttribute(string(semconv.PprofMappingHasFunctionsKey), true)
 		ids = append(ids, idx)
 	}
 
 	if m.HasFilenames {
-		idx := lts.getIdxForAttribute("pprof.mapping.has_filenames", true)
+		idx := lts.getIdxForAttribute(string(semconv.PprofMappingHasFilenamesKey), true)
 		ids = append(ids, idx)
 	}
 
 	if m.HasLineNumbers {
-		idx := lts.getIdxForAttribute("pprof.mapping.has_line_numbers", true)
+		idx := lts.getIdxForAttribute(string(semconv.PprofMappingHasLineNumbersKey), true)
 		ids = append(ids, idx)
 	}
 
 	if m.HasInlineFrames {
-		idx := lts.getIdxForAttribute("pprof.mapping.has_inline_frames", true)
+		idx := lts.getIdxForAttribute(string(semconv.PprofMappingHasInlineFramesKey), true)
 		ids = append(ids, idx)
 	}
 
@@ -382,7 +380,7 @@ func (lts *lookupTables) getIdxForLocation(l *profile.Location) int32 {
 	var attrIdxs []int32
 	// pprof.Location.is_folded
 	if l.IsFolded {
-		idx := lts.getIdxForAttribute("pprof.location.is_folded", true)
+		idx := lts.getIdxForAttribute(string(semconv.PprofLocationIsFoldedKey), true)
 		attrIdxs = append(attrIdxs, idx)
 	}
 
