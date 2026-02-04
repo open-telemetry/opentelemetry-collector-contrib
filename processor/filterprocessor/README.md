@@ -88,7 +88,7 @@ filter:
     - resource.attributes["host.name"] == "localhost" and spanevent.name == "grpc.timeout"
 ```
 
-This condition translates to: For each span event, check if its parent span's resource attribute `host.name` is `localhost` and if the span event's name is `grpc.timeout`.
+This condition translates to: For each span event, check if its parent span's resource attribute `host.name` is `localhost` and if the span event's name is `grpc.timeout`. Drop the span event if both are true.
 
 ### Error Modes
 
