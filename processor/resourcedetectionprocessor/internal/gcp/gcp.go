@@ -231,6 +231,9 @@ func (c *instancesRESTClient) Get(ctx context.Context, req *computepb.GetInstanc
 func (c *instancesRESTClient) Close() error { return c.inner.Close() }
 
 func fetchGCELabels(ctx context.Context, svc instancesAPI, project, zone, instance string, labelKeyRegexes []*regexp.Regexp) (map[string]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
 	inst, err := svc.Get(ctx, &computepb.GetInstanceRequest{
 		Project:  project,
 		Zone:     zone,
