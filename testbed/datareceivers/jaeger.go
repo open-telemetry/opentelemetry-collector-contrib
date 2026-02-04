@@ -56,12 +56,12 @@ func (jr *jaegerDataReceiver) GenConfigYAMLStr() string {
 	// The Jaeger exporter is no longer supported, therefore
 	// we export data using OTLP instead
 	return fmt.Sprintf(`
-  otlp/jaeger:
+  otlp_grpc/jaeger:
     endpoint: "127.0.0.1:%d"
     tls:
       insecure: true`, jr.Port)
 }
 
 func (*jaegerDataReceiver) ProtocolName() string {
-	return "otlp/jaeger"
+	return "otlp_grpc/jaeger"
 }

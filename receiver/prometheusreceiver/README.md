@@ -130,7 +130,7 @@ processors:
         action: upsert
 
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: otel-collector:4317
     tls:
       insecure: false
@@ -151,7 +151,7 @@ service:
     metrics:
       receivers: [prometheus]
       processors: [resource]
-      exporters: [otlp, prometheusremotewrite]
+      exporters: [otlp_grpc, prometheusremotewrite]
 ```
 
 This configuration:
@@ -335,7 +335,7 @@ This will surface detailed scrape errors and help diagnose connectivity or confi
 
 3. **Disable Expensive Features**
    - Avoid enabling `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion` unless necessary (known CPU impact)
-   - Use `batch` processor to reduce export frequency
+   - Use exporter-level batching to reduce export frequency
    - Consider disabling extra scrape metrics if not needed
 
 **Example Configuration**:
@@ -478,7 +478,7 @@ processors:
         action: upsert
 
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: otel-collector:4317
     tls:
       insecure: false
