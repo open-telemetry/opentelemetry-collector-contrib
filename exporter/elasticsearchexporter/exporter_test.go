@@ -1931,6 +1931,61 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("mapping hints excluded from grouping", func(t *testing.T) {
+		// Test that data points with different mapping hints are grouped together
+		// since elasticsearch.mapping.hints should be excluded from the hash.
+		for _, mode := range []string{"ecs", "otel"} {
+			t.Run(mode, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				testMetricsExporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = mode
+				})
+
+				metrics := pmetric.NewMetrics()
+				resource := metrics.ResourceMetrics().AppendEmpty()
+				scope := resource.ScopeMetrics().AppendEmpty()
+
+				// Metric with mapping hints
+				fooMetric := scope.Metrics().AppendEmpty()
+				fooMetric.SetName("metric.foo")
+				fooDp := fooMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				fooDp.SetDoubleValue(1.0)
+				hints := fooDp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintAggregateMetricDouble))
+
+				// Metric without mapping hints - should be grouped with the above
+				barMetric := scope.Metrics().AppendEmpty()
+				barMetric.SetName("metric.bar")
+				barDp := barMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				barDp.SetDoubleValue(2.0)
+
+				// Metric with different mapping hints - should still be grouped
+				bazMetric := scope.Metrics().AppendEmpty()
+				bazMetric.SetName("metric.baz")
+				bazDp := bazMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				bazDp.SetDoubleValue(3.0)
+				bazHints := bazDp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				bazHints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+
+				mustSendMetrics(t, testMetricsExporter, metrics)
+
+				rec.WaitItems(1)
+				assert.Len(t, rec.Items(), 1)
+				// Sanity check that all metrics are included in a single document
+				// ECS mode uses short names (foo, bar, baz), OTel mode uses full names (metric.foo, etc.)
+				doc := string(rec.Items()[0].Document)
+				assert.Contains(t, doc, "foo")
+				assert.Contains(t, doc, "bar")
+				assert.Contains(t, doc, "baz")
+			})
+		}
+	})
 }
 
 func mapToDistinct(m map[string]any) attribute.Distinct {
