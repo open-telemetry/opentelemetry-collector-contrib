@@ -1,0 +1,87 @@
+$defs:
+  metric_tables_config:
+    type: object
+    properties:
+      exponential_histogram:
+        description: ExponentialHistogram is the table name for exponential histogram metric type. default is `otel_metrics_exponential_histogram`.
+        $ref: ./internal/metrics.metric_type_config
+      gauge:
+        description: Gauge is the table name for gauge metric type. default is `otel_metrics_gauge`.
+        $ref: ./internal/metrics.metric_type_config
+      histogram:
+        description: Histogram is the table name for histogram metric type. default is `otel_metrics_histogram`.
+        $ref: ./internal/metrics.metric_type_config
+      sum:
+        description: Sum is the table name for sum metric type. default is `otel_metrics_sum`.
+        $ref: ./internal/metrics.metric_type_config
+      summary:
+        description: Summary is the table name for summary metric type. default is `otel_metrics_summary`.
+        $ref: ./internal/metrics.metric_type_config
+  table_engine:
+    description: TableEngine defines the ENGINE string value when creating the table.
+    type: object
+    properties:
+      name:
+        type: string
+      params:
+        type: string
+description: Config defines configuration for clickhouse exporter.
+type: object
+properties:
+  async_insert:
+    description: AsyncInsert if true will enable async inserts. Default is `true`. Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
+    type: boolean
+  cluster_name:
+    description: ClusterName if set will append `ON CLUSTER` with the provided name when creating tables.
+    type: string
+  compress:
+    description: 'Compress controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4).'
+    type: string
+  connection_params:
+    description: ConnectionParams is the extra connection parameters with map format. for example compression/dial_timeout
+    type: object
+    additionalProperties:
+      type: string
+  create_schema:
+    description: CreateSchema if set to true will run the DDL for creating the database and tables. default is true.
+    type: boolean
+  database:
+    description: Database is the database name to export.
+    type: string
+  endpoint:
+    description: Endpoint is the clickhouse endpoint.
+    type: string
+  logs_table_name:
+    description: LogsTableName is the table name for logs. default is `otel_logs`.
+    type: string
+  metrics_table_name:
+    description: 'MetricsTableName is the table name for metrics. default is `otel_metrics`. Deprecated: MetricsTableName exists for historical compatibility and should not be used. To set the metrics tables name, use the MetricsTables parameter instead.'
+    type: string
+  metrics_tables:
+    description: MetricsTables defines the table names for metric types.
+    $ref: metric_tables_config
+  password:
+    description: Password is the authentication password.
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  table_engine:
+    description: TableEngine is the table engine to use. default is `MergeTree()`.
+    $ref: table_engine
+  tls:
+    description: TLS is the TLS config for connecting to ClickHouse.
+    $ref: go.opentelemetry.io/collector/config/configtls.client_config
+  traces_table_name:
+    description: TracesTableName is the table name for traces. default is `otel_traces`.
+    type: string
+  ttl:
+    description: TTL is The data time-to-live example 30m, 48h. 0 means no ttl.
+    type: string
+    format: duration
+  username:
+    description: Username is the authentication username.
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

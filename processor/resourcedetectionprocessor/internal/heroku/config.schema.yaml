@@ -1,0 +1,4 @@
+type: object
+properties:
+  resource_attributes:
+    $ref: ./internal/metadata.resource_attributes_config

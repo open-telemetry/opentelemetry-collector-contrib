@@ -4,14 +4,13 @@ go 1.24.0
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.144.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.145.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.51.0
-	go.opentelemetry.io/collector/component/componenttest v0.144.0
+	go.opentelemetry.io/collector/component/componenttest v0.145.0
 	go.opentelemetry.io/collector/confmap v1.51.0
 	go.opentelemetry.io/collector/extension v1.51.0
-	go.opentelemetry.io/collector/extension/extensioncapabilities v0.145.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.144.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.145.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 	k8s.io/apimachinery v0.34.3
