@@ -34,23 +34,6 @@ receivers:
     endpoint: 0.0.0.0:9090
 ```
 
-### Configuration Options
-
-The `max_request_body_size` option controls the maximum size of incoming request bodies. Requests exceeding this limit will be rejected with a 413 Request Entity Too Large response.
-
-```yaml
-receivers:
-  prometheusremotewrite:
-    endpoint: 0.0.0.0:9090
-    max_request_body_size: 10485760  # optional, defaults to 10MiB (10 * 1024 * 1024)
-```
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `max_request_body_size` | int64 | 10485760 (10MiB) | Maximum size in bytes of a single request body |
-
-This setting helps prevent memory exhaustion from large requests and ensures the receiver can handle high-throughput scenarios safely.
-
 ## Configuring your Prometheus
 
 To make Prometheus work with this component, you'll need to add a few extra configuration options. As described below:
