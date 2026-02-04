@@ -31,7 +31,6 @@ var (
 	// Error messages
 	errMissingEndpoint      = errors.New("missing a receiver endpoint")
 	errGitlabClient         = errors.New("failed to create gitlab client")
-	errUnexpectedEvent      = errors.New("unexpected event type")
 	errInvalidHTTPMethod    = errors.New("invalid HTTP method")
 	errInvalidHeader        = errors.New("invalid header")
 	errMissingHeader        = errors.New("missing header")
@@ -108,16 +107,6 @@ func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer co
 	return receiver, nil
 }
 
-// newMetricsReceiver creates a receiver instance for metrics (used by factory)
-func newMetricsReceiver(settings receiver.Settings, cfg *Config, metricConsumer consumer.Metrics) (*gitlabReceiver, error) {
-	receiver, err := newGitLabReceiver(settings, cfg)
-	if err != nil {
-		return nil, err
-	}
-	receiver.metricConsumer = metricConsumer
-	return receiver, nil
-}
-
 func (gtr *gitlabReceiver) Start(ctx context.Context, host component.Host) error {
 	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.NetAddr.Endpoint, gtr.cfg.WebHook.Path)
 	gtr.logger.Info("Starting GitLab WebHook receiving server", zap.String("endpoint", endpoint))
@@ -186,8 +175,7 @@ func (gtr *gitlabReceiver) handleHealthCheck(w http.ResponseWriter, r *http.Requ
 
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-
-		_, _ = w.Write([]byte(HealthyResponse))
+	_, _ = w.Write([]byte(HealthyResponse))
 }
 
 // handleWebhook handles incoming request sent to the webhook endpoint
@@ -226,20 +214,21 @@ func (gtr *gitlabReceiver) handleWebhook(w http.ResponseWriter, r *http.Request)
 	// Process result based on type
 	spanCount := 0
 	if result != nil {
-		if result.Traces != nil && result.Traces.SpanCount() > 0 && gtr.traceConsumer != nil {
+		switch {
+		case result.Traces != nil && result.Traces.SpanCount() > 0 && gtr.traceConsumer != nil:
 			if err := gtr.traceConsumer.ConsumeTraces(ctx, *result.Traces); err != nil {
 				gtr.failBadReq(ctx, w, http.StatusInternalServerError, err, 0)
 				return
 			}
 			spanCount = result.Traces.SpanCount()
 			w.WriteHeader(http.StatusOK)
-		} else if result.Metrics != nil && result.Metrics.MetricCount() > 0 && gtr.metricConsumer != nil {
+		case result.Metrics != nil && result.Metrics.MetricCount() > 0 && gtr.metricConsumer != nil:
 			if err := gtr.metricConsumer.ConsumeMetrics(ctx, *result.Metrics); err != nil {
 				gtr.failBadReq(ctx, w, http.StatusInternalServerError, err, 0)
 				return
 			}
 			w.WriteHeader(http.StatusOK)
-		} else {
+		default:
 			w.WriteHeader(http.StatusNoContent)
 		}
 	} else {

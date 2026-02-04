@@ -4,7 +4,6 @@
 package gitlabreceiver
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -153,11 +152,11 @@ func TestJobEventWebhookIntegration(t *testing.T) {
 			require.Equal(t, tt.expectedCode, resp.StatusCode)
 
 			if tt.setupMetrics {
-				require.Equal(t, 1, len(metricsSink.AllMetrics()))
+				require.Len(t, metricsSink.AllMetrics(), 1)
 				metrics := metricsSink.AllMetrics()[0]
 				require.Equal(t, tt.metricCount, metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 			} else {
-				require.Equal(t, 0, len(metricsSink.AllMetrics()))
+				require.Empty(t, metricsSink.AllMetrics())
 			}
 		})
 	}
@@ -176,11 +175,11 @@ func TestJobEventRouterRouting(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	router := newEventRouter(logger, config)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name        string
-		event       interface{}
+		event       any
 		eventType   gitlab.EventType
 		expectError bool
 		hasMetrics  bool
@@ -222,8 +221,8 @@ func TestJobEventRouterRouting(t *testing.T) {
 			if tt.hasMetrics {
 				require.NotNil(t, result, "result should not be nil")
 				require.NotNil(t, result.Metrics, "result.Metrics should not be nil")
-				metricCount := int(result.Metrics.MetricCount())
-				require.Greater(t, metricCount, 0, "should have at least one metric")
+				metricCount := result.Metrics.MetricCount()
+				require.Positive(t, metricCount, "should have at least one metric")
 			} else {
 				// Incomplete jobs return nil result
 				if result == nil {
@@ -240,8 +239,8 @@ func TestJobEventRouterRouting(t *testing.T) {
 
 // TestJobEventMultipleStatuses tests all job statuses
 func TestJobEventMultipleStatuses(t *testing.T) {
-	handler, _ := setupJobEventHandler(t)
-	ctx := context.Background()
+	handler := setupJobEventHandler(t)
+	ctx := t.Context()
 
 	statuses := []struct {
 		status         string
@@ -266,8 +265,8 @@ func TestJobEventMultipleStatuses(t *testing.T) {
 			if tt.shouldGenerate {
 				require.NotNil(t, result, "result should not be nil for completed jobs")
 				require.NotNil(t, result.Metrics, "result.Metrics should not be nil for completed jobs")
-				metricCount := int(result.Metrics.MetricCount())
-				require.Greater(t, metricCount, 0, "should have at least one metric")
+				metricCount := result.Metrics.MetricCount()
+				require.Positive(t, metricCount, "should have at least one metric")
 			} else {
 				require.Nil(t, result, "result should be nil for incomplete jobs")
 			}
@@ -277,8 +276,8 @@ func TestJobEventMultipleStatuses(t *testing.T) {
 
 // TestJobEventResourceAttributes validates resource attributes are set correctly
 func TestJobEventResourceAttributes(t *testing.T) {
-	handler, _ := setupJobEventHandler(t)
-	ctx := context.Background()
+	handler := setupJobEventHandler(t)
+	ctx := t.Context()
 
 	event := parseJobEventFromFile(t, testDataJobSuccess)
 	result, err := handler.Handle(ctx, event)
@@ -305,8 +304,8 @@ func TestJobEventResourceAttributes(t *testing.T) {
 
 // TestJobEventMetricAttributes validates metric data point attributes
 func TestJobEventMetricAttributes(t *testing.T) {
-	handler, _ := setupJobEventHandler(t)
-	ctx := context.Background()
+	handler := setupJobEventHandler(t)
+	ctx := t.Context()
 
 	event := parseJobEventFromFile(t, testDataJobSuccess)
 	result, err := handler.Handle(ctx, event)
@@ -339,8 +338,8 @@ func TestJobEventMetricAttributes(t *testing.T) {
 
 // TestJobEventQueuedDurationMetric validates queued duration metric
 func TestJobEventQueuedDurationMetric(t *testing.T) {
-	handler, _ := setupJobEventHandler(t)
-	ctx := context.Background()
+	handler := setupJobEventHandler(t)
+	ctx := t.Context()
 
 	event := parseJobEventFromFile(t, testDataJobSuccess)
 	result, err := handler.Handle(ctx, event)
@@ -371,8 +370,8 @@ func TestJobEventQueuedDurationMetric(t *testing.T) {
 
 // TestJobEventNoQueuedDuration tests job without queued duration
 func TestJobEventNoQueuedDuration(t *testing.T) {
-	handler, _ := setupJobEventHandler(t)
-	ctx := context.Background()
+	handler := setupJobEventHandler(t)
+	ctx := t.Context()
 
 	event := parseJobEventFromFile(t, testDataJobWithoutQueuedDur)
 	result, err := handler.Handle(ctx, event)

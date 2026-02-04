@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal"
 
 import (
 	"errors"
@@ -39,4 +39,3 @@ func ParseGitlabTime(t string) (time.Time, error) {
 
 	return time.Time{}, err
 }
-

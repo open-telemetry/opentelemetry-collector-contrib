@@ -6,6 +6,7 @@ package gitlabreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -38,13 +39,13 @@ func newJobEventHandler(logger *zap.Logger, config *Config) *jobEventHandler {
 }
 
 // CanHandle returns true if the event is a JobEvent
-func (h *jobEventHandler) CanHandle(event interface{}) bool {
+func (*jobEventHandler) CanHandle(event any) bool {
 	_, ok := event.(*gitlab.JobEvent)
 	return ok
 }
 
 // Handle processes a Job event and returns metrics
-func (h *jobEventHandler) Handle(ctx context.Context, event interface{}) (*eventResult, error) {
+func (h *jobEventHandler) Handle(_ context.Context, event any) (*eventResult, error) {
 	jobEvent, ok := event.(*gitlab.JobEvent)
 	if !ok {
 		return nil, fmt.Errorf("expected *gitlab.JobEvent, got %T", event)
@@ -94,15 +95,11 @@ func (h *jobEventHandler) Handle(ctx context.Context, event interface{}) (*event
 	// Version is not set as it's not part of the generated metadata
 
 	// Create job duration metric
-	if err := createJobDurationMetric(scopeMetrics, jobEvent, duration, status); err != nil {
-		return nil, err
-	}
+	createJobDurationMetric(scopeMetrics, jobEvent, duration, status)
 
 	// Create queued duration metric if available
 	if queuedDuration > 0 {
-		if err := createQueuedDurationMetric(scopeMetrics, jobEvent, queuedDuration); err != nil {
-			return nil, err
-		}
+		createQueuedDurationMetric(scopeMetrics, jobEvent, queuedDuration)
 	}
 
 	return &eventResult{Metrics: &metrics}, nil
@@ -111,12 +108,7 @@ func (h *jobEventHandler) Handle(ctx context.Context, event interface{}) (*event
 func isCompletedJobStatus(status string) bool {
 	status = strings.ToLower(status)
 	completed := []string{JobStatusSuccess, JobStatusFailed, JobStatusCanceled, JobStatusSkipped}
-	for _, s := range completed {
-		if status == s {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(completed, status)
 }
 
 func setJobResourceAttributes(resource pcommon.Resource, e *gitlab.JobEvent) {
@@ -133,7 +125,7 @@ func createJobDurationMetric(
 	e *gitlab.JobEvent,
 	duration float64,
 	status string,
-) error {
+) {
 	// Create metric
 	metric := scopeMetrics.Metrics().AppendEmpty()
 	metric.SetName("gitlab.job.duration")
@@ -168,15 +160,13 @@ func createJobDurationMetric(
 			attrs.PutStr("gitlab.job.runner.tags", strings.Join(e.Runner.Tags, ","))
 		}
 	}
-
-	return nil
 }
 
 func createQueuedDurationMetric(
 	scopeMetrics pmetric.ScopeMetrics,
 	e *gitlab.JobEvent,
 	queuedDuration float64,
-) error {
+) {
 	// Create metric
 	metric := scopeMetrics.Metrics().AppendEmpty()
 	metric.SetName("gitlab.job.queued_duration")
@@ -198,6 +188,4 @@ func createQueuedDurationMetric(
 	attrs.PutStr(string(conventions.CICDPipelineTaskNameKey), e.BuildName)
 	// Stage is not yet part of semantic conventions, using custom attribute
 	attrs.PutStr("gitlab.job.stage", e.BuildStage)
-
-	return nil
 }

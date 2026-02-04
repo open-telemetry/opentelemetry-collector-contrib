@@ -28,13 +28,13 @@ func newPipelineEventHandler(logger *zap.Logger, config *Config) *pipelineEventH
 }
 
 // CanHandle returns true if the event is a PipelineEvent
-func (h *pipelineEventHandler) CanHandle(event interface{}) bool {
+func (*pipelineEventHandler) CanHandle(event any) bool {
 	_, ok := event.(*gitlab.PipelineEvent)
 	return ok
 }
 
 // Handle processes a Pipeline event and returns traces
-func (h *pipelineEventHandler) Handle(ctx context.Context, event interface{}) (*eventResult, error) {
+func (h *pipelineEventHandler) Handle(_ context.Context, event any) (*eventResult, error) {
 	pipelineEvent, ok := event.(*gitlab.PipelineEvent)
 	if !ok {
 		return nil, fmt.Errorf("expected *gitlab.PipelineEvent, got %T", event)

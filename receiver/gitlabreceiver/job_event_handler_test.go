@@ -4,7 +4,6 @@
 package gitlabreceiver
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -34,15 +33,15 @@ const (
 	metricJobDuration  = "gitlab.job.duration"
 	metricJobQueuedDur = "gitlab.job.queued_duration"
 	// Semantic convention attributes
-	attrJobID          = "cicd.pipeline.task.run.id"
-	attrJobName        = "cicd.pipeline.task.name"
-	attrJobStatus      = "cicd.pipeline.task.run.result"
-	attrWorkerID       = "cicd.worker.id"
-	attrWorkerName     = "cicd.worker.name"
+	attrJobID      = "cicd.pipeline.task.run.id"
+	attrJobName    = "cicd.pipeline.task.name"
+	attrJobStatus  = "cicd.pipeline.task.run.result"
+	attrWorkerID   = "cicd.worker.id"
+	attrWorkerName = "cicd.worker.name"
 	// Custom attributes (not yet in semantic conventions)
-	attrJobStage       = "gitlab.job.stage"
-	attrRunnerTags     = "gitlab.job.runner.tags"
-	testProjectName    = "gitlab-org/gitlab-test"
+	attrJobStage    = "gitlab.job.stage"
+	attrRunnerTags  = "gitlab.job.runner.tags"
+	testProjectName = "gitlab-org/gitlab-test"
 )
 
 // loadJobEventTestData loads a job event test data file from testdata
@@ -52,11 +51,11 @@ func loadJobEventTestData(t *testing.T, filename string) string {
 	return string(data)
 }
 
-func setupJobEventHandler(t *testing.T) (*jobEventHandler, *Config) {
+func setupJobEventHandler(t *testing.T) *jobEventHandler {
 	logger := zaptest.NewLogger(t)
 	config := createDefaultConfig().(*Config)
 	handler := newJobEventHandler(logger, config)
-	return handler, config
+	return handler
 }
 
 // parseJobEvent parses a job event from JSON string
@@ -74,11 +73,11 @@ func parseJobEventFromFile(t *testing.T, filename string) *gitlab.JobEvent {
 }
 
 func TestJobEventHandlerCanHandle(t *testing.T) {
-	handler, _ := setupJobEventHandler(t)
+	handler := setupJobEventHandler(t)
 
 	tests := []struct {
 		name     string
-		event    interface{}
+		event    any
 		expected bool
 	}{
 		{
@@ -112,8 +111,8 @@ func TestJobEventHandlerCanHandle(t *testing.T) {
 }
 
 func TestJobEventHandlerHandle(t *testing.T) {
-	handler, _ := setupJobEventHandler(t)
-	ctx := context.Background()
+	handler := setupJobEventHandler(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name            string
@@ -311,8 +310,8 @@ func TestJobEventHandlerHandle(t *testing.T) {
 }
 
 func TestJobEventHandlerHandleInvalidEventType(t *testing.T) {
-	handler, _ := setupJobEventHandler(t)
-	ctx := context.Background()
+	handler := setupJobEventHandler(t)
+	ctx := t.Context()
 
 	// Test with wrong event type
 	result, err := handler.Handle(ctx, &gitlab.PipelineEvent{})
@@ -322,8 +321,8 @@ func TestJobEventHandlerHandleInvalidEventType(t *testing.T) {
 }
 
 func TestJobEventHandlerHandleInvalidTimestamps(t *testing.T) {
-	handler, _ := setupJobEventHandler(t)
-	ctx := context.Background()
+	handler := setupJobEventHandler(t)
+	ctx := t.Context()
 
 	// Create job event with invalid timestamp format
 	event := &gitlab.JobEvent{
@@ -400,8 +399,7 @@ func TestCreateJobDurationMetric(t *testing.T) {
 	finishedAt, _ := parseGitlabTime(event.BuildFinishedAt)
 	duration := finishedAt.Sub(startedAt).Seconds()
 
-	err := createJobDurationMetric(scopeMetrics, event, duration, "success")
-	require.NoError(t, err)
+	createJobDurationMetric(scopeMetrics, event, duration, "success")
 
 	metric := scopeMetrics.Metrics().At(0)
 	require.Equal(t, metricJobDuration, metric.Name())
@@ -413,7 +411,7 @@ func TestCreateJobDurationMetric(t *testing.T) {
 
 	dp := gauge.DataPoints().At(0)
 	require.Equal(t, duration, dp.DoubleValue())
-	require.True(t, dp.Timestamp() > 0)
+	require.Positive(t, dp.Timestamp())
 
 	attrs := dp.Attributes()
 	jobID, found := attrs.Get(attrJobID)
@@ -436,8 +434,7 @@ func TestCreateQueuedDurationMetric(t *testing.T) {
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
 
-	err := createQueuedDurationMetric(scopeMetrics, event, 1095.588715)
-	require.NoError(t, err)
+	createQueuedDurationMetric(scopeMetrics, event, 1095.588715)
 
 	metric := scopeMetrics.Metrics().At(0)
 	require.Equal(t, "gitlab.job.queued_duration", metric.Name())
@@ -468,7 +465,7 @@ func TestJobEventIntegration(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	router := newEventRouter(logger, config)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	event := parseJobEventFromFile(t, testDataJobSuccess)
 
 	result, err := router.Route(ctx, event, gitlab.EventType("Job Hook"))
@@ -483,8 +480,8 @@ func TestJobEventIntegration(t *testing.T) {
 
 // Integration test: Test job event with different time formats
 func TestJobEventTimeFormats(t *testing.T) {
-	handler, _ := setupJobEventHandler(t)
-	ctx := context.Background()
+	handler := setupJobEventHandler(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name        string
@@ -541,8 +538,8 @@ func TestJobEventTimeFormats(t *testing.T) {
 
 // Test metric data structure validation
 func TestJobEventMetricsStructure(t *testing.T) {
-	handler, _ := setupJobEventHandler(t)
-	ctx := context.Background()
+	handler := setupJobEventHandler(t)
+	ctx := t.Context()
 	event := parseJobEventFromFile(t, testDataJobSuccess)
 
 	result, err := handler.Handle(ctx, event)
@@ -558,7 +555,7 @@ func TestJobEventMetricsStructure(t *testing.T) {
 
 	// Validate resource attributes
 	resource := resourceMetrics.Resource()
-	require.True(t, resource.Attributes().Len() > 0)
+	require.Positive(t, resource.Attributes().Len())
 
 	// Validate scope metrics
 	require.Equal(t, 1, resourceMetrics.ScopeMetrics().Len())
@@ -581,16 +578,16 @@ func TestJobEventMetricsStructure(t *testing.T) {
 		require.Equal(t, 1, gauge.DataPoints().Len())
 
 		dp := gauge.DataPoints().At(0)
-		require.True(t, dp.Timestamp() > 0)
-		require.True(t, dp.DoubleValue() >= 0)
-		require.True(t, dp.Attributes().Len() > 0)
+		require.Positive(t, dp.Timestamp())
+		require.GreaterOrEqual(t, dp.DoubleValue(), 0.0)
+		require.Positive(t, dp.Attributes().Len())
 	}
 }
 
 // Test that incomplete jobs don't generate metrics
 func TestIncompleteJobsNoMetrics(t *testing.T) {
-	handler, _ := setupJobEventHandler(t)
-	ctx := context.Background()
+	handler := setupJobEventHandler(t)
+	ctx := t.Context()
 
 	incompleteStatuses := []string{"running", "pending", "created", "waiting_for_resource", "preparing", "scheduled"}
 
@@ -617,11 +614,12 @@ func TestIncompleteJobsNoMetrics(t *testing.T) {
 // Benchmark test for job event handling
 func BenchmarkJobEventHandlerHandle(b *testing.B) {
 	t := &testing.T{}
-	handler, _ := setupJobEventHandler(t)
-	ctx := context.Background()
+	handler := setupJobEventHandler(t)
+	ctx := t.Context()
 	event := parseJobEventFromFile(t, testDataJobSuccess)
 
 	b.ResetTimer()
+	//nolint:modernize // b.Loop() not available in current Go version
 	for i := 0; i < b.N; i++ {
 		_, _ = handler.Handle(ctx, event)
 	}

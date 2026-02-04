@@ -76,7 +76,7 @@ func (e *errorComponent) Start(context.Context, component.Host) error {
 	return e.err
 }
 
-func (e *errorComponent) Shutdown(context.Context) error {
+func (*errorComponent) Shutdown(context.Context) error {
 	return nil
 }
 

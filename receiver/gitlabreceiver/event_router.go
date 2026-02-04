@@ -22,9 +22,9 @@ type eventResult struct {
 // eventHandler defines the interface for event handlers
 type eventHandler interface {
 	// Handle processes the event and returns traces, metrics, or both
-	Handle(ctx context.Context, event interface{}) (*eventResult, error)
+	Handle(ctx context.Context, event any) (*eventResult, error)
 	// CanHandle returns true if this handler can process the given event type
-	CanHandle(event interface{}) bool
+	CanHandle(event any) bool
 }
 
 // eventRouter routes events to appropriate handlers
@@ -49,7 +49,7 @@ func newEventRouter(logger *zap.Logger, config *Config) *eventRouter {
 }
 
 // Route routes an event to the appropriate handler
-func (er *eventRouter) Route(ctx context.Context, event interface{}, eventType gitlab.EventType) (*eventResult, error) {
+func (er *eventRouter) Route(ctx context.Context, event any, eventType gitlab.EventType) (*eventResult, error) {
 	// Find handler that can process this event
 	for _, handler := range er.handlers {
 		if handler.CanHandle(event) {

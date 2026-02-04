@@ -327,8 +327,9 @@ func setSpanTimeStamps(span ptrace.Span, startTime, endTime string) error {
 	return nil
 }
 
-// parseGitlabTime is a wrapper around internal.ParseGitlabTime for backward compatibility
-// Deprecated: Use internal.ParseGitlabTime directly
+// parseGitlabTime is a wrapper around internal.ParseGitlabTime for backward compatibility.
+//
+// Deprecated: Use internal.ParseGitlabTime directly.
 func parseGitlabTime(t string) (time.Time, error) {
 	return internal.ParseGitlabTime(t)
 }
