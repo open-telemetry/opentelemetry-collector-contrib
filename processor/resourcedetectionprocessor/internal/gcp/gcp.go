@@ -26,7 +26,7 @@ import (
 const (
 	// TypeStr is type of detector.
 	TypeStr        = "gcp"
-	GCElabelPrefix = "gcp.gce.instance.labels."
+	gceLabelPrefix = "gcp.gce.instance.labels."
 )
 
 // NewDetector returns a detector which can detect resource attributes on:
@@ -174,7 +174,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		zone, _, zerr := d.detector.GCEAvailabilityZoneAndRegion()
 		name, nerr := d.detector.GCEInstanceName()
 		if perr != nil || zerr != nil || nerr != nil {
-			d.logger.Warn("failed reading GCE metadata for labels", zap.Error(perr), zap.Error(zerr), zap.Error(nerr))
+			d.logger.Warn("failed reading GCE metadata for labels", zap.NamedError("project_id", perr), zap.NamedError("zone", zerr), zap.NamedError("instance_name", nerr))
 			return res, conventions.SchemaURL, errs
 		}
 
@@ -194,7 +194,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		if len(labels) > 0 {
 			attrs := res.Attributes()
 			for k, v := range labels {
-				attrs.PutStr(GCElabelPrefix+k, v)
+				attrs.PutStr(gceLabelPrefix+k, v)
 			}
 		}
 
