@@ -5,6 +5,7 @@ package filterprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -23,9 +24,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 )
 
 type filterMetricProcessor struct {
+	consumers         []condition.MetricsConsumer
 	skipResourceExpr  expr.BoolExpr[*ottlresource.TransformContext]
 	skipMetricExpr    expr.BoolExpr[*ottlmetric.TransformContext]
 	skipDataPointExpr expr.BoolExpr[*ottldatapoint.TransformContext]
@@ -44,6 +47,23 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 		return nil, fmt.Errorf("error creating filter processor telemetry: %w", err)
 	}
 	fsp.telemetry = fpt
+
+	if len(cfg.MetricConditions) > 0 {
+		pc, collectionErr := cfg.newMetricParserCollection(set.TelemetrySettings)
+		if collectionErr != nil {
+			return nil, collectionErr
+		}
+		var errs error
+		for _, cs := range cfg.MetricConditions {
+			consumer, parseErr := pc.ParseContextConditions(cs)
+			errs = multierr.Append(errs, parseErr)
+			fsp.consumers = append(fsp.consumers, consumer)
+		}
+		if errs != nil {
+			return nil, errs
+		}
+		return fsp, nil
+	}
 
 	if cfg.Metrics.ResourceConditions != nil || cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil {
 		if cfg.Metrics.ResourceConditions != nil {
@@ -119,20 +139,54 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 
 // processMetrics filters the given metrics based off the filterMetricProcessor's filters.
 func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
-	if fmp.skipResourceExpr == nil && fmp.skipMetricExpr == nil && fmp.skipDataPointExpr == nil {
+	if fmp.skipResourceExpr == nil && fmp.skipMetricExpr == nil && fmp.skipDataPointExpr == nil && len(fmp.consumers) == 0 {
 		return md, nil
 	}
 
 	metricDataPointCountBeforeFilters := md.DataPointCount()
 
-	var errors error
+	var errs error
+	var processedMetrics pmetric.Metrics
+	if len(fmp.consumers) > 0 {
+		processedMetrics, errs = fmp.processConditions(ctx, md)
+	} else {
+		processedMetrics, errs = fmp.processSkipExpression(ctx, md)
+	}
+
+	metricDataPointCountAfterFilters := processedMetrics.DataPointCount()
+	fmp.telemetry.record(ctx, int64(metricDataPointCountBeforeFilters-metricDataPointCountAfterFilters))
+
+	if errs != nil && !errors.Is(errs, processorhelper.ErrSkipProcessingData) {
+		fmp.logger.Error("failed processing metrics", zap.Error(errs))
+		return processedMetrics, errs
+	}
+
+	if processedMetrics.ResourceMetrics().Len() == 0 {
+		return processedMetrics, processorhelper.ErrSkipProcessingData
+	}
+	return processedMetrics, nil
+}
+
+func (fmp *filterMetricProcessor) processConditions(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	var errs error
+	for _, consumer := range fmp.consumers {
+		err := consumer.ConsumeMetrics(ctx, md)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+	return md, errs
+}
+
+func (fmp *filterMetricProcessor) processSkipExpression(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	var errs error
 	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
 		if fmp.skipResourceExpr != nil {
 			tCtx := ottlresource.NewTransformContextPtr(rm.Resource(), rm)
 			skip, err := fmp.skipResourceExpr.Eval(ctx, tCtx)
 			tCtx.Close()
 			if err != nil {
-				errors = multierr.Append(errors, err)
+				errs = multierr.Append(errs, err)
 				return false
 			}
 			if skip {
@@ -149,7 +203,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 					skip, err := fmp.skipMetricExpr.Eval(ctx, tCtx)
 					tCtx.Close()
 					if err != nil {
-						errors = multierr.Append(errors, err)
+						errs = multierr.Append(errs, err)
 						return false
 					}
 					if skip {
@@ -160,19 +214,19 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 					//exhaustive:enforce
 					switch metric.Type() {
 					case pmetric.MetricTypeSum:
-						errors = multierr.Append(errors, fmp.handleNumberDataPoints(ctx, rm, smetrics, metric, metric.Sum().DataPoints()))
+						errs = multierr.Append(errs, fmp.handleNumberDataPoints(ctx, rm, smetrics, metric, metric.Sum().DataPoints()))
 						return metric.Sum().DataPoints().Len() == 0
 					case pmetric.MetricTypeGauge:
-						errors = multierr.Append(errors, fmp.handleNumberDataPoints(ctx, rm, smetrics, metric, metric.Gauge().DataPoints()))
+						errs = multierr.Append(errs, fmp.handleNumberDataPoints(ctx, rm, smetrics, metric, metric.Gauge().DataPoints()))
 						return metric.Gauge().DataPoints().Len() == 0
 					case pmetric.MetricTypeHistogram:
-						errors = multierr.Append(errors, fmp.handleHistogramDataPoints(ctx, rm, smetrics, metric, metric.Histogram().DataPoints()))
+						errs = multierr.Append(errs, fmp.handleHistogramDataPoints(ctx, rm, smetrics, metric, metric.Histogram().DataPoints()))
 						return metric.Histogram().DataPoints().Len() == 0
 					case pmetric.MetricTypeExponentialHistogram:
-						errors = multierr.Append(errors, fmp.handleExponentialHistogramDataPoints(ctx, rm, smetrics, metric, metric.ExponentialHistogram().DataPoints()))
+						errs = multierr.Append(errs, fmp.handleExponentialHistogramDataPoints(ctx, rm, smetrics, metric, metric.ExponentialHistogram().DataPoints()))
 						return metric.ExponentialHistogram().DataPoints().Len() == 0
 					case pmetric.MetricTypeSummary:
-						errors = multierr.Append(errors, fmp.handleSummaryDataPoints(ctx, rm, smetrics, metric, metric.Summary().DataPoints()))
+						errs = multierr.Append(errs, fmp.handleSummaryDataPoints(ctx, rm, smetrics, metric, metric.Summary().DataPoints()))
 						return metric.Summary().DataPoints().Len() == 0
 					default:
 						return false
@@ -184,18 +238,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 		})
 		return rm.ScopeMetrics().Len() == 0
 	})
-
-	metricDataPointCountAfterFilters := md.DataPointCount()
-	fmp.telemetry.record(ctx, int64(metricDataPointCountBeforeFilters-metricDataPointCountAfterFilters))
-
-	if errors != nil {
-		fmp.logger.Error("failed processing metrics", zap.Error(errors))
-		return md, errors
-	}
-	if md.ResourceMetrics().Len() == 0 {
-		return md, processorhelper.ErrSkipProcessingData
-	}
-	return md, nil
+	return md, errs
 }
 
 func newSkipResExpr(include, exclude *filterconfig.MetricMatchProperties) (expr.BoolExpr[*ottlresource.TransformContext], error) {
@@ -270,61 +313,61 @@ func newResExpr(mp *filterconfig.MetricMatchProperties) (expr.BoolExpr[*ottlreso
 }
 
 func (fmp *filterMetricProcessor) handleNumberDataPoints(ctx context.Context, rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dps pmetric.NumberDataPointSlice) error {
-	var errors error
+	var errs error
 	dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
 		tCtx := ottldatapoint.NewTransformContextPtr(rm, sm, m, dp)
 		defer tCtx.Close()
 		skip, err := fmp.skipDataPointExpr.Eval(ctx, tCtx)
 		if err != nil {
-			errors = multierr.Append(errors, err)
+			errs = multierr.Append(errs, err)
 			return false
 		}
 		return skip
 	})
-	return errors
+	return errs
 }
 
 func (fmp *filterMetricProcessor) handleHistogramDataPoints(ctx context.Context, rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dps pmetric.HistogramDataPointSlice) error {
-	var errors error
+	var errs error
 	dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
 		tCtx := ottldatapoint.NewTransformContextPtr(rm, sm, m, dp)
 		defer tCtx.Close()
 		skip, err := fmp.skipDataPointExpr.Eval(ctx, tCtx)
 		if err != nil {
-			errors = multierr.Append(errors, err)
+			errs = multierr.Append(errs, err)
 			return false
 		}
 		return skip
 	})
-	return errors
+	return errs
 }
 
 func (fmp *filterMetricProcessor) handleExponentialHistogramDataPoints(ctx context.Context, rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dps pmetric.ExponentialHistogramDataPointSlice) error {
-	var errors error
+	var errs error
 	dps.RemoveIf(func(dp pmetric.ExponentialHistogramDataPoint) bool {
 		tCtx := ottldatapoint.NewTransformContextPtr(rm, sm, m, dp)
 		defer tCtx.Close()
 		skip, err := fmp.skipDataPointExpr.Eval(ctx, tCtx)
 		if err != nil {
-			errors = multierr.Append(errors, err)
+			errs = multierr.Append(errs, err)
 			return false
 		}
 		return skip
 	})
-	return errors
+	return errs
 }
 
 func (fmp *filterMetricProcessor) handleSummaryDataPoints(ctx context.Context, rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dps pmetric.SummaryDataPointSlice) error {
-	var errors error
+	var errs error
 	dps.RemoveIf(func(dp pmetric.SummaryDataPoint) bool {
 		tCtx := ottldatapoint.NewTransformContextPtr(rm, sm, m, dp)
 		defer tCtx.Close()
 		skip, err := fmp.skipDataPointExpr.Eval(ctx, tCtx)
 		if err != nil {
-			errors = multierr.Append(errors, err)
+			errs = multierr.Append(errs, err)
 			return false
 		}
 		return skip
 	})
-	return errors
+	return errs
 }
