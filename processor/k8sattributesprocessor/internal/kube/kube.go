@@ -145,7 +145,8 @@ type PodContainers struct {
 type Container struct {
 	Name              string
 	ImageName         string
-	ImageTag          string
+	ImageTag          string   // Legacy: single tag (stable uses ImageTags)
+	ImageTags         []string // Stable: array of tags
 	ServiceInstanceID string
 	ServiceVersion    string
 
@@ -252,7 +253,8 @@ type ExtractionRules struct {
 	ContainerID               bool
 	ContainerImageName        bool
 	ContainerImageRepoDigests bool
-	ContainerImageTag         bool
+	ContainerImageTag         bool // Legacy
+	ContainerImageTags        bool // Stable
 	ClusterUID                bool
 	ServiceNamespace          bool
 	ServiceName               bool
