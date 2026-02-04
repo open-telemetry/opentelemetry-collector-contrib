@@ -164,6 +164,7 @@ func (a *Aggregator[K]) Finalize(mds []model.MetricDef[K]) {
 			destMetric.SetDescription(md.Key.Description)
 			destCounter := destMetric.SetEmptySum()
 			destCounter.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+			destCounter.SetIsMonotonic(md.Sum.IsMonotonic)
 			destCounter.DataPoints().EnsureCapacity(len(dpMap))
 			for _, dp := range dpMap {
 				dp.Copy(a.timestamp, destCounter.DataPoints().AppendEmpty())

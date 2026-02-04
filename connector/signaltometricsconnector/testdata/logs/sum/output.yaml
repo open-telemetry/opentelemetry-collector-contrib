@@ -19,6 +19,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "4"
                   timeUnixNano: "1000000"
+              isMonotonic: true
           - description: Count total number of log records as per log.foo attribute
             name: log.foo.sum
             sum:
@@ -36,6 +37,7 @@ resourceMetrics:
                       value:
                         stringValue: notfoo
                   timeUnixNano: "1000000"
+              isMonotonic: true
           - description: Count total number of log records as per log.bar attribute
             name: log.bar.sum
             sum:
@@ -53,6 +55,7 @@ resourceMetrics:
                       value:
                         stringValue: notbar
                   timeUnixNano: "1000000"
+              isMonotonic: true
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
   - resource:
@@ -72,5 +75,6 @@ resourceMetrics:
               dataPoints:
                 - asInt: "4"
                   timeUnixNano: "1000000"
+              isMonotonic: true
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

@@ -53,6 +53,7 @@ signaltometrics:
         - IsDouble(attributes["some.optional.1"])
       sum:
         value: attributes["some.optional.1"]
+        monotonic: false
   logs:
     - name: log.sum
       description: Sum
@@ -69,6 +70,7 @@ signaltometrics:
         - attributes["some.optional.1"] != nil
       sum:
         value: "1"
+        monotonic: true
   profiles:
     - name: profile.sum
       description: Sum
@@ -85,3 +87,4 @@ signaltometrics:
         - duration_unix_nano > 0
       sum:
         value: "1"
+        monotonic: true
