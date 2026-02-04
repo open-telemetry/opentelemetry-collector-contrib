@@ -43,10 +43,6 @@ func TruncateAll[K any](target ottl.PMapGetSetter[K], limit int64, utf8Safe ottl
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
-		if limit < 0 {
-			return nil, nil
-		}
-
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
