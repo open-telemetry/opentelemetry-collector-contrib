@@ -15,8 +15,6 @@ import (
 )
 
 func TestNewConnector(t *testing.T) {
-	defaultLatencyHistogramBuckets := createDefaultConfig().(*Config).LatencyHistogramBuckets
-
 	for _, tc := range []struct {
 		name                            string
 		latencyHistogramBuckets         []time.Duration
@@ -24,7 +22,7 @@ func TestNewConnector(t *testing.T) {
 	}{
 		{
 			name:                            "simplest config (use defaults)",
-			expectedLatencyHistogramBuckets: mapDurationsToFloat(defaultLatencyHistogramBuckets),
+			expectedLatencyHistogramBuckets: defaultLatencyHistogramBuckets,
 		},
 		{
 			name:                            "latency histogram configured with catch-all bucket to check no additional catch-all bucket inserted",
@@ -43,7 +41,9 @@ func TestNewConnector(t *testing.T) {
 
 			creationParams := connectortest.NewNopSettings(metadata.Type)
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.LatencyHistogramBuckets = tc.latencyHistogramBuckets
+			if tc.latencyHistogramBuckets != nil {
+				cfg.LatencyHistogramBuckets = tc.latencyHistogramBuckets
+			}
 
 			// Test
 			conn, err := factory.CreateTracesToMetrics(t.Context(), creationParams, cfg, consumertest.NewNop())
