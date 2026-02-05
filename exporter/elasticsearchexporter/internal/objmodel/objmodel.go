@@ -233,9 +233,6 @@ func (doc *Document) sort() {
 // Dedup removes fields from the document, that have duplicate keys.
 // The filtering only keeps the last value for a key.
 // protectedSet is an optional map of field paths that should never get .value suffix.
-//
-// NOTE: The value MUST be sorted.
-//
 // Dedup ensure that keys are sorted.
 func (doc *Document) Dedup(protectedSet map[string]struct{}) {
 	// 1. Always ensure the fields are sorted, Dedup support requires
@@ -510,6 +507,8 @@ func (v *Value) sort() {
 }
 
 // Dedup recursively dedups keys in stored documents.
+//
+// NOTE: The value MUST be sorted.
 func (v *Value) Dedup(protectedSet map[string]struct{}) {
 	switch v.kind {
 	case KindObject:
