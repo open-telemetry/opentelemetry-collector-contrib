@@ -60,7 +60,7 @@ receivers:
 processors:
 
 exporters:
-  otlp:
+  otlp_grpc:
     auth:
       authenticator: basicauth/client
 
@@ -70,5 +70,5 @@ service:
     traces:
       receivers: [otlp]
       processors: []
-      exporters: [otlp]
+      exporters: [otlp_grpc]
 ```

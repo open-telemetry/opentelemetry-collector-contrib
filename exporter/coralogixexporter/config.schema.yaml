@@ -1,0 +1,78 @@
+$defs:
+  rate_limiter_config:
+    type: object
+    properties:
+      duration:
+        type: string
+        format: duration
+      enabled:
+        type: boolean
+      threshold:
+        type: integer
+  transport_config:
+    description: TransportConfig extends configgrpc.ClientConfig with additional HTTP-specific settings
+    type: object
+    properties:
+      accept_encoding:
+        description: AcceptEncoding specifies the compression encoding to accept for gRPC responses. Defaults to "gzip" if not set. Only used when protocol is "grpc".
+        type: string
+      proxy_url:
+        description: The following fields are only used when protocol is "http"
+        type: string
+      timeout:
+        type: string
+        format: duration
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/configgrpc.client_config
+description: Config defines configuration for Coralogix exporter.
+type: object
+properties:
+  application_name:
+    description: Default Coralogix application and subsystem name values.
+    type: string
+  application_name_attributes:
+    description: 'Ordered list of Resource attributes that are used for Coralogix AppName and SubSystem values. The first non-empty Resource attribute is used. Example: AppNameAttributes: ["k8s.namespace.name", "service.namespace"] Example: SubSystemAttributes: ["k8s.deployment.name", "k8s.daemonset.name", "service.name"]'
+    type: array
+    items:
+      type: string
+  domain:
+    description: Coralogix domain
+    type: string
+  domain_settings:
+    description: Transport settings used with Domain (supports both gRPC and HTTP)
+    $ref: transport_config
+  logs:
+    description: The Coralogix logs ingress endpoint (supports both gRPC and HTTP)
+    $ref: transport_config
+  metrics:
+    description: The Coralogix metrics ingress endpoint (supports both gRPC and HTTP)
+    $ref: transport_config
+  private_key:
+    description: Your Coralogix private key (sensitive) for authentication
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  private_link:
+    description: Use AWS PrivateLink for the domain
+    type: boolean
+  profiles:
+    description: The Coralogix profiles ingress endpoint (gRPC only)
+    $ref: go.opentelemetry.io/collector/config/configgrpc.client_config
+  protocol:
+    description: 'Protocol to use for communication. Options: "grpc" (default), "http"'
+    type: string
+  rate_limiter:
+    $ref: rate_limiter_config
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  subsystem_name:
+    type: string
+  subsystem_name_attributes:
+    type: array
+    items:
+      type: string
+  traces:
+    description: Coralogix traces ingress endpoint (supports both gRPC and HTTP)
+    $ref: transport_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
