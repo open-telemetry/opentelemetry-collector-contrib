@@ -276,8 +276,11 @@ func (ecsModeEncoder) encodeSpan(
 ) error {
 	var document objmodel.Document
 
+	// First, try to map resource-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
+	// Then, try to map scope-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), map[string]conversionEntry{})
+	// Finally, try to map span-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, span.Attributes(), map[string]conversionEntry{
 		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
 		string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
