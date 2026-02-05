@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
@@ -163,6 +164,7 @@ func NewDefaultConfig() component.Config {
 					Endpoint:  endpointForPort(DefaultHTTPPort),
 					Transport: "tcp",
 				},
+				KeepAlivesEnabled: true,
 			},
 			Path: "/",
 		},
@@ -172,6 +174,7 @@ func NewDefaultConfig() component.Config {
 					Endpoint:  endpointForPort(DefaultHTTPPort),
 					Transport: "tcp",
 				},
+				KeepAlivesEnabled: true,
 			},
 			Status: http.PathConfig{
 				Enabled: true,
@@ -188,6 +191,7 @@ func NewDefaultConfig() component.Config {
 					Endpoint:  endpointForPort(DefaultGRPCPort),
 					Transport: "tcp",
 				},
+				Keepalive: configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 			},
 		},
 	}
