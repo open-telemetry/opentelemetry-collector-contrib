@@ -265,11 +265,10 @@ func (doc *Document) Dedup(protectedSet map[string]struct{}) {
 				// This is a protected field - mark all nested fields under it as ignore.
 				keyPrefix := key + "."
 				for j := i + 1; j < len(doc.fields); j++ {
-					if strings.HasPrefix(doc.fields[j].key, keyPrefix) {
-						doc.fields[j].value = ignoreValue
-					} else {
+					if !strings.HasPrefix(doc.fields[j].key, keyPrefix) {
 						break
 					}
+					doc.fields[j].value = ignoreValue
 				}
 			} else {
 				// Normal case: rename to .value
