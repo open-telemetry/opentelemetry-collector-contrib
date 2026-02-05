@@ -67,7 +67,7 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 // extractPodIds returns pod identifier for first association matching all sources
 func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) kube.PodIdentifier {
 	var podIP, labelIP string
-	podIP = stringAttributeFromMap(attrs, kube.K8sIPLabelName)
+	podIP = stringAttributeFromMap(attrs, string(conventions.K8SPodIPKey))
 	if podIP != "" {
 		return kube.PodIdentifier{
 			kube.PodIdentifierAttributeFromConnection(podIP),
