@@ -6,6 +6,6 @@ status:
   stability:
     development: [extension]
   codeowners:
-    active: [mwear]
-    emeritus: [jpkrohling]
+    active: [evan-bradley]
+    emeritus: [jpkrohling, mwear]
     seeking_new: true

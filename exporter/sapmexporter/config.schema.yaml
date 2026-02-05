@@ -1,0 +1,33 @@
+description: Config defines configuration for SAPM exporter.
+type: object
+properties:
+  access_token:
+    description: AccessToken is the authentication token provided by SignalFx.
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  compression:
+    description: Compression method to use (gzip or zstd). Ignored if DisableCompression=true. If unspecified defaults to gzip.
+    type: string
+  disable_compression:
+    description: Disable compression. If set to true then Compression field is ignored.
+    type: boolean
+  endpoint:
+    description: Endpoint is the destination to where traces will be sent to in SAPM format. It must be a full URL and include the scheme, port and path e.g, https://ingest.signalfx.com/v2/trace
+    type: string
+  log_detailed_response:
+    description: Log detailed response from trace ingest.
+    type: boolean
+  max_connections:
+    description: MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
+    type: integer
+    x-customType: uint
+  num_workers:
+    description: NumWorkers is the number of workers that should be used to export traces. Exporter can make as many requests in parallel as the number of workers. Defaults to 8.
+    type: integer
+    x-customType: uint
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk.access_token_passthrough_config
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

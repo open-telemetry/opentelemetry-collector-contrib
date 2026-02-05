@@ -1,0 +1,80 @@
+{
+    "records": [
+        {
+            "RoleLocation": "Switzerland West",
+            "Stamp": "FDWorker",
+            "ReleaseVersion": "6.2025.14.4+0123456.release_2025w14",
+            "time": "2025-04-23T11:02:06.6966319Z",
+            "resourceId": "/SUBSCRIPTIONS/11111111-1111-1111-1111-111111111111/RESOURCEGROUPS/CONTOSO-RESOURCES/PROVIDERS/MICROSOFT.WEB/SITES/CONTOSO-WEB-APP",
+            "operationName": "MICROSOFT.AUTHORIZATION/POLICIES/AUDIT/ACTION",
+            "category": "Policy",
+            "resultType": "Success",
+            "resultSignature": "Succeeded.",
+            "durationMs": "0",
+            "callerIpAddress": "203.0.113.50",
+            "correlationId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            "identity": {
+                "authorization": {
+                    "scope": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/contoso-resources/providers/Microsoft.Web/sites/contoso-web-app",
+                    "action": "Microsoft.Web/sites/write",
+                    "evidence": {
+                        "role": "Owner",
+                        "roleAssignmentScope": "/subscriptions/11111111-1111-1111-1111-111111111111",
+                        "roleAssignmentId": "22222222222222222222222222222222",
+                        "roleDefinitionId": "33333333333333333333333333333333",
+                        "principalId": "44444444444444444444444444444444",
+                        "principalType": "User"
+                    }
+                },
+                "claims": {
+                    "aud": "https://management.core.windows.net/",
+                    "iss": "https://sts.windows.net/55555555-5555-5555-5555-555555555555/",
+                    "iat": "1745405200",
+                    "nbf": "1745405200",
+                    "exp": "1745409118",
+                    "http://schemas.microsoft.com/claims/authnclassreference": "1",
+                    "aio": "AbCdEfGhIjKlMnOpQrStUvWxYz1234567890AbCdEfGhIjKlMnOpQrStUvWxYz",
+                    "altsecid": "5::10032001XXXXXXXX",
+                    "http://schemas.microsoft.com/claims/authnmethodsreferences": "pwd,mfa",
+                    "appid": "66666666-6666-6666-6666-666666666666",
+                    "appidacr": "0",
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress": "john.doe@contoso.com",
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname": "Doe",
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname": "John",
+                    "groups": "77777777-7777-7777-7777-777777777777,88888888-8888-8888-8888-888888888888",
+                    "http://schemas.microsoft.com/identity/claims/identityprovider": "https://sts.windows.net/99999999-9999-9999-9999-999999999999/",
+                    "idtyp": "user",
+                    "ipaddr": "203.0.113.50",
+                    "name": "John Doe",
+                    "http://schemas.microsoft.com/identity/claims/objectidentifier": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                    "puid": "1003200000000000",
+                    "rh": "1.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.",
+                    "http://schemas.microsoft.com/identity/claims/scope": "user_impersonation",
+                    "sid": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier": "XxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxX",
+                    "http://schemas.microsoft.com/identity/claims/tenantid": "55555555-5555-5555-5555-555555555555",
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name": "john.doe@contoso.com",
+                    "uti": "XXXXXXXXXXXXXXXXXXXX",
+                    "ver": "1.0",
+                    "wids": "cccccccc-cccc-cccc-cccc-cccccccccccc,dddddddd-dddd-dddd-dddd-dddddddddddd",
+                    "xms_edov": "true",
+                    "xms_idrel": "5 2",
+                    "xms_tcdt": "1391159646",
+                    "correlationid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+                }
+            },
+            "level": "Warning",
+            "properties": {
+                "isComplianceCheck": "False",
+                "resourceLocation": "eastus2",
+                "ancestors": "55555555-5555-5555-5555-555555555555",
+                "policies": "[{\"policyDefinitionId\":\"/providers/Microsoft.Authorization/policyDefinitions/2b9ad585-36bc-4615-b300-fd4435808332\",\"policySetDefinitionId\":\"/providers/Microsoft.Authorization/policySetDefinitions/1f3afdf9-d0c9-4c3d-847f-89da613e70a8\",\"policyDefinitionReferenceId\":\"managedIdentityShouldBeUsedInYourWebAppMonitoringEffect\",\"policySetDefinitionName\":\"1f3afdf9-d0c9-4c3d-847f-89da613e70a8\",\"policySetDefinitionDisplayName\":\"Microsoft cloud security benchmark\",\"policySetDefinitionVersion\":\"57.49.0\",\"policyDefinitionName\":\"2b9ad585-36bc-4615-b300-fd4435808332\",\"policyDefinitionDisplayName\":\"App Service apps should use managed identity\",\"policyDefinitionVersion\":\"3.0.0\",\"policyDefinitionEffect\":\"AuditIfNotExists\",\"policyAssignmentId\":\"/subscriptions/11111111-1111-1111-1111-111111111111/providers/Microsoft.Authorization/policyAssignments/SecurityCenterBuiltIn\",\"policyAssignmentName\":\"SecurityCenterBuiltIn\",\"policyAssignmentDisplayName\":\"ASC Default (subscription: 11111111-1111-1111-1111-111111111111)\",\"policyAssignmentScope\":\"/subscriptions/11111111-1111-1111-1111-111111111111\",\"policyExemptionIds\":[],\"policyEnrollmentIds\":[]}]",
+                "eventCategory": "Policy",
+                "entity": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/contoso-resources/providers/Microsoft.Web/sites/contoso-web-app",
+                "message": "Microsoft.Authorization/policies/audit/action",
+                "hierarchy": ""
+            },
+            "tenantId": "55555555-5555-5555-5555-555555555555"
+        }
+    ]
+}

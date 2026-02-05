@@ -497,6 +497,10 @@ component_management:
     name: processor_logstransform
     paths:
     - processor/logstransformprocessor/**
+  - component_id: processor_lookup
+    name: processor_lookup
+    paths:
+    - processor/lookupprocessor/**
   - component_id: processor_metricsgeneration
     name: processor_metricsgeneration
     paths:

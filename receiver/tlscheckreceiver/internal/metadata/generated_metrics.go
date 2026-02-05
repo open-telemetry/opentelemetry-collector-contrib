@@ -72,6 +72,7 @@ func (m *metricTlscheckTimeLeft) emit(metrics pmetric.MetricSlice) {
 
 func newMetricTlscheckTimeLeft(cfg MetricConfig) metricTlscheckTimeLeft {
 	m := metricTlscheckTimeLeft{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

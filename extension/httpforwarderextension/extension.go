@@ -32,7 +32,7 @@ var _ extension.Extension = (*httpForwarder)(nil)
 func (h *httpForwarder) Start(ctx context.Context, host component.Host) error {
 	listener, err := h.config.Ingress.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", h.config.Ingress.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", h.config.Ingress.NetAddr.Endpoint, err)
 	}
 
 	httpClient, err := h.config.Egress.ToClient(ctx, host.GetExtensions(), h.settings)

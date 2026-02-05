@@ -44,6 +44,7 @@ type Config struct {
 
 	// For testing only.
 	ignoreMetadata bool
+	skipOffsetting bool
 }
 
 // Validate checks the receiver configuration is valid.
@@ -239,7 +240,7 @@ func (cfg *APIServer) Validate() error {
 		return nil
 	}
 
-	if cfg.ServerConfig.Endpoint == "" {
+	if cfg.ServerConfig.NetAddr.Endpoint == "" {
 		return errors.New("if api_server is enabled, it requires a non-empty server_config endpoint")
 	}
 

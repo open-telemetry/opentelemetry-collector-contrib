@@ -123,7 +123,7 @@ func (r *lokiReceiver) startProtocolsServers(ctx context.Context, host component
 }
 
 func (r *lokiReceiver) startHTTPServer(ctx context.Context, host component.Host) error {
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.conf.HTTP.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.conf.HTTP.NetAddr.Endpoint))
 	listener, err := r.conf.HTTP.ToListener(ctx)
 	if err != nil {
 		return err
