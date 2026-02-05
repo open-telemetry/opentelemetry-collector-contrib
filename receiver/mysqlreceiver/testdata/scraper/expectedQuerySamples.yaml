@@ -24,16 +24,19 @@ resourceLogs:
               - key: db.query.text
                 value:
                   stringValue: SELECT soh.SalesOrderID, soh.OrderDate, c.CustomerID, p.Name, sod.OrderQty, sod.LineTotal FROM salesorderheader soh JOIN salesorderdetail sod ON soh.SalesOrderID = sod.SalesOrderID JOIN product p ON sod.ProductID = p.ProductID JOIN customer c ON soh.CustomerID = c.CustomerID ORDER BY soh.OrderDate DESC
-              - key: mysql.events_statements_current.digest
+              - key: mysql.query_hash
                 value:
                   stringValue: aaaaaa
+              - key: mysql.query_plan_hash
+                value:
+                  stringValue: 9a2692756afe28fbfd3057805a4768d4f0587eb49095cb8461982e4aca4563f7
               - key: mysql.event_id
                 value:
                   intValue: "17470257762"
               - key: mysql.wait_type
                 value:
                   stringValue: CPU
-              - key: mysql.events_waits_current.timer_wait
+              - key: mysql.wait_time
                 value:
                   doubleValue: 1.2851652e-05
               - key: client.address

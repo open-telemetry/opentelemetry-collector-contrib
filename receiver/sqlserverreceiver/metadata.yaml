@@ -1,5 +1,5 @@
 type: sqlserver
-
+#generated_package_name: sqlserverreceiver
 status:
   class: receiver
   stability:

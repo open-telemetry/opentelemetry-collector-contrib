@@ -6,7 +6,10 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"container/heap"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -132,6 +135,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func (m *mySQLScraper) scrapeTopQueryFunc(ctx context.Context) (plog.Logs, error) {
+	m.logger.Info("Starting top queries scrape")
 	if m.sqlclient == nil {
 		return plog.NewLogs(), errors.New("failed to connect to http client")
 	}
@@ -145,10 +149,14 @@ func (m *mySQLScraper) scrapeTopQueryFunc(ctx context.Context) (plog.Logs, error
 	} else {
 		m.scrapeTopQueries(ctx, now, errs)
 	}
-	return m.lb.Emit(), errs.Combine()
+	rb := m.lb.NewResourceBuilder()
+	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	m.logger.Info(fmt.Sprintf("Setting Resource endpoint to %s", m.config.Endpoint))
+	return m.lb.Emit(metadata.WithLogsResource(rb.Emit())), errs.Combine()
 }
 
 func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, error) {
+	m.logger.Info("Starting query samples scrape")
 	if m.sqlclient == nil {
 		return plog.NewLogs(), errors.New("failed to connect to http client")
 	}
@@ -158,8 +166,10 @@ func (m *mySQLScraper) scrapeQuerySampleFunc(ctx context.Context) (plog.Logs, er
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	m.scrapeQuerySamples(ctx, now, errs)
+	rb := m.lb.NewResourceBuilder()
+	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
 
-	return m.lb.Emit(), errs.Combine()
+	return m.lb.Emit(metadata.WithLogsResource(rb.Emit())), errs.Combine()
 }
 
 func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -689,15 +699,22 @@ func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timesta
 		}
 
 		queryPlan := m.sqlclient.explainQuery(q.querySampleText, q.schemaName, m.logger)
-
-		var obfuscatedPlan string
-		var ok bool
-		if obfuscatedPlan, ok = m.queryPlanCache.Get(q.schemaName + "-" + q.digest); !ok {
-			obfuscatedPlan, err = m.obfuscator.obfuscatePlan(queryPlan)
-			if err != nil {
-				m.logger.Error("Failed to obfuscate query", zap.Error(err))
+		queryPlanHash := q.digest
+		obfuscatedPlan := ""
+		if queryPlan == "" {
+			m.logger.Warn("Empty query plan received", zap.String("schema", q.schemaName), zap.String("digest", q.digest))
+		} else {
+			hasher := sha256.New()
+			hasher.Write([]byte(queryPlan))
+			queryPlanHash = hex.EncodeToString(hasher.Sum(nil))
+			var ok bool
+			if obfuscatedPlan, ok = m.queryPlanCache.Get(q.schemaName + "-" + q.digest); !ok {
+				obfuscatedPlan, err = m.obfuscator.obfuscatePlan(queryPlan)
+				if err != nil {
+					m.logger.Error("Failed to obfuscate query plan", zap.Error(err), zap.String("query plan hash", queryPlanHash))
+				}
+				m.queryPlanCache.Add(q.schemaName+"-"+q.digest, obfuscatedPlan)
 			}
-			m.queryPlanCache.Add(q.schemaName+"-"+q.digest, obfuscatedPlan)
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
@@ -706,6 +723,7 @@ func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timesta
 			metadata.AttributeDbSystemNameMysql,
 			obfuscatedQuery,
 			obfuscatedPlan,
+			queryPlanHash,
 			q.digest,
 			countStarVal,
 			sumTimerWaitVal,
@@ -745,25 +763,35 @@ func (m *mySQLScraper) scrapeQuerySamples(ctx context.Context, now pcommon.Times
 		if err != nil {
 			m.logger.Error("Failed to obfuscate query", zap.Error(err))
 		}
+		queryPlanHash := sample.digest
+		queryPlan := m.sqlclient.explainQuery(sample.sqlText, sample.schema, m.logger)
+		if queryPlan == "" {
+			m.logger.Warn("Empty query plan received", zap.String("schema", sample.schema), zap.String("sql digest", sample.digest))
+		} else {
+			hasher := sha256.New()
+			hasher.Write([]byte(queryPlan))
+			queryPlanHash = hex.EncodeToString(hasher.Sum(nil))
+		}
 
 		m.lb.RecordDbServerQuerySampleEvent(
 			ctx,
 			now,
-			metadata.AttributeDbSystemNameMysql,
-			sample.threadID,
-			sample.processlistUser,
-			sample.processlistDB,
-			sample.processlistCommand,
-			sample.processlistState,
-			obfuscatedQuery,
-			sample.digest,
-			sample.eventID,
-			sample.waitEvent,
-			sample.waitTime,
 			clientAddress,
 			clientPort,
+			sample.processlistDB,
+			obfuscatedQuery,
+			metadata.AttributeDbSystemNameMysql,
+			sample.eventID,
+			sample.digest,
+			queryPlanHash,
+			sample.waitTime,
+			sample.processlistCommand,
+			sample.processlistState,
+			sample.threadID,
+			sample.waitEvent,
 			networkPeerAddress,
 			networkPeerPort,
+			sample.processlistUser,
 		)
 	}
 }
