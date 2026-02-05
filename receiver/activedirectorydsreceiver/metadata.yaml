@@ -71,16 +71,14 @@ metrics:
       value_type: double
     attributes: [bind_type]
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.ldap.bind.last_successful.time:
     description: "The amount of time taken for the last successful LDAP bind."
     unit: "ms"
     gauge:
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.ldap.bind.rate:
     description: "The number of successful LDAP binds per second."
     unit: "{binds}/s"
@@ -89,8 +87,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: double
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.ldap.client.session.count:
     description: "The number of connected LDAP client sessions."
     unit: "{sessions}"
@@ -99,8 +96,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.ldap.search.rate:
     description: "The number of LDAP searches per second."
     unit: "{searches}/s"
@@ -109,16 +105,14 @@ metrics:
       aggregation_temporality: cumulative
       value_type: double
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.name_cache.hit_rate:
     description: "The percentage of directory object name component lookups that are satisfied by the Directory System Agent's name cache."
     unit: "%"
     gauge:
       value_type: double
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.notification.queued:
     description: "The number of pending update notifications that have been queued to push to clients."
     unit: "{notifications}"
@@ -127,8 +121,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.operation.rate:
     description: "The number of operations performed per second."
     unit: "{operations}/s"
@@ -138,8 +131,7 @@ metrics:
       value_type: double
     attributes: [operation_type]
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.replication.network.io:
     description: "The amount of network data transmitted by the Directory Replication Agent."
     unit: By
@@ -149,8 +141,7 @@ metrics:
       value_type: int
     attributes: [direction, network_data_type]
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.replication.object.rate:
     description: "The number of objects transmitted by the Directory Replication Agent per second."
     unit: "{objects}/s"
@@ -160,8 +151,7 @@ metrics:
       value_type: double
     attributes: [direction]
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.replication.operation.pending:
     description: "The number of pending replication operations for the Directory Replication Agent."
     unit: "{operations}"
@@ -170,8 +160,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.replication.property.rate:
     description: "The number of properties transmitted by the Directory Replication Agent per second."
     unit: "{properties}/s"
@@ -181,8 +170,7 @@ metrics:
       value_type: double
     attributes: [direction]
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.replication.sync.object.pending:
     description: "The number of objects remaining until the full sync completes for the Directory Replication Agent."
     unit: "{objects}"
@@ -191,8 +179,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.replication.sync.request.count:
     description: "The number of sync requests made by the Directory Replication Agent."
     unit: "{requests}"
@@ -202,8 +189,7 @@ metrics:
       value_type: int
     attributes: [sync_result]
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.replication.value.rate:
     description: "The number of values transmitted by the Directory Replication Agent per second."
     unit: "{values}/s"
@@ -213,8 +199,7 @@ metrics:
       value_type: double
     attributes: [direction, value_type]
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.security_descriptor_propagations_event.queued:
     description: "The number of security descriptor propagation events that are queued for processing."
     unit: "{events}"
@@ -223,8 +208,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.suboperation.rate:
     description: "The rate of sub-operations performed."
     unit: "{suboperations}/s"
@@ -234,8 +218,7 @@ metrics:
       value_type: double
     attributes: [suboperation_type]
     enabled: true
-    stability:
-      level: development
+    stability: development
   active_directory.ds.thread.count:
     description: "The number of threads in use by the directory service."
     unit: "{threads}"
@@ -244,8 +227,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
 
 # TODO: Update the receiver to pass the tests
 tests:

@@ -33,8 +33,7 @@ metrics:
   kafka.broker.log_retention_period:
     enabled: false
     description: log retention time (s) of a broker.
-    stability:
-      level: development
+    stability: development
     unit: "s"
     gauge:
       value_type: int
@@ -42,8 +41,7 @@ metrics:
   kafka.brokers:
     enabled: true
     description: Number of brokers in the cluster.
-    stability:
-      level: development
+    stability: development
     unit: "{brokers}"
     sum:
       monotonic: false
@@ -53,8 +51,7 @@ metrics:
   kafka.consumer_group.lag:
     enabled: true
     description: Current approximate lag of consumer group at partition of topic
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -62,8 +59,7 @@ metrics:
   kafka.consumer_group.lag_sum:
     enabled: true
     description: Current approximate sum of consumer group lag across all partitions of topic
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -71,8 +67,7 @@ metrics:
   kafka.consumer_group.members:
     enabled: true
     description: Count of members in the consumer group
-    stability:
-      level: development
+    stability: development
     unit: "{members}"
     sum:
       monotonic: false
@@ -82,8 +77,7 @@ metrics:
   kafka.consumer_group.offset:
     enabled: true
     description: Current offset of the consumer group at partition of topic
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -91,8 +85,7 @@ metrics:
   kafka.consumer_group.offset_sum:
     enabled: true
     description: Sum of consumer group offset across partitions of topic
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -101,8 +94,7 @@ metrics:
   kafka.partition.current_offset:
     enabled: true
     description: Current offset of partition of topic.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -110,8 +102,7 @@ metrics:
   kafka.partition.oldest_offset:
     enabled: true
     description: Oldest offset of partition of topic
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -119,8 +110,7 @@ metrics:
   kafka.partition.replicas:
     enabled: true
     description: Number of replicas for partition of topic
-    stability:
-      level: development
+    stability: development
     unit: "{replicas}"
     sum:
       monotonic: false
@@ -130,8 +120,7 @@ metrics:
   kafka.partition.replicas_in_sync:
     enabled: true
     description: Number of synchronized replicas of partition
-    stability:
-      level: development
+    stability: development
     unit: "{replicas}"
     sum:
       monotonic: false
@@ -141,8 +130,7 @@ metrics:
   kafka.topic.log_retention_period:
     enabled: false
     description: log retention period of a topic (s).
-    stability:
-      level: development
+    stability: development
     unit: s
     gauge:
       value_type: int
@@ -150,8 +138,7 @@ metrics:
   kafka.topic.log_retention_size:
     enabled: false
     description: log retention size of a topic in Bytes, The value (-1) indicates infinite size.
-    stability:
-      level: development
+    stability: development
     unit: By
     gauge:
       value_type: int
@@ -159,8 +146,7 @@ metrics:
   kafka.topic.min_insync_replicas:
     enabled: false
     description: minimum in-sync replicas of a topic.
-    stability:
-      level: development
+    stability: development
     unit: "{replicas}"
     gauge:
       value_type: int
@@ -168,8 +154,7 @@ metrics:
   kafka.topic.partitions:
     enabled: true
     description: Number of partitions in topic.
-    stability:
-      level: development
+    stability: development
     unit: "{partitions}"
     sum:
       monotonic: false
@@ -179,8 +164,7 @@ metrics:
   kafka.topic.replication_factor:
     enabled: false
     description: replication factor of a topic.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int

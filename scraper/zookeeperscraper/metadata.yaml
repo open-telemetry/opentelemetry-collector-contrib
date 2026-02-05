@@ -38,8 +38,7 @@ metrics:
   zookeeper.connection.active:
     enabled: true
     description: Number of active clients connected to a ZooKeeper server.
-    stability:
-      level: development
+    stability: development
     unit: "{connections}"
     sum:
       monotonic: false
@@ -48,8 +47,7 @@ metrics:
   zookeeper.data_tree.ephemeral_node.count:
     enabled: true
     description: Number of ephemeral nodes that a ZooKeeper server has in its data tree.
-    stability:
-      level: development
+    stability: development
     unit: "{nodes}"
     sum:
       monotonic: false
@@ -58,8 +56,7 @@ metrics:
   zookeeper.data_tree.size:
     enabled: true
     description: Size of data in bytes that a ZooKeeper server has in its data tree.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -68,16 +65,14 @@ metrics:
   zookeeper.file_descriptor.limit:
     enabled: true
     description: Maximum number of file descriptors that a ZooKeeper server can open.
-    stability:
-      level: development
+    stability: development
     unit: "{file_descriptors}"
     gauge:
       value_type: int
   zookeeper.file_descriptor.open:
     enabled: true
     description: Number of file descriptors that a ZooKeeper server has open.
-    stability:
-      level: development
+    stability: development
     unit: "{file_descriptors}"
     sum:
       monotonic: false
@@ -86,8 +81,7 @@ metrics:
   zookeeper.follower.count:
     enabled: true
     description: The number of followers. Only exposed by the leader.
-    stability:
-      level: development
+    stability: development
     unit: "{followers}"
     attributes: [state]
     sum:
@@ -97,8 +91,7 @@ metrics:
   zookeeper.fsync.exceeded_threshold.count:
     enabled: true
     description: Number of times fsync duration has exceeded warning threshold.
-    stability:
-      level: development
+    stability: development
     unit: "{events}"
     sum:
       value_type: int
@@ -107,32 +100,28 @@ metrics:
   zookeeper.latency.avg:
     enabled: true
     description: Average time in milliseconds for requests to be processed.
-    stability:
-      level: development
+    stability: development
     unit: ms
     gauge:
       value_type: int
   zookeeper.latency.max:
     enabled: true
     description: Maximum time in milliseconds for requests to be processed.
-    stability:
-      level: development
+    stability: development
     unit: ms
     gauge:
       value_type: int
   zookeeper.latency.min:
     enabled: true
     description: Minimum time in milliseconds for requests to be processed.
-    stability:
-      level: development
+    stability: development
     unit: ms
     gauge:
       value_type: int
   zookeeper.packet.count:
     enabled: true
     description: The number of ZooKeeper packets received or sent by a server.
-    stability:
-      level: development
+    stability: development
     unit: "{packets}"
     attributes: [direction]
     sum:
@@ -142,8 +131,7 @@ metrics:
   zookeeper.request.active:
     enabled: true
     description: Number of currently executing requests.
-    stability:
-      level: development
+    stability: development
     unit: "{requests}"
     sum:
       monotonic: false
@@ -152,8 +140,7 @@ metrics:
   zookeeper.ruok:
     enabled: true
     description: Response from zookeeper ruok command
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -161,8 +148,7 @@ metrics:
   zookeeper.sync.pending:
     enabled: true
     description: The number of pending syncs from the followers. Only exposed by the leader.
-    stability:
-      level: development
+    stability: development
     unit: "{syncs}"
     sum:
       monotonic: false
@@ -171,8 +157,7 @@ metrics:
   zookeeper.watch.count:
     enabled: true
     description: Number of watches placed on Z-Nodes on a ZooKeeper server.
-    stability:
-      level: development
+    stability: development
     unit: "{watches}"
     sum:
       monotonic: false
@@ -181,8 +166,7 @@ metrics:
   zookeeper.znode.count:
     enabled: true
     description: Number of z-nodes that a ZooKeeper server has in its data tree.
-    stability:
-      level: development
+    stability: development
     unit: "{znodes}"
     sum:
       monotonic: false

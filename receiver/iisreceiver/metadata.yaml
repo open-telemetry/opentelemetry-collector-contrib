@@ -50,16 +50,14 @@ metrics:
     gauge:
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   iis.application_pool.uptime:
     description: The application pools uptime period since the last restart.
     unit: "{ms}"
     gauge:
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   iis.connection.active:
     description: Number of active connections.
     unit: "{connections}"
@@ -68,8 +66,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   iis.connection.anonymous:
     description: Number of connections established anonymously.
     unit: "{connections}"
@@ -78,8 +75,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   iis.connection.attempt.count:
     description: Total number of attempts to connect to the server.
     unit: "{attempts}"
@@ -88,8 +84,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   iis.network.blocked:
     description: Number of bytes blocked due to bandwidth throttling.
     unit: By
@@ -98,8 +93,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   iis.network.file.count:
     description: Number of transmitted files.
     unit: "{files}"
@@ -108,8 +102,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
     attributes: [direction]
   iis.network.io:
     description: Total amount of bytes sent and received.
@@ -119,8 +112,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
     attributes: [direction]
   iis.request.count:
     description: Total number of requests of a given type.
@@ -130,8 +122,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
     attributes: [request]
   iis.request.queue.age.max:
     description: Age of oldest request in the queue.
@@ -139,8 +130,7 @@ metrics:
     gauge:
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   iis.request.queue.count:
     description: Current number of requests in the queue.
     unit: "{requests}"
@@ -149,8 +139,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   iis.request.rejected:
     description: Total number of requests rejected.
     unit: "{requests}"
@@ -159,8 +148,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   iis.thread.active:
     description: Current number of active threads.
     unit: "{threads}"
@@ -169,13 +157,11 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   iis.uptime:
     description: The amount of time the server has been up.
     unit: s
     gauge:
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development

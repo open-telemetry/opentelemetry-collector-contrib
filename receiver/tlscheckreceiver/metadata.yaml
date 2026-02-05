@@ -28,8 +28,7 @@ attributes:
 metrics:
   tlscheck.time_left:
     description: Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.
-    stability:
-      level: development
+    stability: development
     enabled: true
     gauge:
       value_type: int

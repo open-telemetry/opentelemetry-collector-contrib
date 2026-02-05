@@ -38,8 +38,7 @@ attributes:
 metrics:
   haproxy.active:
     description: Number of active servers (backend) or server is active (server). Corresponds to HAProxy's `act` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     gauge:
       value_type: int
@@ -47,8 +46,7 @@ metrics:
     unit: "{servers}"
   haproxy.backup:
     description: Number of backup servers (backend) or server is backup (server). Corresponds to HAProxy's `bck` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     gauge:
       value_type: int
@@ -56,8 +54,7 @@ metrics:
     unit: "{servers}"
   haproxy.bytes.input:
     description: Bytes in. Corresponds to HAProxy's `bin` metric.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -67,8 +64,7 @@ metrics:
     unit: by
   haproxy.bytes.output:
     description: Bytes out. Corresponds to HAProxy's `bout` metric.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -78,8 +74,7 @@ metrics:
     unit: by
   haproxy.clients.canceled:
     description: Number of data transfers aborted by the client. Corresponds to HAProxy's `cli_abrt` metric
-    stability:
-      level: development
+    stability: development
     enabled: false
     sum:
       aggregation_temporality: cumulative
@@ -89,8 +84,7 @@ metrics:
     unit: "{cancellations}"
   haproxy.compression.bypass:
     description: Number of bytes that bypassed the HTTP compressor (CPU/BW limit). Corresponds to HAProxy's `comp_byp` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     sum:
       aggregation_temporality: cumulative
@@ -100,8 +94,7 @@ metrics:
     unit: by
   haproxy.compression.count:
     description: Number of HTTP responses that were compressed. Corresponds to HAProxy's `comp_rsp` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     sum:
       aggregation_temporality: cumulative
@@ -111,8 +104,7 @@ metrics:
     unit: "{responses}"
   haproxy.compression.input:
     description: Number of HTTP response bytes fed to the compressor. Corresponds to HAProxy's `comp_in` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     sum:
       aggregation_temporality: cumulative
@@ -122,8 +114,7 @@ metrics:
     unit: by
   haproxy.compression.output:
     description: Number of HTTP response bytes emitted by the compressor. Corresponds to HAProxy's `comp_out` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     sum:
       aggregation_temporality: cumulative
@@ -133,8 +124,7 @@ metrics:
     unit: by
   haproxy.connections.average_time:
     description: Average connect time in ms over the 1024 last requests. Corresponds to HAProxy's `ctime` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     gauge:
       value_type: double
@@ -142,8 +132,7 @@ metrics:
     unit: ms
   haproxy.connections.errors:
     description: Number of requests that encountered an error trying to connect to a backend server. The backend stat is the sum of the stat. Corresponds to HAProxy's `econ` metric
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -153,8 +142,7 @@ metrics:
     unit: "{errors}"
   haproxy.connections.rate:
     description: Number of connections over the last elapsed second (frontend). Corresponds to HAProxy's `conn_rate` metric.
-    stability:
-      level: development
+    stability: development
     enabled: true
     gauge:
       value_type: int
@@ -162,8 +150,7 @@ metrics:
     unit: "{connections}"
   haproxy.connections.retries:
     description: Number of times a connection to a server was retried. Corresponds to HAProxy's `wretr` metric.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -173,8 +160,7 @@ metrics:
     unit: "{retries}"
   haproxy.connections.total:
     description: Cumulative number of connections (frontend). Corresponds to HAProxy's `conn_tot` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     sum:
       aggregation_temporality: cumulative
@@ -184,8 +170,7 @@ metrics:
     unit: "{connections}"
   haproxy.downtime:
     description: Total downtime (in seconds). The value for the backend is the downtime for the whole backend, not the sum of the server downtime. Corresponds to HAProxy's `downtime` metric
-    stability:
-      level: development
+    stability: development
     enabled: false
     sum:
       aggregation_temporality: cumulative
@@ -195,8 +180,7 @@ metrics:
     unit: s
   haproxy.failed_checks:
     description: Number of failed checks. (Only counts checks failed when the server is up). Corresponds to HAProxy's `chkfail` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     sum:
       aggregation_temporality: cumulative
@@ -206,8 +190,7 @@ metrics:
     unit: "{checks}"
   haproxy.requests.average_time:
     description: Average queue time in ms over the 1024 last requests. Corresponds to HAProxy's `qtime` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     gauge:
       value_type: double
@@ -215,8 +198,7 @@ metrics:
     unit: ms
   haproxy.requests.denied:
     description: Requests denied because of security concerns. Corresponds to HAProxy's `dreq` metric
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -226,8 +208,7 @@ metrics:
     unit: "{requests}"
   haproxy.requests.errors:
     description: Cumulative number of request errors. Corresponds to HAProxy's `ereq` metric.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -237,8 +218,7 @@ metrics:
     unit: "{errors}"
   haproxy.requests.queued:
     description: Current queued requests. For the backend this reports the number queued without a server assigned. Corresponds to HAProxy's `qcur` metric.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -248,8 +228,7 @@ metrics:
     unit: "{requests}"
   haproxy.requests.rate:
     description: HTTP requests per second over last elapsed second. Corresponds to HAProxy's `req_rate` metric.
-    stability:
-      level: development
+    stability: development
     enabled: true
     gauge:
       value_type: double
@@ -257,8 +236,7 @@ metrics:
     unit: "{requests}"
   haproxy.requests.redispatched:
     description: Number of times a request was redispatched to another server. Corresponds to HAProxy's `wredis` metric.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -268,8 +246,7 @@ metrics:
     unit: "{requests}"
   haproxy.requests.total:
     description: Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrsp_1xx`, `hrsp_2xx`, `hrsp_3xx`, `hrsp_4xx`, `hrsp_5xx` and `hrsp_other` metrics.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -281,8 +258,7 @@ metrics:
       - status_code
   haproxy.responses.average_time:
     description: Average response time in ms over the 1024 last requests. Corresponds to HAProxy's `rtime` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     gauge:
       value_type: double
@@ -290,8 +266,7 @@ metrics:
     unit: ms
   haproxy.responses.denied:
     description: Responses denied because of security concerns. Corresponds to HAProxy's `dresp` metric
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -301,8 +276,7 @@ metrics:
     unit: "{responses}"
   haproxy.responses.errors:
     description: Cumulative number of response errors. Corresponds to HAProxy's `eresp` metric, `srv_abrt` will be counted here also.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -311,8 +285,7 @@ metrics:
     unit: "{errors}"
   haproxy.server_selected.total:
     description: Number of times a server was selected, either for new sessions or when re-dispatching. Corresponds to HAProxy's `lbtot` metric.
-    stability:
-      level: development
+    stability: development
     enabled: true
     sum:
       aggregation_temporality: cumulative
@@ -322,8 +295,7 @@ metrics:
     unit: "{selections}"
   haproxy.sessions.average:
     description: Average total session time in ms over the last 1024 requests. Corresponds to HAProxy's `ttime` metric.
-    stability:
-      level: development
+    stability: development
     enabled: true
     gauge:
       value_type: double
@@ -331,8 +303,7 @@ metrics:
     unit: ms
   haproxy.sessions.count:
     description: Current sessions. Corresponds to HAProxy's `scur` metric.
-    stability:
-      level: development
+    stability: development
     enabled: true
     gauge:
       value_type: int
@@ -340,8 +311,7 @@ metrics:
     unit: "{sessions}"
   haproxy.sessions.limit:
     description: Configured session limit. Corresponds to HAProxy's `slim` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     gauge:
       value_type: int
@@ -349,8 +319,7 @@ metrics:
     unit: "{sessions}"
   haproxy.sessions.rate:
     description: Number of sessions per second over last elapsed second. Corresponds to HAProxy's `rate` metric.
-    stability:
-      level: development
+    stability: development
     enabled: true
     gauge:
       value_type: double
@@ -358,8 +327,7 @@ metrics:
     unit: "{sessions}"
   haproxy.sessions.total:
     description: Cumulative number of sessions. Corresponds to HAProxy's `stot` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     sum:
       aggregation_temporality: cumulative
@@ -369,8 +337,7 @@ metrics:
     unit: "{sessions}"
   haproxy.weight:
     description: Total effective weight (backend) or effective weight (server). Corresponds to HAProxy's `weight` metric.
-    stability:
-      level: development
+    stability: development
     enabled: false
     gauge:
       value_type: int

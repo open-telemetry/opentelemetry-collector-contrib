@@ -13,8 +13,7 @@ telemetry:
     receiver_received_statsd_metrics:
       enabled: true
       description: Number of statsd metrics received.
-      stability:
-        level: development
+      stability: development
       unit: "1"
       sum:
         value_type: int

@@ -39,8 +39,7 @@ metrics:
   systemd.service.cpu.time:
     description: Total CPU time spent by this service.
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -55,8 +54,7 @@ metrics:
       automatic service restarts (restarts when the process exits), and does
       not include manual restarts (e.g. from `systemctl restart`).
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -66,8 +64,7 @@ metrics:
   systemd.unit.state:
     description: 1 if the check resulted in active_state matching the current state, otherwise 0.
     enabled: true
-    stability:
-      level: alpha
+    stability: alpha
     sum:
       value_type: int
       aggregation_temporality: cumulative

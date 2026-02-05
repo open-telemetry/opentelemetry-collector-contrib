@@ -50,8 +50,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.client.net.tcp.connection.accepted:
     enabled: true
@@ -61,8 +60,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.client.operation.count:
     enabled: true
@@ -75,8 +73,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.client.procedure.count:
     enabled: true
@@ -87,8 +84,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.client.rpc.authrefresh.count:
     enabled: true
@@ -98,8 +94,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.client.rpc.count:
     enabled: true
@@ -109,8 +104,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.client.rpc.retransmit.count:
     enabled: true
@@ -120,8 +114,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.fh.stale.count:
     enabled: true
@@ -131,8 +124,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.io:
     enabled: true
@@ -143,8 +135,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.net.count:
     enabled: true
@@ -155,8 +146,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.net.tcp.connection.accepted:
     enabled: true
@@ -166,8 +156,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.operation.count:
     enabled: true
@@ -178,8 +167,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.procedure.count:
     enabled: true
@@ -190,8 +178,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
   nfs.server.repcache.requests:
     enabled: true
     description: Reports the kernel NFS server reply cache request count by cache hit status.
@@ -201,8 +188,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.rpc.count:
     enabled: true
@@ -213,8 +199,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.thread.count:
     enabled: true
@@ -224,5 +209,4 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
