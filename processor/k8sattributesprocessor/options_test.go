@@ -9,12 +9,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestWithAPIConfig(t *testing.T) {
@@ -62,7 +60,7 @@ func TestEnabledAttributes(t *testing.T) {
 		"k8s.namespace.name",
 		"k8s.pod.name",
 		"k8s.pod.uid",
-		metadataPodStartTime,
+		"k8s.pod.start_time",
 		"k8s.deployment.name",
 		"k8s.node.name",
 		"container.image.name",
@@ -564,58 +562,54 @@ func TestWithFilterFields(t *testing.T) {
 }
 
 func Test_extractFieldRules(t *testing.T) {
-	type args struct {
-		fieldType string
-		fields    []FieldExtractConfig
-	}
 	tests := []struct {
 		name    string
-		args    args
+		fields  []FieldExtractConfig
 		want    []kube.FieldExtractionRule
 		wantErr bool
 	}{
 		{
-			name: "default",
-			args: args{"labels", []FieldExtractConfig{
+			name: "empty tag_name leaves Name empty for dynamic resolution",
+			fields: []FieldExtractConfig{
 				{
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},
-			}},
+			},
 			want: []kube.FieldExtractionRule{
 				{
-					Name: "k8s.pod.labels.key",
+					Name: "",
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},
 			},
 		},
 		{
-			name: "basic",
-			args: args{"field", []FieldExtractConfig{
+			name: "explicit tag_name is preserved",
+			fields: []FieldExtractConfig{
 				{
-					TagName: "name",
+					TagName: "custom.name",
 					Key:     "key",
 					From:    kube.MetadataFromPod,
 				},
-			}},
+			},
 			want: []kube.FieldExtractionRule{
 				{
-					Name: "name",
+					Name: "custom.name",
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},
 			},
 		},
 		{
-			name: "keyregex-capture-group",
-			args: args{"labels", []FieldExtractConfig{
+			name: "keyregex with capture groups",
+			fields: []FieldExtractConfig{
 				{
 					TagName:  "$0-$1-$2",
 					KeyRegex: "(key)(.*)",
 					From:     kube.MetadataFromPod,
 				},
-			}},
+			},
 			want: []kube.FieldExtractionRule{
 				{
 					Name:                 "$0-$1-$2",
@@ -625,128 +619,49 @@ func Test_extractFieldRules(t *testing.T) {
 				},
 			},
 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := extractFieldRules(tt.args.fieldType, tt.args.fields...)
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
-func Test_extractFieldRules_FeatureGate(t *testing.T) {
-	tests := []struct {
-		name             string
-		fieldType        string
-		fields           []FieldExtractConfig
-		featureGateValue bool
-		wantNamePattern  string
-	}{
 		{
-			name:      "labels plural when feature gate disabled",
-			fieldType: "labels",
-			fields: []FieldExtractConfig{
-				{
-					Key:  "app",
-					From: kube.MetadataFromPod,
-				},
-			},
-			featureGateValue: false,
-			wantNamePattern:  "k8s.pod.labels.app",
-		},
-		{
-			name:      "labels singular when feature gate enabled",
-			fieldType: "labels",
-			fields: []FieldExtractConfig{
-				{
-					Key:  "app",
-					From: kube.MetadataFromPod,
-				},
-			},
-			featureGateValue: true,
-			wantNamePattern:  "k8s.pod.label.app",
-		},
-		{
-			name:      "annotations plural when feature gate disabled",
-			fieldType: "annotations",
-			fields: []FieldExtractConfig{
-				{
-					Key:  "workload",
-					From: kube.MetadataFromPod,
-				},
-			},
-			featureGateValue: false,
-			wantNamePattern:  "k8s.pod.annotations.workload",
-		},
-		{
-			name:      "annotations singular when feature gate enabled",
-			fieldType: "annotations",
-			fields: []FieldExtractConfig{
-				{
-					Key:  "workload",
-					From: kube.MetadataFromPod,
-				},
-			},
-			featureGateValue: true,
-			wantNamePattern:  "k8s.pod.annotation.workload",
-		},
-		{
-			name:      "namespace labels singular when feature gate enabled",
-			fieldType: "labels",
+			name: "namespace metadata source",
 			fields: []FieldExtractConfig{
 				{
 					Key:  "env",
 					From: kube.MetadataFromNamespace,
 				},
 			},
-			featureGateValue: true,
-			wantNamePattern:  "k8s.namespace.label.env",
+			want: []kube.FieldExtractionRule{
+				{
+					Name: "",
+					Key:  "env",
+					From: kube.MetadataFromNamespace,
+				},
+			},
 		},
 		{
-			name:      "node annotations singular when feature gate enabled",
-			fieldType: "annotations",
+			name: "node metadata source",
 			fields: []FieldExtractConfig{
 				{
 					Key:  "zone",
 					From: kube.MetadataFromNode,
 				},
 			},
-			featureGateValue: true,
-			wantNamePattern:  "k8s.node.annotation.zone",
-		},
-		{
-			name:      "explicit tag name not affected by feature gate",
-			fieldType: "labels",
-			fields: []FieldExtractConfig{
+			want: []kube.FieldExtractionRule{
 				{
-					TagName: "custom.tag.name",
-					Key:     "app",
-					From:    kube.MetadataFromPod,
+					Name: "",
+					Key:  "zone",
+					From: kube.MetadataFromNode,
 				},
 			},
-			featureGateValue: true,
-			wantNamePattern:  "custom.tag.name",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set feature gate state
-			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), tt.featureGateValue))
-			defer func() {
-				// Reset to default
-				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.K8sattrLabelsAnnotationsSingularAllowFeatureGate.ID(), false))
-			}()
-
-			got, err := extractFieldRules(tt.fieldType, tt.fields...)
+			got, err := extractFieldRules(tt.fields...)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
 			require.NoError(t, err)
-			require.Len(t, got, 1)
-			assert.Equal(t, tt.wantNamePattern, got[0].Name)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
