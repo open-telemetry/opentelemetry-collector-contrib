@@ -1,0 +1,17 @@
+{
+    "messageType": "DATA_MESSAGE",
+    "owner": "123456789012",
+    "logGroup": "test-log-group",
+    "logStream": "test-log-stream",
+    "subscriptionFilters": ["test-filter"],
+    "logEvents": [
+        {
+            "id": "38480917865042697267627490045603633139480491071049695232",
+            "timestamp": 1725544035523,
+            "message": "Hello world, here is our first log message!",
+            "extractedFields": {
+                "@aws.account": "999888777666"
+            }
+        }
+    ]
+}
