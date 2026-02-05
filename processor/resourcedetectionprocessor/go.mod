@@ -113,7 +113,6 @@ require (
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
-	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.3 // indirect
@@ -150,7 +149,6 @@ require (
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
@@ -160,18 +158,15 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector v0.145.0 // indirect
 	go.opentelemetry.io/collector/client v1.51.0 // indirect
-	go.opentelemetry.io/collector/cmd/mdatagen v0.145.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.145.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v1.51.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.51.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.145.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.51.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.51.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.51.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.145.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.51.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.145.0 // indirect
-	go.opentelemetry.io/collector/filter v0.145.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.145.0 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.145.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.145.0 // indirect

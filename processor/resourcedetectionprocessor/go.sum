@@ -77,7 +77,6 @@ github.com/containerd/errdefs/pkg v0.3.0 h1:9IKJ06FvyNlexW690DXuQNx2KA2cUJXx151X
 github.com/containerd/errdefs/pkg v0.3.0/go.mod h1:NJw6s9HwNuRhnjJhM7pylWwMyAkmCQvQ4GpJHEqRLVk=
 github.com/containerd/log v0.1.0 h1:TCJt7ioM2cr/tfR8GPbGf9/VRAX8D2B4PjzCpfX540I=
 github.com/containerd/log v0.1.0/go.mod h1:VRRf09a7mHDIRezVKTRCrOq78v577GXq3bSa3EhrzVo=
-github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -221,8 +220,6 @@ github.com/hashicorp/serf v0.10.1 h1:Z1H2J60yRKvfDYAOZLd2MU0ND4AH/WDz7xYHDWQsIPY
 github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfEvMqbG+4=
 github.com/hetznercloud/hcloud-go/v2 v2.36.0 h1:HlLL/aaVXUulqe+rsjoJmrxKhPi1MflL5O9iq5QEtvo=
 github.com/hetznercloud/hcloud-go/v2 v2.36.0/go.mod h1:MnN/QJEa/RYNQiiVoJjNHPntM7Z1wlYPgJ2HA40/cDE=
-github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
-github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/jarcoal/httpmock v1.4.1 h1:0Ju+VCFuARfFlhVXFc2HxlcQkfB+Xq12/EotHko+x2A=
 github.com/jarcoal/httpmock v1.4.1/go.mod h1:ftW1xULwo+j0R0JJkJIIi7UKigZUXCLLanykgjwBXL0=
 github.com/josharian/intern v1.0.0 h1:vlS4z54oSdjm0bgjRigI+G1HpF+tI+9rE5LLzOg8HmY=
@@ -363,7 +360,6 @@ github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0t
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/rs/cors v1.11.1 h1:eU3gRzXLRK57F5rKMGMZURNdIG4EoAmX8k94r9wXWHA=
 github.com/rs/cors v1.11.1/go.mod h1:XyqrcTp5zjWr1wsJ8PIRZssZ8b/WMcMf71DJnit4EMU=
-github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/ryanuber/columnize v0.0.0-20160712163229-9b3edd62028f/go.mod h1:sm1tb6uqfes/u+d4ooFouqFdy9/2g9QGwK3SQygK0Ts=
 github.com/scaleway/scaleway-sdk-go v1.0.0-beta.36 h1:ObX9hZmK+VmijreZO/8x9pQ8/P/ToHD/bdSb4Eg4tUo=
 github.com/scaleway/scaleway-sdk-go v1.0.0-beta.36/go.mod h1:LEsDu4BubxK7/cWhtlQWfuxwL4rf/2UEpxXz1o1EMtM=
@@ -375,11 +371,6 @@ github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPx
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
-github.com/spf13/cobra v1.10.2 h1:DMTTonx5m65Ic0GOoRY2c16WCbHxOOw6xxezuLaBpcU=
-github.com/spf13/cobra v1.10.2/go.mod h1:7C1pvHqHw5A4vrJfjNwvOdzYu0Gml16OCs2GRiTUUS4=
-github.com/spf13/pflag v1.0.6 h1:jFzHGLGAlb3ruxLB8MhbI6A8+AQX/2eW4qeyNZXNp2o=
-github.com/spf13/pflag v1.0.6/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
-github.com/spf13/pflag v1.0.9/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/spf13/pflag v1.0.10 h1:4EBh2KAYBwaONj6b2Ye1GiHfwjqyROoF4RwYO+vPwFk=
 github.com/spf13/pflag v1.0.10/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
@@ -415,8 +406,6 @@ go.opentelemetry.io/collector v0.145.0 h1:OyYXWGQpHH/eTojW9FkjulWb9CgbhcKX1ZMZuY
 go.opentelemetry.io/collector v0.145.0/go.mod h1:RB+kvaPrPuwlzocWyWtCB4vByc+ZZUyO6luYMm2MI+Y=
 go.opentelemetry.io/collector/client v1.51.0 h1:7FaC2gglA7OWol/wMMSpoE1nFY6oewIIyf3nqVzO8m8=
 go.opentelemetry.io/collector/client v1.51.0/go.mod h1:lx+VIlIm1/qaUeWs4ozeV/Q9y9rJQGwQo+dnk+We5TQ=
-go.opentelemetry.io/collector/cmd/mdatagen v0.145.0 h1:ZCDChotunBllFmI/CO0JUXEJB5js1PjT+1jjCz1CvX8=
-go.opentelemetry.io/collector/cmd/mdatagen v0.145.0/go.mod h1:6QKNjAGm3Dmdhp4S/IKjsc9ShxQiAt91Ym9EV/beYOk=
 go.opentelemetry.io/collector/component v1.51.0 h1:btNW76MCRmpsk0ARRT5wspDXF9tvdaLd3uBtYXIiQn0=
 go.opentelemetry.io/collector/component v1.51.0/go.mod h1:Zlgwh4yTLDhJglOXqiyXZ7paepTvvoijfFjLqOr/Qww=
 go.opentelemetry.io/collector/component/componentstatus v0.145.0 h1:EwUZfSaagdpRXnlrb0TqReJXXW2p9HWBU5YiIeXPCAE=
@@ -443,8 +432,6 @@ go.opentelemetry.io/collector/config/configtls v1.51.0 h1:fkZ3o3i6A7MCQBYCid2ZBY
 go.opentelemetry.io/collector/config/configtls v1.51.0/go.mod h1:d2yeGb0Bt0WA9cL9SpC1nfhu5Qfiz+PhtQoecs+Kong=
 go.opentelemetry.io/collector/confmap v1.51.0 h1:C9YlMNkIgzuauLpUz2F7DLlWwqAmkQKNcKj1XATVWuE=
 go.opentelemetry.io/collector/confmap v1.51.0/go.mod h1:uWi4b9lHfvEC2poJ2I2vXwGUREVEQTcdUguOpfqdcHM=
-go.opentelemetry.io/collector/confmap/provider/fileprovider v1.51.0 h1:yXEYXIowoLdmDF0CPUhLa0mgbhRuvySbcs7OShNsFaE=
-go.opentelemetry.io/collector/confmap/provider/fileprovider v1.51.0/go.mod h1:ew7Ntt1ehqspNIa51e1PrgIEIW8M0Nml5bHP4C0vIeU=
 go.opentelemetry.io/collector/confmap/xconfmap v0.145.0 h1:ngbyfh4+SKlA+osgsak3AxUNPxVxaJTmA0Sl7VfJzwY=
 go.opentelemetry.io/collector/confmap/xconfmap v0.145.0/go.mod h1:zTSK+c76NAy/tI1R3xfZjdoI04D9EYDnzAHQQwl6AmA=
 go.opentelemetry.io/collector/consumer v1.51.0 h1:Ex1x/k9VEEA2DOgt/eSc2Z9KTp0I6xBSruLmrYFfIFY=
@@ -467,8 +454,6 @@ go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaret
 go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.145.0/go.mod h1:xqCp8tnkBYhjuL8WYEaC721cAFWJjPz8yaIIQ8+j5os=
 go.opentelemetry.io/collector/featuregate v1.51.0 h1:dxJuv/3T84dhNKp7fz5+8srHz1dhquGzDpLW4OZTFBw=
 go.opentelemetry.io/collector/featuregate v1.51.0/go.mod h1:/1bclXgP91pISaEeNulRxzzmzMTm4I5Xih2SnI4HRSo=
-go.opentelemetry.io/collector/filter v0.145.0 h1:FYR7o9s6TIlLnPr69gdXdCMZ09we8Wi1HjSPE9e5G/4=
-go.opentelemetry.io/collector/filter v0.145.0/go.mod h1:5+dI8GNfF14Myv01982ZI+8QewY+gyjlrG3E4yx0IFs=
 go.opentelemetry.io/collector/internal/componentalias v0.145.0 h1:A9V5IiETzz8FCtjxjRM5gf7RE3sOtA1h8phmpQjXTZ4=
 go.opentelemetry.io/collector/internal/componentalias v0.145.0/go.mod h1:sEKEAwAn45ZiXRk3T/vbkvetw14tIRd0CJIxcEx9SsQ=
 go.opentelemetry.io/collector/internal/sharedcomponent v0.145.0 h1:eHQiOZFuBjklq7Ow8MZP2DapQdSB4oaBZm7wRcKfeK0=
