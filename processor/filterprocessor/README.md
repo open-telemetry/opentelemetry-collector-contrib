@@ -66,11 +66,12 @@ Within each `<signal>_conditions` list, only certain OTTL Contexts can be used. 
 [log]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md
 [profile]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlprofile/README.md
 
-Telemetry is evaluated in a hierarchy from higher to lower levels:
+Telemetry is evaluated hierarchically, from higher to lower levels. The hierarchy may vary by signal type; examples include:
 
-For traces: resource → scope → span → spanevent
+Logs: `resource` → `scope` → `log`
+Metrics: `resource` → `scope` → `metric` → `datapoint`
+Traces: `resource` → `scope` → `span` → `spanevent`
 
-For metrics: resource → scope → metric → datapoint
 
 For conditions that apply to the same signal, such as spans and span events, if the "higher" level telemetry matches a condition and is dropped, the "lower" level condition will not be checked.
 This means that if a span is dropped but a span event condition was defined, the span event condition will not be checked for that span.
