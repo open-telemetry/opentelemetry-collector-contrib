@@ -388,6 +388,7 @@ func flushBulkIndexer(
 			zap.String("index", resp.Index),
 			zap.String("error.type", resp.Error.Type),
 			zap.String("error.reason", resp.Error.Reason),
+			zap.Int("status.code", resp.Status),
 		)
 
 		if hint := getErrorHint(resp.Index, resp.Error.Type); hint != "" {
