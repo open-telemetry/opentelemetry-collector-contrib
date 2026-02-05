@@ -40,6 +40,7 @@ The following settings are optional:
   - For standalone MongoDB deployments this is the hostname and port of the mongod instance
   - For replica sets specify the hostnames and ports of the mongod instances that are in the replica set configuration. If the `replica_set` field is specified, nodes will be autodiscovered.
   - For a sharded MongoDB deployment, please specify a list of the `mongos` hosts.
+- `scheme` (default: `mongodb`): connection scheme. Use `mongodb+srv` for clusters that use SRV DNS records (e.g. MongoDB Atlas). When using `mongodb+srv`, exactly one host must be specified.
 - `username`: If authentication is required, the user can with `clusterMonitor` permissions can be provided here.
 - `password`: If authentication is required, the password can be provided here.
 - `collection_interval`: (default = `1m`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
@@ -63,6 +64,19 @@ receivers:
     tls:
       insecure: true
       insecure_skip_verify: true
+```
+
+### Example Configuration (MongoDB Atlas / SRV)
+
+```yaml
+receivers:
+  mongodb:
+    hosts:
+      - endpoint: cluster0.example.mongodb.net
+    scheme: mongodb+srv
+    username: otel
+    password: ${env:MONGODB_PASSWORD}
+    collection_interval: 60s
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
