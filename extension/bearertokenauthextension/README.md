@@ -58,7 +58,7 @@ receivers:
       grpc:
 
 exporters:
-  otlp/withauth:
+  otlp_grpc/withauth:
     endpoint: 0.0.0.0:5000
     ca_file: /tmp/certs/ca.pem
     auth:
@@ -75,5 +75,5 @@ service:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [otlp/withauth, otlp_http/withauth]
+      exporters: [otlp_grpc/withauth, otlp_http/withauth]
 ```

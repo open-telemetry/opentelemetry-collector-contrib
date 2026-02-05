@@ -1,0 +1,124 @@
+$defs:
+  deprecated_batch_config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      flush_timeout:
+        type: string
+        format: duration
+      max_size:
+        type: integer
+        x-customType: int64
+      min_size:
+        type: integer
+        x-customType: int64
+      sizer:
+        $ref: go.opentelemetry.io/collector/exporter/exporterhelper.request_sizer_type
+  hec_heartbeat:
+    description: HecHeartbeat defines the heartbeat information for the exporter
+    type: object
+    properties:
+      interval:
+        description: Interval represents the time interval for the heartbeat interval. If nothing or 0 is set, heartbeat is not enabled. A heartbeat is an event sent to _internal index with metadata for the current collector/host.
+        type: string
+        format: duration
+      startup:
+        description: Startup is used to send heartbeat events on exporter's startup.
+        type: boolean
+  hec_telemetry:
+    description: HecTelemetry defines the telemetry configuration for the exporter
+    type: object
+    properties:
+      enabled:
+        description: Enabled is the bool to enable telemetry inside splunk hec exporter
+        type: boolean
+      extra_attributes:
+        description: ExtraAttributes is the extra attributes for metrics inside splunk hex exporter
+        type: object
+        additionalProperties:
+          type: string
+      override_metrics_names:
+        description: OverrideMetricsNames is the map to override metrics for internal metrics in splunk hec exporter
+        type: object
+        additionalProperties:
+          type: string
+description: Config defines configuration for Splunk exporter.
+type: object
+properties:
+  batcher:
+    description: DeprecatedBatcher is the deprecated batcher configuration.
+    $ref: deprecated_batch_config
+  disable_compression:
+    description: Disable GZip compression. Defaults to false.
+    type: boolean
+  export_raw:
+    description: ExportRaw to send only the log's body, targeting a Splunk HEC raw endpoint.
+    type: boolean
+  health_check_enabled:
+    description: HecHealthCheckEnabled can be used to verify Splunk HEC health on exporter's startup
+    type: boolean
+  health_path:
+    description: HealthPath for health API, default is '/services/collector/health'
+    type: string
+  heartbeat:
+    description: Heartbeat is the configuration to enable heartbeat
+    $ref: hec_heartbeat
+  index:
+    description: Splunk index, optional name of the Splunk index.
+    type: string
+  log_data_enabled:
+    description: LogDataEnabled can be used to disable sending logs by the exporter.
+    type: boolean
+  max_content_length_logs:
+    description: Maximum log payload size in bytes. Default value is 2097152 bytes (2MiB). Maximum allowed value is 838860800 (~ 800 MB).
+    type: integer
+    x-customType: uint
+  max_content_length_metrics:
+    description: Maximum metric payload size in bytes. Default value is 2097152 bytes (2MiB). Maximum allowed value is 838860800 (~ 800 MB).
+    type: integer
+    x-customType: uint
+  max_content_length_traces:
+    description: Maximum trace payload size in bytes. Default value is 2097152 bytes (2MiB). Maximum allowed value is 838860800 (~ 800 MB).
+    type: integer
+    x-customType: uint
+  max_event_size:
+    description: Maximum payload size, raw uncompressed. Default value is 5242880 bytes (5MiB). Maximum allowed value is 838860800 (~ 800 MB).
+    type: integer
+    x-customType: uint
+  otel_attrs_to_hec_metadata:
+    description: 'OtelAttrsToHec creates a mapping from attributes to HEC specific metadata: source, sourcetype, index and host.'
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk.hec_to_otel_attrs
+  otel_to_hec_fields:
+    description: HecFields creates a mapping from attributes to HEC fields.
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk.otel_to_hec_fields
+  profiling_data_enabled:
+    description: ProfilingDataEnabled can be used to disable sending profiling data by the exporter.
+    type: boolean
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  source:
+    description: 'Optional Splunk source: https://docs.splunk.com/Splexicon:Source. Sources identify the incoming data.'
+    type: string
+  sourcetype:
+    description: 'Optional Splunk source type: https://docs.splunk.com/Splexicon:Sourcetype.'
+    type: string
+  splunk_app_name:
+    description: App name is used to track telemetry information for Splunk App's using HEC by App name. Defaults to "OpenTelemetry Collector Contrib".
+    type: string
+  splunk_app_version:
+    description: App version is used to track telemetry information for Splunk App's using HEC by App version. Defaults to the current OpenTelemetry Collector Contrib build version.
+    type: string
+  telemetry:
+    description: Telemetry is the configuration for splunk hec exporter telemetry
+    $ref: hec_telemetry
+  token:
+    description: 'HEC Token is the authentication token provided by Splunk: https://docs.splunk.com/Documentation/Splunk/latest/Data/UsetheHTTPEventCollector.'
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  use_multi_metric_format:
+    description: UseMultiMetricFormat combines metric events to save space during ingestion.
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

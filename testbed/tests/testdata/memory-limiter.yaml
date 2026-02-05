@@ -5,7 +5,7 @@ receivers:
         endpoint: "127.0.0.1:4317"
 
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: "127.0.0.1:55680"
     tls:
       insecure: true
@@ -20,7 +20,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter]
-      exporters: [otlp]
+      exporters: [otlp_grpc]
     metrics:
       receivers: [otlp]
-      exporters: [otlp]
+      exporters: [otlp_grpc]

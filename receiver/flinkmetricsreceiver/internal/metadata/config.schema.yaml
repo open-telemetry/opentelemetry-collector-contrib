@@ -1,0 +1,118 @@
+$defs:
+  attribute_checkpoint:
+    description: AttributeCheckpoint specifies the value checkpoint attribute.
+    type: integer
+  attribute_garbage_collector_name:
+    description: AttributeGarbageCollectorName specifies the value garbage_collector_name attribute.
+    type: integer
+  attribute_record:
+    description: AttributeRecord specifies the value record attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for flinkmetrics metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for flinkmetrics metrics.
+    type: object
+    properties:
+      flink.job.checkpoint.count:
+        $ref: metric_config
+      flink.job.checkpoint.in_progress:
+        $ref: metric_config
+      flink.job.last_checkpoint.size:
+        $ref: metric_config
+      flink.job.last_checkpoint.time:
+        $ref: metric_config
+      flink.job.restart.count:
+        $ref: metric_config
+      flink.jvm.class_loader.classes_loaded:
+        $ref: metric_config
+      flink.jvm.cpu.load:
+        $ref: metric_config
+      flink.jvm.cpu.time:
+        $ref: metric_config
+      flink.jvm.gc.collections.count:
+        $ref: metric_config
+      flink.jvm.gc.collections.time:
+        $ref: metric_config
+      flink.jvm.memory.direct.total_capacity:
+        $ref: metric_config
+      flink.jvm.memory.direct.used:
+        $ref: metric_config
+      flink.jvm.memory.heap.committed:
+        $ref: metric_config
+      flink.jvm.memory.heap.max:
+        $ref: metric_config
+      flink.jvm.memory.heap.used:
+        $ref: metric_config
+      flink.jvm.memory.mapped.total_capacity:
+        $ref: metric_config
+      flink.jvm.memory.mapped.used:
+        $ref: metric_config
+      flink.jvm.memory.metaspace.committed:
+        $ref: metric_config
+      flink.jvm.memory.metaspace.max:
+        $ref: metric_config
+      flink.jvm.memory.metaspace.used:
+        $ref: metric_config
+      flink.jvm.memory.nonheap.committed:
+        $ref: metric_config
+      flink.jvm.memory.nonheap.max:
+        $ref: metric_config
+      flink.jvm.memory.nonheap.used:
+        $ref: metric_config
+      flink.jvm.threads.count:
+        $ref: metric_config
+      flink.memory.managed.total:
+        $ref: metric_config
+      flink.memory.managed.used:
+        $ref: metric_config
+      flink.operator.record.count:
+        $ref: metric_config
+      flink.operator.watermark.output:
+        $ref: metric_config
+      flink.task.record.count:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for flinkmetrics resource attributes.
+    type: object
+    properties:
+      flink.job.name:
+        $ref: resource_attribute_config
+      flink.resource.type:
+        $ref: resource_attribute_config
+      flink.subtask.index:
+        $ref: resource_attribute_config
+      flink.task.name:
+        $ref: resource_attribute_config
+      flink.taskmanager.id:
+        $ref: resource_attribute_config
+      host.name:
+        $ref: resource_attribute_config
