@@ -518,12 +518,12 @@ The number of used bytes in the pod volume.
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| aws.volume.id | The id of the AWS Volume | Any Str | true |
+| aws.volume.id | [DEPRECATED] The id of the AWS Volume | Any Str | true |
 | container.id | Container id used to identify container | Any Str | true |
-| fs.type | The filesystem type of the Volume | Any Str | true |
-| gce.pd.name | The name of the persistent disk in GCE | Any Str | true |
-| glusterfs.endpoints.name | The endpoint name that details Glusterfs topology | Any Str | true |
-| glusterfs.path | Glusterfs volume path | Any Str | true |
+| fs.type | [DEPRECATED] The filesystem type of the Volume | Any Str | true |
+| gce.pd.name | [DEPRECATED] The name of the persistent disk in GCE | Any Str | true |
+| glusterfs.endpoints.name | [DEPRECATED] The endpoint name that details Glusterfs topology | Any Str | true |
+| glusterfs.path | [DEPRECATED] Glusterfs volume path | Any Str | true |
 | k8s.container.name | Container name used by container runtime | Any Str | true |
 | k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true |
 | k8s.node.name | The name of the Node | Any Str | true |
@@ -532,4 +532,4 @@ The number of used bytes in the pod volume.
 | k8s.pod.uid | The UID of the Pod | Any Str | true |
 | k8s.volume.name | The name of the Volume | Any Str | true |
 | k8s.volume.type | The type of the Volume | Any Str | true |
-| partition | The partition in the Volume | Any Str | true |
+| partition | [DEPRECATED] The partition in the Volume | Any Str | true |

@@ -3305,6 +3305,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.AwsVolumeID.Enabled {
 		settings.Logger.Warn("[WARNING] `aws.volume.id` should not be enabled: This resource_attribute is deprecated and will be removed soon")
 	}
+	if mbc.ResourceAttributes.FsType.Enabled {
+		settings.Logger.Warn("[WARNING] `fs.type` should not be enabled: This resource_attribute is deprecated and will be removed soon")
+	}
 	if mbc.ResourceAttributes.GcePdName.Enabled {
 		settings.Logger.Warn("[WARNING] `gce.pd.name` should not be enabled: This resource_attribute is deprecated and will be removed soon")
 	}
@@ -3313,6 +3316,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.GlusterfsPath.Enabled {
 		settings.Logger.Warn("[WARNING] `glusterfs.path` should not be enabled: This resource_attribute is deprecated and will be removed soon")
+	}
+	if mbc.ResourceAttributes.Partition.Enabled {
+		settings.Logger.Warn("[WARNING] `partition` should not be enabled: This resource_attribute is deprecated and will be removed soon")
 	}
 	mb := &MetricsBuilder{
 		config:                                     mbc,
