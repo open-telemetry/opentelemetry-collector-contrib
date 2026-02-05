@@ -1,0 +1,27 @@
+{
+    "metric_stream_name": "MyMetricStream",
+    "account_id": "1234567890",
+    "region": "us-east-1",
+    "namespace": "AWS/EC2",
+    "metric_name": "DiskWriteOps",
+    "dimensions": {
+        "InstanceId": "i-123456789012"
+    },
+    "timestamp": 1611929698000,
+    "value": {
+        "count": 3.0,
+        "sum": 20.0,
+        "max": 18.0,
+        "min": 0.0,
+        "p99": 17.0,
+        "TM(25%:75%)": 16.43,
+        "WM(10%:90%)": 15.5,
+        "TC(0.005:0.030)": 2.5,
+        "TS(80%:)": 19.0,
+        "PR(:300)": 85.0,
+        "IQM": 16.0,
+        "tm99": 15.8,
+        "wm98": 16.2
+    },
+    "unit": "Seconds"
+}
