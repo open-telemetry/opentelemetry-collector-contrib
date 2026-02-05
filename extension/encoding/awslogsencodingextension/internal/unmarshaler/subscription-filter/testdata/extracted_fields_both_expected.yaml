@@ -6,28 +6,25 @@ resourceLogs:
             stringValue: aws
         - key: cloud.account.id
           value:
-            stringValue: "123456789012"
+            stringValue: "999888777666"
+        - key: cloud.region
+          value:
+            stringValue: us-west-2
         - key: aws.log.group.names
           value:
             arrayValue:
               values:
-                - stringValue: CloudTrail
+                - stringValue: test-log-group
         - key: aws.log.stream.names
           value:
             arrayValue:
               values:
-                - stringValue: 123456789012_CloudTrail_us-east-1
+                - stringValue: test-log-stream
     scopeLogs:
       - logRecords:
           - body:
-              stringValue: '{"eventVersion":"1.03","userIdentity":{"type":"Root"}'
-            timeUnixNano: "1432826855000000000"
-          - body:
-              stringValue: '{"eventVersion":"1.03","userIdentity":{"type":"Root"}'
-            timeUnixNano: "1432826855000000000"
-          - body:
-              stringValue: '{"eventVersion":"1.03","userIdentity":{"type":"Root"}'
-            timeUnixNano: "1432826855000000000"
+              stringValue: "Hello world, here is our first log message!"
+            timeUnixNano: "1725544035523000000"
         scope:
           attributes:
             - key: encoding.format
