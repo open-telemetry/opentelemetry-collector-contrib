@@ -25,9 +25,16 @@ import (
 type mockPartitionClient struct {
 	eventData []*azeventhubs.ReceivedEventData
 	closed    bool
+	err       error
+	callCount int
 }
 
 func (p *mockPartitionClient) ReceiveEvents(_ context.Context, maxBatchSize int, _ *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error) {
+	p.callCount++
+	if p.err != nil && p.callCount == 1 {
+		return nil, p.err
+	}
+
 	events := make([]*azeventhubs.ReceivedEventData, 0, maxBatchSize)
 
 	for i := range maxBatchSize {
@@ -54,6 +61,7 @@ type mockAzeventHub struct {
 	partitionID         string
 	offset              string
 	closed              bool
+	partitionClient     *mockPartitionClient
 }
 
 func (a *mockAzeventHub) GetEventHubProperties(_ context.Context, _ *azeventhubs.GetEventHubPropertiesOptions) (azeventhubs.EventHubProperties, error) {
@@ -69,7 +77,9 @@ func (a *mockAzeventHub) NewPartitionClient(partitionID string, options *azevent
 	if options != nil && options.StartPosition.Offset != nil {
 		a.offset = *options.StartPosition.Offset
 	}
-
+	if a.partitionClient != nil {
+		return a.partitionClient, nil
+	}
 	return &mockPartitionClient{}, nil
 }
 
@@ -262,6 +272,22 @@ func TestPartitionListener_SetErr(t *testing.T) {
 	require.NoError(t, p.err)
 	p.setErr(errors.New("test"))
 	assert.Equal(t, "test", p.err.Error())
+}
+
+func TestReceive_ContinuesAfterError(t *testing.T) {
+	pc := &mockPartitionClient{err: errors.New("receive error")}
+	h := &hubWrapperAzeventhubImpl{
+		hub:    &mockAzeventHub{partitionClient: pc},
+		config: &Config{Connection: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=Key;SharedAccessKey=Secret;EntityPath=hub", PollRate: 1},
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+
+	_, err := h.Receive(ctx, "p1", func(_ context.Context, _ *azureEvent) error { return nil }, false, zaptest.NewLogger(t))
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool { return pc.callCount >= 2 }, 2*time.Second, 50*time.Millisecond)
 }
 
 func TestGetConsumerGroup(t *testing.T) {
