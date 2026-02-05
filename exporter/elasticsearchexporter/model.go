@@ -556,9 +556,9 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 
 func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]conversionEntry) {
 	if len(conversionMap) == 0 {
-		for k, v := range attrs.All() {
-			document.AddAttribute(k, v)
-		}
+		// No conversions to be done; add all attributes at top level of
+		// document.
+		document.AddAttributes("", attrs)
 		return
 	}
 

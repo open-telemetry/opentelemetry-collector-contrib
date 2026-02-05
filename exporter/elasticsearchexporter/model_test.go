@@ -1262,6 +1262,38 @@ func TestEncodeLogECSModeKnownFieldConflict(t *testing.T) {
 		expected := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"otlp"},"process":{"executable":"/usr/bin/ssh"},"service":{"name":"test-service"}}`
 		assert.JSONEq(t, expected, buf.String())
 	})
+
+	t.Run("nested_attributes_form_objects_without_conflict", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name": "test-service",
+		})
+		require.NoError(t, err)
+
+		scope := pcommon.NewInstrumentationScope()
+		record := plog.NewLogRecord()
+		err = record.Attributes().FromRaw(map[string]any{
+			"custom.field.name":  "value1",
+			"custom.field.count": 42,
+		})
+		require.NoError(t, err)
+
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: scope},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		// custom.field should form a nested object since it's not a protected field
+		expected := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"otlp"},"custom":{"field":{"count":42,"name":"value1"}},"service":{"name":"test-service"}}`
+		assert.JSONEq(t, expected, buf.String())
+	})
 }
 
 // JSON serializable structs for OTel test convenience
