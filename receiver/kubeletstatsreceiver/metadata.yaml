@@ -13,6 +13,8 @@ resource_attributes:
     description: "The id of the AWS Volume"
     enabled: true
     type: string
+    warnings:
+      if_enabled: "This resource_attribute is deprecated and will be removed soon"
   container.id:
     description: "Container id used to identify container"
     enabled: true
@@ -25,14 +27,20 @@ resource_attributes:
     description: "The name of the persistent disk in GCE"
     enabled: true
     type: string
+    warnings:
+      if_enabled: "This resource_attribute is deprecated and will be removed soon"
   glusterfs.endpoints.name:
     description: "The endpoint name that details Glusterfs topology"
     enabled: true
     type: string
+    warnings:
+      if_enabled: "This resource_attribute is deprecated and will be removed soon"
   glusterfs.path:
     description: "Glusterfs volume path"
     enabled: true
     type: string
+    warnings:
+      if_enabled: "This resource_attribute is deprecated and will be removed soon"
 
   k8s.container.name:
     description: "Container name used by container runtime"
