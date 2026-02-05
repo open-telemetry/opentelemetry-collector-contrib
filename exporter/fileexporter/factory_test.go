@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DeRuina/timberjack"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 )
@@ -166,7 +166,7 @@ func TestNewFileWriter(t *testing.T) {
 				},
 			},
 			validate: func(t *testing.T, writer *fileWriter) {
-				logger, ok := writer.file.(*lumberjack.Logger)
+				logger, ok := writer.file.(*timberjack.Logger)
 				assert.True(t, ok)
 				assert.Equal(t, defaultMaxBackups, logger.MaxBackups)
 			},
@@ -185,7 +185,7 @@ func TestNewFileWriter(t *testing.T) {
 				},
 			},
 			validate: func(t *testing.T, writer *fileWriter) {
-				logger, ok := writer.file.(*lumberjack.Logger)
+				logger, ok := writer.file.(*timberjack.Logger)
 				assert.True(t, ok)
 				assert.Equal(t, 3, logger.MaxBackups)
 				assert.Equal(t, 30, logger.MaxSize)
