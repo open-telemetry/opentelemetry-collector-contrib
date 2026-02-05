@@ -93,31 +93,33 @@ var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventions.FaaSTriggerKey):               {to: "faas.trigger.type"},
 }
 
-var recordAttrsConversionMap = map[string]conversionEntry{
-	"event.name":                                {to: "event.action"},
-	string(conventions.ExceptionMessageKey):     {to: "error.message"},
-	string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
-	string(conventions.ExceptionTypeKey):        {to: "error.type"},
-	string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
-	string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
-}
-
 var (
+	logRecordAttrsConversionMap = map[string]conversionEntry{
+		"event.name":                                {to: "event.action"},
+		string(conventions.ExceptionMessageKey):     {to: "error.message"},
+		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
+		string(conventions.ExceptionTypeKey):        {to: "error.type"},
+		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
+		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+	}
+
+	spanAttrsConversionMap = map[string]conversionEntry{
+		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
+		string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
+		string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
+		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+	}
+
 	// Precomputed protected fields for performance
 	logProtectedFields = collectECSFields(
 		resourceAttrsConversionMap,
 		map[string]conversionEntry{}, // scopeAttrsConversionMap
-		recordAttrsConversionMap,
+		logRecordAttrsConversionMap,
 	)
 	spanProtectedFields = collectECSFields(
 		resourceAttrsConversionMap,
 		map[string]conversionEntry{}, // scopeAttrsConversionMap
-		map[string]conversionEntry{ // spanAttrsConversionMap
-			string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
-			string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
-			string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
-			string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
-		},
+		spanAttrsConversionMap,
 	)
 	metricsProtectedFields = collectECSFields(resourceAttrsConversionMap)
 )
@@ -245,7 +247,7 @@ func (ecsModeEncoder) encodeLog(
 	// Then, try to map scope-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), map[string]conversionEntry{})
 	// Finally, try to map record-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
+	encodeAttributesECSMode(&document, record.Attributes(), logRecordAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
@@ -281,12 +283,7 @@ func (ecsModeEncoder) encodeSpan(
 	// Then, try to map scope-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), map[string]conversionEntry{})
 	// Finally, try to map span-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, span.Attributes(), map[string]conversionEntry{
-		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
-		string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
-		string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
-		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
-	})
+	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
 	encodeHostOsTypeECSMode(&document, ec.resource)
 	addDataStreamAttributes(&document, "", idx)
 
