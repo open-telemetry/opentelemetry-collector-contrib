@@ -1,4 +1,4 @@
-type: k8sattributes
+type: k8s_attributes
 
 status:
   class: processor
