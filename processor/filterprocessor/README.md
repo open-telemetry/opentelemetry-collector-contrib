@@ -69,9 +69,10 @@ Within each `<signal>_conditions` list, only certain OTTL Contexts can be used. 
 Telemetry is evaluated hierarchically, from higher to lower levels. The hierarchy may vary by signal type; examples include:
 
 Logs: `resource` → `scope` → `log`
-Metrics: `resource` → `scope` → `metric` → `datapoint`
-Traces: `resource` → `scope` → `span` → `spanevent`
 
+Metrics: `resource` → `scope` → `metric` → `datapoint`
+
+Traces: `resource` → `scope` → `span` → `spanevent`
 
 For conditions that apply to the same signal, such as spans and span events, if the "higher" level telemetry matches a condition and is dropped, the "lower" level condition will not be checked.
 This means that if a span is dropped but a span event condition was defined, the span event condition will not be checked for that span.
@@ -89,7 +90,7 @@ filter:
     - resource.attributes["host.name"] == "localhost" or spanevent.name == "grpc.timeout"
 ```
 
-This condition translates to: For each span event, check if its parent span's resource attribute `host.name` is `localhost` and if the span event's name is `grpc.timeout`. Drop the span event if both are true.
+This condition translates to: For each span event, check if its parent span's resource attribute `host.name` is `localhost` or if the span event's name is `grpc.timeout`. Drop the span event if either condition is true.
 
 ### Error Modes
 
