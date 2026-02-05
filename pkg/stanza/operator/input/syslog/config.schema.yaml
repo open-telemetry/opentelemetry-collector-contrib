@@ -1,0 +1,15 @@
+$defs:
+  config:
+    type: object
+    properties:
+      on_error:
+        type: string
+      tcp:
+        x-pointer: true
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp.base_config
+      udp:
+        x-pointer: true
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp.base_config
+    allOf:
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.input_config
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog.base_config

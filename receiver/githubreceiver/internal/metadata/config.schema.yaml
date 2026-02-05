@@ -1,0 +1,81 @@
+$defs:
+  attribute_vcs_change_state:
+    description: AttributeVcsChangeState specifies the value vcs.change.state attribute.
+    type: integer
+  attribute_vcs_line_change_type:
+    description: AttributeVcsLineChangeType specifies the value vcs.line_change.type attribute.
+    type: integer
+  attribute_vcs_ref_base_type:
+    description: AttributeVcsRefBaseType specifies the value vcs.ref.base.type attribute.
+    type: integer
+  attribute_vcs_ref_head_type:
+    description: AttributeVcsRefHeadType specifies the value vcs.ref.head.type attribute.
+    type: integer
+  attribute_vcs_ref_type:
+    description: AttributeVcsRefType specifies the value vcs.ref.type attribute.
+    type: integer
+  attribute_vcs_revision_delta_direction:
+    description: AttributeVcsRevisionDeltaDirection specifies the value vcs.revision_delta.direction attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for github metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for github metrics.
+    type: object
+    properties:
+      vcs.change.count:
+        $ref: metric_config
+      vcs.change.duration:
+        $ref: metric_config
+      vcs.change.time_to_approval:
+        $ref: metric_config
+      vcs.change.time_to_merge:
+        $ref: metric_config
+      vcs.contributor.count:
+        $ref: metric_config
+      vcs.ref.count:
+        $ref: metric_config
+      vcs.ref.lines_delta:
+        $ref: metric_config
+      vcs.ref.revisions_delta:
+        $ref: metric_config
+      vcs.ref.time:
+        $ref: metric_config
+      vcs.repository.count:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for github resource attributes.
+    type: object
+    properties:
+      vcs.owner.name:
+        $ref: resource_attribute_config
+      vcs.provider.name:
+        $ref: resource_attribute_config
