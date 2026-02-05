@@ -283,6 +283,8 @@ If the contributor has not replied to maintainer communications after two weeks,
 
 The OpenTelemetry community strives to foster and maintain a high-trust community. As result, rules below are more discretionary than strictly procedural.
 
+It's highly encouraged for Code Owners who know they will be unavailable for a prolonged period of time to inform other Code Owners for their components in advance. If a Code Owner expects they may be unavailable for a long, undetermined period of time, they should consider moving themselves to emeritus status, and may request to be made active again once they can devote time to maintaining the component.
+
 If a Code Owner has not replied to communications from a maintainer or another Code Owner after two weeks, they may be moved to emeritus status following the majority vote of other Code Owners and with the agreement of a maintainer. If a majority cannot be reached because of unresponsive Code Owners, the active Code Owners can move the unresponsive Code Owners to emeritus status after a 6 week period with no reply, following a majority vote of known-active Code Owners and the agreement of a maintainer.
 
 If a component is seen as at risk of being unmaintained by maintainers, the maintainers may reach out to Code Owners to ensure they are still active. If none of a component's Code Owners respond to communication after a two week period, maintainers may add a new Code Owner to the component at their discretion. Similar to the policy in the preceding paragraph, the unresponsive Code Owners may be removed if a response has not been received after an additional four weeks. This is to ensure the ongoing maintenance of components within the repository.
