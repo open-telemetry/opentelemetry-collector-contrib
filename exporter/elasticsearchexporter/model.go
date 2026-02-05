@@ -98,7 +98,7 @@ var (
 	logProtectedFields = collectECSFields(
 		resourceAttrsConversionMap,
 		map[string]conversionEntry{}, // scopeAttrsConversionMap
-		map[string]conversionEntry{   // recordAttrsConversionMap
+		map[string]conversionEntry{ // recordAttrsConversionMap
 			"event.name":                                {to: "event.action"},
 			string(conventions.ExceptionMessageKey):     {to: "error.message"},
 			string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
@@ -110,7 +110,7 @@ var (
 	spanProtectedFields = collectECSFields(
 		resourceAttrsConversionMap,
 		map[string]conversionEntry{}, // scopeAttrsConversionMap
-		map[string]conversionEntry{   // spanAttrsConversionMap
+		map[string]conversionEntry{ // spanAttrsConversionMap
 			string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
 			string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
 			string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
