@@ -5,7 +5,11 @@ package vcrreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
-	"sync"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -14,11 +18,11 @@ import (
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
-type rawFile struct {
+/*type rawFile struct {
 	path       string
 	signalType string
 	sequence   int
-}
+}*/
 
 type tapeFile struct {
 	path    string
@@ -28,8 +32,8 @@ type tapeFile struct {
 
 type tapeLoader struct {
 	dir         []string
+	signalType  string
 	loadedFiles map[string]tapeFile
-	mu          sync.Mutex
 }
 
 type Config struct {
@@ -48,11 +52,10 @@ func createDefaultConfig() component.Config {
 
 type vcrReceiver struct {
 	loader *tapeLoader
-	cancel context.CancelFunc
 }
 
 func NewFactory() receiver.Factory {
-	typ, err := component.NewType("vcrreceiver")
+	typ, err := component.NewType("vcr")
 	if err != nil {
 		panic(err)
 	}
@@ -66,30 +69,80 @@ func NewFactory() receiver.Factory {
 		xreceiver.WithProfiles(createProfilesReceiver, component.StabilityLevelDevelopment))
 }
 
-func (v *vcrReceiver) Start(_ context.Context, _ component.Host) error {
+func (*vcrReceiver) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (v *vcrReceiver) Shutdown(ctx context.Context) error {
-	v.cancel()
+func (*vcrReceiver) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func newTapeLoader(dir []string) *tapeLoader {
-	return &tapeLoader{
+func newTapeLoader(dir []string, signalType string) (*tapeLoader, error) {
+	loader := &tapeLoader{
 		dir:         dir,
+		signalType:  signalType,
 		loadedFiles: make(map[string]tapeFile),
 	}
+
+	if err := loader.loadTapeFiles(); err != nil {
+		return nil, err
+	}
+	return loader, nil
+}
+
+func (t *tapeLoader) loadTapeFiles() error {
+	pattern := regexp.MustCompile(fmt.Sprintf(`^tape_%s_(\d{18,20})-(\d{18,20})\.json$`, t.signalType))
+	for _, dir := range t.dir {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return fmt.Errorf("failed to read directory %s: %w", dir, err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			matches := pattern.FindStringSubmatch(entry.Name())
+			if matches == nil {
+				// Skip files that don't match the pattern
+				continue
+			}
+			// matches[0] = full string
+			// matches[1] = signal type (metrics|traces|logs|profiles)
+			// matches[2] = start timestamp
+			// matches[3] = end timestamp
+			startNs, err := strconv.ParseInt(matches[2], 10, 64)
+			if err != nil {
+				return fmt.Errorf("invalid start timestamp in file %s: %w", entry.Name(), err)
+			}
+			endNs, err := strconv.ParseInt(matches[3], 10, 64)
+			if err != nil {
+				return fmt.Errorf("invalid end timestamp in file %s: %w", entry.Name(), err)
+			}
+			if endNs < startNs {
+				return fmt.Errorf("end timestamp must be >= start timestamp in file %s", entry.Name())
+			}
+			fullPath := filepath.Join(dir, entry.Name())
+			t.loadedFiles[fullPath] = tapeFile{
+				path:    fullPath,
+				startNs: startNs,
+				endNs:   endNs,
+			}
+		}
+	}
+	return nil
 }
 
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	settings receiver.Settings,
 	cfg component.Config,
-	metrics consumer.Metrics,
+	_ consumer.Metrics,
 ) (receiver.Metrics, error) {
 	c := cfg.(*Config)
-	loader := newTapeLoader(c.IncludeTape)
+	loader, err := newTapeLoader(c.IncludeTape, "metrics")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tape loader: %w", err)
+	}
 
 	go func() {
 		// start playback tape loop here
@@ -102,13 +155,16 @@ func createMetricsReceiver(
 }
 
 func createTracesReceiver(
-	ctx context.Context,
+	_ context.Context,
 	settings receiver.Settings,
 	cfg component.Config,
-	traces consumer.Traces,
+	_ consumer.Traces,
 ) (receiver.Traces, error) {
 	c := cfg.(*Config)
-	loader := newTapeLoader(c.IncludeTape)
+	loader, err := newTapeLoader(c.IncludeTape, "traces")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tape loader: %w", err)
+	}
 
 	go func() {
 		// start playback tape loop here
@@ -121,13 +177,16 @@ func createTracesReceiver(
 }
 
 func createLogsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	settings receiver.Settings,
 	cfg component.Config,
-	logs consumer.Logs,
+	_ consumer.Logs,
 ) (receiver.Logs, error) {
 	c := cfg.(*Config)
-	loader := newTapeLoader(c.IncludeTape)
+	loader, err := newTapeLoader(c.IncludeTape, "logs")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tape loader: %w", err)
+	}
 
 	go func() {
 		// start playback tape loop here
@@ -140,13 +199,16 @@ func createLogsReceiver(
 }
 
 func createProfilesReceiver(
-	ctx context.Context,
+	_ context.Context,
 	settings receiver.Settings,
 	cfg component.Config,
-	profiles xconsumer.Profiles,
+	_ xconsumer.Profiles,
 ) (xreceiver.Profiles, error) {
 	c := cfg.(*Config)
-	loader := newTapeLoader(c.IncludeTape)
+	loader, err := newTapeLoader(c.IncludeTape, "profiles")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tape loader: %w", err)
+	}
 
 	go func() {
 		// start playback tape loop here
