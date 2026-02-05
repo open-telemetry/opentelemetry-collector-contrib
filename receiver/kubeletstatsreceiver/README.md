@@ -229,12 +229,16 @@ receivers:
       auth_type: serviceAccount
 ```
 
-If `k8s_api_config` set, the receiver will attempt to collect metadata from underlying storage resources for
+If `k8s_api_config` is set, the receiver will attempt to collect metadata from underlying storage resources for
 Persistent Volume Claims. For example, if a Pod is using a PVC backed by an EBS instance on AWS, the receiver
 would set the `k8s.volume.type` label to be `awsElasticBlockStore` rather than `persistentVolumeClaim`.
 
 > [!WARNING]
 > awsElasticBlockStore resource attribute `aws.volume.id` is deprecated and will be removed soon
+
+**Important**: When using `k8s_api_config`, the service account must have `get` permissions for
+`persistentvolumeclaims` and `persistentvolumes` resources. See [Role-based access control](#role-based-access-control)
+for the required RBAC configuration.
 
 ### Metric Groups
 
@@ -322,7 +326,9 @@ with detailed sample configurations in [testdata/config.yaml](./testdata/config.
 
 ### Role-based access control
 
-The Kubelet Stats Receiver needs `get` permissions on the `nodes/stats` resources. Additionally, when using `extra_metadata_labels` or any of the `{request|limit}_utilization` metrics the processor also needs `get` permissions for `nodes/proxy` resources.
+The Kubelet Stats Receiver needs `get` permissions on the `nodes/stats` resources. Additionally, when using `extra_metadata_labels` or any of the `{request|limit}_utilization` metrics the receiver also needs `get` permissions for `nodes/proxy` resources.
+
+When using `k8s_api_config` to collect detailed volume metadata from PersistentVolumeClaims (as described in [Collecting Additional Volume Metadata](#collecting-additional-volume-metadata)), the receiver also needs `get` permissions for `persistentvolumeclaims` and `persistentvolumes` resources.
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -338,5 +344,14 @@ rules:
   # are collecting the request/limit utilization metrics
   - apiGroups: [""]
     resources: ["nodes/proxy"]
+    verbs: ["get"]
+
+  # Only needed if you are using k8s_api_config to collect
+  # detailed volume metadata from PersistentVolumeClaims
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
     verbs: ["get"]
 ```

@@ -60,7 +60,7 @@ func TestEnabledAttributes(t *testing.T) {
 		"k8s.namespace.name",
 		"k8s.pod.name",
 		"k8s.pod.uid",
-		metadataPodStartTime,
+		"k8s.pod.start_time",
 		"k8s.deployment.name",
 		"k8s.node.name",
 		"container.image.name",

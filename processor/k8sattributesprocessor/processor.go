@@ -161,7 +161,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
 			if kp.passthroughMode || kp.rules.PodIP {
-				setResourceAttribute(resource.Attributes(), kube.K8sIPLabelName, podIdentifierValue[i].Value)
+				setResourceAttribute(resource.Attributes(), string(conventions.K8SPodIPKey), podIdentifierValue[i].Value)
 			}
 			break
 		}
