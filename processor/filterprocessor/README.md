@@ -249,7 +249,8 @@ trace_conditions:
   - context: span
     conditions:
       - IsRootSpan()
-  - spanevent.name == "bar"
+  - conditions:
+      - spanevent.name == "bar"
 ```
 
 The advanced configuration is required for `IsRootSpan()` because there is no Path prefix in the condition, 
