@@ -235,7 +235,6 @@ func (*formatJSONUnmarshaler) addMetricToResource(
 		q.SetQuantile(percentileFloat / 100) // Convert percentile to quantile
 		q.SetValue(value)
 	}
-
 }
 
 // createMetrics creates pmetric.Metrics based on
