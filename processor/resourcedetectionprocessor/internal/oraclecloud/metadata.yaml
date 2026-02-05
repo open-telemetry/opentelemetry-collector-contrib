@@ -1,6 +1,11 @@
-type: resourcedetectionprocessor/oraclecloud
+type: oracleclouddetector
 
-parent: resourcedetection
+status:
+  class: processor
+  stability:
+    alpha: [traces, metrics, logs, profiles]
+  codeowners:
+    active: [dashpole]
 
 resource_attributes:
   cloud.availability_zone:
