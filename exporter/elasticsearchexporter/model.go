@@ -93,19 +93,21 @@ var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventions.FaaSTriggerKey):               {to: "faas.trigger.type"},
 }
 
+var recordAttrsConversionMap = map[string]conversionEntry{
+	"event.name":                                {to: "event.action"},
+	string(conventions.ExceptionMessageKey):     {to: "error.message"},
+	string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
+	string(conventions.ExceptionTypeKey):        {to: "error.type"},
+	string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
+	string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+}
+
 var (
 	// Precomputed protected fields for performance
 	logProtectedFields = collectECSFields(
 		resourceAttrsConversionMap,
 		map[string]conversionEntry{}, // scopeAttrsConversionMap
-		map[string]conversionEntry{ // recordAttrsConversionMap
-			"event.name":                                {to: "event.action"},
-			string(conventions.ExceptionMessageKey):     {to: "error.message"},
-			string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
-			string(conventions.ExceptionTypeKey):        {to: "error.type"},
-			string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
-			string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
-		},
+		recordAttrsConversionMap,
 	)
 	spanProtectedFields = collectECSFields(
 		resourceAttrsConversionMap,
@@ -238,16 +240,12 @@ func (ecsModeEncoder) encodeLog(
 ) error {
 	var document objmodel.Document
 
+	// First, try to map resource-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
+	// Then, try to map scope-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), map[string]conversionEntry{})
-	encodeAttributesECSMode(&document, record.Attributes(), map[string]conversionEntry{
-		"event.name":                                {to: "event.action"},
-		string(conventions.ExceptionMessageKey):     {to: "error.message"},
-		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
-		string(conventions.ExceptionTypeKey):        {to: "error.type"},
-		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
-		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
-	})
+	// Finally, try to map record-level attributes to ECS fields.
+	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
@@ -566,6 +564,7 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 		// If ECS key is found for current k in conversion map, use it.
 		if c, exists := conversionMap[k]; exists {
 			if c.skip {
+				// Skip the conversion for this k.
 				continue
 			}
 			if !c.skipIfExists {
@@ -580,6 +579,7 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 			continue
 		}
 
+		// Otherwise, add key at top level with attribute name as-is.
 		document.AddAttribute(k, v)
 	}
 }

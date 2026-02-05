@@ -10,13 +10,13 @@ component: exporter/elasticsearch
 note: Fix ECS mode to properly protect known schema fields from getting `.value` suffix when conflicting with nested attributes
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [37211, 45589]
+issues: [37211]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Previously, when ECS mode was enabled and attributes like `process.executable.name` conflicted with the known ECS field `process.executable`, the deduplication logic would incorrectly add a `.value` suffix to the known field, resulting in `process.executable.value`. This fix ensures protected ECS fields remain unchanged and conflicting nested attributes are properly ignored. Performance improved by precomputing protected field sets and using map[string]struct{} for memory efficiency.
+  Previously, when ECS mode was enabled and attributes like `process.executable.name` conflicted with the known ECS field `process.executable`, the deduplication logic would incorrectly add a `.value` suffix to the known field, resulting in `process.executable.value`. This fix ensures protected ECS fields remain unchanged and conflicting nested attributes are properly ignored.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
