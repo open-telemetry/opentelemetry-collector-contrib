@@ -344,7 +344,7 @@ func generateProfiles(resourceFunc ...generateResourceFunc) pprofile.Profiles {
 
 func withPassthroughIP(passthroughIP string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().PutStr(kube.K8sIPLabelName, passthroughIP)
+		res.Attributes().PutStr("k8s.pod.ip", passthroughIP)
 	}
 }
 
@@ -600,7 +600,7 @@ func TestIPSourceWithoutPodAssociation(t *testing.T) {
 
 			for _, res := range resources {
 				if tc.resourceK8SIP != "" {
-					res.Attributes().PutStr(kube.K8sIPLabelName, tc.resourceK8SIP)
+					res.Attributes().PutStr("k8s.pod.ip", tc.resourceK8SIP)
 				}
 				if tc.resourceIP != "" {
 					res.Attributes().PutStr(clientIPLabelName, tc.resourceIP)
@@ -1279,7 +1279,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("1"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:           "1.1.1.1",
+				"k8s.pod.ip":                  "1.1.1.1",
 				"k8s.container.name":          "app",
 				"k8s.container.restart_count": "1",
 				"container.id":                "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e",
@@ -1307,7 +1307,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:  "1.1.1.1",
+				"k8s.pod.ip":         "1.1.1.1",
 				"k8s.container.name": "app",
 				"container.id":       "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848",
 			},
@@ -1332,7 +1332,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:            "1.1.1.1",
+				"k8s.pod.ip":                   "1.1.1.1",
 				"k8s.container.name":           "app",
 				"container.image.repo_digests": []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
 			},
@@ -1360,7 +1360,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("0"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:           "1.1.1.1",
+				"k8s.pod.ip":                  "1.1.1.1",
 				"k8s.container.name":          "new-app",
 				"k8s.container.restart_count": "0",
 			},
@@ -1387,7 +1387,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("1"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:           "1.1.1.1",
+				"k8s.pod.ip":                  "1.1.1.1",
 				"k8s.container.name":          "app",
 				"k8s.container.restart_count": "1",
 				"container.image.name":        "test/app",
@@ -1547,7 +1547,7 @@ func TestProcessorPicksUpPassthroughPodIp(t *testing.T) {
 	m.assertResourceAttributesLen(0, 3)
 
 	m.assertResource(0, func(res pcommon.Resource) {
-		assertResourceHasStringAttribute(t, res, kube.K8sIPLabelName, "2.2.2.2")
+		assertResourceHasStringAttribute(t, res, "k8s.pod.ip", "2.2.2.2")
 		assertResourceHasStringAttribute(t, res, "k", "v")
 		assertResourceHasStringAttribute(t, res, "1", "2")
 	})
@@ -1601,9 +1601,9 @@ func TestMetricsProcessorHostname(t *testing.T) {
 			name:     "valid IP in hostname",
 			hostname: "3.3.3.3",
 			expectedAttrs: map[string]string{
-				"host.name":         "3.3.3.3",
-				kube.K8sIPLabelName: "3.3.3.3",
-				"kk":                "vv",
+				"host.name":  "3.3.3.3",
+				"k8s.pod.ip": "3.3.3.3",
+				"kk":         "vv",
 			},
 		},
 	}
