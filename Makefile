@@ -112,7 +112,7 @@ integration-tests-with-cover:
 # Long-running e2e tests
 .PHONY: stability-tests
 stability-tests: otelcontribcol
-	@e@o Stability tests are disabled until we have a stable performance environment.
+	@echo Stability tests are disabled until we have a stable performance environment.
 	@echo To enable the tests replace this echo by $(MAKE) -C testbed run-stability-tests
 
 .PHONY: genlabels
