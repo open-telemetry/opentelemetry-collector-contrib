@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -26,12 +27,12 @@ type mockPartitionClient struct {
 	eventData []*azeventhubs.ReceivedEventData
 	closed    bool
 	err       error
-	callCount int
+	callCount atomic.Int32
 }
 
 func (p *mockPartitionClient) ReceiveEvents(_ context.Context, maxBatchSize int, _ *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error) {
-	p.callCount++
-	if p.err != nil && p.callCount == 1 {
+	callCount := p.callCount.Add(1)
+	if p.err != nil && callCount == 1 {
 		return nil, p.err
 	}
 
@@ -287,7 +288,7 @@ func TestReceive_ContinuesAfterError(t *testing.T) {
 	_, err := h.Receive(ctx, "p1", func(_ context.Context, _ *azureEvent) error { return nil }, false, zaptest.NewLogger(t))
 	require.NoError(t, err)
 
-	require.Eventually(t, func() bool { return pc.callCount >= 2 }, 2*time.Second, 50*time.Millisecond)
+	require.Eventually(t, func() bool { return pc.callCount.Load() >= 2 }, 2*time.Second, 50*time.Millisecond)
 }
 
 func TestGetConsumerGroup(t *testing.T) {
