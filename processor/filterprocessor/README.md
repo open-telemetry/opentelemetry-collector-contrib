@@ -86,7 +86,7 @@ Note that when a single condition contains paths from different contexts, `resou
 ```
 filter:
   trace_conditions:
-    - resource.attributes["host.name"] == "localhost" and spanevent.name == "grpc.timeout"
+    - resource.attributes["host.name"] == "localhost" or spanevent.name == "grpc.timeout"
 ```
 
 This condition translates to: For each span event, check if its parent span's resource attribute `host.name` is `localhost` and if the span event's name is `grpc.timeout`. Drop the span event if both are true.
