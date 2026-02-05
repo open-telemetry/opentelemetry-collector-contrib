@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: exporter/datadogexporter
+component: exporter/datadog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: OTLP logs now support array type attributes. Arrays containing primitive values or nested maps are now correctly preserved in the log output.
