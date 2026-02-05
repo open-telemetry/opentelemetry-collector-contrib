@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 )
 
 type mockPartitionClient struct {
@@ -171,6 +172,7 @@ func TestHubWrapperAzeventhubImpl_Receive(t *testing.T) {
 					return nil
 				},
 				test.applyOffset,
+				zaptest.NewLogger(t),
 			)
 			if test.expectErr {
 				require.Error(t, err)
