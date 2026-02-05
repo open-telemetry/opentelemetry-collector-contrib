@@ -21,12 +21,7 @@ const (
 	filterOPNotEquals    = "not-equals"
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
-	metadataPodIP        = "k8s.pod.ip"
-	metadataPodStartTime = "k8s.pod.start_time"
-	specPodHostName      = "k8s.pod.hostname"
-
-	// TODO: Should be migrated to https://github.com/open-telemetry/semantic-conventions/blob/v1.38.0/model/container/registry.yaml#L48-L57
-	containerImageTag = "container.image.tag"
+	containerImageTag    = "container.image.tag"
 )
 
 // option represents a configuration option that can be passes.
@@ -66,8 +61,13 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.ContainerImageRepoDigests.Enabled {
 		attributes = append(attributes, string(conventions.ContainerImageRepoDigestsKey))
 	}
-	if defaultConfig.ContainerImageTag.Enabled {
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if !disableLegacy && defaultConfig.ContainerImageTag.Enabled {
 		attributes = append(attributes, containerImageTag)
+	}
+	if enableStable && defaultConfig.ContainerImageTags.Enabled {
+		attributes = append(attributes, string(conventions.ContainerImageTagsKey))
 	}
 	if defaultConfig.K8sContainerName.Enabled {
 		attributes = append(attributes, string(conventions.K8SContainerNameKey))
@@ -106,19 +106,19 @@ func enabledAttributes() (attributes []string) {
 		attributes = append(attributes, string(conventions.K8SNodeUIDKey))
 	}
 	if defaultConfig.K8sPodHostname.Enabled {
-		attributes = append(attributes, specPodHostName)
+		attributes = append(attributes, string(conventions.K8SPodHostnameKey))
 	}
 	if defaultConfig.K8sPodName.Enabled {
 		attributes = append(attributes, string(conventions.K8SPodNameKey))
 	}
 	if defaultConfig.K8sPodStartTime.Enabled {
-		attributes = append(attributes, metadataPodStartTime)
+		attributes = append(attributes, string(conventions.K8SPodStartTimeKey))
 	}
 	if defaultConfig.K8sPodUID.Enabled {
 		attributes = append(attributes, string(conventions.K8SPodUIDKey))
 	}
 	if defaultConfig.K8sPodIP.Enabled {
-		attributes = append(attributes, metadataPodIP)
+		attributes = append(attributes, string(conventions.K8SPodIPKey))
 	}
 	if defaultConfig.K8sReplicasetName.Enabled {
 		attributes = append(attributes, string(conventions.K8SReplicaSetNameKey))
@@ -159,11 +159,11 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.PodName = true
 			case string(conventions.K8SPodUIDKey):
 				p.rules.PodUID = true
-			case specPodHostName:
+			case string(conventions.K8SPodHostnameKey):
 				p.rules.PodHostName = true
-			case metadataPodStartTime:
+			case string(conventions.K8SPodStartTimeKey):
 				p.rules.StartTime = true
-			case metadataPodIP:
+			case string(conventions.K8SPodIPKey):
 				p.rules.PodIP = true
 			case string(conventions.K8SDeploymentNameKey):
 				p.rules.DeploymentName = true
@@ -203,6 +203,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerImageRepoDigests = true
 			case containerImageTag:
 				p.rules.ContainerImageTag = true
+			case string(conventions.ContainerImageTagsKey):
+				p.rules.ContainerImageTags = true
 			case string(conventions.K8SClusterUIDKey):
 				p.rules.ClusterUID = true
 			case string(conventions.ServiceNamespaceKey):

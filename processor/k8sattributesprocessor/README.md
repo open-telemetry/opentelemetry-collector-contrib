@@ -959,7 +959,8 @@ as tags.
 
 ### Kubernetes Versions
 
-This processor is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L98) workflow. These tested versions represent the officially supported Kubernetes versions for this component.
+This processor is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L98)
+workflow. These tested versions represent the officially supported Kubernetes versions for this component.
 
 ## Production Deployment Guide
 
@@ -1078,7 +1079,7 @@ Key metrics to monitor:
    of the node it is on, it consumes more memory than other processors. That consumption is compounded
    if users don't filter down to only the metadata for the node the processor is running on.
 
-### Feature Gates
+## Feature Gates
 
 See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
 
@@ -1087,3 +1088,24 @@ Feature gates can be enabled using the `--feature-gates` flag:
 ```shell
 "--feature-gates=<feature-gate>"
 ```
+
+## Semantic Conventions Compatibility
+
+The processor is moving towards the latest [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/)
+through the following feature gates:
+- `processor.k8sattributes.DontEmitV0K8sConventions`
+- `processor.k8sattributes.EmitV1K8sConventions`
+
+This follows the migration pattern described by the respective Collector [RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/semconv-feature-gates.md#proposed-mechanism).
+
+The breaking changes between the 2 schemas are the following:
+- `container.image.tag` -> `container.image.tags`
+- `k8s.pod.labels.<key>` -> `k8s.pod.label.<key>`
+- `k8s.pod.annotations.<key>` -> `k8s.pod.annotation.<key>`
+- `k8s.node.labels.<key>` -> `k8s.node.label.<key>`
+- `k8s.node.annotations.<key>` -> `k8s.node.annotation.<key>`
+- `k8s.namespace.labels.<key>` -> `k8s.namespace.label.<key>`
+- `k8s.namespace.annotations.<key>` -> `k8s.namespace.annotation.<key>`
+
+All attributes emitted through the `processor.k8sattributes.EmitV1K8sConventions` feature gate
+are currently in `alpha` stability and are actively moving towards `stable` stability.

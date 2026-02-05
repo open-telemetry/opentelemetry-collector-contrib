@@ -391,6 +391,70 @@ func TestFailContactingOAuth(t *testing.T) {
 	assert.ErrorContains(t, err, serverURL.String())
 }
 
+func TestClientCredentials(t *testing.T) {
+	resourceServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		if auth != "Bearer ok" {
+			t.Errorf("unexpected Authorization header: %q", auth)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("success"))
+	}))
+	defer resourceServer.Close()
+
+	var tokenRequests int
+	var tokenRequest *http.Request
+	var tokenRequestForm url.Values
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenRequests++
+		if err := r.ParseForm(); err != nil {
+			panic(err)
+		}
+		tokenRequest = r
+		tokenRequestForm = r.PostForm
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"access_token":"ok","token_type":"Bearer"}`))
+	}))
+	defer tokenServer.Close()
+
+	cfg := &Config{
+		ClientID:     "test-client-id",
+		ClientSecret: "test-client-secret",
+		GrantType:    "client_credentials",
+		TokenURL:     tokenServer.URL,
+		Scopes:       []string{"scope1"},
+	}
+	oauth2Authenticator, err := newClientAuthenticator(cfg, zap.NewNop())
+	require.NoError(t, err)
+
+	roundTripper, err := oauth2Authenticator.RoundTripper(http.DefaultTransport)
+	require.NoError(t, err)
+
+	client := &http.Client{Transport: roundTripper}
+	resp, err := client.Get(resourceServer.URL)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	// Token endpoint must have been called with client_credentials flow
+	require.Equal(t, 1, tokenRequests, "token endpoint should have been called once")
+
+	// client-credentials will first attempt with client ID and secret in the
+	// Authorization header, and if that fails it will fall back to passing them
+	// as form values. We just check the first here.
+	assert.Equal(t, url.Values{
+		"grant_type": []string{"client_credentials"},
+		"scope":      []string{"scope1"},
+	}, tokenRequestForm)
+
+	username, password, ok := tokenRequest.BasicAuth()
+	require.True(t, ok)
+	assert.Equal(t, "test-client-id", username)
+	assert.Equal(t, "test-client-secret", password)
+}
+
 func TestJwtOAuth(t *testing.T) {
 	tokenTS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Helper()
