@@ -58,25 +58,6 @@ func NewFactory() connector.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	bounds := []time.Duration{
-		2 * time.Millisecond,
-		4 * time.Millisecond,
-		6 * time.Millisecond,
-		8 * time.Millisecond,
-		10 * time.Millisecond,
-		50 * time.Millisecond,
-		100 * time.Millisecond,
-		200 * time.Millisecond,
-		400 * time.Millisecond,
-		800 * time.Millisecond,
-		1 * time.Second,
-		1400 * time.Millisecond,
-		2 * time.Second,
-		5 * time.Second,
-		10 * time.Second,
-		15 * time.Second,
-	}
-
 	return &Config{
 		Store: StoreConfig{
 			TTL:      2 * time.Second,
@@ -88,9 +69,8 @@ func createDefaultConfig() component.Config {
 		VirtualNodePeerAttributes: []string{
 			string(semconv.PeerServiceKey), string(semconv.DBNameKey), string(semconv.DBSystemKey),
 		},
-		DatabaseNameAttributes:  []string{string(semconv.DBNameKey)},
-		MetricsFlushInterval:    60 * time.Second, // 1 DPM
-		LatencyHistogramBuckets: bounds,
+		DatabaseNameAttributes: []string{string(semconv.DBNameKey)},
+		MetricsFlushInterval:   60 * time.Second, // 1 DPM
 	}
 }
 
