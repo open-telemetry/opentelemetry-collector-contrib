@@ -235,14 +235,10 @@ func (doc *Document) sort() {
 // protectedSet is an optional map of field paths that should never get .value suffix.
 //
 // Dedup ensure that keys are sorted.
-func (doc *Document) Dedup(protectedSet map[string]bool) {
+func (doc *Document) Dedup(protectedSet map[string]struct{}) {
 	// 1. Always ensure the fields are sorted, Dedup support requires
 	// Fields to be sorted.
 	doc.sort()
-
-	if protectedSet == nil {
-		protectedSet = make(map[string]bool)
-	}
 
 	// 2. rename fields if a primitive value is overwritten by an object,
 	//    EXCEPT for protected fields (well-defined schema fields like ECS).
@@ -265,10 +261,11 @@ func (doc *Document) Dedup(protectedSet map[string]bool) {
 	for i := 0; i < len(doc.fields)-1; i++ {
 		key, nextKey := doc.fields[i].key, doc.fields[i+1].key
 		if len(key) < len(nextKey) && strings.HasPrefix(nextKey, key) && nextKey[len(key)] == '.' {
-			if protectedSet[key] {
+			if _, isProtected := protectedSet[key]; isProtected {
 				// This is a protected field - mark all nested fields under it as ignore.
+				keyPrefix := key + "."
 				for j := i + 1; j < len(doc.fields); j++ {
-					if strings.HasPrefix(doc.fields[j].key, key+".") {
+					if strings.HasPrefix(doc.fields[j].key, keyPrefix) {
 						doc.fields[j].value = ignoreValue
 					} else {
 						break
@@ -312,7 +309,7 @@ func newJSONVisitor(w io.Writer) *json.Visitor {
 // Serialize writes the document to the given writer. The document fields will be
 // deduplicated and, if dedot is true, turned into nested objects prior to
 // serialization.
-func (doc *Document) Serialize(w io.Writer, dedot bool, protectedSet map[string]bool) error {
+func (doc *Document) Serialize(w io.Writer, dedot bool, protectedSet map[string]struct{}) error {
 	doc.Dedup(protectedSet)
 	v := newJSONVisitor(w)
 	return doc.iterJSON(v, dedot)
@@ -512,7 +509,7 @@ func (v *Value) sort() {
 }
 
 // Dedup recursively dedups keys in stored documents.
-func (v *Value) Dedup(protectedSet map[string]bool) {
+func (v *Value) Dedup(protectedSet map[string]struct{}) {
 	switch v.kind {
 	case KindObject:
 		v.doc.Dedup(protectedSet)

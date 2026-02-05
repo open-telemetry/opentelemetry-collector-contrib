@@ -34,12 +34,12 @@ type conversionEntry struct {
 
 // collectECSFields extracts all target ECS field paths from conversion maps
 // and returns them as a set (map) for efficient lookups.
-func collectECSFields(maps ...map[string]conversionEntry) map[string]bool {
-	fields := make(map[string]bool)
+func collectECSFields(maps ...map[string]conversionEntry) map[string]struct{} {
+	fields := make(map[string]struct{})
 	for _, m := range maps {
 		for _, entry := range m {
 			if entry.to != "" && !entry.skip {
-				fields[entry.to] = true
+				fields[entry.to] = struct{}{}
 			}
 		}
 	}
@@ -92,6 +92,33 @@ var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventions.FaaSInstanceKey):              {to: "faas.id"},
 	string(conventions.FaaSTriggerKey):               {to: "faas.trigger.type"},
 }
+
+var (
+	// Precomputed protected fields for performance
+	logProtectedFields = collectECSFields(
+		resourceAttrsConversionMap,
+		map[string]conversionEntry{}, // scopeAttrsConversionMap
+		map[string]conversionEntry{   // recordAttrsConversionMap
+			"event.name":                                {to: "event.action"},
+			string(conventions.ExceptionMessageKey):     {to: "error.message"},
+			string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
+			string(conventions.ExceptionTypeKey):        {to: "error.type"},
+			string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
+			string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+		},
+	)
+	spanProtectedFields = collectECSFields(
+		resourceAttrsConversionMap,
+		map[string]conversionEntry{}, // scopeAttrsConversionMap
+		map[string]conversionEntry{   // spanAttrsConversionMap
+			string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
+			string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
+			string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
+			string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+		},
+	)
+	metricsProtectedFields = collectECSFields(resourceAttrsConversionMap)
+)
 
 var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
 
@@ -211,22 +238,16 @@ func (ecsModeEncoder) encodeLog(
 ) error {
 	var document objmodel.Document
 
-	scopeAttrsConversionMap := map[string]conversionEntry{}
-
-	recordAttrsConversionMap := map[string]conversionEntry{
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), map[string]conversionEntry{})
+	encodeAttributesECSMode(&document, record.Attributes(), map[string]conversionEntry{
 		"event.name":                                {to: "event.action"},
 		string(conventions.ExceptionMessageKey):     {to: "error.message"},
 		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
 		string(conventions.ExceptionTypeKey):        {to: "error.type"},
 		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
-	}
-
-	protectedFields := collectECSFields(resourceAttrsConversionMap, scopeAttrsConversionMap, recordAttrsConversionMap)
-
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
+	})
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
@@ -246,7 +267,7 @@ func (ecsModeEncoder) encodeLog(
 		document.AddAttribute("message", record.Body())
 	}
 
-	return document.Serialize(buf, true, protectedFields)
+	return document.Serialize(buf, true, logProtectedFields)
 }
 
 func (ecsModeEncoder) encodeSpan(
@@ -257,20 +278,14 @@ func (ecsModeEncoder) encodeSpan(
 ) error {
 	var document objmodel.Document
 
-	scopeAttrsConversionMap := map[string]conversionEntry{}
-
-	spanAttrsConversionMap := map[string]conversionEntry{
+	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), map[string]conversionEntry{})
+	encodeAttributesECSMode(&document, span.Attributes(), map[string]conversionEntry{
 		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
 		string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
 		string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
-	}
-
-	protectedFields := collectECSFields(resourceAttrsConversionMap, scopeAttrsConversionMap, spanAttrsConversionMap)
-
-	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
+	})
 	encodeHostOsTypeECSMode(&document, ec.resource)
 	addDataStreamAttributes(&document, "", idx)
 
@@ -289,7 +304,7 @@ func (ecsModeEncoder) encodeSpan(
 		document.AddString("span.kind", spanKind)
 	}
 
-	return document.Serialize(buf, true, protectedFields)
+	return document.Serialize(buf, true, spanProtectedFields)
 }
 
 // spanKindToECSStr converts an OTel SpanKind to its ECS equivalent string representation defined here:
@@ -464,8 +479,6 @@ func (ecsDataPointsEncoder) encodeMetrics(
 	dp0 := dataPoints[0]
 	var document objmodel.Document
 
-	protectedFields := collectECSFields(resourceAttrsConversionMap)
-
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
@@ -480,7 +493,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 		document.AddAttribute(dp.Metric().Name(), value)
 	}
 
-	err := document.Serialize(buf, true, protectedFields)
+	err := document.Serialize(buf, true, metricsProtectedFields)
 
 	return document.DynamicTemplates(), err
 }
