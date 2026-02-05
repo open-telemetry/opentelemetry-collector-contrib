@@ -5,6 +5,7 @@ package loadbalancingexporter
 
 import (
 	"fmt"
+	"hash/crc32"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,6 +43,39 @@ func TestEndpointFor(t *testing.T) {
 
 			// verify
 			assert.Equal(t, tt.expected, endpoint)
+		})
+	}
+}
+
+func TestGetPosition(t *testing.T) {
+	tests := []struct {
+		name       string
+		identifier []byte
+		want       position
+	}{
+		{
+			name:       "simple case",
+			identifier: []byte("example"),
+			want:       position(crc32.ChecksumIEEE([]byte("example")) % maxPositions),
+		},
+		{
+			name:       "different input",
+			identifier: []byte("another"),
+			want:       position(crc32.ChecksumIEEE([]byte("another")) % maxPositions),
+		},
+		{
+			name:       "empty identifier",
+			identifier: []byte(""),
+			want:       position(crc32.ChecksumIEEE([]byte("")) % maxPositions),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getPosition(tt.identifier)
+			if got != tt.want {
+				t.Errorf("getPosition(%q) = %v, want %v", tt.identifier, got, tt.want)
+			}
 		})
 	}
 }
@@ -165,6 +199,7 @@ func TestEqual(t *testing.T) {
 		[]ringItem{
 			{pos: position(123), endpoint: "endpoint-1"},
 		},
+		[]string{"endpoint-1"},
 	}
 
 	for _, tt := range []struct {
@@ -174,7 +209,7 @@ func TestEqual(t *testing.T) {
 	}{
 		{
 			"empty",
-			&hashRing{[]ringItem{}},
+			&hashRing{[]ringItem{}, []string{}},
 			false,
 		},
 		{
@@ -188,6 +223,7 @@ func TestEqual(t *testing.T) {
 				[]ringItem{
 					{pos: position(123), endpoint: "endpoint-1"},
 				},
+				[]string{"endpoint-1"},
 			},
 			true,
 		},
@@ -198,6 +234,7 @@ func TestEqual(t *testing.T) {
 					{pos: position(123), endpoint: "endpoint-1"},
 					{pos: position(124), endpoint: "endpoint-2"},
 				},
+				[]string{"endpoint-1", "endpoint-2"},
 			},
 			false,
 		},
@@ -207,6 +244,7 @@ func TestEqual(t *testing.T) {
 				[]ringItem{
 					{pos: position(124), endpoint: "endpoint-1"},
 				},
+				[]string{"endpoint-1"},
 			},
 			false,
 		},
@@ -216,6 +254,7 @@ func TestEqual(t *testing.T) {
 				[]ringItem{
 					{pos: position(123), endpoint: "endpoint-2"},
 				},
+				[]string{"endpoint-2"},
 			},
 			false,
 		},

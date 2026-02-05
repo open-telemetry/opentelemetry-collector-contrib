@@ -118,7 +118,6 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 
 			_, ok := exporterSegregatedTraces[exp]
 			if !ok {
-				exp.consumeWG.Add(1)
 				exporterSegregatedTraces[exp] = ptrace.NewTraces()
 			}
 			exporterSegregatedTraces[exp] = mergeTraces(exporterSegregatedTraces[exp], batch)
@@ -128,20 +127,33 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	}
 
 	var errs error
-
 	for exp, td := range exporterSegregatedTraces {
-		start := time.Now()
-		err := exp.ConsumeTraces(ctx, td)
-		exp.consumeWG.Done()
-		errs = multierr.Append(errs, err)
-		duration := time.Since(start)
-		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
-		if err == nil {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
-		} else {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
-			e.logger.Debug("failed to export traces", zap.Error(err))
+		consume := func(currentExp *wrappedExporter, currentEndpoint string) error {
+			currentExp.consumeWG.Add(1)
+			start := time.Now()
+			err := currentExp.ConsumeTraces(ctx, td)
+			duration := time.Since(start)
+			currentExp.consumeWG.Done()
+			e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(currentExp.endpointAttr))
+
+			if err == nil {
+				e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(currentExp.successAttr))
+				return nil
+			}
+
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(currentExp.failureAttr))
+			e.logger.Debug("failed to export traces", zap.String("endpoint", currentEndpoint), zap.Error(err))
+			return err
 		}
+
+		var err error
+		// If quarantine is not enabled, use the consume function directly
+		if !e.loadBalancer.isQuarantineEnabled() {
+			err = consume(exp, endpoints[exp])
+		} else {
+			err = e.loadBalancer.consumeWithRetryAndQuarantine([]byte(endpoints[exp]), exp, endpoints[exp], consume)
+		}
+		errs = multierr.Append(errs, err)
 	}
 
 	return errs
