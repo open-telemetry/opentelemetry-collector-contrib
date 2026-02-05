@@ -1,9 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
 
-go 1.24.0
+go 1.24.4
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.145.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/xstream v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.145.0
 	github.com/stretchr/testify v1.11.1
@@ -61,3 +62,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/xstream => ../xstream

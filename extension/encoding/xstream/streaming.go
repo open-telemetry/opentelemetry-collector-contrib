@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package stream // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/stream"
+package xstream // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/xstream"
 
 import (
 	"bufio"
@@ -15,13 +15,16 @@ import (
 )
 
 // ScannerHelper is a helper to scan new line delimited records from io.Reader and determine when to flush.
-// It wraps a bufio.Scanner and tracks batch metrics to support flushing based on configured options.
 // Not safe for concurrent use.
 type ScannerHelper struct {
 	batchHelper *BatchHelper
 	bufReader   *bufio.Reader
 }
 
+// NewScannerHelper creates a new ScannerHelper that reads from the provided io.Reader.
+// It accepts optional encoding.DecoderOption to configure batch flushing behavior.
+// If bufio.Reader is provided, it will be used directly.
+// Otherwise, a new bufio.Reader will be derived with default buffer size.
 func NewScannerHelper(reader io.Reader, opts ...encoding.DecoderOption) *ScannerHelper {
 	batchHelper := NewBatchHelper(opts...)
 
@@ -47,7 +50,7 @@ func (h *ScannerHelper) ScanString() (line string, flush bool, err error) {
 }
 
 // ScanBytes scans the next line from the stream and returns it as a byte slice.
-// flush indicates whether the batch should be flushed after processing this these bytes.
+// flush indicates whether the batch should be flushed after processing these bytes.
 // err is non-nil if an error occurred during scanning. If the end of the stream is reached, err will be io.EOF.
 func (h *ScannerHelper) ScanBytes() (bytes []byte, flush bool, err error) {
 	b, flush, err := h.scanInternal()
@@ -100,6 +103,7 @@ type BatchHelper struct {
 	currentItems int64
 }
 
+// NewBatchHelper creates a new BatchHelper with the provided options.
 func NewBatchHelper(opts ...encoding.DecoderOption) *BatchHelper {
 	options := encoding.DecoderOptions{}
 	for _, o := range opts {
@@ -110,14 +114,18 @@ func NewBatchHelper(opts ...encoding.DecoderOption) *BatchHelper {
 	}
 }
 
+// IncrementBytes adds n to the current byte count.
 func (sh *BatchHelper) IncrementBytes(n int64) {
 	sh.currentBytes += n
 }
 
+// IncrementItems adds n to the current item count.
 func (sh *BatchHelper) IncrementItems(n int64) {
 	sh.currentItems += n
 }
 
+// ShouldFlush returns true if the current counts exceed configured thresholds.
+// Make sure to call Reset after flushing to start tracking the next batch.
 func (sh *BatchHelper) ShouldFlush() bool {
 	if sh.options.FlushBytes > 0 && sh.currentBytes >= sh.options.FlushBytes {
 		return true
@@ -128,37 +136,23 @@ func (sh *BatchHelper) ShouldFlush() bool {
 	return false
 }
 
+// Reset resets the current byte and item counts to zero.
+// Should be called after flushing a batch to start tracking the next batch.
 func (sh *BatchHelper) Reset() {
 	sh.currentBytes = 0
 	sh.currentItems = 0
 }
 
-// LogsDecoderFunc is a helper to implement encoding.LogsDecoder interface with a wrapper function.
-type LogsDecoderFunc struct {
-	batchUnmarshal func() (plog.Logs, error)
+// LogsDecoderFunc is a function type that implements encoding.LogsDecoder.
+type LogsDecoderFunc func() (plog.Logs, error)
+
+func (f LogsDecoderFunc) DecodeLogs() (plog.Logs, error) {
+	return f()
 }
 
-func NewLogsDecoderFunc(batchUnmarshal func() (plog.Logs, error)) *LogsDecoderFunc {
-	return &LogsDecoderFunc{
-		batchUnmarshal: batchUnmarshal,
-	}
-}
+// MetricsDecoderFunc is a function type that implements encoding.MetricsDecoder.
+type MetricsDecoderFunc func() (pmetric.Metrics, error)
 
-func (l *LogsDecoderFunc) DecodeLogs() (plog.Logs, error) {
-	return l.batchUnmarshal()
-}
-
-// MetricsDecoderFunc is a helper to implement encoding.MetricsDecoder interface with a wrapper function.
-type MetricsDecoderFunc struct {
-	batchUnmarshal func() (pmetric.Metrics, error)
-}
-
-func NewMetricsDecoderFunc(batchUnmarshal func() (pmetric.Metrics, error)) *MetricsDecoderFunc {
-	return &MetricsDecoderFunc{
-		batchUnmarshal: batchUnmarshal,
-	}
-}
-
-func (m *MetricsDecoderFunc) DecodeMetrics() (pmetric.Metrics, error) {
-	return m.batchUnmarshal()
+func (m MetricsDecoderFunc) DecodeMetrics() (pmetric.Metrics, error) {
+	return m()
 }

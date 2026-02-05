@@ -1,4 +1,7 @@
-# Stream Package
+# Stream Helpers
+
+> [!NOTE]
+> These helpers are experimental and may change in future releases.
 
 This package provides reusable helpers for stream-based unmarshaling of OpenTelemetry signals. 
 It is designed to support efficient processing of **newline-delimited** streams with configurable batching and flushing behavior.
@@ -36,7 +39,7 @@ Useful when you need custom scanning logic but still want batch tracking.
 
 ```go
 // Flush after every 100 items
-helper := stream.NewScannerHelper(reader,
+helper := xstream.NewScannerHelper(reader,
     encoding.WithFlushItems(100),
 )
 
@@ -62,7 +65,7 @@ for {
 
 ```go
 // Flush after accumulating ~1MB of data
-helper := stream.NewScannerHelper(reader,
+helper := xstream.NewScannerHelper(reader,
     encoding.WithFlushBytes(1024 * 1024),
 )
 ```
@@ -71,7 +74,7 @@ helper := stream.NewScannerHelper(reader,
 
 ```go
 // Flush after 1000 items OR 1MB, whichever comes first
-helper := stream.NewScannerHelper(reader,
+helper := xstream.NewScannerHelper(reader,
     encoding.WithFlushItems(1000),
     encoding.WithFlushBytes(1024 * 1024),
 )
@@ -82,7 +85,7 @@ helper := stream.NewScannerHelper(reader,
 For custom scanning logic where you need full control over reading records, you can use `BatchHelper` directly:
 
 ```go
-batchHelper := stream.NewBatchHelper(
+batchHelper := xstream.NewBatchHelper(
     encoding.WithFlushItems(100),
     encoding.WithFlushBytes(1024 * 1024),
 )

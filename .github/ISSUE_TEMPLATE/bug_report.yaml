@@ -110,6 +110,7 @@ body:
       - extension/encoding/otlpencoding
       - extension/encoding/skywalkingencoding
       - extension/encoding/textencoding
+      - extension/encoding/xstream
       - extension/encoding/zipkinencoding
       - extension/googleclientauth
       - extension/headerssetter

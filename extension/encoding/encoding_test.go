@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStreamUnmarshalOptions(t *testing.T) {
+func TestDecoderOptions(t *testing.T) {
 	opts := DecoderOptions{}
 	WithFlushBytes(100)(&opts)
 	WithFlushItems(50)(&opts)

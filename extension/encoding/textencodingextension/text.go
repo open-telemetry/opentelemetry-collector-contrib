@@ -15,7 +15,7 @@ import (
 	txt "golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/stream"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/xstream"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 )
 
@@ -66,8 +66,8 @@ func (r *textLogCodec) NewLogsDecoder(reader io.Reader, options ...encoding.Deco
 		})
 	}
 
-	batchHelper := stream.NewBatchHelper(options...)
-	return stream.NewLogsDecoderFunc(func() (plog.Logs, error) {
+	batchHelper := xstream.NewBatchHelper(options...)
+	return xstream.LogsDecoderFunc(func() (plog.Logs, error) {
 		p := plog.NewLogs()
 		now := pcommon.NewTimestampFromTime(time.Now())
 
