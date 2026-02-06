@@ -682,6 +682,52 @@ func TestTranslateV2(t *testing.T) {
 			},
 		},
 		{
+			// This test simulates the scenario from GitHub issue #45150
+			// When Prometheus sends only target_info metrics (e.g., due to write_relabel_configs filtering),
+			// the receiver correctly processes the resource attributes but reports 0 samples in PRW 2.0 response.
+			// Prometheus v3.8.1 may treat this as a non-recoverable error since it sent samples but got 0 accepted.
+			name: "target_info only - no other metrics (issue #45150)",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1, 2
+					"instance", "host1", // 3, 4
+					"machine_type", "n1-standard-1", // 5, 6
+					"cloud_provider", "gcp", // 7, 8
+					"region", "us-central1", // 9, 10
+					"__name__", "target_info", // 11, 12
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						// Only target_info metric, no other metrics
+						// This simulates what happens when Prometheus filters out all other metrics
+						// via write_relabel_configs, leaving only target_info
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+				attrs.PutStr("machine_type", "n1-standard-1")
+				attrs.PutStr("cloud_provider", "gcp")
+				attrs.PutStr("region", "us-central1")
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    0, // target_info does not count as a sample
+				Histograms: 0,
+				Exemplars:  0,
+			},
+		},
+		{
 			name: "exponential histogram - integer",
 			request: &writev2.Request{
 				Symbols: []string{
