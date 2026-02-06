@@ -16,11 +16,13 @@ storage:
 
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
-  bootstrap_timeout: 10s
   {{- if .local_config }}
   config_files:
-    - {{ .local_config }}
+    - '{{.local_config}}'
   {{- end }}
+  initial_fallback_configs:
+    - '{{.initial_fallback_config}}'
   {{- if .use_hup_config_reload }}
   use_hup_config_reload: {{ .use_hup_config_reload }}
   {{- end }}
+

@@ -129,6 +129,38 @@ For more details on the healthcheck configuration, see the see the [full list of
 
 Note that the healthceck endpoint is not enabled by default. To enable it, you must explicitly set at least the `endpoint` field in the configuration.
 
+## Initial Fallback Configuration
+
+The Supervisor supports an initial fallback configuration mechanism that provides resilience when the OpAMP server is unreachable at startup and there's no previous configuration state persisted in disk. This is useful for ensuring the Collector can start with a known-good configuration during network outages or server maintenance. When the Supervisor successfully connects to the OpAMP server, the regular configuration (indicated by `agent::config_files`) is restored and any potential remote configuration received from the OpAMP server is applied.
+
+If when the Supervisor starts there's previous configuration state persisted in disk, the Supervisor will use it to start the Collector.
+
+### Configuration Options
+
+The following options can be configured under the `agent` section:
+
+```yaml
+agent:
+  initial_fallback_configs:
+  - /path/to/fallback_config.yaml
+```
+
+| Option | Description |
+|--------|-------------|
+| `initial_fallback_configs` | List of paths to initial fallback configuration files to use. If more than one path is specified, they are merged in order. Together, these must be complete, standalone Collector configuration. |
+
+### Important Notes
+
+- The initial fallback configuration is a set of **standalone configuration files**. It is intentionally not merged with the `agent::config_files` setting. This ensures predictable behavior without dependencies on other configuration files.
+
+- The OpAMP extension and "own telemetry" configuration are automatically added to the fallback configuration. This maintains the Collector's own telemetry flowing and the communication between Supervisor and Collector.
+
+- The Supervisor will continue attempting to reconnect to the OpAMP server even while using the fallback configuration.
+
+### Example
+
+See [examples/supervisor_fallback.yaml](./examples/supervisor_fallback.yaml) for a complete example configuration with fallback enabled.
+
 ## Status
 
 The OpenTelemetry OpAMP Supervisor is intended to be the reference
