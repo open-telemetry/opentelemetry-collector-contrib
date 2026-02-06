@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -19,14 +20,22 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 )
 
 type mockPartitionClient struct {
 	eventData []*azeventhubs.ReceivedEventData
 	closed    bool
+	err       error
+	callCount atomic.Int32
 }
 
 func (p *mockPartitionClient) ReceiveEvents(_ context.Context, maxBatchSize int, _ *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error) {
+	callCount := p.callCount.Add(1)
+	if p.err != nil && callCount == 1 {
+		return nil, p.err
+	}
+
 	events := make([]*azeventhubs.ReceivedEventData, 0, maxBatchSize)
 
 	for i := range maxBatchSize {
@@ -53,6 +62,7 @@ type mockAzeventHub struct {
 	partitionID         string
 	offset              string
 	closed              bool
+	partitionClient     *mockPartitionClient
 }
 
 func (a *mockAzeventHub) GetEventHubProperties(_ context.Context, _ *azeventhubs.GetEventHubPropertiesOptions) (azeventhubs.EventHubProperties, error) {
@@ -68,7 +78,9 @@ func (a *mockAzeventHub) NewPartitionClient(partitionID string, options *azevent
 	if options != nil && options.StartPosition.Offset != nil {
 		a.offset = *options.StartPosition.Offset
 	}
-
+	if a.partitionClient != nil {
+		return a.partitionClient, nil
+	}
 	return &mockPartitionClient{}, nil
 }
 
@@ -171,6 +183,7 @@ func TestHubWrapperAzeventhubImpl_Receive(t *testing.T) {
 					return nil
 				},
 				test.applyOffset,
+				zaptest.NewLogger(t),
 			)
 			if test.expectErr {
 				require.Error(t, err)
@@ -260,6 +273,22 @@ func TestPartitionListener_SetErr(t *testing.T) {
 	require.NoError(t, p.err)
 	p.setErr(errors.New("test"))
 	assert.Equal(t, "test", p.err.Error())
+}
+
+func TestReceive_ContinuesAfterError(t *testing.T) {
+	pc := &mockPartitionClient{err: errors.New("receive error")}
+	h := &hubWrapperAzeventhubImpl{
+		hub:    &mockAzeventHub{partitionClient: pc},
+		config: &Config{Connection: "Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=Key;SharedAccessKey=Secret;EntityPath=hub", PollRate: 1},
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+
+	_, err := h.Receive(ctx, "p1", func(_ context.Context, _ *azureEvent) error { return nil }, false, zaptest.NewLogger(t))
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool { return pc.callCount.Load() >= 2 }, 2*time.Second, 50*time.Millisecond)
 }
 
 func TestGetConsumerGroup(t *testing.T) {
