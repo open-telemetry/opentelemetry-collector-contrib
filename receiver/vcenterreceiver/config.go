@@ -25,6 +25,13 @@ type Config struct {
 	Endpoint                       string              `mapstructure:"endpoint"`
 	Username                       string              `mapstructure:"username"`
 	Password                       configopaque.String `mapstructure:"password"`
+	// Scrapers defines which scraper groups are enabled.
+	// If not specified, all scraper groups are enabled by default for backward compatibility.
+	Scrapers map[ScraperGroup]ScraperConfig `mapstructure:"scrapers,omitempty"`
+}
+
+type ScraperConfig struct {
+	Enabled bool `mapstructure:"enabled,omitempty"`
 }
 
 // Validate checks to see if the supplied config will work for the receiver
@@ -54,6 +61,19 @@ func (c *Config) Validate() error {
 
 	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
+	}
+
+	// Validate scraper group names
+	if c.Scrapers != nil {
+		validGroups := make(map[ScraperGroup]bool)
+		for _, group := range AllScraperGroups() {
+			validGroups[group] = true
+		}
+		for group := range c.Scrapers {
+			if !validGroups[group] {
+				err = multierr.Append(err, fmt.Errorf("invalid scraper group: %q. Valid groups are: %v", group, AllScraperGroups()))
+			}
+		}
 	}
 
 	return err
