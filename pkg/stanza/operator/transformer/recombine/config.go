@@ -108,6 +108,10 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, fmt.Errorf("invalid value '%s' for parameter 'overwrite_with'", c.OverwriteWith)
 	}
 
+	if c.MaxBatchSize == 0 && c.MaxLogSize == 0 {
+		set.Logger.Warn("Both 'max_batch_size' and 'max_log_size' are set to 0. This will allow unlimited batching with no size constraints, which may lead to excessive memory usage.")
+	}
+
 	return &Transformer{
 		TransformerOperator:   transformer,
 		matchFirstLine:        matchesFirst,

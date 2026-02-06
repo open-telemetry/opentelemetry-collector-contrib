@@ -89,3 +89,13 @@ func (f *itemFilterFactory) Shutdown() error {
 
 	return nil
 }
+
+// StartAllCaches starts the TTL caches for all filters inside the resolver.
+// It is a no-op if the resolver is not the concrete factory from this package.
+func StartAllCaches(resolver filter.ItemFilterResolver) {
+	if f, ok := resolver.(*itemFilterFactory); ok {
+		for _, it := range f.filterByMetric {
+			it.StartCache()
+		}
+	}
+}

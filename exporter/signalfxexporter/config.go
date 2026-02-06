@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -60,7 +61,7 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	confighttp.ClientConfig   `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
@@ -131,6 +132,11 @@ type Config struct {
 	// ExcludeProperties defines dpfilter.PropertyFilters to prevent inclusion of
 	// properties to include with dimension updates to the SignalFx backend.
 	ExcludeProperties []dpfilters.PropertyFilter `mapstructure:"exclude_properties"`
+
+	// DefaultProperties defines a set of properties to be added to any dimension
+	// updates to the Splunk Observability backend. Any explicit property value
+	// takes precedence over those defaults.
+	DefaultProperties map[string]string `mapstructure:"default_properties"`
 
 	// Correlation configuration for syncing traces service and environment to metrics.
 	Correlation *correlation.Config `mapstructure:"correlation"`
@@ -232,6 +238,12 @@ func (cfg *Config) Validate() error {
 	if cfg.SyncHostMetadata {
 		if err := gopsutilenv.ValidateRootPath(cfg.RootPath); err != nil {
 			return fmt.Errorf("invalid root_path: %w", err)
+		}
+	}
+
+	for k, v := range cfg.DefaultProperties {
+		if v == "" {
+			return fmt.Errorf(`"default_properties" contains an empty value under key %q`, k)
 		}
 	}
 	return nil

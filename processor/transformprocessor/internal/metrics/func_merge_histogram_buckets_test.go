@@ -150,15 +150,8 @@ func TestMergeHistogramBuckets(t *testing.T) {
 			dp.BucketCounts().FromRaw(tt.inputCounts)
 			dp.ExplicitBounds().FromRaw(tt.inputBounds)
 
-			ctx := ottldatapoint.NewTransformContext(
-				dp,
-				metric,
-				pmetric.NewMetricSlice(),
-				pcommon.NewInstrumentationScope(),
-				pcommon.NewResource(),
-				pmetric.NewScopeMetrics(),
-				pmetric.NewResourceMetrics(),
-			)
+			ctx := ottldatapoint.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric, dp)
+			defer ctx.Close()
 
 			result, err := exprFunc(t.Context(), ctx)
 
@@ -208,7 +201,8 @@ func TestMergeHistogramBucketsNonHistogramDataPoint(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, exprFunc)
 
-	ctx := ottldatapoint.NewTransformContext(dp, metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+	ctx := ottldatapoint.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric, dp)
+	defer ctx.Close()
 	result, err := exprFunc(t.Context(), ctx)
 
 	require.NoError(t, err)

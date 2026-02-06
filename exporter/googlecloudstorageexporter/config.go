@@ -5,9 +5,16 @@ package googlecloudstorageexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"errors"
+	"fmt"
 
+	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+)
+
+var (
+	errNameRequired  = errors.New("name is required")
+	errFormatInvalid = errors.New("invalid format")
 )
 
 type Config struct {
@@ -25,13 +32,15 @@ type bucketConfig struct {
 	// Name for the bucket storage.
 	Name string `mapstructure:"name"`
 
-	// FilePrefix holds the prefix for the created files. FilePrefix can
-	// include folders as well. All files will have a suffix that is defined
-	// by the exporter.
+	// FilePrefix holds the prefix for the created filename.
+	// This prefix is applied after the partition path (if any).
 	// Example:
-	// 		filename: folder/file
-	//	Files will be placed in 'folder', and will have the prefix 'file'.
+	// 		file_prefix: "logs"
+	// 		Result: ".../logs_UUID"
 	FilePrefix string `mapstructure:"file_prefix"`
+
+	// Partition configures the time-based partition format and file prefix.
+	Partition partitionConfig `mapstructure:"partition"`
 
 	// ReuseIfExists decides if the bucket should be used if it already
 	// exists. If it is set to false, an error will be thrown if the
@@ -43,6 +52,21 @@ type bucketConfig struct {
 	// empty, it will query the metadata endpoint. It requires the collector
 	// to be running in a Google Cloud environment.
 	Region string `mapstructure:"region"`
+}
+
+type partitionConfig struct {
+	// Format is a time format string used to create time-based partitions.
+	// If set, the current UTC time formatted with this string will be prepended to
+	// the filename. You can use standard strftime format parameters (e.g., %Y, %m, %d, %H, %M, %S).
+	// Example: "year=%Y/month=%m/day=%d" would result in "year=2023/month=10/day=25/"
+	Format string `mapstructure:"format"`
+
+	// Prefix holds the prefix for the partition path.
+	// This prefix is applied before the time-based partition structure.
+	// Example:
+	// 		prefix: "archive"
+	// 		Result: "archive/year=2023/..."
+	Prefix string `mapstructure:"prefix"`
 }
 
 var _ xconfmap.Validator = (*Config)(nil)
@@ -58,7 +82,14 @@ func createDefaultConfig() component.Config {
 
 func (c *bucketConfig) Validate() error {
 	if c.Name == "" {
-		return errors.New("name is required")
+		return errNameRequired
+	}
+	return nil
+}
+
+func (c *partitionConfig) Validate() error {
+	if _, err := strftime.New(c.Format); err != nil {
+		return fmt.Errorf("%w: %w", errFormatInvalid, err)
 	}
 	return nil
 }

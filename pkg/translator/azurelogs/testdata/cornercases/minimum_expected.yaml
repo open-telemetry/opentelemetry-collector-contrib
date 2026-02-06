@@ -15,12 +15,22 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: category
-                    value:
-                      stringValue: AuditEvent
                   - key: operation.name
                     value:
                       stringValue: SecretGet
+                  - key: event.original
+                    value:
+                      stringValue: |-
+                        {
+                        	"time": "2022-11-11T04:48:27.6767145Z",
+                        	"resourceId": "/RESOURCE_ID",
+                        	"operationName": "SecretGet",
+                        	"category": "AuditEvent"
+                        }
+                  - key: category
+                    value:
+                      stringValue: AuditEvent
+            observedTimeUnixNano: "1766081218371601000"
             timeUnixNano: "1668142107676714500"
         scope:
           name: otelcol/azureresourcelogs

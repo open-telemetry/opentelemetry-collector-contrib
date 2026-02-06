@@ -8,12 +8,14 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
@@ -35,12 +37,13 @@ func NewFactory() receiver.Factory {
 
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = defaultEndpoint
 	return &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: defaultEndpoint,
-		},
+		ServerConfig:                 confighttp.ServerConfig{NetAddr: netAddr},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{},
-		HecToOtelAttrs: splunk.HecToOtelAttrs{
+		HecToOtelAttrs: translator.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
 			Index:      splunk.DefaultIndexLabel,

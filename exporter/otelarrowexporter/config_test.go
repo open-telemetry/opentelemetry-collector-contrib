@@ -58,8 +58,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueSettings: exporterhelper.QueueBatchConfig{
-				Enabled:         true,
+			QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
 				NumConsumers:    2,
 				QueueSize:       10,
 				Sizer:           exporterhelper.RequestSizerTypeItems,
@@ -70,7 +69,7 @@ func TestUnmarshalConfig(t *testing.T) {
 					MinSize:      1000,
 					MaxSize:      10000,
 				}),
-			},
+			}),
 			ClientConfig: configgrpc.ClientConfig{
 				Headers: configopaque.MapList{
 					{Name: "another", Value: "somevalue"},

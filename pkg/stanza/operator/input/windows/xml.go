@@ -13,25 +13,27 @@ import (
 
 // EventXML is the rendered xml of an event.
 type EventXML struct {
-	Original         string      `xml:"-"`
-	EventID          EventID     `xml:"System>EventID"`
-	Provider         Provider    `xml:"System>Provider"`
-	Computer         string      `xml:"System>Computer"`
-	Channel          string      `xml:"System>Channel"`
-	RecordID         uint64      `xml:"System>EventRecordID"`
-	TimeCreated      TimeCreated `xml:"System>TimeCreated"`
-	Message          string      `xml:"RenderingInfo>Message"`
-	RenderedLevel    string      `xml:"RenderingInfo>Level"`
-	Level            string      `xml:"System>Level"`
-	RenderedTask     string      `xml:"RenderingInfo>Task"`
-	Task             string      `xml:"System>Task"`
-	RenderedOpcode   string      `xml:"RenderingInfo>Opcode"`
-	Opcode           string      `xml:"System>Opcode"`
-	RenderedKeywords []string    `xml:"RenderingInfo>Keywords>Keyword"`
-	Keywords         []string    `xml:"System>Keywords"`
-	Security         *Security   `xml:"System>Security"`
-	Execution        *Execution  `xml:"System>Execution"`
-	EventData        EventData   `xml:"EventData"`
+	Original         string       `xml:"-"`
+	EventID          EventID      `xml:"System>EventID"`
+	Provider         Provider     `xml:"System>Provider"`
+	Computer         string       `xml:"System>Computer"`
+	Channel          string       `xml:"System>Channel"`
+	RecordID         uint64       `xml:"System>EventRecordID"`
+	TimeCreated      TimeCreated  `xml:"System>TimeCreated"`
+	Message          string       `xml:"RenderingInfo>Message"`
+	RenderedLevel    string       `xml:"RenderingInfo>Level"`
+	Level            string       `xml:"System>Level"`
+	RenderedTask     string       `xml:"RenderingInfo>Task"`
+	Task             string       `xml:"System>Task"`
+	RenderedOpcode   string       `xml:"RenderingInfo>Opcode"`
+	Opcode           string       `xml:"System>Opcode"`
+	RenderedKeywords []string     `xml:"RenderingInfo>Keywords>Keyword"`
+	Keywords         []string     `xml:"System>Keywords"`
+	Security         *Security    `xml:"System>Security"`
+	Execution        *Execution   `xml:"System>Execution"`
+	EventData        EventData    `xml:"EventData"`
+	Correlation      *Correlation `xml:"System>Correlation"`
+	Version          uint8        `xml:"System>Version"`
 }
 
 // parseTimestamp will parse the timestamp of the event.
@@ -115,6 +117,7 @@ func formattedBody(e *EventXML) map[string]any {
 		"opcode":      opcode,
 		"keywords":    keywords,
 		"event_data":  parseEventData(e.EventData),
+		"version":     e.Version,
 	}
 
 	if len(details) > 0 {
@@ -129,6 +132,10 @@ func formattedBody(e *EventXML) map[string]any {
 
 	if e.Execution != nil {
 		body["execution"] = e.Execution.asMap()
+	}
+
+	if e.Correlation != nil {
+		body["correlation"] = e.Correlation.asMap()
 	}
 
 	return body
@@ -245,6 +252,28 @@ func (e Execution) asMap() map[string]any {
 
 	if e.ProcessorTime != nil {
 		result["processor_time"] = *e.ProcessorTime
+	}
+
+	return result
+}
+
+// Correlation contains the activity identifiers that consumers can use to group related events together.
+type Correlation struct {
+	// ActivityID and RelatedActivityID are optional fields
+	// https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-correlation-systempropertiestype-element
+	ActivityID        *string `xml:"ActivityID,attr"`
+	RelatedActivityID *string `xml:"RelatedActivityID,attr"`
+}
+
+func (e Correlation) asMap() map[string]any {
+	result := map[string]any{}
+
+	if e.ActivityID != nil {
+		result["activity_id"] = *e.ActivityID
+	}
+
+	if e.RelatedActivityID != nil {
+		result["related_activity_id"] = *e.RelatedActivityID
 	}
 
 	return result

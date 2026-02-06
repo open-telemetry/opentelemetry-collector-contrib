@@ -28,8 +28,6 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions127 "go.opentelemetry.io/otel/semconv/v1.27.0"
-	semconv "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -199,12 +197,12 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 		},
 		{
 			attrs: map[string]any{
-				string(semconv.CloudProviderKey):      semconv.CloudProviderAWS.Value.AsString(),
-				string(semconv.CloudPlatformKey):      semconv.CloudPlatformAWSECS.Value.AsString(),
-				string(semconv.AWSECSTaskARNKey):      "example-task-ARN",
-				string(semconv.AWSECSTaskFamilyKey):   "example-task-family",
-				string(semconv.AWSECSTaskRevisionKey): "example-task-revision",
-				string(semconv.AWSECSLaunchtypeKey):   semconv.AWSECSLaunchtypeFargate.Value.AsString(),
+				"cloud.provider":        "aws",
+				"cloud.platform":        "aws_ecs",
+				"aws.ecs.task.arn":      "example-task-ARN",
+				"aws.ecs.task.family":   "example-task-family",
+				"aws.ecs.task.revision": "example-task-revision",
+				"aws.ecs.launchtype":    "fargate",
 			},
 			host: "",
 			tags: []string{"version:latest", "command:otelcol", "task_arn:example-task-ARN"},
@@ -406,7 +404,7 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	exp, err := f.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(t.Context(), simpleTraces(map[string]any{string(conventions127.DeploymentEnvironmentNameKey): "new_env"}, nil, ptrace.SpanKindInternal))
+	err = exp.ConsumeTraces(t.Context(), simpleTraces(map[string]any{"deployment.environment.name": "new_env"}, nil, ptrace.SpanKindInternal))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan
@@ -464,7 +462,7 @@ func subtestPushTraceDataOperationAndResourceName(t *testing.T, enableOperationA
 	exp, err := f.CreateTraces(t.Context(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(t.Context(), simpleTraces(map[string]any{string(conventions127.DeploymentEnvironmentNameKey): "new_env"}, nil, ptrace.SpanKindServer))
+	err = exp.ConsumeTraces(t.Context(), simpleTraces(map[string]any{"deployment.environment.name": "new_env"}, nil, ptrace.SpanKindServer))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan

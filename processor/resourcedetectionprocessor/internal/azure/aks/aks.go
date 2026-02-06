@@ -10,7 +10,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventionsv134 "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -54,7 +55,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 	}
 	if d.resourceAttributes.CloudPlatform.Enabled {
-		attrs.PutStr(string(conventions.CloudPlatformKey), conventions.CloudPlatformAzureAKS.Value.AsString())
+		attrs.PutStr(string(conventions.CloudPlatformKey), conventionsv134.CloudPlatformAzureAKS.Value.AsString())
 	}
 	if d.resourceAttributes.K8sClusterName.Enabled {
 		attrs.PutStr(string(conventions.K8SClusterNameKey), parseClusterName(m.ResourceGroupName))

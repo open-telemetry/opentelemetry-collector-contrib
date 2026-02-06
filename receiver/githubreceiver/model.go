@@ -9,9 +9,9 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/google/go-github/v79/github"
+	"github.com/google/go-github/v81/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 // model.go contains custom attributes that complement the standardized attributes
@@ -109,7 +109,7 @@ func (gtr *githubTracesReceiver) getWorkflowRunAttrs(resource pcommon.Resource, 
 		err = errors.New("failed to get service.name")
 	}
 
-	attrs.PutStr(string(semconv.ServiceNameKey), svc)
+	attrs.PutStr(string(conventions.ServiceNameKey), svc)
 
 	// Add all custom properties from the repository as resource attributes
 	addCustomPropertiesToAttrs(attrs, e.GetRepo().CustomProperties)
@@ -124,10 +124,10 @@ func (gtr *githubTracesReceiver) getWorkflowRunAttrs(resource pcommon.Resource, 
 	attrs.PutStr(AttributeVCSRefHeadRevisionAuthorEmail, e.GetWorkflowRun().GetHeadCommit().GetCommitter().GetEmail())
 
 	// CICD Attributes
-	attrs.PutStr(string(semconv.CICDPipelineNameKey), e.GetWorkflowRun().GetName())
+	attrs.PutStr(string(conventions.CICDPipelineNameKey), e.GetWorkflowRun().GetName())
 	attrs.PutStr(AttributeCICDPipelineRunSenderLogin, e.GetSender().GetLogin())
 	attrs.PutStr(AttributeCICDPipelineRunURLFull, e.GetWorkflowRun().GetHTMLURL())
-	attrs.PutInt(string(semconv.CICDPipelineRunIDKey), e.GetWorkflowRun().GetID())
+	attrs.PutInt(string(conventions.CICDPipelineRunIDKey), e.GetWorkflowRun().GetID())
 	switch status := strings.ToLower(e.GetWorkflowRun().GetConclusion()); status {
 	case "success":
 		attrs.PutStr(AttributeCICDPipelineRunStatus, AttributeCICDPipelineRunStatusSuccess)
@@ -185,7 +185,7 @@ func (gtr *githubTracesReceiver) getWorkflowJobAttrs(resource pcommon.Resource, 
 		err = errors.New("failed to get service.name")
 	}
 
-	attrs.PutStr(string(semconv.ServiceNameKey), svc)
+	attrs.PutStr(string(conventions.ServiceNameKey), svc)
 
 	// Add all custom properties from the repository as resource attributes
 	addCustomPropertiesToAttrs(attrs, e.GetRepo().CustomProperties)
@@ -214,10 +214,10 @@ func (gtr *githubTracesReceiver) getWorkflowJobAttrs(resource pcommon.Resource, 
 	}
 
 	// CICD Attributes
-	attrs.PutStr(string(semconv.CICDPipelineNameKey), e.GetWorkflowJob().GetName())
+	attrs.PutStr(string(conventions.CICDPipelineNameKey), e.GetWorkflowJob().GetName())
 	attrs.PutStr(AttributeCICDPipelineTaskRunSenderLogin, e.GetSender().GetLogin())
-	attrs.PutStr(string(semconv.CICDPipelineTaskRunURLFullKey), e.GetWorkflowJob().GetHTMLURL())
-	attrs.PutInt(string(semconv.CICDPipelineTaskRunIDKey), e.GetWorkflowJob().GetID())
+	attrs.PutStr(string(conventions.CICDPipelineTaskRunURLFullKey), e.GetWorkflowJob().GetHTMLURL())
+	attrs.PutInt(string(conventions.CICDPipelineTaskRunIDKey), e.GetWorkflowJob().GetID())
 	switch status := strings.ToLower(e.GetWorkflowJob().GetConclusion()); status {
 	case "success":
 		attrs.PutStr(AttributeCICDPipelineTaskRunStatus, AttributeCICDPipelineTaskRunStatusSuccess)

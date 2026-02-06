@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -45,52 +44,29 @@ func (e *httpError) Error() string {
 	return e.Message
 }
 
-// ensureHTTPScheme ensures the endpoint has an https:// scheme
-func ensureHTTPScheme(endpoint string) string {
-	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
-		return "https://" + endpoint
-	}
-	return endpoint
-}
-
 func newHTTPLogsExporter(client *http.Client, config *Config) httpLogsExporter {
-	endpoint := config.Logs.Endpoint
-	if isEmpty(endpoint) {
-		endpoint = ensureHTTPScheme(config.getDomainGrpcSettings().Endpoint)
-	}
-
 	return httpLogsExporter{
 		httpExporter: httpExporter{
 			Client:   client,
-			Endpoint: endpoint,
+			Endpoint: config.Logs.Endpoint,
 		},
 	}
 }
 
 func newHTTPMetricsExporter(client *http.Client, config *Config) httpMetricsExporter {
-	endpoint := config.Metrics.Endpoint
-	if isEmpty(endpoint) {
-		endpoint = ensureHTTPScheme(config.getDomainGrpcSettings().Endpoint)
-	}
-
 	return httpMetricsExporter{
 		httpExporter: httpExporter{
 			Client:   client,
-			Endpoint: endpoint,
+			Endpoint: config.Metrics.Endpoint,
 		},
 	}
 }
 
 func newHTTPTracesExporter(client *http.Client, config *Config) httpTracesExporter {
-	endpoint := config.Traces.Endpoint
-	if isEmpty(endpoint) {
-		endpoint = ensureHTTPScheme(config.getDomainGrpcSettings().Endpoint)
-	}
-
 	return httpTracesExporter{
 		httpExporter: httpExporter{
 			Client:   client,
-			Endpoint: endpoint,
+			Endpoint: config.Traces.Endpoint,
 		},
 	}
 }

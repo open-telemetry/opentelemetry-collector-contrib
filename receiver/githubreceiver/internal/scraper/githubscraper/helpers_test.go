@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v79/github"
+	"github.com/google/go-github/v81/github"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -24,6 +24,7 @@ import (
 type responses struct {
 	repoResponse       repoResponse
 	prResponse         prResponse
+	mergedPRResponse   mergedPRResponse
 	branchResponse     branchResponse
 	checkLoginResponse loginResponse
 	contribResponse    contribResponse
@@ -39,6 +40,12 @@ type repoResponse struct {
 
 type prResponse struct {
 	prs          []getPullRequestDataRepositoryPullRequestsPullRequestConnection
+	responseCode int
+	page         int
+}
+
+type mergedPRResponse struct {
+	prs          []getMergedPullRequestDataRepositoryPullRequestsPullRequestConnection
 	responseCode int
 	page         int
 }
@@ -133,6 +140,39 @@ func MockServer(responses *responses) *http.ServeMux {
 					return
 				}
 				prResp.page++
+			}
+		case "getMergedPullRequestData":
+			mergedPRResp := &responses.mergedPRResponse
+			// Default to 200 if not set
+			responseCode := mergedPRResp.responseCode
+			if responseCode == 0 {
+				responseCode = http.StatusOK
+			}
+			w.WriteHeader(responseCode)
+			if responseCode == http.StatusOK {
+				// Handle case where no merged PR data is provided
+				var pullRequests getMergedPullRequestDataRepositoryPullRequestsPullRequestConnection
+				if len(mergedPRResp.prs) > 0 && mergedPRResp.page < len(mergedPRResp.prs) {
+					pullRequests = mergedPRResp.prs[mergedPRResp.page]
+					mergedPRResp.page++
+				} else {
+					// Return empty result
+					pullRequests = getMergedPullRequestDataRepositoryPullRequestsPullRequestConnection{
+						Nodes: []MergedPullRequestNode{},
+						PageInfo: getMergedPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo{
+							HasPreviousPage: false,
+						},
+					}
+				}
+				resp := getMergedPullRequestDataResponse{
+					Repository: getMergedPullRequestDataRepository{
+						PullRequests: pullRequests,
+					},
+				}
+				graphqlResponse := graphql.Response{Data: &resp}
+				if err := json.NewEncoder(w).Encode(graphqlResponse); err != nil {
+					return
+				}
 			}
 		case "getCommitData":
 			commitResp := &responses.commitResponse
@@ -452,9 +492,9 @@ func TestGetPullRequests(t *testing.T) {
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
 
-			prs, err := ghs.getPullRequests(t.Context(), client, "repo name")
+			openPRs, _, err := ghs.getPullRequests(t.Context(), client, "repo name")
 
-			assert.Len(t, prs, tc.expectedPrCount)
+			assert.Len(t, openPRs, tc.expectedPrCount)
 			if tc.expectedErr == nil {
 				assert.NoError(t, err)
 			} else {

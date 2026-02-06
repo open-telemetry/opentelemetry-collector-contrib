@@ -201,8 +201,20 @@ func TestApplyRouting(t *testing.T) {
 			wantFound:   true,
 		},
 		{
+			name:        "connector-based routing with spanmetricsconnector",
+			scopeName:   "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector",
+			wantDataset: "spanmetricsconnector",
+			wantFound:   true,
+		},
+		{
 			name:        "receiver without a receiver name",
 			scopeName:   "some.scope.name/receiver/receiver/should/be/ignored",
+			wantDataset: "",
+			wantFound:   false,
+		},
+		{
+			name:        "connector without a connector name",
+			scopeName:   "some.scope.name/connector/connector/should/be/ignored",
 			wantDataset: "",
 			wantFound:   false,
 		},

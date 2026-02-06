@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -249,12 +248,12 @@ func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetada
 			ResourceIDKey: "k8s.pod.uid",
 			ResourceID:    experimentalmetricmetadata.ResourceID(podUIDLabel),
 			Metadata: map[string]string{
-				kindNameLabel:                      kindObjName,
-				kindUIDLabel:                       kindObjUID,
-				string(conventions.K8SNodeNameKey): "test-node",
-				"k8s.pod.name":                     podNameLabel,
-				"k8s.pod.phase":                    "Unknown", // Default value when phase is not set.
-				"k8s.namespace.name":               namespaceLabel,
+				kindNameLabel:        kindObjName,
+				kindUIDLabel:         kindObjUID,
+				"k8s.node.name":      "test-node",
+				"k8s.pod.name":       podNameLabel,
+				"k8s.pod.phase":      "Unknown", // Default value when phase is not set.
+				"k8s.namespace.name": namespaceLabel,
 			},
 		},
 	}
@@ -553,17 +552,17 @@ func TestPodMetadata(t *testing.T) {
 			statusPhase:  corev1.PodFailed,
 			statusReason: "Evicted",
 			expectedMetadata: map[string]string{
-				"k8s.pod.name":                     "test-pod-0",
-				"k8s.namespace.name":               "test-namespace",
-				"k8s.pod.phase":                    "Failed",
-				"k8s.pod.status_reason":            "Evicted",
-				"k8s.workload.kind":                "Deployment",
-				"k8s.workload.name":                "test-deployment-0",
-				"k8s.replicaset.name":              "test-replicaset-0",
-				"k8s.replicaset.uid":               "test-replicaset-0-uid",
-				"k8s.deployment.name":              "test-deployment-0",
-				"k8s.deployment.uid":               "test-deployment-0-uid",
-				string(conventions.K8SNodeNameKey): "test-node",
+				"k8s.pod.name":          "test-pod-0",
+				"k8s.namespace.name":    "test-namespace",
+				"k8s.pod.phase":         "Failed",
+				"k8s.pod.status_reason": "Evicted",
+				"k8s.workload.kind":     "Deployment",
+				"k8s.workload.name":     "test-deployment-0",
+				"k8s.replicaset.name":   "test-replicaset-0",
+				"k8s.replicaset.uid":    "test-replicaset-0-uid",
+				"k8s.deployment.name":   "test-deployment-0",
+				"k8s.deployment.uid":    "test-deployment-0-uid",
+				"k8s.node.name":         "test-node",
 			},
 		},
 		{
@@ -571,16 +570,16 @@ func TestPodMetadata(t *testing.T) {
 			statusPhase:  corev1.PodRunning,
 			statusReason: "",
 			expectedMetadata: map[string]string{
-				"k8s.pod.name":                     "test-pod-0",
-				"k8s.namespace.name":               "test-namespace",
-				"k8s.pod.phase":                    "Running",
-				"k8s.workload.kind":                "Deployment",
-				"k8s.workload.name":                "test-deployment-0",
-				"k8s.replicaset.name":              "test-replicaset-0",
-				"k8s.replicaset.uid":               "test-replicaset-0-uid",
-				"k8s.deployment.name":              "test-deployment-0",
-				"k8s.deployment.uid":               "test-deployment-0-uid",
-				string(conventions.K8SNodeNameKey): "test-node",
+				"k8s.pod.name":        "test-pod-0",
+				"k8s.namespace.name":  "test-namespace",
+				"k8s.pod.phase":       "Running",
+				"k8s.workload.kind":   "Deployment",
+				"k8s.workload.name":   "test-deployment-0",
+				"k8s.replicaset.name": "test-replicaset-0",
+				"k8s.replicaset.uid":  "test-replicaset-0-uid",
+				"k8s.deployment.name": "test-deployment-0",
+				"k8s.deployment.uid":  "test-deployment-0-uid",
+				"k8s.node.name":       "test-node",
 			},
 		},
 	}

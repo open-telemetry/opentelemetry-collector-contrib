@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -52,7 +53,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
-		QueueBatchConfig: exporterhelper.NewDefaultQueueConfig(),
+		QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		ClientConfig:     configkafka.NewDefaultClientConfig(),
 		Producer:         configkafka.NewDefaultProducerConfig(),
 		Logs: SignalConfig{
@@ -169,7 +170,7 @@ func exporterhelperOptions(
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
-		// and will rely on the sarama Producer Timeout logic.
+		// and will rely on the Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		xexporterhelper.WithQueueBatch(cfg.QueueBatchConfig, qbs),

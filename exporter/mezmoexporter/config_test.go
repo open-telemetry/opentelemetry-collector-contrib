@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -58,15 +59,9 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: func() exporterhelper.QueueBatchConfig {
-					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.Enabled = false
-					queue.NumConsumers = 7
-					queue.QueueSize = 17
-					return queue
-				}(),
-				IngestURL: "https://alternate.mezmo.com/otel/ingest/rest",
-				IngestKey: "1234509876",
+				QueueSettings: configoptional.None[exporterhelper.QueueBatchConfig](),
+				IngestURL:     "https://alternate.mezmo.com/otel/ingest/rest",
+				IngestKey:     "1234509876",
 			},
 		},
 	}

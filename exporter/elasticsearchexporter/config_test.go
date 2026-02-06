@@ -57,8 +57,7 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			expected: &Config{
-				QueueBatchConfig: exporterhelper.QueueBatchConfig{
-					Enabled:         true,
+				QueueBatchConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
 					NumConsumers:    10,
 					QueueSize:       10,
 					BlockOnOverflow: true,
@@ -69,7 +68,7 @@ func TestConfig(t *testing.T) {
 						MinSize:      1000000,
 						MaxSize:      5000000,
 					}),
-				},
+				}),
 				Endpoints: []string{
 					"https://elastic.example.com:9200",
 				},
@@ -84,6 +83,9 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
+				TracesDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
 				LogsDynamicPipeline: DynamicPipelineSettings{
@@ -143,8 +145,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "log"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueBatchConfig: exporterhelper.QueueBatchConfig{
-					Enabled:         true,
+				QueueBatchConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
 					NumConsumers:    10,
 					QueueSize:       10,
 					BlockOnOverflow: true,
@@ -155,7 +156,7 @@ func TestConfig(t *testing.T) {
 						MinSize:      1000000,
 						MaxSize:      5000000,
 					}),
-				},
+				}),
 				Endpoints: []string{"http://localhost:9200"},
 				LogsIndex: "my_log_index",
 				LogsDynamicIndex: DynamicIndexSetting{
@@ -168,6 +169,9 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
+				TracesDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
 				LogsDynamicPipeline: DynamicPipelineSettings{
@@ -217,8 +221,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "metric"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueBatchConfig: exporterhelper.QueueBatchConfig{
-					Enabled:         true,
+				QueueBatchConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
 					NumConsumers:    10,
 					QueueSize:       10,
 					BlockOnOverflow: true,
@@ -229,7 +232,7 @@ func TestConfig(t *testing.T) {
 						MinSize:      1000000,
 						MaxSize:      5000000,
 					}),
-				},
+				}),
 				Endpoints: []string{"http://localhost:9200"},
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -242,6 +245,9 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
+				TracesDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
 				LogsDynamicPipeline: DynamicPipelineSettings{
@@ -353,7 +359,7 @@ func TestConfig(t *testing.T) {
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
-				cfg.QueueBatchConfig.Enabled = false
+				cfg.QueueBatchConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
 			}),
 		},
 		{
@@ -362,8 +368,8 @@ func TestConfig(t *testing.T) {
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
-				cfg.QueueBatchConfig.NumConsumers = 100
-				cfg.QueueBatchConfig.Batch = configoptional.Some(
+				cfg.QueueBatchConfig.Get().NumConsumers = 100
+				cfg.QueueBatchConfig.Get().Batch = configoptional.Some(
 					exporterhelper.BatchConfig{
 						Sizer:        exporterhelper.RequestSizerTypeItems,
 						FlushTimeout: time.Second,
@@ -384,9 +390,9 @@ func TestConfig(t *testing.T) {
 					Bytes:    1001,
 					Interval: 11 * time.Second,
 				}
-				cfg.QueueBatchConfig.NumConsumers = 111
+				cfg.QueueBatchConfig.Get().NumConsumers = 111
 				// QueueBatchConfig is set by default
-				qbCfg := cfg.QueueBatchConfig.Batch.Get()
+				qbCfg := cfg.QueueBatchConfig.Get().Batch.Get()
 				qbCfg.FlushTimeout = 111 * time.Second
 				qbCfg.MaxSize = 1_000_001
 				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
@@ -403,9 +409,9 @@ func TestConfig(t *testing.T) {
 					Bytes:    1_000_001,
 					Interval: 11 * time.Second,
 				}
-				cfg.QueueBatchConfig.NumConsumers = 11
+				cfg.QueueBatchConfig.Get().NumConsumers = 11
 				// QueueBatchConfig is set by default
-				qbCfg := cfg.QueueBatchConfig.Batch.Get()
+				qbCfg := cfg.QueueBatchConfig.Get().Batch.Get()
 				qbCfg.FlushTimeout = 11 * time.Second
 				qbCfg.MaxSize = 1_000_001
 				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
@@ -426,6 +432,7 @@ func TestConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
+
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

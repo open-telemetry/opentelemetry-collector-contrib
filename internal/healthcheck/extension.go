@@ -5,6 +5,7 @@ package healthcheck // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -32,6 +33,7 @@ type HealthCheckExtension struct {
 	eventCh       chan *eventSourcePair
 	readyCh       chan struct{}
 	host          component.Host
+	shutdownOnce  sync.Once
 }
 
 var (
@@ -110,17 +112,18 @@ func (hc *HealthCheckExtension) Start(ctx context.Context, host component.Host) 
 
 // Shutdown implements the component.Component interface.
 func (hc *HealthCheckExtension) Shutdown(ctx context.Context) error {
-	// Preemptively send the stopped event, so it can be exported before shutdown
-	componentstatus.ReportStatus(hc.host, componentstatus.NewEvent(componentstatus.StatusStopped))
-
-	close(hc.eventCh)
-	hc.aggregator.Close()
-
 	var err error
-	for _, comp := range hc.subcomponents {
-		err = multierr.Append(err, comp.Shutdown(ctx))
-	}
+	hc.shutdownOnce.Do(func() {
+		// Preemptively send the stopped event, so it can be exported before shutdown
+		componentstatus.ReportStatus(hc.host, componentstatus.NewEvent(componentstatus.StatusStopped))
 
+		close(hc.eventCh)
+		hc.aggregator.Close()
+
+		for _, comp := range hc.subcomponents {
+			err = multierr.Append(err, comp.Shutdown(ctx))
+		}
+	})
 	return err
 }
 

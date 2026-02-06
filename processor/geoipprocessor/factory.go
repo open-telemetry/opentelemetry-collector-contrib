@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
@@ -25,9 +25,9 @@ var (
 	// These keys are used to identify an IP address attribute associated with the resource.
 	defaultAttributes = []attribute.Key{
 		// The client attributes are in use by the HTTP semantic conventions
-		semconv.ClientAddressKey,
+		conventions.ClientAddressKey,
 		// The source attributes are used when there is no client/server relationship between the two sides, or when that relationship is unknown
-		semconv.SourceAddressKey,
+		conventions.SourceAddressKey,
 	}
 )
 

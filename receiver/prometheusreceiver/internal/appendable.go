@@ -5,8 +5,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"regexp"
-	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
@@ -17,14 +15,10 @@ import (
 
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
 type appendable struct {
-	sink                   consumer.Metrics
-	metricAdjuster         MetricsAdjuster
-	useStartTimeMetric     bool
-	enableNativeHistograms bool
-	useMetadata            bool
-	trimSuffixes           bool
-	startTimeMetricRegex   *regexp.Regexp
-	externalLabels         labels.Labels
+	sink           consumer.Metrics
+	useMetadata    bool
+	trimSuffixes   bool
+	externalLabels labels.Labels
 
 	settings receiver.Settings
 	obsrecv  *receiverhelper.ObsReport
@@ -34,41 +28,25 @@ type appendable struct {
 func NewAppendable(
 	sink consumer.Metrics,
 	set receiver.Settings,
-	gcInterval time.Duration,
-	useStartTimeMetric bool,
-	startTimeMetricRegex *regexp.Regexp,
-	useCreatedMetric bool,
-	enableNativeHistograms bool,
 	useMetadata bool,
 	externalLabels labels.Labels,
 	trimSuffixes bool,
 ) (storage.Appendable, error) {
-	var metricAdjuster MetricsAdjuster
-	if !useStartTimeMetric {
-		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval, useCreatedMetric)
-	} else {
-		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex, gcInterval)
-	}
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverID: set.ID, Transport: transport, ReceiverCreateSettings: set})
 	if err != nil {
 		return nil, err
 	}
 
 	return &appendable{
-		sink:                   sink,
-		settings:               set,
-		metricAdjuster:         metricAdjuster,
-		useStartTimeMetric:     useStartTimeMetric,
-		enableNativeHistograms: enableNativeHistograms,
-		useMetadata:            useMetadata,
-		startTimeMetricRegex:   startTimeMetricRegex,
-		externalLabels:         externalLabels,
-		obsrecv:                obsrecv,
-		trimSuffixes:           trimSuffixes,
+		sink:           sink,
+		settings:       set,
+		useMetadata:    useMetadata,
+		externalLabels: externalLabels,
+		obsrecv:        obsrecv,
+		trimSuffixes:   trimSuffixes,
 	}, nil
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.enableNativeHistograms, o.useMetadata)
+	return newTransaction(ctx, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.useMetadata)
 }

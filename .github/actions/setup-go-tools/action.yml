@@ -1,0 +1,68 @@
+name: Setup Go & repo tooling
+description: Common setup for Go-based workflows (disk cleanup, setup-go cache, optional gomoddownload/install-tools, cache .tools).
+
+inputs:
+  repo-path:
+    description: Path to the repository root.
+    required: false
+    default: "."
+  go-version:
+    description: Version passed to actions/setup-go.
+    required: false
+    default: "oldstable"
+  cache-dependency-path:
+    description: Pattern(s) for actions/setup-go cache-dependency-path, relative to repo-path.
+    required: false
+    default: "**/*.sum"
+  gomoddownload:
+    description: Whether to run `make -j2 gomoddownload` when Go cache is cold.
+    required: false
+    default: "true"
+  install-tools:
+    description: Whether to cache and build repo tools (make install-tools).
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Free disk space
+      shell: bash
+      # Force 'bash' to use Git Bash on Windows runners.
+      # This allows us to share the same cleanup script across OSs.
+      run: |
+        chmod +x "${{ inputs.repo-path }}/.github/workflows/scripts/free-disk-space.sh"
+        "${{ inputs.repo-path }}/.github/workflows/scripts/free-disk-space.sh"
+
+    - name: Setup Go
+      uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      id: go-setup
+      with:
+        go-version: ${{ inputs.go-version }}
+        # Always format the path. "./pattern" is valid, handling both root (.) and subdirs.
+        cache-dependency-path: ${{ format('{0}/{1}', inputs.repo-path, inputs.cache-dependency-path) }}
+
+    - name: Cache .tools
+      if: inputs.install-tools == 'true'
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+      id: tools-cache
+      with:
+        path: ${{ inputs.repo-path }}/.tools
+        # Key includes OS/Arch (binaries differ) and hashes of tools/go.mod + go.sum.
+        # This invalidates the cache if the tool versions change.
+        key: tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(format('{0}/internal/tools/go.mod', inputs.repo-path), format('{0}/internal/tools/go.sum', inputs.repo-path)) }}
+
+    - name: Install dependencies (gomoddownload)
+      # Only download if setup-go didn't restore a cache.
+      if: inputs.gomoddownload == 'true' && steps.go-setup.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: ${{ inputs.repo-path }}
+      run: make -j2 gomoddownload
+
+    - name: Install tools
+      # Only build tools if we missed BOTH the main Go cache AND the specific tools cache.
+      # If caches are hit, we assume the binaries in .tools are valid or will be built lazily by make.
+      if: inputs.install-tools == 'true' && steps.go-setup.outputs.cache-hit != 'true' && steps.tools-cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: ${{ inputs.repo-path }}
+      run: make install-tools

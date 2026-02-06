@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.uber.org/multierr"
@@ -33,8 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 	encoding := component.MustNewIDWithName("foo", "bar")
 
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -68,12 +68,12 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := func() exporterhelper.QueueBatchConfig {
+	queueCfg := configoptional.Some(func() exporterhelper.QueueBatchConfig {
 		queue := exporterhelper.NewDefaultQueueConfig()
 		queue.NumConsumers = 23
 		queue.QueueSize = 42
 		return queue
-	}()
+	}())
 
 	timeoutCfg := exporterhelper.TimeoutConfig{
 		Timeout: 8,
@@ -115,8 +115,7 @@ func TestConfigS3StorageClass(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -152,8 +151,7 @@ func TestConfigS3ACL(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -190,8 +188,7 @@ func TestConfigS3ACLDefined(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -226,8 +223,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -346,8 +342,7 @@ func TestMarshallerName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -399,8 +394,7 @@ func TestCompressionName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -473,8 +467,7 @@ func TestResourceAttrsToS3(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -514,8 +507,7 @@ func TestRetry(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -553,8 +545,7 @@ func TestConfigS3UniqueKeyFunc(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -590,8 +581,7 @@ func TestConfigS3BasePrefix(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.None[exporterhelper.QueueBatchConfig]()
 	timeoutCfg := exporterhelper.TimeoutConfig{
 		Timeout: 5 * time.Second,
 	}
@@ -629,8 +619,7 @@ func TestConfigS3BasePrefixWithResourceAttrs(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := exporterhelper.NewDefaultQueueConfig()
-	queueCfg.Enabled = false
+	queueCfg := configoptional.None[exporterhelper.QueueBatchConfig]()
 	timeoutCfg := exporterhelper.TimeoutConfig{
 		Timeout: 5 * time.Second,
 	}

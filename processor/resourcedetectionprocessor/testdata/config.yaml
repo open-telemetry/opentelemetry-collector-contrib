@@ -10,7 +10,7 @@ resourcedetection/openshift:
       insecure: true
 
 resourcedetection/aks:
-  detectors: [ env, aks ]
+  detectors: [env, aks]
   timeout: 2s
   override: false
 
@@ -44,7 +44,6 @@ resourcedetection/system:
   override: false
   system:
     hostname_sources: [os]
-  attributes: ["a", "b"]
 
 resourcedetection/docker:
   detectors: [env, docker]
@@ -60,6 +59,12 @@ resourcedetection/heroku:
   detectors: [env, heroku]
   timeout: 2s
   override: false
+
+resourcedetection/refresh:
+  detectors: [system]
+  timeout: 2s
+  override: false
+  refresh_interval: 5s
 
 resourcedetection/invalid:
   detectors: [env, system]

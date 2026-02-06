@@ -31,6 +31,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			functionWithPMapGetSetter,
 		),
 		createFactory[any](
+			"testing_pslicegetsetter",
+			&pSliceGetSetterArguments{},
+			functionWithPSliceGetSetter,
+		),
+		createFactory[any](
 			"testing_getsetter",
 			&getSetterArguments{},
 			functionWithGetSetter,
@@ -122,6 +127,19 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			name: "not accessor (pmap)",
 			inv: editor{
 				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							String: ottltest.Strp("not path"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "not accessor (pslice)",
+			inv: editor{
+				Function: "testing_pslicegetsetter",
 				Arguments: []argument{
 					{
 						Value: value{
@@ -435,6 +453,30 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
+			name: "path parts not all used (pslice)",
+			inv: editor{
+				Function: "testing_pslicegetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+										{
+											Name: "not-used",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "path parts not all used",
 			inv: editor{
 				Function: "testing_getsetter",
@@ -462,6 +504,35 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			name: "Keys not allowed (pmap)",
 			inv: editor{
 				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+											Keys: []key{
+												{
+													String: ottltest.Strp("foo"),
+												},
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Keys not allowed (pslice)",
+			inv: editor{
+				Function: "testing_pslicegetsetter",
 				Arguments: []argument{
 					{
 						Value: value{
@@ -946,6 +1017,27 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 			want: 2,
+		},
+		{
+			name: "pslicegetsetter arg",
+			inv: editor{
+				Function: "testing_pslicegetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "pslicegetter slice arg",
@@ -1675,6 +1767,36 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "Complex Indexing (pslice)",
+			inv: editor{
+				Function: "testing_pslicegetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "attributes",
+											Keys: []key{
+												{
+													Int: ottltest.Intp(0),
+												},
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
 			name: "Complex Indexing",
 			inv: editor{
 				Function: "testing_getsetter",
@@ -1708,6 +1830,28 @@ func Test_NewFunctionCall(t *testing.T) {
 			name: "path that allows keys but none have been specified (pmap)",
 			inv: editor{
 				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "attributes",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "path that allows keys but none have been specified (pslice)",
+			inv: editor{
+				Function: "testing_pslicegetsetter",
 				Arguments: []argument{
 					{
 						Value: value{
@@ -2178,6 +2322,16 @@ func functionWithPMapGetter(PMapGetter[any]) (ExprFunc[any], error) {
 	}, nil
 }
 
+type pSliceGetSetterArguments struct {
+	PSliceGetSetterArg PSliceGetSetter[any]
+}
+
+func functionWithPSliceGetSetter(PSliceGetSetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return "anything", nil
+	}, nil
+}
+
 type pSliceGetterArguments struct {
 	PSliceArg PSliceGetter[any]
 }
@@ -2408,6 +2562,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_pmapgetsetter",
 			&pMapGetSetterArguments{},
 			functionWithPMapGetSetter,
+		),
+		createFactory[any](
+			"testing_pslicegetsetter",
+			&pSliceGetSetterArguments{},
+			functionWithPSliceGetSetter,
 		),
 		createFactory[any](
 			"testing_getsetter",

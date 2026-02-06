@@ -28,6 +28,10 @@ resource_attributes:
     description: The table name.
     enabled: true
     type: string
+  service.instance.id:
+    description: A unique identifier of the PostgreSQL instance in the format host:port (defaults to 'unknown:5432' in case of error in generating this value).
+    enabled: true
+    type: string
 
 attributes:
   bg_buffer_source:

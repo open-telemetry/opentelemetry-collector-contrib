@@ -31,9 +31,7 @@ func basicProfiles() pprofiletest.Profiles {
 						Scope: pcommon.NewInstrumentationScope(),
 						Profiles: []pprofiletest.Profile{
 							{
-								SampleType: []pprofiletest.ValueType{
-									{Typ: "samples", Unit: "count"},
-								},
+								SampleType: pprofiletest.ValueType{Typ: "samples", Unit: "count"},
 								PeriodType: pprofiletest.ValueType{Typ: "cpu", Unit: "nanoseconds"},
 								Attributes: []pprofiletest.Attribute{
 									{Key: "process.executable.build_id.htlhash", Value: "600DCAFE4A110000F2BF38C493F5FB92"},

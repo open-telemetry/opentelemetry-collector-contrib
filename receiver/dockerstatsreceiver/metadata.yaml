@@ -10,7 +10,7 @@ status:
     emeritus: [rmfitzpatrick]
   unsupported_platforms: [darwin, windows]
 
-sem_conv_version: 1.27.0
+sem_conv_version: 1.38.0
 
 tests:
   goleak:

@@ -1,0 +1,4 @@
+type: object
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper.config

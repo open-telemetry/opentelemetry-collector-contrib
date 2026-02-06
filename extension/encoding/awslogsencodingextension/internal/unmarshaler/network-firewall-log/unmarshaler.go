@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
@@ -103,8 +103,8 @@ func (n *networkFirewallLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog
 
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(
-		string(semconv.CloudProviderKey),
-		semconv.CloudProviderAWS.Value.AsString(),
+		string(conventions.CloudProviderKey),
+		conventions.CloudProviderAWS.Value.AsString(),
 	)
 
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
@@ -159,7 +159,7 @@ func setResourceAttributes(resourceLogs plog.ResourceLogs, firewallName, availab
 	resourceLogs.Resource().Attributes().PutStr("aws.networkfirewall.name", firewallName)
 
 	if availabilityZone != "" {
-		resourceLogs.Resource().Attributes().PutStr(string(semconv.CloudAvailabilityZoneKey), availabilityZone)
+		resourceLogs.Resource().Attributes().PutStr(string(conventions.CloudAvailabilityZoneKey), availabilityZone)
 	}
 
 	return nil
@@ -208,16 +208,16 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 
 	// Add network fields
 	if log.Event.Src != "" {
-		putStr(string(semconv.SourceAddressKey), log.Event.Src)
+		putStr(string(conventions.SourceAddressKey), log.Event.Src)
 	}
 	if log.Event.SrcPort != 0 {
-		putInt(string(semconv.SourcePortKey), log.Event.SrcPort)
+		putInt(string(conventions.SourcePortKey), log.Event.SrcPort)
 	}
 	if log.Event.Dest != "" {
-		putStr(string(semconv.DestinationAddressKey), log.Event.Dest)
+		putStr(string(conventions.DestinationAddressKey), log.Event.Dest)
 	}
 	if log.Event.DestPort != 0 {
-		putInt(string(semconv.DestinationPortKey), log.Event.DestPort)
+		putInt(string(conventions.DestinationPortKey), log.Event.DestPort)
 	}
 	if log.Event.Proto != "" {
 		putStr("network.transport", log.Event.Proto)
@@ -303,7 +303,7 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 
 	// SNI can be at event level
 	if log.Event.SNI != "" {
-		putStr(string(semconv.ServerAddressKey), log.Event.SNI)
+		putStr(string(conventions.ServerAddressKey), log.Event.SNI)
 	}
 
 	// Revocation check fields (check each field individually)
@@ -340,10 +340,10 @@ func (*networkFirewallLogUnmarshaler) addNetworkFirewallLog(log networkFirewallL
 		putStr("url.domain", log.Event.HTTP.Hostname)
 	}
 	if log.Event.HTTP.URL != "" {
-		putStr(string(semconv.URLPathKey), log.Event.HTTP.URL)
+		putStr(string(conventions.URLPathKey), log.Event.HTTP.URL)
 	}
 	if log.Event.HTTP.HTTPUserAgent != "" {
-		putStr(string(semconv.UserAgentOriginalKey), log.Event.HTTP.HTTPUserAgent)
+		putStr(string(conventions.UserAgentOriginalKey), log.Event.HTTP.HTTPUserAgent)
 	}
 	if log.Event.HTTP.HTTPContentType != "" {
 		putStr("http.request.header.content-type", log.Event.HTTP.HTTPContentType)

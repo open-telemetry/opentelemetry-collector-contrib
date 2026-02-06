@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 )
 
 // int64Ptr returns a pointer to the given int64 value
@@ -30,11 +29,11 @@ func TestHandleConnection(t *testing.T) {
 				DestPort: int64Ptr(40708),
 			},
 			expectedAttr: map[string]any{
-				string(semconv.NetworkTransportKey):   "tcp",
-				string(semconv.SourceAddressKey):      "192.0.2.1",
-				string(semconv.DestinationAddressKey): "203.0.113.1",
-				string(semconv.SourcePortKey):         int64(443),
-				string(semconv.DestinationPortKey):    int64(40708),
+				"network.transport":   "tcp",
+				"source.address":      "192.0.2.1",
+				"destination.address": "203.0.113.1",
+				"source.port":         int64(443),
+				"destination.port":    int64(40708),
 			},
 		},
 		"icmp connection": {
@@ -44,9 +43,9 @@ func TestHandleConnection(t *testing.T) {
 				DestIP:   "192.0.2.3",
 			},
 			expectedAttr: map[string]any{
-				string(semconv.NetworkTransportKey):   "icmp",
-				string(semconv.SourceAddressKey):      "203.0.113.3",
-				string(semconv.DestinationAddressKey): "192.0.2.3",
+				"network.transport":   "icmp",
+				"source.address":      "203.0.113.3",
+				"destination.address": "192.0.2.3",
 			},
 		},
 		"udp connection": {
@@ -58,11 +57,11 @@ func TestHandleConnection(t *testing.T) {
 				DestPort: int64Ptr(53),
 			},
 			expectedAttr: map[string]any{
-				string(semconv.NetworkTransportKey):   "udp",
-				string(semconv.SourceAddressKey):      "192.168.1.1",
-				string(semconv.DestinationAddressKey): "192.168.1.2",
-				string(semconv.SourcePortKey):         int64(53),
-				string(semconv.DestinationPortKey):    int64(53),
+				"network.transport":   "udp",
+				"source.address":      "192.168.1.1",
+				"destination.address": "192.168.1.2",
+				"source.port":         int64(53),
+				"destination.port":    int64(53),
 			},
 		},
 		"unknown protocol": {
@@ -74,8 +73,8 @@ func TestHandleConnection(t *testing.T) {
 			expectedAttr: map[string]any{
 				// 250 is not present in the protocolNames map,
 				// so we don't expect it to be in the attributes
-				string(semconv.SourceAddressKey):      "10.0.0.1",
-				string(semconv.DestinationAddressKey): "10.0.0.2",
+				"source.address":      "10.0.0.1",
+				"destination.address": "10.0.0.2",
 			},
 		},
 		"nil connection": {
@@ -137,8 +136,9 @@ func TestHandleInstance(t *testing.T) {
 				VMName:    "test-vm-1",
 				Zone:      "us-central1-a",
 				ManagedInstanceGroup: &managedInstanceGroup{
-					Name: "test-mig-1",
-					Zone: "us-central1-a",
+					Name:   "test-mig-1",
+					Region: "us-central1",
+					Zone:   "us-central1-a",
 				},
 			},
 			side: src,
@@ -148,6 +148,7 @@ func TestHandleInstance(t *testing.T) {
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, src):    "test-vm-1",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, src):    "us-central1-a",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, src):   "test-mig-1",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGRegionTemplate, src): "us-central1",
 				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGZoneTemplate, src):   "us-central1-a",
 			},
 		},
@@ -198,6 +199,66 @@ func TestHandleInstance(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tt.expectedAttr, attr.AsRaw())
 			}
+		})
+	}
+}
+
+func TestHandleGoogleService(t *testing.T) {
+	tests := map[string]struct {
+		service      *googleService
+		side         flowSide
+		expectedAttr map[string]any
+		expectError  bool
+	}{
+		"source google service": {
+			service: &googleService{
+				Type:         "GOOGLE_API",
+				ServiceName:  "logging.googleapis.com",
+				Connectivity: "PUBLIC_IP",
+			},
+			side: src,
+			expectedAttr: map[string]any{
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceTypeTemplate, src): "GOOGLE_API",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceNameTemplate, src): "logging.googleapis.com",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceConnTemplate, src): "PUBLIC_IP",
+			},
+		},
+		"destination google service missing fields": {
+			service: &googleService{
+				Type: "GOOGLE_API",
+			},
+			side: dest,
+			expectedAttr: map[string]any{
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceTypeTemplate, dest): "GOOGLE_API",
+			},
+		},
+		"nil google service": {
+			service:      nil,
+			side:         src,
+			expectedAttr: map[string]any{},
+		},
+		"invalid side": {
+			service: &googleService{
+				Type: "GOOGLE_API",
+			},
+			side:        flowSide("invalid"),
+			expectError: true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			attr := pcommon.NewMap()
+			err := handleGoogleService(tt.service, tt.side, attr)
+			if tt.expectError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "handleGoogleService")
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedAttr, attr.AsRaw())
 		})
 	}
 }
@@ -468,6 +529,7 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 					"zone": "us-central1-a",
 					"managed_instance_group": {
 						"name": "test-mig-1",
+						"region": "us-central1",
 						"zone": "us-central1-a"
 					}
 				},
@@ -476,30 +538,47 @@ func TestParsePayloadIntoAttributes(t *testing.T) {
 					"subnetwork_name": "default",
 					"subnetwork_region": "us-central1",
 					"vpc_name": "default"
+				},
+				"src_google_service": {
+					"type": "GOOGLE_API",
+					"service_name": "logging.googleapis.com",
+					"connectivity": "PUBLIC_IP"
+				},
+				"dest_google_service": {
+					"type": "GOOGLE_API",
+					"service_name": "monitoring.googleapis.com",
+					"connectivity": "PRIVATE_SERVICE_CONNECT"
 				}
 			}`),
 			expectedAttr: map[string]any{
-				string(semconv.NetworkTransportKey):   "tcp",
-				string(semconv.SourceAddressKey):      "192.0.2.1",
-				string(semconv.DestinationAddressKey): "203.0.113.1",
-				string(semconv.SourcePortKey):         int64(443),
-				string(semconv.DestinationPortKey):    int64(40708),
-				gcpVPCFlowReporter:                    "SRC",
-				gcpVPCFlowBytesSent:                   int64(0),
-				gcpVPCFlowPacketsSent:                 int64(640),
-				gcpVPCFlowStartTime:                   "2025-09-27T21:12:02.937646004Z",
-				gcpVPCFlowEndTime:                     "2025-09-27T21:15:03.837646004Z",
-				gcpVPCFlowNetworkServiceDSCP:          int64(32),
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, src): "test-project-id-src",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMRegionTemplate, src):  "us-central1",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, src):    "test-vm-1",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, src):    "us-central1-a",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, src):   "test-mig-1",
-				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGZoneTemplate, src):   "us-central1-a",
-				fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, src):         "test-project-id",
-				fmtAttributeNameUsingSide(gcpVPCFlowSubnetNameTemplate, src):        "default",
-				fmtAttributeNameUsingSide(gcpVPCFlowSubnetRegionTemplate, src):      "us-central1",
-				fmtAttributeNameUsingSide(gcpVPCFlowVPCNameTemplate, src):           "default",
+				"network.transport":          "tcp",
+				"source.address":             "192.0.2.1",
+				"destination.address":        "203.0.113.1",
+				"source.port":                int64(443),
+				"destination.port":           int64(40708),
+				gcpVPCFlowReporter:           "SRC",
+				gcpVPCFlowBytesSent:          int64(0),
+				gcpVPCFlowPacketsSent:        int64(640),
+				gcpVPCFlowStartTime:          "2025-09-27T21:12:02.937646004Z",
+				gcpVPCFlowEndTime:            "2025-09-27T21:15:03.837646004Z",
+				gcpVPCFlowNetworkServiceDSCP: int64(32),
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceProjectIDTemplate, src):  "test-project-id-src",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMRegionTemplate, src):   "us-central1",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMNameTemplate, src):     "test-vm-1",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceVMZoneTemplate, src):     "us-central1-a",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGRegionTemplate, src):  "us-central1",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, src):    "test-mig-1",
+				fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGZoneTemplate, src):    "us-central1-a",
+				fmtAttributeNameUsingSide(gcpVPCFlowProjectIDTemplate, src):          "test-project-id",
+				fmtAttributeNameUsingSide(gcpVPCFlowSubnetNameTemplate, src):         "default",
+				fmtAttributeNameUsingSide(gcpVPCFlowSubnetRegionTemplate, src):       "us-central1",
+				fmtAttributeNameUsingSide(gcpVPCFlowVPCNameTemplate, src):            "default",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceTypeTemplate, src):  "GOOGLE_API",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceNameTemplate, src):  "logging.googleapis.com",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceConnTemplate, src):  "PUBLIC_IP",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceTypeTemplate, dest): "GOOGLE_API",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceNameTemplate, dest): "monitoring.googleapis.com",
+				fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceConnTemplate, dest): "PRIVATE_SERVICE_CONNECT",
 			},
 		},
 	}

@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
@@ -467,7 +466,7 @@ func appendTraceWithUnsetStatusCode(traces ptrace.Traces) ptrace.Traces {
 
 func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 	if serviceSpans.serviceName != "" {
-		spans.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceSpans.serviceName)
+		spans.Resource().Attributes().PutStr("service.name", serviceSpans.serviceName)
 	}
 
 	spans.Resource().Attributes().PutStr(regionResourceAttrName, sampleRegion)
@@ -1229,7 +1228,7 @@ func TestAddResourceAttributesConfig(t *testing.T) {
 			// Create a trace with resource attributes
 			traces := ptrace.NewTraces()
 			rs := traces.ResourceSpans().AppendEmpty()
-			rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), "test-service")
+			rs.Resource().Attributes().PutStr("service.name", "test-service")
 			rs.Resource().Attributes().PutStr("test.resource.attr", "test-value")
 			rs.Resource().Attributes().PutStr(regionResourceAttrName, sampleRegion)
 
@@ -1257,7 +1256,7 @@ func TestAddResourceAttributesConfig(t *testing.T) {
 			if tt.expectResourceAttributes {
 				// Should have resource attributes
 				assert.Positive(t, resourceAttrs.Len(), "Expected resource attributes to be present")
-				val, ok := resourceAttrs.Get(string(conventions.ServiceNameKey))
+				val, ok := resourceAttrs.Get("service.name")
 				assert.True(t, ok, "Expected service.name attribute to be present")
 				assert.Equal(t, "test-service", val.Str())
 				val, ok = resourceAttrs.Get("test.resource.attr")

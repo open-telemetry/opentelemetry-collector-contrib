@@ -1,0 +1,38 @@
+$defs:
+  decoder_config:
+    type: object
+    properties:
+      concurrency:
+        description: 'Concurrency is a Zstd-library parameter that configures the use of background goroutines to improve decompression speed. 0 means to let the library decide (it will use up to GOMAXPROCS), and 1 means to avoid background workers.  (default: 1) See `zstdlib.WithDecoderConcurrency()`.'
+        type: integer
+        x-customType: uint
+      max_window_size_mib:
+        description: MaxWindowSizeMiB limits window sizes that can be configured in the corresponding encoder's `EncoderConfig.WindowSizeMiB` setting, as a way to control memory usage. See `zstdlib.WithDecoderMaxWindow()`.
+        type: integer
+        x-customType: uint32
+      memory_limit_mib:
+        description: MemoryLimitMiB is a memory limit control for the decoder, as a way to limit overall memory use by Zstd. See `zstdlib.WithDecoderMaxMemory()`.
+        type: integer
+        x-customType: uint32
+  encoder_config:
+    type: object
+    properties:
+      concurrency:
+        description: 'Concurrency is a Zstd-library parameter that configures the use of background goroutines to improve compression speed. 0 means to let the library decide (it will use up to GOMAXPROCS), and 1 means to avoid background workers.  (default: 1) See `zstdlib.WithEncoderConcurrency()`.'
+        type: integer
+        x-customType: uint
+      level:
+        description: 'Level is meaningful in the range [0, 10].  No invalid values, they all map into 4 default configurations.  (default: 5) See `zstdlib.WithEncoderLevel()`.'
+        $ref: level
+      window_size_mib:
+        description: 'WindowSizeMiB is a Zstd-library parameter that controls how much window of text is visible to the compressor at a time. It is the dominant factor that determines memory usage. If zero, the window size is determined by level.  (default: 0) See `zstdlib.WithWindowSize()`.'
+        type: integer
+        x-customType: uint32
+  gen:
+    description: Gen is the reset time.
+    type: string
+    format: date-time
+  level:
+    description: Level is an integer value mapping to compression level. [0] implies disablement; not registered in grpc [1,2] fastest i.e., "zstdarrow1", "zstdarrow2" [3-5] default [6-9] better [10] best.
+    type: integer
+    x-customType: uint

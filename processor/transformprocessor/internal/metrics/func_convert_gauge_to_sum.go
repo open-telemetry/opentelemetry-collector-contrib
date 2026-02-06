@@ -19,11 +19,11 @@ type convertGaugeToSumArguments struct {
 	Monotonic     bool
 }
 
-func newConvertGaugeToSumFactory() ottl.Factory[ottlmetric.TransformContext] {
+func newConvertGaugeToSumFactory() ottl.Factory[*ottlmetric.TransformContext] {
 	return ottl.NewFactory("convert_gauge_to_sum", &convertGaugeToSumArguments{}, createConvertGaugeToSumFunction)
 }
 
-func createConvertGaugeToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func createConvertGaugeToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*convertGaugeToSumArguments)
 
 	if !ok {
@@ -33,7 +33,7 @@ func createConvertGaugeToSumFunction(_ ottl.FunctionContext, oArgs ottl.Argument
 	return convertGaugeToSum(args.StringAggTemp, args.Monotonic)
 }
 
-func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
 	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {
 	case "delta":
@@ -44,7 +44,7 @@ func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottl
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
 
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+	return func(_ context.Context, tCtx *ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeGauge {
 			return nil, nil

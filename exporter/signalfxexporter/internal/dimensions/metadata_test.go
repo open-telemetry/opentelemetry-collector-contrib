@@ -7,23 +7,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 func TestGetDimensionUpdateFromMetadata(t *testing.T) {
-	translator, _ := translation.NewMetricTranslator([]translation.Rule{
-		{
-			Action:  translation.ActionRenameDimensionKeys,
-			Mapping: map[string]string{"name": "translated_name"},
-		},
-	}, 1, make(chan struct{}))
 	type args struct {
-		metadata         metadata.MetadataUpdate
-		metricTranslator *translation.MetricTranslator
+		defaults map[string]string
+		metadata metadata.MetadataUpdate
 	}
 	tests := []struct {
 		name string
@@ -46,7 +37,6 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 						MetadataToUpdate: map[string]string{},
 					},
 				},
-				metricTranslator: nil,
 			},
 			&DimensionUpdate{
 				Name:       "name",
@@ -77,7 +67,6 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 						},
 					},
 				},
-				metricTranslator: nil,
 			},
 			&DimensionUpdate{
 				Name:  "name",
@@ -112,7 +101,6 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 						},
 					},
 				},
-				metricTranslator: nil,
 			},
 			&DimensionUpdate{
 				Name:  "name",
@@ -121,44 +109,6 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 					"prope/rty1": "value1",
 					"prope.rty2": "",
 					"prope_rty3": "value33",
-					"prope.rty4": "",
-				}),
-				Tags: map[string]bool{
-					"ta.g1": true,
-					"ta/g2": false,
-				},
-			},
-		},
-		{
-			"Test dimensions translation",
-			args{
-				metadata: metadata.MetadataUpdate{
-					ResourceIDKey: "name",
-					ResourceID:    "val",
-					MetadataDelta: metadata.MetadataDelta{
-						MetadataToAdd: map[string]string{
-							"prope/rty1": "value1",
-							"ta.g1":      "",
-						},
-						MetadataToRemove: map[string]string{
-							"prope_rty2": "value2",
-							"ta/g2":      "",
-						},
-						MetadataToUpdate: map[string]string{
-							"prope.rty3": "value33",
-							"prope.rty4": "",
-						},
-					},
-				},
-				metricTranslator: translator,
-			},
-			&DimensionUpdate{
-				Name:  "translated_name",
-				Value: "val",
-				Properties: getMapToPointers(map[string]string{
-					"prope/rty1": "value1",
-					"prope_rty2": "",
-					"prope.rty3": "value33",
 					"prope.rty4": "",
 				}),
 				Tags: map[string]bool{
@@ -182,7 +132,6 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 						},
 					},
 				},
-				metricTranslator: nil,
 			},
 			&DimensionUpdate{
 				Name:       "name",
@@ -194,20 +143,37 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				},
 			},
 		},
+		{
+			"Test with defaults",
+			args{
+				defaults: map[string]string{
+					"foo": "bar",
+					"bar": "baz",
+				},
+				metadata: metadata.MetadataUpdate{
+					ResourceIDKey: "name",
+					ResourceID:    "val",
+					MetadataDelta: metadata.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"bar": "foobar",
+						},
+					},
+				},
+			},
+			&DimensionUpdate{
+				Name:  "name",
+				Value: "val",
+				Properties: getMapToPointers(map[string]string{
+					"foo": "bar",
+					"bar": "foobar",
+				}),
+				Tags: map[string]bool{},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			converter, err := translation.NewMetricsConverter(
-				zap.NewNop(),
-				tt.args.metricTranslator,
-				nil,
-				nil,
-				"-_.",
-				false,
-				true,
-			)
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, getDimensionUpdateFromMetadata(tt.args.metadata, *converter))
+			assert.Equal(t, tt.want, getDimensionUpdateFromMetadata(tt.args.defaults, tt.args.metadata, "-_."))
 		})
 	}
 }
@@ -225,4 +191,38 @@ func getMapToPointers(m map[string]string) map[string]*string {
 	}
 
 	return out
+}
+
+func TestFilterKeyChars(t *testing.T) {
+	tests := []struct {
+		name                    string
+		nonAlphanumericDimChars string
+		dim                     string
+		want                    string
+	}{
+		{
+			name:                    "periods_replaced_with_underscores",
+			nonAlphanumericDimChars: "_-",
+			dim:                     "d.i.m",
+			want:                    "d_i_m",
+		},
+		{
+			name:                    "periods_allowed_when_specified",
+			nonAlphanumericDimChars: "_-.",
+			dim:                     "d.i.m",
+			want:                    "d.i.m",
+		},
+		{
+			name:                    "multiple_special_chars_replaced",
+			nonAlphanumericDimChars: "_",
+			dim:                     "my-dim.name",
+			want:                    "my_dim_name",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FilterKeyChars(tt.dim, tt.nonAlphanumericDimChars)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

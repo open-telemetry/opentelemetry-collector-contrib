@@ -67,7 +67,7 @@ func TestReadPipe(t *testing.T) {
 
 	// Write 10 logs into the pipe and assert that they all come out the other end.
 	numLogs := 10
-	for i := 0; i < numLogs; i++ {
+	for range numLogs {
 		_, err = pipe.WriteString("test\n")
 		require.NoError(t, err, "failed to write to pipe")
 	}

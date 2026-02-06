@@ -97,7 +97,9 @@ func (r *fluentReceiver) Shutdown(context.Context) error {
 	if r.listener == nil {
 		return nil
 	}
-	r.listener.Close()
+	// Close the listener to stop accepting new connections
+	_ = r.listener.Close()
+	r.server.closeAllConns()
 	r.cancel()
 	return nil
 }

@@ -1,0 +1,95 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789010"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "2"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-1235b8ca123456789
+              - key: source.port
+                value:
+                  intValue: "20641"
+              - key: destination.port
+                value:
+                  intValue: "22"
+              - key: network.protocol.name
+                value:
+                  stringValue: tcp
+              - key: aws.vpc.flow.packets
+                value:
+                  intValue: "20"
+              - key: aws.vpc.flow.bytes
+                value:
+                  intValue: "4249"
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1418530010"
+              - key: aws.vpc.flow.action
+                value:
+                  stringValue: ACCEPT
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: OK
+              - key: source.address
+                value:
+                  stringValue: 172.31.16.139
+              - key: destination.address
+                value:
+                  stringValue: 172.31.16.21
+            body: {}
+            timeUnixNano: "1418530070000000000"
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "2"
+              - key: network.interface.name
+                value:
+                  stringValue: eni-1235b8ca123456789
+              - key: source.port
+                value:
+                  intValue: "49761"
+              - key: destination.port
+                value:
+                  intValue: "3389"
+              - key: network.protocol.name
+                value:
+                  stringValue: tcp
+              - key: aws.vpc.flow.packets
+                value:
+                  intValue: "20"
+              - key: aws.vpc.flow.bytes
+                value:
+                  intValue: "4249"
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1418530010"
+              - key: aws.vpc.flow.action
+                value:
+                  stringValue: REJECT
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: OK
+              - key: source.address
+                value:
+                  stringValue: 172.31.9.69
+              - key: destination.address
+                value:
+                  stringValue: 172.31.9.12
+            body: {}
+            timeUnixNano: "1418530070000000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.vpcflow
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

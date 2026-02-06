@@ -64,7 +64,7 @@ func TestCreateMetricExporter(t *testing.T) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
 					Sizer: exporterhelper.RequestSizerTypeBytes,
 				})
 			}),
@@ -120,7 +120,7 @@ func TestCreateLogExporter(t *testing.T) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
 					Sizer: exporterhelper.RequestSizerTypeBytes,
 				})
 			}),
@@ -176,7 +176,7 @@ func TestCreateTraceExporter(t *testing.T) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
 					Sizer: exporterhelper.RequestSizerTypeBytes,
 				})
 			}),
@@ -232,7 +232,7 @@ func TestCreateProfileExporter(t *testing.T) {
 				// Disabling broker check
 				conf.Metadata.Full = false
 				conf.IncludeMetadataKeys = []string{"k1", "k2"}
-				conf.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+				conf.QueueBatchConfig.GetOrInsertDefault().Batch = configoptional.Some(exporterhelper.BatchConfig{
 					Sizer: exporterhelper.RequestSizerTypeBytes,
 				})
 			}),

@@ -9,3 +9,31 @@ status:
   codeowners:
     active: [Aneurysm9, dashpole]
     seeking_new: true
+
+tests:
+  goleak:
+    ignore:
+      any:
+        - "net/http.(*persistConn).readLoop"
+        - "net/http.(*persistConn).writeLoop"
+        - "golang.org/x/net/http2.(*ClientConn).readLoop"
+        - "golang.org/x/net/http2.(*clientConnReadLoop).run"
+        - "crypto/tls.(*Conn).readRecordOrCCS"
+        - "crypto/tls.(*Conn).Read"
+
+feature_gates:
+  - id: processor.resourcedetection.propagateerrors
+    stage: stable
+    description: >-
+      When enabled, allows errors returned from resource detectors to propagate
+      in the Start() method and stop the collector.
+    from_version: v0.121.0
+    to_version: v0.146.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37961
+  - id: processor.resourcedetection.removeGCPFaasID
+    stage: stable
+    description: >-
+      Remove faas.id from the GCP detector. Use faas.instance instead.
+    from_version: v0.87.0
+    to_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/26486

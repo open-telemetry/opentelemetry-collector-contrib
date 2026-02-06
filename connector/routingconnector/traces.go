@@ -68,35 +68,76 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 		switch route.statementContext {
 		case "request":
 			if route.requestCondition.matchRequest(ctx) {
-				// all traces are routed
-				td.MoveTo(matched)
+				switch route.action {
+				case Copy:
+					td.CopyTo(matched)
+				default:
+					// all traces are routed
+					td.MoveTo(matched)
+				}
 			}
 		case "", "resource":
-			ptraceutil.MoveResourcesIf(td, matched,
-				func(rs ptrace.ResourceSpans) bool {
-					rtx := ottlresource.NewTransformContext(rs.Resource(), rs)
-					_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
-					// If error during statement evaluation consider it as not a match.
-					if err != nil {
-						errs = errors.Join(errs, err)
-						return false
-					}
-					return isMatch
-				},
-			)
+			switch route.action {
+			case Copy:
+				ptraceutil.CopyResourcesIf(td, matched,
+					func(rs ptrace.ResourceSpans) bool {
+						rtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
+						defer rtx.Close()
+						_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
+						// If error during statement evaluation consider it as not a match.
+						if err != nil {
+							errs = errors.Join(errs, err)
+							return false
+						}
+						return isMatch
+					},
+				)
+			default:
+				ptraceutil.MoveResourcesIf(td, matched,
+					func(rs ptrace.ResourceSpans) bool {
+						rtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
+						defer rtx.Close()
+						_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
+						// If error during statement evaluation consider it as not a match.
+						if err != nil {
+							errs = errors.Join(errs, err)
+							return false
+						}
+						return isMatch
+					},
+				)
+			}
 		case "span":
-			ptraceutil.MoveSpansWithContextIf(td, matched,
-				func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, s ptrace.Span) bool {
-					mtx := ottlspan.NewTransformContext(s, ss.Scope(), rs.Resource(), ss, rs)
-					_, isMatch, err := route.spanStatement.Execute(ctx, mtx)
-					// If error during statement evaluation consider it as not a match.
-					if err != nil {
-						errs = errors.Join(errs, err)
-						return false
-					}
-					return isMatch
-				},
-			)
+			switch route.action {
+			case Copy:
+				ptraceutil.CopySpansWithContextIf(td, matched,
+					func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, s ptrace.Span) bool {
+						mtx := ottlspan.NewTransformContextPtr(rs, ss, s)
+						defer mtx.Close()
+						_, isMatch, err := route.spanStatement.Execute(ctx, mtx)
+						// If error during statement evaluation consider it as not a match.
+						if err != nil {
+							errs = errors.Join(errs, err)
+							return false
+						}
+						return isMatch
+					},
+				)
+			default:
+				ptraceutil.MoveSpansWithContextIf(td, matched,
+					func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, s ptrace.Span) bool {
+						mtx := ottlspan.NewTransformContextPtr(rs, ss, s)
+						defer mtx.Close()
+						_, isMatch, err := route.spanStatement.Execute(ctx, mtx)
+						// If error during statement evaluation consider it as not a match.
+						if err != nil {
+							errs = errors.Join(errs, err)
+							return false
+						}
+						return isMatch
+					},
+				)
+			}
 		}
 		if errs != nil && c.config.ErrorMode == ottl.PropagateError {
 			return errs

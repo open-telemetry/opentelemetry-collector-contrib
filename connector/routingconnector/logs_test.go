@@ -39,6 +39,16 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 				Condition: `attributes["X-Tenant"] == "*"`,
 				Pipelines: []pipeline.ID{logs0, logs1},
 			},
+			{
+				Statement: `route() where attributes["X-Tenant"] == "abc"`,
+				Pipelines: []pipeline.ID{logs0},
+				Action:    Copy,
+			},
+			{
+				Statement: `route() where attributes["X-Tenant"] == "abc"`,
+				Pipelines: []pipeline.ID{logs0},
+				Action:    Move,
+			},
 		},
 	}
 
@@ -437,9 +447,9 @@ func TestLogsConnectorDetailed(t *testing.T) {
 
 	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
 	isBodyString := `IsString(body) == true`
-	require.Contains(t, standardFunctions[ottllog.TransformContext](), "IsString")
+	require.Contains(t, standardFunctions[*ottllog.TransformContext](), "IsString")
 	isBodyMap := `IsMap(body) == true`
-	require.Contains(t, standardFunctions[ottllog.TransformContext](), "IsMap")
+	require.Contains(t, standardFunctions[*ottllog.TransformContext](), "IsMap")
 
 	isScopeCFromLowerContext := `instrumentation_scope.name == "scopeC"`
 	isScopeDFromLowerContext := `instrumentation_scope.name == "scopeD"`
@@ -981,6 +991,106 @@ func TestLogsForIgnoreError(t *testing.T) {
 	assert.Empty(t, sink0.AllLogs())
 	assert.Len(t, defaultSink.AllLogs(), 1)
 	assert.Equal(t, plogutiltest.NewLogs("1", "2", "3"), defaultSink.AllLogs()[0])
+}
+
+func TestLogsCopyAndMoveConfig(t *testing.T) {
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logs0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
+	logs1 := pipeline.NewIDWithName(pipeline.SignalLogs, "1")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{logsDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `IsMatch(attributes["X-Tenant"], ".*acme") == true`,
+				Pipelines: []pipeline.ID{logs0},
+				Action:    Copy,
+			},
+			{
+				Statement: `route() where IsMatch(attributes["X-Tenant"], "_acme") == true`,
+				Pipelines: []pipeline.ID{logs1},
+				Action:    Move,
+			},
+			{
+				Statement: `route() where attributes["X-Tenant"] == "ecorp"`,
+				Pipelines: []pipeline.ID{logsDefault, logs0},
+			},
+		},
+	}
+
+	var defaultSink, sink0, sink1 consumertest.LogsSink
+
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+		logsDefault: &defaultSink,
+		logs0:       &sink0,
+		logs1:       &sink1,
+	})
+
+	resetSinks := func() {
+		defaultSink.Reset()
+		sink0.Reset()
+		sink1.Reset()
+	}
+
+	factory := NewFactory()
+	conn, err := factory.CreateLogsToLogs(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Logs),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, conn.Shutdown(t.Context()))
+	}()
+
+	t.Run("logs are copied correctly", func(t *testing.T) {
+		resetSinks()
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("X-Tenant", "xacme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeLogs(t.Context(), l))
+
+		assert.Len(t, defaultSink.AllLogs(), 1)
+		assert.Len(t, sink0.AllLogs(), 1)
+		assert.Empty(t, sink1.AllLogs())
+	})
+
+	t.Run("logs are moved correctly", func(t *testing.T) {
+		resetSinks()
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("X-Tenant", "abc")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeLogs(t.Context(), l))
+
+		assert.Len(t, defaultSink.AllLogs(), 1)
+		assert.Empty(t, sink0.AllLogs())
+		assert.Empty(t, sink1.AllLogs())
+	})
+
+	t.Run("logs are copied and moved correctly", func(t *testing.T) {
+		resetSinks()
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("X-Tenant", "_acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeLogs(t.Context(), l))
+
+		assert.Empty(t, defaultSink.AllLogs())
+		assert.Len(t, sink0.AllLogs(), 1)
+		assert.Len(t, sink1.AllLogs(), 1)
+	})
 }
 
 func setLogRecordMap(lr plog.LogRecord, key, value string) plog.LogRecord {

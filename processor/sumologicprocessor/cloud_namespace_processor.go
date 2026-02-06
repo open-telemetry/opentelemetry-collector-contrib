@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 // cloudNamespaceProcessor adds the `cloud.namespace` resource attribute to logs, metrics and traces.

@@ -377,6 +377,14 @@ func CompareProfileSample(expected, actual pprofile.Sample) error {
 		errs = multierr.Append(errs, fmt.Errorf("expected attributes '%v', got '%v'", expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()))
 	}
 
+	if !reflect.DeepEqual(expected.LinkIndex(), actual.LinkIndex()) {
+		errs = multierr.Append(errs, fmt.Errorf("expected link_index '%v', got '%v'", expected.LinkIndex(), actual.LinkIndex()))
+	}
+
+	if !reflect.DeepEqual(expected.StackIndex(), actual.StackIndex()) {
+		errs = multierr.Append(errs, fmt.Errorf("expected stack_index '%v', got '%v'", expected.StackIndex(), actual.StackIndex()))
+	}
+
 	return errs
 }
 

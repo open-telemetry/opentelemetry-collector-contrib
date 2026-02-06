@@ -26,7 +26,7 @@ The following settings can be optionally configured:
 
 - `include`: List of metrics names (case-insensitive), patterns or metric types to convert to delta. Valid values for metric types are: `sum`, `histogram`, `exponentialhistogram`.
 - `exclude`: List of metrics names (case-insensitive), patterns or metric types to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.** Valid values for metric types are: `sum`, `histogram`, `exponentialhistogram`.
-- `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
+- `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 1 hour
 - `initial_value`: Handling of the first observed point for a given metric identity.
   When the collector (re)starts, there's no record of how much of a given cumulative counter has already been converted to delta values.
   - `auto` (default): Send if and only if the startime is set AND the starttime happens after the component started AND the starttime is different from the timestamp.
@@ -136,7 +136,6 @@ processors:
 ## Warnings
 
 - [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The cumulativetodelta processor's calculates delta by remembering the previous value of a metric.  For this reason, the calculation is only accurate if the metric is continuously sent to the same instance of the collector.  As a result, the cumulativetodelta processor may not work as expected if used in a deployment of multiple collectors.  When using this processor it is best for the data source to being sending data to a single collector.
-
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

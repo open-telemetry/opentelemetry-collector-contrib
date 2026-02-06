@@ -19,15 +19,15 @@ import (
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
 func TestNewReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
-		return fake.NewSimpleClientset(), nil
+		return fake.NewClientset(), nil
 	}
 	r, err := newReceiver(
 		receivertest.NewNopSettings(metadata.Type),
@@ -139,7 +139,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.K8sLeaderElector = &leaderID
 	cfg.makeClient = func(_ k8sconfig.APIConfig) (k8s.Interface, error) {
-		return fake.NewSimpleClientset(), nil
+		return fake.NewClientset(), nil
 	}
 
 	sink := new(consumertest.LogsSink)
@@ -152,9 +152,6 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	recv := r.(*k8seventsReceiver)
 
 	require.NoError(t, r.Start(t.Context(), host))
-	t.Cleanup(func() {
-		assert.NoError(t, r.Shutdown(t.Context()))
-	})
 
 	// Become leader: start processing events
 	le.InvokeOnLeading()
@@ -164,21 +161,23 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 		return sink.LogRecordCount() == 1
 	}, 5*time.Second, 100*time.Millisecond, "logs not collected while leader")
 
-	// lose leadership
+	// lose leadership - this will trigger Shutdown()
 	le.InvokeOnStopping()
 
-	// DO NOT call recv.handleEvent(...) here; informer wouldn't deliver to this instance.
-	// Give a tiny moment and ensure count stays 1.
+	// Verify count remains at 1 after losing leadership
 	time.Sleep(100 * time.Millisecond)
-	assert.Equal(t, 1, sink.LogRecordCount(), "event should be ignored after losing leadership")
+	require.Equal(t, 1, sink.LogRecordCount(), "count should remain at 1 after losing leadership")
 
-	// regain leadership and inject again
+	// regain leadership
 	le.InvokeOnLeading()
 	recv.handleEvent(getEvent("Normal"))
 
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() == 2
 	}, 5*time.Second, 100*time.Millisecond, "logs not collected after regaining leadership")
+
+	// Final cleanup
+	require.NoError(t, r.Shutdown(t.Context()))
 }
 
 func getEvent(eventType string) *corev1.Event {

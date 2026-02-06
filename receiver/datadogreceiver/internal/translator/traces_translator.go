@@ -21,7 +21,7 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -48,6 +48,8 @@ const (
 var spanProcessor = map[string]func(*pb.Span, *ptrace.Span){
 	// HTTP
 	"servlet.request": processHTTPSpan,
+	"http.request":    processHTTPSpan,
+	"web.request":     processHTTPSpan,
 
 	// Internal
 	"spring.handler": processInternalSpan,
@@ -55,18 +57,26 @@ var spanProcessor = map[string]func(*pb.Span, *ptrace.Span){
 	// Database
 	"postgresql.query": processDBSpan,
 	"redis.query":      processDBSpan,
+
+	// GRPC
+	"grpc.server": processGRPCSpan,
+	"grpc.client": processGRPCSpan,
+
+	// AWS
+	"aws.request": processAWSSdkSpan,
+	"aws.command": processAWSSdkSpan,
 }
 
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	if ddTracerVersion := req.Header.Get(header.TracerVersion); ddTracerVersion != "" {
-		attrs.PutStr(string(semconv.TelemetrySDKVersionKey), "Datadog-"+ddTracerVersion)
+		attrs.PutStr(string(conventions.TelemetrySDKVersionKey), "Datadog-"+ddTracerVersion)
 	}
 	if ddTracerLang := req.Header.Get(header.Lang); ddTracerLang != "" {
 		otelLang := ddTracerLang
 		if ddTracerLang == ".NET" {
 			otelLang = "dotnet"
 		}
-		attrs.PutStr(string(semconv.TelemetrySDKLanguageKey), otelLang)
+		attrs.PutStr(string(conventions.TelemetrySDKLanguageKey), otelLang)
 	}
 }
 
@@ -119,6 +129,8 @@ func processHTTPSpan(span *pb.Span, newSpan *ptrace.Span) {
 }
 
 func processDBSpan(span *pb.Span, newSpan *ptrace.Span) {
+	// references:
+	// https://github.com/DataDog/documentation/blob/master/content/en/tracing/guide/ignoring_apm_resources.md#database
 	// https://opentelemetry.io/docs/specs/semconv/database/database-spans/#name
 	if val, ok := span.Meta["db.query.summary"]; ok {
 		newSpan.SetName(val)
@@ -131,6 +143,80 @@ func processDBSpan(span *pb.Span, newSpan *ptrace.Span) {
 			}
 		} else if val, ok = span.Meta["db.type"]; ok {
 			newSpan.SetName(val)
+		}
+	}
+}
+
+func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
+	// references:
+	// https://github.com/DataDog/documentation/blob/master/content/en/tracing/guide/ignoring_apm_resources.md#remote-procedure-calls
+	// https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
+
+	// ddSpan.Attributes["grpc.status.code"] contains the gRPC status code name (eg "OK")
+	// not the numeric value (eg "0")
+	// it's ddSpan.error that indicates holds the gRPC status code numeric value
+	newSpan.Attributes().PutStr(string(conventions.RPCSystemKey), conventions.RPCSystemGRPC.Value.AsString())
+	newSpan.Attributes().PutInt(string(conventions.RPCGRPCStatusCodeKey), int64(span.GetError()))
+
+	method := ""
+	service := ""
+	if rpcMethod, ok := span.Meta[("rpc.method")]; ok {
+		// "rpc.method" is used by dd-trace-rb, check dd-trace-php
+		method = rpcMethod
+		if rpcService, ok := span.Meta[("rpc.service")]; ok {
+			service = rpcService
+		}
+	} else if grpcFullMethod, ok := span.Meta[("rpc.grpc.full_method")]; ok {
+		// "rpc.grpc.full_method" is used by dd-trace-go & dd-trace-rb, they also set span.Resource to the full method name
+		// format: /$package.$service/$method
+		grpcFullMethodElements := strings.SplitN(strings.TrimPrefix(grpcFullMethod, "/"), "/", 2)
+		if len(grpcFullMethodElements) == 2 {
+			method = grpcFullMethodElements[1]
+			service = grpcFullMethodElements[0]
+		}
+	} else if grpcMethod, ok := span.Meta[("grpc.method.name")]; ok {
+		// format: /$package.$service/$method
+		// "grpc.method.name" is used by dd-trace-dotnet dd-trace-python & dd-trace-go
+		grpcMethodElements := strings.SplitN(strings.TrimPrefix(grpcMethod, "/"), "/", 2)
+		if len(grpcMethodElements) == 2 {
+			method = grpcMethodElements[1]
+			service = grpcMethodElements[0]
+		} else if len(grpcMethodElements) == 1 {
+			// unexpected format
+			method = ""
+			service = grpcMethodElements[0]
+		}
+	} else {
+		// resource is used by dd-trace-java
+		ddResource := strings.SplitN(strings.TrimPrefix(span.Resource, "/"), "/", 2)
+		if len(ddResource) == 2 {
+			method = ddResource[1]
+			service = ddResource[0]
+		}
+	}
+
+	spanName := ""
+	if method != "" {
+		newSpan.Attributes().PutStr(string(conventions.RPCMethodKey), method)
+		newSpan.Attributes().PutStr(string(conventions.RPCServiceKey), service)
+		spanName = service + "/" + method
+	} else if service != "" {
+		newSpan.Attributes().PutStr(string(conventions.RPCServiceKey), service)
+		spanName = service
+	}
+	if spanName != "" {
+		newSpan.SetName(spanName)
+	}
+}
+
+func processAWSSdkSpan(span *pb.Span, newSpan *ptrace.Span) {
+	// https://opentelemetry.io/docs/specs/semconv/cloud-providers/aws-sdk/
+	newSpan.Attributes().PutStr(string(conventions.RPCSystemKey), "aws-api")
+	if service, ok := span.Meta[("aws.service")]; ok {
+		if operation, ok := span.Meta[("aws.operation")]; ok {
+			newSpan.SetName(service + "/" + operation)
+		} else {
+			newSpan.SetName(service)
 		}
 	}
 }
@@ -148,14 +234,14 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	}
 	sharedAttributes := pcommon.NewMap()
 	for k, v := range map[string]string{
-		string(semconv.ContainerIDKey):               payload.ContainerID,
-		string(semconv.TelemetrySDKLanguageKey):      payload.LanguageName,
-		string(semconv.ProcessRuntimeVersionKey):     payload.LanguageVersion,
-		string(semconv.DeploymentEnvironmentNameKey): payload.Env,
-		string(semconv.HostNameKey):                  payload.Hostname,
-		string(semconv.ServiceVersionKey):            payload.AppVersion,
-		string(semconv.TelemetrySDKNameKey):          "Datadog",
-		string(semconv.TelemetrySDKVersionKey):       payload.TracerVersion,
+		string(conventions.ContainerIDKey):               payload.ContainerID,
+		string(conventions.TelemetrySDKLanguageKey):      payload.LanguageName,
+		string(conventions.ProcessRuntimeVersionKey):     payload.LanguageVersion,
+		string(conventions.DeploymentEnvironmentNameKey): payload.Env,
+		string(conventions.HostNameKey):                  payload.Hostname,
+		string(conventions.ServiceVersionKey):            payload.AppVersion,
+		string(conventions.TelemetrySDKNameKey):          "Datadog",
+		string(conventions.TelemetrySDKVersionKey):       payload.TracerVersion,
 	} {
 		if v != "" {
 			sharedAttributes.PutStr(k, v)
@@ -264,7 +350,7 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 				}
 			}
 
-			// Some spans need specific processing (http, db, ...)
+			// Some spans need specific processing (http, db, grpc...)
 			processSpanByName(span, &newSpan)
 		}
 	}
@@ -272,9 +358,9 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	results := ptrace.NewTraces()
 	for service, spans := range groupByService {
 		rs := results.ResourceSpans().AppendEmpty()
-		rs.SetSchemaUrl(semconv.SchemaURL)
+		rs.SetSchemaUrl(conventions.SchemaURL)
 		sharedAttributes.CopyTo(rs.Resource().Attributes())
-		rs.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), service)
+		rs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), service)
 
 		in := rs.ScopeSpans().AppendEmpty()
 		in.Scope().SetName("Datadog")

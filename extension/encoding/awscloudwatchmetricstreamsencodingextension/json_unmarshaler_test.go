@@ -128,6 +128,17 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 			record:                 joinMetricsFromFile(t, filesDirectory, []string{"valid_metric.json"}),
 			metricExpectedFilename: "valid_record_single_metric_expected.yaml",
 		},
+		"valid_record_with_percentiles": {
+			// test a record with percentile statistics (p90, p99, p99.9)
+			record:                 joinMetricsFromFile(t, filesDirectory, []string{"valid_metric_with_percentiles.json"}),
+			metricExpectedFilename: "valid_record_with_percentiles_expected.yaml",
+		},
+		"valid_record_with_unsupported_stats": {
+			// test a record with unsupported statistics (TM, WM, TC, TS, PR, IQM)
+			// these should be silently ignored, only percentiles should be extracted
+			record:                 joinMetricsFromFile(t, filesDirectory, []string{"valid_metric_with_unsupported_stats.json"}),
+			metricExpectedFilename: "valid_record_with_unsupported_stats_expected.yaml",
+		},
 		"invalid_record": {
 			// test a record with one invalid metric
 			record:         joinMetricsFromFile(t, filesDirectory, []string{"invalid_metric.json"}),
@@ -154,7 +165,7 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 		},
 	}
 
-	unmarshalerCW := &formatJSONUnmarshaler{component.BuildInfo{}}
+	unmarshalerCW := &formatJSONUnmarshaler{buildInfo: component.BuildInfo{}}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			metrics, err := unmarshalerCW.UnmarshalMetrics(test.record)
@@ -165,7 +176,8 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 
 			expectedMetrics, err := golden.ReadMetrics(filepath.Join(filesDirectory, test.metricExpectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics))
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics,
+				pmetrictest.IgnoreSummaryDataPointValueAtQuantileSliceOrder()))
 		})
 	}
 }

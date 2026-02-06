@@ -1,0 +1,109 @@
+$defs:
+  append_blob:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      separator:
+        type: string
+  auth_type:
+    type: string
+  authentication:
+    type: object
+    properties:
+      client_id:
+        description: ClientID is the AAD Application client id. It's needed when type is service principal or user managed identity
+        type: string
+      client_secret:
+        type: string
+      connection_string:
+        description: ConnectionString to the endpoint.
+        type: string
+      federated_token_file:
+        description: FederatedTokenFile is the path to the file containing the federated token. It's needed when type is workload_identity.
+        type: string
+      tenant_id:
+        description: TenantID is the tenand id for the AAD App. It's only needed when type is service principal.
+        type: string
+      type:
+        description: Type is the authentication type. supported values are connection_string, service_principal, system_managed_identity and user_managed_identity
+        $ref: auth_type
+  blob_name_format:
+    type: object
+    properties:
+      logs_format:
+        type: string
+      metrics_format:
+        type: string
+      params:
+        type: object
+        additionalProperties:
+          type: string
+      serial_num_before_extension:
+        type: boolean
+      serial_num_enabled:
+        type: boolean
+      serial_num_range:
+        type: integer
+        x-customType: int64
+      template_enabled:
+        type: boolean
+      time_parser_enabled:
+        type: boolean
+      time_parser_ranges:
+        type: array
+        items:
+          type: string
+      timezone:
+        type: string
+      traces_format:
+        type: string
+  encodings:
+    type: object
+    properties:
+      logs:
+        x-pointer: true
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+      metrics:
+        x-pointer: true
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+      traces:
+        x-pointer: true
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+  telemetry_config:
+    type: object
+    properties:
+      logs:
+        type: string
+      metrics:
+        type: string
+      traces:
+        type: string
+description: Config contains the main configuration options for the azure storage blob exporter
+type: object
+properties:
+  append_blob:
+    description: AppendBlob configures append blob behavior
+    $ref: append_blob
+  auth:
+    $ref: authentication
+  blob_name_format:
+    description: BlobNameFormat is the format of the blob name. It controls the uploaded blob name, e.g. "2006/01/02/metrics_15_04_05.json"
+    $ref: blob_name_format
+  container:
+    description: A container organizes a set of blobs, similar to a directory in a file system.
+    $ref: telemetry_config
+  encodings:
+    description: Encoding extension to apply for logs/metrics/traces. If present, overrides the marshaler configuration option and format.
+    $ref: encodings
+  format:
+    description: FormatType is the format of encoded telemetry data. Supported values are json and proto.
+    type: string
+  url:
+    description: URL is the endpoint to the azure storage account. This is only required until there is an azure auth extension in the future.
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

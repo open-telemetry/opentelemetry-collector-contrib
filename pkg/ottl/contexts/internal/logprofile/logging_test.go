@@ -29,11 +29,9 @@ func TestProfile_MarshalLogObject(t *testing.T) {
 				dic := pprofile.NewProfilesDictionary()
 				p := &pprofiletest.Profile{
 					ProfileID: pprofile.ProfileID([]byte("profileid1111111")),
-					SampleType: []pprofiletest.ValueType{
-						{
-							Typ:  "test",
-							Unit: "foobar",
-						},
+					SampleType: pprofiletest.ValueType{
+						Typ:  "test",
+						Unit: "foobar",
 					},
 					Sample: []pprofiletest.Sample{
 						{

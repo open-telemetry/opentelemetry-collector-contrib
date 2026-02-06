@@ -15,9 +15,8 @@ import (
 
 	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
 	batch_v1 "k8s.io/api/batch/v1"
@@ -32,44 +31,6 @@ import (
 	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
-)
-
-const (
-	// From historical reasons some of workloads are using `*.labels.*` and `*.annotations.*` instead of
-	// `*.label.*` and `*.annotation.*`
-	// Sematic conventions define `*.label.*` and `*.annotation.*`
-	// More information - https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37957
-	K8sPodLabelsKey            = "k8s.pod.labels.%s"
-	K8sPodLabelKey             = "k8s.pod.label.%s"
-	K8sPodAnnotationsKey       = "k8s.pod.annotations.%s"
-	K8sPodAnnotationKey        = "k8s.pod.annotation.%s"
-	K8sNodeLabelsKey           = "k8s.node.labels.%s"
-	K8sNodeLabelKey            = "k8s.node.label.%s"
-	K8sNodeAnnotationsKey      = "k8s.node.annotations.%s"
-	K8sNodeAnnotationKey       = "k8s.node.annotation.%s"
-	K8sNamespaceLabelsKey      = "k8s.namespace.labels.%s"
-	K8sNamespaceLabelKey       = "k8s.namespace.label.%s"
-	K8sNamespaceAnnotationsKey = "k8s.namespace.annotations.%s"
-	K8sNamespaceAnnotationKey  = "k8s.namespace.annotation.%s"
-	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#deployment
-	K8sDeploymentLabel      = "k8s.deployment.label.%s"
-	K8sDeploymentAnnotation = "k8s.deployment.annotation.%s"
-	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#statefulset
-	K8sStatefulSetLabel      = "k8s.statefulset.label.%s"
-	K8sStatefulSetAnnotation = "k8s.statefulset.annotation.%s"
-	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#daemonset
-	K8sDaemonSetLabel      = "k8s.daemonset.label.%s"
-	K8sDaemonSetAnnotation = "k8s.daemonset.annotation.%s"
-	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#job
-	K8sJobLabel      = "k8s.job.label.%s"
-	K8sJobAnnotation = "k8s.job.annotation.%s"
-)
-
-var allowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
-	"k8sattr.labelsAnnotationsSingular.allow",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
-	featuregate.WithRegisterFromVersion("v0.125.0"),
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -182,7 +143,6 @@ func New(
 		waitForMetadata:        waitForMetadata,
 		waitForMetadataTimeout: waitForMetadataTimeout,
 	}
-	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
 	c.Pods = map[PodIdentifier]*Pod{}
 	c.Namespaces = map[string]*Namespace{}
@@ -292,6 +252,9 @@ func New(
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
+	// Start the delete loop for cleaning up old pods from cache
+	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
+
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
@@ -784,11 +747,11 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	if c.Rules.PodHostName {
-		tags[tagHostName] = pod.Spec.Hostname
+		tags[string(conventions.K8SPodHostnameKey)] = pod.Spec.Hostname
 	}
 
 	if c.Rules.PodIP {
-		tags[K8sIPLabelName] = pod.Status.PodIP
+		tags[string(conventions.K8SPodIPKey)] = pod.Status.PodIP
 	}
 
 	if c.Rules.Namespace {
@@ -805,7 +768,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 			if rfc3339ts, err := ts.MarshalText(); err != nil {
 				c.logger.Error("failed to unmarshal pod creation timestamp", zap.Error(err))
 			} else {
-				tags[tagStartTime] = string(rfc3339ts)
+				tags[string(conventions.K8SPodStartTimeKey)] = string(rfc3339ts)
 			}
 		}
 	}
@@ -913,29 +876,36 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	if c.Rules.Node {
-		tags[tagNodeName] = pod.Spec.NodeName
+		tags[string(conventions.K8SNodeNameKey)] = pod.Spec.NodeName
 	}
 
 	if c.Rules.ClusterUID {
 		if val, ok := c.Namespaces["kube-system"]; ok {
-			tags[tagClusterUID] = val.NamespaceUID
+			tags[string(conventions.K8SClusterUIDKey)] = val.NamespaceUID
 		} else {
 			c.logger.Debug("unable to find kube-system namespace, cluster uid will not be available")
 		}
 	}
 
-	formatterLabel := K8sPodLabelsKey
-	if allowLabelsAnnotationsSingular.IsEnabled() {
-		formatterLabel = K8sPodLabelKey
-	}
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromPodMetadata(pod.Labels, tags, formatterLabel)
+		if !disableLegacy {
+			r.extractFromPodMetadata(pod.Labels, tags, K8SPodLabels)
+		}
+		if enableStable {
+			r.extractFromPodMetadata(pod.Labels, tags, conventions.K8SPodLabel)
+		}
 	}
 
-	formatterAnnotation := K8sPodAnnotationsKey
-	if allowLabelsAnnotationsSingular.IsEnabled() {
-		formatterAnnotation = K8sPodAnnotationKey
+	for _, r := range c.Rules.Annotations {
+		if !disableLegacy {
+			r.extractFromPodMetadata(pod.Annotations, tags, K8SPodAnnotations)
+		}
+		if enableStable {
+			r.extractFromPodMetadata(pod.Annotations, tags, conventions.K8SPodAnnotation)
+		}
 	}
 
 	if c.Rules.ServiceName {
@@ -948,9 +918,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		copyLabel(pod, tags, "app.kubernetes.io/version", conventions.ServiceVersionKey)
 	}
 
-	for _, r := range c.Rules.Annotations {
-		r.extractFromPodMetadata(pod.Annotations, tags, formatterAnnotation)
-	}
 	return tags
 }
 
@@ -987,7 +954,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		transformedPod.SetUID(pod.GetUID())
 	}
 
-	if rules.Node {
+	if rules.Node || rules.NodeUID {
 		transformedPod.Spec.NodeName = pod.Spec.NodeName
 	}
 
@@ -1024,7 +991,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		removeUnnecessaryContainerData := func(c api_v1.Container) api_v1.Container {
 			transformedContainer := api_v1.Container{}
 			transformedContainer.Name = c.Name // we always need the name, it's used for identification
-			if rules.ContainerImageName || rules.ContainerImageTag || rules.ServiceVersion {
+			if rules.ContainerImageName || rules.ContainerImageTag || rules.ContainerImageTags || rules.ServiceVersion {
 				transformedContainer.Image = c.Image
 			}
 			return transformedContainer
@@ -1099,7 +1066,11 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if !needContainerAttributes(c.Rules) {
 		return containers
 	}
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag ||
+
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+
+	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.ContainerImageTags ||
 		c.Rules.ServiceVersion || c.Rules.ServiceInstanceID {
 		specs := append(pod.Spec.Containers, pod.Spec.InitContainers...) //nolint:gocritic // appendAssign: append result not assigned to the same slice
 		for i := range specs {
@@ -1110,8 +1081,13 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 				if c.Rules.ContainerImageName {
 					container.ImageName = imageRef.Repository
 				}
-				if c.Rules.ContainerImageTag {
+				// Legacy: container.image.tag (singular, string)
+				if c.Rules.ContainerImageTag && !disableLegacy {
 					container.ImageTag = imageRef.Tag
+				}
+				// Stable: container.image.tags (plural, array)
+				if c.Rules.ContainerImageTags && enableStable {
+					container.ImageTags = []string{imageRef.Tag}
 				}
 				if c.Rules.ServiceVersion {
 					serviceVersion, err := parseServiceVersionFromImage(spec.Image)
@@ -1169,22 +1145,25 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
 	tags := map[string]string{}
 
-	formatterLabel := K8sNamespaceLabelsKey
-	if allowLabelsAnnotationsSingular.IsEnabled() {
-		formatterLabel = K8sNamespaceLabelKey
-	}
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromNamespaceMetadata(namespace.Labels, tags, formatterLabel)
-	}
-
-	formatterAnnotation := K8sNamespaceAnnotationsKey
-	if allowLabelsAnnotationsSingular.IsEnabled() {
-		formatterAnnotation = K8sNamespaceAnnotationKey
+		if !disableLegacy {
+			r.extractFromNamespaceMetadata(namespace.Labels, tags, K8SNamespaceLabels)
+		}
+		if enableStable {
+			r.extractFromNamespaceMetadata(namespace.Labels, tags, conventions.K8SNamespaceLabel)
+		}
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNamespaceMetadata(namespace.Annotations, tags, formatterAnnotation)
+		if !disableLegacy {
+			r.extractFromNamespaceMetadata(namespace.Annotations, tags, K8SNamespaceAnnotations)
+		}
+		if enableStable {
+			r.extractFromNamespaceMetadata(namespace.Annotations, tags, conventions.K8SNamespaceAnnotation)
+		}
 	}
 
 	return tags
@@ -1193,22 +1172,25 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
 	tags := map[string]string{}
 
-	formatterLabel := K8sNodeLabelsKey
-	if allowLabelsAnnotationsSingular.IsEnabled() {
-		formatterLabel = K8sNodeLabelKey
-	}
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromNodeMetadata(node.Labels, tags, formatterLabel)
-	}
-
-	formatterAnnotation := K8sNodeAnnotationsKey
-	if allowLabelsAnnotationsSingular.IsEnabled() {
-		formatterAnnotation = K8sNodeAnnotationKey
+		if !disableLegacy {
+			r.extractFromNodeMetadata(node.Labels, tags, K8SNodeLabels)
+		}
+		if enableStable {
+			r.extractFromNodeMetadata(node.Labels, tags, conventions.K8SNodeLabel)
+		}
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNodeMetadata(node.Annotations, tags, formatterAnnotation)
+		if !disableLegacy {
+			r.extractFromNodeMetadata(node.Annotations, tags, K8SNodeAnnotations)
+		}
+		if enableStable {
+			r.extractFromNodeMetadata(node.Annotations, tags, conventions.K8SNodeAnnotation)
+		}
 	}
 	return tags
 }
@@ -1217,11 +1199,11 @@ func (c *WatchClient) extractDeploymentAttributes(d *apps_v1.Deployment) map[str
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromDeploymentMetadata(d.Labels, tags, K8sDeploymentLabel)
+		r.extractFromDeploymentMetadata(d.Labels, tags, conventions.K8SDeploymentLabel)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromDeploymentMetadata(d.Annotations, tags, K8sDeploymentAnnotation)
+		r.extractFromDeploymentMetadata(d.Annotations, tags, conventions.K8SDeploymentAnnotation)
 	}
 
 	return tags
@@ -1231,11 +1213,11 @@ func (c *WatchClient) extractStatefulSetAttributes(d *apps_v1.StatefulSet) map[s
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromStatefulSetMetadata(d.Labels, tags, K8sStatefulSetLabel)
+		r.extractFromStatefulSetMetadata(d.Labels, tags, conventions.K8SStatefulSetLabel)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromStatefulSetMetadata(d.Annotations, tags, K8sStatefulSetAnnotation)
+		r.extractFromStatefulSetMetadata(d.Annotations, tags, conventions.K8SStatefulSetAnnotation)
 	}
 
 	return tags
@@ -1245,11 +1227,11 @@ func (c *WatchClient) extractDaemonSetAttributes(d *apps_v1.DaemonSet) map[strin
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromDaemonSetMetadata(d.Labels, tags, K8sDaemonSetLabel)
+		r.extractFromDaemonSetMetadata(d.Labels, tags, conventions.K8SDaemonSetLabel)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromDaemonSetMetadata(d.Annotations, tags, K8sDaemonSetAnnotation)
+		r.extractFromDaemonSetMetadata(d.Annotations, tags, conventions.K8SDaemonSetAnnotation)
 	}
 
 	return tags
@@ -1259,11 +1241,11 @@ func (c *WatchClient) extractJobAttributes(d *batch_v1.Job) map[string]string {
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromJobMetadata(d.Labels, tags, K8sJobLabel)
+		r.extractFromJobMetadata(d.Labels, tags, conventions.K8SJobLabel)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromJobMetadata(d.Annotations, tags, K8sJobAnnotation)
+		r.extractFromJobMetadata(d.Annotations, tags, conventions.K8SJobAnnotation)
 	}
 
 	return tags
@@ -1386,7 +1368,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 				case string(conventions.HostNameKey):
 					attr = pod.Address
 				// k8s.pod.ip is set by passthrough mode
-				case K8sIPLabelName:
+				case string(conventions.K8SPodIPKey):
 					attr = pod.Address
 				case string(conventions.ContainerIDKey):
 					// At this point just an empty attr is added and we remember the position.
@@ -1439,7 +1421,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 			},
 			// k8s.pod.ip is set by passthrough mode
 			PodIdentifier{
-				PodIdentifierAttributeFromResourceAttribute(K8sIPLabelName, pod.Address),
+				PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SPodIPKey), pod.Address),
 			})
 	}
 
@@ -1753,6 +1735,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 	return rules.ContainerImageName ||
 		rules.ContainerName ||
 		rules.ContainerImageTag ||
+		rules.ContainerImageTags ||
 		rules.ContainerImageRepoDigests ||
 		rules.ContainerID ||
 		rules.ServiceVersion ||

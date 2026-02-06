@@ -1,0 +1,3 @@
+$defs:
+  prioritizer_name:
+    type: string

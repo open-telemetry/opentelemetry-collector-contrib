@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -46,13 +47,13 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://dc.services.visualstudio.com/v2/track",
 				},
-				QueueSettings: func() exporterhelper.QueueBatchConfig {
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.QueueSize = 1000
 					queue.NumConsumers = 10
 					queue.StorageID = &disk
 					return queue
-				}(),
+				}()),
 				ShutdownTimeout: 2 * time.Second,
 			},
 		},

@@ -1421,8 +1421,8 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 		name               string
 		statements         []common.ContextStatements
 		wantErrorWith      string
-		spanFunctions      map[string]ottl.Factory[ottlspan.TransformContext]
-		spanEventFunctions map[string]ottl.Factory[ottlspanevent.TransformContext]
+		spanFunctions      map[string]ottl.Factory[*ottlspan.TransformContext]
+		spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]
 	}
 
 	tests := []testCase{
@@ -1434,9 +1434,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
 				},
 			},
-			spanFunctions: map[string]ottl.Factory[ottlspan.TransformContext]{
+			spanFunctions: map[string]ottl.Factory[*ottlspan.TransformContext]{
 				"set":          DefaultSpanFunctions["set"],
-				"TestSpanFunc": NewTestSpanFuncFactory[ottlspan.TransformContext](),
+				"TestSpanFunc": NewTestSpanFuncFactory[*ottlspan.TransformContext](),
 			},
 			spanEventFunctions: DefaultSpanEventFunctions,
 		},
@@ -1461,9 +1461,9 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 				},
 			},
 			spanFunctions: DefaultSpanFunctions,
-			spanEventFunctions: map[string]ottl.Factory[ottlspanevent.TransformContext]{
+			spanEventFunctions: map[string]ottl.Factory[*ottlspanevent.TransformContext]{
 				"set":               DefaultSpanEventFunctions["set"],
-				"TestSpanEventFunc": NewTestSpanEventFuncFactory[ottlspanevent.TransformContext](),
+				"TestSpanEventFunc": NewTestSpanEventFuncFactory[*ottlspanevent.TransformContext](),
 			},
 		},
 		{
@@ -1531,6 +1531,8 @@ func BenchmarkTwoSpans(b *testing.B) {
 
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "span", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
 			require.NoError(b, err)
 			b.ResetTimer()
@@ -1582,6 +1584,25 @@ func BenchmarkHundredSpans(b *testing.B) {
 				require.NoError(b, err)
 			}
 		})
+	}
+}
+
+// Benchmark that do not re-allocate data and does not change data to measure only overhead of calling the ottl framework.
+func BenchmarkSetName(b *testing.B) {
+	processor, err := NewProcessor([]common.ContextStatements{{
+		Context:    "span",
+		Statements: []string{`set(name, "operationA") where name == "operationA"`},
+	}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+	require.NoError(b, err)
+
+	td := constructTraces()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		_, err = processor.ProcessTraces(b.Context(), td)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 

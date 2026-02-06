@@ -76,7 +76,6 @@ LINT                := $(TOOLS_BIN_DIR)/golangci-lint
 MULTIMOD            := $(TOOLS_BIN_DIR)/multimod
 CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
 GITHUBGEN           := $(TOOLS_BIN_DIR)/githubgen
-CODECOVGEN          := $(TOOLS_BIN_DIR)/codecovgen
 GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
 PORTO               := $(TOOLS_BIN_DIR)/porto
 CHECKFILE           := $(TOOLS_BIN_DIR)/checkfile
@@ -250,13 +249,19 @@ fmt: $(GOFUMPT) $(GOIMPORTS)
 	$(GOIMPORTS) -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: generate-tools
-generate-tools: $(MDATAGEN) $(GENQLIENT)
+generate-tools: $(GENQLIENT)
 ifeq ($(GOOS),windows)
 	@echo Adding "exe" extensions to generate tools
 	@for f in $^; do \
 		cp -u "$$f" "$$f.exe"; \
 	done
 endif
+
+MDATAGEN_METADATA_YAML?= metadata.yaml
+
+.PHONY: mdatagen
+mdatagen: $(MDATAGEN)
+	@$(MDATAGEN) $(MDATAGEN_METADATA_YAML)
 
 # On Windows changing path with absolute path includes ':' even escaping it is not enough to get it to correctly
 # update PATH, so use a relative path when pre-pending to PATH on Windows. Unfortunately, realpath is not portable
@@ -272,9 +277,11 @@ generate: generate-tools
 ifeq ($(CURDIR),$(SRC_ROOT))
 	PATH="$(TOOLS_BIN_DIR_PORTABLE):$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
+	$(MAKE) gogci
 else
 	PATH="$(TOOLS_BIN_DIR_PORTABLE):$$PATH" $(GOCMD) generate ./...
 	$(MAKE) fmt
+	$(MAKE) gci
 endif
 
 .PHONY: lint
@@ -287,12 +294,15 @@ govulncheck: $(GOVULNCHECK)
 
 .PHONY: modernize
 modernize: $(MODERNIZE)
-	$(MODERNIZE) -fix -test -v ./...
+	$(MODERNIZE) -fix -test -tags integration -v -any -bloop -fmtappendf -forvar -mapsloop -minmax -newexpr \
+		-omitzero -plusbuild \
+		-rangeint -reflecttypefor -slicescontains -slicessort -stditerators -stringscut \
+		-stringscutprefix -stringsseq -stringsbuilder -testingcontext -waitgroup ./...
 
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.24.0
+	$(GOCMD) mod tidy -compat=$(GO_COMPAT_VERSION)
 
 .PHONY: toolchain
 toolchain:
@@ -358,3 +368,11 @@ run-changed-tests:
 			done \
 		fi \
 	fi
+
+SRC ?= '$(CURDIR)'
+FLAGS ?= '-o=$(CURDIR)/'
+
+.PHONY: schemagen
+schemagen:
+	@echo "Running schemagen with filepath='$(SRC)' and flags='$(FLAGS)'"
+	cd $(SRC_ROOT)/cmd/schemagen && go run . $(FLAGS) $(SRC)

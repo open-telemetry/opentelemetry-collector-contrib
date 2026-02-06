@@ -22,14 +22,19 @@ override the resource value in telemetry data with this information.
 
 > **Note**
 >
-> If a configured resource detector fails in some way, the error it returns to the processor will be logged, and the collector will continue to run. This behavior is configurable using a feature gate, however the error behavior of each independent resource detector may vary.
->
-> This feature can be controlled with [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) `processor.resourcedetection.propagateerrors`. It is currently disabled by default (alpha stage).
->
->  Example of how to enable it:
-> ```shell-session
-> $ otelcol --config=config.yaml --feature-gates=processor.resourcedetection.propagateerrors
-> ```
+> If a configured resource detector fails, the error will propagate and stop the collector from starting.
+> The `processor.resourcedetection.propagateerrors` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) is now stable and always enabled
+> (as of v0.146.0).
+
+## Feature gates
+
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
+
+Feature gates can be enabled using the `--feature-gates` flag:
+
+```shell
+"--feature-gates=<feature-gate>"
+```
 
 ## Supported detectors
 
@@ -116,6 +121,17 @@ processors:
     override: false
 ```
 
+#### Docker Socket Permissions
+
+Since version 0.40.0, official OpenTelemetry Collector images run as a non-root user. To access the Docker socket, you need to configure appropriate permissions:
+
+- **Linux**: Grant access to the `docker` group (e.g., `--group-add <docker-gid>` or set `runAsGroup` in Kubernetes)
+- **Windows**: Ensure appropriate named pipe permissions
+
+For detailed permission configuration options and security considerations, see the [Docker Stats receiver documentation](../../receiver/dockerstatsreceiver/README.md#docker-socket-permissions).
+
+For more information, see [issue #11791](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11791).
+
 ### Heroku metadata
 
 When [Heroku dyno metadata is active](https://devcenter.heroku.com/articles/dyno-metadata), Heroku applications publish information through environment variables.
@@ -150,6 +166,9 @@ to read resource information from the [metadata server](https://cloud.google.com
 application is running on, and detect the appropriate attributes for that platform. Regardless
 of the GCP platform the application is running on, use the gcp detector:
 
+It also can optionally gather labels for the GCE instance that the collector is running on.
+Note that in order to fetch GCE labels, the service account assigned to the GCE instance must have the `roles/compute.viewer` role.
+
 Example:
 
 ```yaml
@@ -158,6 +177,12 @@ processors:
     detectors: [env, gcp]
     timeout: 2s
     override: false
+    gcp:
+      # A list of regex's to match label keys to add as resource attributes can be specified
+      labels:
+        - ^label1$
+        - ^label2$
+        - ^label.*$
 ```
 
 The list of the populated resource attributes can be found at [GCP Detector Resource Attributes](./internal/gcp/documentation.md).
@@ -197,7 +222,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.platform ("gcp_cloud_run")
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (service name)
     * faas.version (service revision)
 
@@ -207,7 +232,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.platform ("gcp_cloud_run")
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (service name)
     * gcp.cloud_run.job.execution ("my-service-ajg89")
     * gcp.cloud_run.job.task_index ("0")
@@ -218,7 +243,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.platform ("gcp_cloud_functions")
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (function name)
     * faas.version (function version)
 
@@ -229,7 +254,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * cloud.account.id (project id)
     * cloud.region (e.g. "us-central1")
     * cloud.availability_zone (e.g. "us-central1-c")
-    * faas.id (instance id)
+    * faas.instance (instance id)
     * faas.name (service name)
     * faas.version (service version)
 
@@ -771,6 +796,16 @@ processors:
     detectors: ["vultr"]
 ```
 
+The Vultr detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/vultr:
+    detectors: ["vultr"]
+    vultr:
+      fail_on_missing_metadata: true
+```
+
 ### Digital Ocean
 
 Uses the [Digital Ocean metadata API](https://docs.digitalocean.com/reference/api/metadata/) to read resource information from the instance metadata service and populate related resource attributes.
@@ -783,16 +818,6 @@ Akamai custom configuration example:
 processors:
   resourcedetection/digitalocean:
     detectors: ["digitalocean"]
-```
-
-The Vultr detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
-
-```yaml
-processors:
-  resourcedetection/vultr:
-    detectors: ["vultr"]
-    vultr:
-      fail_on_missing_metadata: true
 ```
 
 ### Openstack Nova
@@ -826,18 +851,42 @@ processors:
       fail_on_missing_metadata: true
 ```
 
+### Alibaba Cloud ECS
+
+Uses the [Alibaba Cloud metadata API](https://www.alibabacloud.com/help/en/ecs/user-guide/view-instance-metadata/?spm=a2c63.p38356.help-menu-25365.d_0_1_3_4_6.7d2848cfJpcLdU#393b14378evdm) to read resource information from the instance metadata service and populate related resource attributes.
+
+The list of the populated resource attributes can be found at [Alibaba Cloud ECS Detector Resource Attributes](./internal/alibaba/ecs/documentation.md).
+
+Alibaba Cloud ECS custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/alibaba_ecs:
+    detectors: ["alibaba_ecs"]
+```
+
+The Alibaba Cloud ECS detector will report an error in logs if the metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/alibaba_ecs:
+    detectors: ["alibaba_ecs"]
+    alibaba_ecs:
+      fail_on_missing_metadata: true
+```
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode, "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
-# [DEPRECATED] When included, only attributes in the list will be appended.  Applies to all detectors.
-attributes: [ <string> ]
+# how often resource detection should be refreshed; if unset, detection runs only once at startup
+refresh_interval: <duration>
 ```
 
-Moreover, you have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
+You have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
 
 ```yaml
 resourcedetection:
@@ -856,31 +905,35 @@ resourcedetection:
         enabled: true
 ```
 
-### Migration from attributes to resource_attributes
+### Using the `refresh_interval` parameter
 
-The `attributes` option is deprecated and will be removed soon, from now on you should enable/disable attributes through `resource_attributes`.
-For example, this config:
+The `refresh_interval` option allows resource attributes to be periodically refreshed without restarting the Collector.
 
-```yaml
-resourcedetection:
-  detectors: [system]
-  attributes: ['host.name', 'host.id']
+**Important considerations:**
+
+- **Latency**: Newly detected resource attributes will be applied after the next refresh cycle completes (up to `refresh_interval` duration).
+- **Metric cardinality**: Changes to resource attributes create new metric time series, which can significantly increase storage costs and query complexity.
+- **Performance impact**: Each refresh re-runs all configured detectors. Values below 5 minutes can increase CPU and memory usage. There is no enforced minimum, but intervals below 1 minute are strongly discouraged.
+
+**Recommendation**: In most environments, a single resource detection at startup is sufficient. Periodic refresh should be used only when resource attributes are expected to change during the Collector's lifetime (e.g., Kubernetes pod labels, cloud instance tags).
+
+## Performance
+
+### Benchmark Tests
+
+This component includes comprehensive benchmark tests for all stable signals. The benchmarks measure the performance of the processor under different configurations:
+
+- **Traces**: `BenchmarkConsumeTracesDefault` and `BenchmarkConsumeTracesAll`
+- **Metrics**: `BenchmarkConsumeMetricsDefault` and `BenchmarkConsumeMetricsAll`
+- **Logs**: `BenchmarkConsumeLogsDefault` and `BenchmarkConsumeLogsAll`
+
+To run the benchmarks locally:
+
+```bash
+go test -bench=. -benchmem
 ```
 
-can be replaced with:
-
-```yaml
-resourcedetection:
-  detectors: [system]
-  system:
-    resource_attributes:
-      host.name:
-        enabled: true
-      host.id:
-        enabled: true
-      os.type:
-        enabled: false
-```
+For the latest benchmark results, see the [GitHub Actions workflow runs](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml).
 
 ## Ordering
 

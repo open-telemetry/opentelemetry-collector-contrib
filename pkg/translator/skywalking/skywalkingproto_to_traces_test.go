@@ -290,14 +290,21 @@ func Test_segmentIdToSpanId_Unique(t *testing.T) {
 	}
 	var results [2][8]byte
 	for i := range 2 {
+		if i >= len(tests) {
+			break
+		}
 		tt := tests[i]
 		t.Run(tt.name, func(_ *testing.T) {
 			got := segmentIDToSpanID(tt.args.segmentID, tt.args.spanID)
-			results[i] = got
+			if i < len(results) {
+				results[i] = got
+			}
 		})
 	}
 
-	assert.NotEqual(t, results[0], results[1])
+	if len(results) >= 2 {
+		assert.NotEqual(t, results[0], results[1])
+	}
 }
 
 func Test_swSpanToSpan_ParentSpanId(t *testing.T) {

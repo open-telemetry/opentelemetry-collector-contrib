@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package influxdbexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 
@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -42,7 +43,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ClientConfig:        clientConfig,
-		QueueSettings:       exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:       configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		BackOffConfig:       configretry.NewDefaultBackOffConfig(),
 		MetricsSchema:       common.MetricsSchemaTelegrafPrometheusV1.String(),
 		SpanDimensions:      otel2influx.DefaultOtelTracesToLineProtocolConfig().SpanDimensions,

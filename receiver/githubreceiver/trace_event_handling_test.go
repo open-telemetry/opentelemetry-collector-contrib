@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v79/github"
+	"github.com/google/go-github/v81/github"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -25,7 +25,7 @@ import (
 
 func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.Endpoint = "localhost:0"
+	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -55,7 +55,7 @@ func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
 
 func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.Endpoint = "localhost:0"
+	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -85,7 +85,7 @@ func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
 
 func TestHandleWorkflowJobWithGoldenFileSkipped(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.WebHook.Endpoint = "localhost:0"
+	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
@@ -706,7 +706,7 @@ func TestNewJobSpanID_Consistency(t *testing.T) {
 
 func TestHandleWorkflowRunWithSpanEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.Endpoint = "localhost:0"
+	config.WebHook.NetAddr.Endpoint = "localhost:0"
 	config.WebHook.IncludeSpanEvents = true // Enable span events
 	consumer := consumertest.NewNop()
 
@@ -753,7 +753,7 @@ func TestHandleWorkflowRunWithSpanEvents(t *testing.T) {
 
 func TestHandleWorkflowJobWithSpanEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.Endpoint = "localhost:0"
+	config.WebHook.NetAddr.Endpoint = "localhost:0"
 	config.WebHook.IncludeSpanEvents = true // Enable span events
 	consumer := consumertest.NewNop()
 
@@ -798,7 +798,7 @@ func TestHandleWorkflowJobWithSpanEvents(t *testing.T) {
 
 func TestHandleWorkflowRunWithoutSpanEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.Endpoint = "localhost:0"
+	config.WebHook.NetAddr.Endpoint = "localhost:0"
 	// IncludeSpanEvents defaults to false
 	consumer := consumertest.NewNop()
 
@@ -833,7 +833,7 @@ func TestHandleWorkflowRunWithoutSpanEvents(t *testing.T) {
 
 func TestStepSpansHaveNoEvents(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.WebHook.Endpoint = "localhost:0"
+	config.WebHook.NetAddr.Endpoint = "localhost:0"
 	config.WebHook.IncludeSpanEvents = true // Enable span events
 	consumer := consumertest.NewNop()
 

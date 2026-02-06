@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
@@ -78,13 +79,12 @@ func TestLoadConfig(t *testing.T) {
 				CumulativeNormalization: false,
 			},
 		},
-		QueueSettings: func() exporterhelper.QueueBatchConfig {
+		QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 			queue := exporterhelper.NewDefaultQueueConfig()
-			queue.Enabled = true
 			queue.NumConsumers = 2
 			queue.QueueSize = 10
 			queue.Sizer = exporterhelper.RequestSizerTypeRequests
 			return queue
-		}(),
+		}()),
 	}, r1)
 }

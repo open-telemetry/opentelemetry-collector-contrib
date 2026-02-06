@@ -52,9 +52,7 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.(*Config)
 	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
 	assert.Equal(t, 5*time.Second, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval))
-	assert.True(t, r1.UseStartTimeMetric)
 	assert.True(t, r1.TrimMetricSuffixes)
-	assert.Equal(t, "^(.+_)*process_start_time_seconds$", r1.StartTimeMetricRegex)
 	assert.True(t, r1.ReportExtraScrapeMetrics)
 
 	ta := r1.TargetAllocator.Get()
@@ -383,7 +381,7 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	assert.NotNil(t, r0.PrometheusConfig)
 	assert.True(t, r0.APIServer.Enabled)
 	assert.NotNil(t, r0.APIServer.ServerConfig)
-	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.Endpoint)
+	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.NetAddr.Endpoint)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIDisabled").String())
 	require.NoError(t, err)
@@ -512,6 +510,28 @@ scrape_configs:
 				require.NotNil(t, scrapeConfig.HTTPClientConfig.OAuth2, "basic auth should be configured")
 				key := string(scrapeConfig.HTTPClientConfig.OAuth2.ClientCertificateKey)
 				assert.Equal(t, "mySuperSecretCertificateKey", key, "client_certificate_key should preserve original value")
+			},
+		},
+		{
+			name: "basic auth password starting with %",
+			configYAML: `
+scrape_configs:
+  - job_name: "foo"
+    basic_auth:
+      username: "user"
+      password: "%password"
+    static_configs:
+      - targets: ["target:8000"]
+`,
+			checkFn: func(t *testing.T, dst *PromConfig) {
+				require.Len(t, dst.ScrapeConfigs, 1)
+				scrapeConfig := dst.ScrapeConfigs[0]
+				assert.Equal(t, "foo", scrapeConfig.JobName)
+
+				// Ensure basic_auth is present
+				require.NotNil(t, scrapeConfig.HTTPClientConfig.BasicAuth, "basic auth should be configured")
+				password := string(scrapeConfig.HTTPClientConfig.BasicAuth.Password)
+				assert.Equal(t, "%password", password, "password should preserve original value with leading %")
 			},
 		},
 	}

@@ -15,7 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -102,34 +101,43 @@ func (r *unifiedLoggingReceiver) readFromLive(ctx context.Context) {
 	}
 
 	// For live mode, use exponential backoff based on whether logs are being actively written
-	// Configure backoff starting at 100ms, maxing out at MaxPollInterval
-	expBackoff := backoff.NewExponentialBackOff(
-		backoff.WithInitialInterval(100*time.Millisecond),
-		backoff.WithMaxInterval(r.config.MaxPollInterval),
-		backoff.WithMultiplier(2.0),
-		backoff.WithMaxElapsedTime(0), // Never stop
-	)
-	expBackoff.Reset()
+	// We cannot safely reset the backoff while ticker is running (causes data race)
+	// Instead, track interval manually and use time.After which creates a new timer each iteration
+	minInterval := 100 * time.Millisecond
+	maxInterval := r.config.MaxPollInterval
+	currentInterval := time.Duration(0) // Start immediately
 
-	ticker := backoff.NewTicker(expBackoff)
-	defer ticker.Stop()
-
+	// Run immediately on start, then use backoff for subsequent iterations
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
-			count, err := r.runLogCommand(ctx, "")
-			if err != nil {
-				r.logger.Error("Failed to run log command", zap.Error(err))
-			}
+		case <-time.After(currentInterval):
+		}
 
-			// If logs were processed, reset backoff to minimum interval
-			if count > 0 {
-				r.logger.Debug("Logs found, resetting backoff to minimum interval", zap.Int("count", count))
-				expBackoff.Reset()
+		// Run the log command
+		count, err := r.runLogCommand(ctx, "")
+		if err != nil {
+			r.logger.Error("Failed to run log command", zap.Error(err))
+		}
+
+		// Adjust interval based on whether logs were found
+		if count > 0 {
+			r.logger.Debug("Logs found, resetting poll interval to minimum", zap.Int("count", count))
+			currentInterval = minInterval
+		} else {
+			// If no logs, exponentially increase interval up to MaxPollInterval
+			if currentInterval == 0 {
+				// First iteration with no logs, start with min interval
+				currentInterval = minInterval
+			} else {
+				nextInterval := currentInterval * 2
+				if nextInterval > maxInterval {
+					currentInterval = maxInterval
+				} else {
+					currentInterval = nextInterval
+				}
 			}
-			// If no logs, backoff will continue to increase to MaxPollInterval
 		}
 	}
 }

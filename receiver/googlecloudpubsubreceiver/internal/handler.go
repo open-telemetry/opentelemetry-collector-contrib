@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -22,9 +24,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
-
-// Time to wait before restarting, when the stream stopped
-const streamRecoveryBackoffPeriod = 250 * time.Millisecond
 
 type StreamHandler struct {
 	stream      pubsubpb.Subscriber_StreamingPullClient
@@ -46,9 +45,11 @@ type StreamHandler struct {
 	// time that acknowledge loop waits before acknowledging messages
 	ackBatchWait time.Duration
 
-	isRunning atomic.Bool
+	isRunning    atomic.Bool
+	retryAttempt int
 }
 
+// ack adds the ackID to the list of message to be acknowledged asynchronously
 func (handler *StreamHandler) ack(ackID string) {
 	handler.mutex.Lock()
 	defer handler.mutex.Unlock()
@@ -76,6 +77,8 @@ func NewHandler(
 	return &handler, handler.initStream(ctx)
 }
 
+// initStream creates a new streaming pull stream. When the previous stream was closed, the
+// pending acknowledge messages will be acknowledged at stream re-creation.
 func (handler *StreamHandler) initStream(ctx context.Context) error {
 	var err error
 	// Create a stream, but with the receivers context as we don't want to cancel and ongoing operation
@@ -88,11 +91,13 @@ func (handler *StreamHandler) initStream(ctx context.Context) error {
 		Subscription:             handler.subscription,
 		StreamAckDeadlineSeconds: 60,
 		ClientId:                 handler.clientID,
+		AckIds:                   handler.acks,
 	}
 	if err := handler.stream.Send(&request); err != nil {
 		_ = handler.stream.CloseSend()
 		return err
 	}
+	handler.acks = nil
 	handler.telemetryBuilder.ReceiverGooglecloudpubsubStreamRestarts.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("otelcol.component.kind", "receiver"),
@@ -101,6 +106,7 @@ func (handler *StreamHandler) initStream(ctx context.Context) error {
 	return nil
 }
 
+// RecoverableStream starts the Pub/Sub stream loop and recovers it if it fails
 func (handler *StreamHandler) RecoverableStream(ctx context.Context) {
 	handler.handlerWaitGroup.Add(1)
 	handler.isRunning.Swap(true)
@@ -131,10 +137,13 @@ func (handler *StreamHandler) recoverableStream(ctx context.Context) {
 			err := handler.initStream(ctx)
 			if err != nil {
 				handler.settings.Logger.Error("Failed to recovery stream.")
+				handler.retryAttempt++
+			} else {
+				handler.retryAttempt = 0
 			}
 		}
 		handler.settings.Logger.Debug("End of recovery loop, restarting.")
-		time.Sleep(streamRecoveryBackoffPeriod)
+		time.Sleep(exponentialBackoff(handler.retryAttempt))
 	}
 	handler.settings.Logger.Warn("Shutting down recovery loop.")
 	handler.handlerWaitGroup.Done()
@@ -152,6 +161,8 @@ func (handler *StreamHandler) Wait() {
 	handler.handlerWaitGroup.Wait()
 }
 
+// acknowledgeMessages will acknowledge the messages, and only clear the outstanding messages when the
+// acknowledgement is send successfully
 func (handler *StreamHandler) acknowledgeMessages() error {
 	handler.mutex.Lock()
 	defer handler.mutex.Unlock()
@@ -161,13 +172,25 @@ func (handler *StreamHandler) acknowledgeMessages() error {
 	request := pubsubpb.StreamingPullRequest{
 		AckIds: handler.acks,
 	}
-	handler.acks = nil
-	return handler.stream.Send(&request)
+	err := handler.stream.Send(&request)
+	if err == nil {
+		handler.acks = nil
+	}
+	return err
 }
 
+// requestStream waits for triggers to acknowledge messages that have been processed by the collector. If
+// a stream got restarted, the messages that still needed to be acknowledged are acknowledged at the start
+// of the new stream, so we don't need to start with an acknowledgeMessages.
 func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.CancelFunc) {
 	timer := time.NewTimer(handler.ackBatchWait)
 	for {
+		select {
+		case <-ctx.Done():
+			handler.settings.Logger.Debug("requestStream <-ctx.Done()")
+		case <-timer.C:
+		}
+		// whatever happens, we need to acknowledge the messages
 		if err := handler.acknowledgeMessages(); err != nil {
 			if errors.Is(err, io.EOF) {
 				handler.settings.Logger.Warn("EOF reached")
@@ -176,18 +199,13 @@ func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.
 			handler.settings.Logger.Error(fmt.Sprintf("Failed in acknowledge messages with error %v", err))
 			break
 		}
-		select {
-		case <-ctx.Done():
-			handler.settings.Logger.Debug("requestStream <-ctx.Done()")
-		case <-timer.C:
-			timer.Reset(handler.ackBatchWait)
-		}
+		// if the context is canceled, we break the loop
 		if errors.Is(ctx.Err(), context.Canceled) {
-			_ = handler.acknowledgeMessages()
-			timer.Stop()
 			break
 		}
+		timer.Reset(handler.ackBatchWait)
 	}
+	timer.Stop()
 	cancel()
 	handler.settings.Logger.Debug("Request Stream loop ended.")
 	_ = handler.stream.CloseSend()
@@ -241,4 +259,17 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 	cancel()
 	handler.settings.Logger.Debug("Response Stream loop ended.")
 	handler.streamWaitGroup.Done()
+}
+
+// exponentialBackoff will backoff exponentially with a maximum of 2 minutes
+func exponentialBackoff(retryAttempt int) time.Duration {
+	if retryAttempt < 1 {
+		return 0
+	}
+	maxDuration := 2 * time.Minute
+	backoffMs := 250.0 * math.Pow(2, float64(retryAttempt-1))
+	if backoffMs > float64(maxDuration.Milliseconds()) {
+		backoffMs = float64(maxDuration.Milliseconds())
+	}
+	return time.Duration(backoffMs*(0.7+rand.Float64()*0.3)) * time.Millisecond
 }

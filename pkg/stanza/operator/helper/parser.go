@@ -6,6 +6,7 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -186,7 +187,7 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 	}
 
 	if err := entry.Set(p.ParseTo, newValue); err != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(err, "set parse_to"), write)
+		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("set parse_to: %w", err), write)
 	}
 
 	if p.BodyField != nil {
@@ -217,16 +218,16 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 
 	// Handle parsing errors after attempting to parse all
 	if timeParseErr != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(timeParseErr, "time parser"), write)
+		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("time parser: %w", timeParseErr), write)
 	}
 	if severityParseErr != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(severityParseErr, "severity parser"), write)
+		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("severity parser: %w", severityParseErr), write)
 	}
 	if traceParseErr != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(traceParseErr, "trace parser"), write)
+		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("trace parser: %w", traceParseErr), write)
 	}
 	if scopeNameParserErr != nil {
-		return p.HandleEntryErrorWithWrite(ctx, entry, stanza_errors.Wrap(scopeNameParserErr, "scope_name parser"), write)
+		return p.HandleEntryErrorWithWrite(ctx, entry, fmt.Errorf("scope_name parser: %w", scopeNameParserErr), write)
 	}
 	return nil
 }

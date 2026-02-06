@@ -8,7 +8,7 @@ status:
   distributions: [contrib, k8s]
   warnings: [Memory consumption, Other]
   codeowners:
-    active: [dmitryax, fatsheep9146, TylerHelmuth, ChrsMark]
+    active: [dmitryax, fatsheep9146, TylerHelmuth, ChrsMark, odubajDT]
     emeritus: [rmfitzpatrick]
 # resource attributes are exposed through a different configuration interface (extract::metadata).
 resource_attributes:
@@ -25,8 +25,12 @@ resource_attributes:
     type: slice
     enabled: false
   container.image.tag:
-    description: Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name.
+    description: Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name. Deprecated, use container.image.tags instead.
     type: string
+    enabled: true
+  container.image.tags:
+    description: Container image tags. Requires container.id or k8s.container.name.
+    type: slice
     enabled: true
   k8s.cluster.uid:
     description: Gives cluster uid identified with kube-system namespace
@@ -134,14 +138,64 @@ resource_attributes:
     type: string
     enabled: false
 
+feature_gates:
+  - id: k8sattr.labelsAnnotationsSingular.allow
+    stage: deprecated
+    description: >-
+      When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural
+    from_version: v0.125.0
+    to_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774
+  - id: processor.k8sattributes.DontEmitV0K8sConventions
+    stage: alpha
+    description: >-
+      When enabled, semconv legacy attributes are disabled.
+    from_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
+  - id: processor.k8sattributes.EmitV1K8sConventions
+    stage: alpha
+    description: >-
+      When enabled, semconv stable attributes are enabled.
+    from_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
+
 tests:
   config:
   skip_lifecycle: true
   goleak:
     skip: true
 
+attributes:
+  otelcol.signal:
+    description: The signal type the telemetry metric is associated with
+    type: string
+    enum:
+      - metrics
+      - traces
+      - logs
+      - profiles
+  pod_identifier:
+    description: The pod identifier value(s) used for the association attempt
+    type: string
+  status:
+    description: The status of the pod association operation
+    type: string
+    enum:
+      - success
+      - error
+
 telemetry:
   metrics:
+    otelcol.k8s.pod.association:
+      enabled: false
+      description: Number of pod associations' evaluations
+      stability:
+        level: development
+      unit: "{resources}"
+      attributes: [status, pod_identifier, otelcol.signal]
+      sum:
+        value_type: int
+        monotonic: true
     otelsvc_k8s_daemonset_added:
       enabled: false
       description: Number of daemonset add events received

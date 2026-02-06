@@ -9,7 +9,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
@@ -39,7 +39,11 @@ const (
 	gcpVPCFlowInstanceVMNameTemplate    attrNameTmpl = "gcp.vpc.flow.%s.instance.vm.name"
 	gcpVPCFlowInstanceVMZoneTemplate    attrNameTmpl = "gcp.vpc.flow.%s.instance.vm.zone"
 	gcpVPCFlowInstanceMIGNameTemplate   attrNameTmpl = "gcp.vpc.flow.%s.instance.managed_instance_group.name"
+	gcpVPCFlowInstanceMIGRegionTemplate attrNameTmpl = "gcp.vpc.flow.%s.instance.managed_instance_group.region"
 	gcpVPCFlowInstanceMIGZoneTemplate   attrNameTmpl = "gcp.vpc.flow.%s.instance.managed_instance_group.zone"
+	gcpVPCFlowGoogleServiceTypeTemplate attrNameTmpl = "gcp.vpc.flow.%s.google_service.type"
+	gcpVPCFlowGoogleServiceNameTemplate attrNameTmpl = "gcp.vpc.flow.%s.google_service.name"
+	gcpVPCFlowGoogleServiceConnTemplate attrNameTmpl = "gcp.vpc.flow.%s.google_service.connectivity"
 
 	// Location fields
 	gcpVPCFlowASNTemplate          attrNameTmpl = "gcp.vpc.flow.%s.asn"
@@ -97,6 +101,10 @@ type vpcFlowLog struct {
 	SrcVPC  *vpc `json:"src_vpc"`
 	DestVPC *vpc `json:"dest_vpc"`
 
+	// Google service details
+	SrcGoogleService  *googleService `json:"src_google_service"`
+	DestGoogleService *googleService `json:"dest_google_service"`
+
 	// Internet routing details
 	InternetRoutingDetails *internetRoutingDetails `json:"internet_routing_details"`
 }
@@ -125,6 +133,12 @@ type managedInstanceGroup struct {
 	Name   string `json:"name"`
 	Region string `json:"region"`
 	Zone   string `json:"zone"`
+}
+
+type googleService struct {
+	Type         string `json:"type"`
+	ServiceName  string `json:"service_name"`
+	Connectivity string `json:"connectivity"`
 }
 
 type location struct {
@@ -161,17 +175,17 @@ func handleConnection(conn *connection, attr pcommon.Map) {
 
 	// Map protocol number to string
 	if conn.Protocol != nil {
-		if protocolStr, exists := protocolNames[uint32(*conn.Protocol)]; exists {
-			attr.PutStr(string(semconv.NetworkTransportKey), protocolStr)
+		if protocolStr, exists := shared.ProtocolName(uint32(*conn.Protocol)); exists {
+			attr.PutStr(string(conventions.NetworkTransportKey), protocolStr)
 		}
 	}
 
-	shared.PutStr(string(semconv.SourceAddressKey), conn.SrcIP, attr)
-	shared.PutStr(string(semconv.DestinationAddressKey), conn.DestIP, attr)
+	shared.PutStr(string(conventions.SourceAddressKey), conn.SrcIP, attr)
+	shared.PutStr(string(conventions.DestinationAddressKey), conn.DestIP, attr)
 
 	// Only add port attributes if ports are present
-	shared.PutInt(string(semconv.SourcePortKey), conn.SrcPort, attr)
-	shared.PutInt(string(semconv.DestinationPortKey), conn.DestPort, attr)
+	shared.PutInt(string(conventions.SourcePortKey), conn.SrcPort, attr)
+	shared.PutInt(string(conventions.DestinationPortKey), conn.DestPort, attr)
 }
 
 func handleNetworkService(ns *networkService, attr pcommon.Map) {
@@ -199,6 +213,7 @@ func handleInstance(inst *instance, side flowSide, attr pcommon.Map) error {
 
 	if inst.ManagedInstanceGroup != nil {
 		shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGNameTemplate, side), inst.ManagedInstanceGroup.Name, attr)
+		shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGRegionTemplate, side), inst.ManagedInstanceGroup.Region, attr)
 		shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowInstanceMIGZoneTemplate, side), inst.ManagedInstanceGroup.Zone, attr)
 	}
 
@@ -238,6 +253,22 @@ func handleVPC(vpc *vpc, side flowSide, attr pcommon.Map) error {
 	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowSubnetNameTemplate, side), vpc.SubnetworkName, attr)
 	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowSubnetRegionTemplate, side), vpc.SubnetworkRegion, attr)
 	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowVPCNameTemplate, side), vpc.VPCName, attr)
+
+	return nil
+}
+
+func handleGoogleService(service *googleService, side flowSide, attr pcommon.Map) error {
+	if service == nil {
+		return nil
+	}
+
+	if side != src && side != dest {
+		return fmt.Errorf("unsupported side %q passed to handleGoogleService. Must be one of %v", side, validSides)
+	}
+
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceTypeTemplate, side), service.Type, attr)
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceNameTemplate, side), service.ServiceName, attr)
+	shared.PutStr(fmtAttributeNameUsingSide(gcpVPCFlowGoogleServiceConnTemplate, side), service.Connectivity, attr)
 
 	return nil
 }
@@ -319,6 +350,14 @@ func ParsePayloadIntoAttributes(payload []byte, attr pcommon.Map) error {
 	}
 	if err := handleVPC(log.DestVPC, dest, attr); err != nil {
 		return fmt.Errorf("failed to handle destination VPC: %w", err)
+	}
+
+	// Handle Google service details
+	if err := handleGoogleService(log.SrcGoogleService, src, attr); err != nil {
+		return fmt.Errorf("failed to handle source Google service: %w", err)
+	}
+	if err := handleGoogleService(log.DestGoogleService, dest, attr); err != nil {
+		return fmt.Errorf("failed to handle destination Google service: %w", err)
 	}
 
 	// Handle internet routing details

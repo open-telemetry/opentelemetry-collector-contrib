@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -26,8 +27,8 @@ func TestFranzProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		fpm := NewFranzProducerMetrics(tb)
-		fpm.OnBrokerConnect(kgo.BrokerMetadata{NodeID: 1}, time.Minute, nil, nil)
-		fpm.OnBrokerConnect(kgo.BrokerMetadata{NodeID: 1}, time.Minute, nil, errors.New(""))
+		fpm.OnBrokerConnect(kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}, time.Minute, nil, nil)
+		fpm.OnBrokerConnect(kgo.BrokerMetadata{NodeID: 1, Host: "broker2"}, time.Minute, nil, errors.New(""))
 		var rm metricdata.ResourceMetrics
 		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
@@ -40,6 +41,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker1"),
 						attribute.String("outcome", "success"),
 					),
 					Value: 1,
@@ -47,6 +49,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker2"),
 						attribute.String("outcome", "failure"),
 					),
 					Value: 1,
@@ -61,7 +64,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		fpm := NewFranzProducerMetrics(tb)
-		fpm.OnBrokerDisconnect(kgo.BrokerMetadata{NodeID: 1}, nil)
+		fpm.OnBrokerDisconnect(kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}, nil)
 		var rm metricdata.ResourceMetrics
 		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
@@ -72,8 +75,11 @@ func TestFranzProducerMetrics(t *testing.T) {
 			testTel,
 			[]metricdata.DataPoint[int64]{
 				{
-					Attributes: attribute.NewSet(attribute.String("node_id", "1")),
-					Value:      1,
+					Attributes: attribute.NewSet(
+						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker1"),
+					),
+					Value: 1,
 				},
 			},
 			metricdatatest.IgnoreTimestamp(),
@@ -85,7 +91,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		fpm := NewFranzProducerMetrics(tb)
-		fpm.OnBrokerE2E(kgo.BrokerMetadata{NodeID: 1}, 0, kgo.BrokerE2E{
+		fpm.OnBrokerE2E(kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}, int16(kmsg.Produce), kgo.BrokerE2E{
 			WriteWait:   time.Second / 4,
 			TimeToWrite: time.Second / 4,
 			ReadWait:    time.Second / 4,
@@ -93,12 +99,20 @@ func TestFranzProducerMetrics(t *testing.T) {
 			WriteErr:    nil,
 			ReadErr:     nil,
 		})
-		fpm.OnBrokerE2E(kgo.BrokerMetadata{NodeID: 1}, 0, kgo.BrokerE2E{
+		fpm.OnBrokerE2E(kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}, int16(kmsg.Produce), kgo.BrokerE2E{
 			WriteWait:   time.Second * 25,
 			TimeToWrite: time.Second * 25,
 			ReadWait:    time.Second * 25,
 			TimeToRead:  time.Second * 25,
 			WriteErr:    errors.New(""),
+			ReadErr:     nil,
+		})
+		fpm.OnBrokerE2E(kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}, int16(kmsg.Metadata), kgo.BrokerE2E{
+			WriteWait:   time.Second * 100,
+			TimeToWrite: time.Second * 100,
+			ReadWait:    time.Second * 100,
+			TimeToRead:  time.Second * 100,
+			WriteErr:    nil,
 			ReadErr:     nil,
 		})
 		var rm metricdata.ResourceMetrics
@@ -113,6 +127,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker1"),
 						attribute.String("outcome", "success"),
 					),
 					Count:        1,
@@ -125,6 +140,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker1"),
 						attribute.String("outcome", "failure"),
 					),
 					Count:        1,
@@ -144,6 +160,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker1"),
 						attribute.String("outcome", "success"),
 					),
 					Count:        1,
@@ -156,6 +173,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker1"),
 						attribute.String("outcome", "failure"),
 					),
 					Count:        1,
@@ -175,7 +193,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		fpm := NewFranzProducerMetrics(tb)
-		fpm.OnProduceBatchWritten(kgo.BrokerMetadata{NodeID: 1}, "foobar", 1, kgo.ProduceBatchMetrics{
+		fpm.OnProduceBatchWritten(kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}, "foobar", 1, kgo.ProduceBatchMetrics{
 			NumRecords:        10,
 			CompressedBytes:   100,
 			UncompressedBytes: 1000,
@@ -193,6 +211,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker1"),
 						attribute.String("topic", "foobar"),
 						attribute.Int64("partition", 1),
 						attribute.String("compression_codec", "gzip"),
@@ -210,6 +229,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker1"),
 						attribute.String("topic", "foobar"),
 						attribute.Int64("partition", 1),
 						attribute.String("compression_codec", "gzip"),
@@ -227,6 +247,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker1"),
 						attribute.String("topic", "foobar"),
 						attribute.Int64("partition", 1),
 						attribute.String("compression_codec", "gzip"),
@@ -244,6 +265,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker1"),
 						attribute.String("topic", "foobar"),
 						attribute.Int64("partition", 1),
 						attribute.String("compression_codec", "gzip"),
@@ -305,7 +327,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		fpm := NewFranzProducerMetrics(tb)
-		fpm.OnBrokerThrottle(kgo.BrokerMetadata{NodeID: 1}, time.Second, false)
+		fpm.OnBrokerThrottle(kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}, time.Second, false)
 		var rm metricdata.ResourceMetrics
 		err = testTel.Reader.Collect(t.Context(), &rm)
 		require.NoError(t, err)
@@ -318,6 +340,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker1"),
 					),
 					Count:        1,
 					Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
@@ -336,6 +359,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 				{
 					Attributes: attribute.NewSet(
 						attribute.String("node_id", "1"),
+						attribute.String("server.address", "broker1"),
 					),
 					Count:        1,
 					Bounds:       []float64{0, 0.005, 0.010, 0.025, 0.050, 0.075, 0.100, 0.250, 0.500, 0.750, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100},

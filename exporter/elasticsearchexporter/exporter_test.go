@@ -638,8 +638,7 @@ func TestExporterLogs(t *testing.T) {
 					cfg.Retry.MaxInterval = 5 * time.Millisecond
 
 					// use sync flushing
-					cfg.QueueBatchConfig.Enabled = true
-					cfg.QueueBatchConfig.WaitForResult = true
+					cfg.QueueBatchConfig.Get().WaitForResult = true
 				})
 
 				logs := plog.NewLogs()
@@ -682,9 +681,8 @@ func TestExporterLogs(t *testing.T) {
 					cfg.Retry.MaxInterval = 5 * time.Millisecond
 
 					// use async indexer
-					cfg.QueueBatchConfig.Enabled = true
-					cfg.QueueBatchConfig.WaitForResult = false
-					cfg.QueueBatchConfig.BlockOnOverflow = false
+					cfg.QueueBatchConfig.Get().WaitForResult = false
+					cfg.QueueBatchConfig.Get().BlockOnOverflow = false
 				})
 				mustSendLogRecords(t, exporter, plog.NewLogRecord()) // as sync bulk indexer is used, retries are not guaranteed to finish
 
@@ -849,10 +847,10 @@ func TestExporterLogs(t *testing.T) {
 
 	t.Run("publish logs with dynamic id", func(t *testing.T) {
 		t.Parallel()
-		exampleDocID := "abc123"
+		exampleDocID := "example-doc-id-123"
 		tableTests := []struct {
 			name          string
-			expectedDocID string // "" means the _id will not be set
+			expectedDocID string // "" means the document ID will not be set
 			recordAttrs   map[string]any
 		}{
 			{
@@ -867,7 +865,7 @@ func TestExporterLogs(t *testing.T) {
 				},
 			},
 			{
-				name:          "record attributes",
+				name:          "valid document id attribute should set _id",
 				expectedDocID: exampleDocID,
 				recordAttrs: map[string]any{
 					elasticsearch.DocumentIDAttributeName: exampleDocID,
@@ -875,51 +873,39 @@ func TestExporterLogs(t *testing.T) {
 			},
 		}
 
-		cfgs := map[string]func(*Config){
-			"async": func(cfg *Config) {
-				cfg.QueueBatchConfig.WaitForResult = false
-				cfg.QueueBatchConfig.BlockOnOverflow = false
-			},
-			"sync": func(cfg *Config) {
-				cfg.QueueBatchConfig.WaitForResult = true
-				cfg.QueueBatchConfig.BlockOnOverflow = false
-			},
-		}
 		for _, tt := range tableTests {
-			for cfgName, cfgFn := range cfgs {
-				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
-					t.Parallel()
-					rec := newBulkRecorder()
-					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-						rec.Record(docs)
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
 
-						if tt.expectedDocID == "" {
-							assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
-						} else {
-							assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
-						}
+					if tt.expectedDocID == "" {
+						assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+					} else {
+						assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+					}
 
-						// Ensure the document id attribute is removed from the final document.
-						assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
-						return itemsAllOK(docs)
-					})
-
-					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-						cfg.Mapping.Mode = "otel"
-						cfg.LogsDynamicID.Enabled = true
-						cfgFn(cfg)
-					})
-					logs := newLogsWithAttributes(
-						tt.recordAttrs,
-						map[string]any{},
-						map[string]any{},
-					)
-					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-					mustSendLogs(t, exporter, logs)
-
-					rec.WaitItems(1)
+					// Ensure the document id attribute is removed from the final document.
+					assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+					return itemsAllOK(docs)
 				})
-			}
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.LogsDynamicID.Enabled = true
+				})
+				logs := newLogsWithAttributes(
+					tt.recordAttrs,
+					map[string]any{
+						"elastic.mapping.mode": "otel",
+					},
+					map[string]any{},
+				)
+				logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+				mustSendLogs(t, exporter, logs)
+
+				rec.WaitItems(1)
+			})
 		}
 	})
 
@@ -953,12 +939,12 @@ func TestExporterLogs(t *testing.T) {
 
 		cfgs := map[string]func(*Config){
 			"async": func(cfg *Config) {
-				cfg.QueueBatchConfig.WaitForResult = false
-				cfg.QueueBatchConfig.BlockOnOverflow = false
+				cfg.QueueBatchConfig.Get().WaitForResult = false
+				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
 			},
 			"sync": func(cfg *Config) {
-				cfg.QueueBatchConfig.WaitForResult = true
-				cfg.QueueBatchConfig.BlockOnOverflow = false
+				cfg.QueueBatchConfig.Get().WaitForResult = true
+				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
 			},
 		}
 		for _, tt := range tableTests {
@@ -2310,6 +2296,192 @@ func TestExporterTraces(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("publish spans with dynamic id", func(t *testing.T) {
+		t.Parallel()
+		exampleDocID := "example-doc-id-123"
+		tableTests := []struct {
+			name          string
+			expectedDocID string // "" means the document ID will not be set
+			spanAttrs     map[string]any
+		}{
+			{
+				name:          "missing document id attribute should not set _id",
+				expectedDocID: "",
+			},
+			{
+				name:          "empty document id attribute should not set _id",
+				expectedDocID: "",
+				spanAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: "",
+				},
+			},
+			{
+				name:          "valid document id attribute should set _id",
+				expectedDocID: exampleDocID,
+				spanAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: exampleDocID,
+				},
+			},
+		}
+
+		for _, tt := range tableTests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+
+					if tt.expectedDocID == "" {
+						assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+					} else {
+						assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+					}
+
+					// Ensure the document id attribute is removed from the final document.
+					assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+					cfg.TracesDynamicID.Enabled = true
+				})
+				traces := newTracesWithAttributes(
+					tt.spanAttrs,
+					map[string]any{
+						"elastic.mapping.mode": "otel",
+					},
+					map[string]any{},
+				)
+				mustSendTraces(t, exporter, traces)
+
+				rec.WaitItems(1)
+			})
+		}
+	})
+
+	t.Run("publish span events with dynamic id", func(t *testing.T) {
+		t.Parallel()
+		exampleDocID := "span-event-doc-id-456"
+		tableTests := []struct {
+			name          string
+			expectedDocID string
+			eventAttrs    map[string]any
+		}{
+			{
+				name:          "missing document id attribute should not set _id",
+				expectedDocID: "",
+			},
+			{
+				name:          "empty document id attribute should not set _id",
+				expectedDocID: "",
+				eventAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: "",
+				},
+			},
+			{
+				name:          "span event attributes",
+				expectedDocID: exampleDocID,
+				eventAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: exampleDocID,
+				},
+			},
+		}
+
+		for _, tt := range tableTests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+					cfg.TracesDynamicID.Enabled = true
+				})
+				traces := newTracesWithAttributes(
+					map[string]any{},
+					map[string]any{
+						"elastic.mapping.mode": "otel",
+					},
+					map[string]any{},
+				)
+				spanEvent := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+				spanEvent.SetName("test_event")
+				fillAttributeMap(spanEvent.Attributes(), tt.eventAttrs)
+				mustSendTraces(t, exporter, traces)
+
+				// Wait for both span and span event
+				rec.WaitItems(2)
+
+				// Find the span event document
+				var spanEventDoc *itemRequest
+				for _, doc := range rec.Items() {
+					if result := gjson.GetBytes(doc.Document, "event_name"); result.Raw != "" {
+						spanEventDoc = &doc
+						break
+					}
+				}
+
+				require.NotNil(t, spanEventDoc, "span event document should be present")
+
+				if tt.expectedDocID == "" {
+					assert.NotContains(t, string(spanEventDoc.Action), "_id", "expected _id to not be set")
+				} else {
+					assert.Equal(t, tt.expectedDocID, actionJSONToID(t, spanEventDoc.Action), "expected _id to be set")
+				}
+
+				// Ensure the document id attribute is removed from the final document.
+				assert.NotContains(t, string(spanEventDoc.Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+			})
+		}
+	})
+
+	t.Run("publish with dynamic id in ecs mode", func(t *testing.T) {
+		t.Parallel()
+		// Test that spans respect dynamic document IDs in ECS mode,
+		// while span events are embedded (not separate documents)
+		exampleDocID := "ecs-span-doc-id-789"
+
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicID.Enabled = true
+		})
+
+		traces := newTracesWithAttributes(
+			map[string]any{
+				elasticsearch.DocumentIDAttributeName: exampleDocID,
+			},
+			map[string]any{
+				"elastic.mapping.mode": "ecs",
+			},
+			map[string]any{},
+		)
+
+		// Add a span event with its own document ID attribute (should be ignored in ECS mode)
+		spanEvent := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+		spanEvent.SetName("test_event_ecs")
+		spanEvent.Attributes().PutStr(elasticsearch.DocumentIDAttributeName, "should-be-ignored")
+
+		mustSendTraces(t, exporter, traces)
+
+		// In ECS mode, only the span document is created (span events are embedded)
+		rec.WaitItems(1)
+		docs := rec.Items()
+		require.Len(t, docs, 1, "should only have 1 document (span) in ECS mode")
+
+		// Verify the span document has the correct _id
+		assert.Equal(t, exampleDocID, actionJSONToID(t, docs[0].Action), "span should have dynamic _id")
+
+		// Verify the document ID attribute is removed from the span
+		assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "document id attribute should be removed")
+	})
 }
 
 func TestExporter_DynamicMappingMode(t *testing.T) {
@@ -2453,7 +2625,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 				logs := createLogs(tc.scopes...)
 				exporter := newTestLogsExporter(t, server.URL, setAllowedMappingModes, func(cfg *Config) {
 					// Set wait_for_result to be true so that errors are reported directly via Consume*
-					cfg.QueueBatchConfig.WaitForResult = true
+					cfg.QueueBatchConfig.Get().WaitForResult = true
 				})
 				err := exporter.ConsumeLogs(tc.ctx, logs)
 				if tc.expectErr != "" {
@@ -2481,7 +2653,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 				metrics := createMetrics(tc.scopes...)
 				exporter := newTestMetricsExporter(t, server.URL, setAllowedMappingModes, func(cfg *Config) {
 					// Set wait_for_result to be true so that errors are reported directly via Consume*
-					cfg.QueueBatchConfig.WaitForResult = true
+					cfg.QueueBatchConfig.Get().WaitForResult = true
 				})
 				err := exporter.ConsumeMetrics(tc.ctx, metrics)
 				if tc.expectErr != "" {
@@ -2502,7 +2674,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 		// the metadata is picked up and invalid modes are rejected.
 		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes, func(cfg *Config) {
 			// Set wait_for_result to be true so that errors are reported directly via Consume*
-			cfg.QueueBatchConfig.WaitForResult = true
+			cfg.QueueBatchConfig.Get().WaitForResult = true
 		})
 		err := exporter.ConsumeProfiles(noneContext, pprofile.NewProfiles())
 		assert.EqualError(t, err,
@@ -2526,7 +2698,7 @@ func TestExporter_DynamicMappingMode(t *testing.T) {
 				traces := createTraces(tc.scopes...)
 				exporter := newTestTracesExporter(t, server.URL, setAllowedMappingModes, func(cfg *Config) {
 					// Set wait_for_result to be true so that errors are reported directly via Consume*
-					cfg.QueueBatchConfig.WaitForResult = true
+					cfg.QueueBatchConfig.Get().WaitForResult = true
 				})
 				err := exporter.ConsumeTraces(tc.ctx, traces)
 				if tc.expectErr != "" {
@@ -2576,9 +2748,9 @@ func TestExporterBatcher(t *testing.T) {
 	var requests []*http.Request
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		cfg.QueueBatchConfig.Enabled = true
-		cfg.QueueBatchConfig.WaitForResult = true
-		cfg.QueueBatchConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+		cfg.QueueBatchConfig.GetOrInsertDefault()
+		cfg.QueueBatchConfig.Get().WaitForResult = true
+		cfg.QueueBatchConfig.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
 			FlushTimeout: 200 * time.Millisecond,
 			Sizer:        exporterhelper.RequestSizerTypeItems,
 			MinSize:      8192,
@@ -2627,11 +2799,11 @@ func TestExporterSendingQueueContextPropogation(t *testing.T) {
 		})
 		// Configure sending queue with batching enabled. Batching configuration are
 		// kept such that test can simulate batching and the batch matures on age.
-		cfg.QueueBatchConfig.WaitForResult = false
-		cfg.QueueBatchConfig.BlockOnOverflow = true
-		cfg.QueueBatchConfig.QueueSize = 100 // big enough to accommodate all requests
-		cfg.QueueBatchConfig.NumConsumers = 10
-		batchCfg := cfg.QueueBatchConfig.Batch.Get()
+		cfg.QueueBatchConfig.Get().WaitForResult = false
+		cfg.QueueBatchConfig.Get().BlockOnOverflow = true
+		cfg.QueueBatchConfig.Get().QueueSize = 100 // big enough to accommodate all requests
+		cfg.QueueBatchConfig.Get().NumConsumers = 10
+		batchCfg := cfg.QueueBatchConfig.Get().Batch.GetOrInsertDefault()
 		batchCfg.FlushTimeout = 100 * time.Millisecond
 		batchCfg.Sizer = exporterhelper.RequestSizerTypeItems
 		batchCfg.MinSize = 100 // big enough to accommodate all requests
@@ -2813,9 +2985,9 @@ func newUnstartedTestTracesExporter(t *testing.T, url string, fns ...func(*Confi
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
-		cfg.QueueBatchConfig.NumConsumers = 1
+		cfg.QueueBatchConfig.Get().NumConsumers = 1
 		// Batch is configured by default so we can directly edit flush timeout
-		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
+		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
@@ -2837,9 +3009,9 @@ func newUnstartedTestProfilesExporter(t *testing.T, url string, fns ...func(*Con
 	f := NewFactory().(xexporter.Factory)
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
-		cfg.QueueBatchConfig.NumConsumers = 1
+		cfg.QueueBatchConfig.Get().NumConsumers = 1
 		// Batch is configured by default so we can directly edit flush timeout
-		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
+		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateProfiles(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
@@ -2860,9 +3032,9 @@ func newUnstartedTestMetricsExporter(t *testing.T, url string, fns ...func(*Conf
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
-		cfg.QueueBatchConfig.NumConsumers = 1
+		cfg.QueueBatchConfig.Get().NumConsumers = 1
 		// Batch is configured by default so we can directly edit flush timeout
-		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
+		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateMetrics(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
@@ -2884,9 +3056,9 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
-		cfg.QueueBatchConfig.NumConsumers = 1
+		cfg.QueueBatchConfig.Get().NumConsumers = 1
 		// Batch is defined as default configuration
-		cfg.QueueBatchConfig.Batch.Get().FlushTimeout = 10 * time.Millisecond
+		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
