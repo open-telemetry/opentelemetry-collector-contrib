@@ -81,11 +81,7 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 	rb := mb.NewResourceBuilder()
 	var containerID string
 	var imageStr string
-	for i := range pod.Status.ContainerStatuses {
-		cs := pod.Status.ContainerStatuses[i]
-		if cs.Name != c.Name {
-			continue
-		}
+	if cs, ok := findContainerStatusForName(pod, c.Name); ok {
 		containerID = cs.ContainerID
 		imageStr = cs.Image
 		mb.RecordK8sContainerRestartsDataPoint(ts, int64(cs.RestartCount))
@@ -126,7 +122,6 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 			}
 			mb.RecordK8sContainerStatusReasonDataPoint(ts, val, attrVal)
 		}
-		break
 	}
 
 	rb.SetK8sPodUID(string(pod.UID))
@@ -143,6 +138,30 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 		rb.SetContainerImageTag(image.Tag)
 	}
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+}
+
+// findContainerStatusForName returns the ContainerStatus matching the given name from
+// any of container, init container, or ephemeral container statuses.
+func findContainerStatusForName(pod *corev1.Pod, name string) (*corev1.ContainerStatus, bool) {
+	for i := range pod.Status.ContainerStatuses {
+		cs := &pod.Status.ContainerStatuses[i]
+		if cs.Name == name {
+			return cs, true
+		}
+	}
+	for i := range pod.Status.InitContainerStatuses {
+		cs := &pod.Status.InitContainerStatuses[i]
+		if cs.Name == name {
+			return cs, true
+		}
+	}
+	for i := range pod.Status.EphemeralContainerStatuses {
+		cs := &pod.Status.EphemeralContainerStatuses[i]
+		if cs.Name == name {
+			return cs, true
+		}
+	}
+	return nil, false
 }
 
 func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger) *metadata.KubernetesMetadata {
