@@ -1730,7 +1730,6 @@ func TestRemoteWriteHistogramWithExemplars(t *testing.T) {
 						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7,8
 						"span_id", "00f067aa0ba902b7", // 9,10,
 						"4bf92f3577b34da6a3ce929d0e0e4740", "fff067aa0ba902b7", // 11, 12
-						"latency_ms", // 13
 					},
 					Timeseries: []writev2.TimeSeries{
 						{
@@ -1754,6 +1753,9 @@ func TestRemoteWriteHistogramWithExemplars(t *testing.T) {
 								},
 							},
 						},
+						// We're sending exemplars disconnected from histograms because
+						// remote-write 2.0 emits exemplars independently of histogram samples.
+						// See https://github.com/prometheus/prometheus/issues/17857.
 						{
 							Metadata: writev2.Metadata{
 								Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,

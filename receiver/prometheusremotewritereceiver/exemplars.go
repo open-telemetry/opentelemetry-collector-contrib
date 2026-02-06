@@ -77,7 +77,7 @@ func collectExemplars(
 		}
 
 		for _, ex := range ts.Exemplars {
-			labels, err := labelrefsToLabels(ex.LabelsRefs, req.Symbols)
+			promExemplar, err := ex.ToExemplar(&builder, req.Symbols)
 			if err != nil {
 				settings.Logger.Warn("error converting exemplar label refs", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 				continue
@@ -87,8 +87,8 @@ func collectExemplars(
 			exemplar.SetTimestamp(pcommon.Timestamp(ex.Timestamp * int64(time.Millisecond)))
 			exemplar.SetDoubleValue(ex.Value)
 
-			setTraceAndSpan(exemplar, labels)
-			copyExemplarAttributes(exemplar.FilteredAttributes(), labels)
+			setTraceAndSpan(exemplar, promExemplar.Labels)
+			copyExemplarAttributes(exemplar.FilteredAttributes(), promExemplar.Labels)
 			stats.Exemplars++
 		}
 
@@ -144,29 +144,6 @@ func copyExemplarAttributes(dest pcommon.Map, labels labels.Labels) {
 		}
 		dest.PutStr(k, v)
 	}
-}
-
-// labelrefsToLabels converts a slice of label references into a Labels object.
-//
-// The labelRefs slice must contain an even number of entries, representing
-// name/value index pairs into the symbols table. An error is returned if
-// references are malformed or out of bounds.
-//
-// This is similar to timeseries.ToLabels(...) function
-func labelrefsToLabels(labelRefs []uint32, symbols []string) (labels.Labels, error) {
-	if len(labelRefs)%2 != 0 {
-		return labels.EmptyLabels(), fmt.Errorf("invalid labelRefs length %d", len(labelRefs))
-	}
-	builder := labels.NewScratchBuilder(0)
-	for i := 0; i < len(labelRefs); i += 2 {
-		nameRef, valueRef := labelRefs[i], labelRefs[i+1]
-		if int(nameRef) >= len(symbols) || int(valueRef) >= len(symbols) {
-			return labels.EmptyLabels(), fmt.Errorf("labelRefs %d (name) = %d (value) outside of symbols table (size %d)", nameRef, valueRef, len(symbols))
-		}
-		builder.Add(symbols[nameRef], symbols[valueRef])
-	}
-	builder.Sort()
-	return builder.Labels(), nil
 }
 
 type exemplarKey struct {
