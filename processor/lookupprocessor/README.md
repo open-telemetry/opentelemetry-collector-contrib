@@ -216,7 +216,7 @@ factories.Processors[lookupprocessor.Type] = lookupprocessor.NewFactoryWithOptio
 
 - **Concurrency**: `Lookup` is called concurrently from multiple goroutines. Implementations must be safe for concurrent use.
 - **Keys are strings**: The OTTL expression result is converted to a string before calling `Lookup`.
-- **Return values**: For scalar (1:1) lookups, return any single value. For map (1:N) lookups, return `map[string]any`. Supported value types written natively to attributes are `string`, `int`, `int64`, `float64`, and `bool`; anything else is stringified via `fmt.Sprintf`.
+- **Return values**: For scalar (1:1) lookups, return any single value. For map (1:N) lookups, return `map[string]any`. Values are written to attributes via [`pcommon.Value.FromRaw`](https://pkg.go.dev/go.opentelemetry.io/collector/pdata/pcommon#Value.FromRaw). Unsupported types are stringified via `fmt.Sprintf`.
 - **Errors are non-fatal**: When `Lookup` returns an error the processor logs it at Debug level and skips the lookup. It does not fail the batch.
 - **Lifecycle**: `Start` is called once before any `Lookup`; `Shutdown` is called once after all processing stops. Both are optional (pass `nil` to `NewSource`).
 - **Config tags**: Source config structs must use `mapstructure` struct tags. The processor decodes source configuration from a raw map using mapstructure.

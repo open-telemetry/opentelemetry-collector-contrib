@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
 
@@ -281,6 +282,93 @@ func TestProcessorNoSourceAttribute(t *testing.T) {
 	processedLogs := sink.AllLogs()[0]
 	_, exists := processedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("result")
 	assert.False(t, exists, "result should not be set when source attribute is missing")
+}
+
+func TestProcessorValueTypes(t *testing.T) {
+	type unsupportedType struct{ field string }
+
+	mappings := map[string]any{
+		"int-key":    int64(42),
+		"float-key":  float64(3.14),
+		"bool-key":   true,
+		"bytes-key":  []byte("raw bytes"),
+		"slice-key":  []any{"a", "b", "c"},
+		"struct-key": unsupportedType{field: "test"},
+	}
+
+	factory := NewFactoryWithOptions(WithSources(mockMapSourceFactory(mappings)))
+	cfg := &Config{
+		Source: SourceConfig{Type: "mockmap"},
+		Lookups: []LookupConfig{
+			{
+				Key: `log.attributes["key"]`,
+				Attributes: []AttributeMapping{
+					{Destination: "result"},
+				},
+			},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	settings := processortest.NewNopSettings(metadata.Type)
+
+	proc, err := factory.CreateLogs(t.Context(), settings, cfg, sink)
+	require.NoError(t, err)
+
+	host := componenttest.NewNopHost()
+	require.NoError(t, proc.Start(t.Context(), host))
+	defer func() { _ = proc.Shutdown(t.Context()) }()
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	for _, key := range []string{"int-key", "float-key", "bool-key", "bytes-key", "slice-key", "struct-key"} {
+		lr := sl.LogRecords().AppendEmpty()
+		lr.Attributes().PutStr("key", key)
+	}
+
+	err = proc.ConsumeLogs(t.Context(), logs)
+	require.NoError(t, err)
+
+	require.Len(t, sink.AllLogs(), 1)
+	records := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	require.Equal(t, 6, records.Len())
+
+	// int64 => IntValue
+	val, ok := records.At(0).Attributes().Get("result")
+	assert.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeInt, val.Type())
+	assert.Equal(t, int64(42), val.Int())
+
+	// float64 => DoubleValue
+	val, ok = records.At(1).Attributes().Get("result")
+	assert.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeDouble, val.Type())
+	assert.Equal(t, float64(3.14), val.Double())
+
+	// bool => BoolValue
+	val, ok = records.At(2).Attributes().Get("result")
+	assert.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeBool, val.Type())
+	assert.True(t, val.Bool())
+
+	// []byte => BytesValue
+	val, ok = records.At(3).Attributes().Get("result")
+	assert.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeBytes, val.Type())
+	assert.Equal(t, []byte("raw bytes"), val.Bytes().AsRaw())
+
+	// []any => SliceValue
+	val, ok = records.At(4).Attributes().Get("result")
+	assert.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeSlice, val.Type())
+	assert.Equal(t, 3, val.Slice().Len())
+
+	// unsupported type => stringify fallback
+	val, ok = records.At(5).Attributes().Get("result")
+	assert.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeStr, val.Type())
+	assert.Equal(t, "{test}", val.Str())
 }
 
 // mockSourceFactory creates a source factory that always returns the given value.
