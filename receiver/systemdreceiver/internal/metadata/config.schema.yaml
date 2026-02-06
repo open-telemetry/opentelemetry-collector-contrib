@@ -1,0 +1,53 @@
+$defs:
+  attribute_cpu_mode:
+    description: AttributeCPUMode specifies the value cpu.mode attribute.
+    type: integer
+  attribute_systemd_unit_active_state:
+    description: AttributeSystemdUnitActiveState specifies the value systemd.unit.active_state attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for systemd metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for systemd metrics.
+    type: object
+    properties:
+      systemd.service.cpu.time:
+        $ref: metric_config
+      systemd.service.restarts:
+        $ref: metric_config
+      systemd.unit.state:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for systemd resource attributes.
+    type: object
+    properties:
+      systemd.unit.name:
+        $ref: resource_attribute_config
