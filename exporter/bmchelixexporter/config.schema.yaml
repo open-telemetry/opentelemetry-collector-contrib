@@ -1,0 +1,9 @@
+description: Config struct is used to store the configuration of the exporter
+type: object
+properties:
+  api_key:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

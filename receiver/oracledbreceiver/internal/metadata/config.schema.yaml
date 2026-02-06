@@ -1,0 +1,161 @@
+$defs:
+  event_config:
+    description: EventConfig provides common config for a particular event.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  events_config:
+    description: EventsConfig provides config for oracledb events.
+    type: object
+    properties:
+      db.server.query_sample:
+        $ref: event_config
+      db.server.top_query:
+        $ref: event_config
+  logs_builder_config:
+    description: LogsBuilderConfig is a configuration for oracledb logs builder.
+    type: object
+    properties:
+      events:
+        $ref: events_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for oracledb metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for oracledb metrics.
+    type: object
+    properties:
+      oracledb.consistent_gets:
+        $ref: metric_config
+      oracledb.cpu_time:
+        $ref: metric_config
+      oracledb.db_block_gets:
+        $ref: metric_config
+      oracledb.ddl_statements_parallelized:
+        $ref: metric_config
+      oracledb.dml_locks.limit:
+        $ref: metric_config
+      oracledb.dml_locks.usage:
+        $ref: metric_config
+      oracledb.dml_statements_parallelized:
+        $ref: metric_config
+      oracledb.enqueue_deadlocks:
+        $ref: metric_config
+      oracledb.enqueue_locks.limit:
+        $ref: metric_config
+      oracledb.enqueue_locks.usage:
+        $ref: metric_config
+      oracledb.enqueue_resources.limit:
+        $ref: metric_config
+      oracledb.enqueue_resources.usage:
+        $ref: metric_config
+      oracledb.exchange_deadlocks:
+        $ref: metric_config
+      oracledb.executions:
+        $ref: metric_config
+      oracledb.hard_parses:
+        $ref: metric_config
+      oracledb.logical_reads:
+        $ref: metric_config
+      oracledb.logons:
+        $ref: metric_config
+      oracledb.parallel_operations_downgraded_1_to_25_pct:
+        $ref: metric_config
+      oracledb.parallel_operations_downgraded_25_to_50_pct:
+        $ref: metric_config
+      oracledb.parallel_operations_downgraded_50_to_75_pct:
+        $ref: metric_config
+      oracledb.parallel_operations_downgraded_75_to_99_pct:
+        $ref: metric_config
+      oracledb.parallel_operations_downgraded_to_serial:
+        $ref: metric_config
+      oracledb.parallel_operations_not_downgraded:
+        $ref: metric_config
+      oracledb.parse_calls:
+        $ref: metric_config
+      oracledb.pga_memory:
+        $ref: metric_config
+      oracledb.physical_read_io_requests:
+        $ref: metric_config
+      oracledb.physical_reads:
+        $ref: metric_config
+      oracledb.physical_reads_direct:
+        $ref: metric_config
+      oracledb.physical_write_io_requests:
+        $ref: metric_config
+      oracledb.physical_writes:
+        $ref: metric_config
+      oracledb.physical_writes_direct:
+        $ref: metric_config
+      oracledb.processes.limit:
+        $ref: metric_config
+      oracledb.processes.usage:
+        $ref: metric_config
+      oracledb.queries_parallelized:
+        $ref: metric_config
+      oracledb.sessions.limit:
+        $ref: metric_config
+      oracledb.sessions.usage:
+        $ref: metric_config
+      oracledb.tablespace_size.limit:
+        $ref: metric_config
+      oracledb.tablespace_size.usage:
+        $ref: metric_config
+      oracledb.transactions.limit:
+        $ref: metric_config
+      oracledb.transactions.usage:
+        $ref: metric_config
+      oracledb.user_commits:
+        $ref: metric_config
+      oracledb.user_rollbacks:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      events_exclude:
+        description: 'Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      events_include:
+        description: 'Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for oracledb resource attributes.
+    type: object
+    properties:
+      host.name:
+        $ref: resource_attribute_config
+      oracledb.instance.name:
+        $ref: resource_attribute_config
+      service.instance.id:
+        $ref: resource_attribute_config

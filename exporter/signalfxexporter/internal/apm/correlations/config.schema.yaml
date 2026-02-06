@@ -1,0 +1,25 @@
+$defs:
+  config:
+    description: Config defines configuration for correlation settings.
+    type: object
+    properties:
+      cleanup_interval:
+        type: string
+        format: duration
+      log_updates:
+        type: boolean
+      max_buffered:
+        type: integer
+        x-customType: uint
+      max_requests:
+        type: integer
+        x-customType: uint
+      max_retries:
+        type: integer
+        x-customType: uint
+      retry_delay:
+        type: string
+        format: duration
+  type:
+    description: Type is the type of correlation
+    type: string

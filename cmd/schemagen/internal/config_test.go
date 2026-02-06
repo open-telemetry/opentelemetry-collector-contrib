@@ -90,6 +90,114 @@ func TestReadConfig_ReadsSettingsFile(t *testing.T) {
 	}, cfg.Mappings)
 }
 
+func TestReadConfig_MetadataHandling(t *testing.T) {
+	tests := []struct {
+		name          string
+		metadata      string
+		expectedMode  RunMode
+		expectedClass string
+	}{
+		{
+			name: "with parent field",
+			metadata: `type: test
+status:
+  class: pkg
+parent: someparent
+`,
+			expectedMode:  Component,
+			expectedClass: "",
+		},
+		{
+			name: "receiver class",
+			metadata: `type: testreceiver
+status:
+  class: receiver
+`,
+			expectedMode:  Component,
+			expectedClass: "receiver",
+		},
+		{
+			name: "processor class",
+			metadata: `type: testprocessor
+status:
+  class: processor
+`,
+			expectedMode:  Component,
+			expectedClass: "processor",
+		},
+		{
+			name: "exporter class",
+			metadata: `type: testexporter
+status:
+  class: exporter
+`,
+			expectedMode:  Component,
+			expectedClass: "exporter",
+		},
+		{
+			name: "connector class",
+			metadata: `type: testconnector
+status:
+  class: connector
+`,
+			expectedMode:  Component,
+			expectedClass: "connector",
+		},
+		{
+			name: "extension class",
+			metadata: `type: testextension
+status:
+  class: extension
+`,
+			expectedMode:  Component,
+			expectedClass: "extension",
+		},
+		{
+			name: "unknown class (pkg)",
+			metadata: `type: testpkg
+status:
+  class: pkg
+`,
+			expectedMode:  Package,
+			expectedClass: "pkg",
+		},
+		{
+			name: "scraper class (default case)",
+			metadata: `type: testscraper
+status:
+  class: scraper
+`,
+			expectedMode:  Package,
+			expectedClass: "scraper",
+		},
+		{
+			name:          "no metadata file",
+			metadata:      "",
+			expectedMode:  Package,
+			expectedClass: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Chdir(dir)
+			createConfigFile(t, dir, "config.go")
+
+			// Create metadata.yaml if metadata content is provided
+			if tt.metadata != "" {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte(tt.metadata), 0o600))
+			}
+
+			cfg, err := readConfigForTest(t, dir)
+			require.NoError(t, err)
+
+			require.Equal(t, tt.expectedMode, cfg.Mode)
+			require.Equal(t, tt.expectedClass, cfg.Class)
+		})
+	}
+}
+
 func createConfigFile(t *testing.T, dir, name string) string {
 	t.Helper()
 	target := filepath.Join(dir, name)

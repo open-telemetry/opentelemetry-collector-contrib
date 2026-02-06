@@ -1,0 +1,34 @@
+$defs:
+  attribute_source:
+    type: string
+  sampler_mode:
+    description: SamplerMode determines which of several modes is used for the sampling decision.
+    type: string
+description: Config has the configuration guiding the sampler processor.
+type: object
+properties:
+  fail_closed:
+    description: FailClosed indicates to not sample data (the processor will fail "closed") in case of error, such as failure to parse the tracestate field or missing the randomness attribute. By default, failure cases are sampled (the processor is fails "open").  Sampling priority-based decisions are made after FailClosed is processed, making it possible to sample despite errors using priority.
+    type: boolean
+  from_attribute:
+    description: FromAttribute (logs only) The optional name of a log record attribute used for sampling purposes, such as a unique log record ID. The value of the attribute is only used if the trace ID is absent or if `attribute_source` is set to `record`.
+    type: string
+  hash_seed:
+    description: 'HashSeed allows one to configure the hashing seed. This is important in scenarios where multiple layers of collectors have different sampling rates: if they use the same seed all passing one layer may pass the other even if they have different sampling rates, configuring different seeds avoids that.'
+    type: integer
+    x-customType: uint32
+  mode:
+    description: 'Mode selects the sampling behavior. Supported values: - "hash_seed": the legacy behavior of this processor. Using an FNV hash combined with the HashSeed value, this sampler performs a non-consistent probabilistic downsampling.  The number of spans output is expected to equal SamplingPercentage (as a ratio) times the number of spans inpout, assuming good behavior from FNV and good entropy in the hashed attributes or TraceID. - "equalizing": Using an OTel-specified consistent sampling mechanism, this sampler selectively reduces the effective sampling probability of arriving spans.  This can be useful to select a small fraction of complete traces from a stream with mixed sampling rates.  The rate of spans passing through depends on how much sampling has already been applied.  If an arriving span was head sampled at the same probability it passes through.  If the span arrives with lower probability, a warning is logged because it means this sampler is configured with too large a sampling probability to ensure complete traces. - "proportional": Using an OTel-specified consistent sampling mechanism, this sampler reduces the effective sampling probability of each span by `SamplingProbability`.'
+    $ref: sampler_mode
+  sampling_percentage:
+    description: 'SamplingPercentage is the percentage rate at which traces or logs are going to be sampled. Defaults to zero, i.e.: no sample. Values greater or equal 100 are treated as "sample all traces/logs".'
+    type: number
+    x-customType: float32
+  sampling_precision:
+    description: SamplingPrecision is how many hex digits of sampling threshold will be encoded, from 1 up to 14.  Default is 4. 0 is treated as full precision.
+    type: integer
+  sampling_priority:
+    description: SamplingPriority (logs only) enables using a log record attribute as the sampling priority of the log record.
+    type: string
+allOf:
+  - $ref: attribute_source
