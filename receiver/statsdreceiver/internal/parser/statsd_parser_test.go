@@ -2134,9 +2134,9 @@ func TestStatsDParser_IPOnlyAggregation(t *testing.T) {
 	value := metrics[0].Metrics.
 		ResourceMetrics().At(0).
 		ScopeMetrics().At(0).
-		Metrics().At(0).Sum().DataPoints().At(0).IntValue()
+		Metrics().At(0).Sum().DataPoints().At(0).DoubleValue()
 
-	assert.Equal(t, int64(4), value)
+	assert.Equal(t, 4.0, value)
 }
 
 func TestStatsDParser_DiscardInvalidValues(t *testing.T) {
