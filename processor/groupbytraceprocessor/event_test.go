@@ -416,17 +416,17 @@ func TestEventShutdown(t *testing.T) {
 	}, 1*time.Second, 10*time.Millisecond)
 	assert.Equal(t, 0, em.numEvents())
 
-	// new events should *not* be processed
-	em.workers[0].fire(event{
-		typ:     traceExpired,
-		payload: pcommon.TraceID([16]byte{1, 2, 3, 4}),
-	})
-
 	// verify
 	assert.Equal(t, int64(1), traceReceivedFired.Load())
 
 	// wait until the shutdown has returned
 	shutdownWg.Wait()
+
+	// new events should *not* be processed after shutdown
+	em.workers[0].fire(event{
+		typ:     traceExpired,
+		payload: pcommon.TraceID([16]byte{1, 2, 3, 4}),
+	})
 
 	// If the code is wrong, there's a chance that the test will still pass
 	// in case the event is processed after the assertion.
@@ -435,6 +435,59 @@ func TestEventShutdown(t *testing.T) {
 		return traceExpiredFired.Load() == 0
 	}, 100*time.Millisecond, 5*time.Millisecond)
 	assert.Equal(t, int64(0), traceExpiredFired.Load())
+}
+
+func TestEventShutdownMultipleWorkers(t *testing.T) {
+	set := processortest.NewNopSettings(metadata.Type)
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+
+	const numWorkers = 10
+	traceReceivedCount := &atomic.Int64{}
+	traceExpiredCount := &atomic.Int64{}
+
+	em := newEventMachine(zap.NewNop(), 50, numWorkers, 1_000, tel)
+	em.onTraceReceived = func(tracesWithID, *eventMachineWorker) error {
+		traceReceivedCount.Add(1)
+		return nil
+	}
+	em.onTraceExpired = func(pcommon.TraceID, *eventMachineWorker) error {
+		traceExpiredCount.Add(1)
+		return nil
+	}
+	em.startInBackground()
+
+	for i := range numWorkers {
+		em.workers[i].fire(event{
+			typ:     traceReceived,
+			payload: tracesWithID{id: pcommon.NewTraceIDEmpty(), td: ptrace.NewTraces()},
+		})
+	}
+
+	assert.Eventually(t, func() bool {
+		return traceReceivedCount.Load() == numWorkers
+	}, 1*time.Second, 10*time.Millisecond)
+
+	shutdownWg := sync.WaitGroup{}
+	shutdownWg.Add(1)
+	go func() {
+		em.shutdown()
+		shutdownWg.Done()
+	}()
+
+	shutdownWg.Wait()
+
+	// Fire events to all workers after shutdown - none should be processed
+	for i := range numWorkers {
+		em.workers[i].fire(event{
+			typ:     traceExpired,
+			payload: pcommon.TraceID([16]byte{byte(i)}),
+		})
+	}
+
+	assert.Eventually(t, func() bool {
+		return traceExpiredCount.Load() == 0
+	}, 100*time.Millisecond, 5*time.Millisecond)
+	assert.Equal(t, int64(0), traceExpiredCount.Load(), "no traceExpired events should be processed after shutdown")
 }
 
 func TestPeriodicMetrics(t *testing.T) {
@@ -547,11 +600,12 @@ func TestDoWithTimeout_NoTimeout(t *testing.T) {
 func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 	// prepare
 	start := time.Now()
-	blockCh := make(chan struct{}) // channel that will never be closed/signaled
+	blockCh := make(chan struct{})
+	defer close(blockCh) // cleanup: unblock the goroutine to prevent leak
 
 	// test
 	succeed, err := doWithTimeout(20*time.Millisecond, func() error {
-		<-blockCh // block forever (simulating a long-running function)
+		<-blockCh // block until timeout or channel closed
 		return nil
 	})
 	assert.False(t, succeed)

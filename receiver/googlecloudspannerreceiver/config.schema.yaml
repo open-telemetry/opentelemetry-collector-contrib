@@ -1,0 +1,39 @@
+$defs:
+  instance:
+    type: object
+    properties:
+      databases:
+        type: array
+        items:
+          type: string
+      instance_id:
+        type: string
+  project:
+    type: object
+    properties:
+      instances:
+        type: array
+        items:
+          $ref: instance
+      project_id:
+        type: string
+      service_account_key:
+        type: string
+type: object
+properties:
+  backfill_enabled:
+    type: boolean
+  cardinality_total_limit:
+    type: integer
+  hide_topn_lockstats_rowrangestartkey:
+    type: boolean
+  projects:
+    type: array
+    items:
+      $ref: project
+  top_metrics_query_max_rows:
+    type: integer
+  truncate_text:
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

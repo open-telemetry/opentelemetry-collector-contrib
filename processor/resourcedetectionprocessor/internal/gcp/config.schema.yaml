@@ -1,0 +1,9 @@
+type: object
+properties:
+  labels:
+    description: Labels is a list of regex's to match gce instance label keys that users want to add as resource attributes to processed data
+    type: array
+    items:
+      type: string
+  resource_attributes:
+    $ref: ./internal/metadata.resource_attributes_config

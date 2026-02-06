@@ -1,0 +1,15 @@
+$defs:
+  base_config:
+    description: BaseConfig is the common configuration of a stanza-based receiver
+    type: object
+    properties:
+      operators:
+        type: array
+        items:
+          x-customType: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator.Config
+      retry_on_failure:
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.config
+      storage:
+        x-pointer: true
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
