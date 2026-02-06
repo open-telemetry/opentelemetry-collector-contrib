@@ -32,6 +32,8 @@ type monitoringReceiver struct {
 	metricsBuilder    *internal.MetricsBuilder
 	mutex             sync.RWMutex
 	metricDescriptors map[string]*metric.MetricDescriptor // key is the Type of MetricDescriptor
+	timestampsMutex   sync.Mutex
+	lastScrapeTimes   map[string]time.Time
 }
 
 func newGoogleCloudMonitoringReceiver(cfg *Config, logger *zap.Logger) *monitoringReceiver {
@@ -40,6 +42,7 @@ func newGoogleCloudMonitoringReceiver(cfg *Config, logger *zap.Logger) *monitori
 		logger:            logger,
 		metricsBuilder:    internal.NewMetricsBuilder(logger),
 		metricDescriptors: make(map[string]*metric.MetricDescriptor),
+		lastScrapeTimes:   make(map[string]time.Time),
 	}
 }
 
@@ -104,8 +107,12 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 			gDelay = defaultFetchDelay
 		}
 
+		mr.timestampsMutex.Lock()
+		lastScrapeTimestamp := mr.lastScrapeTimes[metricType]
+		mr.timestampsMutex.Unlock()
+
 		// Calculate the start and end times
-		calStartTime, calEndTime = calculateStartEndTime(gInterval, gDelay)
+		calStartTime, calEndTime = calculateStartEndTime(gInterval, gDelay, lastScrapeTimestamp)
 
 		// Get the filter query for the metric
 		filterQuery = fmt.Sprintf(`metric.type = %q`, metricType)
@@ -136,6 +143,18 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 			if err != nil {
 				gErr = fmt.Errorf("failed to retrieve time series data: %w", err)
 				return metrics, gErr
+			}
+
+			latestTimestamp := latestTimeSeriesTimestamp(timeSeries)
+			if !latestTimestamp.IsZero() {
+				mr.timestampsMutex.Lock()
+				previousTimestamp, ok := mr.lastScrapeTimes[metricType]
+				if !ok {
+					mr.lastScrapeTimes[metricType] = latestTimestamp
+				} else if latestTimestamp.After(previousTimestamp) {
+					mr.lastScrapeTimes[metricType] = latestTimestamp
+				}
+				mr.timestampsMutex.Unlock()
 			}
 
 			// Convert and append the metric directly within the loop
@@ -209,27 +228,44 @@ func (mr *monitoringReceiver) metricDescriptorAPI(ctx context.Context) error {
 	return nil
 }
 
-// calculateStartEndTime calculates the start and end times based on the current time, interval, and delay.
+// calculateStartEndTime calculates the start and end times based on the last scrape time, interval, and delay.
 // It enforces a maximum interval of 23 hours to avoid querying data older than 24 hours.
-func calculateStartEndTime(interval, delay time.Duration) (time.Time, time.Time) {
+func calculateStartEndTime(interval, delay time.Duration, lastScrapeTimestamp time.Time) (time.Time, time.Time) {
 	const maxInterval = 23 * time.Hour // Maximum allowed interval is 23 hours
-
-	// Get the current time
-	now := time.Now()
 
 	// Cap the interval at 23 hours if it exceeds that
 	if interval > maxInterval {
 		interval = maxInterval
 	}
 
-	// Calculate end time by subtracting delay
-	endTime := now.Add(-delay)
-
-	// Calculate start time by subtracting the interval from the end time
-	startTime := endTime.Add(-interval)
-
-	// Return start and end times
+	endTime := time.Now().Add((-delay))
+	var startTime time.Time
+	if !lastScrapeTimestamp.IsZero() {
+		// when lastScrapeTimestamp is available, scrape starting from then upto end time
+		startTime = lastScrapeTimestamp
+	} else {
+		// when lastScrapeTimestamp is not available, scrape for the interval upto end time
+		startTime = endTime.Add(-interval)
+	}
 	return startTime, endTime
+}
+
+func latestTimeSeriesTimestamp(timeSeries *monitoringpb.TimeSeries) time.Time {
+	var latest time.Time
+	for _, point := range timeSeries.GetPoints() {
+		interval := point.GetInterval()
+		if interval == nil {
+			continue
+		}
+		var candidate time.Time
+		if end := interval.GetEndTime(); end != nil {
+			candidate = end.AsTime()
+		}
+		if candidate.After(latest) {
+			latest = candidate
+		}
+	}
+	return latest
 }
 
 // getFilterQuery constructs a filter query string based on the provided metric.
