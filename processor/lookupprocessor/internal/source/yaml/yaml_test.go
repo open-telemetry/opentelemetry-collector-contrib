@@ -114,6 +114,64 @@ bool_key: true
 	require.NoError(t, source.Shutdown(t.Context()))
 }
 
+func TestYAMLSourceMapLookup(t *testing.T) {
+	tmpDir := t.TempDir()
+	yamlPath := filepath.Join(tmpDir, "users.yaml")
+
+	yamlContent := `
+user001:
+  name: "Alice Johnson"
+  email: "alice@example.com"
+  role: "admin"
+user002:
+  name: "Bob Smith"
+  email: "bob@example.com"
+  role: "viewer"
+`
+	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o600)
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := &Config{Path: yamlPath}
+
+	settings := lookupsource.CreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+	}
+
+	source, err := factory.CreateSource(t.Context(), settings, cfg)
+	require.NoError(t, err)
+
+	host := componenttest.NewNopHost()
+	require.NoError(t, source.Start(t.Context(), host))
+	defer func() { _ = source.Shutdown(t.Context()) }()
+
+	// Lookup should return map[string]any for nested YAML
+	val, found, err := source.Lookup(t.Context(), "user001")
+	require.NoError(t, err)
+	require.True(t, found)
+
+	m, ok := val.(map[string]any)
+	require.True(t, ok, "expected map[string]any, got %T", val)
+	assert.Equal(t, "Alice Johnson", m["name"])
+	assert.Equal(t, "alice@example.com", m["email"])
+	assert.Equal(t, "admin", m["role"])
+
+	// Second entry
+	val, found, err = source.Lookup(t.Context(), "user002")
+	require.NoError(t, err)
+	require.True(t, found)
+
+	m, ok = val.(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "Bob Smith", m["name"])
+	assert.Equal(t, "viewer", m["role"])
+
+	// Not found
+	_, found, err = source.Lookup(t.Context(), "user999")
+	require.NoError(t, err)
+	assert.False(t, found)
+}
+
 func TestYAMLSourceFileNotFound(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{Path: "/nonexistent/path/to/file.yaml"}

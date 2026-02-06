@@ -68,6 +68,11 @@ func createSource(
 }
 
 // yamlSource holds the loaded YAML data.
+//
+// The file is read once during Start and never reloaded. The RWMutex is
+// present to allow a future file-watch/reload mechanism to swap the data
+// map safely while concurrent lookups are in progress.
+// TODO: support periodic or file-watch-based reload.
 type yamlSource struct {
 	path string
 	mu   sync.RWMutex

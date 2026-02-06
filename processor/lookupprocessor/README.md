@@ -131,6 +131,8 @@ processors:
 
 The `context` field on a key sets the default for all its destination attributes. Each attribute mapping can override this with its own `context` field.
 
+Lookups are evaluated per record. When writing to resource attributes, later records in the same resource may overwrite values written by earlier records.
+
 ## Built-in Sources
 
 ### noop
@@ -209,6 +211,15 @@ factories.Processors[lookupprocessor.Type] = lookupprocessor.NewFactoryWithOptio
     lookupprocessor.WithSources(httplookup.NewFactory()),
 )
 ```
+
+### Source contract
+
+- **Concurrency**: `Lookup` is called concurrently from multiple goroutines. Implementations must be safe for concurrent use.
+- **Keys are strings**: The OTTL expression result is converted to a string before calling `Lookup`.
+- **Return values**: For scalar (1:1) lookups, return any single value. For map (1:N) lookups, return `map[string]any`. Supported value types written natively to attributes are `string`, `int`, `int64`, `float64`, and `bool`; anything else is stringified via `fmt.Sprintf`.
+- **Errors are non-fatal**: When `Lookup` returns an error the processor logs it at Debug level and skips the lookup. It does not fail the batch.
+- **Lifecycle**: `Start` is called once before any `Lookup`; `Shutdown` is called once after all processing stops. Both are optional (pass `nil` to `NewSource`).
+- **Config tags**: Source config structs must use `mapstructure` struct tags. The processor decodes source configuration from a raw map using mapstructure.
 
 ### Implementing a Source
 
