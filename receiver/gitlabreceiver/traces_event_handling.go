@@ -106,16 +106,15 @@ func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPi
 			jobURL: baseJobURL + strconv.Itoa(p.Builds[i].ID),
 		}
 
-		if glJob.event.FinishedAt != "" {
-			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, glJob.event.Stage, stages[glJob.event.Stage].StartedAt)
-			if err != nil {
-				return err
-			}
+		// Process job spans even if FinishedAt is empty (e.g., skipped jobs)
+		parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, glJob.event.Stage, stages[glJob.event.Stage].StartedAt)
+		if err != nil {
+			return err
+		}
 
-			err = gtr.createSpan(r, &glJob, traceID, parentSpanID)
-			if err != nil {
-				return err
-			}
+		err = gtr.createSpan(r, &glJob, traceID, parentSpanID)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -184,11 +183,15 @@ func newStageSpanID(pipelineID int, stageName, startedAt string) (pcommon.SpanID
 		return pcommon.SpanID{}, errors.New("stageName is empty")
 	}
 
-	_, err := parseGitlabTime(startedAt)
-	if err != nil {
-		return pcommon.SpanID{}, fmt.Errorf("invalid startedAt timestamp: %w", err)
+	// Validate timestamp if provided, but don't fail on empty timestamps (skipped jobs)
+	if startedAt != "" && startedAt != "null" {
+		_, err := parseGitlabTime(startedAt)
+		if err != nil {
+			return pcommon.SpanID{}, fmt.Errorf("invalid startedAt timestamp: %w", err)
+		}
 	}
 
+	// Use pipelineID and stageName for span ID (startedAt is optional)
 	spanID, err := newSpanID(fmt.Sprintf("%d%s%s", pipelineID, stageName, startedAt))
 	if err != nil {
 		return pcommon.SpanID{}, err
@@ -198,13 +201,18 @@ func newStageSpanID(pipelineID int, stageName, startedAt string) (pcommon.SpanID
 }
 
 // newJobSpanID creates a deterministic Job Span ID based on the unique jobID
+// The jobID alone is sufficient for uniqueness, startedAt is validated but not required
 func newJobSpanID(jobID int, startedAt string) (pcommon.SpanID, error) {
-	_, err := parseGitlabTime(startedAt)
-	if err != nil {
-		return pcommon.SpanID{}, fmt.Errorf("invalid startedAt timestamp: %w", err)
+	// Validate timestamp if provided, but don't fail on empty timestamps (skipped jobs)
+	if startedAt != "" && startedAt != "null" {
+		_, err := parseGitlabTime(startedAt)
+		if err != nil {
+			return pcommon.SpanID{}, fmt.Errorf("invalid startedAt timestamp: %w", err)
+		}
 	}
 
-	spanID, err := newSpanID(fmt.Sprintf("%d%s", jobID, startedAt))
+	// Use jobID for span ID generation (jobID is already unique)
+	spanID, err := newSpanID(fmt.Sprintf("%d", jobID))
 	if err != nil {
 		return pcommon.SpanID{}, err
 	}
@@ -315,7 +323,8 @@ func setSpanTimeStamps(span ptrace.Span, startTime, endTime string) error {
 // Actual webhook event time format: 2025-04-01 18:31:49 UTC
 func parseGitlabTime(t string) (time.Time, error) {
 	if t == "" || t == "null" {
-		return time.Time{}, errors.New("time is empty")
+		// Return zero time without error for skipped jobs that don't have timestamps
+		return time.Time{}, nil
 	}
 
 	// Time format of actual webhook events

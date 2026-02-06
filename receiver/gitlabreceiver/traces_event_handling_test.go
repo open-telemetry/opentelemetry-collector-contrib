@@ -724,3 +724,128 @@ func TestRunnerAttributes(t *testing.T) {
 		})
 	}
 }
+// Test for skipped jobs with NULL timestamps (GitHub Issue: early-failed pipelines)
+func TestHandlePipelineWithSkippedJobs(t *testing.T) {
+	jsonEvent := `{
+		"object_kind": "pipeline",
+		"object_attributes": {
+			"id": 9999991,
+			"iid": 1,
+			"ref": "test-branch",
+			"tag": false,
+			"sha": "abc123def456",
+			"status": "failed",
+			"created_at": "2026-01-30 14:00:00 UTC",
+			"finished_at": "2026-01-30 14:00:30 UTC",
+			"duration": 30,
+			"source": "push"
+		},
+		"user": {
+			"id": 1,
+			"name": "Test User",
+			"username": "testuser",
+			"email": "test@example.com"
+		},
+		"project": {
+			"id": 123,
+			"name": "Test Project",
+			"path_with_namespace": "test-group/test-project",
+			"web_url": "https://gitlab.example.com/test-group/test-project"
+		},
+		"commit": {
+			"id": "abc123def456",
+			"message": "Test commit",
+			"timestamp": "2026-01-30T14:00:00+00:00",
+			"url": "https://gitlab.example.com/test-group/test-project/commit/abc123def456",
+			"author": {
+				"name": "Test User",
+				"email": "test@example.com"
+			}
+		},
+		"builds": [
+			{
+				"id": 1001,
+				"stage": "stage1",
+				"name": "job1",
+				"status": "failed",
+				"created_at": "2026-01-30 14:00:00 UTC",
+				"started_at": "2026-01-30 14:00:05 UTC",
+				"finished_at": "2026-01-30 14:00:20 UTC",
+				"duration": 15.0,
+				"allow_failure": false,
+				"user": {
+					"id": 1,
+					"name": "Test User",
+					"username": "testuser",
+					"email": "test@example.com"
+				},
+				"runner": null,
+				"artifacts_file": {
+					"filename": null,
+					"size": null
+				}
+			},
+			{
+				"id": 1002,
+				"stage": "stage2",
+				"name": "job2-skipped",
+				"status": "skipped",
+				"created_at": "2026-01-30 14:00:00 UTC",
+				"started_at": null,
+				"finished_at": null,
+				"duration": null,
+				"allow_failure": false,
+				"user": {
+					"id": 1,
+					"name": "Test User",
+					"username": "testuser",
+					"email": "test@example.com"
+				},
+				"runner": null,
+				"artifacts_file": {
+					"filename": null,
+					"size": null
+				}
+			}
+		]
+	}`
+
+	receiver, pipelineEvent, _, _ := setupTestPipelineFromJSON(t, jsonEvent)
+
+	traces, err := receiver.handlePipeline(pipelineEvent)
+	require.NoError(t, err, "Pipeline with skipped jobs should not produce an error")
+	require.NotNil(t, traces)
+
+	// Verify spans were created
+	spanCount := traces.SpanCount()
+	require.Greater(t, spanCount, 0, "Should have created at least some spans")
+
+	// Get all spans across all scope spans
+	require.Equal(t, 1, traces.ResourceSpans().Len())
+	resourceSpan := traces.ResourceSpans().At(0)
+	
+	// Find the skipped job span by iterating through all scope spans
+	var skippedJobSpan ptrace.Span
+	foundSkippedJob := false
+	
+	for i := 0; i < resourceSpan.ScopeSpans().Len(); i++ {
+		spans := resourceSpan.ScopeSpans().At(i).Spans()
+		for j := 0; j < spans.Len(); j++ {
+			span := spans.At(j)
+			t.Logf("Found span: %s", span.Name())
+			if span.Name() == "job2-skipped" {
+				skippedJobSpan = span
+				foundSkippedJob = true
+				break
+			}
+		}
+		if foundSkippedJob {
+			break
+		}
+	}
+	
+	require.True(t, foundSkippedJob, "Skipped job span should be created")
+
+	// Verify span ID was created (proves our fix works - using only jobID, not requiring timestamps)
+	require.NotEqual(t, pcommon.SpanID{}, skippedJobSpan.SpanID(), "Skipped job should have valid SpanID")
+}
