@@ -446,6 +446,30 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | ---- | ----------- | ---------- | --------- |
 |  | Gauge | Int | Development |
 
+### k8s.service.endpoint.count
+
+The number of endpoints for a service, broken down by condition, address type, and zone.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {endpoint} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| k8s.service.endpoint.address_type | The address type of the endpoint. | Str: ``IPv4``, ``IPv6``, ``FQDN`` | Recommended |
+| k8s.service.endpoint.condition | The condition of the service endpoint. | Str: ``ready``, ``serving``, ``terminating`` | Recommended |
+| k8s.service.endpoint.zone | The zone of the service endpoint, typically corresponding to a failure domain. | Any Str | Recommended |
+
+### k8s.service.load_balancer.ingress.count
+
+The number of load balancer ingress points (external IPs/hostnames) assigned to the service.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {ingress} | Gauge | Int | Development |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
@@ -484,6 +508,11 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.replicationcontroller.uid | The k8s replicationcontroller uid. | Any Str | true |
 | k8s.resourcequota.name | The k8s resourcequota name. | Any Str | true |
 | k8s.resourcequota.uid | The k8s resourcequota uid. | Any Str | true |
+| k8s.service.name | The k8s service name. | Any Str | true |
+| k8s.service.publish_not_ready_addresses | Whether the Service publishes not-ready endpoints. | Any Bool | false |
+| k8s.service.traffic_distribution | The traffic distribution policy for the Service (e.g., PreferClose). | Any Str | false |
+| k8s.service.type | The k8s service type. | Any Str | true |
+| k8s.service.uid | The k8s service uid. | Any Str | true |
 | k8s.statefulset.name | The k8s statefulset name. | Any Str | true |
 | k8s.statefulset.uid | The k8s statefulset uid. | Any Str | true |
 | openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true |

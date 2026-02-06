@@ -13,6 +13,7 @@ var (
 	ReplicationController   = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "ReplicationController"}
 	ResourceQuota           = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "ResourceQuota"}
 	Service                 = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Service"}
+	EndpointSlice           = schema.GroupVersionKind{Group: "discovery.k8s.io", Version: "v1", Kind: "EndpointSlice"}
 	DaemonSet               = schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "DaemonSet"}
 	Deployment              = schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "Deployment"}
 	ReplicaSet              = schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "ReplicaSet"}

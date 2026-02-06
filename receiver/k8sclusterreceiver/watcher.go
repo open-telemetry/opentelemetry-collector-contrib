@@ -42,6 +42,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicationcontroller"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/statefulset"
 )
 
@@ -129,6 +130,11 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 		"HorizontalPodAutoscaler": {gvk.HorizontalPodAutoscaler},
 	}
 
+	// Only watch EndpointSlice if any service endpoint metrics are enabled
+	if rw.shouldWatchEndpointSlice() {
+		supportedKinds["EndpointSlice"] = []schema.GroupVersionKind{gvk.EndpointSlice}
+	}
+
 	for kind, gvks := range supportedKinds {
 		anySupported := false
 		for _, gvk := range gvks {
@@ -157,6 +163,11 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 	}
 
 	return nil
+}
+
+// shouldWatchEndpointSlice returns true if the service endpoint count metric is enabled
+func (rw *resourceWatcher) shouldWatchEndpointSlice() bool {
+	return rw.config.Metrics.K8sServiceEndpointCount.Enabled
 }
 
 // getInformerFactories creates the informer factories which are used to set up the informers for the
@@ -248,6 +259,10 @@ func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, fa
 	case gvk.Service:
 		for ns, factory := range factories {
 			rw.setupInformer(kind, ns, factory.Core().V1().Services().Informer())
+		}
+	case gvk.EndpointSlice:
+		for ns, factory := range factories {
+			rw.setupInformer(kind, ns, factory.Discovery().V1().EndpointSlices().Informer())
 		}
 	case gvk.DaemonSet:
 		for ns, factory := range factories {
@@ -365,6 +380,8 @@ func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.R
 		return node.GetMetadata(o)
 	case *corev1.ReplicationController:
 		return replicationcontroller.GetMetadata(o)
+	case *corev1.Service:
+		return service.GetMetadata(o)
 	case *appsv1.Deployment:
 		return deployment.GetMetadata(o)
 	case *appsv1.ReplicaSet:

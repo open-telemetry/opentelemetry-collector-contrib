@@ -215,6 +215,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sResourceQuotaUsedDataPoint(ts, 1, "resource-val")
 
+			allMetricsCount++
+			mb.RecordK8sServiceEndpointCountDataPoint(ts, 1, AttributeK8sServiceEndpointAddressTypeIPv4, AttributeK8sServiceEndpointConditionReady, "k8s.service.endpoint.zone-val")
+
+			allMetricsCount++
+			mb.RecordK8sServiceLoadBalancerIngressCountDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, 1)
@@ -282,6 +288,11 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sReplicationcontrollerUID("k8s.replicationcontroller.uid-val")
 			rb.SetK8sResourcequotaName("k8s.resourcequota.name-val")
 			rb.SetK8sResourcequotaUID("k8s.resourcequota.uid-val")
+			rb.SetK8sServiceName("k8s.service.name-val")
+			rb.SetK8sServicePublishNotReadyAddresses(false)
+			rb.SetK8sServiceTrafficDistribution("k8s.service.traffic_distribution-val")
+			rb.SetK8sServiceType("k8s.service.type-val")
+			rb.SetK8sServiceUID("k8s.service.uid-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
@@ -785,6 +796,39 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
 					assert.Equal(t, "resource-val", attrVal.Str())
+				case "k8s.service.endpoint.count":
+					assert.False(t, validatedMetrics["k8s.service.endpoint.count"], "Found a duplicate in the metrics slice: k8s.service.endpoint.count")
+					validatedMetrics["k8s.service.endpoint.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of endpoints for a service, broken down by condition, address type, and zone.", ms.At(i).Description())
+					assert.Equal(t, "{endpoint}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("k8s.service.endpoint.address_type")
+					assert.True(t, ok)
+					assert.Equal(t, "IPv4", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("k8s.service.endpoint.condition")
+					assert.True(t, ok)
+					assert.Equal(t, "ready", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("k8s.service.endpoint.zone")
+					assert.True(t, ok)
+					assert.Equal(t, "k8s.service.endpoint.zone-val", attrVal.Str())
+				case "k8s.service.load_balancer.ingress.count":
+					assert.False(t, validatedMetrics["k8s.service.load_balancer.ingress.count"], "Found a duplicate in the metrics slice: k8s.service.load_balancer.ingress.count")
+					validatedMetrics["k8s.service.load_balancer.ingress.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of load balancer ingress points (external IPs/hostnames) assigned to the service.", ms.At(i).Description())
+					assert.Equal(t, "{ingress}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.statefulset.current_pods":
 					assert.False(t, validatedMetrics["k8s.statefulset.current_pods"], "Found a duplicate in the metrics slice: k8s.statefulset.current_pods")
 					validatedMetrics["k8s.statefulset.current_pods"] = true

@@ -47,6 +47,11 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sReplicationcontrollerUID("k8s.replicationcontroller.uid-val")
 			rb.SetK8sResourcequotaName("k8s.resourcequota.name-val")
 			rb.SetK8sResourcequotaUID("k8s.resourcequota.uid-val")
+			rb.SetK8sServiceName("k8s.service.name-val")
+			rb.SetK8sServicePublishNotReadyAddresses(false)
+			rb.SetK8sServiceTrafficDistribution("k8s.service.traffic_distribution-val")
+			rb.SetK8sServiceType("k8s.service.type-val")
+			rb.SetK8sServiceUID("k8s.service.uid-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
@@ -59,9 +64,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 30, res.Attributes().Len())
+				assert.Equal(t, 33, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 40, res.Attributes().Len())
+				assert.Equal(t, 45, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -238,6 +243,31 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "k8s.resourcequota.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.service.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.publish_not_ready_addresses")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, false, val.Bool())
+			}
+			val, ok = res.Attributes().Get("k8s.service.traffic_distribution")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "k8s.service.traffic_distribution-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.type")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.service.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.service.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.statefulset.name")
 			assert.True(t, ok)
