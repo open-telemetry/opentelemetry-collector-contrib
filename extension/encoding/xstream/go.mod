@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/xstream
 
-go 1.24.4
+go 1.24.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.145.0
