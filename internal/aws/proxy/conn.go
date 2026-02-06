@@ -132,6 +132,23 @@ func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.S
 	}, sess, nil
 }
 
+// getAWSConfigSessionWithConfig creates an AWS session from a sessionConfig.
+// Used for creating sessions for additional routing rules with different roles.
+func getAWSConfigSessionWithConfig(c *sessionConfig, logger *zap.Logger) (*aws.Config, *session.Session, error) {
+	sess, err := newAWSSession(c.RoleARN, c.Region, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &aws.Config{
+		Region:                        aws.String(c.Region),
+		DisableParamValidation:        aws.Bool(true),
+		MaxRetries:                    aws.Int(2),
+		Endpoint:                      aws.String(c.Endpoint),
+		CredentialsChainVerboseErrors: aws.Bool(true),
+	}, sess, nil
+}
+
 func getProxyAddress(proxyAddress string) string {
 	if proxyAddress != "" {
 		return proxyAddress
