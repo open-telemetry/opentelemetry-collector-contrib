@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetCloudPlatform sets provided value as "cloud.platform" attribute.
+func (rb *ResourceBuilder) SetCloudPlatform(val string) {
+	if rb.config.CloudPlatform.Enabled {
+		rb.res.Attributes().PutStr("cloud.platform", val)
+	}
+}
+
 // SetCloudProvider sets provided value as "cloud.provider" attribute.
 func (rb *ResourceBuilder) SetCloudProvider(val string) {
 	if rb.config.CloudProvider.Enabled {

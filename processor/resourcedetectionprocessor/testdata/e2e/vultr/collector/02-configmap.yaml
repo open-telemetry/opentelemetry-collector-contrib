@@ -18,6 +18,10 @@ data:
         detectors: [vultr]
         timeout: 2s
         override: false
+        vultr:
+          resource_attributes:
+            cloud.platform:
+              enabled: true
     receivers:
       hostmetrics:
         collection_interval: 1s
