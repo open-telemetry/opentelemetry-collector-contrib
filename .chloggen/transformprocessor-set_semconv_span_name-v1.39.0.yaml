@@ -18,7 +18,7 @@ issues: [45911]
 subtext: >
   The `set_semconv_span_name` processor now recognizes semantic conventions 1.38.0 and 1.39.0, allowing span names to be
   determined using the latest rules. Support for the `rpc.system.name` attribute (introduced in 1.39.0) has been added
-  so span names can reflect the RPC system. Backward compatibility is preserved: the `rpc.system` attribute remains 
+  so span names can reflect the RPC system. Backward compatibility is preserved: the `rpc.system` attribute remains
   supported.
 
 # If your change doesn't affect end users or the exported elements of any package,
