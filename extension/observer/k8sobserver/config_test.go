@@ -49,12 +49,58 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "observe-crds"),
+			expected: &Config{
+				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
+				ObservePods: false,
+				ObserveCRDs: []CRDConfig{
+					{
+						Group:   "mycompany.io",
+						Version: "v1",
+						Kind:    "MyResource",
+					},
+					{
+						Group:      "example.com",
+						Version:    "v1alpha1",
+						Kind:       "Widget",
+						Namespaces: []string{"production", "staging"},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "observe-crds-only"),
+			expected: &Config{
+				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
+				ObservePods: false,
+				ObserveCRDs: []CRDConfig{
+					{
+						Group:   "mycompany.io",
+						Version: "v1",
+						Kind:    "MyResource",
+					},
+				},
+			},
+		},
+		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_auth"),
 			expectedErr: "invalid authType for kubernetes: not a real auth type",
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_no_observing"),
-			expectedErr: "one of observe_pods, observe_nodes, observe_services and observe_ingresses must be true",
+			expectedErr: "one of observe_pods, observe_nodes, observe_services, observe_ingresses must be true, or observe_crds must be specified",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_crd_missing_group"),
+			expectedErr: "observe_crds[0]: CRD group is required",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_crd_missing_version"),
+			expectedErr: "observe_crds[0]: CRD version is required",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_crd_missing_kind"),
+			expectedErr: "observe_crds[0]: CRD kind is required",
 		},
 	}
 	for _, tt := range tests {
