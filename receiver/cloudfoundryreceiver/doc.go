@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package cloudfoundryreceiver implements a receiver that can be used by the
 // OpenTelemetry collector to receive Cloud Foundry metrics and logs via its Reverse

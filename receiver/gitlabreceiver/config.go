@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/multierr"
@@ -75,10 +76,13 @@ type GitlabHeaders struct {
 }
 
 func createDefaultConfig() component.Config {
+	netAddr := confignet.NewDefaultAddrConfig()
+	netAddr.Transport = confignet.TransportTypeTCP
+	netAddr.Endpoint = defaultEndpoint
 	return &Config{
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint:     defaultEndpoint,
+				NetAddr:      netAddr,
 				ReadTimeout:  defaultReadTimeout,
 				WriteTimeout: defaultWriteTimeout,
 			},

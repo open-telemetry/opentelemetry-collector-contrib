@@ -86,6 +86,72 @@ func TestPutStr(t *testing.T) {
 	}
 }
 
+func TestPutBool(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		field              string
+		value              string
+		expectedAttributes map[string]any
+	}{
+		"true": {
+			field: "test",
+			value: "true",
+			expectedAttributes: map[string]any{
+				"test": true,
+			},
+		},
+		"True": {
+			field: "test",
+			value: "True",
+			expectedAttributes: map[string]any{
+				"test": true,
+			},
+		},
+		"TRUE": {
+			field: "test",
+			value: "TRUE",
+			expectedAttributes: map[string]any{
+				"test": true,
+			},
+		},
+		"false": {
+			field: "test",
+			value: "false",
+			expectedAttributes: map[string]any{
+				"test": false,
+			},
+		},
+		"False": {
+			field: "test",
+			value: "False",
+			expectedAttributes: map[string]any{
+				"test": false,
+			},
+		},
+		"FALSE": {
+			field: "test",
+			value: "FALSE",
+			expectedAttributes: map[string]any{
+				"test": false,
+			},
+		},
+		"invalid": {
+			field:              "test",
+			value:              "invalid",
+			expectedAttributes: map[string]any{},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			record := plog.NewLogRecord()
+			putBool(test.field, test.value, record)
+			require.Equal(t, test.expectedAttributes, record.Attributes().AsRaw())
+		})
+	}
+}
+
 func TestHandleTime(t *testing.T) {
 	t.Parallel()
 

@@ -39,9 +39,13 @@ const (
 	Error
 	// InvertSampled is used on the invert match flow and indicates to sample
 	// the data.
+	//
+	// Deprecated: Drop policies should be used instead of invert decisions.
 	InvertSampled
 	// InvertNotSampled is used on the invert match flow and indicates to not
 	// sample the data.
+	//
+	// Deprecated: Drop policies should be used instead of invert decisions.
 	InvertNotSampled
 )
 

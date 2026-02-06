@@ -8,18 +8,16 @@ import (
 	"errors"
 	"sync"
 	"testing"
-	"time"
 
-	"github.com/Azure/azure-event-hubs-go/v3/persist"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
 func TestStorageOffsetPersisterUnknownCheckpoint(t *testing.T) {
 	client := newMockClient()
-	s := storageCheckpointPersister[persist.Checkpoint]{
+	s := storageCheckpointPersister[checkpointSeqNumber]{
 		storageClient: client,
-		defaultValue:  persist.NewCheckpointFromStartOfStream(),
+		defaultValue:  checkpointSeqNumber{Offset: "-1"},
 	}
 	// check we have no match
 	checkpoint, err := s.Read("foo", "bar", "foobar", "foobarfoo")
@@ -30,14 +28,13 @@ func TestStorageOffsetPersisterUnknownCheckpoint(t *testing.T) {
 
 func TestStorageOffsetPersisterWithKnownCheckpoint(t *testing.T) {
 	client := newMockClient()
-	s := storageCheckpointPersister[persist.Checkpoint]{
+	s := storageCheckpointPersister[checkpointSeqNumber]{
 		storageClient: client,
-		defaultValue:  persist.NewCheckpointFromStartOfStream(),
+		defaultValue:  checkpointSeqNumber{Offset: "-1"},
 	}
-	checkpoint := persist.Checkpoint{
+	checkpoint := checkpointSeqNumber{
 		Offset:         "foo",
 		SequenceNumber: 2,
-		EnqueueTime:    time.Now(),
 	}
 	err := s.Write("foo", "bar", "foobar", "foobarfoo", checkpoint)
 	assert.NoError(t, err)
@@ -45,7 +42,6 @@ func TestStorageOffsetPersisterWithKnownCheckpoint(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, checkpoint.Offset, read.Offset)
 	assert.Equal(t, checkpoint.SequenceNumber, read.SequenceNumber)
-	assert.True(t, checkpoint.EnqueueTime.Equal(read.EnqueueTime))
 }
 
 // copied from pkg/stanza/adapter/mocks_test.go

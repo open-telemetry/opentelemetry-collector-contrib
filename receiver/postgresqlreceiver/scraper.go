@@ -341,14 +341,16 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		item := heap.Pop(&pq).(*priorityqueue.QueueItem[map[string]any, float64])
 		query := item.Value[string(semconv.DBQueryTextKey)].(string)
 		queryID := item.Value[dbAttributePrefix+queryidColumnName].(string)
+		// Use raw query (with $1, $2 placeholders) for EXPLAIN, not the obfuscated one (with ?)
+		rawQuery, _ := item.Value[dbAttributePrefix+"raw_query"].(string)
 		plan, ok := p.queryPlanCache.Get(queryID + "-plan")
 		if !ok && explained < maxExplainEachInterval {
 			database := item.Value[string(semconv.DBNamespaceKey)].(string)
 			dbClient, err := clientFactory.getClient(database)
 			if err == nil {
-				plan, err = dbClient.explainQuery(query, queryID, logger)
+				plan, err = dbClient.explainQuery(rawQuery, queryID, logger)
 				if err != nil {
-					logger.Error("failed to explain query", zap.String("query", query), zap.Error(err))
+					logger.Error("failed to explain query", zap.String("query", rawQuery), zap.Error(err))
 				}
 				// to avoid flood the error message. there are some internal queries meant to not be
 				// explained. we wait for the cache to expire and report the error again.

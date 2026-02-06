@@ -1,0 +1,23 @@
+description: Config defines configuration for alertmanager exporter.
+type: object
+properties:
+  api_version:
+    type: string
+  event_labels:
+    type: array
+    items:
+      type: string
+  generator_url:
+    type: string
+  retry_on_failure:
+    $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  severity:
+    type: string
+  severity_attribute:
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

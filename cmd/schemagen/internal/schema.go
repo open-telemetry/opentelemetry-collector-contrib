@@ -4,26 +4,28 @@
 package internal
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 
 	"gopkg.in/yaml.v3"
 )
 
-const Version = "https://json-schema.org/draft/2020-12/schema"
-
 type SchemaElement interface {
 	setIsPointer(value bool)
 	setDescription(description string)
+	setOptional(value bool)
 }
 
 type SchemaObject interface {
 	AddProperty(name string, property SchemaElement)
-	AddEmbeddedRef(ref string)
+	AddEmbedded(element SchemaElement)
 }
 
 type BaseSchemaElement struct {
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 	IsPointer   bool   `json:"x-pointer,omitempty" yaml:"x-pointer,omitempty"`
+	IsOptional  bool   `json:"x-optional,omitempty" yaml:"x-optional,omitempty"`
 }
 
 func (b *BaseSchemaElement) setIsPointer(value bool) {
@@ -32,6 +34,10 @@ func (b *BaseSchemaElement) setIsPointer(value bool) {
 
 func (b *BaseSchemaElement) setDescription(value string) {
 	b.Description = value
+}
+
+func (b *BaseSchemaElement) setOptional(value bool) {
+	b.IsOptional = value
 }
 
 type RefSchemaElement struct {
@@ -43,6 +49,7 @@ type FieldSchemaElement struct {
 	BaseSchemaElement `json:",inline" yaml:",inline"`
 	ElementType       SchemaType `json:"type,omitempty" yaml:"type,omitempty"`
 	CustomElementType string     `json:"x-customType,omitempty" yaml:"x-customType,omitempty"`
+	Format            string     `json:"format,omitempty" yaml:"format,omitempty"`
 }
 
 type ArraySchemaElement struct {
@@ -64,8 +71,17 @@ func (s *ObjectSchemaElement) AddProperty(name string, property SchemaElement) {
 	s.Properties[name] = property
 }
 
-func (s *ObjectSchemaElement) AddEmbeddedRef(ref string) {
-	s.AllOf = append(s.AllOf, CreateRefField(ref, ""))
+func (s *ObjectSchemaElement) AddEmbedded(element SchemaElement) {
+	// prevent duplicates
+	if re, ok := element.(*RefSchemaElement); ok {
+		ref := re.Ref
+		for _, refEl := range s.AllOf {
+			if r, ok := refEl.(*RefSchemaElement); ok && r.Ref == ref {
+				return
+			}
+		}
+	}
+	s.AllOf = append(s.AllOf, element)
 }
 
 type DefsSchemaElement map[string]SchemaElement
@@ -75,9 +91,6 @@ func (d DefsSchemaElement) AddDef(name string, property SchemaElement) {
 }
 
 type Schema struct {
-	Schema              string            `json:"$schema" yaml:"$schema"`
-	ID                  string            `json:"id" yaml:"id"`
-	Title               string            `json:"title" yaml:"title"`
 	Defs                DefsSchemaElement `json:"$defs,omitempty" yaml:"$defs,omitempty"`
 	ObjectSchemaElement `json:",inline" yaml:",inline"`
 }
@@ -87,24 +100,21 @@ func (s *Schema) ToJSON() ([]byte, error) {
 }
 
 func (s *Schema) ToYAML() ([]byte, error) {
-	return yaml.Marshal(s)
+	var b bytes.Buffer
+	enc := yaml.NewEncoder(&b)
+
+	enc.SetIndent(2)
+
+	if err := enc.Encode(s); err != nil {
+		return nil, err
+	}
+
+	return b.Bytes(), nil
 }
 
-func CreateSchema(id, title, description string) *Schema {
+func CreateSchema() *Schema {
 	return &Schema{
-		Schema: Version,
-		ID:     id,
-		Title:  title,
-		Defs:   DefsSchemaElement{},
-		ObjectSchemaElement: ObjectSchemaElement{
-			FieldSchemaElement: FieldSchemaElement{
-				BaseSchemaElement: BaseSchemaElement{
-					Description: description,
-				},
-				ElementType: SchemaTypeObject,
-			},
-			Properties: make(map[string]SchemaElement),
-		},
+		Defs: DefsSchemaElement{},
 	}
 }
 
@@ -171,5 +181,19 @@ const (
 	SchemaTypeInteger SchemaType = "integer"
 	SchemaTypeNumber  SchemaType = "number"
 	SchemaTypeBoolean SchemaType = "boolean"
-	SchemaTypeNull    SchemaType = "null"
+	SchemaTypeAny     SchemaType = ""
+	SchemaTypeUnknown SchemaType = "-"
 )
+
+func mergeSchemas(base SchemaObject, additional SchemaElement) error {
+	if objectElement, ok := additional.(*ObjectSchemaElement); ok {
+		for name, prop := range objectElement.Properties {
+			base.AddProperty(name, prop)
+		}
+		for _, el := range objectElement.AllOf {
+			base.AddEmbedded(el)
+		}
+		return nil
+	}
+	return errors.New("cannot merge non-object schema elements")
+}
