@@ -94,13 +94,11 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 	if oCfg.Resolver.K8sSvc.HasValue() {
 		k8sLogger := logger.With(zap.String("resolver", "k8s service"))
 
-		clt, err := newInClusterClient()
-		if err != nil {
-			return nil, err
-		}
+		// Pass nil client - it will be created during start() to allow validation outside k8s cluster
 		k8sSvcResolver := oCfg.Resolver.K8sSvc.Get()
+		var err error
 		res, err = newK8sResolver(
-			clt,
+			nil,
 			k8sLogger,
 			k8sSvcResolver.Service,
 			k8sSvcResolver.Ports,
