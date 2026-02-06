@@ -62,6 +62,30 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `aws.volume.id` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `fs.type` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `gce.pd.name` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `glusterfs.endpoints.name` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `glusterfs.path` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `partition` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
