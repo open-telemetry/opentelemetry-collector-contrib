@@ -23,7 +23,7 @@ func TestNewCache(t *testing.T) {
 }
 
 func TestCacheStub(t *testing.T) {
-	// The cache is a stub for now (full implementation in Branch 3)
+	// The cache is a stub for now (full implementation forthcoming)
 	cache := NewCache(CacheConfig{Enabled: true, Size: 100})
 
 	// Get always returns not found (stub)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -57,7 +58,7 @@ func TestProcessorLookup(t *testing.T) {
 	proc, err := factory.CreateLogs(t.Context(), settings, cfg, sink)
 	require.NoError(t, err)
 
-	host := &testHost{}
+	host := componenttest.NewNopHost()
 	require.NoError(t, proc.Start(t.Context(), host))
 	defer func() { _ = proc.Shutdown(t.Context()) }()
 
@@ -151,7 +152,7 @@ func TestProcessorMapResult(t *testing.T) {
 	proc, err := factory.CreateLogs(t.Context(), settings, cfg, sink)
 	require.NoError(t, err)
 
-	host := &testHost{}
+	host := componenttest.NewNopHost()
 	require.NoError(t, proc.Start(t.Context(), host))
 	defer func() { _ = proc.Shutdown(t.Context()) }()
 
@@ -217,7 +218,7 @@ func TestProcessorMapResultNotFound(t *testing.T) {
 	proc, err := factory.CreateLogs(t.Context(), settings, cfg, sink)
 	require.NoError(t, err)
 
-	host := &testHost{}
+	host := componenttest.NewNopHost()
 	require.NoError(t, proc.Start(t.Context(), host))
 	defer func() { _ = proc.Shutdown(t.Context()) }()
 
@@ -263,7 +264,7 @@ func TestProcessorNoSourceAttribute(t *testing.T) {
 	proc, err := factory.CreateLogs(t.Context(), settings, cfg, sink)
 	require.NoError(t, err)
 
-	host := &testHost{}
+	host := componenttest.NewNopHost()
 	require.NoError(t, proc.Start(t.Context(), host))
 	defer func() { _ = proc.Shutdown(t.Context()) }()
 
