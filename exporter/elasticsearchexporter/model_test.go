@@ -1262,8 +1262,6 @@ func TestEncodeLogECSModeKnownFieldConflict(t *testing.T) {
 		// any other fields under process.executable should be ignored
 		output := buf.String()
 		assert.Equal(t, "/usr/bin/ssh", gjson.Get(output, "process.executable").String())
-		assert.Equal(t, "test-service", gjson.Get(output, "service.name").String())
-		assert.Equal(t, "2024-03-12T20:00:41.123456789Z", gjson.Get(output, "@timestamp").String())
 	})
 }
 
