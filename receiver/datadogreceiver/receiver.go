@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
+	"time"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
@@ -204,7 +205,7 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 			ReadTimeout: config.ReadTimeout,
 		},
 		tReceiver:         instance,
-		metricsTranslator: translator.NewMetricsTranslator(params.BuildInfo),
+		metricsTranslator: translator.NewMetricsTranslator(params.BuildInfo, config.SeriesIdleTimeout),
 		statsTranslator:   translator.NewStatsTranslator(),
 		traceIDCache:      cache,
 	}, nil
@@ -240,6 +241,9 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
 		}
 	}()
+
+	// Starts the sweeper loop to clean up stale data
+	go ddr.runSweeper(ctx)
 	return nil
 }
 
@@ -623,5 +627,36 @@ func createIntakeReverseProxyDirector(site, key string) func(*http.Request) {
 		// but it appears as though the value of that field does not matter,
 		// at least when it comes to matching the actual `DD-API-KEY` we set in the header above.
 		// So, to avoid a bunch of extra expensive work in the collector, we don't touch the body.
+	}
+}
+
+func (ddr *datadogReceiver) runSweeper(ctx context.Context) {
+	// If SeriesIdleTimeout is 0, the feature is disabled (default behavior).
+	if ddr.config.SeriesIdleTimeout == 0 {
+		return
+	}
+
+	// Run the cleanup more frequently than the timeout to ensure precision.
+	// If the timeout is 30m, checking every 5m is healthy.
+	sweepInterval := 5 * time.Minute
+
+	ticker := time.NewTicker(sweepInterval)
+	defer ticker.Stop()
+
+	ddr.params.Logger.Info("Starting series memory sweeper",
+		zap.Duration("series_idle_timeout", ddr.config.SeriesIdleTimeout),
+		zap.Duration("sweep_interval", sweepInterval))
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			removedCount := ddr.metricsTranslator.Prune()
+			if removedCount > 0 {
+				ddr.params.Logger.Debug("Pruned stale series from memory",
+					zap.Int("removed_series", removedCount))
+			}
+		}
 	}
 }
