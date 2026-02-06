@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/tlscheck
+note: Add a "scrape_all_certs" option to TLS Check Receiver to record metrics for all certificates found on an endpoint or in a file.
+issues: [45615]
+subtext: This can be useful for monitoring intermediate certificates on an endpoint, or monitoring several CA certificates in a PEM bundle file.
+change_logs: [user]

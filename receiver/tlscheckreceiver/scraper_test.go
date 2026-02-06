@@ -319,6 +319,7 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 	rm := metrics.ResourceMetrics().At(0)
 	ilms := rm.ScopeMetrics().At(0)
 	metric := ilms.Metrics().At(0)
+	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
 	dp := metric.Gauge().DataPoints().At(0)
 	target, exists := rm.Resource().Attributes().Get("tlscheck.target")
 	require.True(t, exists)
@@ -334,6 +335,63 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 	// Verify positive time left on cert
 	timeLeft := dp.IntValue()
 	assert.Positive(t, timeLeft, "Time left should be positive for a valid cert")
+}
+
+func TestScrape_AllFilepathCertificates(t *testing.T) {
+	caCertFile := createMockCertFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC))
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath:       caCertFile,
+				ScrapeAllCerts: true,
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
+	s := newScraper(cfg, settings, mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	rm := metrics.ResourceMetrics().At(0)
+	ilms := rm.ScopeMetrics().At(0)
+	metric := ilms.Metrics().At(0)
+
+	target, exists := rm.Resource().Attributes().Get("tlscheck.target")
+	require.True(t, exists)
+	assert.Equal(t, caCertFile, target.AsString())
+	assert.Equal(t, 2, metric.Gauge().DataPoints().Len())
+
+	expectedAttrs := []struct {
+		issuer     string
+		commonName string
+	}{
+		{
+			issuer:     "CN=FooIssuer",
+			commonName: "test.example.com",
+		},
+		{
+			issuer:     "CN=FooIssuer",
+			commonName: "FooIssuer",
+		},
+	}
+	for index, attrs := range expectedAttrs {
+		dp := metric.Gauge().DataPoints().At(index)
+
+		// Verify the metric attributes
+		attributes := dp.Attributes()
+		issuer, _ := attributes.Get("tlscheck.x509.issuer")
+		commonName, _ := attributes.Get("tlscheck.x509.cn")
+		assert.Equal(t, attrs.issuer, issuer.AsString(), "Incorrect issuer for target %s", caCertFile)
+		assert.Equal(t, attrs.commonName, commonName.AsString(), "Incorrect common name for target %s", caCertFile)
+
+		// Verify positive time left on cert
+		timeLeft := dp.IntValue()
+		assert.Positive(t, timeLeft, "Time left should be positive for a valid cert")
+	}
 }
 
 func TestValidateEndpoint(t *testing.T) {
