@@ -1261,10 +1261,9 @@ func TestEncodeLogECSModeKnownFieldConflict(t *testing.T) {
 		// process.executable should be string "/usr/bin/ssh", not an object
 		// any other fields under process.executable should be ignored
 		output := buf.String()
-		assert.Contains(t, output, `"process":{"executable":"/usr/bin/ssh"}`)
-		assert.Contains(t, output, `"service":{"name":"test-service"}`)
-		assert.Contains(t, output, `"@timestamp":"2024-03-12T20:00:41.123456789Z"`)
-		// agent.name behavior varies between environments, so we don't assert on it
+		assert.Equal(t, "/usr/bin/ssh", gjson.Get(output, "process.executable").String())
+		assert.Equal(t, "test-service", gjson.Get(output, "service.name").String())
+		assert.Equal(t, "2024-03-12T20:00:41.123456789Z", gjson.Get(output, "@timestamp").String())
 	})
 }
 
