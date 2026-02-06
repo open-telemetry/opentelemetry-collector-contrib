@@ -556,10 +556,10 @@ func TestGroupingFileExporterWithRotation(t *testing.T) {
 	_, isTimberJack := writer.file.(*timberjack.Logger)
 	require.True(t, isTimberJack, "Should use timberjack.Logger for rotation support")
 
-	// Write enough data to trigger rotation (>1MB)
-	// Each trace with padding is roughly 500+ bytes, so we need ~2500 iterations to exceed 1MB
-	largePayload := strings.Repeat("x", 500)
-	for i := range 3000 {
+	// Write enough data to trigger 4+ rotations (>4MB) to test MaxBackups cleanup
+	// Each trace with padding is roughly 1000+ bytes, so we need ~5000 iterations to exceed 5MB
+	largePayload := strings.Repeat("x", 1000)
+	for i := range 5000 {
 		td := ptrace.NewTraces()
 		rs := td.ResourceSpans().AppendEmpty()
 		rs.Resource().Attributes().PutStr("service.name", "test-service")
@@ -594,6 +594,9 @@ func TestGroupingFileExporterWithRotation(t *testing.T) {
 		totalSize += info.Size()
 	}
 	require.Positive(t, backupCount, "Should have at least one timestamped backup file, found files: %v", files)
+
+	// Verify MaxBackups retention policy is enforced (old files should be cleaned up)
+	require.LessOrEqual(t, backupCount, 3, "MaxBackups should limit backup files to 3, but found: %d files: %v", backupCount, files)
 
 	// Verify total data written exceeds the rotation threshold
 	require.Greater(t, totalSize, int64(maxMegabytes*1024*1024), "Total data written should exceed rotation threshold")
