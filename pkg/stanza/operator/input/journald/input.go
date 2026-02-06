@@ -28,7 +28,7 @@ import (
 type Input struct {
 	helper.InputOperator
 
-	newCmd func(ctx context.Context, cursor []byte) cmd
+	newCmd func(ctx context.Context, logger *zap.Logger, cursor []byte) cmd
 
 	persister           operator.Persister
 	convertMessageBytes bool
@@ -118,7 +118,7 @@ func (operator *Input) newJournalctl(ctx context.Context) (*journalctl, error) {
 		return nil, fmt.Errorf("failed to get journalctl state: %w", err)
 	}
 
-	journal := operator.newCmd(ctx, cursor)
+	journal := operator.newCmd(ctx, operator.Logger(), cursor)
 	jctl := &journalctl{
 		cmd: journal,
 	}
