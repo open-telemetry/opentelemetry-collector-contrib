@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_receiver_received_statsd_metrics
 
-Number of statsd metrics received. [Development]
+Number of statsd metrics received.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
