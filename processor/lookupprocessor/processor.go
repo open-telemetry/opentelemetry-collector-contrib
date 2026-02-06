@@ -109,7 +109,9 @@ func (p *lookupProcessor) processLookup(
 			continue
 		}
 
-		putAny(attrs, attr.Destination, value)
+		if err := attrs.PutEmpty(attr.Destination).FromRaw(value); err != nil {
+			attrs.PutStr(attr.Destination, fmt.Sprintf("%v", value))
+		}
 	}
 }
 
@@ -143,23 +145,6 @@ func extractValue(result any, found bool, attr *AttributeMapping) (any, bool) {
 	}
 
 	return val, true
-}
-
-func putAny(attrs pcommon.Map, key string, v any) {
-	switch val := v.(type) {
-	case string:
-		attrs.PutStr(key, val)
-	case int:
-		attrs.PutInt(key, int64(val))
-	case int64:
-		attrs.PutInt(key, val)
-	case float64:
-		attrs.PutDouble(key, val)
-	case bool:
-		attrs.PutBool(key, val)
-	default:
-		attrs.PutStr(key, fmt.Sprintf("%v", v))
-	}
 }
 
 func anyToString(v any) string {
