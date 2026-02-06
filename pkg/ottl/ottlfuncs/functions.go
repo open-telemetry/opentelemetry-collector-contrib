@@ -133,5 +133,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewKeysFactory[K](),
 		NewXXH3Factory[K](),
 		NewXXH128Factory[K](),
+		NewIsInCIDRFactory[K](),
 	}
 }
