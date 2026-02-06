@@ -183,7 +183,11 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	buf.Reset()
 	defer prw.bodyBufferPool.Put(buf)
 	_, err = buf.ReadFrom(req.Body)
-
+	if err != nil {
+		prw.settings.Logger.Warn("Error reading remote write request body", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	var prw2Req writev2.Request
 	if err = proto.Unmarshal(buf.Bytes(), &prw2Req); err != nil {
 		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
