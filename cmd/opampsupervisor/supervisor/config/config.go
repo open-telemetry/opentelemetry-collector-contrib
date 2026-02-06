@@ -214,6 +214,7 @@ func (o OpAMPServer) Validate() error {
 
 type Agent struct {
 	Executable              string            `mapstructure:"executable"`
+	InstanceID              string            `mapstructure:"instance_id"`
 	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription  `mapstructure:"description"`
 	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`

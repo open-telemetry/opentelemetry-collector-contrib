@@ -18,11 +18,39 @@ import (
 func TestCreateOrLoadPersistentState(t *testing.T) {
 	t.Run("Creates a new state file if it does not exist", func(t *testing.T) {
 		f := filepath.Join(t.TempDir(), "state.yaml")
-		state, err := loadOrCreatePersistentState(f, zap.NewNop())
+		state, err := loadOrCreatePersistentState(f, "", zap.NewNop())
 		require.NoError(t, err)
 
 		// instance ID should be populated && remote config status should be nil
 		require.NotEqual(t, uuid.Nil, state.InstanceID)
+		require.Nil(t, state.LastRemoteConfigStatus)
+		require.FileExists(t, f)
+	})
+
+	t.Run("Uses provided instance ID", func(t *testing.T) {
+		f := filepath.Join(t.TempDir(), "state.yaml")
+		expectedID, err := uuid.NewV7()
+		require.NoError(t, err)
+
+		state, err := loadOrCreatePersistentState(f, expectedID.String(), zap.NewNop())
+		require.NoError(t, err)
+
+		// instance ID should be populated and match the expected ID && remote config status should be nil
+		require.NotEqual(t, uuid.Nil, state.InstanceID)
+		require.Equal(t, expectedID, state.InstanceID)
+		require.Nil(t, state.LastRemoteConfigStatus)
+		require.FileExists(t, f)
+	})
+
+	t.Run("Creates a new instance ID if provided instance ID is invalid", func(t *testing.T) {
+		f := filepath.Join(t.TempDir(), "state.yaml")
+		invalidID := ""
+		state, err := loadOrCreatePersistentState(f, invalidID, zap.NewNop())
+		require.NoError(t, err)
+
+		// instance ID should be populated and not match the expected ID && remote config status should be nil
+		require.NotEqual(t, uuid.Nil, state.InstanceID)
+		require.NotEqual(t, invalidID, state.InstanceID)
 		require.Nil(t, state.LastRemoteConfigStatus)
 		require.FileExists(t, f)
 	})
@@ -42,7 +70,7 @@ last_remote_config_status:
 
 		require.NoError(t, err)
 
-		state, err := loadOrCreatePersistentState(f, zap.NewNop())
+		state, err := loadOrCreatePersistentState(f, "", zap.NewNop())
 		require.NoError(t, err)
 
 		// instance ID should be populated with value from file
@@ -58,7 +86,7 @@ last_remote_config_status:
 
 func TestPersistentState_SetInstanceID(t *testing.T) {
 	f := filepath.Join(t.TempDir(), "state.yaml")
-	state, err := createNewPersistentState(f, zap.NewNop())
+	state, err := createNewPersistentState(f, "", zap.NewNop())
 	require.NoError(t, err)
 
 	// instance ID should be populated
@@ -80,7 +108,7 @@ func TestPersistentState_SetInstanceID(t *testing.T) {
 
 func TestPersistentState_SetLastRemoteConfigStatus(t *testing.T) {
 	f := filepath.Join(t.TempDir(), "state.yaml")
-	state, err := createNewPersistentState(f, zap.NewNop())
+	state, err := createNewPersistentState(f, "", zap.NewNop())
 	require.NoError(t, err)
 
 	require.Nil(t, state.LastRemoteConfigStatus)

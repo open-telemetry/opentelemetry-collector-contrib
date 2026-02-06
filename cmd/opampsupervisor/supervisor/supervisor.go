@@ -334,7 +334,7 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to start health check server: %w", err)
 	}
 
-	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath(), s.telemetrySettings.Logger)
+	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath(), s.config.Agent.InstanceID, s.telemetrySettings.Logger)
 	if err != nil {
 		return err
 	}
