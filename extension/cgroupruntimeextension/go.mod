@@ -1,11 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
 
-go 1.24.0
+go 1.25
 
 require (
 	github.com/KimMachineGun/automemlimit v0.7.5
 	github.com/containerd/cgroups/v3 v3.1.2
-	github.com/rdforte/gomaxecs v1.1.1
+	github.com/rdforte/gomaxecs v1.1.2
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.51.0
 	go.opentelemetry.io/collector/component/componenttest v0.145.0
