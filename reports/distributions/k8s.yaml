@@ -38,7 +38,7 @@ components:
         - groupbyattrs
         - groupbytrace
         - interval
-        - k8sattributes
+        - k8s_attributes
         - logdedup
         - metricstransform
         - probabilistic_sampler
