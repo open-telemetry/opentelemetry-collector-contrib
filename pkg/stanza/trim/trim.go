@@ -83,3 +83,64 @@ func ToLength(splitFunc bufio.SplitFunc, maxLength int) bufio.SplitFunc {
 		return advance, token, err
 	}
 }
+
+// ToLengthWithTruncate wraps a bufio.SplitFunc to truncate tokens that exceed maxLength.
+// Unlike ToLength which splits oversized content into multiple tokens, this function
+// returns only the truncated portion (up to maxLength) and advances past the entire
+// original content, effectively dropping the remainder.
+// The skipping parameter is a pointer to a bool that tracks whether we're currently
+// skipping the remainder of an oversized line. This allows the state to be persisted
+// across multiple reader recreations (e.g., between poll cycles).
+func ToLengthWithTruncate(splitFunc bufio.SplitFunc, maxLength int, skipping *bool) bufio.SplitFunc {
+	if maxLength <= 0 {
+		return splitFunc
+	}
+
+	return func(data []byte, atEOF bool) (int, []byte, error) {
+		// If we're in skip mode, look for the next newline to resume normal processing
+		if *skipping {
+			for i := range len(data) {
+				if data[i] == '\n' {
+					// Found the end of the oversized line, resume normal processing
+					*skipping = false
+					// Advance past the newline and continue
+					return i + 1, nil, nil
+				}
+			}
+			// No newline found yet
+			if atEOF {
+				// At EOF, done skipping
+				*skipping = false
+				return len(data), nil, nil
+			}
+			// Skip all data we have and request more
+			return len(data), nil, nil
+		}
+
+		advance, token, err := splitFunc(data, atEOF)
+
+		if (advance == 0 && token == nil && err == nil) && len(data) >= maxLength {
+			// No token was found, but we have enough data.
+			// This means we have an oversized line that exceeds maxLength.
+
+			// First check if newline is in the current buffer after maxLength
+			for i := maxLength; i < len(data); i++ {
+				if data[i] == '\n' {
+					// Found a newline, return truncated token and advance past the whole line including newline
+					return i + 1, data[:maxLength], nil
+				}
+			}
+
+			// No newline found in current buffer
+			// Emit truncated token and enter skip mode
+			*skipping = true
+			return len(data), data[:maxLength], nil
+		}
+		if len(token) > maxLength {
+			// A token was found but it is longer than the max length.
+			// Return truncated token but advance past the entire original token.
+			return advance, token[:maxLength], nil
+		}
+		return advance, token, err
+	}
+}

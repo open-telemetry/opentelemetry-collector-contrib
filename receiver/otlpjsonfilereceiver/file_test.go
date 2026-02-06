@@ -207,6 +207,7 @@ func testdataConfigYamlAsMap() *Config {
 			FingerprintSize:    1000,
 			InitialBufferSize:  16 * 1024,
 			MaxLogSize:         1024 * 1024,
+			MaxLogSizeBehavior: fileconsumer.MaxLogSizeBehaviorSplit,
 			MaxConcurrentFiles: 1024,
 			FlushPeriod:        500 * time.Millisecond,
 			Criteria: matcher.Criteria{
