@@ -197,3 +197,76 @@ func benchmarkNewlineSplitFunc(b *testing.B, enc encoding.Encoding, encoder func
 		}
 	}
 }
+
+// generateMySQLSlowLogData creates multiline records similar to MySQL slow query logs.
+func generateMySQLSlowLogData(numRecords int, encoder func([]byte) []byte, queryRepeat int) []byte {
+	var data []byte
+	queryPayload := bytes.Repeat([]byte("SELECT 1;"), queryRepeat)
+	for i := range numRecords {
+		record := []byte(
+			"# Time: 2025-09-29T07:58:52.0000Z\n" +
+				"# User@Host: user[user] @  [127.0.0.1]  Id: 151268315\n" +
+				"# Schema: default  Last_errno: 0  Killed: 0\n" +
+				"# Query_time: 0.002749  Lock_time: 0.000137  Rows_sent: 1  Rows_examined: 417  Rows_affected: 0  Bytes_sent: 276\n" +
+				"# Tmp_tables: 2  Tmp_disk_tables: 0  Tmp_table_sizes: 0\n" +
+				"# InnoDB_trx_id: 0\n" +
+				"# QC_Hit: No  Full_scan: Yes  Full_join: No  Tmp_table: Yes  Tmp_table_on_disk: No\n" +
+				"# Filesort: No  Filesort_on_disk: No  Merge_passes: 0\n" +
+				"#   InnoDB_IO_r_ops: 0  InnoDB_IO_r_bytes: 0  InnoDB_IO_r_wait: 0.000000\n" +
+				"#   InnoDB_rec_lock_wait: 0.000000  InnoDB_queue_wait: 0.000000\n" +
+				"#   InnoDB_pages_distinct: 210\n" +
+				"# Log_slow_rate_type: query  Log_slow_rate_limit: 100\n" +
+				"SET timestamp=1759132712;\n",
+		)
+		record = append(record, queryPayload...)
+		record = append(record, '\n')
+		if i < numRecords-1 {
+			record = append(record, '\n')
+		}
+		data = append(data, encoder(record)...)
+	}
+	return data
+}
+
+// BenchmarkLineStartSplitFunc_MySQLSlowLog_UTF8 benchmarks line_start_pattern with MySQL slow log-like data.
+// The literal pattern takes the fast path (LineStartLiteralSplitFunc).
+func BenchmarkLineStartSplitFunc_MySQLSlowLog_UTF8(b *testing.B) {
+	benchmarkLineStartSplitFuncMySQLSlowLog(b, `^# Time:`)
+}
+
+// BenchmarkLineStartSplitFunc_MySQLSlowLog_UTF8_Regex forces the regex path to compare against the literal fast path.
+func BenchmarkLineStartSplitFunc_MySQLSlowLog_UTF8_Regex(b *testing.B) {
+	benchmarkLineStartSplitFuncMySQLSlowLog(b, `^# Time:(?:)`)
+}
+
+func benchmarkLineStartSplitFuncMySQLSlowLog(b *testing.B, pattern string) {
+	const numRecords = 50000
+	const queryRepeat = 2000
+	data := generateMySQLSlowLogData(numRecords, utf8Encoder, queryRepeat)
+	cfg := Config{
+		LineStartPattern: pattern,
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for b.Loop() {
+		splitFunc, err := cfg.FuncWithLogger(unicode.UTF8, true, 0, nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+		scanner := bufio.NewScanner(bytes.NewReader(data))
+		scanner.Split(splitFunc)
+
+		count := 0
+		for scanner.Scan() {
+			count++
+		}
+		if scanner.Err() != nil {
+			b.Fatal(scanner.Err())
+		}
+		if count != numRecords {
+			b.Fatalf("expected %d records, got %d", numRecords, count)
+		}
+	}
+}
