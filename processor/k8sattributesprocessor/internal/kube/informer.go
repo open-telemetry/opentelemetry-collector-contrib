@@ -13,8 +13,10 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -45,7 +47,7 @@ type InformerProviderNode func(
 // allow passing custom shared informers to the watch client.
 // It's used for high-level workloads such as ReplicaSets, Deployments, DaemonSets, StatefulSets or Jobs
 type InformerProviderWorkload func(
-	client kubernetes.Interface,
+	client metadata.Interface,
 	namespace string,
 ) cache.SharedInformer
 
@@ -88,11 +90,11 @@ func newKubeSystemSharedInformer(
 ) cache.SharedInformer {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
-			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+			ListWithContextFunc: func(_ context.Context, opts metav1.ListOptions) (runtime.Object, error) {
 				opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", kubeSystemNamespace).String()
 				return client.CoreV1().Namespaces().List(context.Background(), opts)
 			},
-			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+			WatchFuncWithContext: func(_ context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 				opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", kubeSystemNamespace).String()
 				return client.CoreV1().Namespaces().Watch(context.Background(), opts)
 			},
@@ -129,30 +131,27 @@ func namespaceInformerWatchFunc(client kubernetes.Interface) cache.WatchFuncWith
 	}
 }
 
-func newReplicaSetSharedInformer(
-	client kubernetes.Interface,
-	namespace string,
-) cache.SharedInformer {
-	informer := cache.NewSharedInformer(
+func newReplicaSetSharedInformer(client metadata.Interface, namespace string) cache.SharedInformer {
+	gvr := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}
+	return cache.NewSharedInformer(
 		&cache.ListWatch{
-			ListWithContextFunc:  replicasetListFuncWithSelectors(client, namespace),
-			WatchFuncWithContext: replicasetWatchFuncWithSelectors(client, namespace),
+			ListWithContextFunc:  replicaSetListFuncWithSelectors(client, gvr, namespace),
+			WatchFuncWithContext: replicaSetWatchFuncWithSelectors(client, gvr, namespace),
 		},
-		&apps_v1.ReplicaSet{},
+		&metav1.PartialObjectMetadata{},
 		watchSyncPeriod,
 	)
-	return informer
 }
 
-func replicasetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListWithContextFunc {
+func replicaSetListFuncWithSelectors(mc metadata.Interface, gvr schema.GroupVersionResource, namespace string) cache.ListWithContextFunc {
 	return func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
-		return client.AppsV1().ReplicaSets(namespace).List(ctx, opts)
+		return mc.Resource(gvr).Namespace(namespace).List(ctx, opts)
 	}
 }
 
-func replicasetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFuncWithContext {
+func replicaSetWatchFuncWithSelectors(mc metadata.Interface, gvr schema.GroupVersionResource, namespace string) cache.WatchFuncWithContext {
 	return func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-		return client.AppsV1().ReplicaSets(namespace).Watch(ctx, opts)
+		return mc.Resource(gvr).Namespace(namespace).Watch(ctx, opts)
 	}
 }
 
