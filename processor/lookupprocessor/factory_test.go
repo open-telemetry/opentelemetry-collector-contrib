@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
 
@@ -67,7 +68,7 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, proc)
 
-	host := &testHost{}
+	host := componenttest.NewNopHost()
 	require.NoError(t, proc.Start(t.Context(), host))
 	require.NoError(t, proc.Shutdown(t.Context()))
 }
@@ -84,7 +85,7 @@ func TestFactoryCreatesLogsProcessor(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, proc)
 
-	host := &testHost{}
+	host := componenttest.NewNopHost()
 	require.NoError(t, proc.Start(t.Context(), host))
 	require.NoError(t, proc.Shutdown(t.Context()))
 }
