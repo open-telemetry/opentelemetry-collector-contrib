@@ -1,0 +1,20 @@
+$defs:
+  certificate_target:
+    description: CertificateTarget represents a target for certificate checking, which can be either a network endpoint or a local file
+    type: object
+    properties:
+      file_path:
+        type: string
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config
+description: Config defines the configuration for the various elements of the receiver agent.
+type: object
+properties:
+  targets:
+    type: array
+    items:
+      x-pointer: true
+      $ref: certificate_target
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config
