@@ -67,6 +67,23 @@ extensions:
 
 Although this configuration is still accepted by the extension, it is deprecated and support for it will be dropped in the future.
 
+## Configuring Public Keys
+
+By default, this extension will use [OpenID Connect Discovery] to retrieve the set of public keys used to verify JWT signatures. While this data is cached, it does require the extension to be able to reach the provider endpoint at startup and periodically throughout the lifetime of the collector process.
+
+Optionally, a `public_keys_file` can be configured on a per-provider basis. When configured, discovery is disabled and the provided file will be parsed as a [JWK Set]. The public keys contained in the set will be used to verify JWT signatures:
+```yaml
+extensions:
+  oidc:
+    providers:
+      - issuer_url: http://localhost:8080/auth/realms/opentelemetry
+        audience: account
+        public_keys_file: /path/to/jwks.json
+```
+
+[OpenID Connect Discovery]: https://openid.net/specs/openid-connect-discovery-1_0-final.html
+[JWK Set]: https://datatracker.ietf.org/doc/html/rfc7517#section-5
+
 ## Accessing JWT Claims
 
 The OIDC extension allows you to access JWT claims in the processor context.
