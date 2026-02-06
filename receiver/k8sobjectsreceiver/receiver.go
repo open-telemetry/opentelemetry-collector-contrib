@@ -19,11 +19,14 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/pager"
 	"k8s.io/client-go/tools/watch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
@@ -253,12 +256,24 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 	for {
 		select {
 		case <-ticker.C:
-			objects, err := resource.List(ctx, listOption)
+			p := pager.New(func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
+				return resource.List(ctx, opts)
+			})
+			p.PageSize = 500
+			obj, _, err := p.List(ctx, listOption)
 			if err != nil {
 				kr.setting.Logger.Error("error in pulling object",
 					zap.String("resource", config.gvr.String()),
 					zap.Error(err))
-			} else if len(objects.Items) > 0 {
+			}
+			objects, ok := obj.(*unstructured.UnstructuredList)
+			if !ok {
+				kr.setting.Logger.Error("unexpected object type",
+					zap.String("resource", config.gvr.String()),
+					zap.Any("object", obj))
+				continue
+			}
+			if len(objects.Items) > 0 {
 				logs := pullObjectsToLogData(objects, time.Now(), config, kr.setting.BuildInfo.Version)
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				logRecordCount := logs.LogRecordCount()
