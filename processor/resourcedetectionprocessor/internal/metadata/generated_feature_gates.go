@@ -8,10 +8,11 @@ import (
 
 var ProcessorResourcedetectionPropagateerrorsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.resourcedetection.propagateerrors",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, allows errors returned from resource detectors to propagate in the Start() method and stop the collector."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37961"),
 	featuregate.WithRegisterFromVersion("v0.121.0"),
+	featuregate.WithRegisterToVersion("v0.146.0"),
 )
 
 var ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate = featuregate.GlobalRegistry().MustRegister(

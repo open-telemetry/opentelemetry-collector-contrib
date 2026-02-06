@@ -1,0 +1,25 @@
+$defs:
+  config:
+    type: object
+    properties:
+      contributors:
+        description: Contributors can be used to explicitly define which X-Ray components are contributing to the telemetry. If omitted, only X-Ray components with the same component.ID as the setup component will have access.
+        type: array
+        items:
+          type: string
+          x-customType: go.opentelemetry.io/collector/component.ID
+      enabled:
+        description: Enabled determines whether any telemetry should be recorded.
+        type: boolean
+      hostname:
+        description: Hostname can be used to explicitly define the hostname associated with the telemetry.
+        type: string
+      include_metadata:
+        description: IncludeMetadata determines whether metadata (instance ID, hostname, resourceARN) should be included in the telemetry.
+        type: boolean
+      instance_id:
+        description: InstanceID can be used to explicitly define the instance ID associated with the telemetry.
+        type: string
+      resource_arn:
+        description: ResourceARN can be used to explicitly define the resource ARN associated with the telemetry.
+        type: string
