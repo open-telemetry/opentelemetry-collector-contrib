@@ -111,7 +111,7 @@ components:
         - groupbytrace
         - interval
         - isolationforest
-        - k8sattributes
+        - k8s_attributes
         - logdedup
         - metricsgeneration
         - metricstarttime

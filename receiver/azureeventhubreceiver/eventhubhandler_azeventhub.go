@@ -172,7 +172,7 @@ func (h *hubWrapperAzeventhubImpl) GetRuntimeInformation(ctx context.Context) (*
 	return nil, errNoConfig
 }
 
-func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool) (listenerHandleWrapper, error) {
+func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool, logger *zap.Logger) (listenerHandleWrapper, error) {
 	if h.hub != nil {
 		namespace, err := h.namespace()
 		if err != nil {
@@ -223,16 +223,16 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 				events, err := pc.ReceiveEvents(timeout, maxPollEvents, nil)
 				cancelTimeout()
 				if err != nil && !errors.Is(err, context.DeadlineExceeded) {
-					w.setErr(err)
-					return
+					logger.Error("error receiving events", zap.Error(err))
+					continue
 				}
 
 				for _, ev := range events {
 					if err := handler(ctx, &azureEvent{
 						AzEventData: ev,
 					}); err != nil {
-						w.setErr(err)
-						return
+						logger.Error("error processing event", zap.Error(err))
+						continue
 					}
 				}
 
@@ -246,8 +246,8 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 							},
 						)
 						if err != nil {
-							w.setErr(err)
-							return
+							logger.Error("error writing checkpoint", zap.Error(err))
+							continue
 						}
 					}
 				}
