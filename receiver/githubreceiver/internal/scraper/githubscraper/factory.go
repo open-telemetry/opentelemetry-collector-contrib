@@ -34,6 +34,13 @@ func (*Factory) CreateDefaultConfig() internal.Config {
 		ConcurrencyLimit:     defaultConcurrencyLimit, // Default to 50 concurrent goroutines
 		MergedPRLookbackDays: defaultMergedPRLookbackDays,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		RetryOnFailure: RetryConfig{
+			Enabled: true, // Enabled by default for production safety
+		},
+		ProactiveRetry: ProactiveRetryConfig{
+			Enabled:   true, // Enabled by default to prevent rate limit exhaustion
+			Threshold: 100,  // ~25 repositories at 4 points each
+		},
 	}
 }
 

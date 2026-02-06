@@ -22,7 +22,7 @@ const (
 	defaultReturnItems = 100
 )
 
-func (*githubScraper) getRepos(
+func (ghs *githubScraper) getRepos(
 	ctx context.Context,
 	client graphql.Client,
 	searchQuery string,
@@ -34,9 +34,14 @@ func (*githubScraper) getRepos(
 	var count int
 
 	for next := true; next; {
-		r, err := getRepoDataBySearch(ctx, client, searchQuery, cursor)
+		r, err := withGraphQLRetry(ctx, ghs,
+			func() (*getRepoDataBySearchResponse, error) {
+				return getRepoDataBySearch(ctx, client, searchQuery, cursor)
+			},
+			func(r *getRepoDataBySearchResponse) GraphQLRateLimitProvider { return &r.RateLimit },
+		)
 		if err != nil {
-			return nil, 0, err
+			return repos, count, err
 		}
 
 		for _, repo := range r.Search.Nodes {
@@ -63,15 +68,21 @@ func (ghs *githubScraper) getBranches(
 	var count int
 	var branches []BranchNode
 
+	// Use 50 instead of 100 because GitHub kills connections for >80 items
+	// on the getBranchData query.
+	const items = 50
+
 	for next := true; next; {
-		// Instead of using the defaultReturnItems (100) we chose to set it to
-		// 50 because GitHub has been known to kill the connection server side
-		// when trying to get items over 80 on the getBranchData query.
-		items := 50
-		r, err := getBranchData(ctx, client, repoName, ghs.cfg.GitHubOrg, items, defaultBranch, cursor)
+		r, err := withGraphQLRetry(ctx, ghs,
+			func() (*getBranchDataResponse, error) {
+				return getBranchData(ctx, client, repoName, ghs.cfg.GitHubOrg, items, defaultBranch, cursor)
+			},
+			func(r *getBranchDataResponse) GraphQLRateLimitProvider { return &r.RateLimit },
+		)
 		if err != nil {
-			return nil, 0, err
+			return branches, count, err
 		}
+
 		count = r.Repository.Refs.TotalCount
 		cursor = &r.Repository.Refs.PageInfo.EndCursor
 		next = r.Repository.Refs.PageInfo.HasNextPage
@@ -87,25 +98,26 @@ func (ghs *githubScraper) login(
 	client graphql.Client,
 	owner string,
 ) (string, error) {
-	var loginType string
-
 	// The checkLogin GraphQL query will always return an error. We only return
 	// the error if the login response for User and Organization are both nil.
 	// This is represented by checking to see if each resp.*.Login resolves to equal the owner.
-	resp, err := checkLogin(ctx, client, ghs.cfg.GitHubOrg)
+	resp, err := withGraphQLRetry(ctx, ghs,
+		func() (*checkLoginResponse, error) {
+			return checkLogin(ctx, client, ghs.cfg.GitHubOrg)
+		},
+		func(r *checkLoginResponse) GraphQLRateLimitProvider { return &r.RateLimit },
+	)
 
 	// These types are used later to generate the default string for the search query
 	// and thus must match the convention for user: and org: searches in GitHub
 	switch {
-	case resp.User.Login == owner:
-		loginType = "user"
-	case resp.Organization.Login == owner:
-		loginType = "org"
+	case resp != nil && resp.User.Login == owner:
+		return "user", nil
+	case resp != nil && resp.Organization.Login == owner:
+		return "org", nil
 	default:
 		return "", err
 	}
-
-	return loginType, nil
 }
 
 // Returns the default search query string based on input of owner type
@@ -164,9 +176,27 @@ func (ghs *githubScraper) getContributorCount(
 	}
 
 	for {
-		contribs, resp, err := client.Repositories.ListContributors(ctx, ghs.cfg.GitHubOrg, repoName, opt)
+		if err := ghs.checkAndWaitREST(ctx); err != nil {
+			return len(all), err
+		}
+
+		var contribs []*github.Contributor
+		var resp *github.Response
+		err := ghs.withRetry(ctx, func() error {
+			var retryErr error
+			contribs, resp, retryErr = client.Repositories.ListContributors(ctx, ghs.cfg.GitHubOrg, repoName, opt)
+			return retryErr
+		})
 		if err != nil {
-			return 0, err
+			return len(all), err
+		}
+
+		if resp.Rate.Limit > 0 {
+			ghs.restRateLimit.updateFromRest(
+				resp.Rate.Limit,
+				resp.Rate.Remaining,
+				resp.Rate.Reset.Time,
+			)
 		}
 
 		all = append(all, contribs...)
@@ -191,16 +221,14 @@ func (ghs *githubScraper) getOpenPullRequests(
 	var pullRequests []PullRequestNode
 
 	for hasNextPage := true; hasNextPage; {
-		prs, err := getPullRequestData(
-			ctx,
-			client,
-			repoName,
-			ghs.cfg.GitHubOrg,
-			defaultReturnItems,
-			cursor,
+		prs, err := withGraphQLRetry(ctx, ghs,
+			func() (*getPullRequestDataResponse, error) {
+				return getPullRequestData(ctx, client, repoName, ghs.cfg.GitHubOrg, defaultReturnItems, cursor)
+			},
+			func(r *getPullRequestDataResponse) GraphQLRateLimitProvider { return &r.RateLimit },
 		)
 		if err != nil {
-			return nil, err
+			return pullRequests, err
 		}
 
 		pullRequests = append(pullRequests, prs.Repository.PullRequests.Nodes...)
@@ -233,16 +261,14 @@ func (ghs *githubScraper) getMergedPullRequests(
 	}
 
 	for hasPreviousPage := true; hasPreviousPage; {
-		prs, err := getMergedPullRequestData(
-			ctx,
-			client,
-			repoName,
-			ghs.cfg.GitHubOrg,
-			defaultReturnItems,
-			cursor,
+		prs, err := withGraphQLRetry(ctx, ghs,
+			func() (*getMergedPullRequestDataResponse, error) {
+				return getMergedPullRequestData(ctx, client, repoName, ghs.cfg.GitHubOrg, defaultReturnItems, cursor)
+			},
+			func(r *getMergedPullRequestDataResponse) GraphQLRateLimitProvider { return &r.RateLimit },
 		)
 		if err != nil {
-			return nil, err
+			return pullRequests, err
 		}
 
 		// Process PRs in reverse chronological order (most recent first)
@@ -353,7 +379,12 @@ func (ghs *githubScraper) getCommitData(
 	cursor *string,
 	branchName string,
 ) (*BranchHistoryTargetCommitHistoryCommitHistoryConnection, error) {
-	data, err := getCommitData(ctx, client, repoName, ghs.cfg.GitHubOrg, 1, items, cursor, branchName)
+	data, err := withGraphQLRetry(ctx, ghs,
+		func() (*getCommitDataResponse, error) {
+			return getCommitData(ctx, client, repoName, ghs.cfg.GitHubOrg, 1, items, cursor, branchName)
+		},
+		func(r *getCommitDataResponse) GraphQLRateLimitProvider { return &r.RateLimit },
+	)
 	if err != nil {
 		return nil, err
 	}

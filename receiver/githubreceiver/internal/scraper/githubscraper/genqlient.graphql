@@ -1,8 +1,21 @@
+# Rate limit fragment for tracking GitHub API consumption
+# See: https://docs.github.com/en/graphql/overview/rate-limits-and-node-limits-for-the-graphql-api
+fragment rateLimitInfo on RateLimit {
+  cost       # Points consumed by this query
+  limit      # Maximum points per hour
+  remaining  # Points remaining in current window
+  resetAt    # When rate limit window resets (RFC3339 timestamp)
+  used       # Total points used in current window
+}
+
 query getRepoDataBySearch(
   $searchQuery: String!
   # @genqlient(pointer: true)
   $repoCursor: String
 ) {
+  rateLimit {
+    ...rateLimitInfo
+  }
   search(
     query: $searchQuery
     type: REPOSITORY
@@ -29,6 +42,9 @@ query getRepoDataBySearch(
 }
 
 query checkLogin($login: String!) {
+  rateLimit {
+    ...rateLimitInfo
+  }
   user(login: $login) {
     login
   }
@@ -46,6 +62,9 @@ query getCommitData(
   $commitCursor: String
   $branchName: String!
 ) {
+  rateLimit {
+    ...rateLimitInfo
+  }
   repository(name: $name, owner: $owner) {
     refs(refPrefix: "refs/heads/", first: $branchFirst, query: $branchName) {
       # @genqlient(typename: "BranchHistory")
@@ -80,6 +99,9 @@ query getBranchData(
   # @genqlient(pointer: true)
   $branchCursor: String
 ) {
+  rateLimit {
+    ...rateLimitInfo
+  }
   repository(name: $name, owner: $owner) {
     refs(refPrefix: "refs/heads/", first: $branchFirst, after: $branchCursor) {
       totalCount
@@ -112,6 +134,9 @@ query getPullRequestData(
   # @genqlient(pointer: true)
   $prCursor: String
 ) {
+  rateLimit {
+    ...rateLimitInfo
+  }
   repository(name: $name, owner: $owner) {
     pullRequests(first: $prFirst, after: $prCursor, states: [OPEN]) {
       # @genqlient(typename: "PullRequestNode")
@@ -155,6 +180,9 @@ query getMergedPullRequestData(
   # @genqlient(pointer: true)
   $prCursor: String
 ) {
+  rateLimit {
+    ...rateLimitInfo
+  }
   repository(name: $name, owner: $owner) {
     pullRequests(last: $prLast, before: $prCursor, states: [MERGED]) {
       # @genqlient(typename: "MergedPullRequestNode")
