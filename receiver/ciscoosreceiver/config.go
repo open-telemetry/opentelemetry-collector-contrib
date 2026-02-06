@@ -16,11 +16,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/connection"
 )
 
+// DeviceConfig represents configuration for a single Cisco device in the devices list.
+type DeviceConfig struct {
+	// DO NOT USE unkeyed struct initialization
+	_ struct{} `mapstructure:"-"`
+
+	Name string `mapstructure:"name"`
+	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
+
+	Auth connection.AuthConfig `mapstructure:"auth"`
+}
+
 // Config defines configuration for Cisco OS receiver.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Device                         connection.DeviceConfig             `mapstructure:"device"`
-	Scrapers                       map[component.Type]component.Config `mapstructure:"-"`
+
+	// Devices is the list of Cisco devices to monitor.
+	Devices []DeviceConfig `mapstructure:"devices"`
+
+	// Scrapers is the scraper configuration with metric toggles.
+	Scrapers map[component.Type]component.Config `mapstructure:"-"`
 }
 
 var (
@@ -32,72 +48,102 @@ var (
 func (cfg *Config) Validate() error {
 	var err error
 
-	if cfg.Device.Device.Host.IP == "" {
-		err = multierr.Append(err, errors.New("device.host.ip cannot be empty"))
-	}
-	if cfg.Device.Device.Host.Port == 0 {
-		err = multierr.Append(err, errors.New("device.host.port cannot be empty"))
-	}
-	if cfg.Device.Auth.Username == "" {
-		err = multierr.Append(err, errors.New("device.auth.username cannot be empty"))
-	}
-	if cfg.Device.Auth.Password == "" && cfg.Device.Auth.KeyFile == "" {
-		err = multierr.Append(err, errors.New("device.auth.password or device.auth.key_file must be provided"))
+	if len(cfg.Devices) == 0 {
+		err = multierr.Append(err, errors.New("must specify at least one device"))
+		return err
 	}
 
 	if len(cfg.Scrapers) == 0 {
-		err = multierr.Append(err, errors.New("must specify at least one scraper when using ciscoosreceiver"))
+		err = multierr.Append(err, errors.New("must specify at least one scraper"))
+	}
+
+	for i, device := range cfg.Devices {
+		if device.Host == "" {
+			err = multierr.Append(err, fmt.Errorf("devices[%d].host cannot be empty", i))
+		}
+		if device.Port == 0 {
+			err = multierr.Append(err, fmt.Errorf("devices[%d].port cannot be empty", i))
+		}
+		if device.Auth.Username == "" {
+			err = multierr.Append(err, fmt.Errorf("devices[%d].auth.username cannot be empty", i))
+		}
+		if device.Auth.Password == "" && device.Auth.KeyFile == "" {
+			err = multierr.Append(err, fmt.Errorf("devices[%d].auth.password or devices[%d].auth.key_file must be provided", i, i))
+		}
 	}
 
 	return err
 }
 
-// Unmarshal a config.Parser into the config struct.
+var allowedKeys = map[string]struct{}{
+	"collection_interval": {},
+	"initial_delay":       {},
+	"timeout":             {},
+	"devices":             {},
+	"scrapers":            {},
+}
+
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
 		return nil
 	}
 
-	// load the non-dynamic config normally
+	for key := range componentParser.ToStringMap() {
+		if _, ok := allowedKeys[key]; !ok {
+			return fmt.Errorf("unknown configuration key: %q", key)
+		}
+	}
+
+	cfg.Scrapers = map[component.Type]component.Config{}
+	if componentParser.IsSet("scrapers") {
+		scrapers, err := parseScrapersSection(componentParser, "scrapers")
+		if err != nil {
+			return fmt.Errorf("error parsing scrapers: %w", err)
+		}
+		cfg.Scrapers = scrapers
+	}
+
+	// WithIgnoreUnused() needed because "scrapers" has mapstructure:"-"
 	if err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused()); err != nil {
 		return err
-	}
-
-	// dynamically load the individual scraper configs based on the key name
-	cfg.Scrapers = map[component.Type]component.Config{}
-
-	scrapersSection, err := componentParser.Sub("scrapers")
-	if err != nil {
-		return err
-	}
-
-	for keyStr := range scrapersSection.ToStringMap() {
-		key, err := component.NewType(keyStr)
-		if err != nil {
-			return fmt.Errorf("invalid scraper key name: %s", key)
-		}
-
-		factory, ok := scraperFactories[key]
-		if !ok {
-			return fmt.Errorf("invalid scraper key: %s (available: %v)", key, getAvailableScraperTypes())
-		}
-
-		scraperSection, err := scrapersSection.Sub(keyStr)
-		if err != nil {
-			return fmt.Errorf("error getting scraper section for %q: %w", key, err)
-		}
-		scraperCfg := factory.CreateDefaultConfig()
-		if err = scraperSection.Unmarshal(scraperCfg); err != nil {
-			return fmt.Errorf("error reading settings for scraper type %q: %w", key, err)
-		}
-
-		cfg.Scrapers[key] = scraperCfg
 	}
 
 	return nil
 }
 
-// getAvailableScraperTypes returns a list of available scraper types for error messages
+func parseScrapersSection(parser *confmap.Conf, path string) (map[component.Type]component.Config, error) {
+	scrapersSection, err := parser.Sub(path)
+	if err != nil {
+		return nil, err
+	}
+
+	scrapers := map[component.Type]component.Config{}
+	for keyStr := range scrapersSection.ToStringMap() {
+		key, err := component.NewType(keyStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid scraper key name: %s", keyStr)
+		}
+
+		factory, ok := scraperFactories[key]
+		if !ok {
+			return nil, fmt.Errorf("invalid scraper key: %s (available: %v)", key, getAvailableScraperTypes())
+		}
+
+		scraperCfg := factory.CreateDefaultConfig()
+		scraperSubSection, err := scrapersSection.Sub(keyStr)
+		if err != nil {
+			return nil, fmt.Errorf("error getting scraper section for %q: %w", key, err)
+		}
+		if err = scraperSubSection.Unmarshal(scraperCfg); err != nil {
+			return nil, fmt.Errorf("error reading settings for scraper type %q: %w", key, err)
+		}
+
+		scrapers[key] = scraperCfg
+	}
+
+	return scrapers, nil
+}
+
 func getAvailableScraperTypes() []string {
 	types := make([]string, 0, len(scraperFactories))
 	for key := range scraperFactories {
