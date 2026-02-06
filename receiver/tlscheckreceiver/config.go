@@ -5,6 +5,7 @@ package tlscheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -58,4 +59,33 @@ func (cfg *Config) Validate() error {
 	}
 
 	return err
+}
+
+// ValidateForDiscovery implements the receivercreator.Discoverable interface.
+// It validates that all target endpoints in the configuration match the
+// discovered endpoint, preventing annotation-based configurations from
+// targeting arbitrary external endpoints.
+func (*Config) ValidateForDiscovery(rawCfg map[string]any, discoveredEndpoint string) error {
+	targets, ok := rawCfg["targets"].([]any)
+	if !ok {
+		return nil
+	}
+
+	for i, t := range targets {
+		target, ok := t.(map[string]any)
+		if !ok {
+			continue
+		}
+		if endpoint, exists := target["endpoint"]; exists {
+			endpointStr, ok := endpoint.(string)
+			if !ok {
+				return fmt.Errorf("targets[%d].endpoint: expected string", i)
+			}
+
+			if endpointStr != discoveredEndpoint {
+				return fmt.Errorf("targets[%d].endpoint %q does not match discoveredEndpoint %q", i, endpointStr, discoveredEndpoint)
+			}
+		}
+	}
+	return nil
 }

@@ -12,17 +12,23 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator/internal/metadata"
 )
+
+func (c *nopWithEndpointConfig) ValidateForDiscovery(rawCfg map[string]any, discoveredEndpoint string) error {
+	return nil
+}
 
 func Test_loadAndCreateMetricsRuntimeReceiver(t *testing.T) {
 	logCore, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore).With(zap.String("name", "receiver_creator"))
 	rcs := receivertest.NewNopSettings(metadata.Type)
 	rcs.Logger = logger
-	run := &receiverRunner{params: rcs, idNamespace: component.NewIDWithName(metadata.Type, "1")}
+	run := &receiverRunner{logger: logger, params: rcs, idNamespace: component.NewIDWithName(metadata.Type, "1")}
 	exampleFactory := &nopWithEndpointFactory{}
 	template, err := newReceiverTemplate("nop/1", nil)
 	require.NoError(t, err)
@@ -64,6 +70,10 @@ func Test_loadAndCreateMetricsRuntimeReceiver(t *testing.T) {
 }
 
 func TestValidateSetEndpointFromConfig(t *testing.T) {
+	runner := &receiverRunner{
+		logger: zaptest.NewLogger(t),
+	}
+
 	type configWithEndpoint struct {
 		Endpoint any `mapstructure:"endpoint"`
 	}
@@ -80,7 +90,7 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 		return &configWithoutEndpoint{}
 	})
 
-	setEndpointConfMap, setEndpoint, setErr := mergeTemplatedAndDiscoveredConfigs(
+	setEndpointConfMap, setEndpoint, setErr := runner.mergeTemplatedAndDiscoveredConfigs(
 		receiverWithEndpoint, nil, map[string]any{
 			tmpSetEndpointConfigKey: struct{}{},
 			endpointConfigKey:       "an.endpoint",
@@ -90,7 +100,7 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 	require.Equal(t, "an.endpoint", setEndpoint)
 	require.NoError(t, setErr)
 
-	inheritedEndpointConfMap, inheritedEndpoint, inheritedErr := mergeTemplatedAndDiscoveredConfigs(
+	inheritedEndpointConfMap, inheritedEndpoint, inheritedErr := runner.mergeTemplatedAndDiscoveredConfigs(
 		receiverWithEndpoint, map[string]any{
 			endpointConfigKey: "an.endpoint",
 		}, map[string]any{},
@@ -99,7 +109,7 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 	require.Equal(t, "an.endpoint", inheritedEndpoint)
 	require.NoError(t, inheritedErr)
 
-	setEndpointConfMap, setEndpoint, setErr = mergeTemplatedAndDiscoveredConfigs(
+	setEndpointConfMap, setEndpoint, setErr = runner.mergeTemplatedAndDiscoveredConfigs(
 		receiverWithoutEndpoint, nil, map[string]any{
 			tmpSetEndpointConfigKey: struct{}{},
 			endpointConfigKey:       "an.endpoint",
@@ -109,7 +119,7 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 	require.Equal(t, "an.endpoint", setEndpoint)
 	require.NoError(t, setErr)
 
-	inheritedEndpointConfMap, inheritedEndpoint, inheritedErr = mergeTemplatedAndDiscoveredConfigs(
+	inheritedEndpointConfMap, inheritedEndpoint, inheritedErr = runner.mergeTemplatedAndDiscoveredConfigs(
 		receiverWithoutEndpoint, map[string]any{
 			endpointConfigKey: "an.endpoint",
 		}, map[string]any{},
@@ -117,4 +127,35 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 	require.Equal(t, map[string]any{endpointConfigKey: "an.endpoint"}, inheritedEndpointConfMap.ToStringMap())
 	require.Equal(t, "an.endpoint", inheritedEndpoint)
 	require.NoError(t, inheritedErr)
+}
+
+func TestMergeTemplatedAndDiscoveredConfigsLogsWarning(t *testing.T) {
+	core, logs := observer.New(zapcore.WarnLevel)
+	runner := &receiverRunner{
+		logger: zap.New(core),
+	}
+
+	type configWithoutDiscoverable struct {
+		Endpoint any `mapstructure:"endpoint"`
+	}
+
+	factory := receiver.NewFactory(
+		component.MustNewType("not_discoverable"),
+		func() component.Config {
+			return &configWithoutDiscoverable{}
+		},
+	)
+	// Templated config is nil as we want to explictly check for discovered configs
+	_, _, err := runner.mergeTemplatedAndDiscoveredConfigs(
+		factory, nil, map[string]any{
+			tmpSetEndpointConfigKey: struct{}{},
+			endpointConfigKey:       "an.endpoint",
+		},
+	)
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.Len())
+	require.Equal(t,
+		"receiver does not implement the Discoverable interface",
+		logs.All()[0].Message,
+	)
 }
