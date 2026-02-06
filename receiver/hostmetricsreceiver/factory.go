@@ -79,6 +79,9 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:           scraperhelper.NewDefaultControllerConfig(),
 		MetadataCollectionInterval: defaultMetadataCollectionInterval,
+		ResourceAttributes: ResourceAttributesConfig{
+			ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
+		},
 	}
 }
 
@@ -126,21 +129,26 @@ func createAddScraperOptions(
 
 	envMap := gopsutilenv.SetGoPsutilEnvVars(cfg.RootPath)
 
-	// Get hostname once for all scrapers to use in service.instance.id generation.
-	// If hostname unavailable, fall back to "unknown" to ensure scrapers still work.
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "unknown"
+	addResourceAttributes := cfg.ResourceAttributes.ServiceInstanceID.Enabled
+	var hostname string
+	if addResourceAttributes {
+		// Get hostname once for all scrapers to use in service.instance.id generation.
+		// If hostname unavailable, fall back to "unknown" to ensure scrapers still work.
+		var hostnameErr error
+		hostname, hostnameErr = os.Hostname()
+		if hostnameErr != nil {
+			hostname = "unknown"
+		}
 	}
-
 	for key, cfg := range cfg.Scrapers {
 		factory, err := getFactory(key, factories)
 		if err != nil {
 			return nil, err
 		}
-		// Apply wrappers in order: envVar first, then resourceAttribute
 		factory = internal.NewEnvVarFactory(factory, envMap)
-		factory = internal.NewResourceAttributeFactory(factory, hostname)
+		if addResourceAttributes {
+			factory = internal.NewResourceAttributeFactory(factory, hostname)
+		}
 		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddFactoryWithConfig(factory, cfg))
 	}
 

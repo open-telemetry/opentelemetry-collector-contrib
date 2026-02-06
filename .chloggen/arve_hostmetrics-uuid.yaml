@@ -18,6 +18,8 @@ issues: [45548]
 subtext: |
   service.instance.id is a deterministic UUID v5 derived from hostname.
   For the process scraper, service.instance.id is unique per process.
+  This can be disabled via resource_attributes.service.instance.id.enabled: false for users
+  who prefer to manage service.instance.id through the resourcedetectionprocessor or other means.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
