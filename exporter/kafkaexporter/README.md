@@ -38,7 +38,7 @@ The following settings can be optionally configured:
   - `encoding` (default = otlp\_proto): The encoding for logs. See [Supported encodings](#supported-encodings).
   - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
 - `metrics`
-  - `topic` (default = otlp\_metrics): The name of the Kafka topic from which to consume metrics.
+  - `topic` (default = otlp\_metrics): The name of the Kafka topic to publish metrics to.
   - `encoding` (default = otlp\_proto): The encoding for metrics. See [Supported encodings](#supported-encodings).
   - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
 - `traces`
