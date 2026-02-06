@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_gcp.pubsub.input.uncompressed.size
 
-Size of uncompressed incoming log data in bytes (either direct Pub/Sub message payloads or GCS file content retrieved from event notifications). [Development]
+Size of uncompressed incoming log data in bytes (either direct Pub/Sub message payloads or GCS file content retrieved from event notifications).
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -22,7 +22,7 @@ Size of uncompressed incoming log data in bytes (either direct Pub/Sub message p
 
 ### otelcol_http.server.request.active.count
 
-Number of active requests. [Development]
+Number of active requests.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -30,7 +30,7 @@ Number of active requests. [Development]
 
 ### otelcol_http.server.request.duration
 
-Duration of requests in seconds. [Development]
+Duration of requests in seconds.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
