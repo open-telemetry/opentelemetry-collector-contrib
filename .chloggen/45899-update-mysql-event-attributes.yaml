@@ -5,7 +5,7 @@ change_type:
   enhancement
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
 component:
-  receiver/mysqlreceiver
+  receiver/mysql
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note:
   per 45899, update MySQL event attributes to include query plan and query plan hash for both top queries and query samples and bring event attribute names in line with other database receivers. This will allow for better correlation between top queries and query samples and provide more insights into query performance.
