@@ -70,7 +70,7 @@ func (h *ECSDataPointHasher) HashKey() HashKey {
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(h.dp.Timestamp()))
 	_, _ = hasher.Write(timestampBuf)
 
-	mapHashSortedExcludeReservedAttrs(hasher, merged)
+	mapHashSortedExcludeReservedAttrs(hasher, merged, elasticsearch.MappingHintsAttrKey)
 
 	return HashKey{
 		dpHash: hasher.Sum64(),
