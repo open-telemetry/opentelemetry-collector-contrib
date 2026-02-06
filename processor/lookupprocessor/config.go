@@ -9,8 +9,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/lookupsource"
 )
 
 // ContextID specifies where to apply the lookup.
@@ -41,17 +39,25 @@ type Config struct {
 	Lookups []LookupConfig `mapstructure:"lookups"`
 }
 
+// SourceConfig captures the source type and its opaque settings.
+//
+// Source-specific fields are collected into Config via mapstructure's ",remain"
+// tag and decoded later in the factory's createSource using a mapstructure
+// decoder. An alternative would be to implement confmap.Unmarshaler on Config
+// (like geoipprocessor does) to resolve the source config at unmarshal time.
+// We defer decoding to the factory because the set of available source
+// factories is not known until the factory is constructed (custom sources can
+// be injected via WithSources), so the config layer cannot look up the correct
+// factory. Both paths run during collector startup, so validation timing is
+// equivalent in practice.
 type SourceConfig struct {
 	// Type is the source type identifier (e.g., "noop", "yaml").
 	Type string `mapstructure:"type"`
 
 	// Config holds the source-specific configuration as raw map.
-	// This is passed to the source factory for parsing.
+	// It is decoded into the source's typed config struct by the factory
+	// at processor creation time.
 	Config map[string]any `mapstructure:",remain"`
-
-	// ParsedConfig holds the parsed source-specific configuration.
-	// This is populated during config unmarshaling based on the Type.
-	ParsedConfig lookupsource.SourceConfig `mapstructure:"-"`
 }
 
 // LookupConfig defines a single lookup rule.

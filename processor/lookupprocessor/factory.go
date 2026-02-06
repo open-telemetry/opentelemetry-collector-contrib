@@ -179,6 +179,9 @@ func (f *lookupProcessorFactory) createSource(
 		return nil, fmt.Errorf("unknown source type %q", sourceType)
 	}
 
+	// Decode the raw source config captured by mapstructure's ",remain" tag
+	// into the source's typed config struct. See SourceConfig for why this
+	// is deferred to factory time rather than config unmarshal time.
 	sourceCfg := factory.CreateDefaultConfig()
 	if len(cfg.Source.Config) > 0 {
 		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
