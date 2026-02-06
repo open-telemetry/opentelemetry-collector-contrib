@@ -416,17 +416,17 @@ func TestEventShutdown(t *testing.T) {
 	}, 1*time.Second, 10*time.Millisecond)
 	assert.Equal(t, 0, em.numEvents())
 
-	// new events should *not* be processed
-	em.workers[0].fire(event{
-		typ:     traceExpired,
-		payload: pcommon.TraceID([16]byte{1, 2, 3, 4}),
-	})
-
 	// verify
 	assert.Equal(t, int64(1), traceReceivedFired.Load())
 
 	// wait until the shutdown has returned
 	shutdownWg.Wait()
+
+	// new events should *not* be processed after shutdown
+	em.workers[0].fire(event{
+		typ:     traceExpired,
+		payload: pcommon.TraceID([16]byte{1, 2, 3, 4}),
+	})
 
 	// If the code is wrong, there's a chance that the test will still pass
 	// in case the event is processed after the assertion.
