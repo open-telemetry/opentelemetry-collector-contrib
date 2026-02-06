@@ -4,6 +4,9 @@ resourceMetrics:
         - key: cloud.availability_zone
           value:
             stringValue: fsn1-dc14
+        - key: cloud.platform
+          value:
+            stringValue: hetzner.cloud_server
         - key: cloud.provider
           value:
             stringValue: hetzner
