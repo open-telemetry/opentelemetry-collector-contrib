@@ -35,6 +35,12 @@ feature_gates:
       When enabled, allows usage of `ordering_criteria.mode` = `mtime`.
     from_version: v0.89.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812
+  - id: filelog.protobufCheckpointEncoding
+    stage: alpha
+    description: >-
+      Use protobuf encoding for checkpoint storage instead of JSON.
+    from_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266
   - id: filelog.windows.caseInsensitive
     stage: alpha
     description: >-
