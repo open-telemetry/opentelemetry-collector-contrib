@@ -6,17 +6,62 @@
 package windowseventlogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 
 import (
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/receiver"
+	"context"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/sidcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
 )
 
 // newFactoryAdapter creates a factory for windowseventlog receiver
 func newFactoryAdapter() receiver.Factory {
-	return adapter.NewFactory(receiverType{}, metadata.LogsStability)
+	return receiver.NewFactory(
+		metadata.Type,
+		createDefaultConfig,
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+	)
+}
+
+// createLogsReceiver creates a logs receiver with SID enrichment support
+func createLogsReceiver(
+	ctx context.Context,
+	set receiver.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (receiver.Logs, error) {
+	receiverCfg := cfg.(*WindowsLogConfig)
+
+	// Create SID cache if enabled
+	var cache sidcache.Cache
+	if receiverCfg.ResolveSIDs.Enabled {
+		cacheConfig := sidcache.Config{
+			Size: receiverCfg.ResolveSIDs.CacheSize,
+			TTL:  receiverCfg.ResolveSIDs.CacheTTL,
+		}
+
+		var err error
+		cache, err = sidcache.New(cacheConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		set.Logger.Info("SID resolution enabled",
+			zap.Int("cache_size", cacheConfig.Size),
+			zap.Duration("cache_ttl", cacheConfig.TTL))
+	}
+
+	// Wrap the consumer with SID enrichment
+	enrichedConsumer := newSIDEnrichingConsumer(nextConsumer, cache, set.Logger)
+
+	// Create the underlying Stanza receiver with the enriched consumer
+	stanzaFactory := adapter.NewFactory(receiverType{}, metadata.LogsStability)
+	return stanzaFactory.CreateLogs(ctx, set, cfg, enrichedConsumer)
 }
 
 // receiverType implements adapter.LogReceiverType
