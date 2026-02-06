@@ -247,7 +247,7 @@ func (ecsModeEncoder) encodeLog(
 	// First, try to map resource-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 	// Then, try to map scope-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), map[string]conversionEntry{})
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
 	// Finally, try to map record-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, record.Attributes(), logRecordAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
@@ -283,7 +283,7 @@ func (ecsModeEncoder) encodeSpan(
 	// First, try to map resource-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 	// Then, try to map scope-level attributes to ECS fields.
-	encodeAttributesECSMode(&document, ec.scope.Attributes(), map[string]conversionEntry{})
+	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
 	// Finally, try to map span-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
 	encodeHostOsTypeECSMode(&document, ec.resource)
