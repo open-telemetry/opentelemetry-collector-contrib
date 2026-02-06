@@ -98,7 +98,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/skywalkingencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
-      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/xstream
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension
@@ -189,6 +188,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor

@@ -39,7 +39,7 @@ Useful when you need custom scanning logic but still want batch tracking.
 
 ```go
 // Flush after every 100 items
-helper := xstream.NewScannerHelper(reader,
+helper := xstreamencoding.NewScannerHelper(reader,
     encoding.WithFlushItems(100),
 )
 
@@ -65,7 +65,7 @@ for {
 
 ```go
 // Flush after accumulating ~1MB of data
-helper := xstream.NewScannerHelper(reader,
+helper := xstreamencoding.NewScannerHelper(reader,
     encoding.WithFlushBytes(1024 * 1024),
 )
 ```
@@ -74,7 +74,7 @@ helper := xstream.NewScannerHelper(reader,
 
 ```go
 // Flush after 1000 items OR 1MB, whichever comes first
-helper := xstream.NewScannerHelper(reader,
+helper := xstreamencoding.NewScannerHelper(reader,
     encoding.WithFlushItems(1000),
     encoding.WithFlushBytes(1024 * 1024),
 )
@@ -85,7 +85,7 @@ helper := xstream.NewScannerHelper(reader,
 For custom scanning logic where you need full control over reading records, you can use `BatchHelper` directly:
 
 ```go
-batchHelper := xstream.NewBatchHelper(
+batchHelper := xstreamencoding.NewBatchHelper(
     encoding.WithFlushItems(100),
     encoding.WithFlushBytes(1024 * 1024),
 )

@@ -104,7 +104,6 @@ body:
       - extension/encoding/otlpencoding
       - extension/encoding/skywalkingencoding
       - extension/encoding/textencoding
-      - extension/encoding/xstream
       - extension/encoding/zipkinencoding
       - extension/googleclientauth
       - extension/headerssetter
@@ -188,6 +187,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - pkg/xk8stest
+      - pkg/xstreamencoding
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta

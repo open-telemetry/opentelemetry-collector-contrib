@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package xstream // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/xstream"
+package xstreamencoding // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
 
 import (
 	"bufio"

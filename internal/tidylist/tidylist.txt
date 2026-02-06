@@ -156,7 +156,7 @@ extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
 pkg/translator/skywalking
 extension/encoding/skywalkingencodingextension
-extension/encoding/xstream
+pkg/xstreamencoding
 extension/encoding/textencodingextension
 extension/encoding/zipkinencodingextension
 extension/googleclientauthextension
