@@ -13,13 +13,25 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 )
 
 const defaultLogsEncoding = cwlog.TypeStr
+
+const useAWSLogsEncodingExtensionForCWLogsFeatureGateID = "receiver.awsfirehose.useAWSLogsEncodingExtensionForCWLogs"
+
+var useAWSLogsEncodingExtensionForCWLogsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	useAWSLogsEncodingExtensionForCWLogsFeatureGateID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the \"cwlogs\" encoding uses the awslogs_encoding extension instead of the receiver's built-in unmarshaler."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues"),
+)
 
 // logsConsumer implements the firehoseConsumer
 // to use a logs consumer and unmarshaler.
@@ -58,7 +70,7 @@ func newLogsReceiver(
 
 // Start sets the consumer's log unmarshaler to either a built-in
 // unmarshaler or one loaded from an encoding extension.
-func (c *logsConsumer) Start(_ context.Context, host component.Host) error {
+func (c *logsConsumer) Start(ctx context.Context, host component.Host) error {
 	encoding := c.config.Encoding
 	if encoding == "" {
 		encoding = c.config.RecordType
@@ -67,8 +79,15 @@ func (c *logsConsumer) Start(_ context.Context, host component.Host) error {
 		}
 	}
 	if encoding == cwlog.TypeStr {
-		// TODO: make cwlogs an encoding extension
-		c.unmarshaler = cwlog.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
+		if useAWSLogsEncodingExtensionForCWLogsFeatureGate.IsEnabled() {
+			unmarshaler, err := c.createAWSLogsEncodingCloudWatchUnmarshaler(ctx)
+			if err != nil {
+				return err
+			}
+			c.unmarshaler = unmarshaler
+		} else {
+			c.unmarshaler = cwlog.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
+		}
 	} else {
 		unmarshaler, err := loadEncodingExtension[plog.Unmarshaler](host, encoding, "logs")
 		if err != nil {
@@ -77,6 +96,28 @@ func (c *logsConsumer) Start(_ context.Context, host component.Host) error {
 		c.unmarshaler = unmarshaler
 	}
 	return nil
+}
+
+// createAWSLogsEncodingCloudWatchUnmarshaler creates a CloudWatch Logs unmarshaler
+// using the awslogs_encoding extension.
+//
+// Note: the extension's Start and Shutdown are no-ops, so for simplicity we do not
+// call them.
+func (c *logsConsumer) createAWSLogsEncodingCloudWatchUnmarshaler(ctx context.Context) (plog.Unmarshaler, error) {
+	f := awslogsencodingextension.NewFactory()
+	settings := extension.Settings{
+		ID:                component.NewID(f.Type()),
+		BuildInfo:         c.settings.BuildInfo,
+		TelemetrySettings: c.settings.TelemetrySettings,
+	}
+	cfg := f.CreateDefaultConfig().(*awslogsencodingextension.Config)
+	cfg.Format = "cloudwatch"
+
+	ext, err := f.Create(ctx, settings, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create awslogs_encoding extension for cwlogs: %w", err)
+	}
+	return ext.(plog.Unmarshaler), nil
 }
 
 // Consume uses the configured unmarshaler to deserialize each record,

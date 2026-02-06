@@ -87,9 +87,17 @@ For example:
 }
 ```
 
+#### Feature gate: use awslogs_encoding for cwlogs
+
+When the feature gate `receiver.awsfirehose.useAWSLogsEncodingExtensionForCWLogs` is enabled, the `cwlogs` encoding uses the
+[awslogs\_encoding extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/awslogsencodingextension)
+instead of the receiver's built-in unmarshaler. You do not need to add the extension to your pipeline.
+
+This feature gate is **Alpha** and disabled by default. Enable it with `--feature-gates=receiver.awsfirehose.useAWSLogsEncodingExtensionForCWLogs`.
+This will become the default in a future release, and the receiver's built-in unmarshaler will be removed.
+
 ### otlp_v1
 
 The OTLP v1 encoding as produced by CloudWatch metric streams.
 See [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-opentelemetry-100.html) for details.
-
 
