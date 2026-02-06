@@ -347,6 +347,7 @@ body:
       - receiver/tlscheck
       - receiver/udplog
       - receiver/vcenter
+      - receiver/vcr
       - receiver/wavefront
       - receiver/webhookevent
       - receiver/windowseventlog

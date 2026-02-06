@@ -350,6 +350,7 @@ receiver/tcplogreceiver/                                         @open-telemetry
 receiver/tlscheckreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme @michael-burt
 receiver/udplogreceiver/                                         @open-telemetry/collector-contrib-approvers @VihasMakwana
 receiver/vcenterreceiver/                                        @open-telemetry/collector-contrib-approvers @schmikei @ishleenk17
+receiver/vcrreceiver/                                            @open-telemetry/collector-contrib-approvers @atoulme @robertgustafsonsplunk @garrett-splunk
 receiver/wavefrontreceiver/                                      @open-telemetry/collector-contrib-approvers @samiura
 receiver/webhookeventreceiver/                                   @open-telemetry/collector-contrib-approvers @atoulme @shalper2
 receiver/windowseventlogreceiver/                                @open-telemetry/collector-contrib-approvers @armstrmi @pjanotti
