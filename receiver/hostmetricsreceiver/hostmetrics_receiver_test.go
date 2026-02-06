@@ -84,6 +84,9 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 100 * time.Millisecond,
 		},
+		ResourceAttributes: ResourceAttributesConfig{
+			ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
+		},
 		Scrapers: newScrapersConfigs(
 			cpuscraper.NewFactory(),
 			diskscraper.NewFactory(),

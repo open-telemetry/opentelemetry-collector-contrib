@@ -18,6 +18,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 )
 
+// ResourceAttributeConfig is used to enable/disable a single resource attribute.
+type ResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesConfig controls which resource attributes the receiver sets.
+type ResourceAttributesConfig struct {
+	ServiceInstanceID ResourceAttributeConfig `mapstructure:"service.instance.id"`
+}
+
 // Config defines configuration for HostMetrics receiver.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
@@ -31,6 +41,9 @@ type Config struct {
 	// Setting the duration to 0 will disable periodic collection (however will not impact
 	// metadata collection on changes).
 	MetadataCollectionInterval time.Duration `mapstructure:"metadata_collection_interval"`
+
+	// ResourceAttributes controls which resource attributes the receiver sets.
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 var (

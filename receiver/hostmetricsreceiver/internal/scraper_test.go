@@ -191,6 +191,25 @@ func TestResourceAttributeScraper_ProcessWithoutPID(t *testing.T) {
 		"should fall back to base instance ID when process.pid is missing")
 }
 
+func TestResourceAttributeScraper_Disabled(t *testing.T) {
+	// Verify that when the resourceAttributeScraper wrapper is NOT applied,
+	// metrics pass through without service.instance.id being set.
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("system.cpu.time")
+
+	mock := &mockScraper{metrics: metrics}
+
+	// Scrape directly from the mock (no resourceAttributeScraper wrapper)
+	result, err := mock.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	require.Equal(t, 1, result.ResourceMetrics().Len())
+	attrs := result.ResourceMetrics().At(0).Resource().Attributes()
+	_, ok := attrs.Get("service.instance.id")
+	assert.False(t, ok, "service.instance.id should not be set when wrapper is not applied")
+}
+
 // mockScraperWithError is a test scraper that returns both metrics and an error
 type mockScraperWithError struct {
 	metrics pmetric.Metrics
