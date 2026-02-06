@@ -33,6 +33,7 @@ type TopQueryCollection struct {
 	MaxExplainEachInterval int64         `mapstructure:"max_explain_each_interval"`
 	QueryPlanCacheSize     int           `mapstructure:"query_plan_cache_size"`
 	QueryPlanCacheTTL      time.Duration `mapstructure:"query_plan_cache_ttl"`
+	CollectionInterval     time.Duration `mapstructure:"collection_interval"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
