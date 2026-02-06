@@ -129,7 +129,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	var cpuInfo []cpu.InfoStat
 	if d.cfg.ResourceAttributes.HostCPUCacheL2Size.Enabled || d.cfg.ResourceAttributes.HostCPUFamily.Enabled ||
 		d.cfg.ResourceAttributes.HostCPUModelID.Enabled || d.cfg.ResourceAttributes.HostCPUVendorID.Enabled ||
-		d.cfg.ResourceAttributes.HostCPUModelName.Enabled || d.cfg.ResourceAttributes.HostCPUStepping.Enabled {
+		d.cfg.ResourceAttributes.HostCPUModelName.Enabled || d.cfg.ResourceAttributes.HostCPUStepping.Enabled ||
+		d.cfg.ResourceAttributes.HostCPUCoreID.Enabled || d.cfg.ResourceAttributes.HostCPUSocketID.Enabled {
 		cpuInfo, err = d.provider.CPUInfo(ctx)
 		if err != nil {
 			return pcommon.NewResource(), "", fmt.Errorf("failed getting host cpuinfo: %w", err)
@@ -229,4 +230,13 @@ func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) {
 	d.rb.SetHostCPUModelName(cpuInfo.ModelName)
 	d.rb.SetHostCPUStepping(fmt.Sprintf("%d", cpuInfo.Stepping))
 	d.rb.SetHostCPUCacheL2Size(int64(cpuInfo.CacheSize))
+
+	// gopsutil does not implement CoreID and PhysicalID for all platforms.
+	// Skip setting them if the fields are blank.
+	if cpuInfo.CoreID != "" {
+		d.rb.SetHostCPUCoreID(cpuInfo.CoreID)
+	}
+	if cpuInfo.PhysicalID != "" {
+		d.rb.SetHostCPUSocketID(cpuInfo.PhysicalID)
+	}
 }

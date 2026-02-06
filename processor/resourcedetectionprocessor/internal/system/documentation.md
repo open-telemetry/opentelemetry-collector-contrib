@@ -10,9 +10,11 @@
 | ---- | ----------- | ------ | ------- |
 | host.arch | The host.arch | Any Str | false |
 | host.cpu.cache.l2.size | The host.cpu.cache.l2.size | Any Int | false |
+| host.cpu.core.id | The host.cpu.core.id | Any Str | false |
 | host.cpu.family | The host.cpu.family | Any Str | false |
 | host.cpu.model.id | The host.cpu.model.id | Any Str | false |
 | host.cpu.model.name | The host.cpu.model.name | Any Str | false |
+| host.cpu.socket.id | The host.cpu.socket.id | Any Str | false |
 | host.cpu.stepping | The host.cpu.stepping | Any Str | false |
 | host.cpu.vendor.id | The host.cpu.vendor.id | Any Str | false |
 | host.id | The host.id | Any Str | false |

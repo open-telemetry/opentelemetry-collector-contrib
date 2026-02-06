@@ -26,9 +26,11 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				HostArch:           ResourceAttributeConfig{Enabled: true},
 				HostCPUCacheL2Size: ResourceAttributeConfig{Enabled: true},
+				HostCPUCoreID:      ResourceAttributeConfig{Enabled: true},
 				HostCPUFamily:      ResourceAttributeConfig{Enabled: true},
 				HostCPUModelID:     ResourceAttributeConfig{Enabled: true},
 				HostCPUModelName:   ResourceAttributeConfig{Enabled: true},
+				HostCPUSocketID:    ResourceAttributeConfig{Enabled: true},
 				HostCPUStepping:    ResourceAttributeConfig{Enabled: true},
 				HostCPUVendorID:    ResourceAttributeConfig{Enabled: true},
 				HostID:             ResourceAttributeConfig{Enabled: true},
@@ -48,9 +50,11 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				HostArch:           ResourceAttributeConfig{Enabled: false},
 				HostCPUCacheL2Size: ResourceAttributeConfig{Enabled: false},
+				HostCPUCoreID:      ResourceAttributeConfig{Enabled: false},
 				HostCPUFamily:      ResourceAttributeConfig{Enabled: false},
 				HostCPUModelID:     ResourceAttributeConfig{Enabled: false},
 				HostCPUModelName:   ResourceAttributeConfig{Enabled: false},
+				HostCPUSocketID:    ResourceAttributeConfig{Enabled: false},
 				HostCPUStepping:    ResourceAttributeConfig{Enabled: false},
 				HostCPUVendorID:    ResourceAttributeConfig{Enabled: false},
 				HostID:             ResourceAttributeConfig{Enabled: false},

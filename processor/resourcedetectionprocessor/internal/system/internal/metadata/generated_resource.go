@@ -35,6 +35,13 @@ func (rb *ResourceBuilder) SetHostCPUCacheL2Size(val int64) {
 	}
 }
 
+// SetHostCPUCoreID sets provided value as "host.cpu.core.id" attribute.
+func (rb *ResourceBuilder) SetHostCPUCoreID(val string) {
+	if rb.config.HostCPUCoreID.Enabled {
+		rb.res.Attributes().PutStr("host.cpu.core.id", val)
+	}
+}
+
 // SetHostCPUFamily sets provided value as "host.cpu.family" attribute.
 func (rb *ResourceBuilder) SetHostCPUFamily(val string) {
 	if rb.config.HostCPUFamily.Enabled {
@@ -53,6 +60,13 @@ func (rb *ResourceBuilder) SetHostCPUModelID(val string) {
 func (rb *ResourceBuilder) SetHostCPUModelName(val string) {
 	if rb.config.HostCPUModelName.Enabled {
 		rb.res.Attributes().PutStr("host.cpu.model.name", val)
+	}
+}
+
+// SetHostCPUSocketID sets provided value as "host.cpu.socket.id" attribute.
+func (rb *ResourceBuilder) SetHostCPUSocketID(val string) {
+	if rb.config.HostCPUSocketID.Enabled {
+		rb.res.Attributes().PutStr("host.cpu.socket.id", val)
 	}
 }
 

@@ -429,10 +429,16 @@ func TestDetectCPUInfo(t *testing.T) {
 	md.On("HostIPs").Return(testIPsAddresses, nil)
 	md.On("HostMACs").Return(testMACsAddresses, nil)
 	md.On("HostInterfaces").Return(testInterfaces, nil)
-	md.On("CPUInfo").Return([]cpu.InfoStat{{Family: "some"}}, nil)
+	md.On("CPUInfo").Return([]cpu.InfoStat{{
+		Family:     "some",
+		PhysicalID: "0",
+		CoreID:     "2",
+	}}, nil)
 
 	cfg := allEnabledConfig()
 	cfg.HostCPUFamily.Enabled = true
+	cfg.HostCPUCoreID.Enabled = true
+	cfg.HostCPUSocketID.Enabled = true
 	detector := newTestDetector(md, []string{"dns"}, cfg)
 	res, schemaURL, err := detector.Detect(t.Context())
 	require.NoError(t, err)
@@ -440,16 +446,18 @@ func TestDetectCPUInfo(t *testing.T) {
 	md.AssertExpectations(t)
 
 	expected := map[string]any{
-		"host.name":       "fqdn",
-		"os.description":  "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
-		"os.type":         "darwin",
-		"os.version":      "22.04.2 LTS (Jammy Jellyfish)",
-		"host.id":         "2",
-		"host.arch":       "amd64",
-		"host.ip":         testIPsAttribute,
-		"host.mac":        testMACsAttribute,
-		"host.cpu.family": "some",
-		"host.interface":  testInterfacesAttribute,
+		"host.name":          "fqdn",
+		"os.description":     "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
+		"os.type":            "darwin",
+		"os.version":         "22.04.2 LTS (Jammy Jellyfish)",
+		"host.id":            "2",
+		"host.arch":          "amd64",
+		"host.ip":            testIPsAttribute,
+		"host.mac":           testMACsAttribute,
+		"host.cpu.family":    "some",
+		"host.cpu.socket.id": "0",
+		"host.cpu.core.id":   "2",
+		"host.interface":     testInterfacesAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
