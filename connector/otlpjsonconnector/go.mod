@@ -6,15 +6,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.145.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.51.0
+	go.opentelemetry.io/collector/component v1.51.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/component/componenttest v0.145.0
-	go.opentelemetry.io/collector/confmap v1.51.0
+	go.opentelemetry.io/collector/confmap v1.51.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/connector v0.145.0
 	go.opentelemetry.io/collector/connector/connectortest v0.145.0
-	go.opentelemetry.io/collector/consumer v1.51.0
+	go.opentelemetry.io/collector/consumer v1.51.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/consumer/consumertest v0.145.0
-	go.opentelemetry.io/collector/pdata v1.51.0
-	go.opentelemetry.io/collector/pipeline v1.51.0
+	go.opentelemetry.io/collector/pdata v1.51.1-0.20260205185216-81bc641f26c0
+	go.opentelemetry.io/collector/pipeline v1.51.1-0.20260205185216-81bc641f26c0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 )
@@ -41,7 +41,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.145.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.145.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.51.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260205185216-81bc641f26c0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.145.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.145.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.145.0 // indirect
