@@ -180,6 +180,7 @@ components:
     - pkg/winperfcounters
     - pkg/xk8stest
     - processor/akamaidetector
+    - processor/alibabaecsdetector
     - processor/attributes
     - processor/azuredetector
     - processor/coralogix
@@ -197,7 +198,7 @@ components:
     - processor/hetznerdetector
     - processor/interval
     - processor/isolationforest
-    - processor/k8sattributes
+    - processor/k8s_attributes
     - processor/logdedup
     - processor/logstransform
     - processor/lookup

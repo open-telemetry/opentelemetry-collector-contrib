@@ -34,7 +34,7 @@ func TestConvertPprofToPprofile(t *testing.T) {
 			p, err := profile.Parse(bytes.NewBuffer(inbytes))
 			require.NoError(t, err)
 
-			pprofile, err := convertPprofToPprofile(p)
+			pprofile, err := ConvertPprofToProfiles(p)
 			switch {
 			case errors.Is(err, tc.expectedError):
 				// The expected error equals the returned error,

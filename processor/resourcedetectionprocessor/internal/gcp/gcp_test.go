@@ -4,18 +4,50 @@
 package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 
 import (
+	"context"
 	"errors"
+	"regexp"
 	"testing"
 
+	computepb "cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
-	processormetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
+
+type mockInstancesClient struct {
+	labels map[string]string
+	err    error
+}
+
+func (m *mockInstancesClient) Get(_ context.Context, _ *computepb.GetInstanceRequest) (*computepb.Instance, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &computepb.Instance{Labels: m.labels}, nil
+}
+
+func (*mockInstancesClient) Close() error { return nil }
+
+type mockInstancesBuilder struct {
+	client instancesAPI
+	err    error
+}
+
+func (b *mockInstancesBuilder) buildClient(_ context.Context) (instancesAPI, error) {
+	return b.client, b.err
+}
+
+func mustRe(p string) *regexp.Regexp {
+	r, err := regexp.Compile(p)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
 
 func TestDetect(t *testing.T) {
 	// Set this before all tests to ensure metadata.onGCE() returns true
@@ -26,7 +58,6 @@ func TestDetect(t *testing.T) {
 		detector         internal.Detector
 		expectErr        bool
 		expectedResource map[string]any
-		addFaasID        bool
 	}{
 		{
 			desc: "zonal GKE cluster",
@@ -192,28 +223,6 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
-			desc: "Cloud Run with feature gate disabled",
-			detector: newTestDetector(&fakeGCPDetector{
-				projectID:       "my-project",
-				cloudPlatform:   gcp.CloudRun,
-				faaSID:          "1472385723456792345",
-				faaSCloudRegion: "us-central1",
-				faaSName:        "my-service",
-				faaSVersion:     "123456",
-			}),
-			expectedResource: map[string]any{
-				"cloud.provider":   "gcp",
-				"cloud.account.id": "my-project",
-				"cloud.platform":   "gcp_cloud_run",
-				"cloud.region":     "us-central1",
-				"faas.name":        "my-service",
-				"faas.version":     "123456",
-				"faas.instance":    "1472385723456792345",
-				"faas.id":          "1472385723456792345",
-			},
-			addFaasID: true,
-		},
-		{
 			desc: "Cloud Run Job",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:               "my-project",
@@ -236,30 +245,6 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
-			desc: "Cloud Run Job with feature gate disabled",
-			detector: newTestDetector(&fakeGCPDetector{
-				projectID:               "my-project",
-				cloudPlatform:           gcp.CloudRunJob,
-				faaSID:                  "1472385723456792345",
-				faaSCloudRegion:         "us-central1",
-				faaSName:                "my-service",
-				gcpCloudRunJobExecution: "my-service-ajg89",
-				gcpCloudRunJobTaskIndex: "2",
-			}),
-			expectedResource: map[string]any{
-				"cloud.provider":               "gcp",
-				"cloud.account.id":             "my-project",
-				"cloud.platform":               "gcp_cloud_run",
-				"cloud.region":                 "us-central1",
-				"faas.name":                    "my-service",
-				"faas.instance":                "1472385723456792345",
-				"faas.id":                      "1472385723456792345",
-				"gcp.cloud_run.job.execution":  "my-service-ajg89",
-				"gcp.cloud_run.job.task_index": "2",
-			},
-			addFaasID: true,
-		},
-		{
 			desc: "Cloud Functions",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:       "my-project",
@@ -278,28 +263,6 @@ func TestDetect(t *testing.T) {
 				"faas.version":     "123456",
 				"faas.instance":    "1472385723456792345",
 			},
-		},
-		{
-			desc: "Cloud Functions with feature gate disabled",
-			detector: newTestDetector(&fakeGCPDetector{
-				projectID:       "my-project",
-				cloudPlatform:   gcp.CloudFunctions,
-				faaSID:          "1472385723456792345",
-				faaSCloudRegion: "us-central1",
-				faaSName:        "my-service",
-				faaSVersion:     "123456",
-			}),
-			expectedResource: map[string]any{
-				"cloud.provider":   "gcp",
-				"cloud.account.id": "my-project",
-				"cloud.platform":   "gcp_cloud_functions",
-				"cloud.region":     "us-central1",
-				"faas.name":        "my-service",
-				"faas.version":     "123456",
-				"faas.instance":    "1472385723456792345",
-				"faas.id":          "1472385723456792345",
-			},
-			addFaasID: true,
 		},
 		{
 			desc: "App Engine Standard",
@@ -324,30 +287,6 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
-			desc: "App Engine Standard with feature gate disabled",
-			detector: newTestDetector(&fakeGCPDetector{
-				projectID:                 "my-project",
-				cloudPlatform:             gcp.AppEngineStandard,
-				appEngineServiceInstance:  "1472385723456792345",
-				appEngineAvailabilityZone: "us-central1-c",
-				appEngineRegion:           "us-central1",
-				appEngineServiceName:      "my-service",
-				appEngineServiceVersion:   "123456",
-			}),
-			expectedResource: map[string]any{
-				"cloud.provider":          "gcp",
-				"cloud.account.id":        "my-project",
-				"cloud.platform":          "gcp_app_engine",
-				"cloud.region":            "us-central1",
-				"cloud.availability_zone": "us-central1-c",
-				"faas.name":               "my-service",
-				"faas.version":            "123456",
-				"faas.instance":           "1472385723456792345",
-				"faas.id":                 "1472385723456792345",
-			},
-			addFaasID: true,
-		},
-		{
 			desc: "App Engine Flex",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:                 "my-project",
@@ -368,30 +307,6 @@ func TestDetect(t *testing.T) {
 				"faas.version":            "123456",
 				"faas.instance":           "1472385723456792345",
 			},
-		},
-		{
-			desc: "App Engine Flex with feature gate disabled",
-			detector: newTestDetector(&fakeGCPDetector{
-				projectID:                 "my-project",
-				cloudPlatform:             gcp.AppEngineFlex,
-				appEngineServiceInstance:  "1472385723456792345",
-				appEngineAvailabilityZone: "us-central1-c",
-				appEngineRegion:           "us-central1",
-				appEngineServiceName:      "my-service",
-				appEngineServiceVersion:   "123456",
-			}),
-			expectedResource: map[string]any{
-				"cloud.provider":          "gcp",
-				"cloud.account.id":        "my-project",
-				"cloud.platform":          "gcp_app_engine",
-				"cloud.region":            "us-central1",
-				"cloud.availability_zone": "us-central1-c",
-				"faas.name":               "my-service",
-				"faas.version":            "123456",
-				"faas.instance":           "1472385723456792345",
-				"faas.id":                 "1472385723456792345",
-			},
-			addFaasID: true,
 		},
 		{
 			desc: "Bare Metal Solution",
@@ -433,7 +348,6 @@ func TestDetect(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			defer testutil.SetFeatureGateForTest(t, processormetadata.ProcessorResourcedetectionRemoveGCPFaasIDFeatureGate, !tc.addFaasID)()
 			res, schema, err := tc.detector.Detect(t.Context())
 			if tc.expectErr {
 				assert.Error(t, err)
@@ -490,6 +404,112 @@ type fakeGCPDetector struct {
 	gcpBareMetalSolutionInstanceID  string
 	gcpBareMetalSolutionCloudRegion string
 	gcpBareMetalSolutionProjectID   string
+}
+
+func TestGCELabels(t *testing.T) {
+	tests := []struct {
+		name            string
+		instanceLabels  map[string]string
+		instanceErr     error
+		builderErr      error
+		labelRegexes    []*regexp.Regexp
+		expectedPresent map[string]string
+		expectedAbsent  []string
+	}{
+		{
+			name: "success case two labels matched",
+			instanceLabels: map[string]string{
+				"tag1":  "val1",
+				"tag2":  "val2",
+				"other": "nope",
+			},
+			labelRegexes: []*regexp.Regexp{mustRe("^tag1$"), mustRe("^tag2$")},
+			expectedPresent: map[string]string{
+				"tag1": "val1",
+				"tag2": "val2",
+			},
+			expectedAbsent: []string{"other"},
+		},
+		{
+			name:            "error case in Get",
+			instanceErr:     errors.New("compute API is not available"),
+			labelRegexes:    []*regexp.Regexp{mustRe("^tag1$")},
+			expectedPresent: map[string]string{},
+			expectedAbsent:  []string{"tag1"},
+		},
+		{
+			name:            "buildClient error",
+			builderErr:      errors.New("failed to create compute client"),
+			labelRegexes:    []*regexp.Regexp{mustRe("^tag1$")},
+			expectedPresent: map[string]string{},
+			expectedAbsent:  []string{"tag1"},
+		},
+		{
+			name: "no labels match regexes",
+			instanceLabels: map[string]string{
+				"foo": "bar",
+				"baz": "qux",
+			},
+			labelRegexes:    []*regexp.Regexp{mustRe("^nomatch$")},
+			expectedPresent: map[string]string{},
+			expectedAbsent:  []string{"foo", "baz"},
+		},
+		{
+			name: "wildcard regex matches multiple",
+			instanceLabels: map[string]string{
+				"env_prod": "1",
+				"env_dev":  "0",
+				"other":    "x",
+			},
+			labelRegexes: []*regexp.Regexp{mustRe("^env_")},
+			expectedPresent: map[string]string{
+				"env_prod": "1",
+				"env_dev":  "0",
+			},
+			expectedAbsent: []string{"other"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Force metadata.OnGCE() to return true without a real metadata server.
+			t.Setenv("GCE_METADATA_HOST", "169.254.169.254")
+
+			d := newTestDetector(&fakeGCPDetector{
+				projectID:           "test-proj",
+				cloudPlatform:       gcp.GCE,
+				gceAvailabilityZone: "us-central1-a",
+				gceRegion:           "us-central1",
+				gcpGceInstanceName:  "test-vm",
+				gceHostID:           "1234567890",
+				gceHostName:         "test-vm",
+				gceHostType:         "n2-standard-2",
+			})
+
+			d.labelKeyRegexes = tt.labelRegexes
+			d.gceClientBuilder = &mockInstancesBuilder{
+				client: &mockInstancesClient{
+					labels: tt.instanceLabels,
+					err:    tt.instanceErr,
+				},
+				err: tt.builderErr,
+			}
+
+			res, _, err := d.Detect(t.Context())
+			assert.NoError(t, err)
+
+			attrs := res.Attributes()
+			for k, v := range tt.expectedPresent {
+				val, ok := attrs.Get(gceLabelPrefix + k)
+				assert.True(t, ok, "expected %s to be present", k)
+				assert.Equal(t, v, val.Str())
+			}
+			for _, k := range tt.expectedAbsent {
+				_, ok := attrs.Get(gceLabelPrefix + k)
+				assert.False(t, ok, "did not expect %s to be present", k)
+			}
+		})
+	}
 }
 
 func (f *fakeGCPDetector) ProjectID() (string, error) {
@@ -679,4 +699,47 @@ func (f *fakeGCPDetector) BareMetalSolutionProjectID() (string, error) {
 		return "", f.err
 	}
 	return f.gcpBareMetalSolutionProjectID, nil
+}
+
+func TestCompileLabelRegexes(t *testing.T) {
+	tests := []struct {
+		name        string
+		labels      []string
+		expectError bool
+	}{
+		{
+			name:        "valid regexes",
+			labels:      []string{"^tag1$", "^env_"},
+			expectError: false,
+		},
+		{
+			name:        "empty labels",
+			labels:      []string{},
+			expectError: false,
+		},
+		{
+			name:        "invalid regex in config",
+			labels:      []string{"[invalid"},
+			expectError: true,
+		},
+		{
+			name:        "invalid regex among valid ones",
+			labels:      []string{"^valid$", "[also-invalid", "^another-valid$"},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{Labels: tt.labels}
+			regexes, err := compileLabelRegexes(cfg)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Nil(t, regexes)
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, regexes, len(tt.labels))
+			}
+		})
+	}
 }
