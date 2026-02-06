@@ -72,8 +72,7 @@ metrics:
   # CPU
   container.blockio.io_merged_recursive:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{operations}"
@@ -87,8 +86,7 @@ metrics:
       - operation
   container.blockio.io_queued_recursive:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of requests queued up for this cgroup and its descendant cgroups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{operations}"
@@ -102,8 +100,7 @@ metrics:
       - operation
   container.blockio.io_service_bytes_recursive:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: "Number of bytes transferred to/from the disk by the group and descendant groups."
     extended_documentation: >-
       More docs
@@ -120,8 +117,7 @@ metrics:
       - operation
   container.blockio.io_service_time_recursive:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: ns
@@ -135,8 +131,7 @@ metrics:
       - operation
   container.blockio.io_serviced_recursive:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of IOs (bio) issued to the disk by the group and descendant groups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{operations}"
@@ -150,8 +145,7 @@ metrics:
       - operation
   container.blockio.io_time_recursive:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: ms
@@ -165,8 +159,7 @@ metrics:
       - operation
   container.blockio.io_wait_time_recursive:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: ns
@@ -180,8 +173,7 @@ metrics:
       - operation
   container.blockio.sectors_recursive:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of sectors transferred to/from disk by the group and descendant groups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{sectors}"
@@ -196,8 +188,7 @@ metrics:
   # Network
   container.cpu.limit:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "CPU limit set for the container."
     extended_documentation: "This metric is only reported if the container has limits set with -cpus, -cpuset-cpus or -cpu-quota."
     unit: "{cpus}"
@@ -205,8 +196,7 @@ metrics:
       value_type: double
   container.cpu.logical.count:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of cores available to the container."
     unit: "{cpus}"
     gauge:
@@ -215,16 +205,14 @@ metrics:
   # Memory
   container.cpu.shares:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "CPU shares set for the container."
     unit: "1"
     gauge:
       value_type: int
   container.cpu.throttling_data.periods:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of periods with throttling active."
     unit: "{periods}"
     sum:
@@ -233,8 +221,7 @@ metrics:
       aggregation_temporality: cumulative
   container.cpu.throttling_data.throttled_periods:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of periods when the container hits its throttling limit."
     unit: "{periods}"
     sum:
@@ -243,8 +230,7 @@ metrics:
       aggregation_temporality: cumulative
   container.cpu.throttling_data.throttled_time:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Aggregate time the container was throttled."
     unit: ns
     sum:
@@ -253,8 +239,7 @@ metrics:
       aggregation_temporality: cumulative
   container.cpu.usage.kernelmode:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: >-
       Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
     unit: ns
@@ -264,8 +249,7 @@ metrics:
       aggregation_temporality: cumulative
   container.cpu.usage.percpu:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Per-core CPU usage by the container (Only available with cgroups v1)."
     unit: ns
     sum:
@@ -276,8 +260,7 @@ metrics:
       - core
   container.cpu.usage.system:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "System CPU usage, as reported by docker."
     extended_documentation: "Note this is the usage for the system, not the container."
     unit: ns
@@ -287,8 +270,7 @@ metrics:
       aggregation_temporality: cumulative
   container.cpu.usage.total:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: "Total CPU time consumed."
     unit: ns
     sum:
@@ -297,8 +279,7 @@ metrics:
       aggregation_temporality: cumulative
   container.cpu.usage.usermode:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: >-
       Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).
     unit: ns
@@ -308,16 +289,14 @@ metrics:
       aggregation_temporality: cumulative
   container.cpu.utilization:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: "Percent of CPU used by the container."
     unit: "1"
     gauge:
       value_type: double
   container.memory.active_anon:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "The amount of anonymous memory that has been identified as active by the kernel."
     unit: By
     sum:
@@ -326,8 +305,7 @@ metrics:
       monotonic: false
   container.memory.active_file:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Cache memory that has been identified as active by the kernel."
     extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)"
     unit: By
@@ -337,8 +315,7 @@ metrics:
       monotonic: false
   container.memory.anon:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)"
     unit: By
@@ -348,8 +325,7 @@ metrics:
       monotonic: false
   container.memory.cache:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device (Only available with cgroups v1)."
     unit: By
     sum:
@@ -358,8 +334,7 @@ metrics:
       monotonic: false
   container.memory.dirty:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Bytes that are waiting to get written back to the disk, from this cgroup (Only available with cgroups v1)."
     unit: By
     sum:
@@ -368,8 +343,7 @@ metrics:
       monotonic: false
   container.memory.fails:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of times the memory limit was hit."
     unit: "{fails}"
     sum:
@@ -381,8 +355,7 @@ metrics:
   # BlockIO (cgroup v1) and IO (cgroup v2) controllers
   container.memory.file:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: "Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)"
     unit: By
@@ -392,8 +365,7 @@ metrics:
       monotonic: false
   container.memory.hierarchical_memory_limit:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1)."
     unit: By
     sum:
@@ -402,8 +374,7 @@ metrics:
       monotonic: false
   container.memory.hierarchical_memsw_limit:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "The maximum amount of RAM + swap that can be used by the processes of this control group (Only available with cgroups v1)."
     unit: By
     sum:
@@ -412,8 +383,7 @@ metrics:
       monotonic: false
   container.memory.inactive_anon:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "The amount of anonymous memory that has been identified as inactive by the kernel."
     unit: By
     sum:
@@ -422,8 +392,7 @@ metrics:
       monotonic: false
   container.memory.inactive_file:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Cache memory that has been identified as inactive by the kernel."
     extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)"
     unit: By
@@ -433,8 +402,7 @@ metrics:
       monotonic: false
   container.memory.mapped_file:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Indicates the amount of memory mapped by the processes in the control group (Only available with cgroups v1)."
     unit: By
     sum:
@@ -443,16 +411,14 @@ metrics:
       monotonic: false
   container.memory.percent:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: "Percentage of memory used. Not supported on Windows."
     unit: "1"
     gauge:
       value_type: double
   container.memory.pgfault:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Indicate the number of times that a process of the cgroup triggered a page fault."
     unit: "{faults}"
     sum:
@@ -461,8 +427,7 @@ metrics:
       monotonic: true
   container.memory.pgmajfault:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Indicate the number of times that a process of the cgroup triggered a major fault."
     unit: "{faults}"
     sum:
@@ -471,8 +436,7 @@ metrics:
       monotonic: true
   container.memory.pgpgin:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of pages read from disk by the cgroup (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt)."
     unit: "{operations}"
@@ -482,8 +446,7 @@ metrics:
       monotonic: true
   container.memory.pgpgout:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of pages written to disk by the cgroup (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt)."
     unit: "{operations}"
@@ -493,8 +456,7 @@ metrics:
       monotonic: true
   container.memory.rss:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps (Only available with cgroups v1)."
     unit: By
     sum:
@@ -503,8 +465,7 @@ metrics:
       monotonic: false
   container.memory.rss_huge:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of bytes of anonymous transparent hugepages in this cgroup (Only available with cgroups v1)."
     unit: By
     sum:
@@ -513,8 +474,7 @@ metrics:
       monotonic: false
   container.memory.total_active_anon:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
     unit: By
     sum:
@@ -523,8 +483,7 @@ metrics:
       monotonic: false
   container.memory.total_active_file:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Cache memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)."
     unit: By
@@ -534,8 +493,7 @@ metrics:
       monotonic: false
   container.memory.total_cache:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1). Not supported on Windows."
     unit: By
     sum:
@@ -544,8 +502,7 @@ metrics:
       monotonic: false
   container.memory.total_dirty:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Bytes that are waiting to get written back to the disk, from this cgroup and descendants (Only available with cgroups v1)."
     unit: By
     sum:
@@ -554,8 +511,7 @@ metrics:
       monotonic: false
   container.memory.total_inactive_anon:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
     unit: By
     sum:
@@ -564,8 +520,7 @@ metrics:
       monotonic: false
   container.memory.total_inactive_file:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)."
     unit: By
@@ -575,8 +530,7 @@ metrics:
       monotonic: false
   container.memory.total_mapped_file:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Indicates the amount of memory mapped by the processes in the control group and descendant groups (Only available with cgroups v1)."
     unit: By
     sum:
@@ -585,8 +539,7 @@ metrics:
       monotonic: false
   container.memory.total_pgfault:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault (Only available with cgroups v1)."
     unit: "{faults}"
     sum:
@@ -595,8 +548,7 @@ metrics:
       monotonic: true
   container.memory.total_pgmajfault:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault (Only available with cgroups v1)."
     unit: "{faults}"
     sum:
@@ -605,8 +557,7 @@ metrics:
       monotonic: true
   container.memory.total_pgpgin:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of pages read from disk by the cgroup and descendant groups (Only available with cgroups v1)."
     unit: "{operations}"
     sum:
@@ -615,8 +566,7 @@ metrics:
       monotonic: true
   container.memory.total_pgpgout:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of pages written to disk by the cgroup and descendant groups (Only available with cgroups v1)."
     unit: "{operations}"
     sum:
@@ -625,8 +575,7 @@ metrics:
       monotonic: true
   container.memory.total_rss:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups (Only available with cgroups v1)."
     unit: By
     sum:
@@ -635,8 +584,7 @@ metrics:
       monotonic: false
   container.memory.total_rss_huge:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups (Only available with cgroups v1)."
     unit: By
     sum:
@@ -645,8 +593,7 @@ metrics:
       monotonic: false
   container.memory.total_unevictable:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "The amount of memory that cannot be reclaimed. Includes descendant cgroups (Only available with cgroups v1)."
     unit: By
     sum:
@@ -655,8 +602,7 @@ metrics:
       monotonic: false
   container.memory.total_writeback:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants (Only available with cgroups v1)."
     unit: By
     sum:
@@ -665,8 +611,7 @@ metrics:
       monotonic: false
   container.memory.unevictable:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "The amount of memory that cannot be reclaimed."
     unit: By
     sum:
@@ -675,8 +620,7 @@ metrics:
       monotonic: false
   container.memory.usage.limit:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: "Memory limit of the container. Not supported on Windows."
     unit: By
     sum:
@@ -685,8 +629,7 @@ metrics:
       monotonic: false
   container.memory.usage.max:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Maximum memory usage."
     unit: By
     sum:
@@ -695,8 +638,7 @@ metrics:
       monotonic: false
   container.memory.usage.total:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: "Memory usage of the container. This excludes the cache."
     unit: By
     sum:
@@ -705,8 +647,7 @@ metrics:
       monotonic: false
   container.memory.writeback:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup (Only available with cgroups v1)."
     unit: By
     sum:
@@ -715,8 +656,7 @@ metrics:
       monotonic: false
   container.network.io.usage.rx_bytes:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: "Bytes received by the container."
     unit: By
     sum:
@@ -727,8 +667,7 @@ metrics:
       - interface
   container.network.io.usage.rx_dropped:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: "Incoming packets dropped."
     unit: "{packets}"
     sum:
@@ -739,8 +678,7 @@ metrics:
       - interface
   container.network.io.usage.rx_errors:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Received errors. Not supported on Windows."
     unit: "{errors}"
     sum:
@@ -751,8 +689,7 @@ metrics:
       - interface
   container.network.io.usage.rx_packets:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Packets received."
     unit: "{packets}"
     sum:
@@ -763,8 +700,7 @@ metrics:
       - interface
   container.network.io.usage.tx_bytes:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: "Bytes sent."
     unit: By
     sum:
@@ -775,8 +711,7 @@ metrics:
       - interface
   container.network.io.usage.tx_dropped:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: "Outgoing packets dropped."
     unit: "{packets}"
     sum:
@@ -787,8 +722,7 @@ metrics:
       - interface
   container.network.io.usage.tx_errors:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Sent errors. Not supported on Windows."
     unit: "{errors}"
     sum:
@@ -799,8 +733,7 @@ metrics:
       - interface
   container.network.io.usage.tx_packets:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Packets sent."
     unit: "{packets}"
     sum:
@@ -813,8 +746,7 @@ metrics:
   # Pids
   container.pids.count:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of pids in the container's cgroup."
     extended_documentation: "It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supported. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)"
     unit: "{pids}"
@@ -825,8 +757,7 @@ metrics:
 
   container.pids.limit:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Maximum number of pids in the container's cgroup."
     extended_documentation: "It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supported. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)"
     unit: "{pids}"
@@ -838,8 +769,7 @@ metrics:
   # Container
   container.restarts:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Number of restarts for the container."
     unit: "{restarts}"
     sum:
@@ -850,8 +780,7 @@ metrics:
   # Base
   container.uptime:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: "Time elapsed since container start time."
     unit: s
     gauge:

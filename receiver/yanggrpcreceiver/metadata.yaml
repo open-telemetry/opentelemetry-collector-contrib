@@ -18,24 +18,21 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      stability:
-        level: development
+      stability: development
     yang_receiver_connections_closed:
       enabled: true
       description: Number of gRPC connections closed
       unit: "{connections}"
       sum:
         value_type: int
-      stability:
-        level: development
+      stability: development
     yang_receiver_connections_opened:
       enabled: true
       description: Number of gRPC connections opened
       unit: "{connections}"
       sum:
         value_type: int
-      stability:
-        level: development
+      stability: development
     yang_receiver_grpc_errors:
       enabled: true
       description: Number of gRPC errors encountered
@@ -43,8 +40,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      stability:
-        level: development
+      stability: development
     yang_receiver_messages_dropped:
       enabled: true
       description: Number of telemetry messages dropped due to errors
@@ -52,8 +48,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      stability:
-        level: development
+      stability: development
     yang_receiver_messages_processed:
       enabled: true
       description: Number of telemetry messages successfully processed
@@ -61,8 +56,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      stability:
-        level: development
+      stability: development
     yang_receiver_messages_received:
       enabled: true
       description: Number of telemetry messages received
@@ -70,8 +64,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      stability:
-        level: development
+      stability: development
     yang_receiver_processing_duration:
       enabled: true
       description: Time spent processing telemetry messages
@@ -79,16 +72,14 @@ telemetry:
       histogram:
         bucket_boundaries: [ 0.1, 0.5, 1.0, 5.0, 10.0, 50.0, 100.0, 500.0, 1000.0 ]
         value_type: double
-      stability:
-        level: development
+      stability: development
     yang_receiver_yang_modules_discovered:
       enabled: true
       description: Number of unique YANG modules discovered
       unit: "{errors}"
       sum:
         value_type: int
-      stability:
-        level: development
+      stability: development
 
 tests:
   skip_lifecycle: true

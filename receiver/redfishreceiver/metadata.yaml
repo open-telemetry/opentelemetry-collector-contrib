@@ -81,8 +81,7 @@ metrics:
   chassis.powerstate:
     description: Measures the power state of a chassis (-1 unknown, 0 off, 1 on).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{powerstate}"
@@ -90,8 +89,7 @@ metrics:
   chassis.status.health:
     description: Measures the health of a chassis (-1 unknown, 0 critical, 1 ok, 2 warning).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statushealth}"
@@ -99,8 +97,7 @@ metrics:
   chassis.status.state:
     description: Measures the state of a chassis (-1 unknown, 0 disabled, 1 enabled).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statusstate}"
@@ -108,8 +105,7 @@ metrics:
   fan.reading:
     description: Measures the reading of a chassis fan.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{}"
@@ -117,8 +113,7 @@ metrics:
   fan.status.health:
     description: Measures the health of a chassis fan (-1 unknown, 0 critical, 1 ok, 2 warning).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statushealth}"
@@ -126,8 +121,7 @@ metrics:
   fan.status.state:
     description: Measures the state of a chassis fan (-1 unknown, 0 disabled, 1 enabled).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statusstate}"
@@ -135,8 +129,7 @@ metrics:
   system.powerstate:
     description: Measures the power state of a system (-1 unknown, 0 off, 1 on).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{powerstate}"
@@ -144,8 +137,7 @@ metrics:
   system.status.health:
     description: Measures the health of a system (-1 unknown, 0 critical, 1 ok, 2 warning).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statushealth}"
@@ -153,8 +145,7 @@ metrics:
   system.status.state:
     description: Measures the state of a system (-1 unknown, 0 disabled, 1 enabled).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statusstate}"
@@ -162,8 +153,7 @@ metrics:
   temperature.reading:
     description: Measures the reading of a chassis temperature.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "°C"
@@ -171,8 +161,7 @@ metrics:
   temperature.status.health:
     description: Measures the health of a chassis temperature (-1 unknown, 0 critical, 1 ok, 2 warning).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statushealth}"
@@ -180,8 +169,7 @@ metrics:
   temperature.status.state:
     description: Measures the state of a chassis temperature (-1 unknown, 0 disabled, 1 enabled).
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "{statusstate}"
