@@ -103,6 +103,73 @@ func TestParseBody(t *testing.T) {
 	require.Equal(t, expected, formattedBody(xml))
 }
 
+func TestExtendedParseBody(t *testing.T) {
+	xml := &EventXML{
+		EventID: EventID{
+			ID:         1,
+			Qualifiers: 2,
+		},
+		Provider: Provider{
+			Name:            "provider",
+			GUID:            "guid",
+			EventSourceName: "event source",
+		},
+		TimeCreated: TimeCreated{
+			SystemTime: "2020-07-30T01:01:01.123456789Z",
+		},
+		Computer: "computer",
+		Channel:  "application",
+		RecordID: 1,
+		Level:    "Information",
+		Message:  "message",
+		Task:     "task",
+		Opcode:   "opcode",
+		Keywords: []string{"keyword"},
+		EventData: EventData{
+			Data: []Data{{Name: "1st_name", Value: "value"}, {Name: "2nd_name", Value: "another_value"}},
+		},
+		RenderedLevel:    "rendered_level",
+		RenderedTask:     "rendered_task",
+		RenderedOpcode:   "rendered_opcode",
+		RenderedKeywords: []string{"RenderedKeywords"},
+		Version:          0,
+	}
+
+	expected := map[string]any{
+		"event_id": map[string]any{
+			"id":         uint32(1),
+			"qualifiers": uint16(2),
+		},
+		"provider": map[string]any{
+			"name":         "provider",
+			"guid":         "guid",
+			"event_source": "event source",
+		},
+		"system_time":       "2020-07-30T01:01:01.123456789Z",
+		"computer":          "computer",
+		"channel":           "application",
+		"record_id":         uint64(1),
+		"level":             "Information",
+		"rendered_level":    "rendered_level",
+		"message":           "message",
+		"task":              "task",
+		"rendered_task":     "rendered_task",
+		"opcode":            "opcode",
+		"rendered_opcode":   "rendered_opcode",
+		"keywords":          []string{"keyword"},
+		"rendered_keywords": []string{"RenderedKeywords"},
+		"event_data": map[string]any{
+			"data": []any{
+				map[string]any{"1st_name": "value"},
+				map[string]any{"2nd_name": "another_value"},
+			},
+		},
+		"version": uint8(0),
+	}
+
+	require.Equal(t, expected, extendedFormattedBody(xml))
+}
+
 func TestParseBodySecurityExecution(t *testing.T) {
 	xml := &EventXML{
 		EventID: EventID{

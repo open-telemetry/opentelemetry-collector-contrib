@@ -34,6 +34,7 @@ type Input struct {
 	currentMaxReads          int
 	startAt                  string
 	raw                      bool
+	extendedFormat           bool
 	includeLogRecordOriginal bool
 	excludeProviders         map[string]struct{}
 	pollInterval             time.Duration
@@ -352,6 +353,15 @@ func (i *Input) processEventWithRenderingInfo(ctx context.Context, event Event) 
 // sendEvent will send EventXML as an entry to the operator's output.
 func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 	var body any = eventXML.Original
+
+	if i.extendedFormat {
+		body = extendedFormattedBody(eventXML)
+		e, err := i.NewEntry(body)
+		if err != nil {
+			return fmt.Errorf("create entry: %w", err)
+		}
+		return i.Write(ctx, e)
+	}
 	if !i.raw {
 		body = formattedBody(eventXML)
 	}
