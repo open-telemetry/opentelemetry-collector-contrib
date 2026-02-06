@@ -18,13 +18,6 @@ import (
 
 var _ observer.Notify = (*observerHandler)(nil)
 
-const (
-	// tmpSetEndpointConfigKey denotes the observerHandler (not the user) has set an "endpoint" target field
-	// in resolved configuration. Used to determine if the field should be removed when the created receiver
-	// doesn't expose such a field.
-	tmpSetEndpointConfigKey = "<tmp.receiver.creator.automatically.set.endpoint.field>"
-)
-
 // observerHandler manages endpoint change notifications.
 type observerHandler struct {
 	sync.Mutex
@@ -40,6 +33,14 @@ type observerHandler struct {
 	nextTracesConsumer consumer.Traces
 	// runner starts and stops receiver instances.
 	runner runner
+}
+
+// restartEntry holds the information needed to restart a receiver with new config.
+// It captures both the old entry (to shutdown) and the template (to restart with).
+// Used by handleEndpointChange to track receivers that need restart.
+type restartEntry struct {
+	oldEntry receiverEntry
+	template receiverTemplate
 }
 
 // shutdown all receivers started at runtime.
@@ -74,36 +75,13 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 	defer obs.Unlock()
 
 	for _, e := range added {
-		var env observer.EndpointEnv
-		var err error
-		if env, err = e.Env(); err != nil {
+		env, err := e.Env()
+		if err != nil {
 			obs.params.Logger.Error("unable to convert endpoint to environment map", zap.String("endpoint", string(e.ID)), zap.Error(err))
 			continue
 		}
 
-		if obs.config.Discovery.Enabled {
-			builder := createK8sHintsBuilder(obs.config.Discovery, obs.params.Logger)
-			subreceiverTemplate, err := builder.createReceiverTemplateFromHints(env)
-			if err != nil {
-				obs.params.Logger.Error("could not extract configurations from K8s hints' annotations", zap.Error(err))
-				break
-			}
-			if subreceiverTemplate != nil {
-				obs.params.Logger.Debug("adding K8s hinted receiver", zap.Any("subreceiver", subreceiverTemplate))
-				obs.startReceiver(*subreceiverTemplate, env, e)
-				continue
-			}
-		}
-
-		for _, template := range obs.config.receiverTemplates {
-			if matches, err := template.rule.eval(env); err != nil {
-				obs.params.Logger.Error("failed matching rule", zap.String("rule", template.Rule), zap.Error(err))
-				continue
-			} else if !matches {
-				continue
-			}
-			obs.startReceiver(template, env, e)
-		}
+		obs.addReceiversForEndpoint(e, env)
 	}
 }
 
@@ -113,63 +91,175 @@ func (obs *observerHandler) OnRemove(removed []observer.Endpoint) {
 	defer obs.Unlock()
 
 	for _, e := range removed {
-		// debug log the endpoint to improve usability
-		if ce := obs.params.Logger.Check(zap.DebugLevel, "handling removed endpoint"); ce != nil {
-			env, err := e.Env()
-			fields := []zap.Field{zap.String("endpoint_id", string(e.ID))}
-			if err == nil {
-				fields = append(fields, zap.Any("env", env))
-			}
-			ce.Write(fields...)
-		}
-
-		for _, rcvr := range obs.receiversByEndpointID.Get(e.ID) {
-			obs.params.Logger.Info("stopping receiver", zap.Reflect("receiver", rcvr), zap.String("endpoint_id", string(e.ID)))
-
-			if err := obs.runner.shutdown(rcvr); err != nil {
-				obs.params.Logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr), zap.Error(err))
-				continue
-			}
-		}
-		obs.receiversByEndpointID.RemoveAll(e.ID)
+		obs.removeReceiversByEndpointID(e)
 	}
+}
+
+// removeReceiversByEndpointID stops and removes all receivers for the given endpoint.
+// Caller must hold the lock.
+func (obs *observerHandler) removeReceiversByEndpointID(e observer.Endpoint) {
+	// debug log the endpoint to improve usability
+	if ce := obs.params.Logger.Check(zap.DebugLevel, "handling removed endpoint"); ce != nil {
+		env, err := e.Env()
+		fields := []zap.Field{zap.String("endpoint_id", string(e.ID))}
+		if err == nil {
+			fields = append(fields, zap.Any("env", env))
+		}
+		ce.Write(fields...)
+	}
+
+	for _, entry := range obs.receiversByEndpointID.Get(e.ID) {
+		obs.params.Logger.Info("stopping receiver", zap.String("receiver", entry.id.String()), zap.String("endpoint_id", string(e.ID)))
+
+		if err := obs.runner.shutdown(entry.receiver); err != nil {
+			obs.params.Logger.Error("failed to stop receiver", zap.String("receiver", entry.id.String()), zap.Error(err))
+			continue
+		}
+	}
+	obs.receiversByEndpointID.RemoveAll(e.ID)
 }
 
 // OnChange responds to endpoint change notifications.
+// It only restarts receivers if the effective config has changed.
 func (obs *observerHandler) OnChange(changed []observer.Endpoint) {
-	// TODO: optimize to only restart if effective config has changed.
-	obs.OnRemove(changed)
-	obs.OnAdd(changed)
+	obs.Lock()
+	defer obs.Unlock()
+
+	for _, e := range changed {
+		obs.handleEndpointChange(e)
+	}
 }
 
-func (obs *observerHandler) startReceiver(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) {
-	obs.params.Logger.Debug("expanding the following template config",
-		zap.String("name", template.id.String()),
-		zap.String("endpoint", e.Target),
-		zap.String("endpoint_id", string(e.ID)),
-		zap.Any("config", template.config))
-	resolvedConfig, err := expandConfig(template.config, env)
+// handleEndpointChange processes a single endpoint change, only restarting
+// receivers if their effective configuration would change.
+// Caller must hold the lock.
+func (obs *observerHandler) handleEndpointChange(e observer.Endpoint) {
+	env, err := e.Env()
 	if err != nil {
-		obs.params.Logger.Error("unable to resolve template config", zap.String("receiver", template.id.String()), zap.Error(err))
+		obs.params.Logger.Error("unable to convert endpoint to environment map", zap.String("endpoint", string(e.ID)), zap.Error(err))
 		return
 	}
 
-	discoveredCfg := userConfigMap{}
-	// If user didn't set endpoint set to default value as well as
-	// flag indicating we've done this for later validation.
-	if _, ok := resolvedConfig[endpointConfigKey]; !ok {
-		discoveredCfg[endpointConfigKey] = e.Target
-		discoveredCfg[tmpSetEndpointConfigKey] = struct{}{}
+	existingEntries := obs.receiversByEndpointID.Get(e.ID)
+
+	// Classify each existing receiver into one of three categories:
+	// - entriesToKeep: config unchanged, keep running
+	// - entriesToRestart: config changed, need to shutdown and restart with new config
+	// - entriesToRemove: template no longer matches, truly remove (no restart)
+	var entriesToKeep []receiverEntry
+	var entriesToRestart []restartEntry
+	var entriesToRemove []receiverEntry
+
+	for _, entry := range existingEntries {
+		// Find the template that created this receiver
+		template, found := obs.findTemplateForReceiver(entry.id, env)
+		if !found {
+			// Template no longer matches, truly remove this receiver
+			obs.params.Logger.Info("removing receiver (template no longer matches)",
+				zap.String("receiver", entry.id.String()),
+				zap.String("endpoint_id", string(e.ID)))
+			entriesToRemove = append(entriesToRemove, entry)
+			continue
+		}
+
+		// Resolve the new config
+		resolvedConfig, resolvedDiscoveredConfig, _, err := obs.resolveConfig(template, env, e)
+		if err != nil {
+			obs.params.Logger.Error("unable to resolve config for change comparison, removing receiver",
+				zap.String("receiver", entry.id.String()), zap.Error(err))
+			entriesToRemove = append(entriesToRemove, entry)
+			continue
+		}
+
+		// Compute what the resource attributes would be with the new endpoint env.
+		// This catches cases where pod labels/annotations change but the receiver
+		// config itself is unchanged - we still need to restart to pick up the
+		// new attribute values.
+		resAttrs := obs.buildReceiverResourceAttrs(template)
+		computedAttrs, err := computeResourceAttrs(obs.config.ResourceAttributes, resAttrs, env, e)
+		if err != nil {
+			obs.params.Logger.Error("unable to compute resource attrs for change comparison, removing receiver",
+				zap.String("receiver", entry.id.String()), zap.Error(err))
+			entriesToRemove = append(entriesToRemove, entry)
+			continue
+		}
+
+		if entry.configsEqual(resolvedConfig, resolvedDiscoveredConfig, computedAttrs) {
+			// Config AND computed resource attrs unchanged, keep the receiver running
+			obs.params.Logger.Debug("keeping receiver (config unchanged)",
+				zap.String("receiver", entry.id.String()),
+				zap.String("endpoint_id", string(e.ID)))
+			entriesToKeep = append(entriesToKeep, entry)
+		} else {
+			// Config or attrs changed, need to restart
+			obs.params.Logger.Info("restarting receiver (config changed)",
+				zap.String("receiver", entry.id.String()),
+				zap.String("endpoint_id", string(e.ID)))
+			// Debug: show what changed
+			obs.params.Logger.Debug("config comparison details",
+				zap.String("receiver", entry.id.String()),
+				zap.Any("stored_resolvedConfig", entry.resolvedConfig),
+				zap.Any("new_resolvedConfig", resolvedConfig),
+				zap.Any("stored_discoveredConfig", entry.resolvedDiscoveredConfig),
+				zap.Any("new_discoveredConfig", resolvedDiscoveredConfig),
+				zap.Any("stored_resourceAttrs", entry.computedResourceAttrs),
+				zap.Any("new_resourceAttrs", computedAttrs))
+			entriesToRestart = append(entriesToRestart, restartEntry{
+				oldEntry: entry,
+				template: template,
+			})
+		}
 	}
 
-	// Though not necessary with contrib provided observers, nothing is stopping custom
-	// ones from using expr in their Target values.
-	discoveredConfig, err := expandConfig(discoveredCfg, env)
-	if err != nil {
-		obs.params.Logger.Error("unable to resolve discovered config", zap.String("receiver", template.id.String()), zap.Error(err))
-		return
+	// 1. Shutdown receivers that are being truly removed (template no longer matches)
+	for _, entry := range entriesToRemove {
+		if err := obs.runner.shutdown(entry.receiver); err != nil {
+			obs.params.Logger.Error("failed to stop receiver", zap.String("receiver", entry.id.String()), zap.Error(err))
+		}
 	}
 
+	// 2. Shutdown receivers that need to be restarted (will start them after map update)
+	for i := range entriesToRestart {
+		if err := obs.runner.shutdown(entriesToRestart[i].oldEntry.receiver); err != nil {
+			obs.params.Logger.Error("failed to stop receiver for restart", zap.String("receiver", entriesToRestart[i].oldEntry.id.String()), zap.Error(err))
+		}
+	}
+
+	// 3. Update the map: clear old entries and add back the kept ones
+	obs.receiversByEndpointID.RemoveAll(e.ID)
+	for _, entry := range entriesToKeep {
+		obs.receiversByEndpointID.Put(e.ID, entry)
+	}
+
+	// 4. Start receivers that need to be restarted with new config
+	//    (startReceiver will add them to the map)
+	for i := range entriesToRestart {
+		obs.startReceiver(entriesToRestart[i].template, env, e)
+	}
+
+	// 5. Add any NEW receivers from templates that now match
+	//    (excludes those already in the map)
+	obs.addNewReceiversForEndpoint(e, env)
+}
+
+// findTemplateForReceiver finds the template that matches the given receiver ID.
+func (obs *observerHandler) findTemplateForReceiver(id component.ID, env observer.EndpointEnv) (receiverTemplate, bool) {
+	template, found := obs.config.receiverTemplates[id.String()]
+	if !found {
+		return receiverTemplate{}, false
+	}
+	// Check if the rule still matches
+	matches, err := template.rule.eval(env)
+	if err == nil && matches {
+		return template, true
+	}
+	return receiverTemplate{}, false
+}
+
+// buildReceiverResourceAttrs extracts the resource attributes from the template,
+// converting them to a map[string]string for use with computeResourceAttrs.
+// Non-string values are logged and skipped.
+func (obs *observerHandler) buildReceiverResourceAttrs(template receiverTemplate) map[string]string {
 	resAttrs := map[string]string{}
 	for k, v := range template.ResourceAttributes {
 		strVal, ok := v.(string)
@@ -179,6 +269,145 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		}
 		resAttrs[k] = strVal
 	}
+	return resAttrs
+}
+
+// resolveConfig expands the receiver template's config using the endpoint environment.
+//
+// It returns two configs that are later merged by the runner:
+//   - resolvedUserConfig: the user's template config with backtick expressions expanded
+//   - resolvedDiscoveredConfig: auto-discovered values from the endpoint (e.g., endpoint target)
+//   - endpointAutoSet: true if we auto-populated the endpoint field (user didn't set it)
+//
+// These are kept separate so the runner can validate whether auto-discovered fields
+// (like "endpoint") are actually supported by the receiver before merging them.
+func (*observerHandler) resolveConfig(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) (resolvedUserConfig, resolvedDiscoveredConfig userConfigMap, endpointAutoSet bool, err error) {
+	resolvedUserConfig, err = expandConfig(template.config, env)
+	if err != nil {
+		return nil, nil, false, fmt.Errorf("expanding user template config: %w", err)
+	}
+
+	// Build the "discovered" config which contains values derived from the endpoint
+	// rather than from the user's template. Currently this is just the endpoint target.
+	//
+	// If the user didn't explicitly set an "endpoint" field in their config, we auto-populate
+	// it from the discovered endpoint's Target. The endpointAutoSet return value tells
+	// mergeTemplatedAndDiscoveredConfigs (in runner.go) that we auto-set this value, so it
+	// can validate whether the receiver actually supports an "endpoint" config field and
+	// remove it if not (avoiding "unknown field" errors for receivers without that field).
+	//
+	// Caveat: If a receiver has an optional "endpoint" field that's mutually exclusive with
+	// another field (e.g., "url"), users must explicitly set endpoint: "" to prevent auto-discovery.
+	discoveredCfg := userConfigMap{}
+	endpointAutoSet = false
+	if _, ok := resolvedUserConfig[endpointConfigKey]; !ok {
+		discoveredCfg[endpointConfigKey] = e.Target
+		endpointAutoSet = true
+	}
+
+	// We expand discoveredCfg even though it typically contains just e.Target (a plain
+	// address like "192.168.1.5:6379"). This is defensive: the observer API doesn't prevent
+	// a custom observer from setting Target to a backtick expression like "`pod.name`:8080",
+	// which would need expansion. Contrib observers never do this, but we handle it anyway.
+	resolvedDiscoveredConfig, err = expandConfig(discoveredCfg, env)
+	if err != nil {
+		return nil, nil, false, fmt.Errorf("expanding discovered config: %w", err)
+	}
+
+	return resolvedUserConfig, resolvedDiscoveredConfig, endpointAutoSet, nil
+}
+
+// receiverStartedCallback is called when a new receiver is about to be started.
+// It receives the receiver template being started and the endpoint ID.
+// This callback is optional (can be nil) and is used for additional logging
+// beyond the standard debug logging that startMatchingReceivers performs.
+type receiverStartedCallback func(template receiverTemplate, endpointID observer.EndpointID)
+
+// addReceiversForEndpoint starts receivers for an endpoint, skipping any that already exist.
+// Caller must hold the lock.
+func (obs *observerHandler) addReceiversForEndpoint(e observer.Endpoint, env observer.EndpointEnv) {
+	obs.startMatchingReceivers(e, env, nil)
+}
+
+// addNewReceiversForEndpoint starts receivers for templates that newly match this endpoint.
+// This is used by handleEndpointChange to add receivers for templates that didn't match before
+// but now match after the endpoint changed.
+// Caller must hold the lock.
+func (obs *observerHandler) addNewReceiversForEndpoint(e observer.Endpoint, env observer.EndpointEnv) {
+	obs.startMatchingReceivers(e, env, func(t receiverTemplate, endpointID observer.EndpointID) {
+		obs.params.Logger.Info("starting new receiver (template now matches)",
+			zap.String("receiver", t.id.String()),
+			zap.String("endpoint_id", string(endpointID)))
+	})
+}
+
+// startMatchingReceivers starts receivers for templates that match the endpoint, skipping
+// any that are already running (based on what's in the receiver map).
+// Debug logging is performed for each new receiver. The optional onStart callback
+// is invoked just before each new receiver is started for additional logging.
+// Caller must hold the lock.
+func (obs *observerHandler) startMatchingReceivers(e observer.Endpoint, env observer.EndpointEnv, onStart receiverStartedCallback) {
+	existingIDs := make(map[component.ID]bool)
+	for _, entry := range obs.receiversByEndpointID.Get(e.ID) {
+		existingIDs[entry.id] = true
+	}
+
+	if obs.config.Discovery.Enabled {
+		builder := createK8sHintsBuilder(obs.config.Discovery, obs.params.Logger)
+		hintedTemplate, err := builder.createReceiverTemplateFromHints(env)
+		if err != nil {
+			obs.params.Logger.Error("could not extract configurations from K8s hints' annotations", zap.Error(err))
+			return
+		}
+		if hintedTemplate != nil {
+			if !existingIDs[hintedTemplate.id] {
+				obs.params.Logger.Debug("adding K8s hinted receiver",
+					zap.String("endpoint_id", string(e.ID)),
+					zap.Any("receiver_template", *hintedTemplate))
+				if onStart != nil {
+					onStart(*hintedTemplate, e.ID)
+				}
+				obs.startReceiver(*hintedTemplate, env, e)
+			}
+			return // When hints create a receiver, skip regular templates
+		}
+		// Fall through to process regular templates if no hint-based receiver
+	}
+
+	for _, template := range obs.config.receiverTemplates {
+		if existingIDs[template.id] {
+			continue // Already running
+		}
+		if matches, err := template.rule.eval(env); err != nil {
+			obs.params.Logger.Error("failed matching rule", zap.String("rule", template.Rule), zap.Error(err))
+			continue
+		} else if !matches {
+			continue
+		}
+		obs.params.Logger.Debug("adding receiver",
+			zap.String("endpoint_id", string(e.ID)),
+			zap.Any("receiver_template", template))
+		if onStart != nil {
+			onStart(template, e.ID)
+		}
+		obs.startReceiver(template, env, e)
+	}
+}
+
+func (obs *observerHandler) startReceiver(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) {
+	obs.params.Logger.Debug("expanding the following template config",
+		zap.String("name", template.id.String()),
+		zap.String("endpoint", e.Target),
+		zap.String("endpoint_id", string(e.ID)),
+		zap.Any("config", template.config))
+
+	resolvedConfig, resolvedDiscoveredConfig, endpointAutoSet, err := obs.resolveConfig(template, env, e)
+	if err != nil {
+		obs.params.Logger.Error("unable to resolve receiver config", zap.String("receiver", template.id.String()), zap.Error(err))
+		return
+	}
+
+	resAttrs := obs.buildReceiverResourceAttrs(template)
 
 	// Adds default and/or configured resource attributes (e.g. k8s.pod.uid) to resources
 	// as telemetry is emitted.
@@ -219,13 +448,28 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 			config:     resolvedConfig,
 			endpointID: e.ID,
 		},
-		discoveredConfig,
+		resolvedDiscoveredConfig,
+		endpointAutoSet,
 		consumer,
 	); err != nil {
 		obs.params.Logger.Error("failed to start receiver", zap.String("receiver", template.id.String()), zap.Error(err))
 		return
 	}
-	obs.receiversByEndpointID.Put(e.ID, receiver)
+
+	// Store the computed resource attrs so we can compare them on endpoint changes.
+	obs.params.Logger.Debug("storing receiver entry",
+		zap.String("receiver", template.id.String()),
+		zap.String("endpoint_id", string(e.ID)),
+		zap.Any("resolvedConfig", resolvedConfig),
+		zap.Any("resolvedDiscoveredConfig", resolvedDiscoveredConfig),
+		zap.Any("computedResourceAttrs", consumer.attrs))
+	obs.receiversByEndpointID.Put(e.ID, receiverEntry{
+		receiver:                 receiver,
+		id:                       template.id,
+		resolvedConfig:           resolvedConfig,
+		resolvedDiscoveredConfig: resolvedDiscoveredConfig,
+		computedResourceAttrs:    consumer.attrs,
+	})
 }
 
 func filterConsumerSignals(consumer *enhancingConsumer, signals receiverSignals) {
