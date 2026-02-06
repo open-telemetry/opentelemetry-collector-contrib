@@ -286,27 +286,6 @@ func isValidW3CValue(value string) bool {
 	return true
 }
 
-func isLcAlpha(c byte) bool {
-	return c >= 'a' && c <= 'z'
-}
-
-func isLcAlphaNum(c byte) bool {
-	return isLcAlpha(c) || (c >= '0' && c <= '9')
-}
-
-func isValidKeyChar(c byte) bool {
-	return isLcAlphaNum(c) || c == '_' || c == '-' || c == '*' || c == '/'
-}
-
-func isValidKeyChars(s string) bool {
-	for i := 0; i < len(s); i++ {
-		if !isValidKeyChar(s[i]) {
-			return false
-		}
-	}
-	return true
-}
-
 // isNonBlankValueChar: %x21-2B / %x2D-3C / %x3E-7E
 func isNonBlankValueChar(c byte) bool {
 	return (c >= 0x21 && c <= 0x2B) || (c >= 0x2D && c <= 0x3C) || (c >= 0x3E && c <= 0x7E)

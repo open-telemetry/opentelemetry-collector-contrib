@@ -1,4 +1,7 @@
+display_name: Redis Storage Extension
 type: redis_storage
+
+description: The Redis Storage Extension can persist state to a Redis cluster.
 
 status:
   class: extension
