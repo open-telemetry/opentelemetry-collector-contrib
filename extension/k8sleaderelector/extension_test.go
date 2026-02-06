@@ -60,6 +60,9 @@ func TestExtension(t *testing.T) {
 
 	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
 
+	// Signal that the collector is ready - callbacks are only invoked after this.
+	require.NoError(t, leaderElection.Ready())
+
 	expectedLeaseDurationSeconds := ptr.To(int32(15))
 
 	require.EventuallyWithT(t, func(t *assert.CollectT) {
@@ -101,7 +104,7 @@ func TestExtension_WithDelay(t *testing.T) {
 
 	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
 
-	// Simulate a delay of setting up callbacks after the leader has been elected.
+	// Wait for leadership to be acquired first.
 	expectedLeaseDurationSeconds := ptr.To(int32(15))
 	require.EventuallyWithT(t, func(t *assert.CollectT) {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
@@ -112,6 +115,8 @@ func TestExtension_WithDelay(t *testing.T) {
 		require.Equal(t, expectedLeaseDurationSeconds, lease.Spec.LeaseDurationSeconds)
 	}, 10*time.Second, 100*time.Millisecond)
 
+	// Now set up callbacks after leadership is acquired but before Ready().
+	// The callback should NOT be invoked yet because Ready() hasn't been called.
 	leaderElection.SetCallBackFuncs(
 		func(_ context.Context) {
 			onStartLeadingInvoked.Store(true)
@@ -122,7 +127,13 @@ func TestExtension_WithDelay(t *testing.T) {
 		},
 	)
 
-	// Wait for the callback to be invoked (may take a moment for leader election to complete)
+	// Callback should not have been invoked yet since Ready() hasn't been called
+	require.False(t, onStartLeadingInvoked.Load())
+
+	// Signal that the collector is ready - callbacks should be invoked now
+	require.NoError(t, leaderElection.Ready())
+
+	// Wait for the callback to be invoked
 	require.Eventually(t, onStartLeadingInvoked.Load, 10*time.Second, 100*time.Millisecond)
 
 	require.NoError(t, leaderElection.Shutdown(ctx))
@@ -167,6 +178,9 @@ func TestExtension_MultipleCallbacks(t *testing.T) {
 
 	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
 
+	// Signal that the collector is ready - callbacks are only invoked after this
+	require.NoError(t, leaderElection.Ready())
+
 	// Wait for leadership
 	require.EventuallyWithT(t, func(t *assert.CollectT) {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
@@ -185,7 +199,7 @@ func TestExtension_MultipleCallbacks(t *testing.T) {
 		},
 	)
 
-	// Second callback should be invoked immediately since we're already leader
+	// Second callback should be invoked immediately since we're already leader and ready
 	require.True(t, onStartLeading2Invoked.Load())
 
 	require.NoError(t, leaderElection.Shutdown(ctx))
@@ -285,6 +299,9 @@ func TestExtension_CallbacksNotSetImmediately(t *testing.T) {
 	// Start without setting callbacks
 	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
 
+	// Signal that the collector is ready - callbacks are only invoked after this
+	require.NoError(t, leaderElection.Ready())
+
 	// Wait for lease to be acquired
 	require.EventuallyWithT(t, func(t *assert.CollectT) {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
@@ -292,7 +309,7 @@ func TestExtension_CallbacksNotSetImmediately(t *testing.T) {
 		require.NotNil(t, lease)
 	}, 10*time.Second, 100*time.Millisecond)
 
-	// Now set callback - should be invoked immediately since we're already leader
+	// Now set callback - should be invoked immediately since we're already leader and ready
 	leaderElection.SetCallBackFuncs(
 		func(_ context.Context) {
 			onStartLeadingInvoked.Store(true)
