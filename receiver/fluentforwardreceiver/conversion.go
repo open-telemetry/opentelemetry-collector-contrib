@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
+	"strconv"
 	"time"
 
 	"github.com/tinylib/msgp/msgp"
@@ -100,6 +102,11 @@ func parseToAttributeValue(val any, dest pcommon.Value) {
 	case string:
 		dest.SetStr(r)
 	case uint64:
+		// handle overflow of uint64 to int64
+		if r > math.MaxInt64 {
+			dest.SetStr(strconv.FormatUint(r, 10))
+			return
+		}
 		dest.SetInt(int64(r))
 	case int64:
 		dest.SetInt(r)
