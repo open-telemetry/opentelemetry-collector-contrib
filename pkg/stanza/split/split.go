@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"regexp/syntax"
 
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
@@ -67,9 +68,15 @@ func (c Config) FuncWithLogger(enc encoding.Encoding, flushAtEOF bool, maxLogSiz
 	}
 
 	if c.LineEndPattern == "" && c.LineStartPattern != "" {
-		re, err := regexp.Compile("(?m)" + c.LineStartPattern)
+		pattern := "(?m)" + c.LineStartPattern
+		re, err := regexp.Compile(pattern)
 		if err != nil {
 			return nil, fmt.Errorf("compile line start regex: %w", err)
+		}
+		if enc == unicode.UTF8 {
+			if literal, ok := lineStartLiteral(pattern); ok {
+				return LineStartLiteralSplitFunc(literal, c.OmitPattern, flushAtEOF), nil
+			}
 		}
 		return LineStartSplitFunc(re, c.OmitPattern, flushAtEOF, enc, logger), nil
 	}
@@ -87,9 +94,6 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc enc
 	transformBuf := make([]byte, defaultBufSize)
 
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		// Create a fresh decoder for each invocation to avoid state issues
-		decoder := enc.NewDecoder()
-
 		var firstLoc []int
 		var firstMatchStart, firstMatchEnd int
 		var secondLoc []int
@@ -113,6 +117,8 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc enc
 				}
 			}
 		} else {
+			// Create a fresh decoder for each invocation to avoid state issues
+			decoder := enc.NewDecoder()
 			// Find matches in a single operation for non-UTF8 encodings
 			// Limit to 3 matches (first + potentially adjacent + actual second)
 			result, flush, needMoreData := findRegexMatches(re, data, decoder, enc, atEOF, flushAtEOF, logger, transformBuf, 3)
@@ -187,9 +193,6 @@ func LineEndSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc encod
 	transformBuf := make([]byte, defaultBufSize)
 
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		// Create a fresh decoder for each invocation to avoid state issues
-		decoder := enc.NewDecoder()
-
 		var loc []int
 		var matchStart, matchEnd int
 
@@ -200,6 +203,8 @@ func LineEndSplitFunc(re *regexp.Regexp, omitPattern, flushAtEOF bool, enc encod
 				matchStart, matchEnd = loc[0], loc[1]
 			}
 		} else {
+			// Create a fresh decoder for each invocation to avoid state issues
+			decoder := enc.NewDecoder()
 			result, flush, needMoreData := findRegexMatches(re, data, decoder, enc, atEOF, flushAtEOF, logger, transformBuf, 1)
 			if flush {
 				return len(data), data, nil
@@ -435,4 +440,105 @@ func encodedCarriageReturn(enc encoding.Encoding) ([]byte, error) {
 	out := make([]byte, 10)
 	nDst, _, err := enc.NewEncoder().Transform(out, []byte{'\r'}, true)
 	return out[:nDst], err
+}
+
+// lineStartLiteral returns the literal bytes for patterns of the form `(?m)^literal` or `(?m)^literal$`.
+func lineStartLiteral(pattern string) ([]byte, bool) {
+	parsed, err := syntax.Parse(pattern, syntax.Perl)
+	if err != nil {
+		return nil, false
+	}
+	parsed = parsed.Simplify()
+	for parsed.Op == syntax.OpCapture && len(parsed.Sub) == 1 {
+		parsed = parsed.Sub[0]
+	}
+	if parsed.Op != syntax.OpConcat {
+		return nil, false
+	}
+	if len(parsed.Sub) < 2 || len(parsed.Sub) > 3 {
+		return nil, false
+	}
+	if parsed.Sub[0].Op != syntax.OpBeginLine && parsed.Sub[0].Op != syntax.OpBeginText {
+		return nil, false
+	}
+	literalNode := parsed.Sub[1]
+	if literalNode.Op != syntax.OpLiteral {
+		return nil, false
+	}
+	if len(parsed.Sub) == 3 {
+		if parsed.Sub[2].Op != syntax.OpEndLine && parsed.Sub[2].Op != syntax.OpEndText {
+			return nil, false
+		}
+	}
+	if len(literalNode.Rune) == 0 {
+		return nil, false
+	}
+	return []byte(string(literalNode.Rune)), true
+}
+
+// LineStartLiteralSplitFunc is a fast path for UTF-8 line start patterns with a literal prefix.
+func LineStartLiteralSplitFunc(literal []byte, omitPattern, flushAtEOF bool) bufio.SplitFunc {
+	needle := append([]byte{'\n'}, literal...)
+
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		firstMatchStart := findLineStartLiteral(data, literal, needle, 0)
+		if firstMatchStart == -1 {
+			if len(data) != 0 && atEOF && flushAtEOF {
+				return len(data), data, nil
+			}
+			return 0, nil, nil
+		}
+
+		if firstMatchStart != 0 {
+			advance = firstMatchStart
+			token = data[0:firstMatchStart]
+			if token != nil {
+				return advance, token, err
+			}
+		}
+
+		firstMatchEnd := firstMatchStart + len(literal)
+		if firstMatchEnd == len(data) {
+			return 0, nil, nil
+		}
+
+		if atEOF && flushAtEOF {
+			if omitPattern {
+				return len(data), data[firstMatchEnd:], nil
+			}
+			return len(data), data, nil
+		}
+
+		secondMatchStart := findLineStartLiteral(data, literal, needle, firstMatchEnd)
+		if secondMatchStart == -1 {
+			return 0, nil, nil
+		}
+
+		if omitPattern {
+			return secondMatchStart, data[firstMatchEnd:secondMatchStart], nil
+		}
+		return secondMatchStart, data[firstMatchStart:secondMatchStart], nil
+	}
+}
+
+func findLineStartLiteral(data, literal, needle []byte, start int) int {
+	if start <= 0 {
+		if bytes.HasPrefix(data, literal) {
+			return 0
+		}
+		idx := bytes.Index(data, needle)
+		if idx >= 0 {
+			return idx + 1
+		}
+		return -1
+	}
+
+	if start < len(data) && data[start-1] == '\n' && bytes.HasPrefix(data[start:], literal) {
+		return start
+	}
+	idx := bytes.Index(data[start:], needle)
+	if idx >= 0 {
+		return start + idx + 1
+	}
+	return -1
 }
