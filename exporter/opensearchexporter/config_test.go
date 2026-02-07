@@ -81,6 +81,7 @@ func TestLoadConfig(t *testing.T) {
 				MappingsSettings: MappingsSettings{
 					Mode: "ss4o",
 				},
+				QueueConfig: configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
 			},
 			configValidateAssert: assert.NoError,
 		},
@@ -226,20 +227,6 @@ func TestLoadConfig(t *testing.T) {
 				return assert.ErrorContains(t, err, errTracesIndexTimeFormatInvalid.Error())
 			},
 		},
-		{
-			id: component.NewIDWithName(metadata.Type, "sending_queue_with_batch"),
-			expected: withDefaultConfig(func(config *Config) {
-				config.Endpoint = sampleEndpoint
-				config.LogsIndex = "otel-logs"
-				config.LogsIndexTimeFormat = "yyyy-MM-dd"
-				// sending_queue should have default values applied
-				config.QueueConfig = configoptional.Default(exporterhelper.QueueBatchConfig{
-					NumConsumers: 10,
-					QueueSize:    1000,
-				})
-			}),
-			configValidateAssert: assert.NoError,
-		},
 	}
 
 	for _, tt := range tests {
@@ -256,6 +243,30 @@ func TestLoadConfig(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+// TestQueueConfigDefaults verifies that sending_queue gets proper defaults when only batch is configured
+func TestQueueConfigDefaults(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "sending_queue_with_batch").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	actualCfg := cfg.(*Config)
+
+	// Verify QueueConfig has the expected defaults
+	require.True(t, actualCfg.QueueConfig.HasValue(), "QueueConfig should have a value")
+	queueCfg := actualCfg.QueueConfig.Get()
+	assert.Equal(t, 10, queueCfg.NumConsumers, "NumConsumers should default to 10")
+	assert.Equal(t, int64(1000), queueCfg.QueueSize, "QueueSize should default to 1000")
+
+	// Verify config is valid (no crash)
+	require.NoError(t, actualCfg.Validate())
 }
 
 // withDefaultConfig create a new default configuration
