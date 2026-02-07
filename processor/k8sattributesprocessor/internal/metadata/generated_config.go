@@ -25,12 +25,13 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for k8sattributes resource attributes.
+// ResourceAttributesConfig provides config for k8s_attributes resource attributes.
 type ResourceAttributesConfig struct {
 	ContainerID               ResourceAttributeConfig `mapstructure:"container.id"`
 	ContainerImageName        ResourceAttributeConfig `mapstructure:"container.image.name"`
 	ContainerImageRepoDigests ResourceAttributeConfig `mapstructure:"container.image.repo_digests"`
 	ContainerImageTag         ResourceAttributeConfig `mapstructure:"container.image.tag"`
+	ContainerImageTags        ResourceAttributeConfig `mapstructure:"container.image.tags"`
 	K8sClusterUID             ResourceAttributeConfig `mapstructure:"k8s.cluster.uid"`
 	K8sContainerName          ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sCronjobName            ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
@@ -71,6 +72,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		ContainerImageTag: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ContainerImageTags: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sClusterUID: ResourceAttributeConfig{

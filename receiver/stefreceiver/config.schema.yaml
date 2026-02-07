@@ -1,0 +1,8 @@
+description: Config defines configuration for STEF receiver.
+type: object
+properties:
+  ack_interval:
+    type: string
+    format: duration
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/configgrpc.server_config
