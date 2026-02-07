@@ -764,6 +764,10 @@ k8s_attributes:
       - tag_name: $1                 # Use regex capture group
         key_regex: app\.(.*)         # Extract all labels matching pattern
         from: pod
+      # Extract labels matching a pattern without specifying tag_name
+      # Uses default format: k8s.pod.labels.<label_key>
+      - key_regex: environment\.(.*)  # Extract labels starting with "environment."
+        from: pod
       # Extract all labels (use with caution - may extract many attributes)
       - tag_name: $$1
         key_regex: (.*)

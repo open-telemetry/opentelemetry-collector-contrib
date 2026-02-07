@@ -360,7 +360,7 @@ func (r *FieldExtractionRule) extractFromMetadata(metadata, tags map[string]stri
 		for k, v := range metadata {
 			if r.KeyRegex.MatchString(k) && v != "" {
 				var name string
-				if r.HasKeyRegexReference {
+				if r.HasKeyRegexReference && r.Name != "" {
 					var result []byte
 					name = string(r.KeyRegex.ExpandString(result, r.Name, k, r.KeyRegex.FindStringSubmatchIndex(k)))
 					tags[name] = v
