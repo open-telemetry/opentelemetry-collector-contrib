@@ -182,7 +182,8 @@ func TestConfig(t *testing.T) {
 							`IsDouble(attributes["some.optional.1"])`,
 						},
 						Sum: configoptional.Some(Sum{
-							Value: `attributes["some.optional.1"]`,
+							Value:       `attributes["some.optional.1"]`,
+							IsMonotonic: false,
 						}),
 					},
 				},
@@ -200,7 +201,8 @@ func TestConfig(t *testing.T) {
 							`attributes["some.optional.1"] != nil`,
 						},
 						Sum: configoptional.Some(Sum{
-							Value: "1",
+							Value:       "1",
+							IsMonotonic: true,
 						}),
 					},
 				},
@@ -218,7 +220,8 @@ func TestConfig(t *testing.T) {
 							`duration_unix_nano > 0`,
 						},
 						Sum: configoptional.Some(Sum{
-							Value: "1",
+							Value:       "1",
+							IsMonotonic: true,
 						}),
 					},
 				},
