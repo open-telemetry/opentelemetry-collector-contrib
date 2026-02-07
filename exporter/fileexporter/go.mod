@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileex
 go 1.24.0
 
 require (
+	github.com/DeRuina/timberjack v1.3.9
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.18.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.145.0
@@ -25,7 +26,6 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.145.1-0.20260205185216-81bc641f26c0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (

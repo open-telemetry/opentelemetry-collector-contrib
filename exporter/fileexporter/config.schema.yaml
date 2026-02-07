@@ -3,7 +3,7 @@ $defs:
     type: object
     properties:
       enabled:
-        description: Enables group_by. When group_by is enabled, rotation setting is ignored.  Default is false.
+        description: Enables group_by. Default is false.
         type: boolean
       max_open_files:
         description: MaxOpenFiles specifies the maximum number of open file descriptors for the output files. The default is 100.
@@ -62,6 +62,6 @@ properties:
     description: Path of the file to write to. Path is relative to current directory.
     type: string
   rotation:
-    description: Rotation defines an option about rotation of telemetry files. Ignored when GroupByAttribute is used.
+    description: Rotation defines an option about rotation of telemetry files.
     x-pointer: true
     $ref: rotation

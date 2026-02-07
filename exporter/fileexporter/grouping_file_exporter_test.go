@@ -7,8 +7,11 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/DeRuina/timberjack"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -506,4 +509,95 @@ func BenchmarkExporters(b *testing.B) {
 
 		assert.NoError(b, fe.Shutdown(b.Context()))
 	}
+}
+
+func TestGroupingFileExporterWithRotation(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Use a very small rotation size to trigger rotation quickly
+	const maxMegabytes = 1 // 1MB
+
+	conf := &Config{
+		Path:       tmpDir + "/*.log",
+		FormatType: formatTypeJSON,
+		Rotation: &Rotation{
+			MaxMegabytes: maxMegabytes,
+			MaxBackups:   3,
+			LocalTime:    true,
+		},
+		GroupBy: &GroupBy{
+			Enabled:           true,
+			ResourceAttribute: "service.name",
+			MaxOpenFiles:      100,
+		},
+	}
+
+	zapCore, _ := observer.New(zap.DebugLevel)
+	feI := newFileExporter(conf, zap.New(zapCore))
+	require.IsType(t, &groupingFileExporter{}, feI)
+	gfe := feI.(*groupingFileExporter)
+
+	require.NoError(t, gfe.Start(t.Context(), componenttest.NewNopHost()))
+
+	// Verify the writer uses timberjack (rotation enabled)
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "test-service")
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("test-span")
+
+	require.NoError(t, gfe.consumeTraces(t.Context(), td))
+
+	gfe.mutex.Lock()
+	writer, ok := gfe.writers.Get(tmpDir + "/test-service.log")
+	gfe.mutex.Unlock()
+
+	require.True(t, ok, "Writer should exist")
+	_, isTimberJack := writer.file.(*timberjack.Logger)
+	require.True(t, isTimberJack, "Should use timberjack.Logger for rotation support")
+
+	// Write enough data to trigger 4+ rotations (>4MB) to test MaxBackups cleanup
+	// Each trace with padding is roughly 1000+ bytes, so we need ~5000 iterations to exceed 5MB
+	largePayload := strings.Repeat("x", 1000)
+	for i := range 5000 {
+		td := ptrace.NewTraces()
+		rs := td.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("service.name", "test-service")
+		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName(fmt.Sprintf("test-span-%d", i))
+		span.Attributes().PutStr("payload", largePayload)
+
+		require.NoError(t, gfe.consumeTraces(t.Context(), td))
+	}
+
+	require.NoError(t, gfe.Shutdown(t.Context()))
+
+	// Verify rotation occurred by checking for backup files
+	// timberjack creates backup files with timestamp pattern like: test-service-2024-01-02T15-04-05.000.log
+	files, err := filepath.Glob(tmpDir + "/test-service*.log*")
+	require.NoError(t, err)
+
+	// Should have the main file plus at least one rotated backup
+	require.Greater(t, len(files), 1, "Rotation should have created backup files, found: %v", files)
+
+	// Verify at least one backup file exists with timestamp pattern
+	backupCount := 0
+	var totalSize int64
+	for _, f := range files {
+		baseName := filepath.Base(f)
+		// Backup files have format: test-service-YYYY-MM-DDTHH-MM-SS.sss.log
+		if strings.HasPrefix(baseName, "test-service-") && baseName != "test-service.log" {
+			backupCount++
+		}
+		info, err := os.Stat(f)
+		require.NoError(t, err)
+		totalSize += info.Size()
+	}
+	require.Positive(t, backupCount, "Should have at least one timestamped backup file, found files: %v", files)
+
+	// Verify MaxBackups retention policy is enforced (old files should be cleaned up)
+	require.LessOrEqual(t, backupCount, 3, "MaxBackups should limit backup files to 3, but found: %d files: %v", backupCount, files)
+
+	// Verify total data written exceeds the rotation threshold
+	require.Greater(t, totalSize, int64(maxMegabytes*1024*1024), "Total data written should exceed rotation threshold")
 }
