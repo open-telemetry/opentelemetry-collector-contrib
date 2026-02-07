@@ -51,6 +51,21 @@ func TestConvertToEndpoints(tst *testing.T) {
 			},
 		},
 	}
+	readyFalse := false
+	endpoints4 := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-endpoints-4",
+			Namespace: "test-namespace",
+		},
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				Addresses: []string{"192.168.10.104"},
+				Conditions: discoveryv1.EndpointConditions{
+					Ready: &readyFalse,
+				},
+			},
+		},
+	}
 
 	tests := []struct {
 		name              string
@@ -69,7 +84,7 @@ func TestConvertToEndpoints(tst *testing.T) {
 		{
 			name:              "return IPs",
 			returnNames:       false,
-			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpoints2, endpoints3},
+			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpoints2, endpoints3, endpoints4},
 			expectedEndpoints: map[string]bool{"192.168.10.101": true, "192.168.10.102": true, "192.168.10.103": true},
 			wantNil:           false,
 		},
@@ -79,6 +94,29 @@ func TestConvertToEndpoints(tst *testing.T) {
 			includedEndpoints: []*discoveryv1.EndpointSlice{endpoints1, endpoints3},
 			expectedEndpoints: nil,
 			wantNil:           true,
+		},
+		{
+			name:        "skip not ready hostname without failing",
+			returnNames: true,
+			includedEndpoints: []*discoveryv1.EndpointSlice{
+				endpoints1,
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-endpoints-5",
+						Namespace: "test-namespace",
+					},
+					Endpoints: []discoveryv1.Endpoint{
+						{
+							Addresses: []string{"192.168.10.105"},
+							Conditions: discoveryv1.EndpointConditions{
+								Ready: &readyFalse,
+							},
+						},
+					},
+				},
+			},
+			expectedEndpoints: map[string]bool{"pod-1": true},
+			wantNil:           false,
 		},
 	}
 

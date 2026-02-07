@@ -122,7 +122,9 @@ func TestBuildExporterSettings(t *testing.T) {
 		exporterParams := buildExporterSettings(otlpType, creationParams, testEndpoint)
 		exporterParams.Logger.Info("test")
 
-		assert.Equal(t, component.NewID(otlpType), exporterParams.ID)
+		expectedName := endpointIDSuffix(testEndpoint)
+		assert.Equal(t, component.NewIDWithName(otlpType, expectedName), exporterParams.ID)
+		assert.NotContains(t, exporterParams.ID.String(), testEndpoint)
 		assert.IsType(t, metricnoop.NewMeterProvider(), exporterParams.MeterProvider)
 		assert.IsType(t, tracenoop.NewTracerProvider(), exporterParams.TracerProvider)
 
@@ -156,7 +158,9 @@ func TestBuildExporterSettings(t *testing.T) {
 		exporterParams := buildExporterSettings(otlpType, creationParams, testEndpoint)
 		exporterParams.Logger.Info("test")
 
-		assert.Equal(t, component.NewIDWithName(otlpType, "custom"), exporterParams.ID)
+		expectedName := "custom-" + endpointIDSuffix(testEndpoint)
+		assert.Equal(t, component.NewIDWithName(otlpType, expectedName), exporterParams.ID)
+		assert.NotContains(t, exporterParams.ID.String(), testEndpoint)
 		assert.IsType(t, metricnoop.NewMeterProvider(), exporterParams.MeterProvider)
 		assert.IsType(t, tracenoop.NewTracerProvider(), exporterParams.TracerProvider)
 
@@ -171,6 +175,19 @@ func TestBuildExporterSettings(t *testing.T) {
 			zap.String(zapEndpointKey, testEndpoint),
 		)
 	})
+}
+
+func TestBuildExporterSettingsUniquePerEndpoint(t *testing.T) {
+	otlpType := otlpexporter.NewFactory().Type()
+	creationParams := exportertest.NewNopSettings(metadata.Type)
+	creationParams.ID = component.NewIDWithName(metadata.Type, "custom")
+
+	first := buildExporterSettings(otlpType, creationParams, "endpoint-a")
+	second := buildExporterSettings(otlpType, creationParams, "endpoint-b")
+
+	assert.NotEqual(t, first.ID, second.ID)
+	assert.Equal(t, otlpType, first.ID.Type())
+	assert.Equal(t, otlpType, second.ID.Type())
 }
 
 func TestWrappedExporterHasEndpointAttribute(t *testing.T) {

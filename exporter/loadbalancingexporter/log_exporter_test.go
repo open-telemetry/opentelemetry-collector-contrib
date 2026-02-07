@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/attribute"
@@ -240,6 +241,60 @@ func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
 	assert.IsType(t, tracenoop.NewTracerProvider(), childSettings[0].TracerProvider)
 }
 
+func TestChildExporterPersistentQueueUsesUniqueStorage(t *testing.T) {
+	ctx := t.Context()
+	shutdownCtx := context.Background() //nolint:usetesting // Context must outlive test for cleanup
+	telemetry := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, telemetry.Shutdown(shutdownCtx))
+	})
+
+	storageID := component.NewIDWithName(component.MustNewType("file_storage"), "pushgateway")
+	storageExt := newRecordingStorage()
+
+	host := hostWithExtensions{
+		ext: map[component.ID]component.Component{
+			storageID: storageExt,
+		},
+	}
+
+	lbCfg := createDefaultConfig().(*Config)
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.StorageID = &storageID
+	lbCfg.Protocol.OTLP.QueueConfig = configoptional.Some(queueCfg)
+
+	parentParams := exportertest.NewNopSettings(metadata.Type)
+	parentParams.TelemetrySettings = telemetry.NewTelemetrySettings()
+
+	otlpFactory := otlpexporter.NewFactory()
+
+	endpointA := "127.0.0.1:4317"
+	endpointB := "127.0.0.2:4317"
+
+	childCfgA := buildExporterConfig(lbCfg, endpointA)
+	childParamsA := buildExporterSettings(otlpFactory.Type(), parentParams, endpointA)
+	expA, err := otlpFactory.CreateLogs(ctx, childParamsA, &childCfgA)
+	require.NoError(t, err)
+	require.NoError(t, expA.Start(ctx, host))
+	t.Cleanup(func() {
+		require.NoError(t, expA.Shutdown(ctx))
+	})
+
+	childCfgB := buildExporterConfig(lbCfg, endpointB)
+	childParamsB := buildExporterSettings(otlpFactory.Type(), parentParams, endpointB)
+	expB, err := otlpFactory.CreateLogs(ctx, childParamsB, &childCfgB)
+	require.NoError(t, err)
+	require.NoError(t, expB.Start(ctx, host))
+	t.Cleanup(func() {
+		require.NoError(t, expB.Shutdown(ctx))
+	})
+
+	require.Equal(t, 2, storageExt.ClientCount())
+	keys := storageExt.ClientKeys()
+	assert.Len(t, keys, 2)
+	assert.NotEqual(t, keys[0], keys[1])
+}
+
 func generateSingleLogRecord() plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
@@ -286,6 +341,122 @@ func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 	// verify
 	assert.Error(t, res)
 	assert.EqualError(t, res, fmt.Sprintf("unable to export logs, unexpected exporter type: expected exporter.Logs but got %T", newNopMockExporter()))
+}
+
+type hostWithExtensions struct {
+	ext map[component.ID]component.Component
+}
+
+func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
+	return h.ext
+}
+
+type recordingStorage struct {
+	mu    sync.Mutex
+	keys  map[string]struct{}
+	count int
+}
+
+func newRecordingStorage() *recordingStorage {
+	return &recordingStorage{
+		keys: map[string]struct{}{},
+	}
+}
+
+func (*recordingStorage) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (*recordingStorage) Shutdown(context.Context) error {
+	return nil
+}
+
+func (rs *recordingStorage) GetClient(_ context.Context, kind component.Kind, id component.ID, name string) (storage.Client, error) {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+
+	key := fmt.Sprintf("%v|%s|%s", kind, id.String(), name)
+	if _, exists := rs.keys[key]; exists {
+		return nil, errors.New("duplicate storage client")
+	}
+	rs.keys[key] = struct{}{}
+	rs.count++
+	return newMemoryStorageClient(), nil
+}
+
+func (rs *recordingStorage) ClientCount() int {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	return rs.count
+}
+
+func (rs *recordingStorage) ClientKeys() []string {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	keys := make([]string, 0, len(rs.keys))
+	for key := range rs.keys {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+type memoryStorageClient struct {
+	mu   sync.Mutex
+	data map[string][]byte
+}
+
+func newMemoryStorageClient() *memoryStorageClient {
+	return &memoryStorageClient{
+		data: map[string][]byte{},
+	}
+}
+
+func (ms *memoryStorageClient) Get(_ context.Context, key string) ([]byte, error) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+	return ms.data[key], nil
+}
+
+func (ms *memoryStorageClient) Set(_ context.Context, key string, value []byte) error {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+	cp := make([]byte, len(value))
+	copy(cp, value)
+	ms.data[key] = cp
+	return nil
+}
+
+func (ms *memoryStorageClient) Delete(_ context.Context, key string) error {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+	delete(ms.data, key)
+	return nil
+}
+
+func (ms *memoryStorageClient) Batch(ctx context.Context, ops ...*storage.Operation) error {
+	for _, op := range ops {
+		switch op.Type {
+		case storage.Get:
+			val, err := ms.Get(ctx, op.Key)
+			if err != nil {
+				return err
+			}
+			op.Value = val
+		case storage.Set:
+			if err := ms.Set(ctx, op.Key, op.Value); err != nil {
+				return err
+			}
+		case storage.Delete:
+			if err := ms.Delete(ctx, op.Key); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (*memoryStorageClient) Close(context.Context) error {
+	return nil
 }
 
 func TestLogBatchWithTwoTraces(t *testing.T) {

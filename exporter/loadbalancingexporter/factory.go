@@ -7,6 +7,8 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -59,11 +61,12 @@ func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 }
 
 func buildExporterSettings(typ component.Type, params exporter.Settings, endpoint string) exporter.Settings {
-	if name := params.ID.Name(); name != "" {
-		params.ID = component.NewIDWithName(typ, name)
-	} else {
-		params.ID = component.NewID(typ)
+	endpointSuffix := endpointIDSuffix(endpoint)
+	childName := endpointSuffix
+	if baseName := params.ID.Name(); baseName != "" {
+		childName = fmt.Sprintf("%s-%s", baseName, endpointSuffix)
 	}
+	params.ID = component.NewIDWithName(typ, childName)
 	telemetry := params.TelemetrySettings
 	telemetry.MeterProvider = metricnoop.NewMeterProvider()
 	telemetry.TracerProvider = tracenoop.NewTracerProvider()
@@ -71,6 +74,11 @@ func buildExporterSettings(typ component.Type, params exporter.Settings, endpoin
 	telemetry.Logger = params.Logger
 	params.TelemetrySettings = telemetry
 	return params
+}
+
+func endpointIDSuffix(endpoint string) string {
+	sum := sha256.Sum256([]byte(endpoint))
+	return hex.EncodeToString(sum[:8])
 }
 
 func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config) []exporterhelper.Option {
