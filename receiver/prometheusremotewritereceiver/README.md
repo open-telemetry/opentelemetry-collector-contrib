@@ -24,9 +24,9 @@ This receiver implements the [Prometheus Remote Write 2.0 protocol](https://prom
 
 The breaking change in Prometheus 3.8.0 ([prometheus/prometheus#17411](https://github.com/prometheus/prometheus/pull/17411)) updated the Remote Write 2.0 spec from rc.3 to rc.4, renaming `CreatedTimestamp` to `StartTimestamp` and moving it from the `TimeSeries` message to individual `Sample` and `Histogram` messages. This is a wire-protocol incompatibility, so mismatched versions will not work correctly together.
 
-## Configuring `PrometheuRemoteWriteReceiver`
+## Configuring `PrometheusRemoteWriteReceiver`
 
-This component's configuration surface is only what's available though [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). A minimal example can be seen below:
+This component's configuration is based on [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). A minimal example can be seen below:
 
 ```yaml
 receivers:

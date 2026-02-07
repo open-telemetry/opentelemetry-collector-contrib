@@ -3,10 +3,10 @@
 package prometheusremotewritereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver"
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -41,7 +41,6 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 	if err != nil {
 		return nil, fmt.Errorf("failed to create LRU cache: %w", err)
 	}
-
 	return &prometheusRemoteWriteReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -50,6 +49,12 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 			ReadTimeout: 60 * time.Second,
 		},
 		rmCache: cache,
+		bodyBufferPool: &sync.Pool{
+			New: func() any {
+				// Pre-allocate 4KiB
+				return bytes.NewBuffer(make([]byte, 0, 4*1024))
+			},
+		},
 	}, nil
 }
 
@@ -63,6 +68,8 @@ type prometheusRemoteWriteReceiver struct {
 
 	rmCache *lru.Cache[uint64, pmetric.ResourceMetrics]
 	obsrecv *receiverhelper.ObsReport
+
+	bodyBufferPool *sync.Pool
 }
 
 // metricIdentity contains all the components that uniquely identify a metric
@@ -172,16 +179,17 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 
 	// After parsing the content-type header, the next step would be to handle content-encoding.
 	// Luckly confighttp's Server has middleware that already decompress the request body for us.
-
-	body, err := io.ReadAll(req.Body)
+	buf := prw.bodyBufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer prw.bodyBufferPool.Put(buf)
+	_, err = buf.ReadFrom(req.Body)
 	if err != nil {
-		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		prw.settings.Logger.Warn("Error reading remote write request body", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	var prw2Req writev2.Request
-	if err = proto.Unmarshal(body, &prw2Req); err != nil {
+	if err = proto.Unmarshal(buf.Bytes(), &prw2Req); err != nil {
 		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
