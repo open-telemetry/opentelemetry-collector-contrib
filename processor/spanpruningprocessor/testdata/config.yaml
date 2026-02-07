@@ -1,0 +1,12 @@
+spanpruning:
+  group_by_attributes:
+    - "db.operation"
+  min_spans_to_aggregate: 5
+  aggregation_attribute_prefix: "aggregation."
+
+spanpruning/custom:
+  group_by_attributes:
+    - "db.operation"
+    - "db.name"
+  min_spans_to_aggregate: 3
+  aggregation_attribute_prefix: "batch."

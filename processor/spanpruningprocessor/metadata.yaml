@@ -1,0 +1,130 @@
+type: spanpruning
+
+status:
+  class: processor
+  stability:
+    alpha: [traces]
+  distributions: [contrib]
+  codeowners:
+    active: [portertech, csmarchbanks]
+
+telemetry:
+  metrics:
+    processor_spanpruning_aggregation_group_size:
+      enabled: true
+      description: Distribution of spans per aggregation group
+      unit: "{spans}"
+      stability: { level: development }
+      histogram: { value_type: int }
+
+    processor_spanpruning_aggregations_created:
+      enabled: true
+      description: Total aggregation summary spans created
+      unit: "{spans}"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    processor_spanpruning_bytes_emitted:
+      enabled: false
+      description: Total bytes of serialized traces emitted after pruning
+      unit: "By"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    processor_spanpruning_bytes_received:
+      enabled: false
+      description: Total bytes of serialized traces received before pruning
+      unit: "By"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    processor_spanpruning_leaf_attribute_diversity_loss:
+      enabled: false
+      description: Attribute values lost due to diversity per leaf aggregation
+      unit: "{values}"
+      stability: { level: development }
+      histogram:
+        value_type: int
+        bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
+
+    processor_spanpruning_leaf_attribute_loss:
+      enabled: false
+      description: Attribute keys lost due to absence per leaf aggregation
+      unit: "{keys}"
+      stability: { level: development }
+      histogram:
+        value_type: int
+        bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
+
+    processor_spanpruning_outliers_correlations_detected:
+      enabled: true
+      description: Groups where outliers had correlated attributes
+      unit: "{groups}"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    processor_spanpruning_outliers_detected:
+      enabled: true
+      description: Spans identified as outliers by analysis
+      unit: "{spans}"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    processor_spanpruning_outliers_preserved:
+      enabled: true
+      description: Outlier spans kept (excluded from aggregation)
+      unit: "{spans}"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    processor_spanpruning_parent_attribute_diversity_loss:
+      enabled: false
+      description: Attribute values lost due to diversity per parent aggregation
+      unit: "{values}"
+      stability: { level: development }
+      histogram:
+        value_type: int
+        bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
+
+    processor_spanpruning_parent_attribute_loss:
+      enabled: false
+      description: Attribute keys lost due to absence per parent aggregation
+      unit: "{keys}"
+      stability: { level: development }
+      histogram:
+        value_type: int
+        bucket_boundaries: [0, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20]
+
+    processor_spanpruning_processing_duration:
+      enabled: true
+      description: Time to process each batch of traces
+      unit: s
+      stability: { level: development }
+      histogram: { value_type: double }
+
+    processor_spanpruning_spans_pruned:
+      enabled: true
+      description: Total spans pruned/removed by aggregation
+      unit: "{spans}"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    processor_spanpruning_spans_received:
+      enabled: true
+      description: Total spans received by the processor
+      unit: "{spans}"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+    processor_spanpruning_traces_processed:
+      enabled: true
+      description: Total traces processed
+      unit: "{traces}"
+      stability: { level: development }
+      sum: { value_type: int, monotonic: true }
+
+tests:
+  config:
+    group_by_attributes:
+      - "db.operation"
+    min_spans_to_aggregate: 2
