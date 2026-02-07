@@ -1,0 +1,47 @@
+{
+  "object_attributes": {
+    "id": 2,
+    "status": "success",
+    "created_at": "2022-01-02 14:00:00 UTC",
+    "finished_at": "2022-01-02 14:30:00 UTC",
+    "name": "Child Pipeline",
+    "source": "parent_pipeline",
+    "ref": "main",
+    "tag": false,
+    "sha": "def789ghi012"
+  },
+  "project": {
+    "id": 124,
+    "name": "child-project",
+    "path_with_namespace": "test/child-project",
+    "namespace": "test",
+    "web_url": "https://gitlab.example.com/test/child-project",
+    "visibility": "internal",
+    "default_branch": "main"
+  },
+  "source_pipeline": {
+    "project": {
+      "id": 123,
+      "path_with_namespace": "test/parent-project",
+      "web_url": "https://gitlab.example.com/test/parent-project"
+    },
+    "pipeline_id": 1,
+    "job_id": 99
+  },
+  "builds": [],
+  "commit": {
+    "id": "def789ghi012",
+    "message": "Trigger child pipeline",
+    "timestamp": "2022-01-02T13:50:00Z",
+    "author": {
+      "name": "Jane Smith",
+      "email": "jane.smith@example.com"
+    }
+  },
+  "user": {
+    "id": 43,
+    "username": "jsmith",
+    "name": "Jane Smith"
+  }
+}
+

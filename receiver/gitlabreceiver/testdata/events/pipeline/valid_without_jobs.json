@@ -1,0 +1,37 @@
+{
+  "object_attributes": {
+    "id": 1,
+    "status": "success",
+    "created_at": "2022-01-01 12:00:00 UTC",
+    "finished_at": "2022-01-01 13:00:00 UTC",
+    "name": "Test Pipeline",
+    "source": "push",
+    "ref": "main",
+    "tag": false,
+    "sha": "abc123"
+  },
+  "project": {
+    "id": 123,
+    "name": "my-project",
+    "path_with_namespace": "test/project",
+    "namespace": "test",
+    "web_url": "https://gitlab.example.com/test/project",
+    "visibility": "private",
+    "default_branch": "main"
+  },
+  "commit": {
+    "id": "abc123",
+    "message": "Test commit",
+    "timestamp": "2022-01-01T11:50:00Z",
+    "author": {
+      "name": "Test User",
+      "email": "test@example.com"
+    }
+  },
+  "user": {
+    "id": 1,
+    "username": "testuser",
+    "name": "Test User"
+  }
+}
+

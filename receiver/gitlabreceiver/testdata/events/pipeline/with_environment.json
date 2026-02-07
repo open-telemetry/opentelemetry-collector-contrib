@@ -1,0 +1,93 @@
+{
+  "object_attributes": {
+    "id": 3,
+    "status": "success",
+    "created_at": "2022-01-03 10:00:00 UTC",
+    "finished_at": "2022-01-03 10:45:00 UTC",
+    "name": "Deploy Pipeline",
+    "source": "merge_request_event",
+    "ref": "main",
+    "tag": false,
+    "sha": "xyz789abc123"
+  },
+  "project": {
+    "id": 125,
+    "name": "web-app",
+    "path_with_namespace": "prod/web-app",
+    "namespace": "prod",
+    "web_url": "https://gitlab.example.com/prod/web-app",
+    "visibility": "public",
+    "default_branch": "main"
+  },
+  "builds": [
+    {
+      "id": 10,
+      "stage": "deploy",
+      "name": "deploy-staging",
+      "status": "success",
+      "created_at": "2022-01-03 10:20:00 UTC",
+      "started_at": "2022-01-03 10:21:00 UTC",
+      "finished_at": "2022-01-03 10:30:00 UTC",
+      "runner": {
+        "id": 200,
+        "description": "deploy-runner",
+        "active": true,
+        "is_shared": false,
+        "runner_type": "group_type",
+        "tags": ["kubernetes", "production"]
+      },
+      "queued_duration": 45.0,
+      "allow_failure": false,
+      "environment": {
+        "name": "staging",
+        "action": "start",
+        "deployment_tier": "staging"
+      }
+    },
+    {
+      "id": 11,
+      "stage": "deploy",
+      "name": "deploy-production",
+      "status": "failed",
+      "created_at": "2022-01-03 10:31:00 UTC",
+      "started_at": "2022-01-03 10:32:00 UTC",
+      "finished_at": "2022-01-03 10:40:00 UTC",
+      "runner": {
+        "id": 201,
+        "description": "prod-runner",
+        "active": true,
+        "is_shared": false,
+        "runner_type": "group_type",
+        "tags": ["kubernetes", "production", "critical"]
+      },
+      "queued_duration": 60.0,
+      "allow_failure": true,
+      "failure_reason": "script_failure",
+      "environment": {
+        "name": "production",
+        "action": "start",
+        "deployment_tier": "production"
+      }
+    }
+  ],
+  "commit": {
+    "id": "xyz789abc123",
+    "message": "Deploy v2.0.0 to production",
+    "timestamp": "2022-01-03T09:45:00Z",
+    "author": {
+      "name": "Deploy Bot",
+      "email": "deploy@example.com"
+    }
+  },
+  "user": {
+    "id": 1,
+    "username": "deploy-bot",
+    "name": "Deploy Bot"
+  },
+  "merge_request": {
+    "iid": 42,
+    "target_branch": "main",
+    "source_branch": "feature/v2"
+  }
+}
+

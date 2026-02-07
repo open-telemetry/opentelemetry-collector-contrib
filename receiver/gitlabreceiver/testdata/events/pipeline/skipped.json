@@ -1,0 +1,19 @@
+{
+  "object_attributes": {
+    "id": 1,
+    "status": "skipped",
+    "created_at": "2022-01-01 12:00:00 UTC",
+    "finished_at": "2022-01-01 13:00:00 UTC",
+    "name": "Test Pipeline",
+    "ref": "main",
+    "sha": "abc123"
+  },
+  "project": {
+    "id": 123,
+    "path_with_namespace": "test/project"
+  },
+  "commit": {
+    "id": "abc123"
+  }
+}
+

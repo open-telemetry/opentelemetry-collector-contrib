@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -26,47 +25,43 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
 )
 
-const (
-	// Completed pipeline statuses
-	pipelineStatusSuccess  = "success"
-	pipelineStatusFailed   = "failed"
-	pipelineStatusCanceled = "canceled"
-	pipelineStatusSkipped  = "skipped"
-
-	// In-progress pipeline statuses
-	pipelineStatusRunning            = "running"
-	pipelineStatusPending            = "pending"
-	pipelineStatusCreated            = "created"
-	pipelineStatusWaitingForResource = "waiting_for_resource"
-	pipelineStatusPreparing          = "preparing"
-	pipelineStatusScheduled          = "scheduled"
-)
+// Pipeline and job status constants are now in constants.go
 
 var (
 	// Error messages
 	errMissingEndpoint      = errors.New("missing a receiver endpoint")
 	errGitlabClient         = errors.New("failed to create gitlab client")
-	errUnexpectedEvent      = errors.New("unexpected event type")
 	errInvalidHTTPMethod    = errors.New("invalid HTTP method")
 	errInvalidHeader        = errors.New("invalid header")
 	errMissingHeader        = errors.New("missing header")
 	errMissingRequiredField = errors.New("missing required field")
 )
 
-const healthyResponse = `{"text": "GitLab receiver webhook is healthy"}`
+// HealthyResponse is now in constants.go
 
-type gitlabTracesReceiver struct {
-	cfg           *Config
-	settings      receiver.Settings
-	traceConsumer consumer.Traces
-	obsrecv       *receiverhelper.ObsReport
-	server        *http.Server
-	shutdownWG    sync.WaitGroup
-	logger        *zap.Logger
-	gitlabClient  *gitlab.Client
+// gitlabReceiver is the main receiver that handles both traces and metrics
+// It uses a shared component pattern to support multiple signal types
+type gitlabReceiver struct {
+	cfg            *Config
+	settings       receiver.Settings
+	traceConsumer  consumer.Traces
+	metricConsumer consumer.Metrics
+	obsrecv        *receiverhelper.ObsReport
+	server         *http.Server
+	shutdownWG     sync.WaitGroup
+	logger         *zap.Logger
+	gitlabClient   *gitlab.Client
+	eventRouter    *eventRouter
 }
 
-func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer consumer.Traces) (*gitlabTracesReceiver, error) {
+// gitlabTracesReceiver is kept for backward compatibility with existing pipeline handling code
+// It's now embedded in gitlabReceiver
+type gitlabTracesReceiver struct {
+	logger *zap.Logger
+	cfg    *Config
+}
+
+func newGitLabReceiver(settings receiver.Settings, cfg *Config) (*gitlabReceiver, error) {
 	if cfg.WebHook.NetAddr.Endpoint == "" {
 		return nil, errMissingEndpoint
 	}
@@ -90,19 +85,29 @@ func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer co
 		return nil, fmt.Errorf("%w: %w", errGitlabClient, err)
 	}
 
-	gtr := &gitlabTracesReceiver{
-		traceConsumer: traceConsumer,
-		cfg:           cfg,
-		settings:      settings,
-		logger:        settings.Logger,
-		obsrecv:       obsrecv,
-		gitlabClient:  client,
+	receiver := &gitlabReceiver{
+		cfg:          cfg,
+		settings:     settings,
+		logger:       settings.Logger,
+		obsrecv:      obsrecv,
+		gitlabClient: client,
+		eventRouter:  newEventRouter(settings.Logger, cfg),
 	}
 
-	return gtr, nil
+	return receiver, nil
 }
 
-func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host) error {
+// newTracesReceiver creates a receiver instance for traces (used by factory)
+func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer consumer.Traces) (*gitlabReceiver, error) {
+	receiver, err := newGitLabReceiver(settings, cfg)
+	if err != nil {
+		return nil, err
+	}
+	receiver.traceConsumer = traceConsumer
+	return receiver, nil
+}
+
+func (gtr *gitlabReceiver) Start(ctx context.Context, host component.Host) error {
 	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.NetAddr.Endpoint, gtr.cfg.WebHook.Path)
 	gtr.logger.Info("Starting GitLab WebHook receiving server", zap.String("endpoint", endpoint))
 
@@ -149,7 +154,7 @@ func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host)
 	return nil
 }
 
-func (gtr *gitlabTracesReceiver) Shutdown(ctx context.Context) error {
+func (gtr *gitlabReceiver) Shutdown(ctx context.Context) error {
 	if gtr.server != nil {
 		err := gtr.server.Shutdown(ctx)
 		return err
@@ -158,7 +163,7 @@ func (gtr *gitlabTracesReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (gtr *gitlabTracesReceiver) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
+func (gtr *gitlabReceiver) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
 	if r.Body != nil {
 		_, err := io.Copy(io.Discard, r.Body)
 		if err != nil {
@@ -170,90 +175,70 @@ func (gtr *gitlabTracesReceiver) handleHealthCheck(w http.ResponseWriter, r *htt
 
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-
-	_, _ = w.Write([]byte(healthyResponse))
+	_, _ = w.Write([]byte(HealthyResponse))
 }
 
-// handleReq handles incoming request sent to the webhook endpoint
-func (gtr *gitlabTracesReceiver) handleWebhook(w http.ResponseWriter, r *http.Request) {
+// handleWebhook handles incoming request sent to the webhook endpoint
+// It routes events to appropriate handlers using the event router
+func (gtr *gitlabReceiver) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	ctx := gtr.obsrecv.StartTracesOp(r.Context())
 
+	// Validate request
 	eventType, err := gtr.validateReq(r)
 	if err != nil {
 		gtr.failBadReq(ctx, w, http.StatusBadRequest, err, 0)
 		return
 	}
 
+	// Read payload
 	payload, err := io.ReadAll(r.Body)
 	if err != nil || len(payload) == 0 {
 		gtr.failBadReq(ctx, w, http.StatusBadRequest, err, 0)
 		return
 	}
 
+	// Parse webhook
 	event, err := gitlab.ParseWebhook(eventType, payload)
 	if err != nil {
 		gtr.failBadReq(ctx, w, http.StatusBadRequest, err, 0)
 		return
 	}
 
-	e, ok := event.(*gitlab.PipelineEvent)
-	if !ok {
-		gtr.failBadReq(ctx, w, http.StatusBadRequest, fmt.Errorf("%w: %T", errUnexpectedEvent, event), 0)
-		return
-	}
-
-	// Check if the finishedAt timestamp is present, which is required for traceID generation
-	if e.ObjectAttributes.FinishedAt == "" {
-		gtr.logger.Debug("pipeline missing finishedAt timestamp, skipping...",
-			zap.String("status", e.ObjectAttributes.Status))
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	// Process the pipeline based on its status
-	switch strings.ToLower(e.ObjectAttributes.Status) {
-	case pipelineStatusRunning, pipelineStatusPending, pipelineStatusCreated, pipelineStatusWaitingForResource, pipelineStatusPreparing, pipelineStatusScheduled:
-		gtr.logger.Debug("pipeline not complete, skipping...",
-			zap.String("status", e.ObjectAttributes.Status))
-		w.WriteHeader(http.StatusNoContent)
-		return
-	case pipelineStatusSuccess, pipelineStatusFailed, pipelineStatusCanceled, pipelineStatusSkipped:
-		// above statuses are indicators of a completed pipeline, so we process them
-		break
-	default:
-		gtr.logger.Warn("unknown pipeline status, skipping...",
-			zap.String("status", e.ObjectAttributes.Status))
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	err = gtr.validatePipelineEvent(e)
-	if err != nil {
-		gtr.failBadReq(ctx, w, http.StatusBadRequest, err, 0)
-		return
-	}
-
-	traces, err := gtr.handlePipeline(e)
+	// Route event to appropriate handler
+	result, err := gtr.eventRouter.Route(ctx, event, eventType)
 	if err != nil {
 		gtr.failBadReq(ctx, w, http.StatusInternalServerError, err, 0)
 		return
 	}
 
-	if traces.SpanCount() > 0 {
-		err = gtr.traceConsumer.ConsumeTraces(ctx, traces)
-		if err != nil {
-			gtr.failBadReq(ctx, w, http.StatusInternalServerError, err, 0)
-			return
+	// Process result based on type
+	spanCount := 0
+	if result != nil {
+		switch {
+		case result.Traces != nil && result.Traces.SpanCount() > 0 && gtr.traceConsumer != nil:
+			if err := gtr.traceConsumer.ConsumeTraces(ctx, *result.Traces); err != nil {
+				gtr.failBadReq(ctx, w, http.StatusInternalServerError, err, 0)
+				return
+			}
+			spanCount = result.Traces.SpanCount()
+			w.WriteHeader(http.StatusOK)
+		case result.Metrics != nil && result.Metrics.MetricCount() > 0 && gtr.metricConsumer != nil:
+			if err := gtr.metricConsumer.ConsumeMetrics(ctx, *result.Metrics); err != nil {
+				gtr.failBadReq(ctx, w, http.StatusInternalServerError, err, 0)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		default:
+			w.WriteHeader(http.StatusNoContent)
 		}
-		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusNoContent)
 	}
 
-	gtr.obsrecv.EndTracesOp(ctx, metadata.Type.String(), traces.SpanCount(), nil)
+	gtr.obsrecv.EndTracesOp(ctx, metadata.Type.String(), spanCount, nil)
 }
 
-func (gtr *gitlabTracesReceiver) validateReq(r *http.Request) (gitlab.EventType, error) {
+func (gtr *gitlabReceiver) validateReq(r *http.Request) (gitlab.EventType, error) {
 	if r.Method != http.MethodPost {
 		return "", errInvalidHTTPMethod
 	}
@@ -278,42 +263,9 @@ func (gtr *gitlabTracesReceiver) validateReq(r *http.Request) (gitlab.EventType,
 	return eventType, nil
 }
 
-// validatePipelineEvent validates critical webhook event fields for trace generation
-// The following values should ALWAYS be present in a valid pipeline event
-// They are required to set foundational attributes
-func (*gitlabTracesReceiver) validatePipelineEvent(e *gitlab.PipelineEvent) error {
-	if e.ObjectAttributes.ID == 0 {
-		return fmt.Errorf("%w: pipeline ID", errMissingRequiredField)
-	}
+// validatePipelineEvent is now in pipeline_event_handler.go to avoid duplication
 
-	if e.ObjectAttributes.CreatedAt == "" {
-		return fmt.Errorf("%w: pipeline created_at", errMissingRequiredField)
-	}
-
-	if e.ObjectAttributes.Ref == "" {
-		return fmt.Errorf("%w: pipeline ref", errMissingRequiredField)
-	}
-
-	if e.ObjectAttributes.SHA == "" {
-		return fmt.Errorf("%w: pipeline SHA", errMissingRequiredField)
-	}
-
-	if e.Project.ID == 0 {
-		return fmt.Errorf("%w: project ID", errMissingRequiredField)
-	}
-
-	if e.Project.PathWithNamespace == "" {
-		return fmt.Errorf("%w: project path_with_namespace", errMissingRequiredField)
-	}
-
-	if e.Commit.ID == "" {
-		return fmt.Errorf("%w: commit ID", errMissingRequiredField)
-	}
-
-	return nil
-}
-
-func (gtr *gitlabTracesReceiver) failBadReq(ctx context.Context,
+func (gtr *gitlabReceiver) failBadReq(ctx context.Context,
 	w http.ResponseWriter,
 	httpStatusCode int,
 	err error,

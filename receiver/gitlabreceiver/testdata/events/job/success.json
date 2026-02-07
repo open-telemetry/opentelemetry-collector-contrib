@@ -1,0 +1,89 @@
+{
+  "object_kind": "build",
+  "ref": "main",
+  "tag": false,
+  "before_sha": "2293ada6b400935a1378653304eaf6221e0fdb8f",
+  "sha": "2293ada6b400935a1378653304eaf6221e0fdb8f",
+  "retries_count": 0,
+  "build_id": 1977,
+  "build_name": "test",
+  "build_stage": "test",
+  "build_status": "success",
+  "build_created_at": "2021-02-23T02:41:37.886Z",
+  "build_started_at": "2021-02-23T02:42:00.000Z",
+  "build_finished_at": "2021-02-23T02:45:30.000Z",
+  "build_created_at_iso": "2021-02-23T02:41:37Z",
+  "build_started_at_iso": "2021-02-23T02:42:00Z",
+  "build_finished_at_iso": "2021-02-23T02:45:30Z",
+  "build_duration": 210.0,
+  "build_queued_duration": 1095.588715,
+  "build_allow_failure": false,
+  "build_failure_reason": null,
+  "pipeline_id": 2366,
+  "runner": {
+    "id": 380987,
+    "description": "shared-runners-manager-6.gitlab.com",
+    "runner_type": "instance_type",
+    "active": true,
+    "is_shared": true,
+    "tags": ["linux", "docker", "shared-runner"]
+  },
+  "project_id": 380,
+  "project_name": "gitlab-org/gitlab-test",
+  "user": {
+    "id": 3,
+    "name": "User",
+    "username": "user",
+    "avatar_url": "http://www.gravatar.com/avatar/e32bd13e2add097461cb96824b7a829c?s=80&d=identicon",
+    "email": "user@gitlab.com"
+  },
+  "commit": {
+    "id": 2366,
+    "name": "Build pipeline",
+    "sha": "2293ada6b400935a1378653304eaf6221e0fdb8f",
+    "message": "test\n",
+    "author_name": "User",
+    "author_email": "user@gitlab.com",
+    "author_url": "http://192.168.64.1:3005/user",
+    "status": "success",
+    "duration": 210,
+    "started_at": "2021-02-23T02:42:00Z",
+    "finished_at": "2021-02-23T02:45:30Z",
+    "started_at_iso": "2021-02-23T02:42:00Z",
+    "finished_at_iso": "2021-02-23T02:45:30Z"
+  },
+  "repository": {
+    "name": "gitlab_test",
+    "url": "http://192.168.64.1:3005/gitlab-org/gitlab-test",
+    "description": "Atque in sunt eos similique dolores voluptatem.",
+    "homepage": "http://192.168.64.1:3005/gitlab-org/gitlab-test",
+    "git_ssh_url": "git@192.168.64.1:gitlab-org/gitlab-test.git",
+    "git_http_url": "http://192.168.64.1:3005/gitlab-org/gitlab-test.git",
+    "visibility_level": 20
+  },
+  "project": {
+    "id": 380,
+    "name": "Gitlab Test",
+    "description": "Atque in sunt eos similique dolores voluptatem.",
+    "web_url": "http://192.168.64.1:3005/gitlab-org/gitlab-test",
+    "avatar_url": null,
+    "git_ssh_url": "git@192.168.64.1:gitlab-org/gitlab-test.git",
+    "git_http_url": "http://192.168.64.1:3005/gitlab-org/gitlab-test.git",
+    "namespace": "Gitlab Org",
+    "visibility_level": 20,
+    "path_with_namespace": "gitlab-org/gitlab-test",
+    "default_branch": "master",
+    "ci_config_path": null
+  },
+  "environment": null,
+  "source_pipeline": {
+    "project": {
+      "id": 41,
+      "web_url": "https://gitlab.example.com/gitlab-org/upstream-project",
+      "path_with_namespace": "gitlab-org/upstream-project"
+    },
+    "pipeline_id": 30,
+    "job_id": 3401
+  }
+}
+

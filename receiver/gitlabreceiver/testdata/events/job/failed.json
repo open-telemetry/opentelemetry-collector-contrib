@@ -1,0 +1,28 @@
+{
+  "object_kind": "build",
+  "ref": "main",
+  "tag": false,
+  "build_id": 1978,
+  "build_name": "build-job",
+  "build_stage": "build",
+  "build_status": "failed",
+  "build_created_at": "2021-02-23T03:00:00.000Z",
+  "build_started_at": "2021-02-23T03:01:00.000Z",
+  "build_finished_at": "2021-02-23T03:05:00.000Z",
+  "build_duration": 240.0,
+  "build_queued_duration": 500.0,
+  "build_allow_failure": false,
+  "build_failure_reason": "script_failure",
+  "pipeline_id": 2367,
+  "runner": {
+    "id": 380988,
+    "description": "project-runner-1",
+    "runner_type": "project_type",
+    "active": true,
+    "is_shared": false,
+    "tags": ["docker", "linux"]
+  },
+  "project_id": 380,
+  "project_name": "gitlab-org/gitlab-test"
+}
+

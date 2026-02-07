@@ -16,19 +16,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal"
 )
 
-var (
-	errTraceIDGeneration        = errors.New("failed to generate trace ID")
-	errPipelineSpanIDGeneration = errors.New("failed to generate pipeline span ID")
-	errPipelineSpanProcessing   = errors.New("failed to process pipeline span")
-	errStageSpanProcessing      = errors.New("failed to process stage span")
-	errJobSpanProcessing        = errors.New("failed to process job span")
-)
-
-const (
-	gitlabEventTimeFormat = "2006-01-02 15:04:05 UTC"
-)
+// Error variables and time format constants are now in constants.go and internal/utils.go
 
 // GitlabEvent abstracts span setup for different GitLab event types (pipeline, stage, job)
 // It enables unified span creation logic while allowing type-specific customization
@@ -48,26 +40,26 @@ func (gtr *gitlabTracesReceiver) handlePipeline(e *gitlab.PipelineEvent) (ptrace
 
 	traceID, err := newTraceID(e.ObjectAttributes.ID, e.ObjectAttributes.FinishedAt)
 	if err != nil {
-		return ptrace.Traces{}, fmt.Errorf("%w: %w", errTraceIDGeneration, err)
+		return ptrace.Traces{}, fmt.Errorf("%w: %w", ErrTraceIDGeneration, err)
 	}
 
 	pipeline := &glPipeline{e}
 	pipelineSpanID, err := newPipelineSpanID(pipeline.ObjectAttributes.ID, pipeline.ObjectAttributes.FinishedAt)
 	if err != nil {
-		return ptrace.Traces{}, fmt.Errorf("%w: %w", errPipelineSpanIDGeneration, err)
+		return ptrace.Traces{}, fmt.Errorf("%w: %w", ErrPipelineSpanIDGeneration, err)
 	}
 
 	if err = gtr.processPipelineSpan(r, pipeline, traceID, pipelineSpanID); err != nil {
-		return ptrace.Traces{}, fmt.Errorf("%w: %w", errPipelineSpanProcessing, err)
+		return ptrace.Traces{}, fmt.Errorf("%w: %w", ErrPipelineSpanProcessing, err)
 	}
 
 	stages, err := gtr.processStageSpans(r, pipeline, traceID, pipelineSpanID)
 	if err != nil {
-		return ptrace.Traces{}, fmt.Errorf("%w: %w", errStageSpanProcessing, err)
+		return ptrace.Traces{}, fmt.Errorf("%w: %w", ErrStageSpanProcessing, err)
 	}
 
 	if err := gtr.processJobSpans(r, pipeline, traceID, stages); err != nil {
-		return ptrace.Traces{}, fmt.Errorf("%w: %w", errJobSpanProcessing, err)
+		return ptrace.Traces{}, fmt.Errorf("%w: %w", ErrJobSpanProcessing, err)
 	}
 
 	return t, nil
@@ -89,9 +81,13 @@ func (gtr *gitlabTracesReceiver) processStageSpans(r ptrace.ResourceSpans, pipel
 	}
 
 	for _, stage := range stages {
-		err = gtr.createSpan(r, stage, traceID, parentSpanID)
-		if err != nil {
-			return nil, err
+		// Only create stage spans if they have valid timestamps
+		// Skip stages where all jobs had null timestamps (e.g., all skipped manual jobs)
+		if stage.StartedAt != "" && stage.FinishedAt != "" {
+			err = gtr.createSpan(r, stage, traceID, parentSpanID)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return stages, nil
@@ -106,8 +102,21 @@ func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPi
 			jobURL: baseJobURL + strconv.Itoa(p.Builds[i].ID),
 		}
 
-		if glJob.event.FinishedAt != "" {
-			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, glJob.event.Stage, stages[glJob.event.Stage].StartedAt)
+		// Only process jobs with valid timestamps
+		if glJob.event.StartedAt != "" && glJob.event.FinishedAt != "" {
+			stage, exists := stages[glJob.event.Stage]
+			if !exists {
+				continue
+			}
+
+			// Use stage StartedAt if available, otherwise fall back to pipeline created_at
+			stageStartedAt := stage.StartedAt
+			if stageStartedAt == "" {
+				// If stage has no valid timestamps, use pipeline created_at as fallback
+				stageStartedAt = p.ObjectAttributes.CreatedAt
+			}
+
+			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, glJob.event.Stage, stageStartedAt)
 			if err != nil {
 				return err
 			}
@@ -243,8 +252,12 @@ func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*gl
 			}
 			stages[job.Stage] = stage
 		}
-		if err := gtr.setStageTime(stage, job.StartedAt, job.FinishedAt); err != nil {
-			return nil, fmt.Errorf("updating stage timing for %s: %w", job.Stage, err)
+		// Only update stage timestamps from jobs that have valid timestamps
+		// Skip jobs with null/empty timestamps (e.g., skipped manual jobs)
+		if job.StartedAt != "" || job.FinishedAt != "" {
+			if err := gtr.setStageTime(stage, job.StartedAt, job.FinishedAt); err != nil {
+				return nil, fmt.Errorf("updating stage timing for %s: %w", job.Stage, err)
+			}
 		}
 	}
 
@@ -252,42 +265,47 @@ func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*gl
 }
 
 // setStageTime determines stage start/finish times by finding the earliest start and latest finish time
+// Only processes non-empty timestamps to avoid setting empty values
 func (*gitlabTracesReceiver) setStageTime(stage *glPipelineStage, jobStartedAt, jobFinishedAt string) error {
-	// Handle start time
-	if stage.StartedAt == "" {
-		stage.StartedAt = jobStartedAt
-	} else if jobStartedAt != "" {
-		jobStartTime, err := parseGitlabTime(jobStartedAt)
-		if err != nil {
-			return fmt.Errorf("parsing job start time: %w", err)
-		}
-
-		stageStartTime, err := parseGitlabTime(stage.StartedAt)
-		if err != nil {
-			return fmt.Errorf("parsing stage start time: %w", err)
-		}
-
-		if jobStartTime.Before(stageStartTime) {
+	// Handle start time - only process if job has a valid start time
+	if jobStartedAt != "" {
+		if stage.StartedAt == "" {
 			stage.StartedAt = jobStartedAt
+		} else {
+			jobStartTime, err := parseGitlabTime(jobStartedAt)
+			if err != nil {
+				return fmt.Errorf("parsing job start time: %w", err)
+			}
+
+			stageStartTime, err := parseGitlabTime(stage.StartedAt)
+			if err != nil {
+				return fmt.Errorf("parsing stage start time: %w", err)
+			}
+
+			if jobStartTime.Before(stageStartTime) {
+				stage.StartedAt = jobStartedAt
+			}
 		}
 	}
 
-	// Handle finish time
-	if stage.FinishedAt == "" {
-		stage.FinishedAt = jobFinishedAt
-	} else if jobFinishedAt != "" {
-		jobFinishTime, err := parseGitlabTime(jobFinishedAt)
-		if err != nil {
-			return fmt.Errorf("parsing job finish time: %w", err)
-		}
-
-		stageFinishTime, err := parseGitlabTime(stage.FinishedAt)
-		if err != nil {
-			return fmt.Errorf("parsing stage finish time: %w", err)
-		}
-
-		if jobFinishTime.After(stageFinishTime) {
+	// Handle finish time - only process if job has a valid finish time
+	if jobFinishedAt != "" {
+		if stage.FinishedAt == "" {
 			stage.FinishedAt = jobFinishedAt
+		} else {
+			jobFinishTime, err := parseGitlabTime(jobFinishedAt)
+			if err != nil {
+				return fmt.Errorf("parsing job finish time: %w", err)
+			}
+
+			stageFinishTime, err := parseGitlabTime(stage.FinishedAt)
+			if err != nil {
+				return fmt.Errorf("parsing stage finish time: %w", err)
+			}
+
+			if jobFinishTime.After(stageFinishTime) {
+				stage.FinishedAt = jobFinishedAt
+			}
 		}
 	}
 
@@ -309,28 +327,11 @@ func setSpanTimeStamps(span ptrace.Span, startTime, endTime string) error {
 	return nil
 }
 
-// parseGitlabTime parses the time string from the gitlab event, it differs between the test pipeline event and the actual webhook event,
-// because the test pipeline event has a different time format than the actual webhook event.
-// Test pipeline event time format: 2025-04-01T18:31:49.624Z
-// Actual webhook event time format: 2025-04-01 18:31:49 UTC
+// parseGitlabTime is a wrapper around internal.ParseGitlabTime for backward compatibility.
+//
+// Deprecated: Use internal.ParseGitlabTime directly.
 func parseGitlabTime(t string) (time.Time, error) {
-	if t == "" || t == "null" {
-		return time.Time{}, errors.New("time is empty")
-	}
-
-	// Time format of actual webhook events
-	pt, err := time.Parse(gitlabEventTimeFormat, t)
-	if err == nil {
-		return pt, nil
-	}
-
-	// Time format of test webhook events
-	pt, err = time.Parse(time.RFC3339, t)
-	if err == nil {
-		return pt, nil
-	}
-
-	return time.Time{}, err
+	return internal.ParseGitlabTime(t)
 }
 
 // map GitLab status to OTel span status and set optional message
@@ -339,11 +340,11 @@ func parseGitlabTime(t string) (time.Time, error) {
 // - Pipeline: https://docs.gitlab.com/api/pipelines/#list-project-pipelines (see status field)
 func setSpanStatus(span ptrace.Span, status string) {
 	switch strings.ToLower(status) {
-	case pipelineStatusSuccess:
+	case PipelineStatusSuccess:
 		span.Status().SetCode(ptrace.StatusCodeOk)
-	case pipelineStatusFailed, pipelineStatusCanceled:
+	case PipelineStatusFailed, PipelineStatusCanceled:
 		span.Status().SetCode(ptrace.StatusCodeError)
-	case pipelineStatusSkipped:
+	case PipelineStatusSkipped:
 		span.Status().SetCode(ptrace.StatusCodeUnset)
 	default:
 		span.Status().SetCode(ptrace.StatusCodeUnset)
@@ -392,7 +393,7 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 	// VCS
 	// We need to check if the commit timestamp is not nil, otherwise we might have a nil pointer dereference when calling Format()
 	if e.Commit.Timestamp != nil {
-		attrs.PutStr(AttributeVCSRefHeadRevisionTimestamp, e.Commit.Timestamp.Format(gitlabEventTimeFormat))
+		attrs.PutStr(AttributeVCSRefHeadRevisionTimestamp, e.Commit.Timestamp.Format(internal.GitlabEventTimeFormat))
 	}
 
 	attrs.PutStr(AttributeVCSRepositoryVisibility, string(e.Project.Visibility))
