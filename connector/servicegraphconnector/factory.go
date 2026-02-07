@@ -13,13 +13,12 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
 )
 
 const (
-	// The stability level of the processor.
-	connectorStability                    = component.StabilityLevelDevelopment
 	virtualNodeFeatureGateID              = "connector.servicegraph.virtualNode"
 	legacyLatencyMetricNamesFeatureGateID = "connector.servicegraph.legacyLatencyMetricNames"
 	legacyLatencyUnitMs                   = "connector.servicegraph.legacyLatencyUnitMs"
@@ -67,6 +66,11 @@ func createDefaultConfig() component.Config {
 		CacheLoop:              time.Minute,
 		StoreExpirationLoop:    2 * time.Second,
 		MetricsTimestampOffset: 0,
+		VirtualNodePeerAttributes: []string{
+			string(semconv.PeerServiceKey), string(semconv.DBNameKey), string(semconv.DBSystemKey),
+		},
+		DatabaseNameAttributes: []string{string(semconv.DBNameKey)},
+		MetricsFlushInterval:   60 * time.Second, // 1 DPM
 	}
 }
 

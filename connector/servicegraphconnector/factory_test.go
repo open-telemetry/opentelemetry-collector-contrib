@@ -41,7 +41,9 @@ func TestNewConnector(t *testing.T) {
 
 			creationParams := connectortest.NewNopSettings(metadata.Type)
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.LatencyHistogramBuckets = tc.latencyHistogramBuckets
+			if tc.latencyHistogramBuckets != nil {
+				cfg.LatencyHistogramBuckets = tc.latencyHistogramBuckets
+			}
 
 			// Test
 			conn, err := factory.CreateTracesToMetrics(t.Context(), creationParams, cfg, consumertest.NewNop())
