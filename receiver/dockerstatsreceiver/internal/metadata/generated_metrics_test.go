@@ -292,6 +292,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerRestartsDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordContainerStatusDataPoint(ts, 1, AttributeContainerStateCreated)
+
+			allMetricsCount++
 			mb.RecordContainerUptimeDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
@@ -1393,6 +1396,23 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.status":
+					assert.False(t, validatedMetrics["container.status"], "Found a duplicate in the metrics slice: container.status")
+					validatedMetrics["container.status"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Status of the container. One of - created, running, paused, restarting, removing, exited and dead", ms.At(i).Description())
+					assert.Equal(t, "{status}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("container.state")
+					assert.True(t, ok)
+					assert.Equal(t, "created", attrVal.Str())
 				case "container.uptime":
 					assert.False(t, validatedMetrics["container.uptime"], "Found a duplicate in the metrics slice: container.uptime")
 					validatedMetrics["container.uptime"] = true

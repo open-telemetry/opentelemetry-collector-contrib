@@ -13,6 +13,52 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
+// AttributeContainerState specifies the value container.state attribute.
+type AttributeContainerState int
+
+const (
+	_ AttributeContainerState = iota
+	AttributeContainerStateCreated
+	AttributeContainerStateRunning
+	AttributeContainerStatePaused
+	AttributeContainerStateRestarting
+	AttributeContainerStateRemoving
+	AttributeContainerStateExited
+	AttributeContainerStateDead
+)
+
+// String returns the string representation of the AttributeContainerState.
+func (av AttributeContainerState) String() string {
+	switch av {
+	case AttributeContainerStateCreated:
+		return "created"
+	case AttributeContainerStateRunning:
+		return "running"
+	case AttributeContainerStatePaused:
+		return "paused"
+	case AttributeContainerStateRestarting:
+		return "restarting"
+	case AttributeContainerStateRemoving:
+		return "removing"
+	case AttributeContainerStateExited:
+		return "exited"
+	case AttributeContainerStateDead:
+		return "dead"
+	}
+	return ""
+}
+
+// MapAttributeContainerState is a helper map of string to AttributeContainerState attribute value.
+var MapAttributeContainerState = map[string]AttributeContainerState{
+	"created":    AttributeContainerStateCreated,
+	"running":    AttributeContainerStateRunning,
+	"paused":     AttributeContainerStatePaused,
+	"restarting": AttributeContainerStateRestarting,
+	"removing":   AttributeContainerStateRemoving,
+	"exited":     AttributeContainerStateExited,
+	"dead":       AttributeContainerStateDead,
+}
+
 var MetricsInfo = metricsInfo{
 	ContainerBlockioIoMergedRecursive: metricInfo{
 		Name: "container.blockio.io_merged_recursive",
@@ -224,6 +270,9 @@ var MetricsInfo = metricsInfo{
 	ContainerRestarts: metricInfo{
 		Name: "container.restarts",
 	},
+	ContainerStatus: metricInfo{
+		Name: "container.status",
+	},
 	ContainerUptime: metricInfo{
 		Name: "container.uptime",
 	},
@@ -300,6 +349,7 @@ type metricsInfo struct {
 	ContainerPidsCount                         metricInfo
 	ContainerPidsLimit                         metricInfo
 	ContainerRestarts                          metricInfo
+	ContainerStatus                            metricInfo
 	ContainerUptime                            metricInfo
 }
 
@@ -3987,6 +4037,59 @@ func newMetricContainerRestarts(cfg MetricConfig) metricContainerRestarts {
 	return m
 }
 
+type metricContainerStatus struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.status metric with initial data.
+func (m *metricContainerStatus) init() {
+	m.data.SetName("container.status")
+	m.data.SetDescription("Status of the container. One of - created, running, paused, restarting, removing, exited and dead")
+	m.data.SetUnit("{status}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricContainerStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, containerStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("container.state", containerStateAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerStatus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerStatus(cfg MetricConfig) metricContainerStatus {
+	m := metricContainerStatus{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerUptime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -4117,6 +4220,7 @@ type MetricsBuilder struct {
 	metricContainerPidsCount                         metricContainerPidsCount
 	metricContainerPidsLimit                         metricContainerPidsLimit
 	metricContainerRestarts                          metricContainerRestarts
+	metricContainerStatus                            metricContainerStatus
 	metricContainerUptime                            metricContainerUptime
 }
 
@@ -4213,6 +4317,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricContainerPidsCount:                         newMetricContainerPidsCount(mbc.Metrics.ContainerPidsCount),
 		metricContainerPidsLimit:                         newMetricContainerPidsLimit(mbc.Metrics.ContainerPidsLimit),
 		metricContainerRestarts:                          newMetricContainerRestarts(mbc.Metrics.ContainerRestarts),
+		metricContainerStatus:                            newMetricContainerStatus(mbc.Metrics.ContainerStatus),
 		metricContainerUptime:                            newMetricContainerUptime(mbc.Metrics.ContainerUptime),
 		resourceAttributeIncludeFilter:                   make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                   make(map[string]filter.Filter),
@@ -4399,6 +4504,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricContainerPidsCount.emit(ils.Metrics())
 	mb.metricContainerPidsLimit.emit(ils.Metrics())
 	mb.metricContainerRestarts.emit(ils.Metrics())
+	mb.metricContainerStatus.emit(ils.Metrics())
 	mb.metricContainerUptime.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -4779,6 +4885,11 @@ func (mb *MetricsBuilder) RecordContainerPidsLimitDataPoint(ts pcommon.Timestamp
 // RecordContainerRestartsDataPoint adds a data point to container.restarts metric.
 func (mb *MetricsBuilder) RecordContainerRestartsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerRestarts.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerStatusDataPoint adds a data point to container.status metric.
+func (mb *MetricsBuilder) RecordContainerStatusDataPoint(ts pcommon.Timestamp, val int64, containerStateAttributeValue AttributeContainerState) {
+	mb.metricContainerStatus.recordDataPoint(mb.startTime, ts, val, containerStateAttributeValue.String())
 }
 
 // RecordContainerUptimeDataPoint adds a data point to container.uptime metric.

@@ -52,6 +52,10 @@ resource_attributes:
     enabled: true
 
 attributes:
+  container.state:
+    description: "Container State"
+    type: string
+    enum: ["created", "running", "paused", "restarting", "removing", "exited", "dead"]
   core:
     description: "The CPU core number when utilising per-CPU metrics."
     type: string
@@ -846,6 +850,20 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+
+  # Container status
+  container.status:
+    enabled: false
+    stability:
+      level: development
+    description: "Status of the container. One of - created, running, paused, restarting, removing, exited and dead"
+    extended_documentation: "A timeseries is produced for every possible value of `container.state`. The value of this metric is 1 for a state if it is currently in said state, and is 0 for all other states"
+    unit: "{status}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [container.state]
 
   # Base
   container.uptime:
