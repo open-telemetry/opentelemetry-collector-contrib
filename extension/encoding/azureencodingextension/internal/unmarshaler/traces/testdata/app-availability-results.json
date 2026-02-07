@@ -1,0 +1,34 @@
+{
+  "records": [{
+      "time": "2023-04-18T09:03:00.0000000Z",
+      "resourceId": "/SUBSCRIPTIONS/AAAA0A0A-BB1B-CC2C-DD3D-EEEEEE4E4E4E/RESOURCEGROUPS/RG-001/PROVIDERS/MICROSOFT.INSIGHTS/COMPONENTS/APPI1",
+      "ResourceGUID": "1661c923-1507-4313-85ee-b16641fefb1e",
+      "Type": "AppAvailabilityResults",
+      "ClientCity": "Quincy",
+      "ClientCountryOrRegion": "United States",
+      "ClientIP": "0.0.0.0",
+      "ClientStateOrProvince": "Washington",
+      "ClientType": "PC",
+      "IKey": "dbeb0b88-36b4-4ec0-9c70-81c9a0c864c7",
+      "_BilledSize": 954,
+      "OperationId": "b3db42bad2724155bc3e47344aa1e863",
+      "ParentId": "b3db42bad2724155bc3e47344aa1e863",
+      "SDKVersion": "gsm:1.0.0",
+      "Properties": {
+        "WebtestLocationId": "us-ca-sjc-azr",
+        "FullTestResultAvailable": "true",
+        "SourceId": "sid://1661c923-1507-4313-85ee-b16641fefb1e.visualstudio.com/applications/APPI1/features/ui-endpoint/locations/us-ca-sjc-azr",
+        "_MS.altIds": "b3b628283f087ba7",
+        "WebtestArmResourceName": "ui-endpoint",
+        "SyntheticMonitorId": "default_ui-endpoint_us-ca-sjc-azr"
+      },
+      "Id": "b3db42bad2724155bc3e47344aa1e863",
+      "Name": "ui-endpoint",
+      "Location": "West US",
+      "Success": false,
+      "Message": "'403 - Forbidden' does not match the expected status '200 - OK'.",
+      "DurationMs": 42,
+      "ItemCount": 1
+    }
+  ]
+}

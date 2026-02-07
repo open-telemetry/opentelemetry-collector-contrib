@@ -22,12 +22,13 @@ var (
 )
 
 type azureExtension struct {
-	config         *Config
-	logUnmarshaler plog.Unmarshaler
+	config           *Config
+	logUnmarshaler   plog.Unmarshaler
+	traceUnmarshaler ptrace.Unmarshaler
 }
 
-func (*azureExtension) UnmarshalTraces(_ []byte) (ptrace.Traces, error) {
-	return ptrace.Traces{}, errors.New("not implemented yet")
+func (ex *azureExtension) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
+	return ex.traceUnmarshaler.UnmarshalTraces(buf)
 }
 
 func (ex *azureExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
