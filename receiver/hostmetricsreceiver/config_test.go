@@ -60,6 +60,9 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: 30 * time.Second,
 					InitialDelay:       time.Second,
 				},
+				ResourceAttributes: ResourceAttributesConfig{
+					ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
+				},
 				Scrapers: map[component.Type]component.Config{
 					component.MustNewType("cpu"):  cpuscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("disk"): diskscraper.NewFactory().CreateDefaultConfig(),

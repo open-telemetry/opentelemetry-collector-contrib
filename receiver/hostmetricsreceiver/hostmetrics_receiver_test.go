@@ -84,6 +84,9 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 100 * time.Millisecond,
 		},
+		ResourceAttributes: ResourceAttributesConfig{
+			ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
+		},
 		Scrapers: newScrapersConfigs(
 			cpuscraper.NewFactory(),
 			diskscraper.NewFactory(),
@@ -141,10 +144,17 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		returnedMetricNames := getReturnedMetricNames(metrics)
 		assert.Equal(t, "https://opentelemetry.io/schemas/1.9.0", rm.SchemaUrl(),
 			"SchemaURL is incorrect for metrics: %v", returnedMetricNames)
-		if rm.Resource().Attributes().Len() == 0 {
-			maps.Copy(returnedMetrics, returnedMetricNames)
-		} else {
+
+		// Verify service.instance.id is present
+		attrs := rm.Resource().Attributes()
+		_, ok := attrs.Get("service.instance.id")
+		require.True(t, ok, "service.instance.id should be present")
+
+		// Differentiate host-level metrics from process metrics by checking for process.pid
+		if _, hasProcessPid := attrs.Get("process.pid"); hasProcessPid {
 			maps.Copy(returnedResourceMetrics, returnedMetricNames)
+		} else {
+			maps.Copy(returnedMetrics, returnedMetricNames)
 		}
 	}
 
