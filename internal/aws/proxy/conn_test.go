@@ -8,10 +8,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -246,34 +244,61 @@ func TestMissingECSMetadataFile(t *testing.T) {
 		"expected error")
 }
 
-func TestGetPrimaryRegion(t *testing.T) {
-	tests := []struct {
-		region          string
-		expectedPrimary string
-	}{
-		{"us-east-1", "us-east-1"},
-		{"us-west-2", "us-east-1"},
-		{"eu-west-1", "us-east-1"},
-		{"ap-southeast-1", "us-east-1"},
-		{"cn-north-1", "cn-north-1"},
-		{"cn-northwest-1", "cn-north-1"},
-		{"us-gov-west-1", "us-gov-west-1"},
-		{"us-gov-east-1", "us-gov-west-1"},
-		{"us-iso-east-1", "us-iso-east-1"},
-		{"us-iso-west-1", "us-iso-east-1"},
-		{"us-isob-east-1", "us-isob-east-1"},
-		{"eu-isoe-west-1", "eu-isoe-west-1"},
-		{"us-isof-south-1", "us-isof-south-1"},
-		{"eusc-de-east-1", "eusc-de-east-1"},
-	}
+func TestNewAWSConfigDelegatesToAwsutil(t *testing.T) {
+	t.Run("without RoleARN", func(t *testing.T) {
+		logger := zap.NewNop()
+		t.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
+		t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
-	for _, tt := range tests {
-		t.Run(tt.region, func(t *testing.T) {
-			primary, err := getPrimaryRegion(tt.region)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedPrimary, primary)
-		})
-	}
+		cfg, err := newAWSConfig(t.Context(), "", "us-west-2", logger)
+		assert.NoError(t, err)
+		assert.Equal(t, "us-west-2", cfg.Region, "region should be set")
+		assert.Equal(t, 2, cfg.RetryMaxAttempts, "max retries should be 2")
+	})
+
+	t.Run("with RoleARN", func(t *testing.T) {
+		logger := zap.NewNop()
+		t.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
+		t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
+
+		cfg, err := newAWSConfig(t.Context(), "arn:aws:iam::123456789012:role/TestRole", "eu-west-1", logger)
+		assert.NoError(t, err)
+		assert.Equal(t, "eu-west-1", cfg.Region, "region should be set")
+		assert.Equal(t, 2, cfg.RetryMaxAttempts, "max retries should be 2")
+		assert.NotNil(t, cfg.Credentials, "credentials provider should be set for RoleARN")
+	})
+
+	// Verify SDK handles config creation for regions across all AWS partitions.
+	// This ensures getServiceEndpoint (tested in server_test.go) and newAWSConfig
+	// both work consistently for partition-specific regions.
+	t.Run("all partitions", func(t *testing.T) {
+		logger := zap.NewNop()
+		t.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
+		t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
+
+		partitionRegions := []struct {
+			region    string
+			partition string
+		}{
+			{"us-east-1", "aws"},
+			{"eu-west-1", "aws"},
+			{"cn-north-1", "aws-cn"},
+			{"us-gov-west-1", "aws-us-gov"},
+			{"us-iso-east-1", "aws-iso"},
+			{"us-isob-east-1", "aws-iso-b"},
+			{"eu-isoe-west-1", "aws-iso-e"},
+			{"us-isof-south-1", "aws-iso-f"},
+			{"eusc-de-east-1", "aws-eusc"},
+		}
+
+		for _, pr := range partitionRegions {
+			t.Run(pr.partition+"/"+pr.region, func(t *testing.T) {
+				cfg, err := newAWSConfig(t.Context(), "", pr.region, logger)
+				assert.NoError(t, err, "should create config for %s", pr.region)
+				assert.Equal(t, pr.region, cfg.Region)
+			})
+		}
+	})
 }
 
 func TestProxyServerTransportInvalidProxyAddr(t *testing.T) {
@@ -288,165 +313,4 @@ func TestProxyServerTransportHappyCase(t *testing.T) {
 		ProxyAddress: "",
 	})
 	assert.NoError(t, err, "no expected error")
-}
-
-func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
-	const expectedRoleARN = "a role ARN"
-	called := false
-
-	cfg := aws.Config{}
-
-	fake := &stsCallsV2{
-		log: zap.NewNop(),
-		getSTSCredsFromRegionEndpoint: func(_ context.Context, _ *zap.Logger, _ aws.Config, region, roleArn string) aws.CredentialsProvider {
-			assert.Equal(t, "us-east-1", region, "expected region differs")
-			assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
-			called = true
-			return &mockCredentialsProvider{}
-		},
-	}
-	_, err := fake.getSTSCredsFromPrimaryRegionEndpoint(t.Context(), cfg, expectedRoleARN, "us-west-2")
-	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
-	assert.NoError(t, err, "no expected error")
-
-	called = false
-	fake.getSTSCredsFromRegionEndpoint = func(_ context.Context, _ *zap.Logger, _ aws.Config, region, roleArn string) aws.CredentialsProvider {
-		assert.Equal(t, "cn-north-1", region, "expected region differs")
-		assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
-		called = true
-		return &mockCredentialsProvider{}
-	}
-	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(t.Context(), cfg, expectedRoleARN, "cn-north-1")
-	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
-	assert.NoError(t, err, "no expected error")
-
-	called = false
-	fake.getSTSCredsFromRegionEndpoint = func(_ context.Context, _ *zap.Logger, _ aws.Config, region, roleArn string) aws.CredentialsProvider {
-		assert.Equal(t, "us-gov-west-1", region, "expected region differs")
-		assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
-		called = true
-		return &mockCredentialsProvider{}
-	}
-	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(t.Context(), cfg, expectedRoleARN, "us-gov-east-1")
-	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
-	assert.NoError(t, err, "no expected error")
-
-	// Test iso partitions
-	called = false
-	fake.getSTSCredsFromRegionEndpoint = func(_ context.Context, _ *zap.Logger, _ aws.Config, region, roleArn string) aws.CredentialsProvider {
-		assert.Equal(t, "us-iso-east-1", region, "expected region differs")
-		assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
-		called = true
-		return &mockCredentialsProvider{}
-	}
-	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(t.Context(), cfg, expectedRoleARN, "us-iso-west-1")
-	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
-	assert.NoError(t, err, "no expected error")
-
-	called = false
-	fake.getSTSCredsFromRegionEndpoint = func(_ context.Context, _ *zap.Logger, _ aws.Config, region, roleArn string) aws.CredentialsProvider {
-		assert.Equal(t, "us-isob-east-1", region, "expected region differs")
-		assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
-		called = true
-		return &mockCredentialsProvider{}
-	}
-	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(t.Context(), cfg, expectedRoleARN, "us-isob-west-1")
-	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
-	assert.NoError(t, err, "no expected error")
-
-	called = false
-	fake.getSTSCredsFromRegionEndpoint = func(_ context.Context, _ *zap.Logger, _ aws.Config, region, roleArn string) aws.CredentialsProvider {
-		assert.Equal(t, "eu-isoe-west-1", region, "expected region differs")
-		assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
-		called = true
-		return &mockCredentialsProvider{}
-	}
-	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(t.Context(), cfg, expectedRoleARN, "eu-isoe-west-1")
-	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
-	assert.NoError(t, err, "no expected error")
-
-	called = false
-	fake.getSTSCredsFromRegionEndpoint = func(_ context.Context, _ *zap.Logger, _ aws.Config, region, roleArn string) aws.CredentialsProvider {
-		assert.Equal(t, "us-isof-south-1", region, "expected region differs")
-		assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
-		called = true
-		return &mockCredentialsProvider{}
-	}
-	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(t.Context(), cfg, expectedRoleARN, "us-isof-east-1")
-	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
-	assert.NoError(t, err, "no expected error")
-
-	called = false
-	fake.getSTSCredsFromRegionEndpoint = func(_ context.Context, _ *zap.Logger, _ aws.Config, region, roleArn string) aws.CredentialsProvider {
-		assert.Equal(t, "eusc-de-east-1", region, "expected region differs")
-		assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
-		called = true
-		return &mockCredentialsProvider{}
-	}
-	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(t.Context(), cfg, expectedRoleARN, "eusc-de-east-1")
-	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
-	assert.NoError(t, err, "no expected error")
-
-	// Test unknown region falls back to standard partition's primary region
-	called = false
-	fake.getSTSCredsFromRegionEndpoint = func(_ context.Context, _ *zap.Logger, _ aws.Config, region, roleArn string) aws.CredentialsProvider {
-		assert.Equal(t, "us-east-1", region, "unknown regions should fall back to us-east-1")
-		assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
-		called = true
-		return &mockCredentialsProvider{}
-	}
-	_, err = fake.getSTSCredsFromPrimaryRegionEndpoint(t.Context(), cfg, expectedRoleARN, "ap-southeast-99")
-	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
-	assert.NoError(t, err, "no expected error")
-}
-
-// mockCredentialsProvider implements aws.CredentialsProvider for testing
-type mockCredentialsProvider struct {
-	retrieveErr error
-}
-
-func (m *mockCredentialsProvider) Retrieve(_ context.Context) (aws.Credentials, error) {
-	if m.retrieveErr != nil {
-		return aws.Credentials{}, m.retrieveErr
-	}
-	return aws.Credentials{
-		AccessKeyID:     "mockAccessKey",
-		SecretAccessKey: "mockSecret",
-		SessionToken:    "mockToken",
-		Source:          "mockProvider",
-		CanExpire:       true,
-		Expires:         time.Now().Add(time.Hour),
-	}, nil
-}
-
-func TestSTSRegionalEndpointDisabled(t *testing.T) {
-	logger, recordedLogs := logSetup()
-
-	const (
-		expectedRoleARN = "a role ARN"
-		expectedRegion  = "us-west-2000"
-	)
-	called := false
-	expectedErr := &types.RegionDisabledException{Message: aws.String("Region is disabled")}
-
-	cfg := aws.Config{}
-
-	fake := &stsCallsV2{
-		log: logger,
-		getSTSCredsFromRegionEndpoint: func(_ context.Context, _ *zap.Logger, _ aws.Config, _, _ string) aws.CredentialsProvider {
-			called = true
-			return &mockCredentialsProvider{retrieveErr: expectedErr}
-		},
-	}
-	_, err := fake.getCreds(t.Context(), cfg, expectedRegion, expectedRoleARN)
-	assert.True(t, called, "getSTSCredsFromRegionEndpoint should be called")
-	assert.NoError(t, err, "no expected error")
-
-	logs := recordedLogs.All()
-	lastEntry := logs[len(logs)-1]
-	assert.Contains(t, lastEntry.Message,
-		"STS regional endpoint disabled. Credentials for provided RoleARN will be fetched from STS primary region endpoint instead",
-		"expected log message")
-	assert.Equal(t,
-		expectedRegion, lastEntry.Context[0].String, "expected region")
 }
