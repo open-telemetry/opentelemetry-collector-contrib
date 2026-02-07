@@ -141,6 +141,52 @@ func formattedBody(e *EventXML) map[string]any {
 	return body
 }
 
+// extendedFormattedBody will parse a body from the event.
+func extendedFormattedBody(e *EventXML) map[string]any {
+	body := map[string]any{
+		"event_id": map[string]any{
+			"qualifiers": e.EventID.Qualifiers,
+			"id":         e.EventID.ID,
+		},
+		"provider": map[string]any{
+			"name":         e.Provider.Name,
+			"guid":         e.Provider.GUID,
+			"event_source": e.Provider.EventSourceName,
+		},
+		"system_time":       e.TimeCreated.SystemTime,
+		"computer":          e.Computer,
+		"channel":           e.Channel,
+		"record_id":         e.RecordID,
+		"level":             e.Level,
+		"rendered_level":    e.RenderedLevel,
+		"message":           e.Message,
+		"task":              e.Task,
+		"rendered_task":     e.RenderedTask,
+		"opcode":            e.Opcode,
+		"rendered_opcode":   e.RenderedOpcode,
+		"keywords":          e.Keywords,
+		"rendered_keywords": e.RenderedKeywords,
+		"event_data":        parseEventData(e.EventData),
+		"version":           e.Version,
+	}
+
+	if e.Security != nil && e.Security.UserID != "" {
+		body["security"] = map[string]any{
+			"user_id": e.Security.UserID,
+		}
+	}
+
+	if e.Execution != nil {
+		body["execution"] = e.Execution.asMap()
+	}
+
+	if e.Correlation != nil {
+		body["correlation"] = e.Correlation.asMap()
+	}
+
+	return body
+}
+
 // parseMessage will attempt to parse a message into a message and details
 func parseMessage(channel, message string) (string, map[string]any) {
 	switch channel {

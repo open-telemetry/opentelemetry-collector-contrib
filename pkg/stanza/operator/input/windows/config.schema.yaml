@@ -23,6 +23,8 @@ $defs:
       query:
         x-pointer: true
         type: string
+      extendedFormat:
+        type: boolean
       raw:
         type: boolean
       remote:

@@ -36,6 +36,7 @@ type Config struct {
 	StartAt                  string        `mapstructure:"start_at,omitempty"`
 	PollInterval             time.Duration `mapstructure:"poll_interval,omitempty"`
 	MaxEventsPerPoll         int           `mapstructure:"max_events_per_poll,omitempty"`
+	ExtendedFormat           bool          `mapstructure:"extended_format,omitempty"`
 	Raw                      bool          `mapstructure:"raw,omitempty"`
 	IncludeLogRecordOriginal bool          `mapstructure:"include_log_record_original,omitempty"`
 	SuppressRenderingInfo    bool          `mapstructure:"suppress_rendering_info,omitempty"`
