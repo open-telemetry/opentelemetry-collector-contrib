@@ -1,0 +1,40 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.node.name
+          value:
+            stringValue: test-node-1
+        - key: k8s.node.uid
+          value:
+            stringValue: test-node-1-uid
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Amount of cpu allocatable on the node
+            sum:
+              dataPoints:
+                - asDouble: 0.123
+            name: k8s.node.cpu.allocatable
+            unit: '{cpu}'
+          - description: Amount of ephemeral-storage allocatable on the node
+            sum:
+              dataPoints:
+                - asInt: "1234"
+            name: k8s.node.ephemeral_storage.allocatable
+            unit: By
+          - description: Amount of memory allocatable on the node
+            sum:
+              dataPoints:
+                - asInt: "456"
+            name: k8s.node.memory.allocatable
+            unit: By
+          - description: Amount of pods allocatable on the node
+            sum:
+              dataPoints:
+                - asInt: "12"
+            name: k8s.node.pod.allocatable
+            unit: "{pod}"
+
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+          version: latest

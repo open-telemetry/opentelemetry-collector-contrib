@@ -493,6 +493,8 @@ metrics:
     gauge:
       value_type: int
 
+  # k8s.node.condition_* metrics (k8s.node.condition_ready, k8s.node.condition_memory_pressure, etc) are controlled
+  # by node_conditions_to_report config option. By default, only k8s.node.condition_ready is enabled.
   k8s.node.condition:
     enabled: false
     description: The condition of a particular Node.
@@ -503,11 +505,45 @@ metrics:
       value_type: int
     attributes:
       - condition
-  # k8s.node.condition_* metrics (k8s.node.condition_ready, k8s.node.condition_memory_pressure, etc) are controlled
-  # by node_conditions_to_report config option. By default, only k8s.node.condition_ready is enabled.
 
   # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
   # by allocatable_types_to_report config option. By default, none of them are reported.
+  k8s.node.cpu.allocatable:
+    enabled: true
+    description: Amount of cpu allocatable on the node
+    unit: "{cpu}"
+    stability:
+      level: development
+    sum:
+      monotonic: false
+      value_type: double
+  k8s.node.ephemeral_storage.allocatable:
+    enabled: true
+    description: Amount of ephemeral-storage allocatable on the node
+    unit: "By"
+    stability:
+      level: development
+    sum:
+      monotonic: false
+      value_type: int
+  k8s.node.memory.allocatable:
+    enabled: true
+    description: Amount of memory allocatable on the node
+    unit: "By"
+    stability:
+      level: development
+    sum:
+      monotonic: false
+      value_type: int
+  k8s.node.pod.allocatable:
+    enabled: true
+    description: Amount of pods allocatable on the node
+    unit: "{pod}"
+    stability:
+      level: development
+    sum:
+      monotonic: false
+      value_type: int
 
   k8s.pod.phase:
     enabled: true
@@ -665,3 +701,17 @@ tests:
   skip_lifecycle: true
   goleak:
     skip: true
+
+feature_gates:
+  - id: receiver.k8scluster.DontEmitV0K8sConventions
+    stage: alpha
+    description: >-
+      When enabled, V0 semantic conventions are disabled.
+    from_version: v0.146.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708
+  - id: receiver.k8scluster.EmitV1K8sConventions
+    stage: alpha
+    description: >-
+      When enabled, V1 semantic conventions are enabled.
+    from_version: v0.146.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708

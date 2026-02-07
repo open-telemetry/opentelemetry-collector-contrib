@@ -60,6 +60,24 @@ func RecordMetrics(mb *metadata.MetricsBuilder, node *corev1.Node, ts pcommon.Ti
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 
+	if metadata.ReceiverK8sclusterEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if cpuVal, ok := node.Status.Allocatable[corev1.ResourceCPU]; ok {
+			mb.RecordK8sNodeCPUAllocatableDataPoint(ts, float64(cpuVal.MilliValue())/1000.0)
+		}
+
+		if ephemeralMemoryVal, ok := node.Status.Allocatable[corev1.ResourceEphemeralStorage]; ok {
+			mb.RecordK8sNodeEphemeralStorageAllocatableDataPoint(ts, ephemeralMemoryVal.Value())
+		}
+
+		if memoryVal, ok := node.Status.Allocatable[corev1.ResourceMemory]; ok {
+			mb.RecordK8sNodeMemoryAllocatableDataPoint(ts, memoryVal.Value())
+		}
+
+		if podVal, ok := node.Status.Allocatable[corev1.ResourcePods]; ok {
+			mb.RecordK8sNodePodAllocatableDataPoint(ts, podVal.Value())
+		}
+	}
+
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -83,22 +101,24 @@ func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *co
 	}
 
 	// Adding 'node allocatable type' metrics
-	for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
-		v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
-		quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]
-		if !ok {
-			set.Logger.Debug(fmt.Errorf("allocatable type %v not found in node %v", nodeAllocatableTypeValue,
-				node.GetName()).Error())
-			continue
+	if !metadata.ReceiverK8sclusterDontEmitV0K8sConventionsFeatureGate.IsEnabled() {
+		for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
+			v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
+			quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]
+			if !ok {
+				set.Logger.Debug(fmt.Errorf("allocatable type %v not found in node %v", nodeAllocatableTypeValue,
+					node.GetName()).Error())
+				continue
+			}
+			m := sm.Metrics().AppendEmpty()
+			m.SetName(getNodeAllocatableMetric(nodeAllocatableTypeValue))
+			m.SetDescription(fmt.Sprintf("Amount of %v allocatable on the node", nodeAllocatableTypeValue))
+			m.SetUnit(getNodeAllocatableUnit(v1NodeAllocatableTypeValue))
+			g := m.SetEmptyGauge()
+			dp := g.DataPoints().AppendEmpty()
+			setNodeAllocatableValue(dp, v1NodeAllocatableTypeValue, quantity)
+			dp.SetTimestamp(ts)
 		}
-		m := sm.Metrics().AppendEmpty()
-		m.SetName(getNodeAllocatableMetric(nodeAllocatableTypeValue))
-		m.SetDescription(fmt.Sprintf("Amount of %v allocatable on the node", nodeAllocatableTypeValue))
-		m.SetUnit(getNodeAllocatableUnit(v1NodeAllocatableTypeValue))
-		g := m.SetEmptyGauge()
-		dp := g.DataPoints().AppendEmpty()
-		setNodeAllocatableValue(dp, v1NodeAllocatableTypeValue, quantity)
-		dp.SetTimestamp(ts)
 	}
 
 	if sm.Metrics().Len() == 0 {
