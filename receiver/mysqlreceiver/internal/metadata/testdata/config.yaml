@@ -57,6 +57,10 @@ all_set:
       enabled: true
     mysql.query.slow.count:
       enabled: true
+    mysql.replica.is_io_thread_running:
+      enabled: true
+    mysql.replica.is_sql_thread_running:
+      enabled: true
     mysql.replica.sql_delay:
       enabled: true
     mysql.replica.time_behind_source:
@@ -162,6 +166,10 @@ none_set:
     mysql.query.count:
       enabled: false
     mysql.query.slow.count:
+      enabled: false
+    mysql.replica.is_io_thread_running:
+      enabled: false
+    mysql.replica.is_sql_thread_running:
       enabled: false
     mysql.replica.sql_delay:
       enabled: false
