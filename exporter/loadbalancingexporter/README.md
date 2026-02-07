@@ -18,16 +18,17 @@
 
 This is an exporter that will consistently export spans and metrics depending on the `routing_key` configured. Logs are exported based on the `traceID` (if it's present) or an auto-generated `traceID`. Therefore setting the `routing_key` for logs does not have any effect.
 
-The options for `routing_key` are: `service`, `traceID`, `metric` (metric name), `resource`, `streamID`.
+The options for `routing_key` are: `service`, `traceID`, `metric` (metric name), `resource`, `streamID`, `exemplarTraceID`.
 
-| routing_key | can be used for      |
-| ----------- | -------------------- |
-| service     | spans, metrics       |
-| traceID     | spans                |
-| resource    | metrics              |
-| metric      | metrics              |
-| streamID    | metrics              |
-| attributes  | spans                |
+| routing_key      | can be used for      |
+| ---------------- | -------------------- |
+| service          | spans, metrics       |
+| traceID          | spans                |
+| resource         | metrics              |
+| metric           | metrics              |
+| streamID         | metrics              |
+| exemplarTraceID  | metrics              |
+| attributes       | spans                |
 
 If no `routing_key` is configured, the default routing mechanism is `traceID`  for traces, while `service` is the default for metrics. This means that spans belonging to the same `traceID` (or `service.name`, when `service` is used as the `routing_key`) will be sent to the same backend.
 
@@ -122,6 +123,14 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `traceID`: Routes spans based on their `traceID`. Invalid for metrics.
   * `metric`: Routes metrics based on their metric name. Invalid for spans.
   * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data
+  * `exemplarTraceID`: Routes metrics based on the trace IDs found in their exemplars. This enables co-location of metrics with their corresponding traces for correlation analysis.
+
+    > ⚠️ **Important behavior notes:**
+    >
+    > - **Value recomputation**: When metrics are split by exemplar trace ID, the metric values are **recomputed from exemplar values**, not preserved from the original. For Sum metrics, the new value is the sum of exemplar values for that trace ID. For Histograms, counts and buckets are recalculated from exemplars.
+    > - **Metrics without exemplars are dropped**: Only metrics containing exemplars with valid trace IDs are routed. Metrics without exemplars, or with exemplars lacking trace IDs, are silently dropped.
+    > - **Use case**: This routing key is designed for **trace-metric correlation** scenarios where you want metrics and their associated traces to land on the same backend for analysis. It is NOT suitable for general metric aggregation pipelines.
+    > - **Exemplars as source of truth**: This mode treats exemplars as the authoritative breakdown of metric values. If your exemplars are samples (not a complete breakdown), the recomputed values will not match the original metric values.
 * loadbalancing exporter supports set of standard [queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), but they are disable by default to maintain compatibility
 * The `routing_attributes` property is used to list the attributes that should be used if the `routing_key` is `attributes`.
 

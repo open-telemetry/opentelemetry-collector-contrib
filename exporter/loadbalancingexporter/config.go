@@ -22,15 +22,17 @@ const (
 	resourceRouting
 	streamIDRouting
 	attrRouting
+	exemplarTraceIDRouting
 )
 
 const (
-	svcRoutingStr        = "service"
-	traceIDRoutingStr    = "traceID"
-	metricNameRoutingStr = "metric"
-	resourceRoutingStr   = "resource"
-	streamIDRoutingStr   = "streamID"
-	attrRoutingStr       = "attributes"
+	svcRoutingStr             = "service"
+	traceIDRoutingStr         = "traceID"
+	metricNameRoutingStr      = "metric"
+	resourceRoutingStr        = "resource"
+	streamIDRoutingStr        = "streamID"
+	attrRoutingStr            = "attributes"
+	exemplarTraceIDRoutingStr = "exemplarTraceID"
 )
 
 // Config defines configuration for the exporter.

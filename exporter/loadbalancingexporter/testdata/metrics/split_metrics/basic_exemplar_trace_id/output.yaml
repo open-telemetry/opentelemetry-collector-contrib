@@ -1,0 +1,53 @@
+"\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10":
+  resourceMetrics:
+    - schemaUrl: https://test-res-schema.com/schema
+      resource:
+        attributes:
+          - key: service.name
+            value:
+              stringValue: test-service
+      scopeMetrics:
+        - schemaUrl: https://test-scope-schema.com/schema
+          scope:
+            name: MyTestInstrument
+            version: "1.2.3"
+          metrics:
+            - name: test.sum.metric
+              sum:
+                aggregationTemporality: 2
+                isMonotonic: true
+                dataPoints:
+                  - timeUnixNano: 50
+                    asDouble: 30
+                    exemplars:
+                      - timeUnixNano: 50
+                        asDouble: 10
+                        traceId: "0102030405060708090a0b0c0d0e0f10"
+                      - timeUnixNano: 51
+                        asDouble: 20
+                        traceId: "0102030405060708090a0b0c0d0e0f10"
+"\x10\x0f\x0e\r\x0c\x0b\n\t\x08\x07\x06\x05\x04\x03\x02\x01":
+  resourceMetrics:
+    - schemaUrl: https://test-res-schema.com/schema
+      resource:
+        attributes:
+          - key: service.name
+            value:
+              stringValue: test-service
+      scopeMetrics:
+        - schemaUrl: https://test-scope-schema.com/schema
+          scope:
+            name: MyTestInstrument
+            version: "1.2.3"
+          metrics:
+            - name: test.sum.metric
+              sum:
+                aggregationTemporality: 2
+                isMonotonic: true
+                dataPoints:
+                  - timeUnixNano: 50
+                    asDouble: 30
+                    exemplars:
+                      - timeUnixNano: 52
+                        asDouble: 30
+                        traceId: "100f0e0d0c0b0a090807060504030201"
