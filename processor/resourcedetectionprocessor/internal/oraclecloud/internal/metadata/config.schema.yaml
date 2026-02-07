@@ -25,3 +25,5 @@ $defs:
         $ref: resource_attribute_config
       k8s.cluster.name:
         $ref: resource_attribute_config
+      oracle_cloud.realm:
+        $ref: resource_attribute_config

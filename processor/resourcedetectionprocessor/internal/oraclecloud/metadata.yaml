@@ -1,6 +1,4 @@
-type: resourcedetectionprocessor/oraclecloud
-
-parent: resourcedetection
+type: oracleclouddetector
 
 status:
   class: processor
@@ -40,5 +38,9 @@ resource_attributes:
     type: string
   k8s.cluster.name:
     description: k8s.cluster.name
+    enabled: true
+    type: string
+  oracle_cloud.realm:
+    description: The Oracle Cloud realm
     enabled: true
     type: string

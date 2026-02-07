@@ -66,6 +66,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetHostType(compute.HostType)
 
 	d.rb.SetK8sClusterName(compute.Metadata.OKEClusterDisplayName)
+	d.rb.SetOracleCloudRealm(compute.Metadata.Realm)
 
 	res := d.rb.Emit()
 

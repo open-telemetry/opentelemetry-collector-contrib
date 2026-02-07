@@ -6,13 +6,14 @@
 
 ## Resource Attributes
 
-| Name                   | Description                                                                                                                                                              | Values   | Enabled |
-|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------|
-| cloud.availability_zone| The [availability domain](https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm) in which this Oracle Cloud instance is running (e.g., "PHX-AD-1").      | Any Str  | true    |
-| cloud.platform         | Value is `oracle_cloud_infrastructure` for resources detected on Oracle Cloud Infrastructure (OCI).                                                                       | Any Str  | true    |
-| cloud.provider         | Always set to `oraclecloud` to identify resources provided by Oracle Cloud Infrastructure (OCI).                                                                          | Any Str  | true    |
-| cloud.region           | The Oracle Cloud region identifier for this instance (e.g., "us-phoenix-1").                                                                                            | Any Str  | true    |
-| host.id                | The OCID (Oracle Cloud Identifier) of the host instance (unique per compute instance).                                                                                   | Any Str  | true    |
-| host.name              | The system hostname as reported by the OCI metadata service.                                                                                                             | Any Str  | true    |
-| host.type              | The compute shape (instance type) of the host, such as "VM.Standard.E4.Flex".                                                                                            | Any Str  | true    |
-| k8s.cluster.name       | The Kubernetes cluster name if running in an Oracle Container Engine for Kubernetes (OKE) cluster; unset otherwise.                                                      | Any Str  | true    |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| cloud.availability_zone | The cloud.availability_zone | Any Str | true |
+| cloud.platform | The cloud.platform | Any Str | true |
+| cloud.provider | The cloud.provider | Any Str | true |
+| cloud.region | The cloud.region | Any Str | true |
+| host.id | The host.id | Any Str | true |
+| host.name | The hostname | Any Str | true |
+| host.type | The instance type (shape) | Any Str | true |
+| k8s.cluster.name | k8s.cluster.name | Any Str | true |
+| oracle_cloud.realm | The Oracle Cloud realm | Any Str | true |
