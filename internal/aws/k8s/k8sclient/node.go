@@ -48,6 +48,7 @@ type nodeClient struct {
 	syncChecker initialSyncChecker
 
 	mu                     sync.RWMutex
+	wg                     sync.WaitGroup
 	clusterFailedNodeCount int
 	clusterNodeCount       int
 }
@@ -118,7 +119,12 @@ func newNodeClient(clientSet kubernetes.Interface, logger *zap.Logger, options .
 
 	lw := createNodeListWatch(clientSet)
 	reflector := cache.NewReflector(lw, &v1.Node{}, c.store, 0)
-	go reflector.Run(c.stopChan)
+	// start reflector in a goroutine tracked by the wait group
+	go func() {
+		c.wg.Add(1)
+		defer c.wg.Done()
+		reflector.Run(c.stopChan)
+	}()
 
 	if c.syncChecker != nil {
 		// check the init sync for potential connection issue
@@ -130,10 +136,14 @@ func newNodeClient(clientSet kubernetes.Interface, logger *zap.Logger, options .
 
 func (c *nodeClient) shutdown() {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	if !c.stopped {
+		close(c.stopChan)
+		c.stopped = true
+	}
+	c.mu.Unlock()
 
-	close(c.stopChan)
-	c.stopped = true
+	// wait for reflector goroutine(s) to exit
+	c.wg.Wait()
 }
 
 func transformFuncNode(obj any) (any, error) {

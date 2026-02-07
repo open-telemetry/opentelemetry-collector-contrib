@@ -47,12 +47,12 @@ func jobSyncCheckerOption(checker initialSyncChecker) jobClientOption {
 type jobClient struct {
 	stopChan chan struct{}
 	stopped  bool
-
-	store *ObjStore
+	store    *ObjStore
 
 	syncChecker initialSyncChecker
 
 	mu              sync.RWMutex
+	wg              sync.WaitGroup
 	cachedJobMap    map[string]time.Time
 	jobToCronJobMap map[string]string
 }
@@ -120,8 +120,12 @@ func newJobClient(clientSet kubernetes.Interface, logger *zap.Logger, options ..
 	c.store = NewObjStore(transformFuncJob, logger)
 	lw := createJobListWatch(clientSet, metav1.NamespaceAll)
 	reflector := cache.NewReflector(lw, &batchv1.Job{}, c.store, 0)
-
-	go reflector.Run(c.stopChan)
+	// start reflector in a goroutine tracked by the wait group
+	go func() {
+		c.wg.Add(1)
+		defer c.wg.Done()
+		reflector.Run(c.stopChan)
+	}()
 
 	if c.syncChecker != nil {
 		// check the init sync for potential connection issue
@@ -134,6 +138,9 @@ func newJobClient(clientSet kubernetes.Interface, logger *zap.Logger, options ..
 func (c *jobClient) shutdown() {
 	close(c.stopChan)
 	c.stopped = true
+
+	// wait for reflector goroutine(s) to exit
+	c.wg.Wait()
 }
 
 func transformFuncJob(obj any) (any, error) {

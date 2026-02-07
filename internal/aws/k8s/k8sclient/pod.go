@@ -38,6 +38,7 @@ type podClient struct {
 	syncChecker initialSyncChecker
 
 	mu                          sync.RWMutex
+	wg                          sync.WaitGroup
 	namespaceToRunningPodNumMap map[string]int
 }
 
@@ -82,8 +83,12 @@ func newPodClient(clientSet kubernetes.Interface, logger *zap.Logger, options ..
 
 	lw := createPodListWatch(clientSet, metav1.NamespaceAll)
 	reflector := cache.NewReflector(lw, &v1.Pod{}, c.store, 0)
-
-	go reflector.Run(c.stopChan)
+	// start reflector in a goroutine tracked by the wait group
+	go func() {
+		c.wg.Add(1)
+		defer c.wg.Done()
+		reflector.Run(c.stopChan)
+	}()
 
 	if c.syncChecker != nil {
 		// check the init sync for potential connection issue
@@ -96,8 +101,13 @@ func newPodClient(clientSet kubernetes.Interface, logger *zap.Logger, options ..
 func (c *podClient) shutdown() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	close(c.stopChan)
-	c.stopped = true
+	if !c.stopped {
+		close(c.stopChan)
+		c.stopped = true
+	}
+
+	// wait for reflector goroutine(s) to exit
+	c.wg.Wait()
 }
 
 func transformFuncPod(obj any) (any, error) {
