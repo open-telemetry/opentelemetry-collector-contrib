@@ -334,6 +334,21 @@ func (r *Reader) GetFileName() string {
 	return r.fileName
 }
 
+func (r *Reader) GetOffset() int64 {
+	return r.Offset
+}
+
+func (r *Reader) GetFileSize() (int64, error) {
+	if r.file == nil {
+		return 0, errors.New("file has been closed")
+	}
+	info, err := r.file.Stat()
+	if err != nil {
+		return 0, err
+	}
+	return info.Size(), nil
+}
+
 func (m Metadata) GetFingerprint() *fingerprint.Fingerprint {
 	return m.Fingerprint
 }
