@@ -5,6 +5,7 @@ package textencodingextension // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"io"
 	"regexp"
 
 	"go.opentelemetry.io/collector/component"
@@ -17,6 +18,7 @@ import (
 var (
 	_ encoding.LogsMarshalerExtension   = (*textExtension)(nil)
 	_ encoding.LogsUnmarshalerExtension = (*textExtension)(nil)
+	_ encoding.LogsDecoderExtension     = (*textExtension)(nil)
 )
 
 type textExtension struct {
@@ -30,6 +32,10 @@ func (e *textExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 func (e *textExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	return e.textEncoder.MarshalLogs(ld)
+}
+
+func (e *textExtension) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	return e.textEncoder.NewLogsDecoder(reader, options...)
 }
 
 func (e *textExtension) Start(_ context.Context, _ component.Host) error {

@@ -55,7 +55,10 @@ func init() {
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/45459"))
 }
 
-var _ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
+var (
+	_ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
+	_ encoding.LogsDecoderExtension     = (*encodingExtension)(nil)
+)
 
 type encodingExtension struct {
 	cfg *Config
@@ -70,8 +73,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	case constants.FormatCloudWatchLogsSubscriptionFilter, constants.FormatCloudWatchLogsSubscriptionFilterV1:
 		if cfg.Format == constants.FormatCloudWatchLogsSubscriptionFilterV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", string(constants.FormatCloudWatchLogsSubscriptionFilterV1)),
-				zap.String("new_format", string(constants.FormatCloudWatchLogsSubscriptionFilter)),
+				zap.String("old_format", constants.FormatCloudWatchLogsSubscriptionFilterV1),
+				zap.String("new_format", constants.FormatCloudWatchLogsSubscriptionFilter),
 			)
 		}
 		return &encodingExtension{
@@ -81,8 +84,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	case constants.FormatVPCFlowLog, constants.FormatVPCFlowLogV1:
 		if cfg.Format == constants.FormatVPCFlowLogV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", string(constants.FormatVPCFlowLogV1)),
-				zap.String("new_format", string(constants.FormatVPCFlowLog)),
+				zap.String("old_format", constants.FormatVPCFlowLogV1),
+				zap.String("new_format", constants.FormatVPCFlowLog),
 			)
 		}
 
@@ -100,8 +103,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	case constants.FormatS3AccessLog, constants.FormatS3AccessLogV1:
 		if cfg.Format == constants.FormatS3AccessLogV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", string(constants.FormatS3AccessLogV1)),
-				zap.String("new_format", string(constants.FormatS3AccessLog)),
+				zap.String("old_format", constants.FormatS3AccessLogV1),
+				zap.String("new_format", constants.FormatS3AccessLog),
 			)
 		}
 		return &encodingExtension{
@@ -111,8 +114,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	case constants.FormatWAFLog, constants.FormatWAFLogV1:
 		if cfg.Format == constants.FormatWAFLogV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", string(constants.FormatWAFLogV1)),
-				zap.String("new_format", string(constants.FormatWAFLog)),
+				zap.String("old_format", constants.FormatWAFLogV1),
+				zap.String("new_format", constants.FormatWAFLog),
 			)
 		}
 		return &encodingExtension{
@@ -122,8 +125,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	case constants.FormatCloudTrailLog, constants.FormatCloudTrailLogV1:
 		if cfg.Format == constants.FormatCloudTrailLogV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", string(constants.FormatCloudTrailLogV1)),
-				zap.String("new_format", string(constants.FormatCloudTrailLog)),
+				zap.String("old_format", constants.FormatCloudTrailLogV1),
+				zap.String("new_format", constants.FormatCloudTrailLog),
 			)
 		}
 		return &encodingExtension{
@@ -135,8 +138,8 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	case constants.FormatELBAccessLog, constants.FormatELBAccessLogV1:
 		if cfg.Format == constants.FormatELBAccessLogV1 {
 			settings.Logger.Warn("using old format value. This format will be removed in version 0.138.0.",
-				zap.String("old_format", string(constants.FormatELBAccessLogV1)),
-				zap.String("new_format", string(constants.FormatELBAccessLog)),
+				zap.String("old_format", constants.FormatELBAccessLogV1),
+				zap.String("new_format", constants.FormatELBAccessLog),
 			)
 		}
 		return &encodingExtension{
@@ -167,37 +170,30 @@ func (*encodingExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (e *encodingExtension) getGzipReader(buf []byte) (io.Reader, error) {
-	var err error
-	gzipReader, ok := e.gzipPool.Get().(*gzip.Reader)
-	if !ok {
-		gzipReader, err = gzip.NewReader(bytes.NewReader(buf))
-	} else {
-		err = gzipReader.Reset(bytes.NewBuffer(buf))
-	}
-
+func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
+	encodingReader, reader, err := e.getReaderFromFormat(buf)
 	if err != nil {
-		if gzipReader != nil {
-			e.gzipPool.Put(gzipReader)
+		return plog.Logs{}, fmt.Errorf("failed to get reader for %q logs: %w", e.format, err)
+	}
+
+	defer func() {
+		if encodingReader == gzipEncoding {
+			r := reader.(*gzip.Reader)
+			_ = r.Close()
+			e.gzipPool.Put(r)
 		}
-		return nil, fmt.Errorf("failed to decompress content: %w", err)
+	}()
+
+	logs, err := e.unmarshaler.UnmarshalAWSLogs(reader)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to unmarshal logs as %q format: %w", e.format, err)
 	}
 
-	return gzipReader, nil
+	return logs, nil
 }
 
-// isGzipData checks if the buffer contains gzip-compressed data by examining magic bytes
-func isGzipData(buf []byte) bool {
-	return len(buf) > 2 && buf[0] == 0x1f && buf[1] == 0x8b
-}
-
-// getReaderForData returns the appropriate reader and encoding type based on data format
-func (e *encodingExtension) getReaderForData(buf []byte) (string, io.Reader, error) {
-	if isGzipData(buf) {
-		reader, err := e.getGzipReader(buf)
-		return gzipEncoding, reader, err
-	}
-	return bytesEncoding, bytes.NewReader(buf), nil
+func (e *encodingExtension) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	return e.unmarshaler.NewStreamUnmarshaler(reader, options...)
 }
 
 func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, error) {
@@ -229,24 +225,35 @@ func (e *encodingExtension) getReaderFromFormat(buf []byte) (string, io.Reader, 
 	}
 }
 
-func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	encodingReader, reader, err := e.getReaderFromFormat(buf)
-	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to get reader for %q logs: %w", e.format, err)
+// getReaderForData returns the appropriate reader and encoding type based on data format
+func (e *encodingExtension) getReaderForData(buf []byte) (string, io.Reader, error) {
+	if isGzipData(buf) {
+		reader, err := e.getGzipReader(buf)
+		return gzipEncoding, reader, err
+	}
+	return bytesEncoding, bytes.NewReader(buf), nil
+}
+
+func (e *encodingExtension) getGzipReader(buf []byte) (io.Reader, error) {
+	var err error
+	gzipReader, ok := e.gzipPool.Get().(*gzip.Reader)
+	if !ok {
+		gzipReader, err = gzip.NewReader(bytes.NewReader(buf))
+	} else {
+		err = gzipReader.Reset(bytes.NewBuffer(buf))
 	}
 
-	defer func() {
-		if encodingReader == gzipEncoding {
-			r := reader.(*gzip.Reader)
-			_ = r.Close()
-			e.gzipPool.Put(r)
+	if err != nil {
+		if gzipReader != nil {
+			e.gzipPool.Put(gzipReader)
 		}
-	}()
-
-	logs, err := e.unmarshaler.UnmarshalAWSLogs(reader)
-	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to unmarshal logs as %q format: %w", e.format, err)
+		return nil, fmt.Errorf("failed to decompress content: %w", err)
 	}
 
-	return logs, nil
+	return gzipReader, nil
+}
+
+// isGzipData checks if the buffer contains gzip-compressed data by examining magic bytes
+func isGzipData(buf []byte) bool {
+	return len(buf) > 2 && buf[0] == 0x1f && buf[1] == 0x8b
 }

@@ -55,6 +55,7 @@ func BenchmarkUnmarshalAWSLogs(b *testing.B) {
 		buildInfo: component.BuildInfo{},
 		logger:    zap.NewNop(),
 	}
+
 	for _, bc := range elbCases {
 		data := createELBAccessLogContent(b, bc.filename, bc.nLogs)
 		b.Run(bc.name, func(b *testing.B) {

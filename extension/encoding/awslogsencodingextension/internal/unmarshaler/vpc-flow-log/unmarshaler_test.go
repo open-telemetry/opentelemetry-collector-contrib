@@ -5,6 +5,8 @@ package vpcflowlog
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -133,6 +136,48 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
 		})
 	}
+}
+
+func TestGetStreamUnmarshaler(t *testing.T) {
+	directory := "testdata/stream"
+	expectPattern := "valid_vpc_flow_log_multi_%d.yaml"
+
+	config := Config{
+		FileFormat: constants.FileFormatPlainText,
+	}
+
+	vpcUnmarshal, err := NewVPCFlowLogUnmarshaler(config, component.BuildInfo{}, zap.NewNop(), false)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(filepath.Join(directory, "valid_vpc_flow_log_multi.log"))
+	require.NoError(t, err)
+
+	// Flush after every log for testing purposes
+	streamer, err := vpcUnmarshal.NewStreamUnmarshaler(bytes.NewReader(data), encoding.WithFlushItems(1))
+	require.NoError(t, err)
+
+	var i int
+	for {
+		var logs plog.Logs
+		logs, err = streamer.DecodeLogs()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			t.Errorf("failed to unmarshal log %d: %v", i, err)
+		}
+
+		i++
+		var expectedLogs plog.Logs
+		expectedLogs, err = golden.ReadLogs(filepath.Join(directory, fmt.Sprintf(expectPattern, i)))
+		require.NoError(t, err)
+		require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+	}
+
+	// expect EOF after all logs are read
+	_, err = streamer.DecodeLogs()
+	require.ErrorIs(t, err, io.EOF)
 }
 
 func TestHandleAddresses(t *testing.T) {

@@ -4,7 +4,6 @@
 package s3accesslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -18,9 +17,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
 )
 
 const (
@@ -47,23 +48,58 @@ type resourceAttributes struct {
 }
 
 func (s *s3AccessLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
-	scanner := bufio.NewScanner(reader)
-
-	logs, resourceLogs, scopeLogs := s.createLogs()
-	resourceAttr := &resourceAttributes{}
-	for scanner.Scan() {
-		log := scanner.Text()
-		if err := handleLog(resourceAttr, scopeLogs, log); err != nil {
-			return plog.Logs{}, err
+	streamUnmarshaler, err := s.NewStreamUnmarshaler(reader)
+	if err != nil {
+		return plog.Logs{}, err
+	}
+	logs, err := streamUnmarshaler.DecodeLogs()
+	if err != nil {
+		//nolint:errorlint
+		if err == io.EOF {
+			// EOF indicates no logs were found, return any logs that's available
+			return logs, nil
 		}
-	}
 
-	if err := scanner.Err(); err != nil {
-		return plog.Logs{}, fmt.Errorf("error reading log line: %w", err)
+		return logs, err
 	}
-
-	s.setResourceAttributes(resourceAttr, resourceLogs)
 	return logs, nil
+}
+
+func (s *s3AccessLogUnmarshaler) NewStreamUnmarshaler(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	scannerHelper := xstreamencoding.NewScannerHelper(reader, options...)
+	return xstreamencoding.LogsDecoderFunc(func() (plog.Logs, error) {
+		logs, resourceLogs, scopeLogs := s.createLogs()
+		resourceAttr := &resourceAttributes{}
+
+		for {
+			log, flush, err := scannerHelper.ScanString()
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					return plog.Logs{}, fmt.Errorf("error reading S3 access logs from stream:: %w", err)
+				}
+
+				if log == "" {
+					break
+				}
+			}
+
+			if err := handleLog(resourceAttr, scopeLogs, log); err != nil {
+				return plog.Logs{}, err
+			}
+
+			if flush {
+				break
+			}
+		}
+
+		s.setResourceAttributes(resourceAttr, resourceLogs)
+
+		if scopeLogs.LogRecords().Len() == 0 {
+			return logs, io.EOF
+		}
+
+		return logs, nil
+	}), nil
 }
 
 // createLogs with the expected fields for the scope logs

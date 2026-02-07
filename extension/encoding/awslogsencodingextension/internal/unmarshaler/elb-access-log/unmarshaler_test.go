@@ -4,8 +4,11 @@
 package elbaccesslogs
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,8 +17,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
@@ -65,7 +70,7 @@ func TestUnmarshallELBAccessLogs(t *testing.T) {
 		},
 		"empty log file": {
 			reader:      readAndCompressLogFile(t, filesDirectory, "elb_empty_file.log"),
-			expectedErr: "no log lines found",
+			expectedErr: "invalid first ELB access log line part",
 		},
 		"invalid syntax field": {
 			reader:      readAndCompressLogFile(t, filesDirectory, "alb_al_invalid_syntax.log"),
@@ -119,6 +124,96 @@ func TestUnmarshallELBAccessLogs(t *testing.T) {
 			expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, test.logsExpectedFilename))
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+		})
+	}
+}
+
+func TestGetStreamUnmarshaler(t *testing.T) {
+	directory := "testdata/stream_alb"
+	expectPattern := "alb_al_valid_logs_expected_%d.yaml"
+
+	// Input with 3 valid ALB logs
+	input := readAndCompressLogFile(t, directory, "alb_al_valid_logs.log")
+
+	logger := zaptest.NewLogger(t)
+	elbUnmarshaler := NewELBAccessLogUnmarshaler(component.BuildInfo{}, logger)
+
+	// Flush after every log for testing purposes
+	streamer, err := elbUnmarshaler.NewStreamUnmarshaler(input, encoding.WithFlushItems(1))
+	require.NoError(t, err)
+
+	var i int
+	for {
+		var logs plog.Logs
+		logs, err = streamer.DecodeLogs()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			t.Errorf("failed to unmarshal log %d: %v", i, err)
+		}
+
+		i++
+		var expectedLogs plog.Logs
+		expectedLogs, err = golden.ReadLogs(filepath.Join(directory, fmt.Sprintf(expectPattern, i)))
+		require.NoError(t, err)
+		require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+	}
+
+	// expect EOF after all logs are read
+	_, err = streamer.DecodeLogs()
+	require.ErrorIs(t, err, io.EOF)
+}
+
+func Test_peekAndGetSyntax(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     []byte
+		logSyntax logSyntaxType
+		wantError string
+	}{
+		{
+			name:      "Enable message",
+			input:     []byte("Enable ConnectionLog for ELB"),
+			logSyntax: controlMessage,
+			wantError: "",
+		},
+		{
+			name:      "ALB log",
+			input:     []byte("http 2018-07-02T22:23:00.186641Z app/my-loadbalancer/50dc6c495c0c9188 192.168.131.39:2817 10.0.0.1:80 0.000 0.001 0.000 200 200 34 366 \"GET http://www.example.com:80/ HTTP/1.1\" \"curl/7.46.0\" - - arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 \"Root=1-58337262-36d228ad5d99923122bbe354\" \"-\" \"-\" 0 2018-07-02T22:22:48.364000Z \"forward\" \"-\" \"-\" \"10.0.0.1:80\" \"200\" \"-\" \"-\" TID_1234abcd5678ef90 \"-\" \"-\" \"-\""),
+			logSyntax: albAccessLogs,
+			wantError: "",
+		},
+		{
+			name:      "NLB log",
+			input:     []byte("tls 2.0 2018-12-20T02:59:40 net/my-network-loadbalancer/c6e77e28c25b2234 g3d4b5e8bb8464cd 72.21.218.154:51341 172.100.100.185:443 5 2 98 246 - arn:aws:acm:us-east-2:671290407336:certificate/2a108f19-aded-46b0-8493-c63eb1ef4a99 - ECDHE-RSA-AES128-SHA tlsv12 - my-network-loadbalancer-c6e77e28c25b2234.elb.us-east-2.amazonaws.com - - - 2018-12-20T02:59:30\n"),
+			logSyntax: nlbAccessLogs,
+			wantError: "",
+		},
+		{
+			name:      "CLB log",
+			input:     []byte("2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 10.0.0.1:80 0.000073 0.001048 0.000057 200 200 0 29 \"GET http://www.example.com:80/ HTTP/1.1\" \"curl/7.38.0\" - -\n"),
+			logSyntax: clbAccessLogs,
+			wantError: "",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			reader := bufio.NewReader(bytes.NewReader(test.input))
+
+			syntax, err := peekAndGetSyntax(reader)
+			if test.wantError != "" {
+				require.ErrorContains(t, err, test.wantError)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, test.logSyntax, syntax)
+
+			// reader should not have consumed any bytes
+			peekedBytes, _ := reader.ReadBytes('\n')
+			require.Equal(t, test.input, peekedBytes)
 		})
 	}
 }
