@@ -28,6 +28,7 @@ type Config struct {
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Deprecated - Transport option will be removed in v0.102.0
 	Hosts            []confignet.TCPAddrConfig `mapstructure:"hosts"`
+	Scheme           string                    `mapstructure:"scheme"`
 	Username         string                    `mapstructure:"username"`
 	Password         configopaque.String       `mapstructure:"password"`
 	ReplicaSet       string                    `mapstructure:"replica_set,omitempty"`
@@ -45,6 +46,14 @@ func (c *Config) Validate() error {
 		if host.Endpoint == "" {
 			err = multierr.Append(err, errors.New("no endpoint specified for one of the hosts"))
 		}
+	}
+
+	if c.Scheme != "" && c.Scheme != "mongodb" && c.Scheme != "mongodb+srv" {
+		err = multierr.Append(err, fmt.Errorf("invalid scheme %q, must be \"mongodb\" or \"mongodb+srv\"", c.Scheme))
+	}
+
+	if c.Scheme == "mongodb+srv" && len(c.Hosts) != 1 {
+		err = multierr.Append(err, errors.New("mongodb+srv scheme requires exactly one host"))
 	}
 
 	if c.Username != "" && c.Password == "" {
@@ -82,7 +91,11 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		return clientOptions
 	}
 	clientOptions := options.Client()
-	connString := "mongodb://" + strings.Join(c.hostlist(), ",")
+	scheme := c.Scheme
+	if scheme == "" {
+		scheme = "mongodb"
+	}
+	connString := scheme + "://" + strings.Join(c.hostlist(), ",")
 	clientOptions.ApplyURI(connString)
 
 	if c.Timeout > 0 {

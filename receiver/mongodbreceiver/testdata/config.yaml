@@ -4,3 +4,11 @@ mongodb:
   username: otel
   password: ${env:MONGO_PASSWORD}
   collection_interval: 60s
+
+mongodb/srv:
+  hosts:
+    - endpoint: cluster0.example.mongodb.net
+  scheme: mongodb+srv
+  username: otel
+  password: ${env:MONGO_PASSWORD}
+  collection_interval: 60s
