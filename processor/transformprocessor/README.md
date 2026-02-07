@@ -262,6 +262,7 @@ In addition to the common OTTL functions, the processor defines its own function
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
 - [extract_count_metric](#extract_count_metric)
 - [extract_sum_metric](#extract_sum_metric)
+- [extract_percentile_metric](#extract_percentile_metric)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_quantile_val_to_gauge](#convert_summary_quantile_val_to_gauge)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
@@ -356,6 +357,35 @@ Examples:
 - `extract_sum_metric(true, ".sum")`
 
 - `extract_sum_metric(false, ".sum")`
+
+### extract_percentile_metric
+
+> [!NOTE]  
+> This function supports Histograms and ExponentialHistograms.
+
+`extract_percentile_metric(percentile, Optional[suffix])`
+
+The `extract_percentile_metric` function creates a new Gauge metric from a Histogram or ExponentialHistogram by calculating the specified percentile value from the bucket counts. A metric will only be created if there is at least one data point.
+
+`percentile` is a float64 value between 0 and 100 representing the desired percentile to extract (e.g., 50 for median, 95 for p95, 99 for p99).
+
+`suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_p{percentile}` (e.g., `_p50`, `_p95`, `_p99`).
+
+For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.p{percentile}` (e.g., `.p50`, `.p95`, `.p99`) instead. This default is expected to change in a future release.
+
+The name for the new metric will be `<original metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `unit`.
+
+For Histograms, the function uses linear interpolation within buckets to estimate the percentile value. For ExponentialHistograms, it uses logarithmic interpolation appropriate for the exponential bucket structure.
+
+The new metric that is created will be passed to all subsequent statements in the metrics statements list.
+
+Examples:
+
+- `extract_percentile_metric(50.0)` - Extract median (p50) with default suffix `_p50`
+
+- `extract_percentile_metric(95.0, "_p95_custom")` - Extract p95 with custom suffix `_p95_custom`
+
+- `extract_percentile_metric(99.9) where metric.name == "http.server.duration"` - Extract p99.9 only for specific metrics
 
 ### convert_summary_count_val_to_sum
 
