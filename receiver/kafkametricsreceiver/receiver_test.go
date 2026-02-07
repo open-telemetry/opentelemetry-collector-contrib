@@ -70,3 +70,23 @@ func TestNewReceiver_handles_scraper_error(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
+
+func TestNewReceiver_EnablesResourceAttributeWhenClusterAliasSet(t *testing.T) {
+	c := createDefaultConfig().(*Config)
+	c.Scrapers = []string{"brokers"}
+	c.ClusterAlias = "test-cluster"
+
+	mockScraper := func(_ context.Context, cfg Config, _ receiver.Settings) (scraper.Metrics, error) {
+		assert.True(t, cfg.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled,
+			"KafkaClusterAlias resource attribute should be enabled when ClusterAlias is set")
+		return scraper.NewMetrics(
+			func(context.Context) (pmetric.Metrics, error) {
+				return pmetric.Metrics{}, nil
+			})
+	}
+	allScrapers["brokers"] = mockScraper
+
+	r, err := createMetricsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), c, consumertest.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+}
