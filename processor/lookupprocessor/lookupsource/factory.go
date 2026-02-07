@@ -36,7 +36,7 @@ type SourceFactory interface {
 // NewSourceFactory creates a new SourceFactory.
 //
 // Parameters:
-//   - typ: The source type identifier (e.g., "yaml", "http", "dns").
+//   - typ: The source type identifier (e.g., "yaml", "http").
 //   - createDefaultConfig: Returns the default configuration for this source.
 //   - createSource: Creates a Source instance from configuration.
 //
