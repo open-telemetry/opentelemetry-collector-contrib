@@ -151,6 +151,7 @@ The following general labels are supported:
 | `priority:p3`             | `priority:p3`             |
 | `Stale`                   | `stale`                   |
 | `never stale`             | `never-stale`             |
+| `Skip Changelog`          | `skip-changelog`          |
 
 To delete a label, prepend the label with `-`. Note that you must make a new comment to modify labels; you cannot edit an existing comment.
 
