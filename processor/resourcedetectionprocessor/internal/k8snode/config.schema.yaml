@@ -1,0 +1,9 @@
+type: object
+properties:
+  node_from_env_var:
+    description: 'NodeFromEnv can be used to extract the node name from an environment variable. The value must be the name of the environment variable. This is useful when the node a Otel agent will run on cannot be predicted. In such cases, the Kubernetes downward API can be used to add the node name to each pod as an environment variable. K8s tagger can then read this value and filter pods by it. NodeFromEnv defaults to K8S_NODE_NAME For example, node name can be passed to each agent with the downward API as follows env: - name: K8S_NODE_NAME valueFrom: fieldRef: fieldPath: spec.nodeName Then the NodeFromEnv field can be set to `K8S_NODE_NAME` to filter all pods by the node that the agent is running on. More on downward API here: https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/'
+    type: string
+  resource_attributes:
+    $ref: ./internal/metadata.resource_attributes_config
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig.api_config

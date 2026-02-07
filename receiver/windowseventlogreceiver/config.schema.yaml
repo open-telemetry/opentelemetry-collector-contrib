@@ -1,0 +1,5 @@
+description: WindowsLogConfig defines configuration for the windowseventlog receiver
+type: object
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows.config
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.base_config

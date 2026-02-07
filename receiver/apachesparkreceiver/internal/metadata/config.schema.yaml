@@ -1,0 +1,207 @@
+$defs:
+  attribute_direction:
+    description: AttributeDirection specifies the value direction attribute.
+    type: integer
+  attribute_executor_task_result:
+    description: AttributeExecutorTaskResult specifies the value executor_task_result attribute.
+    type: integer
+  attribute_gc_type:
+    description: AttributeGcType specifies the value gc_type attribute.
+    type: integer
+  attribute_job_result:
+    description: AttributeJobResult specifies the value job_result attribute.
+    type: integer
+  attribute_location:
+    description: AttributeLocation specifies the value location attribute.
+    type: integer
+  attribute_pool_memory_type:
+    description: AttributePoolMemoryType specifies the value pool_memory_type attribute.
+    type: integer
+  attribute_scheduler_status:
+    description: AttributeSchedulerStatus specifies the value scheduler_status attribute.
+    type: integer
+  attribute_source:
+    description: AttributeSource specifies the value source attribute.
+    type: integer
+  attribute_stage_task_result:
+    description: AttributeStageTaskResult specifies the value stage_task_result attribute.
+    type: integer
+  attribute_state:
+    description: AttributeState specifies the value state attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for apachespark metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for apachespark metrics.
+    type: object
+    properties:
+      spark.driver.block_manager.disk.usage:
+        $ref: metric_config
+      spark.driver.block_manager.memory.usage:
+        $ref: metric_config
+      spark.driver.code_generator.compilation.average_time:
+        $ref: metric_config
+      spark.driver.code_generator.compilation.count:
+        $ref: metric_config
+      spark.driver.code_generator.generated_class.average_size:
+        $ref: metric_config
+      spark.driver.code_generator.generated_class.count:
+        $ref: metric_config
+      spark.driver.code_generator.generated_method.average_size:
+        $ref: metric_config
+      spark.driver.code_generator.generated_method.count:
+        $ref: metric_config
+      spark.driver.code_generator.source_code.average_size:
+        $ref: metric_config
+      spark.driver.code_generator.source_code.operations:
+        $ref: metric_config
+      spark.driver.dag_scheduler.job.active:
+        $ref: metric_config
+      spark.driver.dag_scheduler.job.count:
+        $ref: metric_config
+      spark.driver.dag_scheduler.stage.count:
+        $ref: metric_config
+      spark.driver.dag_scheduler.stage.failed:
+        $ref: metric_config
+      spark.driver.executor.gc.operations:
+        $ref: metric_config
+      spark.driver.executor.gc.time:
+        $ref: metric_config
+      spark.driver.executor.memory.execution:
+        $ref: metric_config
+      spark.driver.executor.memory.jvm:
+        $ref: metric_config
+      spark.driver.executor.memory.pool:
+        $ref: metric_config
+      spark.driver.executor.memory.storage:
+        $ref: metric_config
+      spark.driver.hive_external_catalog.file_cache_hits:
+        $ref: metric_config
+      spark.driver.hive_external_catalog.files_discovered:
+        $ref: metric_config
+      spark.driver.hive_external_catalog.hive_client_calls:
+        $ref: metric_config
+      spark.driver.hive_external_catalog.parallel_listing_jobs:
+        $ref: metric_config
+      spark.driver.hive_external_catalog.partitions_fetched:
+        $ref: metric_config
+      spark.driver.jvm_cpu_time:
+        $ref: metric_config
+      spark.driver.live_listener_bus.dropped:
+        $ref: metric_config
+      spark.driver.live_listener_bus.posted:
+        $ref: metric_config
+      spark.driver.live_listener_bus.processing_time.average:
+        $ref: metric_config
+      spark.driver.live_listener_bus.queue_size:
+        $ref: metric_config
+      spark.executor.disk.usage:
+        $ref: metric_config
+      spark.executor.gc_time:
+        $ref: metric_config
+      spark.executor.input_size:
+        $ref: metric_config
+      spark.executor.memory.usage:
+        $ref: metric_config
+      spark.executor.shuffle.io.size:
+        $ref: metric_config
+      spark.executor.storage_memory.usage:
+        $ref: metric_config
+      spark.executor.task.active:
+        $ref: metric_config
+      spark.executor.task.limit:
+        $ref: metric_config
+      spark.executor.task.result:
+        $ref: metric_config
+      spark.executor.time:
+        $ref: metric_config
+      spark.job.stage.active:
+        $ref: metric_config
+      spark.job.stage.result:
+        $ref: metric_config
+      spark.job.task.active:
+        $ref: metric_config
+      spark.job.task.result:
+        $ref: metric_config
+      spark.stage.disk.spilled:
+        $ref: metric_config
+      spark.stage.executor.cpu_time:
+        $ref: metric_config
+      spark.stage.executor.run_time:
+        $ref: metric_config
+      spark.stage.io.records:
+        $ref: metric_config
+      spark.stage.io.size:
+        $ref: metric_config
+      spark.stage.jvm_gc_time:
+        $ref: metric_config
+      spark.stage.memory.peak:
+        $ref: metric_config
+      spark.stage.memory.spilled:
+        $ref: metric_config
+      spark.stage.shuffle.blocks_fetched:
+        $ref: metric_config
+      spark.stage.shuffle.fetch_wait_time:
+        $ref: metric_config
+      spark.stage.shuffle.io.disk:
+        $ref: metric_config
+      spark.stage.shuffle.io.read.size:
+        $ref: metric_config
+      spark.stage.shuffle.io.records:
+        $ref: metric_config
+      spark.stage.shuffle.io.write.size:
+        $ref: metric_config
+      spark.stage.shuffle.write_time:
+        $ref: metric_config
+      spark.stage.status:
+        $ref: metric_config
+      spark.stage.task.active:
+        $ref: metric_config
+      spark.stage.task.result:
+        $ref: metric_config
+      spark.stage.task.result_size:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for apachespark resource attributes.
+    type: object
+    properties:
+      spark.application.id:
+        $ref: resource_attribute_config
+      spark.application.name:
+        $ref: resource_attribute_config
+      spark.executor.id:
+        $ref: resource_attribute_config
+      spark.job.id:
+        $ref: resource_attribute_config
+      spark.stage.attempt.id:
+        $ref: resource_attribute_config
+      spark.stage.id:
+        $ref: resource_attribute_config

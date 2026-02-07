@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_probabilistic_sampler_count_logs_sampled
 
-Count of logs that were sampled or not [Development]
+Count of logs that were sampled or not
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,7 +16,7 @@ Count of logs that were sampled or not [Development]
 
 ### otelcol_processor_probabilistic_sampler_count_traces_sampled
 
-Count of traces that were sampled or not [Development]
+Count of traces that were sampled or not
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

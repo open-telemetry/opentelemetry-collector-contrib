@@ -1,0 +1,55 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/11111111-1111-1111-1111-111111111111/RESOURCEGROUPS/EXAMPLE-FRONTDOOR/PROVIDERS/MICROSOFT.CDN/PROFILES/EXAMPLE-FRONTDOOR-PROFILE
+        - key: event.name
+          value:
+            stringValue: az.resource.log
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.resourcehealth.title
+                value:
+                  stringValue: Unknown
+              - key: azure.resourcehealth.details
+                value:
+                  stringValue: Unknown
+              - key: azure.resourcehealth.state
+                value:
+                  stringValue: Unavailable
+              - key: azure.resourcehealth.previous_state
+                value:
+                  stringValue: Available
+              - key: azure.resourcehealth.type
+                value:
+                  stringValue: Downtime
+              - key: azure.resourcehealth.cause
+                value:
+                  stringValue: Unknown
+              - key: azure.category
+                value:
+                  stringValue: ResourceHealth
+              - key: azure.correlation_id
+                value:
+                  stringValue: aaaaaaaa-bbbb-cccc-dddd-444444444444
+              - key: azure.location
+                value:
+                  stringValue: global
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Resourcehealth/healthevent/Activated/action
+              - key: azure.result.type
+                value:
+                  stringValue: Active
+            body: {}
+            severityNumber: 9
+            severityText: Informational
+            timeUnixNano: "1745498954624103500"
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3
