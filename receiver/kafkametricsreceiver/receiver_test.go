@@ -135,3 +135,23 @@ func TestReceiver_UsesFranzWhenFranzEnabled(t *testing.T) {
 		"consumers scraper should NOT be the Sarama default when gate is enabled",
 	)
 }
+
+func TestNewReceiver_EnablesResourceAttributeWhenClusterAliasSet(t *testing.T) {
+	c := createDefaultConfig().(*Config)
+	c.Scrapers = []string{"brokers"}
+	c.ClusterAlias = "test-cluster"
+
+	mockScraper := func(_ context.Context, cfg Config, _ receiver.Settings) (scraper.Metrics, error) {
+		assert.True(t, cfg.ResourceAttributes.KafkaClusterAlias.Enabled,
+			"KafkaClusterAlias resource attribute should be enabled when ClusterAlias is set")
+		return scraper.NewMetrics(
+			func(context.Context) (pmetric.Metrics, error) {
+				return pmetric.Metrics{}, nil
+			})
+	}
+	allScrapers["brokers"] = mockScraper
+
+	r, err := createMetricsReceiver(t.Context(), receivertest.NewNopSettings(metadata.Type), c, consumertest.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+}
