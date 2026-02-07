@@ -204,5 +204,7 @@ func getEvent(eventType string) *corev1.Event {
 			Component: "testComponent",
 			Host:      "testHost",
 		},
+		ReportingController: "some-controller",
+		ReportingInstance:   "some-instance",
 	}
 }
