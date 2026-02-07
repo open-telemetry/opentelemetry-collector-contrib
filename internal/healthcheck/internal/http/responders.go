@@ -30,13 +30,13 @@ type serializationErr struct {
 }
 
 type responder interface {
-	respond(*status.AggregateStatus, http.ResponseWriter) error
+	respond(*status.AggregateStatus, http.ResponseWriter, bool) error
 }
 
-type responderFunc func(*status.AggregateStatus, http.ResponseWriter) error
+type responderFunc func(*status.AggregateStatus, http.ResponseWriter, bool) error
 
-func (f responderFunc) respond(st *status.AggregateStatus, w http.ResponseWriter) error {
-	return f(st, w)
+func (f responderFunc) respond(st *status.AggregateStatus, w http.ResponseWriter, verbose bool) error {
+	return f(st, w, verbose)
 }
 
 func respondWithJSON(code int, content any, w http.ResponseWriter) error {
@@ -51,12 +51,13 @@ func respondWithJSON(code int, content any, w http.ResponseWriter) error {
 	return wErr
 }
 
-func defaultResponder(startTimestamp *time.Time) responderFunc {
-	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
+func defaultResponder(startTimestamp *time.Time, includeAttributes bool) responderFunc {
+	return func(st *status.AggregateStatus, w http.ResponseWriter, verbose bool) error {
 		code := responseCodes[st.Status()]
 		sst := toSerializableStatus(st, &serializationOptions{
-			includeStartTime: true,
-			startTimestamp:   startTimestamp,
+			includeStartTime:  true,
+			startTimestamp:    startTimestamp,
+			includeAttributes: includeAttributes && verbose,
 		})
 		return respondWithJSON(code, sst, w)
 	}
@@ -65,6 +66,7 @@ func defaultResponder(startTimestamp *time.Time) responderFunc {
 func componentHealthResponder(
 	startTimestamp *time.Time,
 	config *common.ComponentHealthConfig,
+	includeAttributes bool,
 ) responderFunc {
 	healthyFunc := func(now *time.Time) func(status.Event) bool {
 		return func(ev status.Event) bool {
@@ -79,14 +81,15 @@ func componentHealthResponder(
 			return ev.Status() != componentstatus.StatusFatalError
 		}
 	}
-	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
+	return func(st *status.AggregateStatus, w http.ResponseWriter, verbose bool) error {
 		now := time.Now()
 		sst := toSerializableStatus(
 			st,
 			&serializationOptions{
-				includeStartTime: true,
-				startTimestamp:   startTimestamp,
-				healthyFunc:      healthyFunc(&now),
+				includeStartTime:  true,
+				startTimestamp:    startTimestamp,
+				healthyFunc:       healthyFunc(&now),
+				includeAttributes: includeAttributes && verbose,
 			},
 		)
 
@@ -128,7 +131,7 @@ func legacyDefaultResponder(startTimestamp *time.Time) responderFunc {
 		http.StatusServiceUnavailable: "Server not available",
 	}
 
-	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
+	return func(st *status.AggregateStatus, w http.ResponseWriter, _ bool) error {
 		code := legacyResponseCodes[st.Status()]
 		resp := healthCheckResponse{
 			StatusMsg: codeToMsgMap[code],
@@ -146,7 +149,7 @@ func legacyCustomResponder(config *ResponseBodyConfig) responderFunc {
 		http.StatusOK:                 []byte(config.Healthy),
 		http.StatusServiceUnavailable: []byte(config.Unhealthy),
 	}
-	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
+	return func(st *status.AggregateStatus, w http.ResponseWriter, _ bool) error {
 		code := legacyResponseCodes[st.Status()]
 		w.WriteHeader(code)
 		_, err := w.Write(codeToMsgMap[code])
