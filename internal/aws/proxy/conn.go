@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 
@@ -34,57 +33,7 @@ const (
 	awsDefaultRegionEnvVar            = "AWS_DEFAULT_REGION"
 	ecsContainerMetadataEnabledEnvVar = "ECS_ENABLE_CONTAINER_METADATA"
 	ecsMetadataFileEnvVar             = "ECS_CONTAINER_METADATA_FILE"
-
-	stsEndpointPrefix = "https://sts."
-
-	// Partition IDs
-	awsPartitionID      = "aws"
-	awsCnPartitionID    = "aws-cn"
-	awsUsGovPartitionID = "aws-us-gov"
-
-	// Primary regions for fallback
-	usEast1RegionID    = "us-east-1"
-	cnNorth1RegionID   = "cn-north-1"
-	usGovWest1RegionID = "us-gov-west-1"
 )
-
-// partitionConfig holds partition information similar to awsrulesfn.PartitionConfig
-type partitionConfig struct {
-	name      string
-	dnsSuffix string
-}
-
-// partition definitions matching aws-sdk-go-v2/internal/endpoints/awsrulesfn
-var partitions = []struct {
-	id          string
-	regionRegex *regexp.Regexp
-	config      partitionConfig
-}{
-	{
-		id:          awsPartitionID,
-		regionRegex: regexp.MustCompile(`^(us|eu|ap|sa|ca|me|af|il|mx)\-\w+\-\d+$`),
-		config: partitionConfig{
-			name:      awsPartitionID,
-			dnsSuffix: "amazonaws.com",
-		},
-	},
-	{
-		id:          awsCnPartitionID,
-		regionRegex: regexp.MustCompile(`^cn\-\w+\-\d+$`),
-		config: partitionConfig{
-			name:      awsCnPartitionID,
-			dnsSuffix: "amazonaws.com.cn",
-		},
-	},
-	{
-		id:          awsUsGovPartitionID,
-		regionRegex: regexp.MustCompile(`^us\-gov\-\w+\-\d+$`),
-		config: partitionConfig{
-			name:      awsUsGovPartitionID,
-			dnsSuffix: "amazonaws.com",
-		},
-	},
-}
 
 var getEC2Region = func(ctx context.Context, cfg aws.Config) (string, error) {
 	client := imds.NewFromConfig(cfg)
@@ -135,8 +84,6 @@ func getAWSConfigSession(ctx context.Context, c *Config, logger *zap.Logger) (aw
 		return aws.Config{}, err
 	}
 
-	cfg.Region = region
-	cfg.RetryMaxAttempts = 2
 	if c.AWSEndpoint != "" {
 		cfg.BaseEndpoint = aws.String(c.AWSEndpoint)
 	}
@@ -288,75 +235,91 @@ func (s *stsCallsV2) getCreds(ctx context.Context, cfg aws.Config, region, roleA
 	return stsCred, nil
 }
 
-// getSTSCredsFromRegionEndpointV2 fetches STS credentials for provided roleARN from regional endpoint.
-// AWS STS recommends that you provide both the Region and endpoint when you make calls to a Regional endpoint.
-// Reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#id_credentials_temp_enable-regions_writing_code
+// getSTSCredsFromRegionEndpointV2 fetches STS credentials for the provided roleARN
+// from the regional endpoint. The STS v2 client's built-in EndpointResolverV2 resolves
+// the correct regional endpoint for all AWS partitions (including iso, iso-b, iso-e,
+// iso-f, eusc) via its internal awsrulesfn.GetPartition(). We only set Region and let
+// the SDK handle endpoint resolution — setting BaseEndpoint would bypass the
+// partition-aware logic.
 var getSTSCredsFromRegionEndpointV2 = func(_ context.Context, log *zap.Logger, cfg aws.Config, region, roleArn string) aws.CredentialsProvider {
-	regionalEndpoint := getSTSRegionalEndpoint(region)
-	// if regionalEndpoint is "", the STS endpoint is Global endpoint for classic regions except ap-east-1 - (HKG)
-	// for other opt-in regions, region value will create STS regional endpoint.
-	// This will only be the case if the provided region is not present in partition definitions
-
 	stsClient := sts.NewFromConfig(cfg, func(o *sts.Options) {
 		o.Region = region
-		if regionalEndpoint != "" {
-			o.BaseEndpoint = aws.String(regionalEndpoint)
-		}
 	})
 
-	log.Info("STS endpoint to use", zap.String("region", region), zap.String("endpoint", regionalEndpoint))
+	log.Info("STS endpoint resolved by SDK for region", zap.String("region", region))
 
 	return aws.NewCredentialsCache(stscreds.NewAssumeRoleProvider(stsClient, roleArn))
 }
 
-// getSTSCredsFromPrimaryRegionEndpoint fetches STS credentials for provided roleARN from primary region endpoint in the
-// respective partition.
+// getSTSCredsFromPrimaryRegionEndpoint fetches STS credentials for the provided roleARN
+// from the primary region endpoint in the respective partition.
 func (s *stsCallsV2) getSTSCredsFromPrimaryRegionEndpoint(ctx context.Context, cfg aws.Config, roleArn, region string) (aws.CredentialsProvider, error) {
-	partitionID := getPartition(region)
-	switch partitionID {
-	case awsPartitionID:
-		return s.getSTSCredsFromRegionEndpoint(ctx, s.log, cfg, usEast1RegionID, roleArn), nil
-	case awsCnPartitionID:
-		return s.getSTSCredsFromRegionEndpoint(ctx, s.log, cfg, cnNorth1RegionID, roleArn), nil
-	case awsUsGovPartitionID:
-		return s.getSTSCredsFromRegionEndpoint(ctx, s.log, cfg, usGovWest1RegionID, roleArn), nil
+	primaryRegion, err := getPrimaryRegion(region)
+	if err != nil {
+		return nil, err
+	}
+	return s.getSTSCredsFromRegionEndpoint(ctx, s.log, cfg, primaryRegion, roleArn), nil
+}
+
+// getPrimaryRegion returns the primary (implicit global) region for the AWS partition
+// containing the given region. Primary regions serve as a fallback destination when a
+// regional STS endpoint returns RegionDisabledException.
+//
+// The region-to-partition mapping uses prefix matching that corresponds to the
+// regionRegex patterns from the SDK's partitions.json.
+func getPrimaryRegion(region string) (string, error) {
+	switch {
+	case strings.HasPrefix(region, "cn-"):
+		return "cn-north-1", nil
+	case strings.HasPrefix(region, "us-gov-"):
+		return "us-gov-west-1", nil
+	case strings.HasPrefix(region, "us-iso-"):
+		return "us-iso-east-1", nil
+	case strings.HasPrefix(region, "us-isob-"):
+		return "us-isob-east-1", nil
+	case strings.HasPrefix(region, "eu-isoe-"):
+		return "eu-isoe-west-1", nil
+	case strings.HasPrefix(region, "us-isof-"):
+		return "us-isof-south-1", nil
+	case strings.HasPrefix(region, "eusc-"):
+		return "eusc-de-east-1", nil
 	default:
-		return nil, fmt.Errorf("unrecognized AWS region: %s, or partition: %s", region, partitionID)
+		// Standard AWS partition (us, eu, ap, sa, ca, me, af, il, mx regions)
+		return "us-east-1", nil
 	}
 }
 
-func getSTSRegionalEndpoint(r string) string {
-	p := getPartitionConfig(r)
-	if p == nil {
-		return ""
+// isValidRegion checks that the region is a non-empty string containing only
+// lowercase ASCII letters, digits, and hyphens (valid DNS label characters).
+func isValidRegion(region string) bool {
+	if region == "" {
+		return false
 	}
-	return stsEndpointPrefix + r + "." + p.dnsSuffix
-}
-
-// getPartition returns the AWS Partition ID for the provided region.
-func getPartition(region string) string {
-	p := getPartitionConfig(region)
-	if p == nil {
-		return ""
-	}
-	return p.name
-}
-
-// getPartitionConfig returns the partition configuration for the provided region.
-func getPartitionConfig(region string) *partitionConfig {
-	for _, p := range partitions {
-		if p.regionRegex.MatchString(region) {
-			return &p.config
+	for _, c := range region {
+		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
+			return false
 		}
 	}
-	return nil
+	return true
 }
 
-// getServiceEndpoint returns AWS service endpoint for a given service and region.
+// getServiceEndpoint returns the AWS service endpoint URL for a given service and region.
+// It leverages the STS EndpointResolverV2 (which internally uses awsrulesfn.GetPartition
+// covering all 8 AWS partitions) to resolve the correct DNS suffix, then replaces the
+// service name in the resolved URL.
 func getServiceEndpoint(region, serviceName string) (string, error) {
-	p := getPartitionConfig(region)
-	if p == nil {
+	if !isValidRegion(region) {
 		return "", fmt.Errorf("invalid region: %s", region)
 	}
-	return fmt.Sprintf("https://%s.%s.%s", serviceName, region, p.dnsSuffix), nil
+	resolver := sts.NewDefaultEndpointResolverV2()
+	endpoint, err := resolver.ResolveEndpoint(context.Background(), sts.EndpointParameters{
+		Region: aws.String(region),
+	})
+	if err != nil {
+		return "", fmt.Errorf("invalid region: %s", region)
+	}
+	// The STS endpoint URL has the format https://sts.<region>.<dnsSuffix>.
+	// Replace the "sts" service prefix with the target service name.
+	u := endpoint.URI.String()
+	return strings.Replace(u, "://sts.", "://"+serviceName+".", 1), nil
 }

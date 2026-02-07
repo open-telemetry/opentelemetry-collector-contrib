@@ -21,6 +21,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -253,6 +254,30 @@ func TestGetServiceEndpoint(t *testing.T) {
 	endpoint, err = getServiceEndpoint("cn-north-1", "xray")
 	assert.NoError(t, err)
 	assert.Equal(t, "https://xray.cn-north-1.amazonaws.com.cn", endpoint)
+
+	endpoint, err = getServiceEndpoint("us-gov-west-1", "xray")
+	assert.NoError(t, err)
+	assert.Equal(t, "https://xray.us-gov-west-1.amazonaws.com", endpoint)
+
+	endpoint, err = getServiceEndpoint("us-iso-east-1", "xray")
+	assert.NoError(t, err)
+	assert.Equal(t, "https://xray.us-iso-east-1.c2s.ic.gov", endpoint)
+
+	endpoint, err = getServiceEndpoint("us-isob-east-1", "xray")
+	assert.NoError(t, err)
+	assert.Equal(t, "https://xray.us-isob-east-1.sc2s.sgov.gov", endpoint)
+
+	endpoint, err = getServiceEndpoint("eu-isoe-west-1", "xray")
+	assert.NoError(t, err)
+	assert.Equal(t, "https://xray.eu-isoe-west-1.cloud.adc-e.uk", endpoint)
+
+	endpoint, err = getServiceEndpoint("us-isof-south-1", "xray")
+	assert.NoError(t, err)
+	assert.Equal(t, "https://xray.us-isof-south-1.csp.hci.ic.gov", endpoint)
+
+	endpoint, err = getServiceEndpoint("eusc-de-east-1", "xray")
+	assert.NoError(t, err)
+	assert.Equal(t, "https://xray.eusc-de-east-1.amazonaws.eu", endpoint)
 }
 
 type mockReadCloser struct {
@@ -396,9 +421,9 @@ func TestSignedRequestHasAuthorizationHeader(t *testing.T) {
 	assert.NoError(t, err, "NewServer should succeed")
 
 	// Create a mock backend server to capture the signed request
-	var capturedReq *http.Request
+	capturedReqCh := make(chan *http.Request, 1)
 	backend := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		capturedReq = r
+		capturedReqCh <- r.Clone(r.Context())
 	}))
 	defer backend.Close()
 
@@ -424,18 +449,22 @@ func TestSignedRequestHasAuthorizationHeader(t *testing.T) {
 	handler(rec, req)
 
 	// Verify Authorization header format
-	if capturedReq != nil {
-		authHeader := capturedReq.Header.Get("Authorization")
-		if authHeader != "" {
-			// AWS SigV4 Authorization header format:
-			// AWS4-HMAC-SHA256 Credential=.../aws4_request, SignedHeaders=..., Signature=...
-			assert.Contains(t, authHeader, "AWS4-HMAC-SHA256", "should use AWS4-HMAC-SHA256 algorithm")
-			assert.Contains(t, authHeader, "Credential=", "should contain Credential")
-			assert.Contains(t, authHeader, "SignedHeaders=", "should contain SignedHeaders")
-			assert.Contains(t, authHeader, "Signature=", "should contain Signature")
-			assert.Contains(t, authHeader, "aws4_request", "should contain aws4_request scope terminator")
-		}
+	var capturedReq *http.Request
+	select {
+	case capturedReq = <-capturedReqCh:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for backend to receive request")
 	}
+	require.NotNil(t, capturedReq, "backend should have received the request")
+	authHeader := capturedReq.Header.Get("Authorization")
+	require.NotEmpty(t, authHeader, "Authorization header should be present")
+	// AWS SigV4 Authorization header format:
+	// AWS4-HMAC-SHA256 Credential=.../aws4_request, SignedHeaders=..., Signature=...
+	assert.Contains(t, authHeader, "AWS4-HMAC-SHA256", "should use AWS4-HMAC-SHA256 algorithm")
+	assert.Contains(t, authHeader, "Credential=", "should contain Credential")
+	assert.Contains(t, authHeader, "SignedHeaders=", "should contain SignedHeaders")
+	assert.Contains(t, authHeader, "Signature=", "should contain Signature")
+	assert.Contains(t, authHeader, "aws4_request", "should contain aws4_request scope terminator")
 }
 
 // TestSignedRequestHasRequiredHeaders verifies that signed requests contain
@@ -454,9 +483,9 @@ func TestSignedRequestHasRequiredHeaders(t *testing.T) {
 	assert.NoError(t, err, "NewServer should succeed")
 
 	// Create a mock backend server to capture the signed request
-	var capturedReq *http.Request
+	capturedReqCh := make(chan *http.Request, 1)
 	backend := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		capturedReq = r
+		capturedReqCh <- r.Clone(r.Context())
 	}))
 	defer backend.Close()
 
@@ -479,14 +508,18 @@ func TestSignedRequestHasRequiredHeaders(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler(rec, req)
 
-	if capturedReq != nil {
-		// X-Amz-Date header is required for SigV4
-		xAmzDate := capturedReq.Header.Get("X-Amz-Date")
-		if xAmzDate != "" {
-			// Format: 20060102T150405Z (ISO 8601 basic format)
-			assert.Regexp(t, `^\d{8}T\d{6}Z$`, xAmzDate, "X-Amz-Date should be in ISO 8601 basic format")
-		}
+	var capturedReq *http.Request
+	select {
+	case capturedReq = <-capturedReqCh:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for backend to receive request")
 	}
+	require.NotNil(t, capturedReq, "backend should have received the request")
+	// X-Amz-Date header is required for SigV4
+	xAmzDate := capturedReq.Header.Get("X-Amz-Date")
+	require.NotEmpty(t, xAmzDate, "X-Amz-Date header should be present")
+	// Format: 20060102T150405Z (ISO 8601 basic format)
+	assert.Regexp(t, `^\d{8}T\d{6}Z$`, xAmzDate, "X-Amz-Date should be in ISO 8601 basic format")
 }
 
 // TestConnectionHeaderRemovedBeforeSigning verifies that the Connection header
@@ -506,9 +539,9 @@ func TestConnectionHeaderRemovedBeforeSigning(t *testing.T) {
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 
-	var capturedReq *http.Request
+	capturedReqCh := make(chan *http.Request, 1)
 	backend := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		capturedReq = r
+		capturedReqCh <- r.Clone(r.Context())
 	}))
 	defer backend.Close()
 
@@ -532,12 +565,16 @@ func TestConnectionHeaderRemovedBeforeSigning(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler(rec, req)
 
-	if capturedReq != nil {
-		authHeader := capturedReq.Header.Get("Authorization")
-		if authHeader != "" {
-			// Connection header should NOT be in SignedHeaders
-			assert.NotContains(t, strings.ToLower(authHeader), "connection",
-				"Connection header should not be signed")
-		}
+	var capturedReq *http.Request
+	select {
+	case capturedReq = <-capturedReqCh:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for backend to receive request")
 	}
+	require.NotNil(t, capturedReq, "backend should have received the request")
+	authHeader := capturedReq.Header.Get("Authorization")
+	require.NotEmpty(t, authHeader, "Authorization header should be present")
+	// Connection header should NOT be in SignedHeaders
+	assert.NotContains(t, strings.ToLower(authHeader), "connection",
+		"Connection header should not be signed")
 }
