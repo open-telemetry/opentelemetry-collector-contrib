@@ -6,8 +6,8 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [rnishtala-sumo, chan-tim-sumo, amdprophet]
-    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek, echlebek]
+    active: [rnishtala-sumo, pankaj101A, jagan2221]
+    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek, echlebek, chan-tim-sumo, amdprophet]
 
 tests:
   config:
