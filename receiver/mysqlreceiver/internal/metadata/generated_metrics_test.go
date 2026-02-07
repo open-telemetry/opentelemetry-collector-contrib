@@ -238,6 +238,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			rb := mb.NewResourceBuilder()
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+			rb.SetServiceInstanceID("service.instance.id-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 

@@ -727,3 +727,4 @@ This provides insights into query performance and resource usage, helping users 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true |
+| service.instance.id | A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint. | Any Str | true |
