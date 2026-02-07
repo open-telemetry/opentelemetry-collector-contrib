@@ -32,6 +32,20 @@ type conversionEntry struct {
 	skipIfExists     bool
 }
 
+// collectECSFields extracts all target ECS field paths from conversion maps
+// and returns them as a set (map) for efficient lookups.
+func collectECSFields(maps ...map[string]conversionEntry) map[string]struct{} {
+	fields := make(map[string]struct{})
+	for _, m := range maps {
+		for _, entry := range m {
+			if entry.to != "" && !entry.skip {
+				fields[entry.to] = struct{}{}
+			}
+		}
+	}
+	return fields
+}
+
 // resourceAttrsConversionMap contains conversions for resource-level attributes
 // from their Semantic Conventions (SemConv) names to equivalent Elastic Common
 // Schema (ECS) names.
@@ -78,6 +92,39 @@ var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventions.FaaSInstanceKey):              {to: "faas.id"},
 	string(conventions.FaaSTriggerKey):               {to: "faas.trigger.type"},
 }
+
+var (
+	scopeAttrsConversionMap = map[string]conversionEntry{}
+
+	logRecordAttrsConversionMap = map[string]conversionEntry{
+		"event.name":                                {to: "event.action"},
+		string(conventions.ExceptionMessageKey):     {to: "error.message"},
+		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
+		string(conventions.ExceptionTypeKey):        {to: "error.type"},
+		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
+		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+	}
+
+	spanAttrsConversionMap = map[string]conversionEntry{
+		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
+		string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
+		string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
+		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+	}
+
+	// Precomputed protected fields for performance
+	logProtectedFields = collectECSFields(
+		resourceAttrsConversionMap,
+		scopeAttrsConversionMap,
+		logRecordAttrsConversionMap,
+	)
+	spanProtectedFields = collectECSFields(
+		resourceAttrsConversionMap,
+		scopeAttrsConversionMap,
+		spanAttrsConversionMap,
+	)
+	metricsProtectedFields = collectECSFields(resourceAttrsConversionMap)
+)
 
 var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
 
@@ -186,7 +233,7 @@ func (e legacyModeEncoder) encodeLog(ec encodingContext, record plog.LogRecord, 
 	document.AddAttributes("Scope", scopeToAttributes(ec.scope))
 	encodeAttributes(e.attributesPrefix, &document, record.Attributes(), idx)
 
-	return document.Serialize(buf, false)
+	return document.Serialize(buf, false, nil)
 }
 
 func (ecsModeEncoder) encodeLog(
@@ -199,23 +246,10 @@ func (ecsModeEncoder) encodeLog(
 
 	// First, try to map resource-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-
 	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]conversionEntry{
-		// None at the moment
-	}
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-
 	// Finally, try to map record-level attributes to ECS fields.
-	recordAttrsConversionMap := map[string]conversionEntry{
-		"event.name":                                {to: "event.action"},
-		string(conventions.ExceptionMessageKey):     {to: "error.message"},
-		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
-		string(conventions.ExceptionTypeKey):        {to: "error.type"},
-		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
-		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
-	}
-	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
+	encodeAttributesECSMode(&document, record.Attributes(), logRecordAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
@@ -233,7 +267,7 @@ func (ecsModeEncoder) encodeLog(
 		document.AddAttribute("message", record.Body())
 	}
 
-	return document.Serialize(buf, true)
+	return document.Serialize(buf, true, logProtectedFields)
 }
 
 func (ecsModeEncoder) encodeSpan(
@@ -246,23 +280,9 @@ func (ecsModeEncoder) encodeSpan(
 
 	// First, try to map resource-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-
 	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]conversionEntry{
-		// None at the moment
-	}
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-
-	// Finally, try to map record-level attributes to ECS fields.
-
-	spanAttrsConversionMap := map[string]conversionEntry{
-		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
-		string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
-		string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
-		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
-	}
-
-	// Handle special cases.
+	// Finally, try to map span-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
 	encodeHostOsTypeECSMode(&document, ec.resource)
 	addDataStreamAttributes(&document, "", idx)
@@ -282,7 +302,7 @@ func (ecsModeEncoder) encodeSpan(
 		document.AddString("span.kind", spanKind)
 	}
 
-	return document.Serialize(buf, true)
+	return document.Serialize(buf, true, spanProtectedFields)
 }
 
 // spanKindToECSStr converts an OTel SpanKind to its ECS equivalent string representation defined here:
@@ -442,7 +462,7 @@ func (e nonOTelSpanEncoder) encodeSpan(
 	document.AddAttributes("Scope", scopeToAttributes(ec.scope))
 	encodeAttributes(e.attributesPrefix, &document, span.Attributes(), idx)
 	document.AddEvents(e.eventsPrefix, span.Events())
-	return document.Serialize(buf, e.dedot)
+	return document.Serialize(buf, e.dedot, nil)
 }
 
 type ecsDataPointsEncoder struct{}
@@ -456,6 +476,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 ) (map[string]string, error) {
 	dp0 := dataPoints[0]
 	var document objmodel.Document
+
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
@@ -469,7 +490,8 @@ func (ecsDataPointsEncoder) encodeMetrics(
 		}
 		document.AddAttribute(dp.Metric().Name(), value)
 	}
-	err := document.Serialize(buf, true)
+
+	err := document.Serialize(buf, true, metricsProtectedFields)
 
 	return document.DynamicTemplates(), err
 }

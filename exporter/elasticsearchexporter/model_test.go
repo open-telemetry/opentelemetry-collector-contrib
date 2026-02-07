@@ -714,7 +714,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "args": "/usr/bin/ssh -l user 10.0.0.16",
 		  "executable": "/usr/bin/ssh",
           "parent": { "pid": "42" },
-		   "title": "node"
+		  "title": "node"
 		},
 		"service": {
 		  "name": "foo.bar",
@@ -1076,6 +1076,43 @@ func TestMapLogAttributesToECS(t *testing.T) {
 			require.Equal(t, expectedDoc, doc)
 		})
 	}
+}
+
+func TestEncodeLogECSModeKnownFieldConflict(t *testing.T) {
+	t.Run("protected_field_wins_over_nested_attributes", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.path": "/usr/bin/ssh",
+		})
+		require.NoError(t, err)
+
+		scope := pcommon.NewInstrumentationScope()
+		record := plog.NewLogRecord()
+		err = record.Attributes().FromRaw(map[string]any{
+			"process.executable.name":    "ssh",
+			"process.executable.foo":     "bar",
+			"process.executable.foo.bar": "baz",
+		})
+		require.NoError(t, err)
+
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: scope},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		// process.executable should be string "/usr/bin/ssh", not an object
+		// any other fields under process.executable should be ignored
+		output := buf.String()
+		assert.Equal(t, "/usr/bin/ssh", gjson.Get(output, "process.executable").String())
+	})
 }
 
 // JSON serializable structs for OTel test convenience
