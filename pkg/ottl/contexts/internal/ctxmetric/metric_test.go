@@ -30,11 +30,12 @@ func TestPathGetSetter(t *testing.T) {
 	dataPoint.SetIntValue(1)
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[*testContext]
-		orig     any
-		newVal   any
-		modified func(metric pmetric.Metric)
+		name                string
+		path                ottl.Path[*testContext]
+		orig                any
+		newVal              any
+		modified            func(metric pmetric.Metric)
+		skipSetterTypeCheck bool
 	}{
 		{
 			name: "metric name",
@@ -78,6 +79,7 @@ func TestPathGetSetter(t *testing.T) {
 			newVal: int64(pmetric.MetricTypeSum),
 			modified: func(_ pmetric.Metric) {
 			},
+			skipSetterTypeCheck: true, // metric type setter is a no-op
 		},
 		{
 			name: "metric aggregation_temporality",
@@ -137,6 +139,12 @@ func TestPathGetSetter(t *testing.T) {
 
 			err = accessor.Set(t.Context(), newTestContext(metric), tt.newVal)
 			require.NoError(t, err)
+
+			// Verify that setting an invalid type returns an error
+			if !tt.skipSetterTypeCheck {
+				err = accessor.Set(t.Context(), newTestContext(metric), struct{}{})
+				require.Error(t, err)
+			}
 
 			expectedMetric := createTelemetry()
 			tt.modified(expectedMetric)

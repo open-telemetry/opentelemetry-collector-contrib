@@ -365,8 +365,13 @@ func TestPathGetSetter(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(t.Context(), newTestContext(log), tt.newVal)
+			ctx := newTestContext(log)
+			err = accessor.Set(t.Context(), ctx, tt.newVal)
 			require.NoError(t, err)
+
+			// Verify that setting an invalid type returns an error
+			err = accessor.Set(t.Context(), ctx, struct{}{})
+			require.Error(t, err)
 
 			expectedLog := createTelemetry(tt.bodyType)
 			tt.modified(expectedLog)
