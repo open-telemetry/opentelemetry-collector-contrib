@@ -90,7 +90,6 @@ For more information about the maintainer role, see the [community repository](h
 - [Braydon Kains](https://github.com/braydonk), Google
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
-- [Matt Wear](https://github.com/mwear), Lightstep
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
@@ -104,7 +103,6 @@ For more information about the approver role, see the [community repository](htt
 - [Bogdan Stancu](https://github.com/bogdan-st), Adobe
 - [Constança Manteigas](https://github.com/constanca-m), Elastic
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
-- [Florian Bacher](https://github.com/bacherfl), Dynatrace
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
@@ -128,6 +126,7 @@ For more information about the emeritus role, see the [community repository](htt
 
 - [Anthony Mirabella](https://github.com/Aneurysm9)
 - [Bryan Aguilar](https://github.com/bryan-aguilar)
+- [Matt Wear](https://github.com/mwear)
 - [Przemek Maciolek](https://github.com/pmm-sumo)
 - [Ruslan Kovalov](https://github.com/kovrus)
 
@@ -140,6 +139,7 @@ For more information about the emeritus role, see the [community repository](htt
 - [Goutham Veeramachaneni](https://github.com/gouthamve)
 - [Punya Biswal](https://github.com/punya)
 - [Steve Flanders](https://github.com/flands)
+- [Florian Bacher](https://github.com/bacherfl), Dynatrace
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
 

@@ -1,0 +1,34 @@
+type: object
+properties:
+  bucket:
+    type: object
+    properties:
+      file_prefix:
+        description: 'FilePrefix holds the prefix for the created filename. This prefix is applied after the partition path (if any). Example: file_prefix: "logs" Result: ".../logs_UUID"'
+        type: string
+      name:
+        description: Name for the bucket storage.
+        type: string
+      partition:
+        description: Partition configures the time-based partition format and file prefix.
+        type: object
+        properties:
+          format:
+            description: 'Format is a time format string used to create time-based partitions. If set, the current UTC time formatted with this string will be prepended to the filename. You can use standard strftime format parameters (e.g., %Y, %m, %d, %H, %M, %S). Example: "year=%Y/month=%m/day=%d" would result in "year=2023/month=10/day=25/"'
+            type: string
+          prefix:
+            description: 'Prefix holds the prefix for the partition path. This prefix is applied before the time-based partition structure. Example: prefix: "archive" Result: "archive/year=2023/..."'
+            type: string
+      project_id:
+        description: ProjectID defines the project where the bucket will be created or where it exists. If it is left empty, it will query the metadata endpoint. It requires the collector to be running in a Google Cloud environment.
+        type: string
+      region:
+        description: Region where bucket will be created or where it exists. If it is left empty, it will query the metadata endpoint. It requires the collector to be running in a Google Cloud environment.
+        type: string
+      reuse_if_exists:
+        description: ReuseIfExists decides if the bucket should be used if it already exists. If it is set to false, an error will be thrown if the bucket already exists. Otherwise, the existent bucket will be used.
+        type: boolean
+  encoding:
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID

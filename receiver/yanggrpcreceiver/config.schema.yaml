@@ -1,0 +1,62 @@
+$defs:
+  rate_limiting_config:
+    description: RateLimitingConfig contains rate limiting configuration
+    type: object
+    properties:
+      burst_size:
+        description: BurstSize is the maximum burst size for rate limiting
+        type: integer
+      cleanup_interval:
+        description: CleanupInterval is how often to clean up rate limiter entries
+        type: string
+        format: duration
+      enabled:
+        description: Enabled indicates whether rate limiting should be enabled
+        type: boolean
+      requests_per_second:
+        description: RequestsPerSecond is the maximum number of requests per second per client
+        type: number
+        x-customType: float64
+  security_config:
+    description: SecurityConfig contains security hardening options
+    type: object
+    properties:
+      allowed_clients:
+        description: AllowedClients contains client IP allowlist configuration
+        type: array
+        items:
+          type: string
+      connection_timeout:
+        description: ConnectionTimeout is the maximum time to wait for new connections
+        type: string
+        format: duration
+      enable_metrics:
+        description: EnableMetrics enables security-related metrics collection
+        type: boolean
+      rate_limiting:
+        description: RateLimiting contains rate limiting configuration
+        $ref: rate_limiting_config
+  yang_config:
+    description: YANGConfig contains YANG parser configuration
+    type: object
+    properties:
+      cache_modules:
+        description: CacheModules enables caching of discovered YANG modules
+        type: boolean
+      enable_rfc_parser:
+        description: EnableRFCParser enables the RFC 6020/7950 compliant YANG parser
+        type: boolean
+      max_modules:
+        description: MaxModules is the maximum number of YANG modules to cache
+        type: integer
+description: Config defines configuration for yanggrpc receiver.
+type: object
+properties:
+  security:
+    description: Security contains security hardening configuration
+    $ref: security_config
+  yang:
+    description: YANG contains YANG parser configuration
+    $ref: yang_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/configgrpc.server_config

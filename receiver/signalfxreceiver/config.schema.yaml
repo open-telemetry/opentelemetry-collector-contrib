@@ -1,0 +1,4 @@
+description: Config defines configuration for the SignalFx receiver.
+type: object
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.server_config

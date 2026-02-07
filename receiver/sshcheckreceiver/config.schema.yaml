@@ -1,0 +1,8 @@
+type: object
+properties:
+  check_sftp:
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/configssh.ssh_client_settings
+  - $ref: ./internal/metadata.metrics_builder_config
