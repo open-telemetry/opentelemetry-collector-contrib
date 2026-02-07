@@ -252,7 +252,7 @@ func (tsp *tailSamplingSpanProcessor) updatePolicyNameAttrs() {
 	tsp.policyNameAttrs = make(map[string]attribute.KeyValue, len(tsp.policies))
 	for _, p := range tsp.policies {
 		if _, ok := tsp.policyNameAttrs[p.name]; !ok {
-			tsp.policyNameAttrs[p.name] = policyNameKey.String(p.name)
+			tsp.policyNameAttrs[p.name] = attributePolicyName.String(p.name)
 		}
 	}
 }
@@ -345,15 +345,13 @@ var (
 	attrSampledFalse = metric.WithAttributes(attribute.String("sampled", "false"))
 
 	// Pre-allocated trace span attributes for decisions to reduce allocations
-	policyNameKey = attribute.Key("policy.name")
-	//decisionFinalKey key to represent final decision made
-	decisionFinalKey = attribute.Key("decision.final")
-	//decisionPolicyKey key to represent policy name
-	decisionPolicyKey = attribute.Key("decision.policy")
-	//policyDecisionKey key to represent individual policy decision
-	policyDecisionKey         = attribute.Key("policy.decision")
-	spanDecisionToAttribute   = telemetry.NewDecisionAttributes(decisionFinalKey)
-	policyDecisionToAttribute = telemetry.NewDecisionAttributes(policyDecisionKey)
+	attributePolicyName = attribute.Key("policy.name")
+	// attributeFinalDecision key to represent final decision made
+	attributeFinalDecision = attribute.Key("decision.final")
+	// attributePolicyDecision key to represent individual policy decision
+	attributePolicyDecision   = attribute.Key("policy.decision")
+	spanDecisionToAttribute   = telemetry.NewDecisionAttributes(attributeFinalDecision)
+	policyDecisionToAttribute = telemetry.NewDecisionAttributes(attributePolicyDecision)
 )
 
 type Option func(*tailSamplingSpanProcessor)
@@ -618,9 +616,6 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 
 // samplingPolicyOnTick takes the next batch and process all traces in that batch. Returns if there are more batches in the batcher.
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
-	ctx, span := tsp.tracer.Start(context.Background(), "tailsampling.samplingPolicyOnTick")
-	defer span.End()
-
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
 
 	metrics := newPolicyTickMetrics(len(tsp.policies))
@@ -637,12 +632,11 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 		}
 	}
 	batchLen := len(batch)
-
-	if span.IsRecording() {
-		span.SetAttributes(
-			attribute.Int("batch.size", batchLen),
-			attribute.Int("policies.count", len(tsp.policies)),
-		)
+	var span trace.Span
+	ctx := context.Background()
+	if batchLen > 0 {
+		ctx, span = tsp.tracer.Start(ctx, "tailsampling.samplingPolicyOnTick")
+		defer span.End()
 	}
 
 	for id := range batch {
@@ -703,15 +697,18 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 		tsp.telemetry.ProcessorTailSamplingSamplingPolicyExecutionCount.Add(tsp.ctx, metrics.cumulativeExecutionTime[i].executionCount, p.attribute)
 	}
 
-	if span.IsRecording() {
+	if span != nil && span.IsRecording() {
 		span.SetAttributes(
+			attribute.Int("batch.size", batchLen),
+			attribute.Int("policy.count", len(tsp.policies)),
+			attribute.Int64("policy.errors", metrics.evaluateErrorCount),
 			attribute.Int64("decisions.sampled", metrics.decisionSampled),
 			attribute.Int64("decisions.not_sampled", metrics.decisionNotSampled),
 			attribute.Int64("decisions.dropped", metrics.decisionDropped),
 		)
 	}
 
-	if metrics.evaluateErrorCount > 0 && span.IsRecording() {
+	if metrics.evaluateErrorCount > 0 && span != nil && span.IsRecording() {
 		span.SetStatus(codes.Error, fmt.Sprintf("%d policy evaluation errors", metrics.evaluateErrorCount))
 	}
 
@@ -765,19 +762,6 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, id pcomm
 		decision, err := p.evaluator.Evaluate(ctx, id, traceData)
 		evaluationDuration := time.Since(startTime)
 		metrics.addDecisionTime(i, evaluationDuration)
-
-		if span.IsRecording() {
-			eventAttrs := []attribute.KeyValue{
-				tsp.policyNameAttrs[p.name],
-				attribute.Int64("policy.evaluation_us", evaluationDuration.Microseconds()),
-			}
-			if err == nil {
-				eventAttrs = append(eventAttrs, policyDecisionToAttribute.Get(decision))
-			} else {
-				eventAttrs = append(eventAttrs, attribute.String("policy.error", err.Error()))
-			}
-			span.AddEvent("policy.evaluated", trace.WithAttributes(eventAttrs...))
-		}
 
 		if err != nil {
 			if samplingDecisions[samplingpolicy.Error] == nil {
@@ -840,7 +824,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(ctx context.Context, id pcomm
 	if span.IsRecording() {
 		span.SetAttributes(spanDecisionToAttribute.Get(finalDecision))
 		if policyName := getPolicyName(sampledPolicy); policyName != "" {
-			span.SetAttributes(decisionPolicyKey.String(policyName))
+			span.SetAttributes(attributePolicyName.String(policyName))
 		}
 	}
 
