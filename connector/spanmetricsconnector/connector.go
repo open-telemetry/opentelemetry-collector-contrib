@@ -45,6 +45,9 @@ const (
 	metricNameCalls    = "calls"
 	metricNameEvents   = "events"
 
+	metricAttrIsExtrapolated = "is_extrapolated"
+	metricAttrSamplingMethod = "sampling.method"
+
 	defaultUnit = metrics.Seconds
 
 	// https://github.com/open-telemetry/opentelemetry-go/blob/3ae002c3caf3e44387f0554dfcbbde2c5aab7909/sdk/metric/internal/aggregate/limit.go#L11C36-L11C50
@@ -136,7 +139,7 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 
 	var lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
 	if cfg.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-		lastDeltaTimestamps, err = simplelru.NewLRU[metrics.Key, pcommon.Timestamp](cfg.GetDeltaTimestampCacheSize(), func(k metrics.Key, _ pcommon.Timestamp) {
+		lastDeltaTimestamps, err = simplelru.NewLRU(cfg.GetDeltaTimestampCacheSize(), func(k metrics.Key, _ pcommon.Timestamp) {
 			logger.Info("Evicting cached delta timestamp", zap.String("key", string(k)))
 		})
 		if err != nil {
@@ -380,6 +383,11 @@ func (p *connectorImp) resetState() {
 // dimensions the user has configured.
 func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	startTimestamp := pcommon.NewTimestampFromTime(p.clock.Now())
+
+	// Local cache for adjusted count - no synchronization needed.
+	// Consecutive spans from the same trace share identical tracestates.
+	adjustedCountCache := metrics.NewAdjustedCountCache()
+
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -409,11 +417,12 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					duration = float64(endTime-startTime) / float64(unitDivider)
 				}
 
+				adjustedCount, isAdjusted := metrics.GetStochasticAdjustedCountWithCache(&span, &adjustedCountCache)
 				callsDimensions := p.dimensions
 				callsDimensions = append(callsDimensions, p.callsDimensions...)
 				key := p.buildKey(serviceName, span, callsDimensions, resourceAttr)
 				attributesFun := func() pcommon.Map {
-					return p.buildAttributes(serviceName, span, resourceAttr, callsDimensions, ils.Scope())
+					return p.buildAttributes(serviceName, span, resourceAttr, callsDimensions, ils.Scope(), isAdjusted)
 				}
 
 				// aggregate sums metrics
@@ -421,7 +430,8 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				if !limitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
 				}
-				s.Add(1)
+
+				s.Add(adjustedCount)
 
 				// aggregate histogram metrics
 				if !p.config.Histogram.Disable {
@@ -429,13 +439,13 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					durationDimensions = append(durationDimensions, p.durationDimensions...)
 					durationKey := p.buildKey(serviceName, span, durationDimensions, resourceAttr)
 					attributesFun = func() pcommon.Map {
-						return p.buildAttributes(serviceName, span, resourceAttr, durationDimensions, ils.Scope())
+						return p.buildAttributes(serviceName, span, resourceAttr, durationDimensions, ils.Scope(), isAdjusted)
 					}
 					h, durationLimitReached := histograms.GetOrCreate(durationKey, attributesFun, startTimestamp)
 					if !durationLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 						p.addExemplar(span, duration, h)
 					}
-					h.Observe(duration)
+					h.ObserveN(duration, adjustedCount)
 				}
 
 				// aggregate events metrics
@@ -457,13 +467,13 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
 						attributesFun = func() pcommon.Map {
-							return p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
+							return p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope(), isAdjusted)
 						}
 						e, eventLimitReached := events.GetOrCreate(eKey, attributesFun, startTimestamp)
 						if !eventLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
 						}
-						e.Add(1)
+						e.Add(adjustedCount)
 					}
 				}
 			}
@@ -524,6 +534,7 @@ func (p *connectorImp) buildAttributes(
 	resourceAttrs pcommon.Map,
 	dimensions []utilattri.Dimension,
 	instrumentationScope pcommon.InstrumentationScope,
+	isAdjustedCount bool,
 ) pcommon.Map {
 	attr := pcommon.NewMap()
 	attr.EnsureCapacity(5 + len(dimensions))
@@ -560,6 +571,11 @@ func (p *connectorImp) buildAttributes(
 		if instrumentationScope.Version() != "" {
 			attr.PutStr(instrumentationScopeVersionKey, instrumentationScope.Version())
 		}
+	}
+
+	if isAdjustedCount {
+		attr.PutBool(metricAttrIsExtrapolated, true)
+		attr.PutStr(metricAttrSamplingMethod, "ot.thrv")
 	}
 
 	addResourceAttributes(&attr, dimensions, span, resourceAttrs)
