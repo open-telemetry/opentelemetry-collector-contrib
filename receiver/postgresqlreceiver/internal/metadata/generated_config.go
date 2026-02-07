@@ -255,7 +255,10 @@ type ResourceAttributesConfig struct {
 	PostgresqlIndexName    ResourceAttributeConfig `mapstructure:"postgresql.index.name"`
 	PostgresqlSchemaName   ResourceAttributeConfig `mapstructure:"postgresql.schema.name"`
 	PostgresqlTableName    ResourceAttributeConfig `mapstructure:"postgresql.table.name"`
+	ServerAddress          ResourceAttributeConfig `mapstructure:"server.address"`
+	ServerPort             ResourceAttributeConfig `mapstructure:"server.port"`
 	ServiceInstanceID      ResourceAttributeConfig `mapstructure:"service.instance.id"`
+	ServiceName            ResourceAttributeConfig `mapstructure:"service.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -272,7 +275,16 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		PostgresqlTableName: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		ServerAddress: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServerPort: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		ServiceInstanceID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServiceName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}
