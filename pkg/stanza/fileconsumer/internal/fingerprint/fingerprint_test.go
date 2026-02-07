@@ -338,3 +338,43 @@ func TestCompressionFingerprint(t *testing.T) {
 	uncompressedFP := New(data)
 	uncompressedFP.Equal(compressedFP)
 }
+
+func TestFingerprintKeyCaching(t *testing.T) {
+	data := []byte("test fingerprint data")
+	fp := New(data)
+
+	key1 := fp.Key()
+	require.Equal(t, string(data), key1)
+
+	key2 := fp.Key()
+	require.Equal(t, key1, key2)
+
+	require.NotEmpty(t, fp.key)
+}
+
+func TestFingerprintCopyDoesNotShareKey(t *testing.T) {
+	data := []byte("original data")
+	original := New(data)
+
+	originalKey := original.Key()
+	require.NotEmpty(t, originalKey)
+
+	copied := original.Copy()
+	require.Empty(t, copied.key)
+
+	copiedKey := copied.Key()
+	require.Equal(t, originalKey, copiedKey)
+
+	require.NotEmpty(t, copied.key)
+}
+
+func TestFingerprintKeyWithNilOrEmpty(t *testing.T) {
+	var nilFP *Fingerprint
+	require.Empty(t, nilFP.Key())
+
+	emptyFP := New([]byte{})
+	require.Empty(t, emptyFP.Key())
+
+	fp := &Fingerprint{firstBytes: nil}
+	require.Empty(t, fp.Key())
+}
