@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
@@ -36,6 +37,7 @@ const (
 	SCRAMSHA256          = "SCRAM-SHA-256"
 	PLAIN                = "PLAIN"
 	AWSMSKIAMOAUTHBEARER = "AWS_MSK_IAM_OAUTHBEARER" //nolint:gosec // These aren't credentials.
+	OAUTHBEARER          = "OAUTHBEARER"
 )
 
 // NewFranzSyncProducer creates a new Kafka client using the franz-go library.
@@ -203,7 +205,7 @@ func NewFranzClusterAdminClient(
 
 func commonOpts(
 	ctx context.Context,
-	_ component.Host,
+	host component.Host,
 	clientCfg configkafka.ClientConfig,
 	logger *zap.Logger,
 	opts ...kgo.Opt,
@@ -239,7 +241,7 @@ func commonOpts(
 		opts = append(opts, kgo.SASL(auth.AsMechanism()))
 	}
 	if clientCfg.Authentication.SASL != nil {
-		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL)
+		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL, host)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure SASL: %w", err)
 		}
@@ -282,7 +284,7 @@ func commonOpts(
 	return opts, nil
 }
 
-func configureKgoSASL(cfg *configkafka.SASLConfig) (kgo.Opt, error) {
+func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
 	var m sasl.Mechanism
 	switch cfg.Mechanism {
 	case PLAIN:
@@ -295,6 +297,22 @@ func configureKgoSASL(cfg *configkafka.SASLConfig) (kgo.Opt, error) {
 		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
 			token, _, err := signer.GenerateAuthToken(ctx, cfg.AWSMSK.Region)
 			return oauth.Auth{Token: token}, err
+		})
+	case OAUTHBEARER:
+		extMap := host.GetExtensions()
+		oauthExt, exists := extMap[cfg.OAuthBearerTokenSource]
+		if !exists {
+			return nil, fmt.Errorf("extension %s is not configured", cfg.OAuthBearerTokenSource.Name())
+		}
+
+		m = oauth.Oauth(func(_ context.Context) (oauth.Auth, error) {
+			ts := oauthExt.(oauth2.TokenSource)
+
+			token, err := ts.Token()
+			if err != nil {
+				return oauth.Auth{}, err
+			}
+			return oauth.Auth{Token: token.AccessToken}, nil
 		})
 	default:
 		return nil, fmt.Errorf("unsupported SASL mechanism: %s", cfg.Mechanism)

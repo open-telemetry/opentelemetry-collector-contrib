@@ -44,13 +44,21 @@ func newClientCredentialsGrantTypeConfig(cfg *Config) *clientCredentialsConfig {
 //
 // Example - Retrieve secret from file:
 //
-//	cfg := clientCredentialsConfig{
-//		Config: clientcredentials.Config{
+//	cfg := ClientCredentialsConfig{
+//		Config: Config{
 //			ClientID:     "clientId",
 //			...
 //		},
 //		ClientSecretFile: "/path/to/client/secret",
 //	}
+type ClientCredentialsConfig struct {
+	Config Config
+
+	AuthStyle    oauth2.AuthStyle
+	ExpiryBuffer int
+}
+
+// clientCredentialsConfig is an internal version that embeds clientcredentials.Config
 type clientCredentialsConfig struct {
 	clientcredentials.Config
 
@@ -110,7 +118,25 @@ func (c *clientCredentialsConfig) createConfig() (*clientcredentials.Config, err
 	}, nil
 }
 
-func (c *clientCredentialsConfig) TokenSource(ctx context.Context) oauth2.TokenSource {
+// TokenSource creates an oauth2.TokenSource from the exported ClientCredentialsConfig
+func (c *ClientCredentialsConfig) TokenSource(ctx context.Context) oauth2.TokenSource {
+	internalConfig := &clientCredentialsConfig{
+		Config: clientcredentials.Config{
+			ClientID:       c.Config.ClientID,
+			ClientSecret:   string(c.Config.ClientSecret),
+			TokenURL:       c.Config.TokenURL,
+			Scopes:         c.Config.Scopes,
+			EndpointParams: c.Config.EndpointParams,
+			AuthStyle:      c.AuthStyle,
+		},
+		ClientIDFile:     c.Config.ClientIDFile,
+		ClientSecretFile: c.Config.ClientSecretFile,
+		ExpiryBuffer:     time.Duration(c.ExpiryBuffer) * time.Second,
+	}
+	return internalConfig.tokenSource(ctx)
+}
+
+func (c *clientCredentialsConfig) tokenSource(ctx context.Context) oauth2.TokenSource {
 	return oauth2.ReuseTokenSourceWithExpiry(nil, clientCredentialsTokenSource{ctx: ctx, config: c}, c.ExpiryBuffer)
 }
 
