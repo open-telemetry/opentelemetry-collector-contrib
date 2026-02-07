@@ -16,7 +16,6 @@ resource_attributes:
     description: Endpoint of the MySQL instance.
     enabled: true
     type: string
-
 attributes:
   buffer_pool_data:
     name_override: status
@@ -121,24 +120,17 @@ attributes:
   mysql.event_id:
     description: The thread associated with the event and the thread current event number when the event starts.
     type: int
-  mysql.events_statements_current.digest:
-    description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
-    type: string
-  mysql.events_statements_summary_by_digest.count_star:
+  mysql.execution_count:
     description: The number of times the statement was executed, report in delta value.
     type: int
-  mysql.events_statements_summary_by_digest.digest:
+  mysql.query_hash:
     description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
     type: string
-  mysql.events_statements_summary_by_digest.sum_timer_wait:
-    description: The total time spent executing the statement, report in delta seconds.
-    type: double
-
-  mysql.events_waits_current.timer_wait:
-    description: Timing information for the event, indicating elapsed time the event waited in seconds.
-    type: double
   mysql.query_plan:
     description: The query plan for the statement, if available.
+    type: string
+  mysql.query_plan_hash:
+    description: The SHA256 hash of the query plan for the statement, if available.
     type: string
   mysql.threads.processlist_command:
     description: The type of command the thread is executing on behalf of the client for foreground threads, or `Sleep` if the session is idle.
@@ -149,6 +141,12 @@ attributes:
   mysql.threads.thread_id:
     description: The unique identifier for the thread executing the statement.
     type: int
+  mysql.total_elapsed_time:
+    description: The total time spent executing the statement, report in delta seconds.
+    type: double
+  mysql.wait_time:
+    description: Timing information for the event, indicating elapsed time the event waited in seconds.
+    type: double
   mysql.wait_type:
     description: The name of the instrument that produced the event.
     type: string
@@ -240,21 +238,22 @@ events:
       Query sample collection enables monitoring of current running database statements.
       This provides real-time visibility into active queries, helping users monitor database activity and performance as part of their observability pipeline.
     attributes:
-      - db.system.name
-      - mysql.threads.thread_id
-      - user.name
-      - db.namespace
-      - mysql.threads.processlist_command
-      - mysql.threads.processlist_state
-      - db.query.text
-      - mysql.events_statements_current.digest
-      - mysql.event_id
-      - mysql.wait_type
-      - mysql.events_waits_current.timer_wait
       - client.address
       - client.port
+      - db.namespace
+      - db.query.text
+      - db.system.name
+      - mysql.event_id
+      - mysql.query_hash
+      - mysql.query_plan_hash
+      - mysql.wait_time
+      - mysql.threads.processlist_command
+      - mysql.threads.processlist_state
+      - mysql.threads.thread_id
+      - mysql.wait_type
       - network.peer.address
       - network.peer.port
+      - user.name
 
   db.server.top_query:
     enabled: false
@@ -265,9 +264,10 @@ events:
       - db.system.name
       - db.query.text
       - mysql.query_plan
-      - mysql.events_statements_summary_by_digest.digest
-      - mysql.events_statements_summary_by_digest.count_star
-      - mysql.events_statements_summary_by_digest.sum_timer_wait
+      - mysql.query_plan_hash
+      - mysql.query_hash
+      - mysql.execution_count
+      - mysql.total_elapsed_time
 
 metrics:
   mysql.buffer_pool.data_pages:

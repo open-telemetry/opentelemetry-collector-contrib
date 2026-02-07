@@ -498,9 +498,10 @@ func (c *mockClient) getQuerySamples(uint64) ([]querySample, error) {
 		s.processlistState = text[5]
 		s.sqlText = text[6]
 		s.digest = text[7]
-		s.eventID, _ = parseInt(text[8])
-		s.waitEvent = text[9]
-		s.waitTime, _ = strconv.ParseFloat(text[10], 64)
+		s.schema = text[8]
+		s.eventID, _ = parseInt(text[9])
+		s.waitEvent = text[10]
+		s.waitTime, _ = strconv.ParseFloat(text[11], 64)
 
 		samples = append(samples, s)
 	}

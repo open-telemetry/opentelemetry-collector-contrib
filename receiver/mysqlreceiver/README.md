@@ -34,6 +34,10 @@ GRANT SELECT ON performance_schema.* TO <your-user>@'%';
 
 ## Configuration
 
+The target MySQL server should have the appropriate configuration settings:
+- `performance_schema` should be enabled.
+- `performance_schema.events_statements_current` and `performance_schema.events_statements_current` should be enabled in the `performance_schema.setup_consumers` table.
+- the variable `performance_schema_max_sql_text_length` defaults to 1024, and will need to be increased if you want to collect the full SQL text of queries and any corresponding explain plans. This is a global variable, so it will affect all users. see [this link](https://dev.mysql.com/doc/refman/9.0/en/performance-schema-system-variables.html#sysvar_performance_schema_max_sql_text_length) for more information.
 
 The following settings are optional:
 - `endpoint`: (default = `localhost:3306`)
@@ -56,6 +60,7 @@ The following settings are optional:
   - `limit` - limit of records, which is maximum number of generated metrics (default=`250`)
 - `query_sample_collection`: Additional configuration for query sample collection(`db.server.query_sample` event):
   - `max_rows_per_query` - maximum number of rows to collect per scrape (default=`100`)
+  - Note that collection of Query Plans requires that the query returned from `performance_schema.events_statements_summary_by_digest` is limited to 1024 characters by default. If a query exceeds this length, the plan cannot be collected. See `QUERY_SAMPLE_TEXT` in https://dev.mysql.com/doc/refman/8.4/en/performance-schema-statement-summary-tables.html for details and how to change this limit.
 - `top_query_collection`: Additional configuration for top queries collection (`db.server.top_query` event):
   - `lookback_time` (optional, example = `60`, default = `2 * collection_interval`): The time window (in seconds) in which to query for top queries.
     - Queries that finished execution outside the lookback window are not included in the collection. Increasing the lookback window will be useful for capturing long-running queries.
@@ -72,6 +77,35 @@ The following settings are optional:
     This defines the cache's size for query plan.
   - `query_plan_cache_ttl`: (optional, example = `1m`, default = `1h`). How long until a query plan expires in the cache. The receiver will run an explain query to MySQL to get the query plan after it expires.
 
+- `top_query_collection` : 
+  - `enabled` (default = `false`): Enables the collection and reporting of top queries. If this is set to `true`, the receiver will collect and report the top queries based on their execution time as Logs (to include query and plan text, which otherwise exceeds Metrics limits), including the following attributes:
+    - `mysql.current_schema`: The current schema.
+    - `mysql.query_hash`: The hash of the query.
+    - `mysql.query_hash_text`: The normalized text of the query.
+    - `mysql.end_event_id`: The event ID of the end event.
+    - `mysql.uptime`: The uptime of the MySQL server.
+    - `mysql.timer_start`: The start time of the event.
+    - `mysql.timer_end`: The end time of the event.
+    - `mysql.timer_wait`: The wait time of the event.
+    - `mysql.lock_time`: The lock time of the event.
+    - `mysql.rows_affected`: The number of rows affected by the event.
+    - `mysql.rows_sent`: The number of rows sent by the event.
+    - `mysql.rows_examined`: The number of rows examined by the event.
+    - `mysql.select_full_join`: The number of full joins performed by the event.
+    - `mysql.select_full_range_join`: The number of full range joins performed by the event.
+    - `mysql.select_range`: The number of range selections performed by the event.
+    - `mysql.select_range_check`: The number of range checks performed by the event.
+    - `mysql.select_scan`: The number of scans performed by the event.
+    - `mysql.sort_merge_passes`: The number of sort merge passes performed by the event.
+    - `mysql.sort_range`: The number of range sorts performed by the event.
+    - `mysql.sort_rows`: The number of rows sorted by the event.
+    - `mysql.sort_scan`: The number of scans performed by the event.
+    - `mysql.no_good_index_used`: The number of times a good index was not used by the event.
+    - `mysql.no_index_used`: The number of times an index was not used by the event.
+    - `mysql.process_list_user`: The user who executed the query.
+    - `mysql.process_list_host`: The host from which the query was executed.
+    - `mysql.process_list_db`: The database from which the query was executed.
+  - `top_query_count` (default = 200): The maximum number of top queries to be collected and emitted with the above attributes.  The value must be a positive integer. If set to 0, no top queries will be collected.
 ### Example Configuration
 
 ```yaml
@@ -93,7 +127,7 @@ The full list of settings exposed for this receiver are documented in [config.go
 
 ## Metrics
 
-Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml). Note that the disabling of most metrics does not work.
 
 ## Logs
 Details about the logs produced by this receiver can be found in [documentation.md](./documentation.md)

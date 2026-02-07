@@ -206,6 +206,7 @@ type querySample struct {
 	processlistState   string
 	sqlText            string
 	digest             string
+	schema             string
 	eventID            int64
 	waitEvent          string
 	waitTime           float64
@@ -773,6 +774,7 @@ func (c *mySQLClient) getQuerySamples(limit uint64) ([]querySample, error) {
 			&s.processlistState,
 			&s.sqlText,
 			&s.digest,
+			&s.schema,
 			&s.eventID,
 			&s.waitEvent,
 			&s.waitTime,
