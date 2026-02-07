@@ -16,15 +16,16 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetDatabase("database-val")
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
+			rb.SetServiceInstanceID("service.instance.id-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 2, res.Attributes().Len())
-			case "all_set":
 				assert.Equal(t, 3, res.Attributes().Len())
+			case "all_set":
+				assert.Equal(t, 4, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -46,6 +47,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, 11, val.Int())
+			}
+			val, ok = res.Attributes().Get("service.instance.id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "service.instance.id-val", val.Str())
 			}
 		})
 	}

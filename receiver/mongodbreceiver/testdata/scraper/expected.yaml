@@ -4,6 +4,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: ecb6adf34046
+        - key: service.instance.id
+          value:
+            stringValue: 0d53bbba-e245-5e46-a385-b3cb9baa6d28
     scopeMetrics:
       - metrics:
           - description: The number of cache operations of the instance.
@@ -296,12 +299,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: server.address
-          value:
-            stringValue: ecb6adf34046
         - key: database
           value:
             stringValue: fakedatabase
+        - key: server.address
+          value:
+            stringValue: ecb6adf34046
+        - key: service.instance.id
+          value:
+            stringValue: 97892696-98a0-5b72-9073-e85145e93029
     scopeMetrics:
       - metrics:
           - description: The number of collections.

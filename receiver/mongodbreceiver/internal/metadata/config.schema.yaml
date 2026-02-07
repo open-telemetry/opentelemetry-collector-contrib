@@ -158,3 +158,5 @@ $defs:
         $ref: resource_attribute_config
       server.port:
         $ref: resource_attribute_config
+      service.instance.id:
+        $ref: resource_attribute_config
