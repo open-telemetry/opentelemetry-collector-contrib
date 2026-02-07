@@ -14,8 +14,8 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 // NewMockOperator will return a basic operator mock
@@ -96,7 +96,7 @@ func (f *FakeOutput) ProcessBatch(ctx context.Context, entries []*entry.Entry) e
 func (f *FakeOutput) Process(_ context.Context, entry *entry.Entry) error {
 	f.Received <- entry
 	if f.processWithError {
-		return errors.NewError("Operator can not process logs.", "")
+		return stanzaerrors.NewError("Operator can not process logs.", "")
 	}
 	return nil
 }

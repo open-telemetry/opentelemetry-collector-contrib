@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 // NewTransformerConfig creates a new transformer config with default values
@@ -37,13 +37,13 @@ type TransformerConfig struct {
 func (c TransformerConfig) Build(set component.TelemetrySettings) (TransformerOperator, error) {
 	writerOperator, err := c.WriterConfig.Build(set)
 	if err != nil {
-		return TransformerOperator{}, stanza_errors.WithDetails(err, "operator_id", c.ID())
+		return TransformerOperator{}, stanzaerrors.WithDetails(err, "operator_id", c.ID())
 	}
 
 	switch c.OnError {
 	case SendOnError, SendOnErrorQuiet, DropOnError, DropOnErrorQuiet:
 	default:
-		return TransformerOperator{}, stanza_errors.NewError(
+		return TransformerOperator{}, stanzaerrors.NewError(
 			"operator config has an invalid `on_error` field.",
 			"ensure that the `on_error` field is set to one of `send`, `send_quiet`, `drop`, `drop_quiet`.",
 			"on_error", c.OnError,
