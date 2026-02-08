@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: extension/oidcauthextension
+note: Allow collector to start when some OIDC issuers are unreachable, as long as one is reachable.
+issues: [45206]
