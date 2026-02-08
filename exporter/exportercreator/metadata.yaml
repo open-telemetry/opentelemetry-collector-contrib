@@ -8,6 +8,17 @@ status:
   codeowners:
     active: [stu]
 
+telemetry:
+  metrics:
+    exporter_creator_exporters_count:
+      enabled: true
+      stability:
+        level: development
+      description: Current number of exporters created by the exporter_creator.
+      unit: "{exporters}"
+      gauge:
+        value_type: int
+
 tests:
   skip_lifecycle: true
   skip_shutdown: true

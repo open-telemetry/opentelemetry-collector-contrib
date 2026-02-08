@@ -4,12 +4,15 @@
 package exportercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/exportercreator"
 
 import (
+	"context"
 	"strings"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/otel/metric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/exportercreator/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
@@ -18,6 +21,7 @@ type telemetryRouter struct {
 	mu        sync.RWMutex
 	rules     []RoutingRule
 	exporters map[observer.EndpointID]*routedExporter
+	telemetry *metadata.TelemetryBuilder
 }
 
 // routedExporter holds an exporter with its endpoint properties for matching.
@@ -27,10 +31,11 @@ type routedExporter struct {
 }
 
 // newTelemetryRouter creates a new telemetry router with the given routing rules.
-func newTelemetryRouter(rules []RoutingRule) *telemetryRouter {
+func newTelemetryRouter(rules []RoutingRule, telemetry *metadata.TelemetryBuilder) *telemetryRouter {
 	return &telemetryRouter{
 		rules:     rules,
 		exporters: make(map[observer.EndpointID]*routedExporter),
+		telemetry: telemetry,
 	}
 }
 
@@ -43,6 +48,11 @@ func (r *telemetryRouter) AddExporter(id observer.EndpointID, exp component.Comp
 		exporter:   exp,
 		properties: flattenProperties(env),
 	}
+
+	// Update the gauge metric with the current count
+	if r.telemetry != nil {
+		r.telemetry.ExporterCreatorExportersCount.Record(context.Background(), int64(len(r.exporters)))
+	}
 }
 
 // RemoveExporter unregisters an exporter.
@@ -51,6 +61,11 @@ func (r *telemetryRouter) RemoveExporter(id observer.EndpointID) {
 	defer r.mu.Unlock()
 
 	delete(r.exporters, id)
+
+	// Update the gauge metric with the current count
+	if r.telemetry != nil {
+		r.telemetry.ExporterCreatorExportersCount.Record(context.Background(), int64(len(r.exporters)))
+	}
 }
 
 // Route returns all exporters that match the given resource attributes.
@@ -69,6 +84,13 @@ func (r *telemetryRouter) Route(resourceAttrs pcommon.Map) []component.Component
 		}
 	}
 	return matched
+}
+
+// Count returns the current number of exporters.
+func (r *telemetryRouter) Count() int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return len(r.exporters)
 }
 
 // matchesAllRules checks if all routing rules match for the given resource attributes and endpoint properties.

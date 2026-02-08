@@ -41,9 +41,18 @@ func createLogsExporter(
 	params exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
+	var err error
 	e := exporters.GetOrAdd(cfg, func() component.Component {
-		return newExporterCreator(params, cfg.(*Config))
+		var ec *exporterCreator
+		ec, err = newExporterCreator(params, cfg.(*Config))
+		if err != nil {
+			return nil
+		}
+		return ec
 	})
+	if err != nil {
+		return nil, err
+	}
 	c := e.Unwrap()
 	return c.(*exporterCreator), nil
 }
@@ -53,9 +62,18 @@ func createMetricsExporter(
 	params exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
+	var err error
 	e := exporters.GetOrAdd(cfg, func() component.Component {
-		return newExporterCreator(params, cfg.(*Config))
+		var ec *exporterCreator
+		ec, err = newExporterCreator(params, cfg.(*Config))
+		if err != nil {
+			return nil
+		}
+		return ec
 	})
+	if err != nil {
+		return nil, err
+	}
 	c := e.Unwrap()
 	return c.(*exporterCreator), nil
 }
@@ -65,9 +83,18 @@ func createTracesExporter(
 	params exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
+	var err error
 	e := exporters.GetOrAdd(cfg, func() component.Component {
-		return newExporterCreator(params, cfg.(*Config))
+		var ec *exporterCreator
+		ec, err = newExporterCreator(params, cfg.(*Config))
+		if err != nil {
+			return nil
+		}
+		return ec
 	})
+	if err != nil {
+		return nil, err
+	}
 	c := e.Unwrap()
 	return c.(*exporterCreator), nil
 }

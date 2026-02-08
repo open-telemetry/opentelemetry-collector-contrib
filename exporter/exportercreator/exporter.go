@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/exportercreator/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
@@ -32,14 +33,22 @@ type exporterCreator struct {
 	observerHandler *observerHandler
 	observables     []observer.Observable
 	router          *telemetryRouter
+	telemetry       *metadata.TelemetryBuilder
 }
 
-func newExporterCreator(params exporter.Settings, cfg *Config) *exporterCreator {
-	return &exporterCreator{
-		params: params,
-		cfg:    cfg,
-		router: newTelemetryRouter(cfg.Routing.Rules),
+func newExporterCreator(params exporter.Settings, cfg *Config) (*exporterCreator, error) {
+	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
+	if err != nil {
+		return nil, err
 	}
+
+	ec := &exporterCreator{
+		params:    params,
+		cfg:       cfg,
+		router:    newTelemetryRouter(cfg.Routing.Rules, telemetry),
+		telemetry: telemetry,
+	}
+	return ec, nil
 }
 
 // Start exporter_creator.
@@ -49,6 +58,11 @@ func (ec *exporterCreator) Start(_ context.Context, h component.Host) error {
 	// 2. Create observer handler
 	// 3. Subscribe to observers
 	_ = h
+	
+	// Initialize the gauge metric to 0
+	if ec.telemetry != nil {
+		ec.telemetry.ExporterCreatorExportersCount.Record(context.Background(), 0)
+	}
 	return nil
 }
 
@@ -57,6 +71,9 @@ func (ec *exporterCreator) Shutdown(context.Context) error {
 	// TODO: Implement in PR2
 	// 1. Unsubscribe from observers
 	// 2. Shutdown all sub-exporters
+	if ec.telemetry != nil {
+		ec.telemetry.Shutdown()
+	}
 	return nil
 }
 
