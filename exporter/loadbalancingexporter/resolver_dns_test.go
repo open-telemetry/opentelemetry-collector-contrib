@@ -20,7 +20,7 @@ import (
 func TestInitialDNSResolution(t *testing.T) {
 	// prepare
 	_, tb := getTelemetryAssets(t)
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second, tb)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", DNSModeStandard, 5*time.Second, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{
@@ -53,7 +53,7 @@ func TestInitialDNSResolution(t *testing.T) {
 func TestInitialDNSResolutionWithPort(t *testing.T) {
 	// prepare
 	_, tb := getTelemetryAssets(t)
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "55690", 5*time.Second, 1*time.Second, tb)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "55690", DNSModeStandard, 5*time.Second, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{
@@ -86,7 +86,7 @@ func TestInitialDNSResolutionWithPort(t *testing.T) {
 func TestErrNoHostname(t *testing.T) {
 	// test
 	_, tb := getTelemetryAssets(t)
-	res, err := newDNSResolver(zap.NewNop(), "", "", 5*time.Second, 1*time.Second, tb)
+	res, err := newDNSResolver(zap.NewNop(), "", "", DNSModeStandard, 5*time.Second, 1*time.Second, tb)
 
 	// verify
 	assert.Nil(t, res)
@@ -96,7 +96,7 @@ func TestErrNoHostname(t *testing.T) {
 func TestCantResolve(t *testing.T) {
 	// prepare
 	_, tb := getTelemetryAssets(t)
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second, tb)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", DNSModeStandard, 5*time.Second, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
@@ -117,7 +117,7 @@ func TestCantResolve(t *testing.T) {
 func TestOnChange(t *testing.T) {
 	// prepare
 	_, tb := getTelemetryAssets(t)
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second, tb)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", DNSModeStandard, 5*time.Second, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	resolve := []net.IPAddr{
@@ -131,7 +131,7 @@ func TestOnChange(t *testing.T) {
 
 	// test
 	counter := &atomic.Int64{}
-	res.onChange(func(_ []string) {
+	res.onChange(func([]string) {
 		counter.Add(1)
 	})
 	require.NoError(t, res.start(t.Context()))
@@ -185,7 +185,7 @@ func TestEqualStringSlice(t *testing.T) {
 func TestPeriodicallyResolve(t *testing.T) {
 	// prepare
 	_, tb := getTelemetryAssets(t)
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second, tb)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", DNSModeStandard, 10*time.Millisecond, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	counter := &atomic.Int64{}
@@ -222,7 +222,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 	}
 
 	wg := sync.WaitGroup{}
-	res.onChange(func(_ []string) {
+	res.onChange(func([]string) {
 		wg.Done()
 	})
 
@@ -244,7 +244,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 func TestPeriodicallyResolveFailure(t *testing.T) {
 	// prepare
 	_, tb := getTelemetryAssets(t)
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 10*time.Millisecond, 1*time.Second, tb)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", DNSModeStandard, 10*time.Millisecond, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
@@ -288,11 +288,11 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 func TestShutdownClearsCallbacks(t *testing.T) {
 	// prepare
 	_, tb := getTelemetryAssets(t)
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second, tb)
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", DNSModeStandard, 5*time.Second, 1*time.Second, tb)
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{}
-	res.onChange(func(_ []string) {})
+	res.onChange(func([]string) {})
 	require.NoError(t, res.start(t.Context()))
 
 	// sanity check
@@ -306,7 +306,7 @@ func TestShutdownClearsCallbacks(t *testing.T) {
 	assert.Empty(t, res.onChangeCallbacks)
 
 	// check that we can add a new onChange before a new start
-	res.onChange(func(_ []string) {})
+	res.onChange(func([]string) {})
 	assert.Len(t, res.onChangeCallbacks, 1)
 }
 
@@ -315,6 +315,7 @@ var _ netResolver = (*mockDNSResolver)(nil)
 type mockDNSResolver struct {
 	net.Resolver
 	onLookupIPAddr func(context.Context, string) ([]net.IPAddr, error)
+	onLookupSRV    func(context.Context, string, string, string) (string, []*net.SRV, error)
 }
 
 func (m *mockDNSResolver) LookupIPAddr(ctx context.Context, hostname string) ([]net.IPAddr, error) {
@@ -322,4 +323,256 @@ func (m *mockDNSResolver) LookupIPAddr(ctx context.Context, hostname string) ([]
 		return m.onLookupIPAddr(ctx, hostname)
 	}
 	return nil, nil
+}
+
+func (m *mockDNSResolver) LookupSRV(ctx context.Context, service, proto, name string) (string, []*net.SRV, error) {
+	if m.onLookupSRV != nil {
+		return m.onLookupSRV(ctx, service, proto, name)
+	}
+	return "", nil, nil
+}
+
+func TestDNSSRVResolution(t *testing.T) {
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "_svc._tcp.example.org", "", DNSModeSRV, 5*time.Second, 1*time.Second, tb)
+	require.NoError(t, err)
+
+	res.resolver = &mockDNSResolver{
+		onLookupSRV: func(context.Context, string, string, string) (string, []*net.SRV, error) {
+			// emulate two SRV records
+			return "", []*net.SRV{
+				{Target: "host1.example.org.", Port: 1000},
+				{Target: "host2.example.org.", Port: 2000},
+			}, nil
+		},
+		onLookupIPAddr: func(_ context.Context, host string) ([]net.IPAddr, error) {
+			if host == "host1.example.org." {
+				return []net.IPAddr{{IP: net.IPv4(10, 0, 0, 1)}}, nil
+			}
+			if host == "host2.example.org." {
+				return []net.IPAddr{{IP: net.IPv6loopback}}, nil
+			}
+			return nil, nil
+		},
+	}
+
+	var resolved []string
+	res.onChange(func(endpoints []string) {
+		resolved = endpoints
+	})
+	require.NoError(t, res.start(t.Context()))
+	defer func() { require.NoError(t, res.shutdown(t.Context())) }()
+
+	assert.Len(t, resolved, 2)
+	assert.Equal(t, "10.0.0.1:1000", resolved[0])
+	assert.Equal(t, "[::1]:2000", resolved[1])
+}
+
+func TestDNSSRVNoHostname(t *testing.T) {
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "", "", DNSModeSRV, 5*time.Second, 1*time.Second, tb)
+
+	assert.Nil(t, res)
+	assert.Equal(t, errNoHostname, err)
+}
+
+func TestDNSSRVLookupError(t *testing.T) {
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "_svc._tcp.example.org", "", DNSModeSRV, 5*time.Second, 1*time.Second, tb)
+	require.NoError(t, err)
+
+	expectedErr := errors.New("some expected error")
+	res.resolver = &mockDNSResolver{
+		onLookupSRV: func(context.Context, string, string, string) (string, []*net.SRV, error) {
+			return "", nil, expectedErr
+		},
+	}
+
+	// starting should not fail
+	require.NoError(t, res.start(t.Context()))
+	require.NoError(t, res.shutdown(t.Context()))
+}
+
+func TestDNSSRVPartialIPLookupFailure(t *testing.T) {
+	// When one SRV target's A/AAAA lookup fails, the other targets should still be resolved.
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "_svc._tcp.example.org", "", DNSModeSRV, 5*time.Second, 1*time.Second, tb)
+	require.NoError(t, err)
+
+	res.resolver = &mockDNSResolver{
+		onLookupSRV: func(context.Context, string, string, string) (string, []*net.SRV, error) {
+			return "", []*net.SRV{
+				{Target: "healthy.example.org.", Port: 8080},
+				{Target: "broken.example.org.", Port: 9090},
+			}, nil
+		},
+		onLookupIPAddr: func(_ context.Context, host string) ([]net.IPAddr, error) {
+			if host == "healthy.example.org." {
+				return []net.IPAddr{{IP: net.IPv4(10, 0, 0, 1)}}, nil
+			}
+			return nil, errors.New("lookup failed")
+		},
+	}
+
+	var resolved []string
+	res.onChange(func(endpoints []string) {
+		resolved = endpoints
+	})
+	require.NoError(t, res.start(t.Context()))
+	defer func() { require.NoError(t, res.shutdown(t.Context())) }()
+
+	// only the healthy target should appear
+	assert.Len(t, resolved, 1)
+	assert.Equal(t, "10.0.0.1:8080", resolved[0])
+}
+
+func TestDNSSRVTargetWithMultipleIPs(t *testing.T) {
+	// A single SRV target that resolves to multiple A/AAAA records (e.g. round-robin DNS).
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "_svc._tcp.example.org", "", DNSModeSRV, 5*time.Second, 1*time.Second, tb)
+	require.NoError(t, err)
+
+	res.resolver = &mockDNSResolver{
+		onLookupSRV: func(context.Context, string, string, string) (string, []*net.SRV, error) {
+			return "", []*net.SRV{
+				{Target: "multi.example.org.", Port: 4317},
+			}, nil
+		},
+		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
+			return []net.IPAddr{
+				{IP: net.IPv4(10, 0, 0, 1)},
+				{IP: net.IPv4(10, 0, 0, 2)},
+				{IP: net.IPv6loopback},
+			}, nil
+		},
+	}
+
+	var resolved []string
+	res.onChange(func(endpoints []string) {
+		resolved = endpoints
+	})
+	require.NoError(t, res.start(t.Context()))
+	defer func() { require.NoError(t, res.shutdown(t.Context())) }()
+
+	assert.Len(t, resolved, 3)
+	// sorted order
+	assert.Equal(t, "10.0.0.1:4317", resolved[0])
+	assert.Equal(t, "10.0.0.2:4317", resolved[1])
+	assert.Equal(t, "[::1]:4317", resolved[2])
+}
+
+func TestDNSSRVEmptyResult(t *testing.T) {
+	// LookupSRV succeeds but returns zero SRV records.
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "_svc._tcp.example.org", "", DNSModeSRV, 5*time.Second, 1*time.Second, tb)
+	require.NoError(t, err)
+
+	res.resolver = &mockDNSResolver{
+		onLookupSRV: func(context.Context, string, string, string) (string, []*net.SRV, error) {
+			return "", []*net.SRV{}, nil
+		},
+	}
+
+	var resolved []string
+	res.onChange(func(endpoints []string) {
+		resolved = endpoints
+	})
+	require.NoError(t, res.start(t.Context()))
+	defer func() { require.NoError(t, res.shutdown(t.Context())) }()
+
+	assert.Empty(t, resolved)
+}
+
+func TestDNSSRVOnChangeNotCalledOnSameResult(t *testing.T) {
+	// Resolving the same SRV records twice should not trigger onChange a second time.
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "_svc._tcp.example.org", "", DNSModeSRV, 5*time.Second, 1*time.Second, tb)
+	require.NoError(t, err)
+
+	res.resolver = &mockDNSResolver{
+		onLookupSRV: func(context.Context, string, string, string) (string, []*net.SRV, error) {
+			return "", []*net.SRV{
+				{Target: "host1.example.org.", Port: 4317},
+			}, nil
+		},
+		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
+			return []net.IPAddr{{IP: net.IPv4(10, 0, 0, 1)}}, nil
+		},
+	}
+
+	counter := &atomic.Int64{}
+	res.onChange(func([]string) {
+		counter.Add(1)
+	})
+	require.NoError(t, res.start(t.Context()))
+	defer func() { require.NoError(t, res.shutdown(t.Context())) }()
+	require.Equal(t, int64(1), counter.Load())
+
+	// resolve again with the same result — onChange should NOT fire
+	_, err = res.resolve(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), counter.Load())
+
+	// now change the result and resolve — onChange should fire
+	res.resolver = &mockDNSResolver{
+		onLookupSRV: func(context.Context, string, string, string) (string, []*net.SRV, error) {
+			return "", []*net.SRV{
+				{Target: "host1.example.org.", Port: 4317},
+				{Target: "host2.example.org.", Port: 4318},
+			}, nil
+		},
+		onLookupIPAddr: func(_ context.Context, host string) ([]net.IPAddr, error) {
+			if host == "host1.example.org." {
+				return []net.IPAddr{{IP: net.IPv4(10, 0, 0, 1)}}, nil
+			}
+			return []net.IPAddr{{IP: net.IPv4(10, 0, 0, 2)}}, nil
+		},
+	}
+	_, err = res.resolve(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), counter.Load())
+}
+
+func TestDNSSRVPeriodicallyResolve(t *testing.T) {
+	// Periodic resolution should pick up changes in SRV records over time.
+	_, tb := getTelemetryAssets(t)
+	res, err := newDNSResolver(zap.NewNop(), "_svc._tcp.example.org", "", DNSModeSRV, 10*time.Millisecond, 1*time.Second, tb)
+	require.NoError(t, err)
+
+	counter := &atomic.Int64{}
+	resolve := [][]*net.SRV{
+		{{Target: "host1.example.org.", Port: 4317}},
+		{{Target: "host1.example.org.", Port: 4317}, {Target: "host2.example.org.", Port: 4318}},
+	}
+	res.resolver = &mockDNSResolver{
+		onLookupSRV: func(context.Context, string, string, string) (string, []*net.SRV, error) {
+			idx := counter.Load()
+			if int(idx) >= len(resolve) {
+				return "", resolve[len(resolve)-1], nil
+			}
+			return "", resolve[idx], nil
+		},
+		onLookupIPAddr: func(_ context.Context, host string) ([]net.IPAddr, error) {
+			if host == "host1.example.org." {
+				return []net.IPAddr{{IP: net.IPv4(10, 0, 0, 1)}}, nil
+			}
+			return []net.IPAddr{{IP: net.IPv4(10, 0, 0, 2)}}, nil
+		},
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	res.onChange(func([]string) {
+		counter.Add(1)
+		wg.Done()
+	})
+
+	require.NoError(t, res.start(t.Context()))
+	defer func() { require.NoError(t, res.shutdown(t.Context())) }()
+
+	// wait for initial + one periodic resolution that sees the changed list
+	wg.Wait()
+
+	assert.GreaterOrEqual(t, counter.Load(), int64(2))
+	assert.Len(t, res.endpoints, 2)
 }

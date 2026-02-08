@@ -87,13 +87,18 @@ To avoid a single point of failure, requests can be distributed among multiple C
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the exporter.
 
 * The `otlp` property configures the template used for building the OTLP exporter. Refer to the OTLP Exporter documentation for information on which options are available. Note that the `endpoint` property should not be set and will be overridden by this exporter with the backend endpoint.
-* The `resolver` accepts a `static` node, a `dns`, a `k8s` service or `aws_cloud_map`. If all four are specified, an `errMultipleResolversProvided` error will be thrown.
+* The `resolver` accepts a `static` node, a `dns`, a `dnssrv`, a `k8s` service or `aws_cloud_map`.
 * The `hostname` property inside a `dns` node specifies the hostname to query in order to obtain the list of IP addresses.
 * The `dns` node also accepts the following optional properties:
   * `hostname` DNS hostname to resolve.
   * `port` port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 4317 is used.
   * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1s` will be used.
+* The `dnssrv` node performs DNS SRV lookups and resolves each SRV target to IP addresses via A/AAAA queries. It accepts:
+  * `hostname` SRV record to query, e.g. `_grpc._tcp.my-service.svc` or `_service._tcp.example.org`.
+  * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
+  * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1s` will be used.
+  * **Note:** Port numbers come from the SRV records; no port configuration is needed.
 * The `k8s` node accepts the following optional properties:
   * `service` Kubernetes service to resolve, e.g. `lb-svc.lb-ns`. If no namespace is specified, an attempt will be made to infer the namespace for this collector, and if this fails it will fall back to the `default` namespace.
   * `ports` port to be used for exporting the traces to the addresses resolved from `service`. If `ports` is not specified, the default port 4317 is used. When multiple ports are specified, two backends are added to the load balancer as if they were at different pods.
@@ -151,9 +156,13 @@ exporters:
         - backend-2:4317
         - backend-3:4317
         - backend-4:4317
-      # Notice to config a headless service DNS in Kubernetes
+      # DNS-based resolution (A/AAAA queries)
       # dns:
-      #  hostname: otelcol-headless.observability.svc.cluster.local
+      #   hostname: otelcol-headless.observability.svc.cluster.local
+      #   port: "4317"
+      # DNS SRV-based resolution (SRV + A/AAAA queries)
+      # dnssrv:
+      #   hostname: _grpc._tcp.otelcol.observability.svc.cluster.local
 
 service:
   pipelines:

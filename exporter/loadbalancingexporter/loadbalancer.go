@@ -50,6 +50,9 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 	if oCfg.Resolver.DNS.HasValue() {
 		count++
 	}
+	if oCfg.Resolver.DNSSRV.HasValue() {
+		count++
+	}
 	if oCfg.Resolver.Static.HasValue() {
 		count++
 	}
@@ -83,8 +86,27 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 			dnsLogger,
 			dnsResolver.Hostname,
 			dnsResolver.Port,
+			DNSModeStandard,
 			dnsResolver.Interval,
 			dnsResolver.Timeout,
+			telemetry,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if oCfg.Resolver.DNSSRV.HasValue() {
+		srvResolver := oCfg.Resolver.DNSSRV.Get()
+		srvLogger := logger.With(zap.String("resolver", "dnssrv"))
+
+		var err error
+		res, err = newDNSResolver(
+			srvLogger,
+			srvResolver.Hostname,
+			"",
+			DNSModeSRV,
+			srvResolver.Interval,
+			srvResolver.Timeout,
 			telemetry,
 		)
 		if err != nil {
