@@ -18,9 +18,6 @@ type CRDConfig struct {
 	Version string `mapstructure:"version"`
 	// Kind is the kind of the CRD (e.g., "MyResource").
 	Kind string `mapstructure:"kind"`
-	// Namespaces limits the namespaces for the observed CRD. If empty, all namespaces will be observed.
-	// This overrides the global Namespaces setting for this specific CRD.
-	Namespaces []string `mapstructure:"namespaces"`
 }
 
 // Validate checks if the CRD configuration is valid.

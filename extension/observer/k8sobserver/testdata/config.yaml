@@ -18,9 +18,6 @@ k8s_observer/observe-crds:
   - group: example.com
     version: v1alpha1
     kind: Widget
-    namespaces:
-    - production
-    - staging
 k8s_observer/observe-crds-only:
   auth_type: none
   observe_pods: false

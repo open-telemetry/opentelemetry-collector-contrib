@@ -60,10 +60,9 @@ func TestLoadConfig(t *testing.T) {
 						Kind:    "MyResource",
 					},
 					{
-						Group:      "example.com",
-						Version:    "v1alpha1",
-						Kind:       "Widget",
-						Namespaces: []string{"production", "staging"},
+						Group:   "example.com",
+						Version: "v1alpha1",
+						Kind:    "Widget",
 					},
 				},
 			},
