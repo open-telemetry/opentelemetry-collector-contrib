@@ -251,11 +251,8 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 				zap.String("kind", crdConfig.Kind),
 				zap.String("resource", resource))
 
-			// Determine namespaces to watch
-			namespaces := crdConfig.Namespaces
-			if len(namespaces) == 0 {
-				namespaces = config.Namespaces
-			}
+			// Use global namespaces setting for CRDs
+			namespaces := config.Namespaces
 
 			if len(namespaces) == 0 {
 				// Watch all namespaces

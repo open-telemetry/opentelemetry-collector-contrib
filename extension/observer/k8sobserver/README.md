@@ -77,7 +77,7 @@ All fields are optional.
 | observe_services  | bool        | `false`          | Whether to report observer k8s.service endpoints.|
 | observe_ingresses | bool        | `false`          | Whether to report observer k8s.ingress endpoints.|
 | observe_crds      | []CRDConfig | `[]`             | List of Custom Resource Definitions to observe. See [Observing Custom Resources](#observing-custom-resources) below. |
-| namespaces        | []string    | `[]`             | List of namespaces to retrieve resources from. If not set, all namespaces will be observed. Does not apply for nodes, as those are not namespaced resources. |
+| namespaces        | []string    | `[]`             | List of namespaces to retrieve resources from. If not set, all namespaces will be observed. Does not apply for nodes, as those are not namespaced resources. Applies to pods, services, ingresses, and CRDs. |
 
 More complete configuration examples on how to use this observer along with the `receiver_creator`,
 can be found at the [Receiver Creator](../../../receiver/receivercreator/README.md)'s documentation.
@@ -92,7 +92,6 @@ Each CRD configuration requires the following fields:
 | group      | string   | Yes      | The API group of the CRD (e.g., `mycompany.io`). |
 | version    | string   | Yes      | The API version of the CRD (e.g., `v1`, `v1alpha1`). |
 | kind       | string   | Yes      | The kind of the CRD (e.g., `MyResource`). |
-| namespaces | []string | No       | List of namespaces to observe for this CRD. Overrides the global `namespaces` setting. |
 
 #### CRD Example Config
 
@@ -108,9 +107,6 @@ extensions:
       - group: example.com
         version: v1alpha1
         kind: CacheCluster
-        namespaces:
-          - production
-          - staging
 
 receivers:
   receiver_creator:
