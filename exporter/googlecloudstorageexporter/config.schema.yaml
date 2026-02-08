@@ -3,6 +3,9 @@ properties:
   bucket:
     type: object
     properties:
+      compression:
+        description: 'Compression sets the algorithm used to process the payload before uploading to GCS. Valid values are: `gzip`, `zstd`, or no value set.'
+        $ref: go.opentelemetry.io/collector/config/configcompression.type
       file_prefix:
         description: 'FilePrefix holds the prefix for the created filename. This prefix is applied after the partition path (if any). Example: file_prefix: "logs" Result: ".../logs_UUID"'
         type: string

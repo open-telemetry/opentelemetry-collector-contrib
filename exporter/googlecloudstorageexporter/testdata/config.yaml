@@ -29,3 +29,27 @@ googlecloudstorage/invalid_partition_format:
     project_id: test-project-id
     partition:
       format: year=%invalid
+
+googlecloudstorage/with_gzip_compression:
+  encoding: test
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+    compression: gzip
+
+googlecloudstorage/with_zstd_compression:
+  encoding: test
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+    compression: zstd
+
+googlecloudstorage/unsupported_compression:
+  encoding: test
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+    compression: snappy
