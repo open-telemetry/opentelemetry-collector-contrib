@@ -27,12 +27,15 @@ type Config struct {
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Deprecated - Transport option will be removed in v0.102.0
-	Hosts            []confignet.TCPAddrConfig `mapstructure:"hosts"`
-	Username         string                    `mapstructure:"username"`
-	Password         configopaque.String       `mapstructure:"password"`
-	ReplicaSet       string                    `mapstructure:"replica_set,omitempty"`
-	Timeout          time.Duration             `mapstructure:"timeout"`
-	DirectConnection bool                      `mapstructure:"direct_connection"`
+	Hosts                   []confignet.TCPAddrConfig `mapstructure:"hosts"`
+	Username                string                    `mapstructure:"username"`
+	Password                configopaque.String       `mapstructure:"password"`
+	AuthMechanism           string                    `mapstructure:"auth_mechanism,omitempty"`
+	AuthSource              string                    `mapstructure:"auth_source,omitempty"`
+	AuthMechanismProperties map[string]string         `mapstructure:"auth_mechanism_properties,omitempty"`
+	ReplicaSet              string                    `mapstructure:"replica_set,omitempty"`
+	Timeout                 time.Duration             `mapstructure:"timeout"`
+	DirectConnection        bool                      `mapstructure:"direct_connection"`
 }
 
 func (c *Config) Validate() error {
@@ -72,11 +75,26 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 			clientOptions.SetConnectTimeout(c.Timeout)
 		}
 
-		if c.Username != "" && c.Password != "" {
-			clientOptions.SetAuth(options.Credential{
-				Username: c.Username,
-				Password: string(c.Password),
-			})
+		// Set up authentication if username/password are provided or if an auth mechanism is specified
+		// Some mechanisms (e.g., MONGODB-X509, MONGODB-AWS with IAM) don't require username/password
+		if c.Username != "" && c.Password != "" || c.AuthMechanism != "" {
+			credential := options.Credential{}
+			if c.Username != "" {
+				credential.Username = c.Username
+			}
+			if c.Password != "" {
+				credential.Password = string(c.Password)
+			}
+			if c.AuthMechanism != "" {
+				credential.AuthMechanism = c.AuthMechanism
+			}
+			if c.AuthSource != "" {
+				credential.AuthSource = c.AuthSource
+			}
+			if len(c.AuthMechanismProperties) > 0 {
+				credential.AuthMechanismProperties = c.AuthMechanismProperties
+			}
+			clientOptions.SetAuth(credential)
 		}
 
 		return clientOptions
@@ -102,11 +120,26 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		clientOptions.SetDirect(c.DirectConnection)
 	}
 
-	if c.Username != "" && c.Password != "" {
-		clientOptions.SetAuth(options.Credential{
-			Username: c.Username,
-			Password: string(c.Password),
-		})
+	// Set up authentication if username/password are provided or if an auth mechanism is specified
+	// Some mechanisms (e.g., MONGODB-X509, MONGODB-AWS with IAM) don't require username/password
+	if c.Username != "" && c.Password != "" || c.AuthMechanism != "" {
+		credential := options.Credential{}
+		if c.Username != "" {
+			credential.Username = c.Username
+		}
+		if c.Password != "" {
+			credential.Password = string(c.Password)
+		}
+		if c.AuthMechanism != "" {
+			credential.AuthMechanism = c.AuthMechanism
+		}
+		if c.AuthSource != "" {
+			credential.AuthSource = c.AuthSource
+		}
+		if len(c.AuthMechanismProperties) > 0 {
+			credential.AuthMechanismProperties = c.AuthMechanismProperties
+		}
+		clientOptions.SetAuth(credential)
 	}
 
 	return clientOptions
