@@ -1,0 +1,13 @@
+type: exporter_creator
+
+status:
+  class: exporter
+  stability:
+    development: [logs, metrics, traces]
+  distributions: []
+  codeowners:
+    active: [stu]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
