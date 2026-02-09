@@ -23,10 +23,11 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                         metric.Meter
-	mu                            sync.Mutex
-	registrations                 []metric.Registration
-	ExporterCreatorExportersCount metric.Int64Gauge
+	meter                                       metric.Meter
+	mu                                          sync.Mutex
+	registrations                               []metric.Registration
+	ExporterCreatorExportersCount               metric.Int64Gauge
+	ExporterCreatorNonroutableMetricPointsTotal metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -62,6 +63,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_creator_exporters_count",
 		metric.WithDescription("Current number of exporters created by the exporter_creator. [Development]"),
 		metric.WithUnit("{exporters}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterCreatorNonroutableMetricPointsTotal, err = builder.meter.Int64Counter(
+		"otelcol_exporter_creator_nonroutable_metric_points_total",
+		metric.WithDescription("Total number of metric points that could not be routed to any exporter. [Development]"),
+		metric.WithUnit("{metric_points}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

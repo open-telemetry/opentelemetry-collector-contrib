@@ -1,0 +1,59 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: exporters.telemetry.opentelemetry.io
+spec:
+  group: telemetry.opentelemetry.io
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                exporterType:
+                  type: string
+                  description: Type of exporter to create (e.g., otlp, prometheusremotewrite, influxdb)
+                endpoint:
+                  type: string
+                  description: Endpoint URL for the exporter
+                tls:
+                  type: object
+                  properties:
+                    insecure:
+                      type: boolean
+                    insecure_skip_verify:
+                      type: boolean
+                config:
+                  type: object
+                  description: Additional exporter-specific configuration
+                  properties:
+                    compression:
+                      type: string
+                    org:
+                      type: string
+                    bucket:
+                      type: string
+                    token:
+                      type: string
+                    resource_to_telemetry_conversion:
+                      type: object
+                      properties:
+                        enabled:
+                          type: boolean
+                resourceAttributes:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Resource attributes to match for routing telemetry to this exporter
+  scope: Namespaced
+  names:
+    plural: exporters
+    singular: exporter
+    kind: Exporter
+    shortNames:
+      - exp

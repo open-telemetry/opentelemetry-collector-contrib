@@ -13,3 +13,11 @@ Current number of exporters created by the exporter_creator. [Development]
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {exporters} | Gauge | Int | Development |
+
+### otelcol_exporter_creator_nonroutable_metric_points_total
+
+Total number of metric points that could not be routed to any exporter. [Development]
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {metric_points} | Sum | Int | true | Development |

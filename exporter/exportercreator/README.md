@@ -95,7 +95,3 @@ config:
   endpoint: '`labels["collector-endpoint"]`'
   topic: '`annotations["kafka.topic"]`'
 ```
-
-## Examples
-
-See the examples in the [plan documentation](.cursor/plans/exportercreator_component_c4b7642a.plan.md) for detailed use cases.

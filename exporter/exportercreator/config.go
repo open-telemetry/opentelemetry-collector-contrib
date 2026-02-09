@@ -49,8 +49,11 @@ type exporterTemplate struct {
 	// ResourceAttributes is a map of resource attributes to associate with this exporter's endpoint.
 	// It can contain expr expressions for endpoint env value expansion.
 	ResourceAttributes map[string]any `mapstructure:"resource_attributes"`
-	rule               rule
-	signals            exporterSignals
+	// Signals specifies which signal types (logs, metrics, traces) this exporter should handle.
+	// If not specified, all signals are enabled by default.
+	Signals exporterSignals `mapstructure:"signals"`
+	rule    rule
+	signals exporterSignals
 }
 
 // newExporterTemplate creates an exporterTemplate instance from the full name of a subexporter
@@ -155,6 +158,11 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 			if _, ok := v.(string); !ok {
 				return fmt.Errorf("unsupported `resource_attributes` %q value %v in %s", k, v, subexporterKey)
 			}
+		}
+
+		// If Signals was configured, use it; otherwise use the default (all enabled)
+		if subexporter.Signals != (exporterSignals{}) {
+			subexporter.signals = subexporter.Signals
 		}
 
 		cfg.exporterTemplates[subexporterKey] = subexporter

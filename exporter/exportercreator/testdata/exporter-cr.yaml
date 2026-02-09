@@ -1,0 +1,65 @@
+apiVersion: telemetry.opentelemetry.io/v1alpha1
+kind: Exporter
+metadata:
+  name: prometheus-remote-write-exporter
+  namespace: default
+  labels:
+    app: prometheus
+    environment: production
+  annotations:
+    description: "Prometheus Remote Write exporter for production metrics"
+spec:
+  exporterType: prometheusremotewrite
+  endpoint: https://prometheus-remote-write.example.com/api/v1/write
+  tls:
+    insecure: false
+    insecure_skip_verify: false
+  config:
+    resource_to_telemetry_conversion:
+      enabled: true
+  resourceAttributes:
+    generator: prometheus
+    environment: production
+
+---
+apiVersion: telemetry.opentelemetry.io/v1alpha1
+kind: Exporter
+metadata:
+  name: otlp-exporter
+  namespace: default
+  labels:
+    app: otlp
+    environment: staging
+spec:
+  exporterType: otlp
+  endpoint: https://otlp-collector.example.com:4317
+  tls:
+    insecure: true
+  config:
+    compression: gzip
+  resourceAttributes:
+    generator: otlp
+    environment: staging
+
+---
+apiVersion: telemetry.opentelemetry.io/v1alpha1
+kind: Exporter
+metadata:
+  name: influxdb-exporter
+  namespace: default
+  labels:
+    app: influxdb
+    environment: development
+spec:
+  exporterType: influxdb
+  endpoint: http://influxdb.example.com:8086
+  tls:
+    insecure: true
+    insecure_skip_verify: true
+  config:
+    org: my-org
+    bucket: telemetry
+    token: secret-token
+  resourceAttributes:
+    generator: influxdb
+    environment: development

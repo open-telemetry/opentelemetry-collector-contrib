@@ -22,10 +22,10 @@ type rule struct {
 
 // ruleRe is used to verify the rule starts type check.
 var ruleRe = regexp.MustCompile(
-	fmt.Sprintf(`^type\s*==\s*(%q|%q|%q|%q|%q|%q|%q|%q|%q|%q)`,
+	fmt.Sprintf(`^type\s*==\s*(%q|%q|%q|%q|%q|%q|%q|%q|%q|%q|%q)`,
 		observer.PodType, observer.K8sServiceType, observer.K8sIngressType, observer.PortType,
 		observer.PodContainerType, observer.HostPortType, observer.ContainerType,
-		observer.K8sNodeType, observer.KafkaTopicType, observer.K8sCRDType),
+		observer.K8sNodeType, observer.KafkaTopicType, observer.K8sCRDType, observer.JSONFileType),
 )
 
 // newRule creates a new rule instance.

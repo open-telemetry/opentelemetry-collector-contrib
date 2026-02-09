@@ -34,3 +34,19 @@ func AssertEqualExporterCreatorExportersCount(t *testing.T, tt *componenttest.Te
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
+
+func AssertEqualExporterCreatorNonroutableMetricPointsTotal(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_creator_nonroutable_metric_points_total",
+		Description: "Total number of metric points that could not be routed to any exporter. [Development]",
+		Unit:        "{metric_points}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_creator_nonroutable_metric_points_total")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
