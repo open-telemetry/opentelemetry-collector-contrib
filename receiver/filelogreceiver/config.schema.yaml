@@ -1,0 +1,5 @@
+description: FileLogConfig defines configuration for the filelog receiver
+type: object
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file.config
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.base_config

@@ -4,9 +4,12 @@
 package container
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
@@ -84,6 +87,8 @@ func TestInternalRecombineCfg(t *testing.T) {
 	expected.CombineWith = ""
 	expected.SourceIdentifier = entry.NewAttributeField(attrs.LogFilePath)
 	expected.MaxLogSize = 102400
+	expected.MaxBatchSize = 0
+	expected.MaxUnmatchedBatchSize = 0
 	require.Equal(t, expected, cfg)
 }
 
@@ -723,6 +728,245 @@ func TestProcessWithOnErrorSendQuiet(t *testing.T) {
 	})
 }
 
+// TestDockerProcessBatchDoesNotSplitBatches verifies that the container parser processes
+// batches of docker entries without splitting them into individual entries.
+func TestDockerProcessBatchDoesNotSplitBatches(t *testing.T) {
+	output := &testutil.Operator{}
+	output.On("ID").Return("test-output")
+	output.On("CanProcess").Return(true)
+	output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = false
+	cfg.Format = "docker"
+	cfg.OutputIDs = []string{"test-output"}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, op.Stop()) }()
+
+	err = op.SetOutputs([]operator.Operator{output})
+	require.NoError(t, err)
+
+	ctx := t.Context()
+
+	entry1 := entry.New()
+	entry1.Body = `{"log":"INFO: first line","stream":"stdout","time":"2029-03-30T08:31:20.545Z"}`
+
+	entry2 := entry.New()
+	entry2.Body = `{"log":"INFO: second line","stream":"stderr","time":"2029-03-30T08:31:21.545Z"}`
+
+	entry3 := entry.New()
+	entry3.Body = `{"log":"INFO: third line","stream":"stdout","time":"2029-03-30T08:31:22.545Z"}`
+
+	testEntries := []*entry.Entry{entry1, entry2, entry3}
+
+	err = op.ProcessBatch(ctx, testEntries)
+	require.NoError(t, err)
+
+	// Verify that ProcessBatch was called exactly once with all entries
+	// This proves that the batch was not split into individual entries
+	output.AssertCalled(t, "ProcessBatch", ctx, mock.MatchedBy(func(entries []*entry.Entry) bool {
+		return len(entries) == 3
+	}))
+	output.AssertNumberOfCalls(t, "ProcessBatch", 1)
+}
+
+// TestDockerProcessBatchWithSkippedEntries verifies that when some entries are skipped
+// by an if condition, the remaining entries are still processed as a batch.
+func TestDockerProcessBatchWithSkippedEntries(t *testing.T) {
+	output := &testutil.Operator{}
+	output.On("ID").Return("test-output")
+	output.On("CanProcess").Return(true)
+	output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
+
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = false
+	cfg.Format = "docker"
+	cfg.IfExpr = `attributes["process"] == "true"`
+	cfg.OutputIDs = []string{"test-output"}
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, op.Stop()) }()
+
+	err = op.SetOutputs([]operator.Operator{output})
+	require.NoError(t, err)
+
+	ctx := t.Context()
+
+	entry1 := entry.New()
+	entry1.Body = `{"log":"INFO: first line","stream":"stdout","time":"2029-03-30T08:31:20.545Z"}`
+	entry1.Attributes = map[string]any{"process": "true"}
+
+	entry2 := entry.New()
+	entry2.Body = `not a docker log - should be skipped`
+	entry2.Attributes = map[string]any{"process": "false"}
+
+	entry3 := entry.New()
+	entry3.Body = `{"log":"INFO: third line","stream":"stdout","time":"2029-03-30T08:31:22.545Z"}`
+	entry3.Attributes = map[string]any{"process": "true"}
+
+	testEntries := []*entry.Entry{entry1, entry2, entry3}
+
+	err = op.ProcessBatch(ctx, testEntries)
+	require.NoError(t, err)
+
+	// All entries (2 processed + 1 skipped) should be sent in a single batch
+	output.AssertCalled(t, "ProcessBatch", ctx, mock.MatchedBy(func(entries []*entry.Entry) bool {
+		return len(entries) == 3
+	}))
+	output.AssertNumberOfCalls(t, "ProcessBatch", 1)
+}
+
+// TestCRIProcessBatchDoesNotSplitBatches verifies that the container parser processes
+// batches of CRI entries without splitting them.
+func TestCRIProcessBatchDoesNotSplitBatches(t *testing.T) {
+	cases := []struct {
+		name           string
+		format         string
+		input          []*entry.Entry
+		expectedOutput []*entry.Entry
+	}{
+		{
+			name:   "crio_standalone_batch",
+			format: "",
+			input: []*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169-10:00 stdout F first crio line`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:38.505201169-10:00 stdout F second crio line`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+			},
+			expectedOutput: []*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "F",
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Body: "first crio line",
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.FixedZone("", -10*60*60)),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "F",
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Body: "second crio line",
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 38, 505201169, time.FixedZone("", -10*60*60)),
+				},
+			},
+		},
+		{
+			name:   "containerd_standalone_batch",
+			format: "",
+			input: []*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout F first containerd line`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:38.505201169Z stdout F second containerd line`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+			},
+			expectedOutput: []*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "F",
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Body: "first containerd line",
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "F",
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Body: "second containerd line",
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 38, 505201169, time.UTC),
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			cfg := NewConfigWithID("test_id")
+			cfg.AddMetadataFromFilePath = true
+			if tc.format != "" {
+				cfg.Format = tc.format
+			}
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
+			require.NoError(t, err)
+			defer func() { require.NoError(t, op.Stop()) }()
+			r := op.(*Parser)
+
+			fake := testutil.NewFakeOutput(t)
+			r.OutputOperators = []operator.Operator{fake}
+
+			err = r.ProcessBatch(ctx, tc.input)
+			require.NoError(t, err)
+
+			fake.ExpectEntries(t, tc.expectedOutput)
+
+			select {
+			case e := <-fake.Received:
+				require.FailNow(t, "Received unexpected entry: ", "%+v", e)
+			default:
+			}
+		})
+	}
+}
+
 func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 	cases := []struct {
 		name           string
@@ -881,5 +1125,178 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 			default:
 			}
 		})
+	}
+}
+
+func TestMaxLogSizeRecombine(t *testing.T) {
+	const (
+		partialSize = 600 * 1024 // 600KB per partial entry
+		oneMiB      = 1024 * 1024
+	)
+
+	filePath := "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log"
+	largeContent := strings.Repeat("x", partialSize)
+
+	makeCRIOEntry := func(content, tag string) *entry.Entry {
+		return &entry.Entry{
+			Body: fmt.Sprintf("2024-04-13T07:59:37.505201169-10:00 stdout %s %s", tag, content),
+			Attributes: map[string]any{
+				attrs.LogFilePath: filePath,
+			},
+		}
+	}
+
+	cases := []struct {
+		name     string
+		op       func() (operator.Operator, error)
+		input    []*entry.Entry
+		validate func(t *testing.T, fake *testutil.FakeOutput)
+	}{
+		{
+			"default_1MiB_limit_flushes_oversized_logs",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = true
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			[]*entry.Entry{
+				makeCRIOEntry(largeContent, "P"),
+				makeCRIOEntry(largeContent, "P"),
+				makeCRIOEntry("final", "F"),
+			},
+			func(t *testing.T, fake *testutil.FakeOutput) {
+				// First entry: flushed due to size limit
+				select {
+				case e := <-fake.Received:
+					body, _ := e.Body.(string)
+					require.Greater(t, len(body), partialSize)
+					require.Contains(t, e.Attributes, "log.iostream")
+				case <-time.After(time.Second):
+					require.FailNow(t, "Timed out waiting for first entry")
+				}
+
+				// Second entry: final content
+				select {
+				case e := <-fake.Received:
+					body, _ := e.Body.(string)
+					require.Equal(t, "final", body)
+					require.Contains(t, e.Attributes, "log.iostream")
+				case <-time.After(time.Second):
+					require.FailNow(t, "Timed out waiting for second entry")
+				}
+			},
+		},
+		{
+			"zero_allows_unlimited_batching",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = true
+				cfg.MaxLogSize = 0 // Unlimited
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			[]*entry.Entry{
+				makeCRIOEntry(largeContent, "P"),
+				makeCRIOEntry(largeContent, "P"),
+				makeCRIOEntry("final", "F"),
+			},
+			func(t *testing.T, fake *testutil.FakeOutput) {
+				// Single combined entry exceeding 1MiB
+				select {
+				case e := <-fake.Received:
+					body, _ := e.Body.(string)
+					require.Greater(t, len(body), oneMiB)
+					require.Contains(t, body, "final")
+					require.Contains(t, e.Attributes, "log.iostream")
+				case <-time.After(time.Second):
+					require.FailNow(t, "Timed out waiting for combined entry")
+				}
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			op, err := tc.op()
+			require.NoError(t, err)
+			defer func() { require.NoError(t, op.Stop()) }()
+
+			r := op.(*Parser)
+			fake := testutil.NewFakeOutput(t)
+			r.OutputOperators = []operator.Operator{fake}
+
+			for _, e := range tc.input {
+				require.NoError(t, r.Process(ctx, e))
+			}
+
+			tc.validate(t, fake)
+
+			select {
+			case e := <-fake.Received:
+				require.FailNow(t, "Received unexpected entry: ", "%+v", e)
+			default:
+			}
+		})
+	}
+}
+
+func TestUnlimitedBatchSize(t *testing.T) {
+	const (
+		numPartialEntries = 1100
+	)
+
+	filePath := "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log"
+
+	makeCRIOEntry := func(content, tag string) *entry.Entry {
+		return &entry.Entry{
+			Body: fmt.Sprintf("2024-04-13T07:59:37.505201169-10:00 stdout %s %s", tag, content),
+			Attributes: map[string]any{
+				attrs.LogFilePath: filePath,
+			},
+		}
+	}
+
+	ctx := t.Context()
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = true
+	cfg.MaxLogSize = 0
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, op.Stop()) }()
+
+	r := op.(*Parser)
+	fake := testutil.NewFakeOutput(t)
+	r.OutputOperators = []operator.Operator{fake}
+
+	input := make([]*entry.Entry, 0, numPartialEntries+1)
+	for i := range numPartialEntries {
+		input = append(input, makeCRIOEntry(fmt.Sprintf("part%d", i), "P"))
+	}
+	input = append(input, makeCRIOEntry("final", "F"))
+
+	for _, e := range input {
+		require.NoError(t, r.Process(ctx, e))
+	}
+
+	select {
+	case e := <-fake.Received:
+		body, ok := e.Body.(string)
+		require.True(t, ok)
+		require.Contains(t, body, "part0", "Should contain first partial entry")
+		require.Contains(t, body, "part1099", "Should contain last partial entry (1100th)")
+		require.Contains(t, body, "final", "Should contain final entry")
+		partCount := strings.Count(body, "part")
+		require.Equal(t, numPartialEntries, partCount, "All %d partial entries should be in single combined log", numPartialEntries)
+	case <-time.After(3 * time.Second):
+		require.FailNow(t, "Timed out waiting for combined entry")
+	}
+
+	select {
+	case e := <-fake.Received:
+		require.FailNow(t, "Received unexpected second entry - batch was incorrectly split", "entry: %+v", e)
+	default:
 	}
 }

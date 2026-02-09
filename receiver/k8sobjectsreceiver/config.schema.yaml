@@ -1,0 +1,51 @@
+$defs:
+  error_mode:
+    type: string
+  k_8_s_objects_config:
+    type: object
+    properties:
+      exclude_namespaces:
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      exclude_watch_type:
+        type: array
+        items:
+          type: string
+          x-customType: k8s.io/apimachinery/pkg/watch.EventType
+      field_selector:
+        type: string
+      group:
+        type: string
+      interval:
+        type: string
+        format: duration
+      label_selector:
+        type: string
+      mode:
+        type: string
+      name:
+        type: string
+      namespaces:
+        type: array
+        items:
+          type: string
+      resource_version:
+        type: string
+type: object
+properties:
+  error_mode:
+    $ref: error_mode
+  include_initial_state:
+    type: boolean
+  k8s_leader_elector:
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+  objects:
+    type: array
+    items:
+      x-pointer: true
+      $ref: k_8_s_objects_config
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig.api_config

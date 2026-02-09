@@ -1,0 +1,59 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/XXXX-YYYYY-ZZZZ/RESOURCEGROUPS/TESTGROUP/PROVIDERS/MICROSOFT.SERVICEBUS/NAMESPACES/NAMESPACE
+        - key: cloud.region
+          value:
+            stringValue: East US
+        - key: service.namespace
+          value:
+            stringValue: namespace-name
+        - key: deployment.environment.name
+          value:
+            stringValue: PROD
+        - key: cloud.account.id
+          value:
+            stringValue: 0000000-0000-0000-0000-000000000000
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: VNetAndIPFilteringLogs
+              - key: azure.autoscale.unit
+                value:
+                  stringValue: PROD-BL2-002
+              - key: log.record.uid
+                value:
+                  stringValue: 5caef1dc-732b-4c9f-a940-a585a28d20e6
+              - key: messaging.system
+                value:
+                  stringValue: servicebus
+              - key: azure.operation.name
+                value:
+                  stringValue: Retrieve Namespace
+              - key: client.address
+                value:
+                  stringValue: 1.2.3.4
+              - key: security_rule.action
+                value:
+                  stringValue: Accept Connection
+              - key: security_rule.evaluation.reason
+                value:
+                  stringValue: IP is accepted by IPAddress filter.
+              - key: security_rule.evaluation.count
+                value:
+                  intValue: "1"
+            body: {}
+            timeUnixNano: "1609533606000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
