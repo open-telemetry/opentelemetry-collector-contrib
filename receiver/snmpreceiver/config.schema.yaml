@@ -1,0 +1,178 @@
+$defs:
+  attribute:
+    description: Attribute is a connection between a metric configuration and an AttributeConfig
+    type: object
+    properties:
+      name:
+        description: Name is required and should match the key for an AttributeConfig
+        type: string
+      value:
+        description: Value is optional and is only needed for a matched AttributeConfig's with enum value. Value should match one of the AttributeConfig's enum values in this case
+        type: string
+  attribute_config:
+    description: AttributeConfig contains config info about all of the metric attributes that will be used by this receiver.
+    type: object
+    properties:
+      description:
+        description: Description is optional and describes what the attribute represents
+        type: string
+      enum:
+        description: Enum is required only if OID and IndexedValuePrefix are not defined. This contains a list of possible values that can be associated with this attribute
+        type: array
+        items:
+          type: string
+      indexed_value_prefix:
+        description: IndexedValuePrefix is required only if Enum and OID are not defined. This is used alongside metrics with ColumnOIDs to assign attribute values using this prefix + the OID index of the metric value
+        type: string
+      oid:
+        description: OID is required only if Enum and IndexedValuePrefix are not defined. This is the column OID which will provide indexed values to be used for this attribute (alongside a metric with ColumnOIDs)
+        type: string
+      value:
+        description: Value is optional, and will allow for a different attribute key other than the attribute name
+        type: string
+  column_oid:
+    description: ColumnOID holds OID info for an indexed metric as well as any attributes or resource attributes that are attached to it
+    type: object
+    properties:
+      attributes:
+        description: Attributes is required only if there are no ResourceAttributes associated defined here. Valid values are non enum AttributeConfig names that will be used to differentiate the indexed values for the column OID
+        type: array
+        items:
+          $ref: attribute
+      oid:
+        description: OID is required and is the column OID that is associated with a metric
+        type: string
+      resource_attributes:
+        description: ResourceAttributes is required only if there are no Attributes associated with non enum AttributeConfigs defined here. Valid values are ResourceAttributeConfig names that will be used to differentiate the indexed values for the column OID
+        type: array
+        items:
+          type: string
+  gauge_metric:
+    description: GaugeMetric contains info about the value of the gauge metric
+    type: object
+    properties:
+      value_type:
+        description: ValueType is required and can be either int or double
+        type: string
+  metric_config:
+    description: MetricConfig contains config info about a given metric
+    type: object
+    properties:
+      column_oids:
+        type: array
+        items:
+          $ref: column_oid
+      description:
+        description: Description is optional and describes what this metric represents
+        type: string
+      gauge:
+        description: Either Gauge or Sum config is required
+        x-pointer: true
+        $ref: gauge_metric
+      scalar_oids:
+        description: Either ScalarOIDs or ColumnOIDs is required. ScalarOIDs is used if one or more scalar OID values is used for this metric. ColumnOIDs is used if one or more column OID indexed set of values is used for this metric.
+        type: array
+        items:
+          $ref: scalar_oid
+      sum:
+        x-pointer: true
+        $ref: sum_metric
+      unit:
+        description: Unit is required
+        type: string
+  resource_attribute_config:
+    description: ResourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.
+    type: object
+    properties:
+      description:
+        description: Description is optional and describes what the resource attribute represents
+        type: string
+      indexed_value_prefix:
+        description: 'IndexedValuePrefix is required only if OID or ScalarOID is not set. This will be used alongside indexed metric values for this resource attribute. The prefix value concatenated with specific indexes of metric indexed values (Ex: prefix.1.2) will ultimately each be associated with a different "resource" as an attribute on that resource. The related indexed metric values will then be used to associate metric datapoints to those resources.'
+        type: string
+      oid:
+        description: OID is required only if ScalarOID or IndexedValuePrefix is not set. This is the column OID which will provide indexed values to be used for this resource attribute. These indexed values will ultimately each be associated with a different "resource" as an attribute on that resource. Indexed metric values will then be used to associate metric datapoints to the matching "resource" (based on matching indexes).
+        type: string
+      scalar_oid:
+        description: ScalarOID is required only if OID or IndexedValuePrefix is not set. This is the scalar OID which will provide a value to be used for this resource attribute. Single or indexed metrics can then be associated with the resource. (Indexed metrics also need an indexed attribute or resource attribute to associate with a scalar metric resource attribute)
+        type: string
+  scalar_oid:
+    description: ScalarOID holds OID info for a scalar metric as well as any {resource} attributes that are attached to it
+    type: object
+    properties:
+      attributes:
+        description: Attributes is optional and may contain names and values associated with enum AttributeConfigs to associate with the value of the scalar OID
+        type: array
+        items:
+          $ref: attribute
+      oid:
+        description: OID is required and is the scalar OID that is associated with a metric
+        type: string
+      resource_attributes:
+        description: ResourceAttributes is optional and may contain only scalar OID values to associate this metric with
+        type: array
+        items:
+          type: string
+  sum_metric:
+    description: SumMetric contains info about the value of the sum metric
+    type: object
+    properties:
+      aggregation:
+        description: Aggregation is required and can be cumulative or delta
+        type: string
+      monotonic:
+        description: Monotonic is required and can be true or false
+        type: boolean
+      value_type:
+        description: ValueType is required and can be either int or double
+        type: string
+description: Config defines the configuration for the various elements of the receiver.
+type: object
+properties:
+  attributes:
+    description: Attributes defines what attributes will be used on metrics for this receiver and is composed of attribute names along with their attribute configurations
+    type: object
+    additionalProperties:
+      x-pointer: true
+      $ref: attribute_config
+  auth_password:
+    description: AuthPassword is the authentication password used for this SNMP connection. Only valid for version "v3" and if "no_auth_no_priv" is not selected for SecurityLevel
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  auth_type:
+    description: 'AuthType is the type of authentication protocol to use for this SNMP connection. Only valid for version “v3” and if “no_auth_no_priv” is not selected for SecurityLevel Valid options: “md5”, “sha”, “sha224”, “sha256”, “sha384”, “sha512” Default: "md5"'
+    type: string
+  community:
+    description: 'Community is the SNMP community string to use. Only valid for versions "v1" and "v2c" Default: public'
+    type: string
+  endpoint:
+    description: 'Endpoint is the SNMP target to request data from. Must be formatted as [udp|tcp|][4|6|]://{host}:{port}. Default: udp://localhost:161 If no scheme is given, udp4 is assumed. If no port is given, 161 is assumed.'
+    type: string
+  metrics:
+    description: Metrics defines what SNMP metrics will be collected for this receiver and is composed of metric names along with their metric configurations
+    type: object
+    additionalProperties:
+      x-pointer: true
+      $ref: metric_config
+  privacy_password:
+    description: PrivacyPassword is the authentication password used for this SNMP connection. Only valid for version “v3” and if "auth_priv" is selected for SecurityLevel
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  privacy_type:
+    description: 'PrivacyType is the type of privacy protocol to use for this SNMP connection. Only valid for version “v3” and if "auth_priv" is selected for SecurityLevel Valid options: “des”, “aes”, “aes192”, “aes256”, “aes192c”, “aes256c” Default: "des"'
+    type: string
+  resource_attributes:
+    description: ResourceAttributes defines what resource attributes will be used for this receiver and is composed of resource attribute names along with their resource attribute configurations
+    type: object
+    additionalProperties:
+      x-pointer: true
+      $ref: resource_attribute_config
+  security_level:
+    description: 'SecurityLevel is the security level to use for this SNMP connection. Only valid for version “v3” Valid options: “no_auth_no_priv”, “auth_no_priv”, “auth_priv” Default: "no_auth_no_priv"'
+    type: string
+  user:
+    description: User is the SNMP User for this connection. Only valid for version “v3”
+    type: string
+  version:
+    description: 'Version is the version of SNMP to use for this connection. Valid options: v1, v2c, v3. Default: v2c'
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

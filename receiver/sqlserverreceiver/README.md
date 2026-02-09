@@ -61,7 +61,7 @@ sqlserver:
   top_query_collection:                        # this collection exports the most expensive queries as logs
     lookback_time: 60s                         # which time window should we look for the top queries
     max_query_sample_count: 1000               # maximum number query we store in cache for top queries.
-    top_query_count: 200                       # The maximum number of active queries to report in a single run.
+    top_query_count: 250                       # The maximum number of active queries to report in a single run.
     collection_interval: 60s                   # collection interval for top query collection specifically
   query_sample_collection:                     # this collection exports the currently (relate to the query time) executing queries as logs
     max_rows_per_query: 100                    # the maximum number of samples to return for one single query.
@@ -90,7 +90,7 @@ Top-Query collection specific options (only useful when top-query collection are
 - `lookback_time` (optional, example = `60s`, default = `2 * collection_interval`): The time window (in second) in which to query for top queries.
   - Queries that were finished execution outside the lookback window are not included in the collection. Increasing the lookback window (in seconds) will be useful for capturing long-running queries.
 - `max_query_sample_count` (optional, example = `5000`, default = `1000`): The maximum number of records to fetch in a single run.
-- `top_query_count`: (optional, example = `100`, default = `200`): The maximum number of active queries to report (to the next consumer) in a single run.
+- `top_query_count`: (optional, example = `100`, default = `250`): The maximum number of active queries to report (to the next consumer) in a single run.
 - `collection_interval`: (optional, default = `60s`): The interval at which top queries should be emitted by this receiver.
   - This value can only guarantee that the top queries are collected at most once in this interval.
     - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `60s`.
