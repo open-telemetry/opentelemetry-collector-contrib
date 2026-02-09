@@ -71,7 +71,7 @@ func createDefaultConfig() component.Config {
 		},
 		TopQueryCollection: TopQueryCollection{
 			CollectionInterval:     time.Minute,
-			TopNQuery:              1000,
+			TopNQuery:              200,
 			MaxRowsPerQuery:        1000,
 			MaxExplainEachInterval: 1000,
 			QueryPlanCacheSize:     1000,
