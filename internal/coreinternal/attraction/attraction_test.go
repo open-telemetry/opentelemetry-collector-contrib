@@ -829,7 +829,7 @@ func TestInvalidConfig(t *testing.T) {
 			actionLists: []ActionKeyValue{
 				{Key: "MissingValueFromAttributes", Action: INSERT},
 			},
-			errorString: "error with key \"MissingValueFromAttributes\" (0-th action): error creating AttrProc. Either field \"value\", \"from_attribute\" or \"from_context\" setting must be specified",
+			errorString: "error with key \"MissingValueFromAttributes\" (0-th action): error creating AttrProc. Either field \"value\", \"from_attribute\", \"from_context\", or \"default_value\" must be specified",
 		},
 		{
 			name: "both set value and from attribute",
@@ -1025,6 +1025,358 @@ func TestFromContext(t *testing.T) {
 			attrMap := pcommon.NewMap()
 			ap.Process(tc.ctx, nil, attrMap)
 			require.Equal(t, tc.expectedAttributes, attrMap.AsRaw())
+		})
+	}
+}
+
+func TestAttributes_DefaultValue(t *testing.T) {
+	t.Run("INSERT with default_value when from_attribute missing", func(t *testing.T) {
+		testCases := []testCase{
+			{
+				name:            "default_value_used_when_from_attribute_missing",
+				inputAttributes: map[string]any{},
+				expectedAttributes: map[string]any{
+					"env": "production",
+				},
+			},
+			{
+				name: "default_value_not_used_when_from_attribute_exists",
+				inputAttributes: map[string]any{
+					"environment": "staging",
+				},
+				expectedAttributes: map[string]any{
+					"environment": "staging",
+					"env":         "staging",
+				},
+			},
+			{
+				name: "default_value_not_used_when_target_already_exists",
+				inputAttributes: map[string]any{
+					"env": "existing",
+				},
+				expectedAttributes: map[string]any{
+					"env": "existing",
+				},
+			},
+		}
+
+		cfg := &Settings{
+			Actions: []ActionKeyValue{
+				{Key: "env", FromAttribute: "environment", DefaultValue: "production", Action: INSERT},
+			},
+		}
+
+		ap, err := NewAttrProc(cfg)
+		require.NoError(t, err)
+		require.NotNil(t, ap)
+
+		for _, tt := range testCases {
+			runIndividualTestCase(t, tt, ap)
+		}
+	})
+
+	t.Run("UPDATE with default_value", func(t *testing.T) {
+		testCases := []testCase{
+			{
+				name:               "default_value_not_used_when_target_missing",
+				inputAttributes:    map[string]any{},
+				expectedAttributes: map[string]any{},
+			},
+			{
+				name: "default_value_used_to_update_existing_key",
+				inputAttributes: map[string]any{
+					"service.namespace": "old",
+				},
+				expectedAttributes: map[string]any{
+					"service.namespace": "default",
+				},
+			},
+			{
+				name: "from_attribute_takes_precedence_over_default",
+				inputAttributes: map[string]any{
+					"namespace":         "custom",
+					"service.namespace": "old",
+				},
+				expectedAttributes: map[string]any{
+					"namespace":         "custom",
+					"service.namespace": "custom",
+				},
+			},
+		}
+
+		cfg := &Settings{
+			Actions: []ActionKeyValue{
+				{Key: "service.namespace", FromAttribute: "namespace", DefaultValue: "default", Action: UPDATE},
+			},
+		}
+
+		ap, err := NewAttrProc(cfg)
+		require.NoError(t, err)
+		require.NotNil(t, ap)
+
+		for _, tt := range testCases {
+			runIndividualTestCase(t, tt, ap)
+		}
+	})
+
+	t.Run("UPSERT with default_value", func(t *testing.T) {
+		testCases := []testCase{
+			{
+				name:            "default_value_creates_new_attribute",
+				inputAttributes: map[string]any{},
+				expectedAttributes: map[string]any{
+					"region": "us-east-1",
+				},
+			},
+			{
+				name: "default_value_updates_existing_attribute",
+				inputAttributes: map[string]any{
+					"region": "old-value",
+				},
+				expectedAttributes: map[string]any{
+					"region": "us-east-1",
+				},
+			},
+			{
+				name: "from_attribute_takes_precedence",
+				inputAttributes: map[string]any{
+					"cloud.region": "eu-west-1",
+				},
+				expectedAttributes: map[string]any{
+					"cloud.region": "eu-west-1",
+					"region":       "eu-west-1",
+				},
+			},
+			{
+				name:            "value_takes_precedence_over_default",
+				inputAttributes: map[string]any{},
+				expectedAttributes: map[string]any{
+					"region": "us-west-2",
+				},
+			},
+		}
+
+		// First three test cases use from_attribute + default_value
+		cfg := &Settings{
+			Actions: []ActionKeyValue{
+				{Key: "region", FromAttribute: "cloud.region", DefaultValue: "us-east-1", Action: UPSERT},
+			},
+		}
+
+		ap, err := NewAttrProc(cfg)
+		require.NoError(t, err)
+		require.NotNil(t, ap)
+
+		for i := range 3 {
+			runIndividualTestCase(t, testCases[i], ap)
+		}
+
+		// Fourth test case uses value + default_value (value should win)
+		cfg2 := &Settings{
+			Actions: []ActionKeyValue{
+				{Key: "region", Value: "us-west-2", DefaultValue: "us-east-1", Action: UPSERT},
+			},
+		}
+
+		ap2, err := NewAttrProc(cfg2)
+		require.NoError(t, err)
+		require.NotNil(t, ap2)
+
+		runIndividualTestCase(t, testCases[3], ap2)
+	})
+
+	t.Run("default_value with different data types", func(t *testing.T) {
+		testCases := []struct {
+			name               string
+			action             ActionKeyValue
+			inputAttributes    map[string]any
+			expectedAttributes map[string]any
+		}{
+			{
+				name:            "string_default_value",
+				action:          ActionKeyValue{Key: "string_attr", FromAttribute: "missing", DefaultValue: "default_string", Action: INSERT},
+				inputAttributes: map[string]any{},
+				expectedAttributes: map[string]any{
+					"string_attr": "default_string",
+				},
+			},
+			{
+				name:            "int_default_value",
+				action:          ActionKeyValue{Key: "int_attr", FromAttribute: "missing", DefaultValue: 42, Action: INSERT},
+				inputAttributes: map[string]any{},
+				expectedAttributes: map[string]any{
+					"int_attr": int64(42),
+				},
+			},
+			{
+				name:            "bool_default_value",
+				action:          ActionKeyValue{Key: "bool_attr", FromAttribute: "missing", DefaultValue: true, Action: INSERT},
+				inputAttributes: map[string]any{},
+				expectedAttributes: map[string]any{
+					"bool_attr": true,
+				},
+			},
+			{
+				name:            "double_default_value",
+				action:          ActionKeyValue{Key: "double_attr", FromAttribute: "missing", DefaultValue: 3.14, Action: INSERT},
+				inputAttributes: map[string]any{},
+				expectedAttributes: map[string]any{
+					"double_attr": 3.14,
+				},
+			},
+		}
+
+		for _, tt := range testCases {
+			t.Run(tt.name, func(t *testing.T) {
+				cfg := &Settings{
+					Actions: []ActionKeyValue{tt.action},
+				}
+
+				ap, err := NewAttrProc(cfg)
+				require.NoError(t, err)
+				require.NotNil(t, ap)
+
+				inputMap := pcommon.NewMap()
+				assert.NoError(t, inputMap.FromRaw(tt.inputAttributes))
+				ap.Process(t.Context(), nil, inputMap)
+				require.Equal(t, tt.expectedAttributes, inputMap.AsRaw())
+			})
+		}
+	})
+
+	t.Run("default_value with from_context", func(t *testing.T) {
+		mdCtx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"region": {"us-west-1"},
+			}),
+		})
+
+		testCases := []struct {
+			name               string
+			ctx                context.Context
+			inputAttributes    map[string]any
+			expectedAttributes map[string]any
+		}{
+			{
+				name:            "default_value_used_when_context_missing",
+				ctx:             t.Context(),
+				inputAttributes: map[string]any{},
+				expectedAttributes: map[string]any{
+					"tenant_id": "default-tenant",
+				},
+			},
+			{
+				name: "context_value_takes_precedence",
+				ctx:  mdCtx,
+				inputAttributes: map[string]any{
+					"cloud.region": "ignored",
+				},
+				expectedAttributes: map[string]any{
+					"cloud.region": "ignored",
+					"region":       "us-west-1",
+				},
+			},
+			{
+				name:            "default_value_used_when_context_key_missing",
+				ctx:             mdCtx,
+				inputAttributes: map[string]any{},
+				expectedAttributes: map[string]any{
+					"tenant_id": "default-tenant",
+				},
+			},
+		}
+
+		cfg1 := &Settings{
+			Actions: []ActionKeyValue{
+				{Key: "tenant_id", FromContext: "metadata.tenant", DefaultValue: "default-tenant", Action: INSERT},
+			},
+		}
+
+		ap1, err := NewAttrProc(cfg1)
+		require.NoError(t, err)
+		require.NotNil(t, ap1)
+
+		attrMap := pcommon.NewMap()
+		ap1.Process(testCases[0].ctx, nil, attrMap)
+		require.Equal(t, testCases[0].expectedAttributes, attrMap.AsRaw())
+
+		attrMap = pcommon.NewMap()
+		ap1.Process(testCases[2].ctx, nil, attrMap)
+		require.Equal(t, testCases[2].expectedAttributes, attrMap.AsRaw())
+
+		cfg2 := &Settings{
+			Actions: []ActionKeyValue{
+				{Key: "region", FromContext: "metadata.region", DefaultValue: "us-east-1", Action: INSERT},
+			},
+		}
+
+		ap2, err := NewAttrProc(cfg2)
+		require.NoError(t, err)
+		require.NotNil(t, ap2)
+
+		attrMap = pcommon.NewMap()
+		assert.NoError(t, attrMap.FromRaw(testCases[1].inputAttributes))
+		ap2.Process(testCases[1].ctx, nil, attrMap)
+		require.Equal(t, testCases[1].expectedAttributes, attrMap.AsRaw())
+	})
+
+	t.Run("multiple_actions_with_default_values", func(t *testing.T) {
+		testCases := []testCase{
+			{
+				name: "multiple_defaults_with_mixed_sources",
+				inputAttributes: map[string]any{
+					"cloud.region": "eu-west-1",
+				},
+				expectedAttributes: map[string]any{
+					"env":          "prod",
+					"region":       "eu-west-1",
+					"cloud.region": "eu-west-1",
+					"tier":         "frontend",
+				},
+			},
+		}
+
+		cfg := &Settings{
+			Actions: []ActionKeyValue{
+				{Key: "env", FromAttribute: "environment", DefaultValue: "prod", Action: INSERT},
+				{Key: "region", FromAttribute: "cloud.region", DefaultValue: "us-east-1", Action: INSERT},
+				{Key: "tier", Value: "frontend", Action: INSERT},
+			},
+		}
+
+		ap, err := NewAttrProc(cfg)
+		require.NoError(t, err)
+		require.NotNil(t, ap)
+
+		for _, tt := range testCases {
+			runIndividualTestCase(t, tt, ap)
+		}
+	})
+}
+
+func TestInvalidDefaultValueConfig(t *testing.T) {
+	testCases := []struct {
+		name        string
+		action      ActionKeyValue
+		errorString string
+	}{
+		{
+			name: "invalid_default_value_type",
+			action: ActionKeyValue{
+				Key:          "test",
+				DefaultValue: []int{1, 2, 3},
+				Action:       INSERT,
+			},
+			errorString: "error with key \"test\" (0-th action): error creating AttrProc due to invalid default value",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ap, err := NewAttrProc(&Settings{Actions: []ActionKeyValue{tc.action}})
+			assert.Nil(t, ap)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errorString)
 		})
 	}
 }

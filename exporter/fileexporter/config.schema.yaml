@@ -1,0 +1,67 @@
+$defs:
+  group_by:
+    type: object
+    properties:
+      enabled:
+        description: Enables group_by. When group_by is enabled, rotation setting is ignored.  Default is false.
+        type: boolean
+      max_open_files:
+        description: MaxOpenFiles specifies the maximum number of open file descriptors for the output files. The default is 100.
+        type: integer
+      resource_attribute:
+        description: ResourceAttribute specifies the name of the resource attribute that contains the path segment of the file to write to. The final path will be the Path config value, with the * replaced with the value of this resource attribute. Default is "fileexporter.path_segment".
+        type: string
+  rotation:
+    description: Rotation an option to rolling log files
+    type: object
+    properties:
+      localtime:
+        description: LocalTime determines if the time used for formatting the timestamps in backup files is the computer's local time.  The default is to use UTC time.
+        type: boolean
+      max_backups:
+        description: MaxBackups is the maximum number of old log files to retain. The default is to 100 files.
+        type: integer
+      max_days:
+        description: MaxDays is the maximum number of days to retain old log files based on the timestamp encoded in their filename.  Note that a day is defined as 24 hours and may not exactly correspond to calendar days due to daylight savings, leap seconds, etc. The default is not to remove old log files based on age.
+        type: integer
+      max_megabytes:
+        description: MaxMegabytes is the maximum size in megabytes of the file before it gets rotated. It defaults to 100 megabytes.
+        type: integer
+description: Config defines configuration for file exporter.
+type: object
+properties:
+  append:
+    description: 'Mode defines whether the exporter should append to the file. Options: - false[default]:  truncates the file - true:  appends to the file.'
+    type: boolean
+  compression:
+    description: Compression Codec used to export telemetry data Supported compression algorithms:`zstd`
+    type: string
+  create_directory:
+    description: CreateDirectory specifies that the parent directory of the output file should be created automatically on start.
+    type: boolean
+  directory_permissions:
+    description: DirectoryPermissions specifies permissions used when creating directories (minus process umask). Value must be an octal string like "0755".
+    type: string
+  encoding:
+    description: Encoding defines the encoding of the telemetry data. If specified, it overrides `FormatType` and applies an encoding extension.
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+  flush_interval:
+    description: FlushInterval is the duration between flushes. See time.ParseDuration for valid values.
+    type: string
+    format: duration
+  format:
+    description: 'FormatType define the data format of encoded telemetry data Options: - json[default]:  OTLP json bytes. - proto:  OTLP binary protobuf bytes.'
+    type: string
+  group_by:
+    description: GroupBy enables writing to separate files based on a resource attribute.
+    x-pointer: true
+    $ref: group_by
+  path:
+    description: Path of the file to write to. Path is relative to current directory.
+    type: string
+  rotation:
+    description: Rotation defines an option about rotation of telemetry files. Ignored when GroupByAttribute is used.
+    x-pointer: true
+    $ref: rotation

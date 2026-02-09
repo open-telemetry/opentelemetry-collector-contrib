@@ -90,7 +90,6 @@ For more information about the maintainer role, see the [community repository](h
 - [Braydon Kains](https://github.com/braydonk), Google
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
-- [Matt Wear](https://github.com/mwear), Lightstep
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
@@ -127,6 +126,7 @@ For more information about the emeritus role, see the [community repository](htt
 
 - [Anthony Mirabella](https://github.com/Aneurysm9)
 - [Bryan Aguilar](https://github.com/bryan-aguilar)
+- [Matt Wear](https://github.com/mwear)
 - [Przemek Maciolek](https://github.com/pmm-sumo)
 - [Ruslan Kovalov](https://github.com/kovrus)
 

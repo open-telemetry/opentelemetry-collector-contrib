@@ -1,0 +1,47 @@
+$defs:
+  marker:
+    type: object
+    properties:
+      dataset_slug:
+        description: DatasetSlug is the endpoint that specifies the Honeycomb environment
+        type: string
+      message_key:
+        description: MessageKey is the attribute that will be used as the message. If necessary the value will be converted to a string.
+        type: string
+      rules:
+        description: Rules are the OTTL rules that determine when a piece of telemetry should be turned into a Marker
+        $ref: rules
+      type:
+        description: Type defines the type of Marker.
+        type: string
+      url_key:
+        description: URLKey is the attribute that will be used as the url. If necessary the value will be converted to a string.
+        type: string
+  rules:
+    type: object
+    properties:
+      log_conditions:
+        description: LogConditions is the list of ottllog conditions that determine a match
+        type: array
+        items:
+          type: string
+description: Config defines configuration for the Honeycomb Marker exporter.
+type: object
+properties:
+  api_key:
+    description: APIKey is the authentication token associated with the Honeycomb account.
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  api_url:
+    description: API URL to use (defaults to https://api.honeycomb.io)
+    type: string
+  markers:
+    description: Markers is the list of markers to create
+    type: array
+    items:
+      $ref: marker
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

@@ -1,0 +1,10 @@
+$defs:
+  scraper_config:
+    type: object
+    properties:
+      address:
+        type: string
+      auth:
+        $ref: go.opentelemetry.io/collector/config/configauth.config
+  scraper_type:
+    type: string

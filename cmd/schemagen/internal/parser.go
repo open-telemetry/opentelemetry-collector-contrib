@@ -253,12 +253,7 @@ func (p *Parser) addEmbeddedField(field *ast.Field, schemaObject SchemaObject) e
 			if err != nil {
 				return err
 			}
-			if refElement, ok := element.(*RefSchemaElement); ok {
-				schemaObject.AddEmbeddedRef(refElement.Ref)
-				return nil
-			}
-
-			fmt.Printf("Warning: could not find schema reference to type %s.%s\n", selector.X, selector.Sel)
+			schemaObject.AddEmbedded(element)
 			return nil
 		}
 
@@ -269,7 +264,7 @@ func (p *Parser) addEmbeddedField(field *ast.Field, schemaObject SchemaObject) e
 	if err == nil {
 		switch elem := elem.(type) {
 		case *RefSchemaElement:
-			schemaObject.AddEmbeddedRef(elem.Ref)
+			schemaObject.AddEmbedded(elem)
 			return nil
 		case *ObjectSchemaElement:
 			return mergeSchemas(schemaObject, elem)

@@ -28,7 +28,7 @@ job "otel-collector" {
       port "metrics" {
         to = 8888
       }
-      port "otlp" {
+      port "otlp-grpc" {
         to = 4317
       }
       port "otlp-http" {
@@ -62,7 +62,7 @@ job "otel-collector" {
   "jaeger-grpc",
   "jaeger-thrift-http",
   "metrics",
-  "otlp"
+  "otlp-grpc"
 ]
 
         
@@ -82,7 +82,7 @@ job "otel-collector" {
         data = <<EOH
 ---
 receivers:
-  otlp:
+  otlp-grpc:
     protocols:
       grpc:
         endpoint: 0.0.0.0:4317
@@ -163,7 +163,7 @@ EOH
           "traefik.tcp.routers.otel-collector-grpc.entrypoints=grpc",
           "traefik.enable=true",
         ]        
-        port = "otlp"
+        port = "otlp-grpc"
       }
 
       service {
