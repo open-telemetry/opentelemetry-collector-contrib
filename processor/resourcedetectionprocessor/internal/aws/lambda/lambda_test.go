@@ -5,7 +5,7 @@ package lambda
 
 import (
 	"os"
-	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,26 +48,21 @@ func TestNotLambda(t *testing.T) {
 
 // Tests that cloud.account.id is set when the account ID symlink exists
 func TestLambdaAccountIDSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping symlink test on Windows: Lambda does not support Windows")
+	}
+
 	ctx := t.Context()
 
 	const functionName = "TestFunctionName"
 	const expectedAccountID = "123456789012"
 	t.Setenv(awsLambdaFunctionNameEnvVar, functionName)
 
-	// Create a symlink at a temp path and override the constant via a helper.
-	// Since accountIDSymlinkPath is a const, we create the symlink at the actual path
-	// in a temp directory and override it for the test.
-	tmpDir := t.TempDir()
-	symlinkPath := filepath.Join(tmpDir, ".otel-account-id")
-	err := os.Symlink(expectedAccountID, symlinkPath)
-	require.NoError(t, err)
-
-	// Patch the global symlink path for this test by creating the symlink at the well-known path.
-	// We use the actual /tmp path since that's what the detector reads.
+	// Create the symlink at the well-known path.
 	// Clean up any pre-existing symlink first (ignore error if it doesn't exist).
 	os.Remove(accountIDSymlinkPath)
 	t.Cleanup(func() { os.Remove(accountIDSymlinkPath) })
-	err = os.Symlink(expectedAccountID, accountIDSymlinkPath)
+	err := os.Symlink(expectedAccountID, accountIDSymlinkPath)
 	require.NoError(t, err)
 
 	lambdaDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())

@@ -6,6 +6,7 @@ package lambda // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"os"
+	"runtime"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -59,8 +60,11 @@ func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 	if value, ok := os.LookupEnv(awsRegionEnvVar); ok {
 		d.rb.SetCloudRegion(value)
 	}
-	if accountID, err := os.Readlink(accountIDSymlinkPath); err == nil {
-		d.rb.SetCloudAccountID(accountID)
+	// The account ID symlink is only available on Linux (Lambda does not support Windows).
+	if runtime.GOOS != "windows" {
+		if accountID, err := os.Readlink(accountIDSymlinkPath); err == nil {
+			d.rb.SetCloudAccountID(accountID)
+		}
 	}
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md
