@@ -81,7 +81,7 @@ func (cfg *Config) Validate() error {
 	for _, field := range cfg.Extract.Metadata {
 		switch field {
 		case string(conventions.K8SNamespaceNameKey), string(conventions.K8SPodNameKey), string(conventions.K8SPodUIDKey),
-			specPodHostName, metadataPodStartTime, metadataPodIP,
+			string(conventions.K8SPodHostnameKey), string(conventions.K8SPodStartTimeKey), string(conventions.K8SPodIPKey),
 			string(conventions.K8SDeploymentNameKey), string(conventions.K8SDeploymentUIDKey),
 			string(conventions.K8SReplicaSetNameKey), string(conventions.K8SReplicaSetUIDKey),
 			string(conventions.K8SDaemonSetNameKey), string(conventions.K8SDaemonSetUIDKey),

@@ -219,8 +219,6 @@ func (ecsModeEncoder) encodeLog(
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
-	encodeLogAgentNameECSMode(&document, ec.resource)
-	encodeLogAgentVersionECSMode(&document, ec.resource)
 	encodeHostOsTypeECSMode(&document, ec.resource)
 	encodeLogTimestampECSMode(&document, record)
 	document.AddTraceID("trace.id", record.TraceID())
@@ -561,52 +559,6 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 
 		// Otherwise, add key at top level with attribute name as-is.
 		document.AddAttribute(k, v)
-	}
-}
-
-func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Resource) {
-	// Parse out telemetry SDK name, language, and distro name from resource
-	// attributes, setting defaults as needed.
-	telemetrySdkName := "otlp"
-	var telemetrySdkLanguage, telemetryDistroName string
-
-	attrs := resource.Attributes()
-	if v, exists := attrs.Get(string(conventions.TelemetrySDKNameKey)); exists {
-		telemetrySdkName = v.Str()
-	}
-	if v, exists := attrs.Get(string(conventions.TelemetrySDKLanguageKey)); exists {
-		telemetrySdkLanguage = v.Str()
-	}
-	if v, exists := attrs.Get(string(conventions.TelemetryDistroNameKey)); exists {
-		telemetryDistroName = v.Str()
-		if telemetrySdkLanguage == "" {
-			telemetrySdkLanguage = "unknown"
-		}
-	}
-
-	// Construct agent name from telemetry SDK name, language, and distro name.
-	agentName := telemetrySdkName
-	if telemetryDistroName != "" {
-		agentName = fmt.Sprintf("%s/%s/%s", agentName, telemetrySdkLanguage, telemetryDistroName)
-	} else if telemetrySdkLanguage != "" {
-		agentName = fmt.Sprintf("%s/%s", agentName, telemetrySdkLanguage)
-	}
-
-	// Set agent name in document.
-	document.AddString("agent.name", agentName)
-}
-
-func encodeLogAgentVersionECSMode(document *objmodel.Document, resource pcommon.Resource) {
-	attrs := resource.Attributes()
-
-	if telemetryDistroVersion, exists := attrs.Get(string(conventions.TelemetryDistroVersionKey)); exists {
-		document.AddString("agent.version", telemetryDistroVersion.Str())
-		return
-	}
-
-	if telemetrySdkVersion, exists := attrs.Get(string(conventions.TelemetrySDKVersionKey)); exists {
-		document.AddString("agent.version", telemetrySdkVersion.Str())
-		return
 	}
 }
 

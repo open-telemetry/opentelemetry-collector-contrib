@@ -398,8 +398,9 @@ gengithub: $(GITHUBGEN)
 gendistributions: $(GITHUBGEN)
 	$(GITHUBGEN) distributions
 
-gencodecov: $(CODECOVGEN)
-	$(CODECOVGEN) --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules **/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**
+.PHONY: gencodecov
+gencodecov:
+	cd $(SRC_ROOT)/cmd/codecovgen && go run . --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules '**/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**' --dir $(SRC_ROOT)
 
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
@@ -702,8 +703,8 @@ generate-gh-issue-templates:
 SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
 
 .PHONY: generate-schemas
-generate-schemas: $(SCHEMAGEN)
-	@$(foreach dir,$(SCHEMA_DIRS), $(SCHEMAGEN) $(dir) -o $(dir);)
+generate-schemas:
+	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)
 
 .PHONY: checks
 checks:
