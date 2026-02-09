@@ -29,6 +29,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 type ResourceAttributesConfig struct {
 	AwsLogGroupNames  ResourceAttributeConfig `mapstructure:"aws.log.group.names"`
 	AwsLogStreamNames ResourceAttributeConfig `mapstructure:"aws.log.stream.names"`
+	CloudAccountID    ResourceAttributeConfig `mapstructure:"cloud.account.id"`
 	CloudPlatform     ResourceAttributeConfig `mapstructure:"cloud.platform"`
 	CloudProvider     ResourceAttributeConfig `mapstructure:"cloud.provider"`
 	CloudRegion       ResourceAttributeConfig `mapstructure:"cloud.region"`
@@ -44,6 +45,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		AwsLogStreamNames: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CloudAccountID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		CloudPlatform: ResourceAttributeConfig{

@@ -5,6 +5,8 @@ all_set:
       enabled: true
     aws.log.stream.names:
       enabled: true
+    cloud.account.id:
+      enabled: true
     cloud.platform:
       enabled: true
     cloud.provider:
@@ -24,6 +26,8 @@ none_set:
     aws.log.group.names:
       enabled: false
     aws.log.stream.names:
+      enabled: false
+    cloud.account.id:
       enabled: false
     cloud.platform:
       enabled: false

@@ -3,6 +3,10 @@ type: resourcedetectionprocessor/lambda
 parent: resourcedetection
 
 resource_attributes:
+  cloud.account.id:
+    description: The cloud account id
+    type: string
+    enabled: true
   aws.log.group.names:
     description: The aws.log.group.names
     type: slice

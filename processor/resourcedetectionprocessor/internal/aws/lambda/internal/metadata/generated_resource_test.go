@@ -15,6 +15,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb := NewResourceBuilder(cfg)
 			rb.SetAwsLogGroupNames([]any{"aws.log.group.names-item1", "aws.log.group.names-item2"})
 			rb.SetAwsLogStreamNames([]any{"aws.log.stream.names-item1", "aws.log.stream.names-item2"})
+			rb.SetCloudAccountID("cloud.account.id-val")
 			rb.SetCloudPlatform("cloud.platform-val")
 			rb.SetCloudProvider("cloud.provider-val")
 			rb.SetCloudRegion("cloud.region-val")
@@ -28,9 +29,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 9, res.Attributes().Len())
+				assert.Equal(t, 10, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 9, res.Attributes().Len())
+				assert.Equal(t, 10, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -47,6 +48,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, []any{"aws.log.stream.names-item1", "aws.log.stream.names-item2"}, val.Slice().AsRaw())
+			}
+			val, ok = res.Attributes().Get("cloud.account.id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "cloud.account.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)

@@ -13,6 +13,8 @@ $defs:
         $ref: resource_attribute_config
       aws.log.stream.names:
         $ref: resource_attribute_config
+      cloud.account.id:
+        $ref: resource_attribute_config
       cloud.platform:
         $ref: resource_attribute_config
       cloud.provider:

@@ -20,6 +20,10 @@ const (
 	// TypeStr is type of detector.
 	TypeStr = "lambda"
 
+	// accountIDSymlinkPath is the path to a symlink whose target is the AWS account ID.
+	// This symlink is created by the opentelemetry-lambda extension layer.
+	accountIDSymlinkPath = "/tmp/.otel-account-id"
+
 	// Environment variables that are set when running on AWS Lambda.
 	// https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime
 	awsRegionEnvVar                   = "AWS_REGION"
@@ -54,6 +58,9 @@ func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 	d.rb.SetCloudPlatform(conventions.CloudPlatformAWSLambda.Value.AsString())
 	if value, ok := os.LookupEnv(awsRegionEnvVar); ok {
 		d.rb.SetCloudRegion(value)
+	}
+	if accountID, err := os.Readlink(accountIDSymlinkPath); err == nil {
+		d.rb.SetCloudAccountID(accountID)
 	}
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md

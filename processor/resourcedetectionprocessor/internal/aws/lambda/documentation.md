@@ -10,6 +10,7 @@
 | ---- | ----------- | ------ | ------- |
 | aws.log.group.names | The aws.log.group.names | Any Slice | true |
 | aws.log.stream.names | The aws.log.stream.names | Any Slice | true |
+| cloud.account.id | The cloud account id | Any Str | true |
 | cloud.platform | The cloud.platform | Any Str | true |
 | cloud.provider | The cloud.provider | Any Str | true |
 | cloud.region | The cloud.region | Any Str | true |

@@ -26,6 +26,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				AwsLogGroupNames:  ResourceAttributeConfig{Enabled: true},
 				AwsLogStreamNames: ResourceAttributeConfig{Enabled: true},
+				CloudAccountID:    ResourceAttributeConfig{Enabled: true},
 				CloudPlatform:     ResourceAttributeConfig{Enabled: true},
 				CloudProvider:     ResourceAttributeConfig{Enabled: true},
 				CloudRegion:       ResourceAttributeConfig{Enabled: true},
@@ -40,6 +41,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				AwsLogGroupNames:  ResourceAttributeConfig{Enabled: false},
 				AwsLogStreamNames: ResourceAttributeConfig{Enabled: false},
+				CloudAccountID:    ResourceAttributeConfig{Enabled: false},
 				CloudPlatform:     ResourceAttributeConfig{Enabled: false},
 				CloudProvider:     ResourceAttributeConfig{Enabled: false},
 				CloudRegion:       ResourceAttributeConfig{Enabled: false},
