@@ -331,6 +331,7 @@ receiver/tcplogreceiver receiver/tcplog
 receiver/tlscheckreceiver receiver/tlscheck
 receiver/udplogreceiver receiver/udplog
 receiver/vcenterreceiver receiver/vcenter
+receiver/vcrreceiver receiver/vcr
 receiver/wavefrontreceiver receiver/wavefront
 receiver/webhookeventreceiver receiver/webhookevent
 receiver/windowseventlogreceiver receiver/windowseventlog
