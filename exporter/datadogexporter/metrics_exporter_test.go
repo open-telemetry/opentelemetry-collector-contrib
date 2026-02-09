@@ -777,7 +777,6 @@ func TestMetricRemapping(t *testing.T) {
 	tests := []struct {
 		newGate         bool
 		oldGate         bool
-		err             bool
 		expectedMetrics []string
 	}{
 		{
@@ -834,7 +833,14 @@ func TestMetricRemapping(t *testing.T) {
 		{
 			newGate: true,
 			oldGate: true,
-			err:     true,
+			expectedMetrics: []string{
+				// Unmapped system metrics
+				"system.filesystem.utilization",
+				// Unmapped runtime metrics
+				"process.runtime.go.goroutines",
+				"process.runtime.dotnet.exceptions.count",
+				"process.runtime.jvm.threads.count",
+			},
 		},
 	}
 
@@ -877,11 +883,6 @@ func TestMetricRemapping(t *testing.T) {
 				nil,
 				gatewayUsage,
 			)
-
-			if tt.err {
-				require.Error(t, err)
-				return
-			}
 			require.NoError(t, err)
 
 			// Push metrics and validate output
