@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.51.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/consumer v1.51.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/consumer/consumertest v0.145.1-0.20260205185216-81bc641f26c0
+	go.opentelemetry.io/collector/filter v0.145.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/pdata v1.51.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/receiver v1.51.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/receiver/receivertest v0.145.1-0.20260205185216-81bc641f26c0
