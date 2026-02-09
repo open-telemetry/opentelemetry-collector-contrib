@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_receiver.googlecloudpubsub.encoding_error
 
-Number of times a message couldn't be decoded by the configured encoder [Development]
+Number of times a message couldn't be decoded by the configured encoder
 
 The receiver reads messages from Google Cloud Pub/Sub and tries to decode the message using the configured
 encoder. Each time a message fails to decoded the counter is increased.
@@ -20,7 +20,7 @@ encoder. Each time a message fails to decoded the counter is increased.
 
 ### otelcol_receiver.googlecloudpubsub.stream_restarts
 
-Number of times the stream (re)starts due to a Pub/Sub servers connection close [Development]
+Number of times the stream (re)starts due to a Pub/Sub servers connection close
 
 The receiver uses the Google Cloud Pub/Sub StreamingPull API and keeps a open connection. The Pub/Sub servers
 recurrently close the connection after a time period to avoid a long-running sticky connection. This metric

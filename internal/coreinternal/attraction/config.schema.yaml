@@ -12,6 +12,9 @@ $defs:
       converted_type:
         description: ConvertedType specifies the target type of an attribute to be converted If the key doesn't exist, no action is performed. If the value cannot be converted, the original value will be left as-is
         type: string
+      default_value:
+        description: DefaultValue specifies the value to use if Value/FromAttribute/FromContext doesn't provide a value (e.g., environment variable not set, attribute doesn't exist). Only used with INSERT, UPDATE, and UPSERT actions.
+        x-customType: any
       from_attribute:
         description: FromAttribute specifies the attribute to use to populate the value. If the attribute doesn't exist, no action is performed.
         type: string

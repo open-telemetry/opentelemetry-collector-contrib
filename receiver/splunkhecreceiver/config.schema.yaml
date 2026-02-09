@@ -1,0 +1,34 @@
+$defs:
+  ack:
+    description: Ack defines configuration for the ACK functionality of the HEC receiver
+    type: object
+    properties:
+      extension:
+        description: Extension defines the extension to use for acking of events. Without specifying an extension, the ACK endpoint won't be exposed
+        x-pointer: true
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+      path:
+        description: Path for Ack API, default is '/services/collector/ack'. Ignored if Extension is not provided.
+        type: string
+  splitting_strategy:
+    type: string
+description: Config defines configuration for the Splunk HEC receiver.
+type: object
+properties:
+  health_path:
+    description: HealthPath for health API, default is '/services/collector/health'
+    type: string
+  hec_metadata_to_otel_attrs:
+    description: HecToOtelAttrs creates a mapping from HEC metadata to attributes.
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk.hec_to_otel_attrs
+  raw_path:
+    description: RawPath for raw data collection, default is '/services/collector/raw'
+    type: string
+  splitting:
+    description: Splitting defines the splitting strategy used by the receiver when ingesting raw events. Can be set to "line" or "none". Default is "line".
+    $ref: splitting_strategy
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.server_config
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk.access_token_passthrough_config
+  - $ref: ack
