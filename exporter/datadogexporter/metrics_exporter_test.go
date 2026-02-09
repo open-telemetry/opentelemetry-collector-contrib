@@ -766,7 +766,7 @@ func createTestMetricsWithRuntimeMetrics() pmetric.Metrics {
 		met.SetName(metricName)
 		dps := met.SetEmptyGauge().DataPoints()
 		dp := dps.AppendEmpty()
-		dp.SetTimestamp(seconds(0))
+		dp.SetTimestamp(0)
 		dp.SetIntValue(42)
 	}
 
@@ -784,8 +784,10 @@ func TestMetricRemapping(t *testing.T) {
 			newGate: false,
 			oldGate: false,
 			expectedMetrics: []string{
+				// Mapped system metrics
 				"system.disk.in_use",
 				"otel.system.filesystem.utilization",
+				// Mapped runtime metrics
 				"runtime.go.num_goroutine",
 				"otel.process.runtime.go.goroutines",
 				"runtime.dotnet.exceptions.count",
@@ -802,7 +804,9 @@ func TestMetricRemapping(t *testing.T) {
 			newGate: true,
 			oldGate: false,
 			expectedMetrics: []string{
+				// Unmapped system metrics
 				"system.filesystem.utilization",
+				// Unmapped runtime metrics
 				"process.runtime.go.goroutines",
 				"process.runtime.dotnet.exceptions.count",
 				"process.runtime.jvm.threads.count",
@@ -812,7 +816,9 @@ func TestMetricRemapping(t *testing.T) {
 			newGate: false,
 			oldGate: true,
 			expectedMetrics: []string{
+				// Unmapped system metrics
 				"system.filesystem.utilization",
+				// Unmapped runtime metrics
 				"runtime.go.num_goroutine",
 				"process.runtime.go.goroutines",
 				"runtime.dotnet.exceptions.count",
