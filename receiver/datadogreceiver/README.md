@@ -35,7 +35,8 @@ receivers:
     endpoint: localhost:8126
     read_timeout: 60s
     trace_id_cache_size: 100
-    series_idle_timeout: 60m
+    idle_series_timeout: 60m
+    idle_series_cleanup_interval: 5m
 
 exporters:
   debug:
@@ -62,12 +63,18 @@ when the feature gate `receiver.datadogreceiver.Enable128BitTraceID` is enabled.
 
 Default: 100
 
-### series_idle_timeout (Optional)
+### idle_series_timeout (Optional)
 The duration a specific series (metric name + unique tags) can be idle (not receive data) before being considered stale and removed from memory. This is useful to release memory in High Cardinality scenarios (e.g. ephemeral pods) where the number of series grows indefinitely.
 
 Recommendation: If enabled, ensure this value is significantly higher than the interval of your slowest emitting metric or cronjob. For example, if you have a job that runs every 30 minutes, set this to at least 60m to avoid resetting the start timestamp for those metrics.
 
 Default: 0s (Disabled - series are kept indefinitely)
+
+### idle_series_cleanup_interval (Optional)
+The duration between runs of the idle series cleanup task. This setting is only used when idle_series_timeout is enabled (greater than 0).
+The value must be a string with a unit (e.g. "5m", "60s").
+
+Default: "5m"
 
 ### HTTP Service Config
 

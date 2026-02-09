@@ -18,15 +18,15 @@ type MetricsTranslator struct {
 	buildInfo         component.BuildInfo
 	lastTs            map[identity.Stream]pcommon.Timestamp
 	stringPool        *StringPool
-	seriesIdleTimeout time.Duration
+	idleSeriesTimeout time.Duration
 }
 
-func NewMetricsTranslator(buildInfo component.BuildInfo, seriesIdleTimeout time.Duration) *MetricsTranslator {
+func NewMetricsTranslator(buildInfo component.BuildInfo, idleSeriesTimeout time.Duration) *MetricsTranslator {
 	return &MetricsTranslator{
 		buildInfo:         buildInfo,
 		lastTs:            make(map[identity.Stream]pcommon.Timestamp),
 		stringPool:        newStringPool(),
-		seriesIdleTimeout: seriesIdleTimeout,
+		idleSeriesTimeout: idleSeriesTimeout,
 	}
 }
 
@@ -48,7 +48,7 @@ func (mt *MetricsTranslator) updateLastTsForStream(stream identity.Stream, ts pc
 func (mt *MetricsTranslator) Prune() int {
 	// If the timeout is 0, the feature is disabled.
 	// Return 0 immediately to preserve legacy behavior (keep all series).
-	if mt.seriesIdleTimeout == 0 {
+	if mt.idleSeriesTimeout == 0 {
 		return 0
 	}
 	// Full Lock is required here because we are swapping the entire map reference.
@@ -73,7 +73,7 @@ func (mt *MetricsTranslator) Prune() int {
 		tsTime := time.Unix(0, int64(ts))
 
 		// If the age is less than the max idle time, keep it.
-		if now.Sub(tsTime) < mt.seriesIdleTimeout {
+		if now.Sub(tsTime) < mt.idleSeriesTimeout {
 			newMap[stream] = ts
 		}
 	}

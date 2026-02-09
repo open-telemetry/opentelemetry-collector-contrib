@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
@@ -51,6 +52,9 @@ type datadogReceiver struct {
 	tReceiver *receiverhelper.ObsReport
 
 	traceIDCache *lru.Cache[uint64, pcommon.TraceID]
+
+	shutdownCh chan struct{}
+	wg         sync.WaitGroup
 }
 
 // Endpoint specifies an API endpoint definition.
@@ -207,9 +211,10 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 		config:             config,
 		intakeReverseProxy: intakeReverseProxy,
 		tReceiver:          instance,
-		metricsTranslator:  translator.NewMetricsTranslator(params.BuildInfo, config.SeriesIdleTimeout),
+		metricsTranslator:  translator.NewMetricsTranslator(params.BuildInfo, config.IdleSeriesTimeout),
 		statsTranslator:    translator.NewStatsTranslator(),
 		traceIDCache:       cache,
+		shutdownCh:         make(chan struct{}),
 	}, nil
 }
 
@@ -244,12 +249,31 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 		}
 	}()
 
-	// Starts the sweeper loop to clean up stale data
-	go ddr.runSweeper(ctx)
+	// Starts the cleanup loop to remove idle series
+	if ddr.config.IdleSeriesTimeout > 0 {
+		if ddr.config.IdleSeriesCleanupInterval <= 0 {
+			return fmt.Errorf(
+				"idle_series_cleanup_interval must be positive when idle_series_timeout is enabled; found %v",
+				ddr.config.IdleSeriesCleanupInterval,
+			)
+		}
+
+		ddr.wg.Add(1)
+		go func() {
+			defer ddr.wg.Done()
+			ddr.runIdleSeriesCleanup()
+		}()
+	}
+
 	return nil
 }
 
 func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
+	// Signal background goroutines to stop
+	close(ddr.shutdownCh)
+	// Wait for them to finish
+	ddr.wg.Wait()
+
 	if ddr.server == nil {
 		return nil
 	}
@@ -705,31 +729,27 @@ func createIntakeReverseProxyDirector(site, key string) func(*http.Request) {
 	}
 }
 
-func (ddr *datadogReceiver) runSweeper(ctx context.Context) {
-	// If SeriesIdleTimeout is 0, the feature is disabled (default behavior).
-	if ddr.config.SeriesIdleTimeout == 0 {
-		return
-	}
+// runIdleSeriesCleanup runs the loop that checks for and removes idle series.
+func (ddr *datadogReceiver) runIdleSeriesCleanup() {
+	cleanupInterval := ddr.config.IdleSeriesCleanupInterval
+	idleTimeout := ddr.config.IdleSeriesTimeout
 
-	// Run the cleanup more frequently than the timeout to ensure precision.
-	// If the timeout is 30m, checking every 5m is healthy.
-	sweepInterval := 5 * time.Minute
-
-	ticker := time.NewTicker(sweepInterval)
+	// Assumes validation was done in Start(), so cleanupInterval is positive.
+	ticker := time.NewTicker(cleanupInterval)
 	defer ticker.Stop()
 
-	ddr.params.Logger.Info("Starting series memory sweeper",
-		zap.Duration("series_idle_timeout", ddr.config.SeriesIdleTimeout),
-		zap.Duration("sweep_interval", sweepInterval))
+	ddr.params.Logger.Info("Starting idle series cleanup",
+		zap.Duration("idle_series_timeout", idleTimeout),
+		zap.Duration("idle_series_cleanup_interval", cleanupInterval))
 
 	for {
 		select {
-		case <-ctx.Done():
+		case <-ddr.shutdownCh:
 			return
 		case <-ticker.C:
 			removedCount := ddr.metricsTranslator.Prune()
 			if removedCount > 0 {
-				ddr.params.Logger.Debug("Pruned stale series from memory",
+				ddr.params.Logger.Debug("Pruned idle series from memory",
 					zap.Int("removed_series", removedCount))
 			}
 		}

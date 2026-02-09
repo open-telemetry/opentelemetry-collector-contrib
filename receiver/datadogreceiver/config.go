@@ -38,9 +38,13 @@ type Config struct {
 	TraceIDCacheSize int `mapstructure:"trace_id_cache_size"`
 	// Intake controls the `/intake` endpoint behavior
 	Intake IntakeConfig `mapstructure:"intake"`
-	// SeriesIdleTimeout defines the maximum duration a series can remain idle before being removed.
-	// This allows releasing memory used by high cardinality tags that are no longer active.
-	SeriesIdleTimeout time.Duration `mapstructure:"series_idle_timeout"`
+	// IdleSeriesTimeout is the duration after which a series is considered stale
+	// and removed from memory if no new data points are received.
+	// The default value is 0, which disables this feature.
+	IdleSeriesTimeout time.Duration `mapstructure:"idle_series_timeout"`
+	// IdleSeriesCleanupInterval defines how frequently the receiver checks for
+	// and removes idle series. Defaults to 5 minutes.
+	IdleSeriesCleanupInterval time.Duration `mapstructure:"idle_series_cleanup_interval"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
