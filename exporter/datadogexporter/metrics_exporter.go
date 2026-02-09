@@ -68,9 +68,19 @@ func newMetricsExporter(
 	options = append(options,
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
 		otlpmetrics.WithStatsOut(statsOut))
-	if featuregates.MetricRemappingDisabledFeatureGate.IsEnabled() {
+
+	if featuregates.DisableMetricRemappingFeatureGate.IsEnabled() { // new feature gate
+		if featuregates.MetricRemappingDisabledFeatureGate.IsEnabled() { // old feature gate
+			// both enabled: error
+			return nil, fmt.Errorf("feature gates %q and %q cannot both be enabled", featuregates.DisableMetricRemappingFeatureGate.ID(), featuregates.MetricRemappingDisabledFeatureGate.ID())
+		}
+		// only new feature gate enabled: disable remapping
+		options = append(options, otlpmetrics.WithoutRuntimeMetricMappings())
+	} else if featuregates.MetricRemappingDisabledFeatureGate.IsEnabled() { // old feature gate
+		// only old: keep previous behavior
 		params.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics before metrics are exported to Datadog (ex: via a processor).")
 	} else {
+		// neither enabled: keep default behavior
 		options = append(options, otlpmetrics.WithRemapping())
 	}
 
