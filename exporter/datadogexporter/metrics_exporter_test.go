@@ -818,7 +818,7 @@ func TestMetricRemapping(t *testing.T) {
 			expectedMetrics: []string{
 				// Unmapped system metrics
 				"system.filesystem.utilization",
-				// Unmapped runtime metrics
+				// Mapped runtime metrics
 				"runtime.go.num_goroutine",
 				"process.runtime.go.goroutines",
 				"runtime.dotnet.exceptions.count",
