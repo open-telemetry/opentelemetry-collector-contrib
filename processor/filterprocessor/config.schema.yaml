@@ -131,6 +131,9 @@ $defs:
 description: Config defines configuration for Resource processor.
 type: object
 properties:
+  action:
+    description: Action determines whether matching data should be dropped or kept. `drop` (default) discards data that matches the condition. `keep` retains only data that matches the condition and discards the rest.
+    $ref: ./internal/condition.action
   error_mode:
     description: ErrorMode determines how the processor reacts to errors that occur while processing an OTTL condition. Valid values are `ignore` and `propagate`. `ignore` means the processor ignores errors returned by conditions and continues on to the next condition. This is the recommended mode. `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector. The default value is `propagate`.
     $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.error_mode
