@@ -1,9 +1,6 @@
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen/internal/testdata/test06
-title: test06 component
 type: object
 $defs:
-  Address:
+  address:
     properties:
       hostname:
         type: string
@@ -15,14 +12,14 @@ $defs:
     type: object
 properties:
   address:
-    $ref: '#/$defs/Address'
+    $ref: 'address'
     x-pointer: true
   name:
     type: string
     x-pointer: true
   other_addresses:
     items:
-      $ref: '#/$defs/Address'
+      $ref: 'address'
     type: array
     x-pointer: true
   tags:

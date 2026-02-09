@@ -1,0 +1,3 @@
+$defs:
+  config:
+    x-customType: any

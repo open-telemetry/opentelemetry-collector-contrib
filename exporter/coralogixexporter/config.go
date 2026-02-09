@@ -137,6 +137,8 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if isEmpty(c.Metrics.Endpoint) {
 		c.Metrics.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	} else if c.Protocol == httpProtocol {
+		c.Metrics.Endpoint = ensureHTTPScheme(c.Metrics.Endpoint)
 	}
 
 	if !isEmpty(c.Domain) && isEmpty(c.Traces.Endpoint) {
@@ -148,6 +150,8 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if isEmpty(c.Traces.Endpoint) {
 		c.Traces.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	} else if c.Protocol == httpProtocol {
+		c.Traces.Endpoint = ensureHTTPScheme(c.Traces.Endpoint)
 	}
 
 	if !isEmpty(c.Domain) && isEmpty(c.Logs.Endpoint) {
@@ -159,14 +163,23 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if isEmpty(c.Logs.Endpoint) {
 		c.Logs.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
+	} else if c.Protocol == httpProtocol {
+		c.Logs.Endpoint = ensureHTTPScheme(c.Logs.Endpoint)
 	}
 
-	if !isEmpty(c.Domain) && isEmpty(c.Profiles.Endpoint) {
+	// Only auto-populate profiles endpoint if protocol is not HTTP (profiles only support gRPC)
+	if c.Protocol != httpProtocol && !isEmpty(c.Domain) && isEmpty(c.Profiles.Endpoint) {
 		tCfg, err := setMergedTransportConfigWithConf(conf, c, &TransportConfig{ClientConfig: c.Profiles})
 		if err != nil {
 			return err
 		}
 		c.Profiles = tCfg.ClientConfig
+	}
+
+	// Only set profiles endpoint fallback if protocol is not HTTP and we have something to fallback to
+	// This avoid validation issues
+	if c.Protocol != httpProtocol && isEmpty(c.Profiles.Endpoint) && !isEmpty(c.DomainSettings.Endpoint) {
+		c.Profiles.Endpoint = ensureHTTPScheme(c.DomainSettings.Endpoint)
 	}
 	return nil
 }

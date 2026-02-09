@@ -416,17 +416,17 @@ func TestEventShutdown(t *testing.T) {
 	}, 1*time.Second, 10*time.Millisecond)
 	assert.Equal(t, 0, em.numEvents())
 
-	// new events should *not* be processed
-	em.workers[0].fire(event{
-		typ:     traceExpired,
-		payload: pcommon.TraceID([16]byte{1, 2, 3, 4}),
-	})
-
 	// verify
 	assert.Equal(t, int64(1), traceReceivedFired.Load())
 
 	// wait until the shutdown has returned
 	shutdownWg.Wait()
+
+	// new events should *not* be processed after shutdown
+	em.workers[0].fire(event{
+		typ:     traceExpired,
+		payload: pcommon.TraceID([16]byte{1, 2, 3, 4}),
+	})
 
 	// If the code is wrong, there's a chance that the test will still pass
 	// in case the event is processed after the assertion.
@@ -600,11 +600,12 @@ func TestDoWithTimeout_NoTimeout(t *testing.T) {
 func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 	// prepare
 	start := time.Now()
-	blockCh := make(chan struct{}) // channel that will never be closed/signaled
+	blockCh := make(chan struct{})
+	defer close(blockCh) // cleanup: unblock the goroutine to prevent leak
 
 	// test
 	succeed, err := doWithTimeout(20*time.Millisecond, func() error {
-		<-blockCh // block forever (simulating a long-running function)
+		<-blockCh // block until timeout or channel closed
 		return nil
 	})
 	assert.False(t, succeed)

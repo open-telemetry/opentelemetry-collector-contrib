@@ -121,3 +121,35 @@ func (ser *serializer) write(str string) {
 func (ser *serializer) check(err error) {
 	ser.err = multierr.Append(ser.err, err)
 }
+
+// =============================================================================
+// Character validation functions shared by W3C and OTel tracestate parsers.
+// These hand-written validators are significantly faster than regex-based
+// validation (30-60x speedup).
+// =============================================================================
+
+// isLcAlpha returns true if c is a lowercase ASCII letter (a-z).
+func isLcAlpha(c byte) bool {
+	return c >= 'a' && c <= 'z'
+}
+
+// isLcAlphaNum returns true if c is a lowercase ASCII letter or digit.
+func isLcAlphaNum(c byte) bool {
+	return isLcAlpha(c) || (c >= '0' && c <= '9')
+}
+
+// isValidKeyChar returns true if c is valid in a W3C tracestate key
+// (lowercase alphanumeric or one of: _ - * /).
+func isValidKeyChar(c byte) bool {
+	return isLcAlphaNum(c) || c == '_' || c == '-' || c == '*' || c == '/'
+}
+
+// isValidKeyChars returns true if all characters in s are valid W3C key characters.
+func isValidKeyChars(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if !isValidKeyChar(s[i]) {
+			return false
+		}
+	}
+	return true
+}

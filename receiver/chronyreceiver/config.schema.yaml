@@ -1,0 +1,8 @@
+type: object
+properties:
+  endpoint:
+    description: 'Endpoint is the published address or unix socket that allows clients to connect to: The allowed format is: unix:///path/to/chronyd/unix.sock udp://localhost:323 The default value is unix:///var/run/chrony/chronyd.sock'
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config

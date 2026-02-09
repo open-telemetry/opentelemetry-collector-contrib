@@ -1,0 +1,12 @@
+description: Config defines configuration for the Wavefront receiver.
+type: object
+properties:
+  extract_collectd_tags:
+    description: ExtractCollectdTags instructs the Wavefront receiver to attempt to extract tags in the CollectD format from the metric name. The default is false.
+    type: boolean
+  tcp_idle_timeout:
+    description: TCPIdleTimeout is the timeout for idle TCP connections.
+    type: string
+    format: duration
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config

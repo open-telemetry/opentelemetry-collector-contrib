@@ -1,0 +1,59 @@
+$defs:
+  mappings_settings:
+    type: object
+    properties:
+      dedot:
+        type: boolean
+      dedup:
+        description: Try to find and remove duplicate fields
+        type: boolean
+      fields:
+        description: Additional field mappings.
+        type: object
+        additionalProperties:
+          type: string
+      file:
+        description: File to read additional fields mappings from.
+        type: string
+      mode:
+        description: 'Mode configures the field mappings. Supported modes are the following: ss4o: exports logs in the Simple Schema for Observability standard. This mode is enabled by default. See: https://opensearch.org/docs/latest/observing-your-data/ss4o/ ecs: maps fields defined in the OpenTelemetry Semantic Conventions to the Elastic Common Schema. See: https://www.elastic.co/guide/en/ecs/current/index.html flatten_attributes: uses the ECS mapping but flattens all resource and log attributes in the record to the top-level. bodymap: supports only logs and uses the "body" of a log record as the exact content of the OpenSearch document, without any transformation. This mapping mode is intended for use cases where the client wishes to have complete control over the OpenSearch document structure.'
+        type: string
+      timestamp_field:
+        description: Field to store timestamp in.  If not set uses the default @timestamp
+        type: string
+      unix_timestamp:
+        description: Whether to store timestamp in Epoch milliseconds
+        type: boolean
+description: Config defines configuration for OpenSearch exporter.
+type: object
+properties:
+  bulk_action:
+    description: BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here. If not specified, the default value `create` will be used.
+    type: string
+  dataset:
+    description: The Observability indices would follow the recommended for immutable data stream ingestion pattern using the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/ Index pattern will follow the next naming template ss4o_{type}-{dataset}-{namespace}
+    type: string
+  logs_index:
+    description: LogsIndex configures the index, index alias, or data stream name logs should be indexed in. https://opensearch.org/docs/latest/im-plugin/index/ https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
+    type: string
+  logs_index_fallback:
+    type: string
+  logs_index_time_format:
+    type: string
+  namespace:
+    type: string
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  traces_index:
+    description: TracesIndex configures the index, index alias, or data stream name traces should be indexed in. https://opensearch.org/docs/latest/im-plugin/index/ https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
+    type: string
+  traces_index_fallback:
+    type: string
+  traces_index_time_format:
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+  - $ref: mappings_settings

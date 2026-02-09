@@ -1,0 +1,37 @@
+$defs:
+  metric_filter:
+    type: object
+    properties:
+      dimensions:
+        description: A map of dimension key/values to match against. All key/values must match a datapoint for it to be matched. The map values can be either a single string or a list of strings.
+        type: object
+        additionalProperties:
+          x-customType: any
+      metric_name:
+        description: A single metric name to match against.
+        type: string
+      metric_names:
+        description: A list of metric names to match against.
+        type: array
+        items:
+          type: string
+  property_filter:
+    description: 'PropertyFilter is a collection of *StringFilter items used in determining if a given property (name and value) should be included with a dimension update request. The default values for all fields is equivalent to the regex StringFilter `/^.*$/` to match with any potential value. Examples: Don''t send any dimension updates for `k8s.pod.uid` dimension: - dimension_name: "k8s.pod.uid" Don''t send dimension updates for any dimension with a value of `some.value`: - dimension_value: "some.value" Don''t send dimension updates including a `some.property` property for any dimension: - property_name: "some.property" Don''t send dimension updates including a `some.property` property with a "some.value" value for any dimension - property_name: "some.property" property_value: "some.value"'
+    type: object
+    properties:
+      dimension_name:
+        description: DimensionName is the (inverted) literal, regex, or globbed dimension name/key to not target for dimension updates. If there are no sub-property filters for its enclosing entry, it will disable dimension updates for this dimension name in total.
+        x-pointer: true
+        $ref: string_filter
+      dimension_value:
+        description: PropertyValue is the (inverted) literal, regex, or globbed dimension value to not target with a dimension update If there are no sub-property filters for its enclosing entry, it will disable dimension updates for this dimension value in total.
+        x-pointer: true
+        $ref: string_filter
+      property_name:
+        description: PropertyName is the (inverted) literal, regex, or globbed property name/key to not include in dimension updates
+        x-pointer: true
+        $ref: string_filter
+      property_value:
+        description: PropertyValue is the (inverted) literal or globbed property value to not include in dimension updates
+        x-pointer: true
+        $ref: string_filter

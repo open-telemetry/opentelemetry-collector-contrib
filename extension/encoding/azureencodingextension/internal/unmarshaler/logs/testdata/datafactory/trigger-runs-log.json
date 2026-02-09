@@ -1,0 +1,50 @@
+{
+  "records": [
+    {
+      "Level": 4,
+      "correlationId": "06a5be36-ad33-4cc7-88dd-139d038c9066",
+      "time": "2020-11-04T21:48:01.8759324Z",
+      "triggerId": "08585970804052975818107475697CU19",
+      "resourceId": "/SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.DATAFACTORY/FACTORIES/TESTDATAFACTORY",
+      "category": "TriggerRuns",
+      "level": "Informational",
+      "operationName": "trigger1 - Succeeded",
+      "triggerName": "trigger1",
+      "triggerType": "ScheduleTrigger",
+      "triggerEvent": "ScheduleTrigger - 2020-11-04T21:48:00.1695402Z",
+      "start": "2020-11-04T21:48:00.1695402Z",
+      "status": "Succeeded",
+      "location": "southcentralus",
+      "type": "integration",
+      "properties": {
+        "Parameters": {
+          "TriggerTime": "2020-11-04T21:48:00.1695402Z",
+          "ScheduleTime": "2020-11-04T21:48:00Z",
+          "triggerObject": {
+            "name": "Trigger_421B8CAF-BE66-42CF-83DA-E3028693F304",
+            "startTime": "2020-11-04T21:48:00.1695402Z",
+            "endTime": "2020-11-04T21:48:00.1695402Z",
+            "scheduledTime": "2020-11-04T21:48:00Z",
+            "trackingId": "3af57bb0-44cc-49a9-8c24-a03f319988af",
+            "clientTrackingId": "08585970804052975818107475697CU19",
+            "originHistoryName": "08585970804052975818107475697CU19",
+            "code": "OK",
+            "status": "Succeeded"
+          }
+        },
+        "SystemParameters": {},
+        "Message": "",
+        "UserProperties": {},
+        "DependencyStatus": {},
+        "TriggeredPipelines": {
+          "dataFlowPipeline": "9b02bd3d-338b-40e4-8e4e-251021316bb7"
+        },
+        "Annotations": []
+      },
+      "tags": "{}",
+      "groupId": "08585970804052975818107475697CU19",
+      "meterId": "04f2be54-5cfe-4ad7-97f3-0badfc1dc247",
+      "billingResourceId": "/SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/TEST-RG/PROVIDERS/MICROSOFT.DATAFACTORY/FACTORIES/TESTDATAFACTORY"
+    }
+  ]
+}
