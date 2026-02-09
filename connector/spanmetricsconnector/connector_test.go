@@ -375,6 +375,9 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 			mID.statusCode = v.Str()
 		case otelStatusCodeKey:
 			mID.otelStatusCode = v.Str()
+		case metricAttrSamplingMethod:
+			// sampling.method attribute is always present, verify it's either "counted" or "extrapolated"
+			assert.Contains(tb, []string{"counted", "extrapolated"}, v.Str())
 		case notInSpanAttrName1:
 			assert.Fail(tb, notInSpanAttrName1+" should not be in this metric")
 		default:
@@ -2245,12 +2248,17 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 
 			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope, false)
 
-			assert.Equal(t, len(tt.want), attrs.Len())
+			// +1 for the sampling.method attribute that's always added
+			assert.Equal(t, len(tt.want)+1, attrs.Len())
 			for k, v := range tt.want {
 				val, ok := attrs.Get(k)
 				assert.True(t, ok)
 				assert.Equal(t, v, val.Str())
 			}
+			// Verify sampling.method attribute is present
+			samplingMethod, ok := attrs.Get(metricAttrSamplingMethod)
+			assert.True(t, ok)
+			assert.Equal(t, "counted", samplingMethod.Str())
 		})
 	}
 }
@@ -2552,12 +2560,17 @@ func TestBuildAttributesWithFeatureGate(t *testing.T) {
 
 			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope, false)
 
-			assert.Equal(t, len(tt.want), attrs.Len())
+			// +1 for the sampling.method attribute that's always added
+			assert.Equal(t, len(tt.want)+1, attrs.Len())
 			for k, v := range tt.want {
 				val, ok := attrs.Get(k)
 				assert.True(t, ok)
 				assert.Equal(t, v, val.Str())
 			}
+			// Verify sampling.method attribute is present
+			samplingMethod, ok := attrs.Get(metricAttrSamplingMethod)
+			assert.True(t, ok)
+			assert.Equal(t, "counted", samplingMethod.Str())
 		})
 	}
 }
@@ -2590,12 +2603,12 @@ func TestBuildAttributes_AdjustedCount(t *testing.T) {
 
 			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, pcommon.NewInstrumentationScope(), tt.isAdjustedCount)
 
-			val, ok := attrs.Get(metricAttrIsExtrapolated)
+			val, ok := attrs.Get(metricAttrSamplingMethod)
+			assert.True(t, ok, "sampling.method attribute should always be present")
 			if tt.expectAttribute {
-				assert.True(t, ok, "adjusted_count attribute should be present")
-				assert.True(t, val.Bool(), "adjusted_count should be true")
+				assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated")
 			} else {
-				assert.False(t, ok, "adjusted_count attribute should not be present")
+				assert.Equal(t, "counted", val.Str(), "sampling.method should be counted")
 			}
 		})
 	}
@@ -2666,15 +2679,13 @@ func TestAdjustedCountAttribute_Integration(t *testing.T) {
 							dps := m.Sum().DataPoints()
 							for l := 0; l < dps.Len(); l++ {
 								dp := dps.At(l)
-								val, hasAdjustedCount := dp.Attributes().Get(metricAttrIsExtrapolated)
+								val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
 
+								assert.True(t, hasAttr, "sampling.method attribute should always be present")
 								if tt.expectAdjusted {
-									assert.True(t, hasAdjustedCount, "adjusted_count attribute should be present for valid tracestate")
-									if hasAdjustedCount {
-										assert.True(t, val.Bool(), "adjusted_count should be true")
-									}
+									assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated for valid tracestate")
 								} else {
-									assert.False(t, hasAdjustedCount, "adjusted_count attribute should not be present for invalid/missing tracestate")
+									assert.Equal(t, "counted", val.Str(), "sampling.method should be counted for invalid/missing tracestate")
 								}
 								found = true
 							}
@@ -2741,15 +2752,13 @@ func TestAdjustedCountAttribute_Histogram(t *testing.T) {
 							dps := m.Histogram().DataPoints()
 							for l := 0; l < dps.Len(); l++ {
 								dp := dps.At(l)
-								val, hasAdjustedCount := dp.Attributes().Get(metricAttrIsExtrapolated)
+								val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
 
+								assert.True(t, hasAttr, "sampling.method attribute should always be present")
 								if tt.expectAdjusted {
-									assert.True(t, hasAdjustedCount, "adjusted_count attribute should be present for histogram with valid tracestate")
-									if hasAdjustedCount {
-										assert.True(t, val.Bool(), "adjusted_count should be true")
-									}
+									assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated for histogram with valid tracestate")
 								} else {
-									assert.False(t, hasAdjustedCount, "adjusted_count attribute should not be present for histogram without tracestate")
+									assert.Equal(t, "counted", val.Str(), "sampling.method should be counted for histogram without tracestate")
 								}
 								found = true
 							}
@@ -2817,15 +2826,13 @@ func TestAdjustedCountAttribute_Events(t *testing.T) {
 							dps := m.Sum().DataPoints()
 							for l := 0; l < dps.Len(); l++ {
 								dp := dps.At(l)
-								val, hasAdjustedCount := dp.Attributes().Get(metricAttrIsExtrapolated)
+								val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
 
+								assert.True(t, hasAttr, "sampling.method attribute should always be present")
 								if tt.expectAdjusted {
-									assert.True(t, hasAdjustedCount, "adjusted_count attribute should be present for events with valid tracestate")
-									if hasAdjustedCount {
-										assert.True(t, val.Bool(), "adjusted_count should be true")
-									}
+									assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated for events with valid tracestate")
 								} else {
-									assert.False(t, hasAdjustedCount, "adjusted_count attribute should not be present for events without tracestate")
+									assert.Equal(t, "counted", val.Str(), "sampling.method should be counted for events without tracestate")
 								}
 								found = true
 							}
@@ -2921,12 +2928,13 @@ func TestConsumeTracesWithTracestate_ExtrapolatedValues(t *testing.T) {
 								dp := dps.At(l)
 								totalCalls += dp.IntValue()
 
-								// Verify is_extrapolated attribute
-								_, hasAttr := dp.Attributes().Get(metricAttrIsExtrapolated)
+								// Verify sampling.method attribute
+								val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
+								assert.True(t, hasAttr, "calls metric should always have sampling.method attribute")
 								if tt.expectExtrapolated {
-									assert.True(t, hasAttr, "calls metric should have is_extrapolated attribute")
+									assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated")
 								} else {
-									assert.False(t, hasAttr, "calls metric should not have is_extrapolated attribute")
+									assert.Equal(t, "counted", val.Str(), "sampling.method should be counted")
 								}
 							}
 
@@ -2937,12 +2945,13 @@ func TestConsumeTracesWithTracestate_ExtrapolatedValues(t *testing.T) {
 								dp := dps.At(l)
 								totalHistogramCount += dp.Count()
 
-								// Verify is_extrapolated attribute
-								_, hasAttr := dp.Attributes().Get(metricAttrIsExtrapolated)
+								// Verify sampling.method attribute
+								val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
+								assert.True(t, hasAttr, "histogram metric should always have sampling.method attribute")
 								if tt.expectExtrapolated {
-									assert.True(t, hasAttr, "histogram metric should have is_extrapolated attribute")
+									assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated")
 								} else {
-									assert.False(t, hasAttr, "histogram metric should not have is_extrapolated attribute")
+									assert.Equal(t, "counted", val.Str(), "sampling.method should be counted")
 								}
 							}
 
@@ -2953,12 +2962,13 @@ func TestConsumeTracesWithTracestate_ExtrapolatedValues(t *testing.T) {
 								dp := dps.At(l)
 								totalEvents += dp.IntValue()
 
-								// Verify is_extrapolated attribute
-								_, hasAttr := dp.Attributes().Get(metricAttrIsExtrapolated)
+								// Verify sampling.method attribute
+								val, hasAttr := dp.Attributes().Get(metricAttrSamplingMethod)
+								assert.True(t, hasAttr, "events metric should always have sampling.method attribute")
 								if tt.expectExtrapolated {
-									assert.True(t, hasAttr, "events metric should have is_extrapolated attribute")
+									assert.Equal(t, "extrapolated", val.Str(), "sampling.method should be extrapolated")
 								} else {
-									assert.False(t, hasAttr, "events metric should not have is_extrapolated attribute")
+									assert.Equal(t, "counted", val.Str(), "sampling.method should be counted")
 								}
 							}
 						}

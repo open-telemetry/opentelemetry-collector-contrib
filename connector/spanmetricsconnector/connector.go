@@ -45,7 +45,6 @@ const (
 	metricNameCalls    = "calls"
 	metricNameEvents   = "events"
 
-	metricAttrIsExtrapolated = "is_extrapolated"
 	metricAttrSamplingMethod = "sampling.method"
 
 	defaultUnit = metrics.Seconds
@@ -574,8 +573,9 @@ func (p *connectorImp) buildAttributes(
 	}
 
 	if isAdjustedCount {
-		attr.PutBool(metricAttrIsExtrapolated, true)
-		attr.PutStr(metricAttrSamplingMethod, "ot.thrv")
+		attr.PutStr(metricAttrSamplingMethod, "extrapolated")
+	} else {
+		attr.PutStr(metricAttrSamplingMethod, "counted")
 	}
 
 	addResourceAttributes(&attr, dimensions, span, resourceAttrs)
