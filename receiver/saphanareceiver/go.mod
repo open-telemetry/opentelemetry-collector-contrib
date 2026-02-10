@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphan
 go 1.24.0
 
 require (
-	github.com/SAP/go-hdb v1.14.19
+	github.com/SAP/go-hdb v1.14.22
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.145.0
