@@ -29,7 +29,7 @@ type tracesDataConsumer interface {
 }
 
 type blobReceiver struct {
-	blobEventHandler   blobEventHandler
+	blobEventHandler   eventHandler
 	logger             *zap.Logger
 	logsUnmarshaler    plog.Unmarshaler
 	tracesUnmarshaler  ptrace.Unmarshaler
@@ -95,7 +95,7 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 }
 
 // Returns a new instance of the log receiver
-func newReceiver(set receiver.Settings, blobEventHandler blobEventHandler) (component.Component, error) {
+func newReceiver(set receiver.Settings, eventHandler eventHandler) (component.Component, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "event",
@@ -106,15 +106,15 @@ func newReceiver(set receiver.Settings, blobEventHandler blobEventHandler) (comp
 	}
 
 	blobReceiver := &blobReceiver{
-		blobEventHandler:  blobEventHandler,
+		blobEventHandler:  eventHandler,
 		logger:            set.Logger,
 		logsUnmarshaler:   &plog.JSONUnmarshaler{},
 		tracesUnmarshaler: &ptrace.JSONUnmarshaler{},
 		obsrecv:           obsrecv,
 	}
 
-	blobEventHandler.setLogsDataConsumer(blobReceiver)
-	blobEventHandler.setTracesDataConsumer(blobReceiver)
+	eventHandler.setLogsDataConsumer(blobReceiver)
+	eventHandler.setTracesDataConsumer(blobReceiver)
 
 	return blobReceiver, nil
 }

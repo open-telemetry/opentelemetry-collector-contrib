@@ -59,8 +59,8 @@ func getEvent(eventData []byte) *azeventhubs.ReceivedEventData {
 	}
 }
 
-func getBlobEventHandler(tb testing.TB, blobClient blobClient) *azureBlobEventHandler {
-	blobEventHandler := newBlobEventHandler(
+func getBlobEventHandler(tb testing.TB, blobClient blobClient) *eventHubEventHandler {
+	blobEventHandler := newEventHubEventHandler(
 		eventHubString,
 		logsContainerName,
 		tracesContainerName,
