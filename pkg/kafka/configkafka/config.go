@@ -78,8 +78,6 @@ type ClientConfig struct {
 	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
 
 	// ConnectionIdleTimeout specifies the time after which idle connections are closed.
-	//
-	// Note: The connection may be closed between 0.5x-1x of the configured value.
 	ConnectionIdleTimeout time.Duration `mapstructure:"connection_idle_timeout"`
 }
 
