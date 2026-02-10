@@ -148,6 +148,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 		})
 	}
 }
+
 func TestResourceProcessorWithDefaultValue(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -323,6 +324,7 @@ func generateTraceDataWithMixedTypes(attributes map[string]string) ptrace.Traces
 	}
 	return td
 }
+
 func generateTraceData(attributes map[string]string) ptrace.Traces {
 	td := testdata.GenerateTracesOneSpanNoResource()
 	if attributes == nil {
