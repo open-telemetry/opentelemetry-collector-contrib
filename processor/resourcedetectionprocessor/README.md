@@ -22,14 +22,9 @@ override the resource value in telemetry data with this information.
 
 > **Note**
 >
-> If a configured resource detector fails in some way, the error it returns to the processor will propagate and stop the collector from starting. This behavior is configurable using a feature gate, however the error behavior of each independent resource detector may vary.
->
-> This feature can be controlled with [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) `processor.resourcedetection.propagateerrors`. It is currently enabled by default (beta stage).
->
->  Example of how to disable it:
-> ```shell-session
-> $ otelcol --config=config.yaml --feature-gates=-processor.resourcedetection.propagateerrors
-> ```
+> If a configured resource detector fails, the error will propagate and stop the collector from starting.
+> The `processor.resourcedetection.propagateerrors` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) is now stable and always enabled
+> (as of v0.146.0).
 
 ## Feature gates
 

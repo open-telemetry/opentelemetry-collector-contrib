@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_solacereceiver_dropped_egress_spans
 
-Number of dropped egress spans [Development]
+Number of dropped egress spans
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,7 +16,7 @@ Number of dropped egress spans [Development]
 
 ### otelcol_solacereceiver_dropped_span_messages
 
-Number of dropped span messages [Development]
+Number of dropped span messages
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -24,7 +24,7 @@ Number of dropped span messages [Development]
 
 ### otelcol_solacereceiver_failed_reconnections
 
-Number of failed broker reconnections [Development]
+Number of failed broker reconnections
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -32,7 +32,7 @@ Number of failed broker reconnections [Development]
 
 ### otelcol_solacereceiver_fatal_unmarshalling_errors
 
-Number of fatal message unmarshalling errors [Development]
+Number of fatal message unmarshalling errors
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -40,7 +40,7 @@ Number of fatal message unmarshalling errors [Development]
 
 ### otelcol_solacereceiver_need_upgrade
 
-Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker [Development]
+Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -48,7 +48,7 @@ Indicates with value 1 that receiver requires an upgrade and is not compatible w
 
 ### otelcol_solacereceiver_received_span_messages
 
-Number of received span messages [Development]
+Number of received span messages
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -56,7 +56,7 @@ Number of received span messages [Development]
 
 ### otelcol_solacereceiver_receiver_flow_control_recent_retries
 
-Most recent/current retry count when flow controlled [Development]
+Most recent/current retry count when flow controlled
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -64,7 +64,7 @@ Most recent/current retry count when flow controlled [Development]
 
 ### otelcol_solacereceiver_receiver_flow_control_status
 
-Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled [Development]
+Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -72,7 +72,7 @@ Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = 
 
 ### otelcol_solacereceiver_receiver_flow_control_total
 
-Number of times the receiver instance became flow controlled [Development]
+Number of times the receiver instance became flow controlled
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -80,7 +80,7 @@ Number of times the receiver instance became flow controlled [Development]
 
 ### otelcol_solacereceiver_receiver_flow_control_with_single_successful_retry
 
-Number of times the receiver instance became flow controlled and resolved situations after the first retry [Development]
+Number of times the receiver instance became flow controlled and resolved situations after the first retry
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -88,7 +88,7 @@ Number of times the receiver instance became flow controlled and resolved situat
 
 ### otelcol_solacereceiver_receiver_status
 
-Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated [Development]
+Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -96,7 +96,7 @@ Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2
 
 ### otelcol_solacereceiver_recoverable_unmarshalling_errors
 
-Number of recoverable message unmarshalling errors [Development]
+Number of recoverable message unmarshalling errors
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -104,7 +104,7 @@ Number of recoverable message unmarshalling errors [Development]
 
 ### otelcol_solacereceiver_reported_spans
 
-Number of reported spans [Development]
+Number of reported spans
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
