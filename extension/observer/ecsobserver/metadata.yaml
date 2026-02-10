@@ -1,3 +1,4 @@
+display_name: Amazon Elastic Container Service Observer
 type: ecs_observer
 
 status:

@@ -14,7 +14,7 @@ data:
       health_check:
         endpoint: 0.0.0.0:13133
     processors:
-      k8sattributes:
+      k8s_attributes:
         extract:
           metadata:
           - k8s.pod.name
@@ -50,27 +50,27 @@ data:
           exporters:
           - otlp_grpc
           processors:
-          - k8sattributes
+          - k8s_attributes
           receivers:
           - otlp
         metrics:
           exporters:
           - otlp_grpc
           processors:
-          - k8sattributes
+          - k8s_attributes
           receivers:
           - otlp
         traces:
           exporters:
           - otlp_grpc
           processors:
-          - k8sattributes
+          - k8s_attributes
           receivers:
           - otlp
         profiles:
           exporters:
           - otlp_grpc
           processors:
-          - k8sattributes
+          - k8s_attributes
           receivers:
           - otlp

@@ -72,7 +72,7 @@ NOTE: a value without unit is in nanoseconds and `flush_interval` is ignored and
 - `directory_permissions`[default: 0755]: file mode (octal string) used when creating directories, minus the process umask. This also applies to directories created by `group_by`.
 
 - `group_by` enables writing to separate files based on a resource attribute.
-  - enabled: [default: false] enables group_by. When group_by is enabled, rotation setting is ignored. 
+  - enabled: [default: false] enables group_by.
   - resource_attribute: [default: fileexporter.path_segment]: specifies the name of the resource attribute that contains the path segment of the file to write to. The final path will be the `path` config value, with the `*` replaced with the value of this resource attribute.
   - max_open_files: [default: 100]: specifies the maximum number of open file descriptors for the output files.
 
