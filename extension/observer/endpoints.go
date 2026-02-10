@@ -39,6 +39,8 @@ const (
 	ContainerType EndpointType = "container"
 	// KafkaTopicType is a kafka topic endpoint
 	KafkaTopicType EndpointType = "kafka.topics"
+	// JSONFileType is a JSON file-based endpoint.
+	JSONFileType EndpointType = "jsonfile"
 )
 
 var (

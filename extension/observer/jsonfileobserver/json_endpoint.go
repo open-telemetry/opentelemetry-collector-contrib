@@ -38,11 +38,8 @@ func (j *JSONFileEndpoint) Env() observer.EndpointEnv {
 }
 
 func (*JSONFileEndpoint) Type() observer.EndpointType {
-	return JSONFileType
+	return observer.JSONFileType
 }
-
-// JSONFileType is the endpoint type for JSON file-based endpoints.
-const JSONFileType observer.EndpointType = "jsonfile"
 
 // convertEndpointConfig converts an EndpointConfig to an observer.Endpoint.
 func convertEndpointConfig(idNamespace string, ec EndpointConfig) observer.Endpoint {
