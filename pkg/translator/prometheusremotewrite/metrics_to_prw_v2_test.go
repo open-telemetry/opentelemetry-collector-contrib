@@ -236,7 +236,7 @@ func TestScopeAttributesV2(t *testing.T) {
 	dp1.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
 	dp1.SetIntValue(1)
 
-	// Scope 2 
+	// Scope 2
 	sm2 := rm.ScopeMetrics().AppendEmpty()
 	scope2 := sm2.Scope()
 	scope2.SetName("scope2")
