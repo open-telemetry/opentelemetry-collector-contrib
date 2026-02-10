@@ -45,7 +45,10 @@ func (r *textLogCodec) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 			if atEOF && len(data) == 0 {
 				return 0, nil, nil
 			}
-			return len(data), data, nil
+			if atEOF {
+				return len(data), data, nil
+			}
+			return 0, nil, nil // Request more data until EOF
 		})
 	}
 	for s.Scan() {

@@ -66,3 +66,15 @@ coralogix/domain_endpoints:
   application_name: "APP_NAME"
   subsystem_name: "SUBSYSTEM_NAME"
   timeout: 5s
+
+coralogix/http_protocol:
+  protocol: "http"
+  domain: "coralogix.com"
+  application_name_attributes:
+    - "service.namespace"
+  subsystem_name_attributes:
+    - "service.name"
+  private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  application_name: "APP_NAME"
+  subsystem_name: "SUBSYSTEM_NAME"
+  timeout: 5s

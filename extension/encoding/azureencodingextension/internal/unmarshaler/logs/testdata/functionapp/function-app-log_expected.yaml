@@ -1,0 +1,290 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/PROD-RG/PROVIDERS/MICROSOFT.WEB/SITES/PROD-FUNCTION
+        - key: cloud.region
+          value:
+            stringValue: West Europe
+        - key: service.name
+          value:
+            stringValue: prod-function-app/Functions.processData
+        - key: service.instance.id
+          value:
+            stringValue: 12345678-987654321012345678
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: FunctionAppLogs
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Web/sites/functions/log
+              - key: faas.invoked_provider
+                value:
+                  stringValue: azure
+              - key: azure.event.name
+                value:
+                  stringValue: FunctionCompleted
+              - key: azure.event.id
+                value:
+                  intValue: "7"
+              - key: faas.invocation_id
+                value:
+                  stringValue: 9f8e7d6c-5b4a-3c2d-1e0f-abcdef123456
+              - key: faas.name
+                value:
+                  stringValue: prod-function-app/Functions.processData
+              - key: faas.invoked_name
+                value:
+                  stringValue: Functions.processData
+              - key: host.id
+                value:
+                  stringValue: a1b2c3d4-e5f6-7890-abcd-1234567890ef
+              - key: host.image.version
+                value:
+                  stringValue: 4.22.1.0
+              - key: process.pid
+                value:
+                  intValue: "101"
+              - key: exception.stacktrace
+                value:
+                  stringValue: |-
+                    Microsoft.Azure.WebJobs.Host.FunctionInvocationException : Exception while executing function: Functions.processData ---> Microsoft.Azure.WebJobs.Script.Workers.Rpc.RpcException : Result: Failure
+                    Exception: Exception: Unexpected error!
+                    Stack:   File "/azure-functions-host/workers/python/3.9/LINUX/X64/azure_functions_worker/dispatcher.py", line 479, in _handle__invocation_request
+                        call_result = await self._loop.run_in_executor(
+                      File "/usr/local/lib/python3.9/concurrent/futures/thread.py", line 58, in run
+                        result = self.fn(*self.args, **self.kwargs)
+                      File "/azure-functions-host/workers/python/3.9/LINUX/X64/azure_functions_worker/dispatcher.py", line 752, in _run_sync_func
+                        return ExtensionManager.get_sync_invocation_wrapper(context,
+                      File "/azure-functions-host/workers/python/3.9/LINUX/X64/azure_functions_worker/extension.py", line 215, in _raw_invocation_wrapper
+                        result = function(**args)
+                      File "/home/site/wwwroot/processData/__init__.py", line 30, in main
+                        raise Exception("Unexpected error!")
+              - key: exception.message
+                value:
+                  stringValue: |
+                    Result: Failure
+                    Exception: Exception: Unexpected error!
+                    Stack:   File "/azure-functions-host/workers/python/3.9/LINUX/X64/azure_functions_worker/dispatcher.py", line 479, in _handle__invocation_request
+                        call_result = await self._loop.run_in_executor(
+                      File "/usr/local/lib/python3.9/concurrent/futures/thread.py", line 58, in run
+                        result = self.fn(*self.args, **self.kwargs)
+                      File "/azure-functions-host/workers/python/3.9/LINUX/X64/azure_functions_worker/dispatcher.py", line 752, in _run_sync_func
+                        return ExtensionManager.get_sync_invocation_wrapper(context,
+                      File "/azure-functions-host/workers/python/3.9/LINUX/X64/azure_functions_worker/extension.py", line 215, in _raw_invocation_wrapper
+                        result = function(**args)
+                      File "/home/site/wwwroot/processData/__init__.py", line 30, in main
+                        raise Exception("Unexpected error!")
+              - key: exception.type
+                value:
+                  stringValue: Exception
+            body:
+              stringValue: Executed Functions.processData (Failed, Id=9f8e7d6c-5b4a-3c2d-1e0f-abcdef123456, Duration=25ms)
+            severityNumber: 17
+            severityText: Error
+            timeUnixNano: "1718029365000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/PROD-RG/PROVIDERS/MICROSOFT.WEB/SITES/PROD-FUNCTION
+        - key: cloud.region
+          value:
+            stringValue: West Europe
+        - key: service.name
+          value:
+            stringValue: prod-function-app/Functions.processData
+        - key: service.instance.id
+          value:
+            stringValue: 12345678-987654321012345679
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: FunctionAppLogs
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Web/sites/functions/log
+              - key: faas.invoked_provider
+                value:
+                  stringValue: azure
+              - key: azure.event.name
+                value:
+                  stringValue: FunctionStarted
+              - key: azure.event.id
+                value:
+                  intValue: "2"
+              - key: faas.invocation_id
+                value:
+                  stringValue: abcdef12-3456-7890-abcd-1234567890ab
+              - key: faas.name
+                value:
+                  stringValue: prod-function-app/Functions.processData
+              - key: faas.invoked_name
+                value:
+                  stringValue: Functions.processData
+              - key: host.id
+                value:
+                  stringValue: b2c3d4e5-f6a7-8901-bcde-2345678901ab
+              - key: host.image.version
+                value:
+                  stringValue: 4.22.1.0
+              - key: process.pid
+                value:
+                  intValue: "102"
+            body:
+              stringValue: Executing Functions.processData (Reason=This function was programmatically called via the host APIs., Id=abcdef12-3456-7890-abcd-1234567890ab)
+            severityNumber: 9
+            severityText: Informational
+            timeUnixNano: "1717924533000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/PROD-RG/PROVIDERS/MICROSOFT.WEB/SITES/INVALIDJSON-FUNCTION
+        - key: cloud.region
+          value:
+            stringValue: West Europe
+        - key: service.name
+          value:
+            stringValue: invalidjson-function-app/Functions.processData
+        - key: service.instance.id
+          value:
+            stringValue: 12345678-987654321012345679
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: FunctionAppLogs
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Web/sites/functions/log
+              - key: faas.invoked_provider
+                value:
+                  stringValue: azure
+              - key: azure.event.name
+                value:
+                  stringValue: FunctionStarted
+              - key: azure.event.id
+                value:
+                  intValue: "2"
+              - key: faas.invocation_id
+                value:
+                  stringValue: abcdef12-3456-7890-abcd-1234567890ab
+              - key: faas.name
+                value:
+                  stringValue: invalidjson-function-app/Functions.processData
+              - key: faas.invoked_name
+                value:
+                  stringValue: Functions.processData
+              - key: host.id
+                value:
+                  stringValue: b2c3d4e5-f6a7-8901-bcde-2345678901ab
+              - key: host.image.version
+                value:
+                  stringValue: 4.22.1.0
+              - key: process.pid
+                value:
+                  intValue: "102"
+            body:
+              stringValue: Message
+            severityNumber: 9
+            severityText: Informational
+            timeUnixNano: "1717924533000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/ABCD1234-5678-90EF-1234-567890ABCDEF/RESOURCEGROUPS/PROD-RG/PROVIDERS/MICROSOFT.WEB/SITES/DOUBLEJSON-FUNCTION
+        - key: cloud.region
+          value:
+            stringValue: West Europe
+        - key: service.name
+          value:
+            stringValue: doublejson-function-app/Functions.processData
+        - key: service.instance.id
+          value:
+            stringValue: 12345678-987654321012345679
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: FunctionAppLogs
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Web/sites/functions/log
+              - key: faas.invoked_provider
+                value:
+                  stringValue: azure
+              - key: azure.event.name
+                value:
+                  stringValue: FunctionStarted
+              - key: azure.event.id
+                value:
+                  intValue: "2"
+              - key: faas.invocation_id
+                value:
+                  stringValue: abcdef12-3456-7890-abcd-1234567890ab
+              - key: faas.name
+                value:
+                  stringValue: doublejson-function-app/Functions.processData
+              - key: faas.invoked_name
+                value:
+                  stringValue: Functions.processData
+              - key: host.id
+                value:
+                  stringValue: b2c3d4e5-f6a7-8901-bcde-2345678901ab
+              - key: host.image.version
+                value:
+                  stringValue: 4.22.1.0
+              - key: process.pid
+                value:
+                  intValue: "102"
+            body:
+              stringValue: 'Double-escaped encoded JSON: {\''key1\'':\''{\\\''boolKey\\\'':true,\\\''intKey\\\'':10,\\\''floatKey\\\'':0.9,\\\''stringKey\\\'':\\\''value\\\''}\''}'
+            severityNumber: 9
+            severityText: Informational
+            timeUnixNano: "1717924533000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

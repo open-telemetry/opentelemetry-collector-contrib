@@ -1,0 +1,11 @@
+$defs:
+  access_token_passthrough_config:
+    description: AccessTokenPassthroughConfig configures passing through access tokens.
+    type: object
+    properties:
+      access_token_passthrough:
+        description: AccessTokenPassthrough indicates whether to associate datapoints with an organization access token received in request.
+        type: boolean
+  host_id_key:
+    description: HostIDKey represents a host identifier.
+    type: string

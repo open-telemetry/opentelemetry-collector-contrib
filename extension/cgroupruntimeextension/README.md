@@ -31,14 +31,14 @@ The following settings can be configured:
 ## Examples
 
 ```yaml
-extension:
-    # processor name: cgroupruntime
-    cgroupruntime:
-      gomaxprocs:
-        enabled: true
-      gomemlimit:
-        enabled: true
-        ratio: 0.8
+extensions:
+  # processor name: cgroupruntime
+  cgroupruntime:
+    gomaxprocs:
+      enabled: true
+    gomemlimit:
+      enabled: true
+      ratio: 0.8
 ```
 
 ## Contributing

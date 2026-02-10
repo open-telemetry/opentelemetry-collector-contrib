@@ -1,0 +1,73 @@
+$defs:
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for kafkametrics metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for kafkametrics metrics.
+    type: object
+    properties:
+      kafka.broker.log_retention_period:
+        $ref: metric_config
+      kafka.brokers:
+        $ref: metric_config
+      kafka.consumer_group.lag:
+        $ref: metric_config
+      kafka.consumer_group.lag_sum:
+        $ref: metric_config
+      kafka.consumer_group.members:
+        $ref: metric_config
+      kafka.consumer_group.offset:
+        $ref: metric_config
+      kafka.consumer_group.offset_sum:
+        $ref: metric_config
+      kafka.partition.current_offset:
+        $ref: metric_config
+      kafka.partition.oldest_offset:
+        $ref: metric_config
+      kafka.partition.replicas:
+        $ref: metric_config
+      kafka.partition.replicas_in_sync:
+        $ref: metric_config
+      kafka.topic.log_retention_period:
+        $ref: metric_config
+      kafka.topic.log_retention_size:
+        $ref: metric_config
+      kafka.topic.min_insync_replicas:
+        $ref: metric_config
+      kafka.topic.partitions:
+        $ref: metric_config
+      kafka.topic.replication_factor:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for kafkametrics resource attributes.
+    type: object
+    properties:
+      kafka.cluster.alias:
+        $ref: resource_attribute_config

@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-var typ = component.MustNewType("signaltometrics")
+var typ = component.MustNewType("signal_to_metrics")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())

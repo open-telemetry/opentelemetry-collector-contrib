@@ -24,7 +24,7 @@ func TestReadConfig(t *testing.T) {
 	require.Equal(t, Package, cfg.Mode)
 	require.Equal(t, dir, cfg.DirPath)
 	require.Equal(t, dir, cfg.OutputFolder)
-	require.Empty(t, cfg.RootTypeName)
+	require.Empty(t, cfg.ConfigType)
 }
 
 func TestReadConfig_Errors(t *testing.T) {
@@ -53,7 +53,7 @@ func TestReadConfig_RespectsRootTypeFlag(t *testing.T) {
 	cfg, err := readConfigForTest(t, "-r", "ExplicitType", target)
 	require.NoError(t, err)
 
-	require.Equal(t, "ExplicitType", cfg.RootTypeName)
+	require.Equal(t, "ExplicitType", cfg.ConfigType)
 }
 
 func TestReadConfig_ReadsSettingsFile(t *testing.T) {
@@ -90,6 +90,114 @@ func TestReadConfig_ReadsSettingsFile(t *testing.T) {
 	}, cfg.Mappings)
 }
 
+func TestReadConfig_MetadataHandling(t *testing.T) {
+	tests := []struct {
+		name          string
+		metadata      string
+		expectedMode  RunMode
+		expectedClass string
+	}{
+		{
+			name: "with parent field",
+			metadata: `type: test
+status:
+  class: pkg
+parent: someparent
+`,
+			expectedMode:  Component,
+			expectedClass: "",
+		},
+		{
+			name: "receiver class",
+			metadata: `type: testreceiver
+status:
+  class: receiver
+`,
+			expectedMode:  Component,
+			expectedClass: "receiver",
+		},
+		{
+			name: "processor class",
+			metadata: `type: testprocessor
+status:
+  class: processor
+`,
+			expectedMode:  Component,
+			expectedClass: "processor",
+		},
+		{
+			name: "exporter class",
+			metadata: `type: testexporter
+status:
+  class: exporter
+`,
+			expectedMode:  Component,
+			expectedClass: "exporter",
+		},
+		{
+			name: "connector class",
+			metadata: `type: testconnector
+status:
+  class: connector
+`,
+			expectedMode:  Component,
+			expectedClass: "connector",
+		},
+		{
+			name: "extension class",
+			metadata: `type: testextension
+status:
+  class: extension
+`,
+			expectedMode:  Component,
+			expectedClass: "extension",
+		},
+		{
+			name: "unknown class (pkg)",
+			metadata: `type: testpkg
+status:
+  class: pkg
+`,
+			expectedMode:  Package,
+			expectedClass: "pkg",
+		},
+		{
+			name: "scraper class (default case)",
+			metadata: `type: testscraper
+status:
+  class: scraper
+`,
+			expectedMode:  Package,
+			expectedClass: "scraper",
+		},
+		{
+			name:          "no metadata file",
+			metadata:      "",
+			expectedMode:  Package,
+			expectedClass: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			t.Chdir(dir)
+			createConfigFile(t, dir, "config.go")
+
+			// Create metadata.yaml if metadata content is provided
+			if tt.metadata != "" {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte(tt.metadata), 0o600))
+			}
+
+			cfg, err := readConfigForTest(t, dir)
+			require.NoError(t, err)
+
+			require.Equal(t, tt.expectedMode, cfg.Mode)
+			require.Equal(t, tt.expectedClass, cfg.Class)
+		})
+	}
+}
+
 func createConfigFile(t *testing.T, dir, name string) string {
 	t.Helper()
 	target := filepath.Join(dir, name)
@@ -102,14 +210,14 @@ func readConfigForTest(t *testing.T, args ...string) (*Config, error) {
 
 	origArgs := os.Args
 	origCommandLine := flag.CommandLine
-	origRootType := rootType
+	origRootType := configType
 	origOutputFolder := outputFolder
 	origFileType := fileType
 
 	flag.CommandLine = flag.NewFlagSet(origArgs[0], flag.ContinueOnError)
 	flag.CommandLine.SetOutput(io.Discard)
 
-	rootType = flag.String("r", "", "Root type name (default is derived from file name)")
+	configType = flag.String("r", "", "Root type name (default is derived from file name)")
 	outputFolder = flag.String("o", "", "Output schema folder")
 	fileType = flag.String("t", "yaml", "Output file type (yaml or json)")
 
@@ -117,7 +225,7 @@ func readConfigForTest(t *testing.T, args ...string) (*Config, error) {
 	t.Cleanup(func() {
 		os.Args = origArgs
 		flag.CommandLine = origCommandLine
-		rootType = origRootType
+		configType = origRootType
 		outputFolder = origOutputFolder
 		fileType = origFileType
 	})

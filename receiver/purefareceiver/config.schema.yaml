@@ -1,0 +1,68 @@
+$defs:
+  reload_intervals:
+    type: object
+    properties:
+      array:
+        type: string
+        format: duration
+      directories:
+        type: string
+        format: duration
+      hosts:
+        type: string
+        format: duration
+      pods:
+        type: string
+        format: duration
+      volumes:
+        type: string
+        format: duration
+  settings:
+    type: object
+    properties:
+      reload_intervals:
+        x-pointer: true
+        $ref: reload_intervals
+description: Config relating to Array Metric Scraper.
+type: object
+properties:
+  array:
+    description: Array represents the list of arrays to query
+    type: array
+    items:
+      $ref: ./internal.scraper_config
+  directories:
+    description: Directories represents the list of directories to query
+    type: array
+    items:
+      $ref: ./internal.scraper_config
+  env:
+    description: Env represents the respective environment value valid to scrape
+    type: string
+  fa_array_name:
+    description: ArrayName represents the display name that is appended to the received metrics, as the `host` label if not provided by OpenMetrics output, and to the `fa_array_name` label always
+    type: string
+  hosts:
+    description: Hosts represents the list of hosts to query
+    type: array
+    items:
+      $ref: ./internal.scraper_config
+  namespace:
+    description: Namespace selects the OpenMetrics namespace requested
+    type: string
+  pods:
+    description: Pods represents the list of pods to query
+    type: array
+    items:
+      $ref: ./internal.scraper_config
+  settings:
+    description: Settings contains settings for the individual scrapers
+    x-pointer: true
+    $ref: settings
+  volumes:
+    description: Volumes represents the list of volumes to query
+    type: array
+    items:
+      $ref: ./internal.scraper_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

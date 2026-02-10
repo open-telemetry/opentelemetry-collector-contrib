@@ -21,16 +21,16 @@ This receiver reads logs and trace data from [Azure Blob Storage](https://azure.
 The following settings are required:
 
 - `event_hub:`
-  `  endpoint:` (no default): Azure Event Hub endpoint triggering on the `Blob Create` event 
+  - `endpoint:` (no default): Azure Event Hub endpoint triggering on the `Blob Create` event 
 
 The following settings can be optionally configured:
 
 - `auth` (default = connection_string): Specifies the used authentication method. Supported values are `connection_string`, `service_principal`, `default`.
 - `cloud` (default = "AzureCloud"): Defines which Azure Cloud to use when using the `service_principal` authentication method. Value is either `AzureCloud` or `AzureUSGovernment`.
 - `logs:`
-  `  container_name:` (default = "logs"): Name of the blob container with the logs
+  - `container_name:` (default = "logs"): Name of the blob container with the logs
 - `traces:`
-  `  container_name:` (default = "traces"): Name of the blob container with the traces
+  - `container_name:` (default = "traces"): Name of the blob container with the traces
 
 Authenticating using a connection string requires configuration of the following additional setting:
 
@@ -39,10 +39,12 @@ Authenticating using a connection string requires configuration of the following
 Authenticating using service principal requires configuration of the following additional settings:
 
 - `service_principal:`
-  `  tenant_id`
-  `  client_id`
-  `  client_secret`
+  - `tenant_id`
+  - `client_id`
+  - `client_secret`
 - `storage_account_url:` Azure Storage Account url
+
+
 
 The service principal method also requires the [Storage Blob Data Contributor](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage#storage-blob-data-contributor) role on the logs and traces containers.
 

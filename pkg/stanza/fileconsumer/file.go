@@ -196,7 +196,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 	if wasCorrupted {
 		m.set.Logger.Debug("Detected and repaired corrupted UNC path", zap.String("original_path", path), zap.String("normalized_path", normalizedPath))
 	}
-	file, err := os.Open(normalizedPath) // #nosec - operator must read in files defined by user
+	file, err := openFile(normalizedPath) // #nosec - operator must read in files defined by user
 	if err != nil {
 		// If a file is unreadable due to permissions error, store path in map and log error once (unless in debug mode)
 		if errors.Is(err, fs.ErrPermission) {
