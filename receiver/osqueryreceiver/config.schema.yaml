@@ -1,0 +1,10 @@
+type: object
+properties:
+  extensions_socket:
+    type: string
+  queries:
+    type: array
+    items:
+      type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

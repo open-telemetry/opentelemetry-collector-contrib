@@ -1,0 +1,22 @@
+description: Config is the config of the processor.
+type: object
+properties:
+  conditions:
+    type: array
+    items:
+      type: string
+  exclude_fields:
+    type: array
+    items:
+      type: string
+  include_fields:
+    type: array
+    items:
+      type: string
+  interval:
+    type: string
+    format: duration
+  log_count_attribute:
+    type: string
+  timezone:
+    type: string

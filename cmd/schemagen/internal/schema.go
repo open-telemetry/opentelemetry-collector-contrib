@@ -19,7 +19,7 @@ type SchemaElement interface {
 
 type SchemaObject interface {
 	AddProperty(name string, property SchemaElement)
-	AddEmbeddedRef(ref string)
+	AddEmbedded(element SchemaElement)
 }
 
 type BaseSchemaElement struct {
@@ -71,14 +71,17 @@ func (s *ObjectSchemaElement) AddProperty(name string, property SchemaElement) {
 	s.Properties[name] = property
 }
 
-func (s *ObjectSchemaElement) AddEmbeddedRef(ref string) {
+func (s *ObjectSchemaElement) AddEmbedded(element SchemaElement) {
 	// prevent duplicates
-	for _, refEl := range s.AllOf {
-		if r, ok := refEl.(*RefSchemaElement); ok && r.Ref == ref {
-			return
+	if re, ok := element.(*RefSchemaElement); ok {
+		ref := re.Ref
+		for _, refEl := range s.AllOf {
+			if r, ok := refEl.(*RefSchemaElement); ok && r.Ref == ref {
+				return
+			}
 		}
 	}
-	s.AllOf = append(s.AllOf, CreateRefField(ref, ""))
+	s.AllOf = append(s.AllOf, element)
 }
 
 type DefsSchemaElement map[string]SchemaElement
@@ -187,10 +190,8 @@ func mergeSchemas(base SchemaObject, additional SchemaElement) error {
 		for name, prop := range objectElement.Properties {
 			base.AddProperty(name, prop)
 		}
-		for _, ref := range objectElement.AllOf {
-			if refElem, ok := ref.(*RefSchemaElement); ok {
-				base.AddEmbeddedRef(refElem.Ref)
-			}
+		for _, el := range objectElement.AllOf {
+			base.AddEmbedded(el)
 		}
 		return nil
 	}

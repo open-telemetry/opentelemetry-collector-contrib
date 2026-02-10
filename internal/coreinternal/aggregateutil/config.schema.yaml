@@ -1,0 +1,4 @@
+$defs:
+  aggregation_type:
+    description: AggregationType is the enum to capture the three types of aggregation for the aggregation operation.
+    type: string

@@ -1,0 +1,79 @@
+$defs:
+  ordering_config:
+    description: OrderingConfig customizes the behavior of the ordering
+    type: object
+    properties:
+      enabled:
+        description: Enabled indicates if ordering is enabled
+        type: boolean
+      from_resource_attribute:
+        description: FromResourceAttribute is a resource attribute that will be used as the ordering key.
+        type: string
+      remove_resource_attribute:
+        description: RemoveResourceAttribute indicates if the ordering key should be removed from the resource attributes.
+        type: boolean
+  signal_config:
+    description: SignalConfig holds signal-specific configuration for the Kafka exporter.
+    type: object
+    properties:
+      attributes:
+        description: Attributes are custom Pub/Sub message attributes
+        type: object
+        additionalProperties:
+          type: string
+      encoding:
+        description: Encoding is a custom encoding for the marshaling the data onto the message
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+  watermark_config:
+    description: WatermarkConfig customizes the behavior of the watermark
+    type: object
+    properties:
+      allowed_drift:
+        description: Indication on how much the timestamp can drift from the current time, the timestamp will be capped to the allowed maximum. A duration of 0 is the same as maximum duration
+        type: string
+        format: duration
+      behavior:
+        description: Behavior of the watermark. Currently, only of the message (none, earliest and current, current being the default) will set the timestamp on pubsub based on timestamps of the events inside the message
+        type: string
+type: object
+properties:
+  compression:
+    description: Compression of the payload (only gzip or is supported, no compression is the default)
+    type: string
+  endpoint:
+    description: Override of the Pubsub Endpoint, leave empty for the default endpoint
+    type: string
+  insecure:
+    description: Only has effect if Endpoint is not ""
+    type: boolean
+  logs:
+    description: LogsSignalConfig allows for custom log configuration
+    $ref: signal_config
+  metrics:
+    description: MetricsSignalConfig allows for custom log configuration
+    $ref: signal_config
+  ordering:
+    description: Ordering configures the ordering keys
+    $ref: ordering_config
+  project:
+    description: Google Cloud Project ID where the Pubsub client will connect to
+    type: string
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  topic:
+    description: The fully qualified resource name of the Pubsub topic
+    type: string
+  traces:
+    description: TracesSignalConfig allows for custom log configuration
+    $ref: signal_config
+  user_agent:
+    description: User agent that will be used by the Pubsub client to connect to the service
+    type: string
+  watermark:
+    description: Watermark defines the watermark (the ce-time attribute on the message) behavior
+    $ref: watermark_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
