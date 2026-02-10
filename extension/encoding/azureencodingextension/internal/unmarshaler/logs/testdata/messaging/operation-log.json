@@ -1,0 +1,32 @@
+{
+  "records": [
+	  {
+      "Environment": "PROD",
+      "Region": "East US",
+      "ScaleUnit": "PROD-BL2-002",
+      "ActivityId": "5caef1dc-732b-4c9f-a940-a585a28d20e6",
+      "EventName": "Retrieve Namespace",
+      "resourceId": "/SUBSCRIPTIONS/XXXX-YYYYY-ZZZZ/RESOURCEGROUPS/TESTGROUP/PROVIDERS/MICROSOFT.SERVICEBUS/NAMESPACES/NAMESPACE",
+      "SubscriptionId": "XXXX-YYYYY-ZZZZ",
+      "EventTimeString": "9/7/2022 2:41:35 PM +00:00",
+      "EventProperties": "{\"SubscriptionId\":\"XXXX-YYYYY-ZZZZ\",\"Namespace\":\"test\",\"Via\":\"https://mynamespace.servicebus.windows.net/f8096791adb448579ee83d30e006a13e/?api-version=2016-07\", \"TrackingId\":\"5caef1dc-732b-4c9f-a940-a585a28d20e6_G6\"}",
+      "Status": "Succeeded",
+      "Caller": "Resource Provider",
+      "category": "OperationalLogs"
+    },
+  	{
+      "Environment": "PROD",
+      "Region": "East US",
+      "ScaleUnit": "PROD-BL2-002",
+      "ActivityId": "5caef1dc-732b-4c9f-a940-a585a28d20e6",
+      "EventName": "Retrieve Namespace",
+      "resourceId": "/SUBSCRIPTIONS/XXXX-YYYYY-ZZZZ/RESOURCEGROUPS/TESTGROUP/PROVIDERS/MICROSOFT.SERVICEBUS/NAMESPACES/NAMESPACE",
+      "SubscriptionId": "XXXX-YYYYY-ZZZZ",
+      "EventTimeString": "9/7/2022 2:41:35 PM +00:00",
+      "EventProperties": "{\"SubscriptionId\":\"XXXX-YYYYY-ZZZZ\",\"Namespace\":\"test\",\"Via\":\"https://mynamespace.servicebus.windows.net/f8096791adb448579ee83d30e006a13e/?api-version=2016-07\", \"TrackingId\":\"5caef1dc-732b-4c9f-a940-a585a28d20e6_G6\", \"ErrorCode\": \"BadRequest\",\"ErrorMessage\": \"SubCode=40000. Partitioning cannot be changed for Queue. To know more visit https://aka.ms/sbResourceMgrExceptions\"}",
+      "Status": "Failed",
+      "Caller": "Resource Provider",
+      "category": "OperationalLogs"
+    }
+  ]
+}

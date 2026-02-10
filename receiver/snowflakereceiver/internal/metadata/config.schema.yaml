@@ -1,0 +1,123 @@
+$defs:
+  attribute_config:
+    description: AttributeConfig holds configuration information for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      aggregation_strategy:
+        type: string
+      attributes:
+        type: array
+        items:
+          type: string
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for snowflake metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for snowflake metrics.
+    type: object
+    properties:
+      snowflake.billing.cloud_service.total:
+        $ref: metric_config
+      snowflake.billing.total_credit.total:
+        $ref: metric_config
+      snowflake.billing.virtual_warehouse.total:
+        $ref: metric_config
+      snowflake.billing.warehouse.cloud_service.total:
+        $ref: metric_config
+      snowflake.billing.warehouse.total_credit.total:
+        $ref: metric_config
+      snowflake.billing.warehouse.virtual_warehouse.total:
+        $ref: metric_config
+      snowflake.database.bytes_scanned.avg:
+        $ref: metric_config
+      snowflake.database.query.count:
+        $ref: metric_config
+      snowflake.logins.total:
+        $ref: metric_config
+      snowflake.pipe.credits_used.total:
+        $ref: metric_config
+      snowflake.query.blocked:
+        $ref: metric_config
+      snowflake.query.bytes_deleted.avg:
+        $ref: metric_config
+      snowflake.query.bytes_spilled.local.avg:
+        $ref: metric_config
+      snowflake.query.bytes_spilled.remote.avg:
+        $ref: metric_config
+      snowflake.query.bytes_written.avg:
+        $ref: metric_config
+      snowflake.query.compilation_time.avg:
+        $ref: metric_config
+      snowflake.query.data_scanned_cache.avg:
+        $ref: metric_config
+      snowflake.query.executed:
+        $ref: metric_config
+      snowflake.query.execution_time.avg:
+        $ref: metric_config
+      snowflake.query.partitions_scanned.avg:
+        $ref: metric_config
+      snowflake.query.queued_overload:
+        $ref: metric_config
+      snowflake.query.queued_provision:
+        $ref: metric_config
+      snowflake.queued_overload_time.avg:
+        $ref: metric_config
+      snowflake.queued_provisioning_time.avg:
+        $ref: metric_config
+      snowflake.queued_repair_time.avg:
+        $ref: metric_config
+      snowflake.rows_deleted.avg:
+        $ref: metric_config
+      snowflake.rows_inserted.avg:
+        $ref: metric_config
+      snowflake.rows_produced.avg:
+        $ref: metric_config
+      snowflake.rows_unloaded.avg:
+        $ref: metric_config
+      snowflake.rows_updated.avg:
+        $ref: metric_config
+      snowflake.session_id.count:
+        $ref: metric_config
+      snowflake.storage.failsafe_bytes.total:
+        $ref: metric_config
+      snowflake.storage.stage_bytes.total:
+        $ref: metric_config
+      snowflake.storage.storage_bytes.total:
+        $ref: metric_config
+      snowflake.total_elapsed_time.avg:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for snowflake resource attributes.
+    type: object
+    properties:
+      snowflake.account.name:
+        $ref: resource_attribute_config

@@ -42,7 +42,10 @@ func TestLoadConfigLegacy(t *testing.T) {
 				Config: healthcheck.Config{
 					LegacyConfig: healthcheck.HTTPLegacyConfig{
 						ServerConfig: confighttp.ServerConfig{
-							Endpoint: "localhost:13",
+							NetAddr: confignet.AddrConfig{
+								Transport: "tcp",
+								Endpoint:  "localhost:13",
+							},
 							TLS: configoptional.Some(configtls.ServerConfig{
 								Config: configtls.Config{
 									CAFile:   "/path/to/ca",
@@ -138,7 +141,10 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 		Config: healthcheck.Config{
 			LegacyConfig: healthcheck.HTTPLegacyConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:13133",
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "localhost:13133",
+					},
 				},
 				Path: "/",
 				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
@@ -149,7 +155,10 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 			},
 			HTTPConfig: &healthcheck.HTTPConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:13133",
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "localhost:13133",
+					},
 				},
 				Status: healthcheck.PathConfig{
 					Enabled: true,

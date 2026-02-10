@@ -80,7 +80,10 @@ func TestReception(t *testing.T) {
 	// 1. Create the Jaeger receiver aka "server"
 	config := Protocols{
 		ThriftHTTP: configoptional.Some(confighttp.ServerConfig{
-			Endpoint: addr,
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  addr,
+				Transport: confignet.TransportTypeTCP,
+			},
 		}),
 	}
 	sink := new(consumertest.TracesSink)

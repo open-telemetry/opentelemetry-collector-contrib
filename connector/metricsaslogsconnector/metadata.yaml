@@ -1,4 +1,5 @@
 type: metricsaslogs
+display_name: Metrics as Logs Connector
 
 status:
   class: connector

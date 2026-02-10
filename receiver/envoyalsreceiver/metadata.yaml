@@ -7,3 +7,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [evan-bradley, zirain]
+
+tests:
+  config:
+    endpoint: 127.0.0.1:0

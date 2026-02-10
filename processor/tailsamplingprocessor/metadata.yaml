@@ -6,7 +6,7 @@ status:
     beta: [traces]
   distributions: [contrib, k8s]
   codeowners:
-    active: [portertech, Logiraptor]
+    active: [portertech, Logiraptor, jmacd]
     emeritus: [jpkrohling]
     seeking_new: true
 
@@ -161,3 +161,13 @@ telemetry:
       enabled: true
       gauge:
         value_type: int
+
+    processor_tail_sampling_traces_dropped_too_large:
+      description: Count of traces that were dropped because they were too large
+      stability:
+        level: development
+      unit: "{traces}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true

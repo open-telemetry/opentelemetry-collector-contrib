@@ -35,7 +35,7 @@ import (
 func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Endpoint = "localhost:0"
+	cfg.(*Config).NetAddr.Endpoint = "localhost:0"
 	ddr, err := factory.CreateTraces(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Traces receiver should be created")
 
@@ -49,7 +49,7 @@ func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Endpoint = "localhost:0"
+	cfg.(*Config).NetAddr.Endpoint = "localhost:0"
 	ddr, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Metrics receiver should be created")
 
@@ -63,7 +63,7 @@ func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 func TestDatadogLogsReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Endpoint = "localhost:0"
+	cfg.(*Config).NetAddr.Endpoint = "localhost:0"
 	ddr, err := factory.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Logs receiver should be created")
 
@@ -76,7 +76,7 @@ func TestDatadogLogsReceiver_Lifecycle(t *testing.T) {
 
 func TestDatadogServer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 
 	ctx := t.Context()
 
@@ -180,7 +180,7 @@ func TestDatadogResponse(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+			cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 
 			ctx := t.Context()
 
@@ -308,7 +308,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+			cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 
 			ctx := t.Context()
 
@@ -347,7 +347,7 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 
 func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -412,7 +412,7 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 
 func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -495,7 +495,7 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 
 func TestDatadogMetricsV2_EndToEndJSON(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -577,7 +577,7 @@ func TestDatadogMetricsV2_EndToEndJSON(t *testing.T) {
 
 func TestDatadogSketches_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -667,7 +667,7 @@ func TestDatadogSketches_EndToEnd(t *testing.T) {
 
 func TestStats_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -761,7 +761,7 @@ func TestStats_EndToEnd(t *testing.T) {
 
 func TestDatadogServices_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -825,7 +825,7 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 
 func TestDatadogServices_SingleObject_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.MetricsSink)
 
 	ctx := t.Context()
@@ -888,7 +888,7 @@ func TestDatadogServices_SingleObject_EndToEnd(t *testing.T) {
 
 func TestDatadogLogsV2_SingleLog_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.LogsSink)
 
 	ctx := t.Context()
@@ -961,7 +961,7 @@ func TestDatadogLogsV2_SingleLog_EndToEnd(t *testing.T) {
 
 func TestDatadogLogsV2_MultipleLogs_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
 	sink := new(consumertest.LogsSink)
 
 	ctx := t.Context()

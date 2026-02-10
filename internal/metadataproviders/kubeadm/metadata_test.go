@@ -118,7 +118,7 @@ func setupConfigMap(client *fake.Clientset) error {
 			Namespace: "ns",
 		},
 		Data: map[string]string{
-			"clusterName": "myClusterName",
+			"ClusterConfiguration": "clusterName: myClusterName",
 		},
 	}
 	_, err := client.CoreV1().ConfigMaps("ns").Create(context.Background(), cm, metav1.CreateOptions{})

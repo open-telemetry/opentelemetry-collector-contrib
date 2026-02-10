@@ -1,0 +1,12 @@
+description: Config defines configuration for HostMetrics receiver.
+type: object
+properties:
+  metadata_collection_interval:
+    description: Collection interval for metadata. Metadata of the particular entity is collected when the entity changes. In addition metadata of all entities is collected periodically even if no changes happen. Setting the duration to 0 will disable periodic collection (however will not impact metadata collection on changes).
+    type: string
+    format: duration
+  root_path:
+    description: RootPath is the host's root directory (linux only).
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

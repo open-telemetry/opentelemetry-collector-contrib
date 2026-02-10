@@ -131,12 +131,12 @@ resourceLogs:
                                               value:
                                                 kvlistValue:
                                                   values:
-                                                    - key: name
-                                                      value:
-                                                        stringValue: pending
                                                     - key: code
                                                       value:
                                                         doubleValue: 0
+                                                    - key: name
+                                                      value:
+                                                        stringValue: pending
                                             - key: previousState
                                               value:
                                                 kvlistValue:
@@ -418,6 +418,15 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: eventSource
+                        value:
+                          stringValue: ssm.amazonaws.com
+                      - key: eventName
+                        value:
+                          stringValue: UpdateInstanceInformation
+                      - key: insightType
+                        value:
+                          stringValue: ApiCallRateInsight
                       - key: insightContext
                         value:
                           kvlistValue:
@@ -443,15 +452,6 @@ resourceLogs:
                       - key: state
                         value:
                           stringValue: Start
-                      - key: eventSource
-                        value:
-                          stringValue: ssm.amazonaws.com
-                      - key: eventName
-                        value:
-                          stringValue: UpdateInstanceInformation
-                      - key: insightType
-                        value:
-                          stringValue: ApiCallRateInsight
             body: {}
             timeUnixNano: "1672627860000000000"
           - attributes:
@@ -611,15 +611,15 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: MFAUsed
-                        value:
-                          boolValue: true
                       - key: MobileVersion
                         value:
                           stringValue: "No"
                       - key: LoginTo
                         value:
                           stringValue: https://console.aws.amazon.com/console/home?region=us
+                      - key: MFAUsed
+                        value:
+                          boolValue: true
             body: {}
             timeUnixNano: "1749997800000000000"
           - attributes:

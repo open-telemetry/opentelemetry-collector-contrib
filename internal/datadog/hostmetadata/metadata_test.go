@@ -260,3 +260,42 @@ func TestPusher(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.Meta.SocketHostname, hostname)
 }
+
+func TestDeepCopyHostMetadata(t *testing.T) {
+	// Create a host metadata payload with gohai data
+	original := payload.HostMetadata{
+		InternalHostname: "test-hostname",
+		Flavor:           "otelcontribcol",
+		Version:          "1.0",
+		Tags:             &payload.HostTags{OTel: []string{"key1:val1"}},
+		Meta: &payload.Meta{
+			Hostname: "test-hostname",
+		},
+	}
+
+	// Deep copy the payload
+	copied := deepCopyHostMetadata(original)
+
+	// Verify the copy has the same values
+	assert.Equal(t, original.InternalHostname, copied.InternalHostname)
+	assert.Equal(t, original.Flavor, copied.Flavor)
+	assert.Equal(t, original.Version, copied.Version)
+	assert.Equal(t, original.Meta.Hostname, copied.Meta.Hostname)
+	assert.Equal(t, original.Tags.OTel, copied.Tags.OTel)
+
+	// Modify the original
+	original.InternalHostname = "modified-hostname"
+	original.Flavor = "modified-flavor"
+	original.Meta.Hostname = "modified-hostname"
+	original.Tags.OTel = append(original.Tags.OTel, "new:tag")
+
+	// Verify the copy is not affected
+	assert.NotEqual(t, original.InternalHostname, copied.InternalHostname)
+	assert.NotEqual(t, original.Flavor, copied.Flavor)
+	assert.NotEqual(t, original.Meta.Hostname, copied.Meta.Hostname)
+	assert.NotEqual(t, len(original.Tags.OTel), len(copied.Tags.OTel))
+	assert.Equal(t, "test-hostname", copied.InternalHostname)
+	assert.Equal(t, "otelcontribcol", copied.Flavor)
+	assert.Equal(t, "test-hostname", copied.Meta.Hostname)
+	assert.Equal(t, []string{"key1:val1"}, copied.Tags.OTel)
+}

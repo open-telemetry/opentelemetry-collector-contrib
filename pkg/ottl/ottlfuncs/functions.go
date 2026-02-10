@@ -123,6 +123,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewWeekdayFactory[K](),
 		NewUserAgentFactory[K](),
 		NewAppendFactory[K](),
+		NewDeleteIndexFactory[K](),
 		NewYearFactory[K](),
 		NewHexFactory[K](),
 		NewSliceToMapFactory[K](),
@@ -132,5 +133,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewKeysFactory[K](),
 		NewXXH3Factory[K](),
 		NewXXH128Factory[K](),
+		NewIsInCIDRFactory[K](),
 	}
 }

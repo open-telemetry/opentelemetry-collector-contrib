@@ -130,7 +130,7 @@ func (r *sfxReceiver) Start(ctx context.Context, host component.Host) error {
 	// set up the listener
 	ln, err := r.config.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", r.config.NetAddr.Endpoint, err)
 	}
 
 	mx := mux.NewRouter()
