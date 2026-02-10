@@ -1,8 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Deprecated [v0.146.0]:  Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors" instead.
-package errors // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+package stanzaerrors // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 
 import (
 	"encoding/json"
