@@ -17,7 +17,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.32.1
 	github.com/hetznercloud/hcloud-go/v2 v2.36.0
-	github.com/linode/go-metadata v0.2.3
+	github.com/linode/go-metadata v0.2.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.145.0
@@ -94,7 +94,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
-	github.com/go-resty/resty/v2 v2.17.0 // indirect
+	github.com/go-resty/resty/v2 v2.17.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
