@@ -568,6 +568,18 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Concat(attributes["primitiveValuesSlice"], ";"))`,
+			want: func(_ *testing.T, tCtx *ottlprofile.TransformContext) {
+				putProfileAttribute(t, tCtx, "test", "value1;42;true")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Concat(Split(attributes["flags"], "|"), ";"))`,
+			want: func(_ *testing.T, tCtx *ottlprofile.TransformContext) {
+				putProfileAttribute(t, tCtx, "test", "A;B;C")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ConvertCase(attributes["http.method"], "upper"))`,
 			want: func(_ *testing.T, tCtx *ottlprofile.TransformContext) {
 				putProfileAttribute(t, tCtx, "test", http.MethodGet)
@@ -1636,6 +1648,7 @@ func constructProfileTransformContext() *ottlprofile.TransformContext {
 				map[string]any{"name": "foo", "value": 2},
 				map[string]any{"name": "bar", "value": 5},
 			}},
+			{Key: "primitiveValuesSlice", Value: []any{"value1", 42, true}},
 		},
 	}
 

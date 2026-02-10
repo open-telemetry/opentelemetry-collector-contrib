@@ -649,11 +649,14 @@ Examples:
 
 ### Concat
 
-`Concat(values[], delimiter)`
+`Concat(values, delimiter)`
 
-The `Concat` Converter takes a sequence of values and a delimiter and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
+The `Concat` Converter takes a sequence of values and a delimiter and concatenates their string representation.
 
-`values` is a list of values. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
+`values` is either:
+
+- a list of values, which supports paths, primitive values, and byte slices (such as trace IDs or span IDs)
+- a path expression or converter result resolving to a slice
 
 `delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
 
@@ -666,6 +669,9 @@ Examples:
 
 
 - `Concat(["HTTP method is: ", span.attributes["http.method"]], "")`
+
+
+- `Concat(log.attributes["tags"], ",")`
 
 ### ContainsValue
 
