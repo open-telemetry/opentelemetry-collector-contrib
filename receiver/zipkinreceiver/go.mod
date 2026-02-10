@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/jaegertracing/jaeger-idl v0.6.0
