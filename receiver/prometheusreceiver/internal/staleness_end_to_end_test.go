@@ -177,15 +177,10 @@ service:
 	defer app.Shutdown()
 
 	// Wait until the collector has actually started.
-	for notYetStarted := true; notYetStarted; {
+	require.Eventually(t, func() bool {
 		state := app.GetState()
-		switch state {
-		case otelcol.StateRunning, otelcol.StateClosed, otelcol.StateClosing:
-			notYetStarted = false
-		case otelcol.StateStarting:
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
+		return state == otelcol.StateRunning || state == otelcol.StateClosed || state == otelcol.StateClosing
+	}, 30*time.Second, 10*time.Millisecond, "collector did not start")
 
 	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest

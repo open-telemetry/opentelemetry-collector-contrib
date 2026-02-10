@@ -1,0 +1,37 @@
+description: Config defines configuration for Azure Data Explorer Exporter
+type: object
+properties:
+  application_id:
+    type: string
+  application_key:
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  cluster_uri:
+    type: string
+  db_name:
+    type: string
+  ingestion_type:
+    type: string
+  logs_table_json_mapping:
+    type: string
+  logs_table_name:
+    type: string
+  managed_identity_id:
+    type: string
+  metrics_table_json_mapping:
+    type: string
+  metrics_table_name:
+    type: string
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  tenant_id:
+    type: string
+  traces_table_json_mapping:
+    type: string
+  traces_table_name:
+    type: string
+  use_azure_auth:
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

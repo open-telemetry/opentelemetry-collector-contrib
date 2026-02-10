@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_fluent_closed_connections
 
-Number of connections closed to the fluentforward receiver [Development]
+Number of connections closed to the fluentforward receiver
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,7 +16,7 @@ Number of connections closed to the fluentforward receiver [Development]
 
 ### otelcol_fluent_events_parsed
 
-Number of Fluent events parsed successfully [Development]
+Number of Fluent events parsed successfully
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -24,7 +24,7 @@ Number of Fluent events parsed successfully [Development]
 
 ### otelcol_fluent_opened_connections
 
-Number of connections opened to the fluentforward receiver [Development]
+Number of connections opened to the fluentforward receiver
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -32,7 +32,7 @@ Number of connections opened to the fluentforward receiver [Development]
 
 ### otelcol_fluent_parse_failures
 
-Number of times Fluent messages failed to be decoded [Development]
+Number of times Fluent messages failed to be decoded
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -40,7 +40,7 @@ Number of times Fluent messages failed to be decoded [Development]
 
 ### otelcol_fluent_records_generated
 
-Number of log records generated from Fluent forward input [Development]
+Number of log records generated from Fluent forward input
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

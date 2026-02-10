@@ -5,17 +5,17 @@ go 1.24.0
 require (
 	github.com/IBM/sarama v1.46.3
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.144.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.145.0
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/stretchr/testify v1.11.1
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20251021233722-4ca18825d8c0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/xdg-go/scram v1.2.0
-	go.opentelemetry.io/collector/component v1.50.1-0.20260128232850-0bb8e65fdaa4
-	go.opentelemetry.io/collector/component/componenttest v0.144.1-0.20260128232850-0bb8e65fdaa4
-	go.opentelemetry.io/collector/config/configcompression v1.50.1-0.20260128232850-0bb8e65fdaa4
-	go.opentelemetry.io/collector/config/configopaque v1.50.1-0.20260128232850-0bb8e65fdaa4
-	go.opentelemetry.io/collector/config/configtls v1.50.1-0.20260128232850-0bb8e65fdaa4
+	go.opentelemetry.io/collector/component v1.51.1-0.20260205185216-81bc641f26c0
+	go.opentelemetry.io/collector/component/componenttest v0.145.1-0.20260205185216-81bc641f26c0
+	go.opentelemetry.io/collector/config/configcompression v1.51.1-0.20260205185216-81bc641f26c0
+	go.opentelemetry.io/collector/config/configopaque v1.51.1-0.20260205185216-81bc641f26c0
+	go.opentelemetry.io/collector/config/configtls v1.51.1-0.20260205185216-81bc641f26c0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -72,21 +72,21 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/confmap v1.50.1-0.20260128232850-0bb8e65fdaa4 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.144.1-0.20260128232850-0bb8e65fdaa4 // indirect
-	go.opentelemetry.io/collector/featuregate v1.50.1-0.20260128232850-0bb8e65fdaa4 // indirect
-	go.opentelemetry.io/collector/pdata v1.50.1-0.20260128232850-0bb8e65fdaa4 // indirect
-	go.opentelemetry.io/otel v1.39.0 // indirect
-	go.opentelemetry.io/otel/metric v1.39.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
-	go.opentelemetry.io/otel/trace v1.39.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.51.1-0.20260205185216-81bc641f26c0 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.145.1-0.20260205185216-81bc641f26c0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260205185216-81bc641f26c0 // indirect
+	go.opentelemetry.io/collector/pdata v1.51.1-0.20260205185216-81bc641f26c0 // indirect
+	go.opentelemetry.io/otel v1.40.0 // indirect
+	go.opentelemetry.io/otel/metric v1.40.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.40.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.40.0 // indirect
+	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

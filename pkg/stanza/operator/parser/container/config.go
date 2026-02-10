@@ -22,6 +22,7 @@ const (
 	operatorType              = "container"
 	recombineSourceIdentifier = attrs.LogFilePath
 	recombineIsLastEntry      = "attributes.logtag == 'F'"
+	defaultMaxLogSize         = 1024 * 1024
 )
 
 func init() {
@@ -39,7 +40,7 @@ func NewConfigWithID(operatorID string) *Config {
 		ParserConfig:            helper.NewParserConfig(operatorID, operatorType),
 		Format:                  "",
 		AddMetadataFromFilePath: true,
-		MaxLogSize:              0,
+		MaxLogSize:              defaultMaxLogSize,
 	}
 }
 
@@ -98,7 +99,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 //	combine_field: body
 //	combine_with: ""
 //	is_last_entry: attributes.logtag == 'F'
-//	max_log_size: 102400
+//	max_log_size: 1048576 (1MiB)
 //	source_identifier: attributes["log.file.path"]
 //	type: recombine
 func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *helper.BatchingLogEmitter) (operator.Operator, error) {
@@ -124,5 +125,9 @@ func createRecombineConfig(c Config) *recombine.Config {
 	recombineParserCfg.CombineWith = ""
 	recombineParserCfg.SourceIdentifier = entry.NewAttributeField(recombineSourceIdentifier)
 	recombineParserCfg.MaxLogSize = c.MaxLogSize
+	// Set batch sizes to 0 (unlimited) - rely on max_log_size for protection
+	recombineParserCfg.MaxBatchSize = 0
+	recombineParserCfg.MaxUnmatchedBatchSize = 0
+
 	return recombineParserCfg
 }

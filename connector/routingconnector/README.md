@@ -5,8 +5,8 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Frouting%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Frouting) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Frouting%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Frouting) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_routing)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_routing&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mwear](https://www.github.com/mwear), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@evan-bradley](https://www.github.com/evan-bradley), [@edmocosta](https://www.github.com/edmocosta), [@bogdandrutu](https://www.github.com/bogdandrutu) \| Seeking more code owners! |
-| Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@evan-bradley](https://www.github.com/evan-bradley), [@edmocosta](https://www.github.com/edmocosta), [@bogdandrutu](https://www.github.com/bogdandrutu) \| Seeking more code owners! |
+| Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling), [@mwear](https://www.github.com/mwear) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -37,6 +37,9 @@ The following settings are available:
 - `table.context (optional, default: resource)`: the [OTTL Context] in which the statement will be evaluated. Currently, only `resource`, `span`, `metric`, `datapoint`, `log`, and `request` are supported.
 - `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. May not be used for `request` context.
 - `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. Required for `request` context.
+- `table.action (optional, default: move)`: determines what happens to the data when the routing condition is met. Valid values are `move` and `copy`.
+  - `move`: Matched data is moved to the target pipeline(s) and removed from subsequent route evaluation. This is the default behavior.
+  - `copy`: Matched data is copied to the target pipeline(s) but remains available for evaluation by subsequent routes. This allows the same data to be routed to multiple pipelines.
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
 - `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `propagate`, `ignore` and `silent`. If `ignore` or `silent` is used and a statement's condition has an error then the payload will be routed to the default pipelines. When `silent` is used the error is not logged. If not supplied, `propagate` is used.
@@ -228,6 +231,100 @@ service:
       receivers: [routing]
       exporters: [file/ecorp]
 ```
+
+Route all logs to an archive, while also routing based on severity using `action: copy`:
+
+```yaml
+receivers:
+    otlp:
+
+exporters:
+  file/archive:
+    path: ./archive.log
+  file/errors:
+    path: ./errors.log
+  file/other:
+    path: ./other.log
+
+connectors:
+  routing:
+    default_pipelines: [logs/other]
+    table:
+      - context: resource
+        condition: "true"
+        action: copy
+        pipelines: [logs/archive]
+      - context: log
+        condition: severity_number >= SEVERITY_NUMBER_ERROR
+        pipelines: [logs/errors]
+
+service:
+  pipelines:
+    logs/in:
+      receivers: [otlp]
+      exporters: [routing]
+    logs/archive:
+      receivers: [routing]
+      exporters: [file/archive]
+    logs/errors:
+      receivers: [routing]
+      exporters: [file/errors]
+    logs/other:
+      receivers: [routing]
+      exporters: [file/other]
+```
+
+In this example:
+- All logs are first copied to the archive pipeline (using `action: copy`), which means the original data remains available for subsequent route evaluation.
+- Error logs are then moved to the errors pipeline (using the default `action: move`).
+- Any remaining logs (non-errors) go to the default pipeline.
+
+Route traces to multiple pipelines based on different attributes using `action: copy`:
+
+```yaml
+receivers:
+    otlp:
+
+exporters:
+  file/prod:
+    path: ./prod.json
+  file/high-latency:
+    path: ./high-latency.json
+  file/other:
+    path: ./other.json
+
+connectors:
+  routing:
+    default_pipelines: [traces/other]
+    table:
+      - context: resource
+        condition: attributes["env"] == "prod"
+        action: copy
+        pipelines: [traces/prod]
+      - context: span
+        condition: attributes["http.duration_ms"] > 1000
+        pipelines: [traces/high-latency]
+
+service:
+  pipelines:
+    traces/in:
+      receivers: [otlp]
+      exporters: [routing]
+    traces/prod:
+      receivers: [routing]
+      exporters: [file/prod]
+    traces/high-latency:
+      receivers: [routing]
+      exporters: [file/high-latency]
+    traces/other:
+      receivers: [routing]
+      exporters: [file/other]
+```
+
+In this example:
+- Production traces are copied to the prod pipeline. Since `action: copy` is used, the traces remain available for subsequent evaluation.
+- High-latency spans (>1000ms) are then moved to the high-latency pipeline. A production trace with high latency will appear in both the prod and high-latency pipelines.
+- Remaining traces go to the default pipeline.
 
 ## `match_once`
 
