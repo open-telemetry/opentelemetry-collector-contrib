@@ -79,6 +79,12 @@ func TestConvertUnstructuredToEndpoint(t *testing.T) {
 	assert.Equal(t, int64(3), crdDetails.Spec["replicas"])
 	assert.Equal(t, "myimage:latest", crdDetails.Spec["image"])
 
+	// Check nested spec
+	require.NotNil(t, crdDetails.Spec["config"])
+	config, ok := crdDetails.Spec["config"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, int64(8080), config["port"])
+
 	// Check status
 	require.NotNil(t, crdDetails.Status)
 	assert.Equal(t, "Running", crdDetails.Status["phase"])
