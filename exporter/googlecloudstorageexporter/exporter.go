@@ -193,21 +193,27 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 	if err != nil {
 		return fmt.Errorf("failed to create storage client: %w", err)
 	}
-	err = client.Bucket(s.cfg.Bucket.Name).Create(ctx, s.cfg.Bucket.ProjectID, &storage.BucketAttrs{
-		Location: s.cfg.Bucket.Region,
-	})
-	if err != nil {
-		if !s.cfg.Bucket.ReuseIfExists {
-			return fmt.Errorf("failed to create storage bucket %q: %w", s.cfg.Bucket.Name, err)
-		}
-		if !isBucketConflictError(err) {
-			return fmt.Errorf("unexpected error creating the storage bucket %q: %w", s.cfg.Bucket.Name, err)
-		}
-		// otherwise bucket exists and will be reused
-		s.logger.Info("Existing bucket will be used", zap.String("bucket", s.cfg.Bucket.Name))
+
+	if s.cfg.Bucket.UseExisting {
+		s.logger.Info("Using existing bucket", zap.String("bucket", s.cfg.Bucket.Name))
 	} else {
-		s.logger.Info("Created bucket", zap.String("bucket", s.cfg.Bucket.Name))
+		err = client.Bucket(s.cfg.Bucket.Name).Create(ctx, s.cfg.Bucket.ProjectID, &storage.BucketAttrs{
+			Location: s.cfg.Bucket.Region,
+		})
+		if err != nil {
+			if !s.cfg.Bucket.ReuseIfExists {
+				return fmt.Errorf("failed to create storage bucket %q: %w", s.cfg.Bucket.Name, err)
+			}
+			if !isBucketConflictError(err) {
+				return fmt.Errorf("unexpected error creating the storage bucket %q: %w", s.cfg.Bucket.Name, err)
+			}
+			// otherwise bucket exists and will be reused
+			s.logger.Info("Existing bucket will be used", zap.String("bucket", s.cfg.Bucket.Name))
+		} else {
+			s.logger.Info("Created bucket", zap.String("bucket", s.cfg.Bucket.Name))
+		}
 	}
+
 	s.bucketHandle = client.Bucket(s.cfg.Bucket.Name)
 	s.storageClient = client
 	return nil

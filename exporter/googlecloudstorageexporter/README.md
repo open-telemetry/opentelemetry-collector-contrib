@@ -25,7 +25,8 @@ This exporter writes received OpenTelemetry data to a cloud storage bucket.
 | `bucket.name`            | Name for the bucket storage.                                                                                                                                                                                             | Yes      |         |
 | `bucket.file_prefix`     | Prefix for the created filename. This prefix is applied after the partition path (if any).                                                                                                                               | No       | `logs`  |
 | `bucket.partition`       | Configuration for time-based partitioning. See below for details.                                                                                                                                                        | No       |         |
-| `bucket.reuse_if_exists` | If true, use the existing bucket if it already exists; if false, error if bucket exists.                                                                                                                                 | No       | `false` |
+| `bucket.use_existing`    | If true, skip bucket creation and assume the bucket already exists. Useful when bucket is managed externally or service account lacks creation permissions. Takes precedence over `reuse_if_exists`.                      | No       | `false` |
+| `bucket.reuse_if_exists` | If true, use the existing bucket if it already exists; if false, error if bucket exists. Ignored if `use_existing` is true.                                                                                              | No       | `false` |
 | `bucket.region`          | Region where the bucket will be created or where it exists. If left empty, it will query the metadata endpoint. It requires the collector to be running in a Google Cloud environment.                                   | Yes      |         |
 | `bucket.compression`     | Compression algorithm used to compress data before uploading. Valid values are `gzip`, `zstd`, or no value set for no compression.                                                                                        | No       |         |
 
@@ -74,4 +75,19 @@ exporters:
       file_prefix: logs
       partition:
         format: "year=%Y/month=%m/day=%d"
+```
+
+### Using Externally Managed Bucket
+
+When the bucket is managed outside of the collector (e.g., via Terraform, CloudFormation) or the service account lacks bucket creation permissions:
+
+```yaml
+exporters:
+  googlecloudstorage:
+    bucket:
+      name: existing-bucket
+      project_id: my-project
+      region: us-central1
+      use_existing: true
+      file_prefix: collector-logs
 ```

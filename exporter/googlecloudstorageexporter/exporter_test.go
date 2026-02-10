@@ -224,6 +224,14 @@ func TestStart(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.NoError(t, err)
 	})
+
+	t.Run("use existing bucket without creation", func(t *testing.T) {
+		gcsExporter.cfg.Bucket.Name = bucketExistsName
+		gcsExporter.cfg.Bucket.UseExisting = true
+		gcsExporter.cfg.Bucket.ReuseIfExists = false
+		err := gcsExporter.Start(t.Context(), mHost)
+		require.NoError(t, err)
+	})
 }
 
 func TestUploadFile(t *testing.T) {
