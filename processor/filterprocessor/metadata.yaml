@@ -1,4 +1,7 @@
+display_name: Filter Processor
 type: filter
+
+description: The Filter Processor allows dropping spans, span events, metrics, datapoints, and logs from the collector.
 
 status:
   class: processor
