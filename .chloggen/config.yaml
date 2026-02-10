@@ -162,6 +162,7 @@ components:
     - pkg/pdatautil
     - pkg/resourcetotelemetry
     - pkg/sampling
+    - pkg/skywalking
     - pkg/stanza
     - pkg/stanza/operator/input/journald
     - pkg/status
@@ -174,7 +175,6 @@ components:
     - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
-    - pkg/translator/skywalking
     - pkg/translator/splunk
     - pkg/translator/zipkin
     - pkg/winperfcounters
