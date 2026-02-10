@@ -694,7 +694,7 @@ func Test_rpcSpanName(t *testing.T) {
 		},
 		{
 			name:                   "'rpc.system.name' and 'rpc.method', no 'rpc.service' - semconv 1.39+",
-			spanName:               "a span nme",
+			spanName:               "a span name",
 			instrumentationLibrary: "hand crafted",
 			kind:                   ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
