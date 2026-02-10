@@ -1,4 +1,4 @@
-type: azureeventhub
+type: azure_event_hub
 
 status:
   class: receiver

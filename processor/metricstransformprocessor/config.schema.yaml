@@ -1,0 +1,91 @@
+$defs:
+  config_action:
+    description: ConfigAction is the enum to capture the type of action to perform on a metric.
+    type: string
+description: Config defines configuration for Resource processor.
+type: object
+properties:
+  transforms:
+    description: transform specifies a list of transforms on metrics with each transform focusing on one metric.
+    type: array
+    items:
+      type: object
+      properties:
+        action:
+          description: Action specifies the action performed on the matched metric. Action specifies if the operations (specified below) are performed on metrics in place (update), on an inserted clone (insert), or on a new combined metric that includes all data points from the set of matching metrics (combine). REQUIRED
+          $ref: config_action
+        aggregation_type:
+          description: AggregationType specifies how to aggregate. REQUIRED only if Action is COMBINE.
+          $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil.aggregation_type
+        experimental_match_labels:
+          description: MatchLabels specifies the label set against which the metric filter will work. This field is optional.
+          type: object
+          additionalProperties:
+            type: string
+        group_resource_labels:
+          description: GroupResourceLabels specifies resource labels that will be appended to this group's new ResourceMetrics message REQUIRED only if Action is GROUP
+          type: object
+          additionalProperties:
+            type: string
+        include:
+          description: Include specifies the metric(s) to operate on.
+          type: string
+        match_type:
+          description: 'MatchType determines how the Include string is matched: <strict|regexp>.'
+          type: string
+        new_name:
+          description: NewName specifies the name of the new metric when inserting or updating. REQUIRED only if Action is INSERT.
+          type: string
+        operations:
+          description: Operations contains a list of operations that will be performed on the resulting metric(s).
+          type: array
+          items:
+            type: object
+            properties:
+              action:
+                description: Action specifies the action performed for this operation. REQUIRED
+                type: string
+              aggregated_values:
+                description: AggregatedValues is a list of label values to aggregate away.
+                type: array
+                items:
+                  type: string
+              aggregation_type:
+                description: AggregationType specifies how to aggregate.
+                $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil.aggregation_type
+              experimental_scale:
+                description: Scale is a scalar to multiply the values with.
+                type: number
+                x-customType: float64
+              label:
+                description: Label identifies the exact label to operate on.
+                type: string
+              label_set:
+                description: LabelSet is a list of labels to keep. All other labels are aggregated based on the AggregationType.
+                type: array
+                items:
+                  type: string
+              label_value:
+                description: LabelValue identifies the exact label value to operate on
+                type: string
+              new_label:
+                description: NewLabel determines the name to rename the identified label to.
+                type: string
+              new_value:
+                description: NewValue is used to set a new label value either when the operation is `AggregatedValues` or `addLabel`.
+                type: string
+              value_actions:
+                description: ValueActions is a list of renaming actions for label values.
+                type: array
+                items:
+                  type: object
+                  properties:
+                    new_value:
+                      description: NewValue specifies the label value to rename to.
+                      type: string
+                    value:
+                      description: Value specifies the current label value.
+                      type: string
+        submatch_case:
+          description: SubmatchCase specifies what case to use for label values created from regexp submatches.
+          type: string

@@ -1,0 +1,54 @@
+$defs:
+  attribute_command:
+    description: AttributeCommand specifies the value command attribute.
+    type: integer
+  attribute_direction:
+    description: AttributeDirection specifies the value direction attribute.
+    type: integer
+  attribute_operation:
+    description: AttributeOperation specifies the value operation attribute.
+    type: integer
+  attribute_state:
+    description: AttributeState specifies the value state attribute.
+    type: integer
+  attribute_type:
+    description: AttributeType specifies the value type attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for memcached metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+  metrics_config:
+    description: MetricsConfig provides config for memcached metrics.
+    type: object
+    properties:
+      memcached.bytes:
+        $ref: metric_config
+      memcached.commands:
+        $ref: metric_config
+      memcached.connections.current:
+        $ref: metric_config
+      memcached.connections.total:
+        $ref: metric_config
+      memcached.cpu.usage:
+        $ref: metric_config
+      memcached.current_items:
+        $ref: metric_config
+      memcached.evictions:
+        $ref: metric_config
+      memcached.network:
+        $ref: metric_config
+      memcached.operation_hit_ratio:
+        $ref: metric_config
+      memcached.operations:
+        $ref: metric_config
+      memcached.threads:
+        $ref: metric_config

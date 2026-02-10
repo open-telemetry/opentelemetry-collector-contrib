@@ -1,0 +1,5 @@
+description: UDPLogConfig defines configuration for the udp receiver
+type: object
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp.config
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.base_config

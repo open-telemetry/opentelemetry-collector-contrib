@@ -1,0 +1,256 @@
+$defs:
+  attribute_buffer_pool_data:
+    description: AttributeBufferPoolData specifies the value buffer_pool_data attribute.
+    type: integer
+  attribute_buffer_pool_operations:
+    description: AttributeBufferPoolOperations specifies the value buffer_pool_operations attribute.
+    type: integer
+  attribute_buffer_pool_pages:
+    description: AttributeBufferPoolPages specifies the value buffer_pool_pages attribute.
+    type: integer
+  attribute_cache_status:
+    description: AttributeCacheStatus specifies the value cache_status attribute.
+    type: integer
+  attribute_command:
+    description: AttributeCommand specifies the value command attribute.
+    type: integer
+  attribute_connection_error:
+    description: AttributeConnectionError specifies the value connection_error attribute.
+    type: integer
+  attribute_connection_status:
+    description: AttributeConnectionStatus specifies the value connection_status attribute.
+    type: integer
+  attribute_db_system_name:
+    description: AttributeDbSystemName specifies the value db.system.name attribute.
+    type: integer
+  attribute_direction:
+    description: AttributeDirection specifies the value direction attribute.
+    type: integer
+  attribute_double_writes:
+    description: AttributeDoubleWrites specifies the value double_writes attribute.
+    type: integer
+  attribute_event_state:
+    description: AttributeEventState specifies the value event_state attribute.
+    type: integer
+  attribute_handler:
+    description: AttributeHandler specifies the value handler attribute.
+    type: integer
+  attribute_io_waits_operations:
+    description: AttributeIoWaitsOperations specifies the value io_waits_operations attribute.
+    type: integer
+  attribute_join_kind:
+    description: AttributeJoinKind specifies the value join_kind attribute.
+    type: integer
+  attribute_locks:
+    description: AttributeLocks specifies the value locks attribute.
+    type: integer
+  attribute_log_operations:
+    description: AttributeLogOperations specifies the value log_operations attribute.
+    type: integer
+  attribute_mysqlx_threads:
+    description: AttributeMysqlxThreads specifies the value mysqlx_threads attribute.
+    type: integer
+  attribute_opened_resources:
+    description: AttributeOpenedResources specifies the value opened_resources attribute.
+    type: integer
+  attribute_operations:
+    description: AttributeOperations specifies the value operations attribute.
+    type: integer
+  attribute_page_operations:
+    description: AttributePageOperations specifies the value page_operations attribute.
+    type: integer
+  attribute_prepared_statements_command:
+    description: AttributePreparedStatementsCommand specifies the value prepared_statements_command attribute.
+    type: integer
+  attribute_read_lock_type:
+    description: AttributeReadLockType specifies the value read_lock_type attribute.
+    type: integer
+  attribute_row_locks:
+    description: AttributeRowLocks specifies the value row_locks attribute.
+    type: integer
+  attribute_row_operations:
+    description: AttributeRowOperations specifies the value row_operations attribute.
+    type: integer
+  attribute_sorts:
+    description: AttributeSorts specifies the value sorts attribute.
+    type: integer
+  attribute_table_size_type:
+    description: AttributeTableSizeType specifies the value table_size_type attribute.
+    type: integer
+  attribute_threads:
+    description: AttributeThreads specifies the value threads attribute.
+    type: integer
+  attribute_tmp_resource:
+    description: AttributeTmpResource specifies the value tmp_resource attribute.
+    type: integer
+  attribute_write_lock_type:
+    description: AttributeWriteLockType specifies the value write_lock_type attribute.
+    type: integer
+  event_config:
+    description: EventConfig provides common config for a particular event.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  events_config:
+    description: EventsConfig provides config for mysql events.
+    type: object
+    properties:
+      db.server.query_sample:
+        $ref: event_config
+      db.server.top_query:
+        $ref: event_config
+  logs_builder_config:
+    description: LogsBuilderConfig is a configuration for mysql logs builder.
+    type: object
+    properties:
+      events:
+        $ref: events_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for mysql metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for mysql metrics.
+    type: object
+    properties:
+      mysql.buffer_pool.data_pages:
+        $ref: metric_config
+      mysql.buffer_pool.limit:
+        $ref: metric_config
+      mysql.buffer_pool.operations:
+        $ref: metric_config
+      mysql.buffer_pool.page_flushes:
+        $ref: metric_config
+      mysql.buffer_pool.pages:
+        $ref: metric_config
+      mysql.buffer_pool.usage:
+        $ref: metric_config
+      mysql.client.network.io:
+        $ref: metric_config
+      mysql.commands:
+        $ref: metric_config
+      mysql.connection.count:
+        $ref: metric_config
+      mysql.connection.errors:
+        $ref: metric_config
+      mysql.double_writes:
+        $ref: metric_config
+      mysql.handlers:
+        $ref: metric_config
+      mysql.index.io.wait.count:
+        $ref: metric_config
+      mysql.index.io.wait.time:
+        $ref: metric_config
+      mysql.joins:
+        $ref: metric_config
+      mysql.locks:
+        $ref: metric_config
+      mysql.log_operations:
+        $ref: metric_config
+      mysql.max_used_connections:
+        $ref: metric_config
+      mysql.mysqlx_connections:
+        $ref: metric_config
+      mysql.mysqlx_worker_threads:
+        $ref: metric_config
+      mysql.opened_resources:
+        $ref: metric_config
+      mysql.operations:
+        $ref: metric_config
+      mysql.page_operations:
+        $ref: metric_config
+      mysql.page_size:
+        $ref: metric_config
+      mysql.prepared_statements:
+        $ref: metric_config
+      mysql.query.client.count:
+        $ref: metric_config
+      mysql.query.count:
+        $ref: metric_config
+      mysql.query.slow.count:
+        $ref: metric_config
+      mysql.replica.sql_delay:
+        $ref: metric_config
+      mysql.replica.time_behind_source:
+        $ref: metric_config
+      mysql.row_locks:
+        $ref: metric_config
+      mysql.row_operations:
+        $ref: metric_config
+      mysql.sorts:
+        $ref: metric_config
+      mysql.statement_event.count:
+        $ref: metric_config
+      mysql.statement_event.wait.time:
+        $ref: metric_config
+      mysql.table.average_row_length:
+        $ref: metric_config
+      mysql.table.io.wait.count:
+        $ref: metric_config
+      mysql.table.io.wait.time:
+        $ref: metric_config
+      mysql.table.lock_wait.read.count:
+        $ref: metric_config
+      mysql.table.lock_wait.read.time:
+        $ref: metric_config
+      mysql.table.lock_wait.write.count:
+        $ref: metric_config
+      mysql.table.lock_wait.write.time:
+        $ref: metric_config
+      mysql.table.rows:
+        $ref: metric_config
+      mysql.table.size:
+        $ref: metric_config
+      mysql.table_open_cache:
+        $ref: metric_config
+      mysql.threads:
+        $ref: metric_config
+      mysql.tmp_resources:
+        $ref: metric_config
+      mysql.uptime:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      events_exclude:
+        description: 'Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      events_include:
+        description: 'Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for mysql resource attributes.
+    type: object
+    properties:
+      mysql.instance.endpoint:
+        $ref: resource_attribute_config

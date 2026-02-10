@@ -270,6 +270,8 @@ func buildLibhoneyEventFromMap(rawEvent map[string]any) libhoneyevent.LibhoneyEv
 			event.MsgPackTimestamp = &propertime
 		case *time.Time:
 			event.MsgPackTimestamp = v
+		case time.Time:
+			event.MsgPackTimestamp = &v
 		}
 	}
 	if event.MsgPackTimestamp == nil {

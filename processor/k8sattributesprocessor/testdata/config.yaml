@@ -1,5 +1,5 @@
-k8sattributes:
-k8sattributes/2:
+k8s_attributes:
+k8s_attributes/2:
   passthrough: false
   auth_type: "kubeConfig"
   extract:
@@ -72,7 +72,7 @@ k8sattributes/2:
       - name: jaeger-agent
       - name: jaeger-collector
 
-k8sattributes/3:
+k8s_attributes/3:
   passthrough: false
   auth_type: "kubeConfig"
   extract:
@@ -83,14 +83,14 @@ k8sattributes/3:
       - key_regex: opentel.* # extracts Keys & values of labels matching regex `opentel.*`
         from: pod
 
-k8sattributes/4:
+k8s_attributes/4:
   auth_type: "kubeConfig"
   extract:
     metadata:
       # the following metadata field has been deprecated
       - k8s.cluster.name
 
-k8sattributes/too_many_sources:
+k8s_attributes/too_many_sources:
   pod_association:
     - sources:
         - from: resource_attribute
@@ -104,89 +104,89 @@ k8sattributes/too_many_sources:
         - from: connection
           name: ip
 
-k8sattributes/bad_keys_labels:
+k8s_attributes/bad_keys_labels:
   extract:
     labels:
       - tag_name: l1
         key: label1
         key_regex: label\d
 
-k8sattributes/bad_keys_annotations:
+k8s_attributes/bad_keys_annotations:
   extract:
     annotations:
       - tag_name: a1
         key: annotation1
         key_regex: annotation\d
 
-k8sattributes/bad_from_labels:
+k8s_attributes/bad_from_labels:
   extract:
     labels:
       - tag_name: a1
         key: label1
         from: unknown
 
-k8sattributes/bad_from_annotations:
+k8s_attributes/bad_from_annotations:
   extract:
     annotations:
       - tag_name: a1
         key: annotation1
         from: unknown
 
-k8sattributes/bad_keyregex_labels:
+k8s_attributes/bad_keyregex_labels:
   extract:
     labels:
       - tag_name: a1
         from: pod
         key_regex: "["
 
-k8sattributes/bad_keyregex_annotations:
+k8s_attributes/bad_keyregex_annotations:
   extract:
     annotations:
       - tag_name: a1
         from: pod
         key_regex: "["
 
-k8sattributes/bad_filter_label_op:
+k8s_attributes/bad_filter_label_op:
   filter:
     labels:
       - key: label
         value: v1
         op: "unknown"
 
-k8sattributes/deployment_name_from_replicaset:
+k8s_attributes/deployment_name_from_replicaset:
   extract:
     deployment_name_from_replicaset: true
-k8sattributes/bad_filter_field_op:
+k8s_attributes/bad_filter_field_op:
   filter:
     fields:
       - key: field
         value: v1
         op: "exists"
 
-k8sattributes/otel_annotations:
+k8s_attributes/otel_annotations:
   extract:
     otel_annotations: true
 
-k8sattributes/wait_for_metadata:
+k8s_attributes/wait_for_metadata:
   wait_for_metadata: true
   wait_for_metadata_timeout: 30s
 
-k8sattributes/passthrough_mode:
+k8s_attributes/passthrough_mode:
   passthrough: true
 
-k8sattributes/filter_label_exists:
+k8s_attributes/filter_label_exists:
   filter:
     labels:
       - key: app
         op: exists
 
-k8sattributes/filter_label_does_not_exist:
+k8s_attributes/filter_label_does_not_exist:
   filter:
     labels:
       - key: deprecated-label
         op: does-not-exist
 
-k8sattributes/extract_from_namespace:
+k8s_attributes/extract_from_namespace:
   extract:
     labels:
       - tag_name: ns_label
@@ -197,7 +197,7 @@ k8sattributes/extract_from_namespace:
         key: owner
         from: namespace
 
-k8sattributes/extract_from_node:
+k8s_attributes/extract_from_node:
   extract:
     labels:
       - tag_name: node_label
@@ -207,35 +207,35 @@ k8sattributes/extract_from_node:
       - k8s.node.name
       - k8s.node.uid
 
-k8sattributes/extract_from_deployment:
+k8s_attributes/extract_from_deployment:
   extract:
     labels:
       - tag_name: deployment_label
         key: app
         from: deployment
 
-k8sattributes/extract_from_statefulset:
+k8s_attributes/extract_from_statefulset:
   extract:
     labels:
       - tag_name: statefulset_label
         key: app
         from: statefulset
 
-k8sattributes/extract_from_daemonset:
+k8s_attributes/extract_from_daemonset:
   extract:
     labels:
       - tag_name: daemonset_label
         key: app
         from: daemonset
 
-k8sattributes/extract_from_job:
+k8s_attributes/extract_from_job:
   extract:
     labels:
       - tag_name: job_label
         key: app
         from: job
 
-k8sattributes/all_metadata_fields:
+k8s_attributes/all_metadata_fields:
   extract:
     metadata:
       - k8s.namespace.name
@@ -269,7 +269,7 @@ k8sattributes/all_metadata_fields:
       - service.instance.id
       - k8s.cluster.uid
 
-k8sattributes/bad_metadata_field:
+k8s_attributes/bad_metadata_field:
   extract:
     metadata:
       - invalid.metadata.field

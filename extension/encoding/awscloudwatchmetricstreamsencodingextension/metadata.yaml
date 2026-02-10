@@ -1,4 +1,9 @@
+display_name: AWS CloudWatch Metric Streams Encoding Extension
 type: awscloudwatchmetricstreams_encoding
+
+description: >
+  This extension unmarshalls metrics encoded in formats produced by
+  [Amazon CloudWatch Metric Streams](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Metric-Streams.html).
 
 status:
   disable_codecov_badge: true

@@ -6,7 +6,7 @@ metadata:
 data:
   relay: |
     exporters:
-      otlp:
+      otlp_grpc:
         endpoint: {{ .HostEndpoint }}:4317
         tls:
           insecure: true
@@ -42,4 +42,4 @@ data:
           processors:
             - resourcedetection
           exporters:
-            - otlp
+            - otlp_grpc

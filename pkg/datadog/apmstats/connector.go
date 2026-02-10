@@ -15,6 +15,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/config"
+	otelstats "github.com/DataDog/datadog-agent/pkg/trace/otel/stats"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 	"github.com/DataDog/datadog-agent/pkg/util/option"
 	"github.com/DataDog/datadog-go/v5/statsd"
@@ -194,7 +195,7 @@ func (*traceToMetricConnector) Capabilities() consumer.Capabilities {
 }
 
 func (c *traceToMetricConnector) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
-	inputs := stats.OTLPTracesToConcentratorInputsWithObfuscation(traces, c.tcfg, c.ctagKeys, c.peerTagKeys, c.obfuscator)
+	inputs := otelstats.OTLPTracesToConcentratorInputsWithObfuscation(traces, c.tcfg, c.ctagKeys, c.peerTagKeys, c.obfuscator)
 	for _, input := range inputs {
 		c.concentrator.Add(input)
 	}

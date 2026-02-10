@@ -5,8 +5,10 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -16,11 +18,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 const (
@@ -31,6 +36,7 @@ type kubernetesprocessor struct {
 	cfg                    component.Config
 	options                []option
 	telemetrySettings      component.TelemetrySettings
+	telemetry              *metadata.TelemetryBuilder
 	logger                 *zap.Logger
 	apiConfig              k8sconfig.APIConfig
 	kc                     kube.Client
@@ -58,6 +64,13 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
+	if metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled() && !metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		err := errors.New("processor.k8sattributes.DontEmitV0K8sConventions cannot be enabled without enabling processor.k8sattributes.EmitV1K8sConventions")
+		kp.logger.Error("Invalid feature gate combination", zap.Error(err))
+		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+		return err
+	}
+
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
 
 	for _, opt := range allOptions {
@@ -88,6 +101,9 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 }
 
 func (kp *kubernetesprocessor) Shutdown(context.Context) error {
+	if kp.telemetry != nil {
+		kp.telemetry.Shutdown()
+	}
 	if kp.kc == nil {
 		return nil
 	}
@@ -101,7 +117,7 @@ func (kp *kubernetesprocessor) Shutdown(context.Context) error {
 func (kp *kubernetesprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
-		kp.processResource(ctx, rss.At(i).Resource())
+		kp.processResource(ctx, rss.At(i).Resource(), "traces")
 	}
 
 	return td, nil
@@ -111,7 +127,7 @@ func (kp *kubernetesprocessor) processTraces(ctx context.Context, td ptrace.Trac
 func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
-		kp.processResource(ctx, rm.At(i).Resource())
+		kp.processResource(ctx, rm.At(i).Resource(), "metrics")
 	}
 
 	return md, nil
@@ -121,7 +137,7 @@ func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pmetric.Me
 func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	rl := ld.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
-		kp.processResource(ctx, rl.At(i).Resource())
+		kp.processResource(ctx, rl.At(i).Resource(), "logs")
 	}
 
 	return ld, nil
@@ -131,21 +147,21 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (p
 func (kp *kubernetesprocessor) processProfiles(ctx context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) {
 	rp := pd.ResourceProfiles()
 	for i := 0; i < rp.Len(); i++ {
-		kp.processResource(ctx, rp.At(i).Resource())
+		kp.processResource(ctx, rp.At(i).Resource(), "profiles")
 	}
 
 	return pd, nil
 }
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
-func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) {
+func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource, signalType string) {
 	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
 	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
 
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
 			if kp.passthroughMode || kp.rules.PodIP {
-				setResourceAttribute(resource.Attributes(), kube.K8sIPLabelName, podIdentifierValue[i].Value)
+				setResourceAttribute(resource.Attributes(), string(conventions.K8SPodIPKey), podIdentifierValue[i].Value)
 			}
 			break
 		}
@@ -155,17 +171,48 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	}
 
 	var pod *kube.Pod
+	var podFound bool
+	podIdentifierStr := buildPodIdentifierString(podIdentifierValue)
 	if podIdentifierValue.IsNotEmpty() {
-		var podFound bool
 		if pod, podFound = kp.kc.GetPod(podIdentifierValue); podFound {
 			kp.logger.Debug("getting the pod", zap.Any("pod", pod))
+
+			// Record successful pod association
+			if kp.telemetry != nil {
+				successAttr := metric.WithAttributes(
+					attribute.String("status", "success"),
+					attribute.String("pod_identifier", podIdentifierStr),
+					attribute.String("otelcol.signal", signalType),
+				)
+				kp.telemetry.OtelcolK8sPodAssociation.Add(ctx, 1, successAttr)
+			}
 
 			for key, val := range pod.Attributes {
 				setResourceAttribute(resource.Attributes(), key, val)
 			}
 			kp.addContainerAttributes(resource.Attributes(), pod)
 		} else {
-			kp.logger.Debug("unable to find pod based on identifier", zap.Any("value", podIdentifierValue))
+			// Record failed pod association
+			kp.logger.Debug("pod not found", zap.Any("podIdentifier", podIdentifierValue))
+			if kp.telemetry != nil {
+				errorAttr := metric.WithAttributes(
+					attribute.String("status", "error"),
+					attribute.String("pod_identifier", podIdentifierStr),
+					attribute.String("otelcol.signal", signalType),
+				)
+				kp.telemetry.OtelcolK8sPodAssociation.Add(ctx, 1, errorAttr)
+			}
+		}
+	} else {
+		// Record failed pod association when no identifier found
+		kp.logger.Debug("no pod identifier found")
+		if kp.telemetry != nil {
+			errorAttr := metric.WithAttributes(
+				attribute.String("status", "error"),
+				attribute.String("pod_identifier", podIdentifierStr),
+				attribute.String("otelcol.signal", signalType),
+			)
+			kp.telemetry.OtelcolK8sPodAssociation.Add(ctx, 1, errorAttr)
 		}
 	}
 
@@ -312,8 +359,16 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 	if containerSpec.ImageName != "" {
 		setResourceAttribute(attrs, string(conventions.ContainerImageNameKey), containerSpec.ImageName)
 	}
-	if containerSpec.ImageTag != "" {
+	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
+	disableLegacy := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if !disableLegacy && containerSpec.ImageTag != "" {
 		setResourceAttribute(attrs, containerImageTag, containerSpec.ImageTag)
+	}
+	if enableStable && len(containerSpec.ImageTags) > 0 {
+		sliceVal := attrs.PutEmptySlice(string(conventions.ContainerImageTagsKey))
+		for _, tag := range containerSpec.ImageTags {
+			sliceVal.AppendEmpty().SetStr(tag)
+		}
 	}
 	if containerSpec.ServiceInstanceID != "" {
 		setResourceAttribute(attrs, string(conventions.ServiceInstanceIDKey), containerSpec.ServiceInstanceID)
@@ -405,6 +460,20 @@ func (kp *kubernetesprocessor) getUIDForPodsNode(nodeName string) string {
 		return ""
 	}
 	return node.NodeUID
+}
+
+// buildPodIdentifierString combines all identifier values into a comma-separated string
+func buildPodIdentifierString(podIdentifierValue kube.PodIdentifier) string {
+	var identifiers []string
+	for i := range podIdentifierValue {
+		if podIdentifierValue[i].Value != "" {
+			identifiers = append(identifiers, podIdentifierValue[i].Value)
+		}
+	}
+	if len(identifiers) > 0 {
+		return strings.Join(identifiers, ",")
+	}
+	return "unknown"
 }
 
 // intFromAttribute extracts int value from an attribute stored as string or int

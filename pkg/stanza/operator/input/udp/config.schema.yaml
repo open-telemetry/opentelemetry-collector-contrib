@@ -1,0 +1,35 @@
+$defs:
+  async_config:
+    type: object
+    properties:
+      max_queue_length:
+        type: integer
+      processors:
+        type: integer
+      readers:
+        type: integer
+  base_config:
+    description: BaseConfig is the details configuration of a udp input operator.
+    type: object
+    properties:
+      add_attributes:
+        type: boolean
+      async:
+        x-pointer: true
+        $ref: async_config
+      encoding:
+        type: string
+      listen_address:
+        type: string
+      multiline:
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split.config
+      one_log_per_packet:
+        type: boolean
+    allOf:
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim.config
+  config:
+    description: Config is the configuration of a udp input operator.
+    type: object
+    allOf:
+      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.input_config
+      - $ref: base_config

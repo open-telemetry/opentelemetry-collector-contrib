@@ -348,7 +348,7 @@ func telemetryResource(t *testing.T) pcommon.Resource {
 
 	r := pcommon.NewResource()
 	r.Attributes().PutStr("service.instance.id", "627cc493-f310-47de-96bd-71410b7dec09")
-	r.Attributes().PutStr("service.name", "signaltometrics")
+	r.Attributes().PutStr("service.name", "signal_to_metrics")
 	r.Attributes().PutStr("service.namespace", "test")
 	return r
 }
