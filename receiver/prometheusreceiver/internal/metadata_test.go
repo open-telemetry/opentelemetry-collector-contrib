@@ -160,3 +160,53 @@ func (f fakeMetadataStore) SizeMetadata() int {
 func (f fakeMetadataStore) LengthMetadata() int {
 	return len(f.data)
 }
+
+func TestIsLikelyCounter(t *testing.T) {
+	testCases := []struct {
+		metricName string
+		expected   bool
+		reason     string
+	}{
+		// Explicit counter suffixes
+		{"http_requests_total", true, "has _total suffix"},
+		{"metric_created", true, "has _created suffix"},
+		{"data_bytes_total", true, "has _bytes_total suffix"},
+		{"network_packets_total", true, "has _packets_total suffix"},
+
+		// Common counter patterns (issue #34263)
+		{"cnpg_pg_stat_database_blks_read", true, "contains _read pattern"},
+		{"bytes_written", true, "contains _written pattern"},
+		{"messages_sent", true, "contains _sent pattern"},
+		{"messages_received", true, "contains _received pattern"},
+		{"http_requests", true, "contains _requests pattern"},
+		{"http_errors", true, "contains _errors pattern"},
+		{"operation_failures", true, "contains _failures pattern"},
+		{"cache_hits", true, "contains _hits pattern"},
+		{"cache_misses", true, "contains _misses pattern"},
+		{"packets_dropped", true, "contains _dropped pattern"},
+		{"items_processed", true, "contains _processed pattern"},
+		{"tasks_completed", true, "contains _completed pattern"},
+		{"operations_failed", true, "contains _failed pattern"},
+		{"request_retries", true, "contains _retries pattern"},
+
+		// Should NOT be detected as counters
+		{"cpu_usage", false, "gauge - current usage"},
+		{"memory_bytes", false, "gauge - current size"},
+		{"temperature_celsius", false, "gauge - current temperature"},
+		{"queue_length", false, "gauge - current queue length"},
+		{"active_connections", false, "gauge - current connections"},
+		{"some_count", false, "_count suffix is ambiguous without context"},
+		{"success_ratio", false, "ratio is a gauge even if contains success"},
+		{"error_percent", false, "percent is a gauge even if contains error"},
+		{"cache_hit_ratio", false, "ratio is a gauge even if contains hits"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.metricName, func(t *testing.T) {
+			result := isLikelyCounter(tc.metricName)
+			if result != tc.expected {
+				t.Errorf("Metric: %s - %s: expected %v, got %v", tc.metricName, tc.reason, tc.expected, result)
+			}
+		})
+	}
+}

@@ -70,6 +70,15 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}
 
+	// Log a warning if metadata type is Unknown and being treated as Gauge
+	// This helps diagnose issues like #34263 where counter metrics are silently dropped
+	if metadata.Type == model.MetricTypeUnknown && mtype == pmetric.MetricTypeGauge {
+		logger.Debug("Metric has no type metadata, treating as gauge",
+			zap.String("metric_name", metricName),
+			zap.String("family_name", familyName),
+		)
+	}
+
 	return &metricFamily{
 		mtype:       mtype,
 		isMonotonic: isMonotonic,

@@ -66,11 +66,74 @@ func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrap
 		}
 		return &metadata, normalizedName
 	}
-	// Otherwise, the metric is unknown
+	// Otherwise, the metric is unknown.
+	// As a fallback, try to infer the type from the metric name to handle
+	// cases where metadata is not available (e.g., issue #34263).
+	// Use Prometheus naming conventions to detect counters.
+	if isLikelyCounter(metricName) {
+		return &scrape.MetricMetadata{
+			MetricFamily: normalizedName,
+			Type:         model.MetricTypeCounter,
+		}, metricName
+	}
+
 	return &scrape.MetricMetadata{
 		MetricFamily: metricName,
 		Type:         model.MetricTypeUnknown,
 	}, metricName
+}
+
+// isLikelyCounter uses heuristics to determine if a metric name likely represents a counter
+// when metadata is not available. This follows Prometheus naming conventions and common patterns.
+func isLikelyCounter(metricName string) bool {
+	// Explicit counter suffixes (Prometheus conventions)
+	// Note: _count is NOT included here because it's ambiguous - it could be part of
+	// histogram metrics (foo_count) or just a poorly named metric (some_count)
+	counterSuffixes := []string{
+		metricSuffixTotal,  // "_total" - most common and reliable counter suffix
+		"_created",         // timestamp when counter was created
+		"_bytes_total",     // total bytes
+		"_packets_total",   // total packets
+	}
+
+	for _, suffix := range counterSuffixes {
+		if strings.HasSuffix(metricName, suffix) {
+			return true
+		}
+	}
+
+	// Common counter patterns (operations that accumulate over time)
+	// These are substrings that indicate cumulative/monotonically increasing values
+	counterPatterns := []string{
+		"_read",      // bytes/blocks/records read (e.g., cnpg_pg_stat_database_blks_read)
+		"_written",   // bytes/blocks/records written
+		"_sent",      // messages/bytes sent
+		"_received",  // messages/bytes received
+		"_requests",  // number of requests
+		"_errors",    // number of errors
+		"_failures",  // number of failures
+		"_success",   // number of successes
+		"_hits",      // cache hits, etc.
+		"_misses",    // cache misses, etc.
+		"_packets",   // network packets
+		"_dropped",   // dropped packets/messages
+		"_processed", // processed items
+		"_completed", // completed operations
+		"_failed",    // failed operations
+		"_retries",   // retry attempts
+	}
+
+	for _, pattern := range counterPatterns {
+		if strings.Contains(metricName, pattern) {
+			// Avoid false positives: if it ends with "_ratio" or "_percent", it's likely a gauge
+			if strings.HasSuffix(metricName, "_ratio") || strings.HasSuffix(metricName, "_percent") {
+				continue
+			}
+			return true
+		}
+	}
+
+	return false
 }
 
 // isCounterCreatedLine determines whether a metric is a _created line for a counter appended by an om-text parser
