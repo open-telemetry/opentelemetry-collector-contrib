@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"time"
 
 	sl "github.com/leodido/go-syslog/v4"
@@ -293,6 +294,14 @@ var timestampFormats = []string{
 	// RFC3164 BSD style (month day time)
 	"Jan _2 15:04:05",
 	"Jan 02 15:04:05",
+	// BSD with year (May 20 2024 15:08:29)
+	"Jan _2 2006 15:04:05",
+	"Jan 02 2006 15:04:05",
+	// Year first with optional timezone (2023 Mar 14 22:48:42 UTC)
+	"2006 Jan _2 15:04:05 MST",
+	"2006 Jan 02 15:04:05 MST",
+	"2006 Jan _2 15:04:05",
+	"2006 Jan 02 15:04:05",
 	// Common variations
 	"2006-01-02 15:04:05.999999",
 	"2006-01-02 15:04:05",
@@ -302,28 +311,77 @@ var timestampFormats = []string{
 	"02/Jan/2006:15:04:05",
 }
 
-// Regex patterns to help extract potential timestamp substrings
-var timestampPatterns = []*regexp.Regexp{
+// timestampPattern represents a regex pattern for extracting timestamps.
+// All patterns are anchored to the beginning of the message (after optional priority header,
+// optional version number, and optional leading colon) to avoid extracting timestamps
+// that appear in the middle of the message body.
+type timestampPattern struct {
+	regex   *regexp.Regexp
+	isEpoch bool // true if this pattern captures a Unix epoch timestamp
+}
+
+// Regex patterns to help extract potential timestamp substrings.
+// The prefix `^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*` matches:
+// - Start of string (^)
+// - Optional priority header like <167> ((?:<\d{1,3}>)?)
+// - Optional version number followed by space like "1 " ((?:\d+\s+)?)
+// - Optional colon and whitespace like ": " (:?\s*)
+var timestampPatterns = []timestampPattern{
 	// RFC5424 style: 2015-08-05T21:58:59.693Z or with timezone offset
-	regexp.MustCompile(`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?`),
+	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)`), false},
+	// Unix epoch timestamp: 1729780712.350113344 (10+ digits, optional fractional)
+	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*(\d{10,}(?:\.\d+)?)`), true},
+	// Year first with optional timezone (2023 Mar 14 22:48:42 UTC)
+	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*(\d{4}\s+[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}(?:\s+[A-Z]{2,4})?)`), false},
+	// BSD with year (May 20 2024 15:08:29)
+	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*([A-Z][a-z]{2}\s+\d{1,2}\s+\d{4}\s+\d{2}:\d{2}:\d{2})`), false},
 	// RFC3164 BSD style: Jan  5 15:04:05 or Jan 05 15:04:05
-	regexp.MustCompile(`[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}`),
+	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*([A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})`), false},
 	// ISO date with space: 2006-01-02 15:04:05
-	regexp.MustCompile(`\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?`),
+	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?)`), false},
 	// Common log format: 02/Jan/2006:15:04:05 -0700
-	regexp.MustCompile(`\d{2}/[A-Z][a-z]{2}/\d{4}:\d{2}:\d{2}:\d{2}(?:\s+[+-]\d{4})?`),
+	{regexp.MustCompile(`^(?:<\d{1,3}>)?(?:\d+\s+)?:?\s*(\d{2}/[A-Z][a-z]{2}/\d{4}:\d{2}:\d{2}:\d{2}(?:\s+[+-]\d{4})?)`), false},
 }
 
 // extractTimestamp attempts to extract a timestamp from the raw message using common formats.
+// Patterns are anchored to the beginning of the message to avoid extracting timestamps
+// that appear in the middle of the message body.
 func (p *Parser) extractTimestamp(msg string) *time.Time {
 	for _, pattern := range timestampPatterns {
-		if match := pattern.FindString(msg); match != "" {
+		matches := pattern.regex.FindStringSubmatch(msg)
+		if len(matches) < 2 {
+			continue
+		}
+		match := matches[1] // captured group
+
+		if pattern.isEpoch {
+			if ts := p.tryParseUnixEpoch(match); ts != nil {
+				return ts
+			}
+		} else {
 			if ts := p.tryParseTimestamp(match); ts != nil {
 				return ts
 			}
 		}
 	}
 	return nil
+}
+
+// tryParseUnixEpoch attempts to parse a Unix epoch timestamp (seconds since 1970).
+func (p *Parser) tryParseUnixEpoch(s string) *time.Time {
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return nil
+	}
+	// Convert float seconds to time.Time
+	sec := int64(f)
+	nsec := int64((f - float64(sec)) * 1e9)
+	ts := time.Unix(sec, nsec)
+	// Apply location if available
+	if p.location != nil {
+		ts = ts.In(p.location)
+	}
+	return &ts
 }
 
 // tryParseTimestamp attempts to parse the given string as a timestamp using known formats.

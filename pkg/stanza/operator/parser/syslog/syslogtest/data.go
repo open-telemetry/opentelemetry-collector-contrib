@@ -485,6 +485,95 @@ func CreateCases(basicConfig func() *syslog.Config) ([]Case, error) {
 			true,
 			false,
 		},
+		{
+			"NoneProtocolWithYear",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `<167>May 20 2024 15:08:29: %ASA-7-609001: Built local-host inside:xxx.xx.xx.xxx`,
+			},
+			&entry.Entry{
+				Timestamp:    time.Date(2024, 5, 20, 15, 8, 29, 0, time.UTC),
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `<167>May 20 2024 15:08:29: %ASA-7-609001: Built local-host inside:xxx.xx.xx.xxx`,
+				},
+				Body: `<167>May 20 2024 15:08:29: %ASA-7-609001: Built local-host inside:xxx.xx.xx.xxx`,
+			},
+			true,
+			true,
+		},
+		{
+			"NoneProtocolUnixEpoch",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `<134>1 1729780712.5 SOMEPLACE_SOMEWHERE vpn_firewall src=xx.xx.xx.xx dst=xx.xx.xx.xx`,
+			},
+			&entry.Entry{
+				// 1729780712.5 = 2024-10-24 14:38:32.5 UTC (using .5 for exact float64 representation)
+				Timestamp:    time.Unix(1729780712, 500000000).UTC(),
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `<134>1 1729780712.5 SOMEPLACE_SOMEWHERE vpn_firewall src=xx.xx.xx.xx dst=xx.xx.xx.xx`,
+				},
+				Body: `<134>1 1729780712.5 SOMEPLACE_SOMEWHERE vpn_firewall src=xx.xx.xx.xx dst=xx.xx.xx.xx`,
+			},
+			true,
+			true,
+		},
+		{
+			"NoneProtocolYearFirstWithTZ",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `<189>: 2023 Mar 14 22:48:42 UTC: %ETHPORT-5-IF_DOWN_ADMIN_DOWN: Interface Ethernet1/22 is down`,
+			},
+			&entry.Entry{
+				Timestamp:    time.Date(2023, 3, 14, 22, 48, 42, 0, time.UTC),
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `<189>: 2023 Mar 14 22:48:42 UTC: %ETHPORT-5-IF_DOWN_ADMIN_DOWN: Interface Ethernet1/22 is down`,
+				},
+				Body: `<189>: 2023 Mar 14 22:48:42 UTC: %ETHPORT-5-IF_DOWN_ADMIN_DOWN: Interface Ethernet1/22 is down`,
+			},
+			true,
+			true,
+		},
+		{
+			"NoneProtocolTimestampInMiddleNotExtracted",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.None
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `Last healthcheck from service hippo seen on Oct 11 22:14:15`,
+			},
+			&entry.Entry{
+				// No timestamp should be extracted since it appears in the middle of the message
+				Severity:     entry.Default,
+				SeverityText: "",
+				Attributes: map[string]any{
+					"message": `Last healthcheck from service hippo seen on Oct 11 22:14:15`,
+				},
+				Body: `Last healthcheck from service hippo seen on Oct 11 22:14:15`,
+			},
+			true,
+			true,
+		},
 	}
 
 	return cases, nil
