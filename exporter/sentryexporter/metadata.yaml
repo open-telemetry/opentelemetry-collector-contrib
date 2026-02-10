@@ -1,9 +1,10 @@
 type: sentry
+display_name: Sentry Exporter
 
 status:
   class: exporter
   stability:
-    beta: [traces]
+    alpha: [traces, logs]
   distributions: [contrib]
   codeowners:
     active: [AbhiPrasad]
@@ -11,3 +12,7 @@ status:
 
 tests:
   expect_consumer_error: true
+  config:
+    url: https://sentry.io
+    org_slug: example-org
+    auth_token: test-token

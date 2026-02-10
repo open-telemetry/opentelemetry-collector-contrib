@@ -1,4 +1,5 @@
 type: roundrobin
+display_name: Round-Robin Connector
 
 status:
   class: connector

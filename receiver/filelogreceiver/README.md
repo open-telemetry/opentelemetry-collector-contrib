@@ -126,7 +126,31 @@ All time parameters must have the unit of time specified. e.g.: `200ms`, `1s`, `
 
 ### Log Rotation
 
-File Log Receiver can read files that are being rotated. 
+File Log Receiver can read files that are being rotated. It supports both common rotation strategies: **move/create** (the file is renamed and a new file is created) and **copy/truncate** (the file is copied to a backup and the original is truncated). The receiver tracks files by their internal identity (inode) and content fingerprint, allowing it to handle both strategies transparently and continue reading data even if the new filename no longer matches the `include` pattern.
+
+#### File Attribute Behavior During Rotation
+
+The receiver handles file attributes differently depending on whether rotated files match your `include` pattern:
+
+**Rotated files NOT matching the include pattern:**
+When a file is rotated and the rotated filename no longer matches the `include` pattern, the receiver preserves the original file attributes (e.g., `log.file.name`, `log.file.path`). This ensures logs read from the rotated file continue to be associated with their original file identity.
+
+Example: With `include: /var/log/pods/*/*/0.log`, when `0.log` is rotated to `0.log.20260115-120000`, logs from the rotated file will still report `log.file.name=0.log`.
+
+**Rotated files matching the include pattern:**
+When a file is rotated and the rotated filename continues to match the `include` pattern, the receiver reports the new rotated filename in file attributes. This is expected behavior that prevents duplicate metrics when tracking per-file consumption.
+
+Example: With `include: /var/log/pods/*/*/*.log*`, when `0.log` is rotated to `0.log.20260115-120000`, logs from the rotated file will report `log.file.name=0.log.20260115-120000`.
+
+For more details, see [issue #38454](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38454).
+
+#### Copy-Truncate Rotation Strategy
+
+When log rotation uses a copy-truncate strategy (the file is copied to a backup, then the original is truncated), the receiver handles this automatically through fingerprint-based deduplication. During the brief moment when both the original and the copied file exist with identical content, the receiver detects the duplicate fingerprint and ingests the file only once.
+
+After the original file is truncated, the receiver detects the fingerprint change and begins reading the file from the beginning, picking up any new logs written to it.
+
+> **Note:** If rotated backup files fall outside the `include` pattern, there is a small window where data loss can occur — if new data is written to the file after the copy but before the truncate, and the receiver has not yet read it. For more details, see the [fileconsumer design doc](../../pkg/stanza/fileconsumer/design.md).
 
 ## Example - Tailing a simple json file
 

@@ -1,0 +1,333 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: ecb6adf34046
+    scopeMetrics:
+      - metrics:
+          - description: The number of cache operations of the instance.
+            name: mongodb.cache.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "201"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: hit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "14"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: miss
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{operations}'
+          - description: The number of commands executed per second.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: mongodb.commands.rate
+            unit: '{command}/s'
+          - description: The number of open cursors maintained for clients.
+            name: mongodb.cursor.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{cursors}'
+          - description: The number of cursors that have timed out.
+            name: mongodb.cursor.timeout.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{cursors}'
+          - description: The number of existing databases.
+            name: mongodb.database.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{databases}'
+          - description: The time the global lock has been held.
+            name: mongodb.global_lock.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "58964"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: ms
+          - description: The number of bytes received.
+            name: mongodb.network.io.receive
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3056"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of by transmitted.
+            name: mongodb.network.io.transmit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "5393"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of requests received by the server.
+            name: mongodb.network.request.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "20"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{requests}'
+          - description: The total time spent performing operations.
+            name: mongodb.operation.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "49340"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: command
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "3750"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: getmore
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "12465"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: insert
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "8907"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: query
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "10117"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: update
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: ms
+          - description: The total number of active sessions.
+            name: mongodb.session.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "19"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{sessions}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: database
+          value:
+            stringValue: fakedatabase
+        - key: server.address
+          value:
+            stringValue: ecb6adf34046
+    scopeMetrics:
+      - metrics:
+          - description: The number of collections.
+            name: mongodb.collection.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{collections}'
+          - description: The number of connections.
+            name: mongodb.connection.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: active
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "838857"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "3"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: current
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{connections}'
+          - description: The size of the collection. Data compression does not affect this value.
+            name: mongodb.data.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3141"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of document operations executed.
+            name: mongodb.document.operation.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: insert
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: update
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{documents}'
+          - description: The number of extents.
+            name: mongodb.extent.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{extents}'
+          - description: The number of times an index has been accessed.
+            name: mongodb.index.access.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: collection
+                      value:
+                        stringValue: orders
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: collection
+                      value:
+                        stringValue: products
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{accesses}'
+          - description: The number of indexes.
+            name: mongodb.index.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{indexes}'
+          - description: Sum of the space allocated to all indexes in the database, including free index space.
+            name: mongodb.index.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "16384"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The amount of memory used.
+            name: mongodb.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "82837504"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: resident
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1141899264"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: virtual
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of objects.
+            name: mongodb.object.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{objects}'
+          - description: The total amount of storage allocated to this collection.
+            name: mongodb.storage.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "16384"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
+          version: latest

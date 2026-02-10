@@ -150,6 +150,21 @@ func TestLoadConfig(t *testing.T) {
 				},
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "not-policy-1",
+						Type: Not,
+					},
+					NotCfg: NotCfg{
+						SubPolicy: NotSubPolicyCfg{
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name:       "test-not-policy-1",
+								Type:       Latency,
+								LatencyCfg: LatencyCfg{ThresholdMs: 1000},
+							},
+						},
+					},
+				},
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
 						Name: "composite-policy-1",
 						Type: Composite,
 					},

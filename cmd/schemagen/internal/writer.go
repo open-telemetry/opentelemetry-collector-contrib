@@ -10,7 +10,7 @@ import (
 )
 
 func WriteSchemaToFile(schema *Schema, config *Config) (string, error) {
-	schemaPath := createOutputFilePath(schema, config)
+	schemaPath := createOutputFilePath(config)
 	var (
 		err error
 		raw []byte
@@ -39,11 +39,7 @@ func writeFile(path string, data []byte) error {
 	return os.WriteFile(path, data, 0o600)
 }
 
-func createOutputFilePath(schema *Schema, config *Config) string {
+func createOutputFilePath(config *Config) string {
 	fileName := "config.schema." + config.FileType
-	if config.Mode == Package {
-		packageName := filepath.Base(schema.ID)
-		fileName = packageName + ".schema." + config.FileType
-	}
 	return filepath.Join(config.OutputFolder, fileName)
 }

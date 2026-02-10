@@ -1,0 +1,4 @@
+type: object
+allOf:
+  - description: Config defines configuration for the Datadog connector.
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config.connector_component_config

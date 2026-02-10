@@ -1,15 +1,15 @@
 add_array_to_attributes:
   type: add
   field: attributes.new
-  value: [1,2,3,4]
+  value: [1, 2, 3, 4]
 add_array_to_body:
   type: add
   field: body.new
-  value: [1,2,3,4]
+  value: [1, 2, 3, 4]
 add_array_to_resource:
   type: add
   field: resource.new
-  value: [1,2,3,4]
+  value: [1, 2, 3, 4]
 add_attribute:
   type: add
   field: attributes.new
@@ -56,3 +56,8 @@ add_value:
   type: add
   field: body.new
   value: randomMessage
+on_error_drop:
+  type: add
+  field: body.new
+  value: testValue
+  on_error: drop

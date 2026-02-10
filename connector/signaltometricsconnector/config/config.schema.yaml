@@ -1,0 +1,99 @@
+$defs:
+  attribute:
+    type: object
+    properties:
+      default_value:
+        x-customType: any
+      key:
+        type: string
+      optional:
+        type: boolean
+  config:
+    description: Config for the connector. Each configuration field describes the metrics to produce from a specific signal.
+    type: object
+    properties:
+      datapoints:
+        type: array
+        items:
+          $ref: metric_info
+      logs:
+        type: array
+        items:
+          $ref: metric_info
+      profiles:
+        type: array
+        items:
+          $ref: metric_info
+      spans:
+        type: array
+        items:
+          $ref: metric_info
+  exponential_histogram:
+    type: object
+    properties:
+      count:
+        type: string
+      max_size:
+        type: integer
+        x-customType: int32
+      value:
+        type: string
+  gauge:
+    type: object
+    properties:
+      value:
+        type: string
+  histogram:
+    type: object
+    properties:
+      buckets:
+        type: array
+        items:
+          type: number
+          x-customType: float64
+      count:
+        type: string
+      value:
+        type: string
+  metric_info:
+    description: MetricInfo defines the structure of the metric produced by the connector.
+    type: object
+    properties:
+      attributes:
+        type: array
+        items:
+          $ref: attribute
+      conditions:
+        description: Conditions are a set of OTTL conditions which are ORed. Data is processed into metrics only if the sequence evaluates to true.
+        type: array
+        items:
+          type: string
+      description:
+        type: string
+      exponential_histogram:
+        x-optional: true
+        $ref: exponential_histogram
+      gauge:
+        x-optional: true
+        $ref: gauge
+      histogram:
+        x-optional: true
+        $ref: histogram
+      include_resource_attributes:
+        description: IncludeResourceAttributes is a list of resource attributes that needs to be included in the generated metric. If no resource attribute is included in the list then all attributes are included.
+        type: array
+        items:
+          $ref: attribute
+      name:
+        type: string
+      sum:
+        x-optional: true
+        $ref: sum
+      unit:
+        description: 'Unit, if not-empty, will set the unit associated with the metric. See: https://github.com/open-telemetry/opentelemetry-collector/blob/b06236cc794982916cc956f20828b3e18eb33264/pdata/pmetric/generated_metric.go#L72-L81'
+        type: string
+  sum:
+    type: object
+    properties:
+      value:
+        type: string
