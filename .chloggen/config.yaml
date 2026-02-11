@@ -240,7 +240,6 @@ components:
     - receiver/azureblob
     - receiver/azuremonitor
     - receiver/bigip
-    - receiver/carbon
     - receiver/chrony
     - receiver/ciscoos
     - receiver/cloudflare

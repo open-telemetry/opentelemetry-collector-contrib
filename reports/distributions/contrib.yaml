@@ -146,7 +146,6 @@ components:
         - azureblob
         - azuremonitor
         - bigip
-        - carbon
         - chrony
         - cloudflare
         - cloudfoundry
