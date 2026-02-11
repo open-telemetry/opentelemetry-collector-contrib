@@ -116,42 +116,11 @@ func commonOpts(
 ) ([]kgo.Opt, error) {
 	opts = append(opts, clientConfigOpts(clientCfg)...)
 	opts = append(opts, kgo.WithLogger(kzap.New(logger.Named("franz"))))
-	tlsConfig := clientCfg.TLS
-	if tlsConfig == nil {
-		tlsConfig = clientCfg.Authentication.TLS
+	secOpts, err := securityOpts(ctx, clientCfg)
+	if err != nil {
+		return nil, err
 	}
-	// Configure TLS if needed
-	if tlsConfig != nil {
-		tlsCfg, err := tlsConfig.LoadTLSConfig(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load TLS config: %w", err)
-		}
-		if tlsCfg != nil {
-			opts = append(opts, kgo.DialTLSConfig(tlsCfg))
-		}
-	}
-	// Configure authentication
-	if clientCfg.Authentication.PlainText != nil {
-		auth := plain.Auth{
-			User: clientCfg.Authentication.PlainText.Username,
-			Pass: clientCfg.Authentication.PlainText.Password,
-		}
-		opts = append(opts, kgo.SASL(auth.AsMechanism()))
-	}
-	if clientCfg.Authentication.SASL != nil {
-		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL)
-		if err != nil {
-			return nil, fmt.Errorf("failed to configure SASL: %w", err)
-		}
-		opts = append(opts, saslOpt)
-	}
-	if clientCfg.Authentication.Kerberos != nil {
-		opt, err := configureKgoKerberos(clientCfg.Authentication.Kerberos)
-		if err != nil {
-			return nil, fmt.Errorf("failed to configure Kerberos: %w", err)
-		}
-		opts = append(opts, opt)
-	}
+	opts = append(opts, secOpts...)
 	// Log protocol version if provided
 	if clientCfg.ProtocolVersion != "" {
 		keyVersions := make(map[string]any)
@@ -165,6 +134,48 @@ func commonOpts(
 			zap.String("version", clientCfg.ProtocolVersion),
 			zap.Any("key_versions", keyVersions),
 		)
+	}
+	return opts, nil
+}
+
+// securityOpts builds kgo.Opt values for TLS and authentication from a ClientConfig.
+func securityOpts(ctx context.Context, cfg configkafka.ClientConfig) ([]kgo.Opt, error) {
+	var opts []kgo.Opt
+	tlsConfig := cfg.TLS
+	if tlsConfig == nil {
+		tlsConfig = cfg.Authentication.TLS
+	}
+	// Configure TLS if needed
+	if tlsConfig != nil {
+		tlsCfg, err := tlsConfig.LoadTLSConfig(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load TLS config: %w", err)
+		}
+		if tlsCfg != nil {
+			opts = append(opts, kgo.DialTLSConfig(tlsCfg))
+		}
+	}
+	// Configure authentication
+	if cfg.Authentication.PlainText != nil {
+		auth := plain.Auth{
+			User: cfg.Authentication.PlainText.Username,
+			Pass: cfg.Authentication.PlainText.Password,
+		}
+		opts = append(opts, kgo.SASL(auth.AsMechanism()))
+	}
+	if cfg.Authentication.SASL != nil {
+		saslOpt, err := configureKgoSASL(cfg.Authentication.SASL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to configure SASL: %w", err)
+		}
+		opts = append(opts, saslOpt)
+	}
+	if cfg.Authentication.Kerberos != nil {
+		opt, err := configureKgoKerberos(cfg.Authentication.Kerberos)
+		if err != nil {
+			return nil, fmt.Errorf("failed to configure Kerberos: %w", err)
+		}
+		opts = append(opts, opt)
 	}
 	return opts, nil
 }
@@ -245,8 +256,7 @@ func saramaHashFn(b []byte) uint32 {
 	return h.Sum32()
 }
 
-// clientConfigOpts builds kgo.Opt values from a ClientConfig that do not
-// require runtime context (TLS, authentication are skipped).
+// clientConfigOpts builds kgo.Opt values from a ClientConfig.
 func clientConfigOpts(cfg configkafka.ClientConfig) []kgo.Opt {
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(cfg.Brokers...),
@@ -382,7 +392,13 @@ func topicOpts(topics, excludeTopics []string) []kgo.Opt {
 // ValidateClientConfigOpts validates the configkafka.ClientConfig by
 // converting config values to kgo options and calling kgo.ValidateOpts.
 func ValidateClientConfigOpts(cfg configkafka.ClientConfig) error {
-	return kgo.ValidateOpts(clientConfigOpts(cfg)...)
+	opts := clientConfigOpts(cfg)
+	secOpts, err := securityOpts(context.Background(), cfg)
+	if err != nil {
+		return err
+	}
+	opts = append(opts, secOpts...)
+	return kgo.ValidateOpts(opts...)
 }
 
 // ValidateProducerConfigOpts validates the configkafka.ClientConfig and
@@ -390,6 +406,11 @@ func ValidateClientConfigOpts(cfg configkafka.ClientConfig) error {
 // and calling kgo.ValidateOpts.
 func ValidateProducerConfigOpts(clientCfg configkafka.ClientConfig, producerCfg configkafka.ProducerConfig, timeout time.Duration) error {
 	opts := clientConfigOpts(clientCfg)
+	secOpts, err := securityOpts(context.Background(), clientCfg)
+	if err != nil {
+		return err
+	}
+	opts = append(opts, secOpts...)
 	opts = append(opts, producerConfigOpts(producerCfg)...)
 	opts = append(opts, kgo.ProduceRequestTimeout(timeout))
 	return kgo.ValidateOpts(opts...)
@@ -400,6 +421,11 @@ func ValidateProducerConfigOpts(clientCfg configkafka.ClientConfig, producerCfg 
 // and calling kgo.ValidateOpts.
 func ValidateConsumerConfigOpts(clientCfg configkafka.ClientConfig, consumerCfg configkafka.ConsumerConfig, topics, excludeTopics []string) error {
 	opts := clientConfigOpts(clientCfg)
+	secOpts, err := securityOpts(context.Background(), clientCfg)
+	if err != nil {
+		return err
+	}
+	opts = append(opts, secOpts...)
 	opts = append(opts, consumerConfigOpts(consumerCfg)...)
 	opts = append(opts, topicOpts(topics, excludeTopics)...)
 	return kgo.ValidateOpts(opts...)

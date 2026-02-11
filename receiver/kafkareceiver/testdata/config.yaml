@@ -31,9 +31,9 @@ kafka/logs:
       username: user
       password: password
   tls:
-    ca_file: ca.pem
-    cert_file: cert.pem
-    key_file: key.pem
+    ca_file: testdata/ca.pem
+    cert_file: testdata/cert.pem
+    key_file: testdata/key.pem
   metadata:
     retry:
       max: 10

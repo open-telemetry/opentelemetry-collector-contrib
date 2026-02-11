@@ -84,9 +84,9 @@ func TestLoadConfig(t *testing.T) {
 					}
 					config.TLS = &configtls.ClientConfig{
 						Config: configtls.Config{
-							CAFile:   "ca.pem",
-							CertFile: "cert.pem",
-							KeyFile:  "key.pem",
+							CAFile:   "testdata/ca.pem",
+							CertFile: "testdata/cert.pem",
+							KeyFile:  "testdata/key.pem",
 						},
 					}
 					return config
