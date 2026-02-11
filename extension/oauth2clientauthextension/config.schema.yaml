@@ -1,0 +1,63 @@
+description: Config stores the configuration for OAuth2 Client Credentials (2-legged OAuth2 flow) setup.
+type: object
+properties:
+  audience:
+    description: Audience optionally specifies the intended audience of the request.  If empty, the value of TokenURL is used as the intended audience. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+    type: string
+  claims:
+    description: Claims is a map of claims to be added to the JWT token. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+    type: object
+    additionalProperties:
+      x-customType: any
+  client_certificate_key:
+    description: ClientCertificateKey is the application's private key. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  client_certificate_key_file:
+    description: ClientSecrClientCertificateKeyFileetFile is the file pathg to read the application's secret from. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+    type: string
+  client_certificate_key_id:
+    description: ClientCertificateKeyID is the Key ID to include in the jwt. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+    type: string
+  client_id:
+    description: ClientID is the application's ID. See https://datatracker.ietf.org/doc/html/rfc6749#section-2.2
+    type: string
+  client_id_file:
+    description: ClientIDFile is the file path to read the application's ID from.
+    type: string
+  client_secret:
+    description: ClientSecret is the application's secret. See https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  client_secret_file:
+    description: ClientSecretFile is the file pathg to read the application's secret from.
+    type: string
+  endpoint_params:
+    description: EndpointParams specifies additional parameters for requests to the token endpoint.
+    x-customType: net/url.values
+  expiry_buffer:
+    description: ExpiryBuffer specifies the time buffer before token expiry to refresh it.
+    type: string
+    format: duration
+  grant_type:
+    description: GrantType is the OAuth2 grant type to use. It can be one of "client_credentials" or "urn:ietf:params:oauth:grant-type:jwt-bearer" (RFC 7523). Default value is "client_credentials"
+    type: string
+  iss:
+    description: Iss is the OAuth client identifier used when communicating with the configured OAuth provider. Default value is client_id. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+    type: string
+  scopes:
+    description: Scope specifies optional requested permissions. See https://datatracker.ietf.org/doc/html/rfc6749#section-3.3
+    type: array
+    items:
+      type: string
+  signature_algorithm:
+    description: SignatureAlgorithm is the RSA algorithm used to sign JWT token. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer". Default value is RS256 and valid values RS256, RS384, RS512
+    type: string
+  timeout:
+    description: Timeout parameter configures `http.Client.Timeout` for the underneath client to authorization server while fetching and refreshing tokens.
+    type: string
+    format: duration
+  tls:
+    description: TLS struct exposes TLS client configuration for the underneath client to authorization server.
+    $ref: go.opentelemetry.io/collector/config/configtls.client_config
+  token_url:
+    description: TokenURL is the resource server's token endpoint URL. This is a constant specific to each server. See https://datatracker.ietf.org/doc/html/rfc6749#section-3.2
+    type: string

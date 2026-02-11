@@ -25,6 +25,9 @@ $defs:
   top_query_collection:
     type: object
     properties:
+      collection_interval:
+        type: string
+        format: duration
       max_explain_each_interval:
         type: integer
         x-customType: int64
