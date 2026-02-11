@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/DeRuina/timberjack"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -20,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -182,7 +182,7 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 		}
 		wc = newBufferedWriteCloser(f)
 	} else {
-		wc = &lumberjack.Logger{
+		wc = &timberjack.Logger{
 			Filename:   path,
 			MaxSize:    rotation.MaxMegabytes,
 			MaxAge:     rotation.MaxDays,

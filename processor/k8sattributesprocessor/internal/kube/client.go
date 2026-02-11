@@ -747,11 +747,11 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	if c.Rules.PodHostName {
-		tags[tagHostName] = pod.Spec.Hostname
+		tags[string(conventions.K8SPodHostnameKey)] = pod.Spec.Hostname
 	}
 
 	if c.Rules.PodIP {
-		tags[K8sIPLabelName] = pod.Status.PodIP
+		tags[string(conventions.K8SPodIPKey)] = pod.Status.PodIP
 	}
 
 	if c.Rules.Namespace {
@@ -768,7 +768,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 			if rfc3339ts, err := ts.MarshalText(); err != nil {
 				c.logger.Error("failed to unmarshal pod creation timestamp", zap.Error(err))
 			} else {
-				tags[tagStartTime] = string(rfc3339ts)
+				tags[string(conventions.K8SPodStartTimeKey)] = string(rfc3339ts)
 			}
 		}
 	}
@@ -1368,7 +1368,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 				case string(conventions.HostNameKey):
 					attr = pod.Address
 				// k8s.pod.ip is set by passthrough mode
-				case K8sIPLabelName:
+				case string(conventions.K8SPodIPKey):
 					attr = pod.Address
 				case string(conventions.ContainerIDKey):
 					// At this point just an empty attr is added and we remember the position.
@@ -1421,7 +1421,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 			},
 			// k8s.pod.ip is set by passthrough mode
 			PodIdentifier{
-				PodIdentifierAttributeFromResourceAttribute(K8sIPLabelName, pod.Address),
+				PodIdentifierAttributeFromResourceAttribute(string(conventions.K8SPodIPKey), pod.Address),
 			})
 	}
 

@@ -1020,6 +1020,39 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.labels.label1": "lv1",
+				"k8s.pod.labels.label2": "k1=v1 k5=v5 extra!",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name singular",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.label.label1": "lv1",
+				"k8s.pod.label.label2": "k1=v1 k5=v5 extra!",
+			},
+			singularFeatureGate: true,
+		},
+		{
 			name:  "service-name",
 			rules: serviceRules,
 			attributes: map[string]string{
@@ -1376,6 +1409,37 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			},
 			singularFeatureGate: true,
 		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromNamespace,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.namespace.labels.label1": "lv1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name singular",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromNamespace,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.namespace.label.label1": "lv1",
+			},
+			singularFeatureGate: true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1636,6 +1700,37 @@ func TestNodeExtractionRules(t *testing.T) {
 			},
 			singularFeatureGate: true,
 		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromNode,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.node.labels.label1": "lv1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name singular",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromNode,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.node.label.label1": "lv1",
+			},
+			singularFeatureGate: true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1739,6 +1834,21 @@ func TestDeploymentExtractionRules(t *testing.T) {
 			},
 			attributes: map[string]string{
 				"k8s.deployment.annotation.annotation1": "av1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromDeployment,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.deployment.label.label1": "lv1",
 			},
 		},
 	}
@@ -1878,6 +1988,21 @@ func TestStatefulSetExtractionRules(t *testing.T) {
 				"k8s.statefulset.annotation.annotation1": "av1",
 			},
 		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromStatefulSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.statefulset.label.label1": "lv1",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1974,6 +2099,21 @@ func TestDaemonSetExtractionRules(t *testing.T) {
 				"k8s.daemonset.annotation.annotation1": "av1",
 			},
 		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromDaemonSet,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.daemonset.label.label1": "lv1",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -2068,6 +2208,21 @@ func TestJobExtractionRules(t *testing.T) {
 			},
 			attributes: map[string]string{
 				"k8s.job.annotation.annotation1": "av1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromJob,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.job.label.label1": "lv1",
 			},
 		},
 	}

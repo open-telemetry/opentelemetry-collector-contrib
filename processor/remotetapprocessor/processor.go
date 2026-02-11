@@ -58,13 +58,11 @@ func (w *wsprocessor) Start(ctx context.Context, host component.Host) error {
 	if err != nil {
 		return err
 	}
-	w.shutdownWG.Add(1)
-	go func() {
-		defer w.shutdownWG.Done()
+	w.shutdownWG.Go(func() {
 		if errHTTP := w.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 	return nil
 }
 
