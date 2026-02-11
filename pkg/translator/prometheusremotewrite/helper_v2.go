@@ -48,7 +48,7 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 		name = settings.Namespace + "_" + name
 	}
 
-	labels, err := createAttributes(resource, attributes, settings.ExternalLabels, identifyingAttrs, false, c.labelNamer, model.MetricNameLabel, name)
+	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, identifyingAttrs, false, c.labelNamer, model.MetricNameLabel, name)
 	if err != nil {
 		return err
 	}
@@ -96,13 +96,13 @@ func (c *prometheusConverterV2) addSampleWithLabels(sampleValue float64, timesta
 }
 
 func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
-	settings Settings, baseName string, metadata metadata,
+	scope pcommon.InstrumentationScope, settings Settings, baseName string, metadata metadata,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer)
+		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -124,13 +124,13 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 }
 
 func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, baseName string, metadata metadata,
+	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, baseName string, metadata metadata,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer)
+		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
