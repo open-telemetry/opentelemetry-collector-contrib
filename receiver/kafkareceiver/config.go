@@ -190,12 +190,20 @@ func (c *Config) Validate() error {
 	}
 	// Validate franz-go options for each configured signal. Deprecated
 	// Topic/ExcludeTopic fields are already migrated by Unmarshal.
-	for _, sig := range []*TopicEncodingConfig{&c.Logs, &c.Metrics, &c.Traces, &c.Profiles} {
-		if len(sig.Topics) == 0 {
+	for _, sig := range []struct {
+		name string
+		cfg  *TopicEncodingConfig
+	}{
+		{name: "logs", cfg: &c.Logs},
+		{name: "metrics", cfg: &c.Metrics},
+		{name: "traces", cfg: &c.Traces},
+		{name: "profiles", cfg: &c.Profiles},
+	} {
+		if len(sig.cfg.Topics) == 0 {
 			continue
 		}
-		if err := kafka.ValidateConsumerConfigOpts(c.ClientConfig, c.ConsumerConfig, sig.Topics, sig.ExcludeTopics); err != nil {
-			return err
+		if err := kafka.ValidateConsumerConfigOpts(c.ClientConfig, c.ConsumerConfig, sig.cfg.Topics, sig.cfg.ExcludeTopics); err != nil {
+			return fmt.Errorf("invalid franz-go options for %s: %w", sig.name, err)
 		}
 	}
 	return nil
