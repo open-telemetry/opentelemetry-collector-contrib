@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
