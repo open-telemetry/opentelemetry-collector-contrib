@@ -222,7 +222,7 @@ func (*factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, sta
 					statsWriter.Write(sp)
 				}
 			}
-		}()
+		})
 	}
 }
 
