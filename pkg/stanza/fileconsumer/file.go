@@ -6,6 +6,7 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"os"
 	"sync"
 	"time"
@@ -146,6 +147,7 @@ func (m *Manager) poll(ctx context.Context) {
 	}
 
 	matches = append(matches, filteredExtraPaths...)
+
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])
 

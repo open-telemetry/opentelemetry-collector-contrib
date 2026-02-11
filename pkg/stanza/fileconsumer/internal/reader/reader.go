@@ -8,11 +8,10 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
-	"io"
-	"os"
-
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+	"io"
+	"os"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
