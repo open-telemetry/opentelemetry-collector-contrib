@@ -17,7 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/apiserver"
 )
 
 type apiResponse struct {
@@ -62,15 +65,14 @@ func TestPrometheusAPIServer(t *testing.T) {
 
 		receiver, _ := newTestReceiver(t, &Config{
 			PrometheusConfig: cfg,
-			APIServer: APIServer{
-				Enabled: true,
+			APIServer: configoptional.Some(apiserver.Config{
 				ServerConfig: confighttp.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Transport: "tcp",
 						Endpoint:  endpoint,
 					},
 				},
-			},
+			}),
 		})
 		endpointsToReceivers[endpoint] = receiver
 		mp.wg.Wait()

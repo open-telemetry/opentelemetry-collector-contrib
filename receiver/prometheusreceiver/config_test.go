@@ -379,18 +379,10 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
-	assert.True(t, r0.APIServer.Enabled)
-	assert.NotNil(t, r0.APIServer.ServerConfig)
-	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.NetAddr.Endpoint)
-
-	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIDisabled").String())
-	require.NoError(t, err)
-	cfg = factory.CreateDefaultConfig()
-	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
-
-	r1 := cfg.(*Config)
-	assert.False(t, r1.APIServer.Enabled)
+	require.True(t, r0.APIServer.HasValue())
+	apiCfg := r0.APIServer.Get()
+	require.NotNil(t, apiCfg)
+	assert.Equal(t, "localhost:9090", apiCfg.ServerConfig.NetAddr.Endpoint)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withoutAPI").String())
 	require.NoError(t, err)
@@ -398,15 +390,26 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, xconfmap.Validate(cfg))
 
+	r1 := cfg.(*Config)
+	assert.NotNil(t, r1.PrometheusConfig)
+	assert.False(t, r1.APIServer.HasValue())
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIUsingDefaults").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
+
 	r2 := cfg.(*Config)
-	assert.NotNil(t, r2.PrometheusConfig)
-	assert.False(t, r2.APIServer.Enabled)
+	require.True(t, r2.APIServer.HasValue())
+	defaultAPICfg := r2.APIServer.Get()
+	require.NotNil(t, defaultAPICfg)
+	assert.Equal(t, "0.0.0.0:9090", defaultAPICfg.ServerConfig.NetAddr.Endpoint)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withInvalidAPIConfig").String())
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
-	require.NoError(t, sub.Unmarshal(cfg))
-	require.Error(t, xconfmap.Validate(cfg))
+	require.Error(t, sub.Unmarshal(cfg))
 }
 
 func TestReloadPromConfigSecretHandling(t *testing.T) {

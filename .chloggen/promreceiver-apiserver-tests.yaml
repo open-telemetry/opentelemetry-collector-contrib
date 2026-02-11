@@ -1,0 +1,11 @@
+change_type: breaking
+component: receiver/prometheus
+note: Prometheus receiver API server configuration now treats the presence of the `api_server` block as the on/off switch; the deprecated `enabled` flag has been removed from the schema and sample configs.
+issues:
+  - 0
+subtext: |-
+  - Added config/manager unit tests under internal/apiserver to cover defaulting and shutdown paths.
+  - Relaxed the configuration schema so `api_server` can be enabled without explicitly providing a listener.
+  - Removing the `api_server.enabled` option is a breaking change; disabling the API server now requires omitting the block entirely.
+change_logs:
+  - user

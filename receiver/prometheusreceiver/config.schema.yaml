@@ -1,11 +1,4 @@
 $defs:
-  api_server:
-    type: object
-    properties:
-      enabled:
-        type: boolean
-      server_config:
-        $ref: go.opentelemetry.io/collector/config/confighttp.server_config
   prom_config:
     description: PromConfig is a redeclaration of promconfig.Config because we need custom unmarshaling as prometheus "config" uses `yaml` tags.
     x-customType: github.com/prometheus/prometheus/config.config
@@ -14,7 +7,8 @@ type: object
 properties:
   api_server:
     description: APIServer has the settings to enable the receiver to host the Prometheus API server in agent mode. This allows the user to call the endpoint to get the config, service discovery, and targets for debugging purposes.
-    $ref: api_server
+    x-optional: true
+    $ref: ./internal/apiserver.config
   config:
     x-pointer: true
     $ref: prom_config

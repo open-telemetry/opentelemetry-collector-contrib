@@ -6,6 +6,7 @@ package targetallocator
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -36,7 +37,7 @@ func TestNewManager(t *testing.T) {
 		},
 	}
 
-	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, promCfg)
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, promCfg, nil)
 
 	assert.NotNil(t, manager)
 	assert.Equal(t, cfg, manager.cfg)
@@ -44,6 +45,24 @@ func TestNewManager(t *testing.T) {
 	assert.NotNil(t, manager.shutdown)
 	assert.NotNil(t, manager.configUpdateCount)
 	assert.Len(t, manager.initialScrapeConfigs, 1)
+}
+
+func TestNewManagerUsesProvidedConfigLock(t *testing.T) {
+	sharedLock := &sync.RWMutex{}
+	cfg := &Config{
+		Interval:    30 * time.Second,
+		CollectorID: "test-collector",
+	}
+	promCfg := &promconfig.Config{
+		ScrapeConfigs: []*promconfig.ScrapeConfig{
+			{JobName: "test-job"},
+		},
+	}
+
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, promCfg, sharedLock)
+
+	require.NotNil(t, manager)
+	assert.Same(t, sharedLock, manager.cfgLock)
 }
 
 func TestManagerShutdown(t *testing.T) {
@@ -70,7 +89,7 @@ func TestManagerShutdown(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 
-	manager := NewManager(settings, cfg, promCfg)
+	manager := NewManager(settings, cfg, promCfg, nil)
 
 	// Start the manager so the goroutine is running
 	ctx := t.Context()

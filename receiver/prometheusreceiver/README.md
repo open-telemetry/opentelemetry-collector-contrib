@@ -230,13 +230,12 @@ and uses attributes (other than `otel_scope_name` and `otel_scope_version`) to p
 Attributes.
 
 ## Prometheus API Server
-The Prometheus API server can be enabled to host info about the Prometheus targets, config, service discovery, and metrics. The `server_config` can be specified using the OpenTelemetry confighttp package. An example configuration would be:
+The Prometheus API server can be enabled to host info about the Prometheus targets, config, service discovery, and metrics. The `server_config` can be specified using the OpenTelemetry confighttp package. Omit the `api_server` block to disable the server. If `server_config.endpoint` is not set, the receiver listens on 0.0.0.0:9090 by default. An example configuration would be:
 
 ```
 receivers:
   prometheus:
     api_server:
-      enabled: true
       server_config:
         endpoint: "localhost:9090"
 ```
@@ -299,7 +298,6 @@ This section provides guidance for common issues, performance optimization, and 
 receivers:
   prometheus:
     api_server:
-      enabled: true
       server_config:
         endpoint: "localhost:9090"
 ```
