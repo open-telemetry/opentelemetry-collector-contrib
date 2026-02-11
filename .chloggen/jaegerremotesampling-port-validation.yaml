@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: jaegerremotesampling
+
+note: Add validation to detect port conflicts between HTTP and gRPC servers
+issues:[#45944]
+subtext: |
+  The jaegerremotesampling extension now validates that HTTP and gRPC servers
+  are configured on different ports during configuration loading. This prevents
+  runtime port binding failures and provides clear, actionable error messages
+  when misconfigurations are detected.
