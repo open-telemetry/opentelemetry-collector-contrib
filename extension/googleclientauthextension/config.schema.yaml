@@ -1,4 +1,0 @@
-description: Config defines configuration for the Google client auth extension.
-type: object
-allOf:
-  - x-customType: github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension.config

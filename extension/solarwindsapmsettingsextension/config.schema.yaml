@@ -1,9 +1,0 @@
-type: object
-properties:
-  endpoint:
-    type: string
-  interval:
-    type: string
-    format: duration
-  key:
-    type: string
