@@ -1,7 +1,7 @@
 // Deprecated: [v0.143.0] Use OTLP exporter instead
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
