@@ -146,13 +146,11 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 			return cerr
 		}
 
-		sr.goroutines.Add(1)
-		go func() {
-			defer sr.goroutines.Done()
+		sr.goroutines.Go(func() {
 			if errHTTP := sr.collectorServer.Serve(cln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 			}
-		}()
+		})
 	}
 
 	if sr.collectorGRPCEnabled() {
@@ -181,13 +179,11 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		v3.RegisterCLRMetricReportServiceServer(sr.grpc, &clrService{})
 		v3.RegisterBrowserPerfServiceServer(sr.grpc, sr.dummyReportService)
 
-		sr.goroutines.Add(1)
-		go func() {
-			defer sr.goroutines.Done()
+		sr.goroutines.Go(func() {
 			if errGrpc := sr.grpc.Serve(gln); !errors.Is(errGrpc, grpc.ErrServerStopped) && errGrpc != nil {
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
 			}
-		}()
+		})
 	}
 
 	return nil
