@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.145.0
@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.145.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/pdata v1.51.1-0.20260205185216-81bc641f26c0
 	go.uber.org/goleak v1.3.0
-	golang.org/x/text v0.31.0
+	golang.org/x/text v0.34.0
 )
 
 require (

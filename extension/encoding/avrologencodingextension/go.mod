@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/linkedin/goavro/v2 v2.15.0
