@@ -13,6 +13,7 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestFromMetricsV2(t *testing.T) {
@@ -204,4 +205,55 @@ func createSample(value float64, labels []prompb.Label) metricSample {
 		},
 		labels: labels,
 	}
+}
+
+func TestScopeAttributesV2(t *testing.T) {
+	settings := Settings{
+		Namespace:         "",
+		ExternalLabels:    nil,
+		DisableTargetInfo: false,
+		AddMetricSuffixes: false,
+		SendMetadata:      false,
+	}
+
+	// Create metrics with scope attributes
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+
+	// Scope 1
+	sm1 := rm.ScopeMetrics().AppendEmpty()
+	scope1 := sm1.Scope()
+	scope1.SetName("scope1")
+	scope1.SetVersion("1.0.0")
+	scope1.Attributes().PutStr("scope.attr", "value1")
+
+	m1 := sm1.Metrics().AppendEmpty()
+	m1.SetName("test_metric")
+	m1.SetDescription("test description")
+	m1.SetUnit("1")
+	g1 := m1.SetEmptyGauge()
+	dp1 := g1.DataPoints().AppendEmpty()
+	dp1.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+	dp1.SetIntValue(1)
+
+	// Scope 2
+	sm2 := rm.ScopeMetrics().AppendEmpty()
+	scope2 := sm2.Scope()
+	scope2.SetName("scope2")
+	scope2.SetVersion("2.0.0")
+	scope2.Attributes().PutStr("scope.attr", "value2")
+
+	m2 := sm2.Metrics().AppendEmpty()
+	m2.SetName("test_metric")
+	m2.SetDescription("test description")
+	m2.SetUnit("1")
+	g2 := m2.SetEmptyGauge()
+	dp2 := g2.DataPoints().AppendEmpty()
+	dp2.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+	dp2.SetIntValue(2)
+
+	tsMap, _, err := FromMetricsV2(md, settings)
+	require.NoError(t, err)
+
+	require.Len(t, tsMap, 2)
 }
