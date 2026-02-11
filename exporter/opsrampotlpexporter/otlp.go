@@ -517,7 +517,7 @@ func getAuthTokenWithTlsDisabled(cfg SecuritySettings) (string, error) {
 	form.Set("client_secret", cfg.ClientSecret)
 	form.Set("grant_type", "client_credentials")
 
-	req, err := http.NewRequest("POST", cfg.OAuthServiceURL, bytes.NewBufferString(form.Encode()))
+	req, err := http.NewRequest("POST", cfg.OAuthServiceURL, bytes.NewBufferString(form.Encode())) //nolint:usestdlibvars
 	if err != nil {
 		return "", err
 	}

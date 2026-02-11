@@ -16,6 +16,18 @@ import (
 
 const knownFilesKey = "knownFiles"
 
+// Checkpoint Retention Policy:
+// -----------------------------------
+// Checkpoints for file offsets are not kept forever. Instead, a ring buffer mechanism is used (see tracker.go),
+// controlled by the 'pollsToArchive' parameter. This limits the number of archived checkpoint sets (e.g., knownFiles0, knownFiles1, ...).
+// When the buffer wraps, old checkpoints are overwritten, bounding storage usage.
+//
+// Tradeoff: If a file is inactive for longer than the buffer covers, its checkpoint may be lost, and if updated later,
+// the file will be reprocessed from the beginning, causing data duplication. Set 'pollsToArchive' high enough to cover
+// the maximum expected inactivity period for files that may be updated again. For files that are truly finalized, their
+// checkpoints can be removed immediately if desired.
+// -----------------------------------
+
 // Save syncs the most recent set of files to the database
 func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata) error {
 	return SaveKey(ctx, persister, rmds, knownFilesKey)
@@ -75,24 +87,50 @@ func Load(ctx context.Context, persister operator.Persister) ([]*reader.Metadata
 		if rmd.FileAttributes == nil {
 			rmd.FileAttributes = map[string]any{}
 		}
+		// This reader won't be used for anything other than metadata reference, so just wrap the metadata
+		rmds = append(rmds, rmd)
+	}
+	return rmds, errors.Join(errs...)
+}
 
-		// Migrate readers that used FileAttributes.HeaderAttributes
-		// This block can be removed in a future release, tentatively v0.90.0
+func LoadKey(ctx context.Context, persister operator.Persister, key string) ([]*reader.Metadata, error) {
+	// Note: This function loads a specific archived checkpoint set (by key) as part of the ring buffer retention policy.
+	// See the file-level comment above for details on retention and tradeoffs.
+	encoded, err := persister.Get(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+
+	if encoded == nil {
+		return []*reader.Metadata{}, nil
+	}
+
+	dec := json.NewDecoder(bytes.NewReader(encoded))
+
+	// Decode the number of entries
+	var knownFileCount int
+	if err = dec.Decode(&knownFileCount); err != nil {
+		return nil, fmt.Errorf("decoding file count: %w", err)
+	}
+
+	rmds := make([]*reader.Metadata, 0, knownFileCount)
+	for i := 0; i < knownFileCount; i++ {
+		rmd := new(reader.Metadata)
+		if err = dec.Decode(rmd); err != nil {
+			return nil, err
+		}
+		if rmd.FileAttributes == nil {
+			rmd.FileAttributes = map[string]any{}
+		}
 		if ha, ok := rmd.FileAttributes["HeaderAttributes"]; ok {
-			switch hat := ha.(type) {
-			case map[string]any:
+			if hat, ok := ha.(map[string]any); ok {
 				for k, v := range hat {
 					rmd.FileAttributes[k] = v
 				}
 				delete(rmd.FileAttributes, "HeaderAttributes")
-			default:
-				errs = append(errs, errors.New("migrate header attributes: unexpected format"))
 			}
 		}
-
-		// This reader won't be used for anything other than metadata reference, so just wrap the metadata
 		rmds = append(rmds, rmd)
 	}
-
-	return rmds, errors.Join(errs...)
+	return rmds, nil
 }

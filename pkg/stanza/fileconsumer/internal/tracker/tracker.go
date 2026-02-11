@@ -31,6 +31,9 @@ type Tracker interface {
 	EndPoll()
 	EndConsume() int
 	TotalReaders() int
+	GetKnownFilePathsNotIn(matchedPaths []string) []string
+	PollsToArchive() int
+	Persister() operator.Persister
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -67,6 +70,14 @@ func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int, pollsToA
 		persister:         persister,
 		archiveIndex:      0,
 	}
+}
+
+func (t *fileTracker) PollsToArchive() int {
+	return t.pollsToArchive
+}
+
+func (t *fileTracker) Persister() operator.Persister {
+	return t.persister
 }
 
 func (t *fileTracker) Add(reader *reader.Reader) {
@@ -224,4 +235,33 @@ func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
 
 func (t *noStateTracker) EndPoll() {}
 
-func (t *noStateTracker) TotalReaders() int { return 0 }
+func (t *noStateTracker) TotalReaders() int                                     { return 0 }
+func (t *noStateTracker) GetKnownFilePathsNotIn(matchedPaths []string) []string { return nil }
+func (t *noStateTracker) PollsToArchive() int                                   { return 0 }
+func (t *noStateTracker) Persister() operator.Persister                         { return nil }
+
+// GetKnownFilePathsNotIn returns paths of known files not present in matched files
+func (t *fileTracker) GetKnownFilePathsNotIn(matchedPaths []string) []string {
+	matched := make(map[string]struct{}, len(matchedPaths))
+	for _, path := range matchedPaths {
+		matched[path] = struct{}{}
+	}
+
+	extras := []string{}
+	for _, fileset := range t.knownFiles {
+		for _, metadata := range fileset.Get() {
+			attr := metadata.FileAttributes["log.file.path"]
+			path, ok := attr.(string)
+			if !ok {
+				t.set.Logger.Warn("Invalid file path in metadata", zap.Any("value", attr))
+				continue
+			}
+
+			if _, found := matched[path]; !found {
+				extras = append(extras, path)
+			}
+		}
+	}
+
+	return extras
+}
