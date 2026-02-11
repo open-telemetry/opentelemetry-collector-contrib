@@ -28,8 +28,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id       component.ID
-		expected component.Config
+		id          component.ID
+		expected    component.Config
+		expectedErr string
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
@@ -139,6 +140,10 @@ func TestLoadConfig(t *testing.T) {
 				Encoding: "legacy_encoding",
 			},
 		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_franz"),
+			expectedErr: "produce timeout 10ms is less than allowed 100ms",
+		},
 	}
 
 	for _, tt := range tests {
@@ -149,8 +154,12 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			if tt.expectedErr != "" {
+				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.expectedErr)
+			} else {
+				assert.NoError(t, xconfmap.Validate(cfg))
+				assert.Equal(t, tt.expected, cfg)
+			}
 		})
 	}
 }

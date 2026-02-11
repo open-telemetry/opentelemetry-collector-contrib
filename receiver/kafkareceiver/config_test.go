@@ -4,6 +4,7 @@
 package kafkareceiver
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -276,6 +277,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_franz"),
+			expectedErr: errors.New("session timeout 1ms is less than allowed 100ms"),
+		},
 	}
 
 	for _, tt := range tests {
@@ -287,8 +292,12 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, xconfmap.Validate(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			if tt.expectedErr != nil {
+				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.expectedErr.Error())
+			} else {
+				assert.NoError(t, xconfmap.Validate(cfg))
+				assert.Equal(t, tt.expected, cfg)
+			}
 		})
 	}
 }

@@ -62,6 +62,13 @@ kafka/message_marking_on_permanent_error_inherited:
     after: true
     on_error: true
 
+kafka/invalid_franz:
+  session_timeout: 1ms
+  logs:
+    topics:
+    - logs
+    encoding: otlp_proto
+
 kafka/regex_topic_with_exclusion:
   logs:
     topics:

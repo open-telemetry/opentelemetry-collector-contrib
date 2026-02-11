@@ -1,3 +1,8 @@
+kafkametrics/invalid_franz:
+  brokers: 10.10.10.10:9092
+  metadata:
+    refresh_interval: 2h
+
 kafkametrics:
   cluster_alias: kafka-test
   brokers: 10.10.10.10:9092
@@ -10,6 +15,6 @@ kafkametrics:
     # the refresh_frequency -> refresh_interval alias
     # does not destroy any other config.
     full: false
-  refresh_frequency: 1
+  refresh_frequency: 10s
   topic_match: test_\w+
   group_match: test_\w+
