@@ -1,0 +1,65 @@
+$defs:
+  authentication:
+    description: Authentication defines authentication strategies.
+    type: object
+    properties:
+      sasl_external:
+        x-optional: true
+        $ref: sasl_external_config
+      sasl_plain:
+        x-optional: true
+        $ref: sasl_plain_text_config
+      sasl_xauth2:
+        x-optional: true
+        $ref: sasl_x_auth_2_config
+  flow_control:
+    description: FlowControl defines the configuration for what to do in backpressure scenarios, e.g. memorylimiter errors
+    type: object
+    properties:
+      delayed_retry:
+        x-optional: true
+        $ref: flow_control_delayed_retry
+  flow_control_delayed_retry:
+    description: FlowControlDelayedRetry represents the strategy of waiting for a defined amount of time (in time.Duration) and attempt redelivery
+    type: object
+    properties:
+      delay:
+        type: string
+        format: duration
+  sasl_plain_text_config:
+    description: SaslPlainTextConfig defines SASL PLAIN authentication.
+    type: object
+    properties:
+      password:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      username:
+        type: string
+  sasl_x_auth_2_config:
+    description: SaslXAuth2Config defines the configuration for the SASL XAUTH2 authentication.
+    type: object
+    properties:
+      bearer:
+        type: string
+      username:
+        type: string
+description: Config defines configuration for Solace receiver.
+type: object
+properties:
+  auth:
+    $ref: authentication
+  broker:
+    description: The list of solace brokers (default localhost:5671)
+    type: array
+    items:
+      type: string
+  flow_control:
+    $ref: flow_control
+  max_unacknowledged:
+    description: The maximum number of unacknowledged messages the Solace broker can transmit, to configure AMQP Link
+    type: integer
+    x-customType: int32
+  queue:
+    description: The name of the solace queue to consume from, it is required parameter
+    type: string
+  tls:
+    $ref: go.opentelemetry.io/collector/config/configtls.client_config

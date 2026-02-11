@@ -87,6 +87,7 @@ type processHandle interface {
 	MemoryPercentWithContext(context.Context) (float32, error)
 	IOCountersWithContext(context.Context) (*process.IOCountersStat, error)
 	NumThreadsWithContext(context.Context) (int32, error)
+	ThreadsWithContext(context.Context) (map[int32]*cpu.TimesStat, error)
 	CreateTimeWithContext(context.Context) (int64, error)
 	PpidWithContext(context.Context) (int32, error)
 	PageFaultsWithContext(context.Context) (*process.PageFaultsStat, error)

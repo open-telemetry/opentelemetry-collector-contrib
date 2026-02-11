@@ -14,7 +14,7 @@ data:
       health_check:
         endpoint: 0.0.0.0:13133
     processors:
-      k8sattributes:
+      k8s_attributes:
         filter:
           namespace: e2ek8sattribute-workloadns
         extract:
@@ -62,20 +62,20 @@ data:
           exporters:
           - otlp_grpc
           processors:
-          - k8sattributes
+          - k8s_attributes
           receivers:
           - otlp
         traces:
           exporters:
           - otlp_grpc
           processors:
-          - k8sattributes
+          - k8s_attributes
           receivers:
           - otlp
         logs:
           exporters:
           - otlp_grpc
           processors:
-          - k8sattributes
+          - k8s_attributes
           receivers:
           - otlp

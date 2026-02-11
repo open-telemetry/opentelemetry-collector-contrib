@@ -4,7 +4,7 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: processor/k8sattributes
+component: processor/k8s_attributes
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Introduce semantic conventions compliant feature gate pair for k8sattributes processor

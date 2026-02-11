@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package time // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/time"
+package stanzatime // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/stanzatime"
 
 import (
 	"time"
