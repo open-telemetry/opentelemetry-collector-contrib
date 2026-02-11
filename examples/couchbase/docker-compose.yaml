@@ -10,7 +10,7 @@ services:
           cpus: "0.50"
           memory: 1512M
   opentelemetry-collector-contrib:
-    image: otel/opentelemetry-collector-contrib:0.144.0
+    image: otel/opentelemetry-collector-contrib:0.145.0
     command: ["--config=/etc/otel-collector-config.yml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yml

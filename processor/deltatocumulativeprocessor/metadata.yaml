@@ -1,4 +1,9 @@
+display_name: Delta to Cumulative Processor
 type: deltatocumulative
+
+description: |
+  The Delta to Cumulative Processor (`deltatocumulativeprocessor`) converts metrics from delta temporality to
+  cumulative, by accumulating samples in memory.
 
 status:
   class: processor

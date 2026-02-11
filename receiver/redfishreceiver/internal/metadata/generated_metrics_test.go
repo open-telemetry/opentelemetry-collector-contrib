@@ -42,6 +42,15 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetNone,
 			expectEmpty: true,
 		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -60,53 +69,56 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordChassisPowerstateDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
+			mb.RecordChassisPowerstateDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordChassisStatusHealthDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
+			mb.RecordChassisStatusHealthDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordChassisStatusStateDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
+			mb.RecordChassisStatusStateDataPoint(ts, 1, "chassis.id-val", "chassis.asset_tag-val", "chassis.model-val", "chassis.name-val", "chassis.manufacturer-val", "chassis.serial_number-val", "chassis.sku-val", "chassis.chassis_type-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFanReadingDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "fan.name-val", "fan.reading_units-val")
+			mb.RecordFanReadingDataPoint(ts, 1, "chassis.id-val", "fan.name-val", "fan.reading_units-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFanStatusHealthDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "fan.name-val")
+			mb.RecordFanStatusHealthDataPoint(ts, 1, "chassis.id-val", "fan.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFanStatusStateDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "fan.name-val")
+			mb.RecordFanStatusStateDataPoint(ts, 1, "chassis.id-val", "fan.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemPowerstateDataPoint(ts, 1, "base_url-val", "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.host_name-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
+			mb.RecordSystemPowerstateDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemStatusHealthDataPoint(ts, 1, "base_url-val", "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.host_name-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
+			mb.RecordSystemStatusHealthDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemStatusStateDataPoint(ts, 1, "base_url-val", "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.host_name-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
+			mb.RecordSystemStatusStateDataPoint(ts, 1, "system.id-val", "system.asset_tag-val", "system.bios_version-val", "system.model-val", "system.name-val", "system.manufacturer-val", "system.serial_number-val", "system.sku-val", "system.system_type-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTemperatureReadingDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "temperature.name-val")
+			mb.RecordTemperatureReadingDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTemperatureStatusHealthDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "temperature.name-val")
+			mb.RecordTemperatureStatusHealthDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTemperatureStatusStateDataPoint(ts, 1, "system.host_name-val", "base_url-val", "chassis.id-val", "temperature.name-val")
+			mb.RecordTemperatureStatusStateDataPoint(ts, 1, "chassis.id-val", "temperature.name-val")
 
-			res := pcommon.NewResource()
+			rb := mb.NewResourceBuilder()
+			rb.SetBaseURL("base_url-val")
+			rb.SetSystemHostName("system.host_name-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if tt.expectEmpty {
@@ -140,13 +152,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("chassis.asset_tag")
@@ -182,13 +188,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("chassis.asset_tag")
@@ -224,13 +224,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("chassis.asset_tag")
@@ -266,13 +260,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("fan.name")
@@ -293,13 +281,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("fan.name")
@@ -317,13 +299,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("fan.name")
@@ -341,10 +317,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("system.id")
+					attrVal, ok := dp.Attributes().Get("system.id")
 					assert.True(t, ok)
 					assert.Equal(t, "system.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("system.asset_tag")
@@ -353,9 +326,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("system.bios_version")
 					assert.True(t, ok)
 					assert.Equal(t, "system.bios_version-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("system.model")
 					assert.True(t, ok)
 					assert.Equal(t, "system.model-val", attrVal.Str())
@@ -386,10 +356,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("system.id")
+					attrVal, ok := dp.Attributes().Get("system.id")
 					assert.True(t, ok)
 					assert.Equal(t, "system.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("system.asset_tag")
@@ -398,9 +365,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("system.bios_version")
 					assert.True(t, ok)
 					assert.Equal(t, "system.bios_version-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("system.model")
 					assert.True(t, ok)
 					assert.Equal(t, "system.model-val", attrVal.Str())
@@ -431,10 +395,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("system.id")
+					attrVal, ok := dp.Attributes().Get("system.id")
 					assert.True(t, ok)
 					assert.Equal(t, "system.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("system.asset_tag")
@@ -443,9 +404,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("system.bios_version")
 					assert.True(t, ok)
 					assert.Equal(t, "system.bios_version-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("system.model")
 					assert.True(t, ok)
 					assert.Equal(t, "system.model-val", attrVal.Str())
@@ -476,13 +434,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("temperature.name")
@@ -500,13 +452,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("temperature.name")
@@ -524,13 +470,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("system.host_name")
-					assert.True(t, ok)
-					assert.Equal(t, "system.host_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("base_url")
-					assert.True(t, ok)
-					assert.Equal(t, "base_url-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("chassis.id")
+					attrVal, ok := dp.Attributes().Get("chassis.id")
 					assert.True(t, ok)
 					assert.Equal(t, "chassis.id-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("temperature.name")
