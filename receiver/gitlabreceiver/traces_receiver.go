@@ -138,13 +138,11 @@ func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host)
 		),
 	)
 
-	gtr.shutdownWG.Add(1)
-	go func() {
-		defer gtr.shutdownWG.Done()
+	gtr.shutdownWG.Go(func() {
 		if errHTTP := gtr.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 
 	return nil
 }

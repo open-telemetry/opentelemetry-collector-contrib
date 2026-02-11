@@ -7,6 +7,6 @@ status:
     development: [logs]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [dmitryax, braydonk]
+    active: [dmitryax, braydonk, rogercoll]
 tests:
   config:

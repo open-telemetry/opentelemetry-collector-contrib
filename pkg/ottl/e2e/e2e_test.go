@@ -1531,6 +1531,12 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutBool("test", true)
 			},
 		},
+		{
+			statement: `set(attributes["in_cidr"], IsInCIDR(attributes["server.ip"], ["192.168.0.0/16"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("in_cidr", true)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -2175,6 +2181,7 @@ func constructLogTransformContext() *ottllog.TransformContext {
 	logRecord.Attributes().PutStr("val", "val2")
 	logRecord.Attributes().PutInt("int_value", 0)
 	logRecord.Attributes().PutStr("nil_string", "nil")
+	logRecord.Attributes().PutStr("server.ip", "192.168.0.1")
 	arr := logRecord.Attributes().PutEmptySlice("array")
 	arr0 := arr.AppendEmpty()
 	arr0.SetStr("looong")

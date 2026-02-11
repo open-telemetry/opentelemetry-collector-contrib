@@ -5,7 +5,7 @@ package parser // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"sort"
 	"time"
 

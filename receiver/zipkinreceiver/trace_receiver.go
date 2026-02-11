@@ -105,14 +105,11 @@ func (zr *zipkinReceiver) Start(ctx context.Context, host component.Host) error 
 	if err != nil {
 		return err
 	}
-	zr.shutdownWG.Add(1)
-	go func() {
-		defer zr.shutdownWG.Done()
-
+	zr.shutdownWG.Go(func() {
 		if errHTTP := zr.server.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 
 	return nil
 }

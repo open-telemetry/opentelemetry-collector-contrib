@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -75,13 +76,15 @@ type cloudwatchMetricValue struct {
 	isSet bool
 
 	// Max is the highest value observed.
-	Max float64 `json:"max"`
+	Max float64
 	// Min is the lowest value observed.
-	Min float64 `json:"min"`
+	Min float64
 	// Sum is the sum of data points collected.
-	Sum float64 `json:"sum"`
+	Sum float64
 	// Count is the number of data points.
-	Count float64 `json:"count"`
+	Count float64
+	// Percentiles contains percentile fields (e.g., p50, p99, p99.9).
+	Percentiles map[string]float64
 }
 
 // validateMetric validates that the cloudwatch metric has been unmarshalled correctly
@@ -101,13 +104,28 @@ func validateMetric(metric cloudwatchMetric) error {
 	return nil
 }
 
-// UnmarshalJSON unmarshalls the data to a cloudwatchMetricValue,
-// and sets isSet to true upon a successful execution
 func (v *cloudwatchMetricValue) UnmarshalJSON(data []byte) error {
-	type valueType cloudwatchMetricValue
-	if err := gojson.Unmarshal(data, (*valueType)(v)); err != nil {
+	// All CloudWatch metric values are float64, so use a typed map
+	rawFields := make(map[string]float64)
+	if err := gojson.Unmarshal(data, &rawFields); err != nil {
 		return err
 	}
+
+	v.Max = rawFields["max"]
+	v.Min = rawFields["min"]
+	v.Sum = rawFields["sum"]
+	v.Count = rawFields["count"]
+
+	// Other statistics (TM, WM, TC, TS, PR, IQM) are silently ignored.
+	v.Percentiles = make(map[string]float64)
+	for key, value := range rawFields {
+		if len(key) > 1 && key[0] == 'p' {
+			if _, err := strconv.ParseFloat(key[1:], 64); err == nil {
+				v.Percentiles[key] = value
+			}
+		}
+	}
+
 	v.isSet = true
 	return nil
 }
@@ -210,6 +228,13 @@ func (*formatJSONUnmarshaler) addMetricToResource(
 	maxQ := dp.QuantileValues().AppendEmpty()
 	maxQ.SetQuantile(1)
 	maxQ.SetValue(cwMetric.Value.Max)
+
+	for key, value := range cwMetric.Value.Percentiles {
+		percentileFloat, _ := strconv.ParseFloat(key[1:], 64)
+		q := dp.QuantileValues().AppendEmpty()
+		q.SetQuantile(percentileFloat / 100) // Convert percentile to quantile
+		q.SetValue(value)
+	}
 }
 
 // createMetrics creates pmetric.Metrics based on
@@ -249,9 +274,9 @@ func setResourceAttributes(rKey resourceKey, resource pcommon.Resource) {
 // if prepended by AWS/. Otherwise, it returns the CloudWatch namespace as the
 // service name with an empty service namespace
 func toServiceAttributes(namespace string) (serviceNamespace, serviceName string) {
-	index := strings.Index(namespace, namespaceDelimiter)
-	if index != -1 && strings.EqualFold(namespace[:index], conventions.CloudProviderAWS.Value.AsString()) {
-		return namespace[:index], namespace[index+1:]
+	before, after, ok := strings.Cut(namespace, namespaceDelimiter)
+	if ok && strings.EqualFold(before, conventions.CloudProviderAWS.Value.AsString()) {
+		return before, after
 	}
 	return "", namespace
 }

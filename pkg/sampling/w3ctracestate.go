@@ -233,11 +233,11 @@ func isValidW3CKey(key string) bool {
 		return false
 	}
 
-	atIdx := strings.IndexByte(key, '@')
-	if atIdx >= 0 {
+	before, after, ok := strings.Cut(key, "@")
+	if ok {
 		// Multi-tenant key
-		tenant := key[:atIdx]
-		system := key[atIdx+1:]
+		tenant := before
+		system := after
 
 		if tenant == "" || system == "" {
 			return false
@@ -280,27 +280,6 @@ func isValidW3CValue(value string) bool {
 	// All chars must be valid value chars
 	for i := 0; i < len(value)-1; i++ {
 		if !isValueChar(value[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func isLcAlpha(c byte) bool {
-	return c >= 'a' && c <= 'z'
-}
-
-func isLcAlphaNum(c byte) bool {
-	return isLcAlpha(c) || (c >= '0' && c <= '9')
-}
-
-func isValidKeyChar(c byte) bool {
-	return isLcAlphaNum(c) || c == '_' || c == '-' || c == '*' || c == '/'
-}
-
-func isValidKeyChars(s string) bool {
-	for i := 0; i < len(s); i++ {
-		if !isValidKeyChar(s[i]) {
 			return false
 		}
 	}

@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 // NewTraceParser creates a new trace parser with default values
@@ -103,7 +103,7 @@ func (t *TraceParser) Parse(entry *entry.Entry) error {
 	entry.SpanID, errSpanID = parseHexField(entry, t.SpanID.ParseFrom)
 	entry.TraceFlags, errTraceFlags = parseHexField(entry, t.TraceFlags.ParseFrom)
 	if errTraceID != nil || errTraceFlags != nil || errSpanID != nil {
-		err := errors.NewError("Error decoding traces for logs", "")
+		err := stanzaerrors.NewError("Error decoding traces for logs", "")
 		if errTraceID != nil {
 			_ = err.WithDetails("trace_id", errTraceID.Error())
 		}

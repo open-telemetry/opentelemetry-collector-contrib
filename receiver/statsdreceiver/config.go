@@ -19,16 +19,16 @@ import (
 
 // Config defines configuration for StatsD receiver.
 type Config struct {
-	NetAddr                 confignet.AddrConfig             `mapstructure:",squash"`
-	AggregationInterval     time.Duration                    `mapstructure:"aggregation_interval"`
-	EnableIPOnlyAggregation bool                             `mapstructure:"enable_ip_only_aggregation"`
-	EnableMetricType        bool                             `mapstructure:"enable_metric_type"`
-	EnableSimpleTags        bool                             `mapstructure:"enable_simple_tags"`
-	IsMonotonicCounter      bool                             `mapstructure:"is_monotonic_counter"`
+	NetAddr                 confignet.AddrConfig `mapstructure:",squash"`
+	AggregationInterval     time.Duration        `mapstructure:"aggregation_interval"`
+	EnableIPOnlyAggregation bool                 `mapstructure:"enable_ip_only_aggregation"`
+	EnableMetricType        bool                 `mapstructure:"enable_metric_type"`
+	EnableSimpleTags        bool                 `mapstructure:"enable_simple_tags"`
+	IsMonotonicCounter      bool                 `mapstructure:"is_monotonic_counter"`
 	// CounterType specifies how counter values are represented in exported metrics.
 	// Valid values: "int" (default), "float", "stochastic_int".
-	CounterType             protocol.CounterType             `mapstructure:"counter_type"`
-	TimerHistogramMapping   []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
+	CounterType           protocol.CounterType             `mapstructure:"counter_type"`
+	TimerHistogramMapping []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
 	// Will only be used when transport set to 'unixgram'.
 	SocketPermissions os.FileMode `mapstructure:"socket_permissions"`
 }
