@@ -869,39 +869,50 @@ func TestExporterLogs(t *testing.T) {
 			},
 		}
 
+		mappingModes := []string{"scope_attribute", "client_metadata"}
+
 		for _, tt := range tableTests {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-				rec := newBulkRecorder()
-				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-					rec.Record(docs)
+			for _, modeName := range mappingModes {
+				t.Run(tt.name+"/"+modeName, func(t *testing.T) {
+					t.Parallel()
+					rec := newBulkRecorder()
+					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+						rec.Record(docs)
 
-					if tt.expectedDocID == "" {
-						assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
-					} else {
-						assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+						if tt.expectedDocID == "" {
+							assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+						} else {
+							assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+						}
+
+						// Ensure the document id attribute is removed from the final document.
+						assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+						return itemsAllOK(docs)
+					})
+
+					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+						cfg.LogsDynamicID.Enabled = true
+					})
+					logs := newLogsWithAttributes(
+						tt.recordAttrs,
+						nil,
+						nil,
+					)
+					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+
+					var ctx context.Context
+					switch modeName {
+					case "scope_attribute":
+						logs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("elastic.mapping.mode", "otel")
+						ctx = t.Context()
+					case "client_metadata":
+						ctx = client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}})})
 					}
+					mustSendLogsWithCtx(ctx, t, exporter, logs)
 
-					// Ensure the document id attribute is removed from the final document.
-					assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
-					return itemsAllOK(docs)
+					rec.WaitItems(1)
 				})
-
-				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-					cfg.LogsDynamicID.Enabled = true
-				})
-				logs := newLogsWithAttributes(
-					tt.recordAttrs,
-					map[string]any{
-						"elastic.mapping.mode": "otel",
-					},
-					map[string]any{},
-				)
-				logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-				mustSendLogs(t, exporter, logs)
-
-				rec.WaitItems(1)
-			})
+			}
 		}
 	})
 
