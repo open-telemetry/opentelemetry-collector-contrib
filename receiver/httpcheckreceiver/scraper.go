@@ -76,6 +76,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 				h.mb.RecordHttpcheckErrorDataPoint(now, int64(1), h.cfg.Targets[targetIndex].Endpoint, err.Error())
 			} else {
 				statusCode = resp.StatusCode
+				h.mb.RecordHttpcheckErrorDataPoint(now, int64(0), h.cfg.Targets[targetIndex].Endpoint, "")
 			}
 
 			for class, intVal := range httpResponseClasses {
