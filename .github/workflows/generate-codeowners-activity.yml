@@ -3,8 +3,10 @@
 # issues and PRs opened against each component (by component label).
 #
 # When testing from a fork PR: the default token cannot read the upstream repo.
-# Add a repo secret UPSTREAM_READ_TOKEN (PAT with "repo" read scope for
-# open-telemetry/opentelemetry-collector-contrib) so the workflow can fetch upstream data.
+# Add a repo secret UPSTREAM_READ_TOKEN. The token must have read access to
+# open-telemetry/opentelemetry-collector-contrib. Use a *classic* PAT with scope
+# "repo" (or "public_repo"). Fine-grained PATs must include "Pull requests: Read"
+# and "Issues: Read" for that repo; otherwise the API returns 404.
 
 name: 'Generate Code Owner Activity Report'
 on:
@@ -30,7 +32,9 @@ permissions:
 jobs:
   report:
     permissions:
-      issues: write
+      contents: read
+      issues: write   # create report issue; read for listComments
+      pull-requests: read   # list reviews (required for code owner activity report)
     runs-on: ubuntu-24.04
     # Run on upstream (schedule/manual) or on any PR so fork PRs can test; use UPSTREAM_READ_TOKEN when from a fork.
     if: ${{ github.repository_owner == 'open-telemetry' || github.event_name == 'pull_request' }}

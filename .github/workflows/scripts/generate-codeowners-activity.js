@@ -133,6 +133,18 @@ function getComponentLabelsOnItem(item, componentLabels) {
   return names.filter((name) => componentLabels.has(name));
 }
 
+// Log 404 permission hint only once (GitHub returns 404 when token lacks Pull requests / Issues read).
+let logged404Hint = false;
+function log404HintOnce(owner, repo) {
+  if (logged404Hint) return;
+  logged404Hint = true;
+  debug({
+    msg: 'Token cannot read pulls/issues (404). Use a classic PAT with scope "repo" or a fine-grained PAT with "Pull requests: Read" and "Issues: Read" for this repo. Affected items are counted as no code-owner response.',
+    owner,
+    repo,
+  });
+}
+
 async function getReviewAndCommentLogins(octokit, owner, repo, prNumber) {
   const logins = new Set();
   try {
@@ -153,7 +165,9 @@ async function getReviewAndCommentLogins(octokit, owner, repo, prNumber) {
       if (c.user && c.user.login) logins.add(c.user.login);
     }
   } catch (e) {
-    debug({ msg: 'getReviewAndCommentLogins error', owner, repo, prNumber, error: e.message });
+    const is404 = e.status === 404 || e.response?.status === 404;
+    if (is404) log404HintOnce(owner, repo);
+    else debug({ msg: 'getReviewAndCommentLogins error', owner, repo, prNumber, error: e.message });
   }
   return logins;
 }
@@ -170,7 +184,9 @@ async function getIssueCommentLogins(octokit, owner, repo, issueNumber) {
       if (c.user && c.user.login) logins.add(c.user.login);
     }
   } catch (e) {
-    debug({ msg: 'getIssueCommentLogins error', owner, repo, issueNumber, error: e.message });
+    const is404 = e.status === 404 || e.response?.status === 404;
+    if (is404) log404HintOnce(owner, repo);
+    else debug({ msg: 'getIssueCommentLogins error', owner, repo, issueNumber, error: e.message });
   }
   return logins;
 }
