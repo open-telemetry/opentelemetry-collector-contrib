@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/client"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver/internal/client"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver/internal/protocol"
 )
 
 func Test_Server_ListenAndServe(t *testing.T) {

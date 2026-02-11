@@ -46,7 +46,6 @@ ignored_paths:
   - processor/filterprocessor # 43994
   - processor/transformprocessor # 43994
   - receiver/aerospikereceiver # 43995
-  - receiver/carbonreceiver
   - receiver/statsdreceiver
 allowed_functions:
   - name: NewFactory

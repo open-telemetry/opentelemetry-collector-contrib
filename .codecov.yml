@@ -617,10 +617,6 @@ component_management:
     name: receiver_bigip
     paths:
     - receiver/bigipreceiver/**
-  - component_id: receiver_carbon
-    name: receiver_carbon
-    paths:
-    - receiver/carbonreceiver/**
   - component_id: receiver_chrony
     name: receiver_chrony
     paths:

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package client // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/client"
+package client // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver/internal/client"
 
 import (
 	"fmt"

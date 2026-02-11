@@ -41,7 +41,6 @@ exporter/zipkinexporter
 extension/storage
 pkg/stanza
 pkg/translator/jaeger
-receiver/carbonreceiver
 internal/aws/ecsutil
 internal/k8sconfig
 internal/metadataproviders

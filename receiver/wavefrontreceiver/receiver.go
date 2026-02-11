@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver/internal/carbon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver/internal/protocol"
 )
 
 var _ receiver.Metrics = (*metricsReceiver)(nil)
@@ -33,7 +33,7 @@ func newMetricsReceiver(cfg *Config, set receiver.Settings, nextConsumer consume
 }
 
 func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error {
-	fact := carbonreceiver.NewFactory()
+	fact := carbon.NewFactory()
 
 	// Wavefront is very similar to Carbon: it is TCP based in which each received
 	// text line represents a single metric data point. They differ on the format
@@ -41,7 +41,7 @@ func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error 
 	//
 	// The Wavefront receiver leverages the Carbon receiver code by implementing
 	// a dedicated parser for its format.
-	carbonCfg := &carbonreceiver.Config{
+	carbonCfg := &carbon.Config{
 		AddrConfig: confignet.AddrConfig{
 			Endpoint:  r.cfg.Endpoint,
 			Transport: confignet.TransportTypeTCP,

@@ -1,5 +1,5 @@
-carbon:
-carbon/receiver_settings:
+wavefront:
+wavefront/receiver_settings:
   # endpoint specifies the network interface and port which will receive
   # Carbon data.
   endpoint: localhost:8080
@@ -18,7 +18,7 @@ carbon/receiver_settings:
     # config specifies any special configuration of the selected parser. What
     # goes under the section depends on the type of parser selected.
     config:
-carbon/regex:
+wavefront/regex:
   parser:
     # The "regex" parser can breakdown the "metric path" of a Carbon metric
     # into metric labels. This is typically used to extract the labels from

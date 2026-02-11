@@ -19,7 +19,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.145.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.145.0
@@ -471,8 +470,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../pkg/translator/signalfx
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../pkg/translator/zipkin
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../receiver/carbonreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../receiver/datadogreceiver
 

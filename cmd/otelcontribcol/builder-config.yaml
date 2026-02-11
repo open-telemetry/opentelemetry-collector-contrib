@@ -161,7 +161,6 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.145.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver v0.145.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.145.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.145.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.145.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver v0.145.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver v0.145.0
