@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 // SeverityParser is a helper that parses severity onto an entry.
@@ -23,7 +23,7 @@ type SeverityParser struct {
 func (p *SeverityParser) Parse(ent *entry.Entry) error {
 	value, ok := ent.Get(p.ParseFrom)
 	if !ok {
-		return errors.NewError(
+		return stanzaerrors.NewError(
 			"log entry does not have the expected parse_from field",
 			"ensure that all entries forwarded to this parser contain the parse_from field",
 			"parse_from", p.ParseFrom.String(),
