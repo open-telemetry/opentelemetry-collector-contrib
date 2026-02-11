@@ -189,7 +189,10 @@ include the following:
 - `k8s.volume.type` - to collect volume type from the Pod spec exposed via `/pods` and have it as a label on volume metrics.
 If there's more information available from the endpoint than just volume type, those are synced as well depending on
 the available fields and the type of volume. For example, `aws.volume.id` would be synced from `awsElasticBlockStore`
-and `gcp.pd.name` is synced for `gcePersistentDisk`.
+and `gce.pd.name` is synced for `gcePersistentDisk`.
+
+> [!WARNING]
+> `gce.pd.name`, `aws.volume.id`, `glusterfs.path`, and `glusterfs.endpoints.name` resource attributes are all deprecated and will be removed soon.
 
 If you want to have `container.id` label added to your metrics, use `extra_metadata_labels` field to enable
 it, for example:
@@ -229,6 +232,9 @@ receivers:
 If `k8s_api_config` is set, the receiver will attempt to collect metadata from underlying storage resources for
 Persistent Volume Claims. For example, if a Pod is using a PVC backed by an EBS instance on AWS, the receiver
 would set the `k8s.volume.type` label to be `awsElasticBlockStore` rather than `persistentVolumeClaim`.
+
+> [!WARNING]
+> awsElasticBlockStore resource attribute `aws.volume.id` is deprecated and will be removed soon
 
 **Important**: When using `k8s_api_config`, the service account must have `get` permissions for
 `persistentvolumeclaims` and `persistentvolumes` resources. See [Role-based access control](#role-based-access-control)

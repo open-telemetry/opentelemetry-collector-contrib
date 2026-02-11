@@ -7,7 +7,7 @@ permissions: read-all
 
 jobs:
   add-labels:
-    if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/label') && github.repository_owner == 'open-telemetry' }}
+    if: ${{ startsWith(github.event.comment.body, '/label') && github.repository_owner == 'open-telemetry' }}
     permissions:
       issues: write
 
