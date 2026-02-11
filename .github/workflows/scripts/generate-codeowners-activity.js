@@ -153,7 +153,7 @@ async function getReviewAndCommentLogins(octokit, owner, repo, prNumber) {
       if (c.user && c.user.login) logins.add(c.user.login);
     }
   } catch (e) {
-    debug({ msg: 'getReviewAndCommentLogins error', prNumber, error: e.message });
+    debug({ msg: 'getReviewAndCommentLogins error', owner, repo, prNumber, error: e.message });
   }
   return logins;
 }
@@ -170,7 +170,7 @@ async function getIssueCommentLogins(octokit, owner, repo, issueNumber) {
       if (c.user && c.user.login) logins.add(c.user.login);
     }
   } catch (e) {
-    debug({ msg: 'getIssueCommentLogins error', issueNumber, error: e.message });
+    debug({ msg: 'getIssueCommentLogins error', owner, repo, issueNumber, error: e.message });
   }
   return logins;
 }
@@ -193,6 +193,15 @@ function getCodeOwnersByLabel(labelsOnItem, labelToOwners) {
 }
 
 /**
+ * Get owner and repo from a search result item (PR or issue). Fall back to upstream constants if missing.
+ */
+function getRepoFromItem(item) {
+  const owner = item.repository?.owner?.login || item.base?.repo?.owner?.login || REPO_OWNER;
+  const repo = item.repository?.name || item.base?.repo?.name || REPO_NAME;
+  return { owner, repo };
+}
+
+/**
  * Stats aggregated by (code owner, component). Shape: byCodeOwner[login][componentLabel] = { total, responded }.
  */
 async function computePrStats(octokit, prs, labelToOwners, componentLabels, thirtyDaysAgo, midnightYesterday) {
@@ -206,7 +215,8 @@ async function computePrStats(octokit, prs, labelToOwners, componentLabels, thir
     const ownerToLabels = getCodeOwnersByLabel(labelsOnPr, labelToOwners);
     if (ownerToLabels.size === 0) continue;
 
-    const respondents = await getReviewAndCommentLogins(octokit, REPO_OWNER, REPO_NAME, pr.number);
+    const { owner, repo } = getRepoFromItem(pr);
+    const respondents = await getReviewAndCommentLogins(octokit, owner, repo, pr.number);
 
     for (const [login, labels] of ownerToLabels) {
       for (const label of labels) {
@@ -236,7 +246,8 @@ async function computeIssueStats(octokit, issues, labelToOwners, componentLabels
     const ownerToLabels = getCodeOwnersByLabel(labelsOnIssue, labelToOwners);
     if (ownerToLabels.size === 0) continue;
 
-    const respondents = await getIssueCommentLogins(octokit, REPO_OWNER, REPO_NAME, issue.number);
+    const { owner, repo } = getRepoFromItem(issue);
+    const respondents = await getIssueCommentLogins(octokit, owner, repo, issue.number);
 
     for (const [login, labels] of ownerToLabels) {
       for (const label of labels) {
@@ -368,6 +379,12 @@ async function main({ github, context }) {
     getPrsInWindow(octokit, lookbackData.thirtyDaysAgo, lookbackData.midnightYesterday),
     getIssuesInWindow(octokit, lookbackData.thirtyDaysAgo, lookbackData.midnightYesterday),
   ]);
+
+  // Log which repo the search returned (first PR) so we can confirm token can access it
+  if (prs.length > 0) {
+    const { owner, repo } = getRepoFromItem(prs[0]);
+    debug({ msg: 'Fetching reviews/comments for repo', owner, repo, prCount: prs.length, issueCount: issues.length });
+  }
 
   const [prStats, issueStats] = await Promise.all([
     computePrStats(octokit, prs, labelToOwners, componentLabels, lookbackData.thirtyDaysAgo, lookbackData.midnightYesterday),
