@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -86,4 +87,62 @@ func (tsr *testStatusReporter) Report(event *componentstatus.Event) {
 
 func (*testStatusReporter) GetExtensions() map[component.ID]component.Component {
 	return make(map[component.ID]component.Component)
+}
+
+// Mock transport for testing
+type mockEsTransport struct {
+	performFunc func(*http.Request) (*http.Response, error)
+}
+
+func (m *mockEsTransport) Perform(req *http.Request) (*http.Response, error) {
+	return m.performFunc(req)
+}
+
+func TestEsClient_Perform_413_Splitting(t *testing.T) {
+	lines := []string{
+		`{"index":{}}`, `{"field":"value1"}`,
+		`{"index":{}}`, `{"field":"value2"}`,
+		`{"index":{}}`, `{"field":"value3"}`,
+		`{"index":{}}`, `{"field":"value4"}`,
+	}
+	fullBody := ""
+	for _, line := range lines {
+		fullBody += line + "\n"
+	}
+
+	callCount := 0
+	transport := &mockEsTransport{
+		performFunc: func(req *http.Request) (*http.Response, error) {
+			callCount++
+			bodyBytes, _ := io.ReadAll(req.Body)
+			bodyStr := string(bodyBytes)
+
+			if callCount == 1 {
+				assert.Equal(t, fullBody, bodyStr)
+				return &http.Response{
+					StatusCode: http.StatusRequestEntityTooLarge,
+					Body:       io.NopCloser(strings.NewReader(`{"error": "too large"}`)),
+				}, nil
+			}
+
+			assert.Contains(t, fullBody, bodyStr)
+			assert.Less(t, len(bodyStr), len(fullBody), "Split body should be smaller than full body")
+
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(`{}`)),
+				Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+			}, nil
+		},
+	}
+
+	client := &esClient{transport: transport}
+
+	req, _ := http.NewRequest(http.MethodPost, defaultURL+"/_bulk", strings.NewReader(fullBody))
+	resp, err := client.Perform(req)
+
+	// We expect success (200 OK) after splitting.
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Greater(t, callCount, 1, "Expected client to retry request by splitting")
 }

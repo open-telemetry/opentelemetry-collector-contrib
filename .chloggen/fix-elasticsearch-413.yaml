@@ -1,0 +1,12 @@
+change_type: bug_fix
+
+component: exporter/elasticsearch
+
+note: Implement request splitting and retry mechanism for HTTP 413 (Payload Too Large) errors.
+
+issues: [45834]
+
+subtext: |
+  Automatically splits large bulk requests into smaller chunks when the Elasticsearch server returns a 413 response, preventing data loss for batches that exceed the server's content length limit.
+
+change_logs: [user]

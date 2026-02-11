@@ -4,7 +4,10 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,7 +20,6 @@ import (
 
 	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	elastictransportversion "github.com/elastic/elastic-transport-go/v8/elastictransport/version"
-	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.uber.org/zap"
@@ -121,6 +123,13 @@ type esClient struct {
 }
 
 func (e *esClient) Perform(req *http.Request) (*http.Response, error) {
+	if req.GetBody != nil {
+		return e.performWithSplitRetry(req)
+	}
+	return e.performInternal(req)
+}
+
+func (e *esClient) performInternal(req *http.Request) (*http.Response, error) {
 	res, err := e.transport.Perform(req)
 	if err != nil {
 		return nil, err
@@ -133,6 +142,150 @@ func (e *esClient) Perform(req *http.Request) (*http.Response, error) {
 		}
 	}
 	return res, nil
+}
+
+func (e *esClient) performWithSplitRetry(req *http.Request) (*http.Response, error) {
+	res, err := e.performInternal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode == http.StatusRequestEntityTooLarge {
+		splitRes, splitErr := e.attemptSplitAndRetry(req)
+		if splitErr == nil {
+			res.Body.Close()
+			return splitRes, nil
+		}
+	}
+	return res, nil
+}
+
+type bulkResponse struct {
+	Took   int               `json:"took"`
+	Errors bool              `json:"errors"`
+	Items  []json.RawMessage `json:"items"`
+}
+
+func (e *esClient) attemptSplitAndRetry(req *http.Request) (*http.Response, error) {
+	rc, err := req.GetBody()
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+
+	bodyBytes, err := io.ReadAll(rc)
+	if err != nil {
+		return nil, err
+	}
+
+	isGzip := req.Header.Get("Content-Encoding") == "gzip"
+	var content []byte
+	if isGzip {
+		gr, gzipErr := gzip.NewReader(bytes.NewReader(bodyBytes))
+		if gzipErr != nil {
+			return nil, gzipErr
+		}
+		defer gr.Close()
+		content, gzipErr = io.ReadAll(gr)
+		if gzipErr != nil {
+			return nil, gzipErr
+		}
+	} else {
+		content = bodyBytes
+	}
+
+	lines := bytes.Split(content, []byte("\n"))
+
+	var nonEmptyLines [][]byte
+	for _, line := range lines {
+		if len(bytes.TrimSpace(line)) > 0 {
+			nonEmptyLines = append(nonEmptyLines, line)
+		}
+	}
+
+	if len(nonEmptyLines) < 2 {
+		return nil, errors.New("cannot split request further")
+	}
+
+	mid := len(nonEmptyLines) / 2
+	if mid%2 != 0 {
+		mid++
+	}
+
+	chunk1 := bytes.Join(nonEmptyLines[:mid], []byte("\n"))
+	chunk2 := bytes.Join(nonEmptyLines[mid:], []byte("\n"))
+	// Re-add trailing newline if needed
+	chunk1 = append(chunk1, '\n')
+	chunk2 = append(chunk2, '\n')
+
+	sendChunk := func(chunk []byte) (*http.Response, *bulkResponse, error) {
+		var finalBody []byte
+		if isGzip {
+			var buf bytes.Buffer
+			gw := gzip.NewWriter(&buf)
+			if _, writeErr := gw.Write(chunk); writeErr != nil {
+				return nil, nil, writeErr
+			}
+			if closeErr := gw.Close(); closeErr != nil {
+				return nil, nil, closeErr
+			}
+			finalBody = buf.Bytes()
+		} else {
+			finalBody = chunk
+		}
+
+		newReq := req.Clone(req.Context())
+		newReq.Body = io.NopCloser(bytes.NewReader(finalBody))
+		newReq.ContentLength = int64(len(finalBody))
+		newReq.GetBody = func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewReader(finalBody)), nil
+		}
+
+		// Recursive retry
+		res, performErr := e.Perform(newReq)
+		if performErr != nil {
+			return nil, nil, performErr
+		}
+		if res.StatusCode >= 300 {
+			res.Body.Close()
+			return nil, nil, fmt.Errorf("chunk failed with status %d", res.StatusCode)
+		}
+
+		defer res.Body.Close()
+		var br bulkResponse
+		if decodeErr := json.NewDecoder(res.Body).Decode(&br); decodeErr != nil {
+			return nil, nil, decodeErr
+		}
+		return res, &br, nil
+	}
+
+	resp1, br1, err := sendChunk(chunk1)
+	if err != nil {
+		return nil, err
+	}
+	_, br2, err := sendChunk(chunk2)
+	if err != nil {
+		return nil, err
+	}
+
+	merged := bulkResponse{
+		Took:   br1.Took + br2.Took,
+		Errors: br1.Errors || br2.Errors,
+		Items:  append(br1.Items, br2.Items...),
+	}
+
+	mergedBytes, err := json.Marshal(merged)
+	if err != nil {
+		return nil, err
+	}
+
+	finalHeaders := resp1.Header.Clone()
+
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader(mergedBytes)),
+		Header:     finalHeaders,
+	}, nil
 }
 
 func (e *esClient) doProductCheck(f func() error) error {
