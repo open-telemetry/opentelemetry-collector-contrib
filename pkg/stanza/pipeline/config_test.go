@@ -12,7 +12,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jsonparser"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/copy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -412,7 +412,7 @@ func TestUpdateOutputIDs(t *testing.T) {
 }
 
 func newDummyJSON(dummyID string) operator.Config {
-	return operator.Config{Builder: json.NewConfigWithID(dummyID)}
+	return operator.Config{Builder: jsonparser.NewConfigWithID(dummyID)}
 }
 
 func newDummyCopy(dummyID string) operator.Config {
