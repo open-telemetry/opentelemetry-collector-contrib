@@ -78,22 +78,7 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		// Set up authentication if username/password are provided or if an auth mechanism is specified
 		// Some mechanisms (e.g., MONGODB-X509, MONGODB-AWS with IAM) don't require username/password
 		if c.Username != "" && c.Password != "" || c.AuthMechanism != "" {
-			credential := options.Credential{}
-			if c.Username != "" {
-				credential.Username = c.Username
-			}
-			if c.Password != "" {
-				credential.Password = string(c.Password)
-			}
-			if c.AuthMechanism != "" {
-				credential.AuthMechanism = c.AuthMechanism
-			}
-			if c.AuthSource != "" {
-				credential.AuthSource = c.AuthSource
-			}
-			if len(c.AuthMechanismProperties) > 0 {
-				credential.AuthMechanismProperties = c.AuthMechanismProperties
-			}
+			credential := c.buildCredential()
 			clientOptions.SetAuth(credential)
 		}
 
@@ -123,26 +108,34 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 	// Set up authentication if username/password are provided or if an auth mechanism is specified
 	// Some mechanisms (e.g., MONGODB-X509, MONGODB-AWS with IAM) don't require username/password
 	if c.Username != "" && c.Password != "" || c.AuthMechanism != "" {
-		credential := options.Credential{}
-		if c.Username != "" {
-			credential.Username = c.Username
-		}
-		if c.Password != "" {
-			credential.Password = string(c.Password)
-		}
-		if c.AuthMechanism != "" {
-			credential.AuthMechanism = c.AuthMechanism
-		}
-		if c.AuthSource != "" {
-			credential.AuthSource = c.AuthSource
-		}
-		if len(c.AuthMechanismProperties) > 0 {
-			credential.AuthMechanismProperties = c.AuthMechanismProperties
-		}
+		credential := c.buildCredential()
 		clientOptions.SetAuth(credential)
 	}
 
 	return clientOptions
+}
+
+func (c *Config) buildCredential() options.Credential {
+	credential := options.Credential{}
+	if c.Username != "" {
+		credential.Username = c.Username
+	}
+	if c.Password != "" {
+		credential.Password = string(c.Password)
+		// PasswordSet is required for GSSAPI (Kerberos) when a password is explicitly provided.
+		// For other mechanisms, this field is ignored by the driver.
+		credential.PasswordSet = true
+	}
+	if c.AuthMechanism != "" {
+		credential.AuthMechanism = c.AuthMechanism
+	}
+	if c.AuthSource != "" {
+		credential.AuthSource = c.AuthSource
+	}
+	if len(c.AuthMechanismProperties) > 0 {
+		credential.AuthMechanismProperties = c.AuthMechanismProperties
+	}
+	return credential
 }
 
 func (c *Config) hostlist() []string {
