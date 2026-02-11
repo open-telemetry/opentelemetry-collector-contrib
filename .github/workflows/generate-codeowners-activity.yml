@@ -14,6 +14,11 @@ on:
   schedule:
     # run on the 1st of every month at 2am UTC
     - cron: "0 2 1 * *"
+  # Run when this workflow or its script is changed in a PR. Uses dry-run so no issue is created (lets you test without merging to main).
+  pull_request:
+    paths:
+      - '.github/workflows/generate-codeowners-activity.yml'
+      - '.github/workflows/scripts/generate-codeowners-activity.js'
 
 permissions:
   contents: read
@@ -29,7 +34,8 @@ jobs:
       - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         id: report
         env:
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' && 'true' || '0' }}
+          # Dry run when manually requested, or when triggered by pull_request (test from a PR without merging to main)
+          DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') || github.event_name == 'pull_request' && 'true' || '0' }}
         with:
           retries: 3
           script: |
