@@ -28,7 +28,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.145.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/consumer/consumertest v0.145.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/processor/processortest v0.145.1-0.20260205185216-81bc641f26c0
-	golang.org/x/time v0.13.0
+	golang.org/x/time v0.14.0
 )
 
 require (
@@ -75,7 +75,7 @@ require (
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
-	golang.org/x/text v0.31.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
