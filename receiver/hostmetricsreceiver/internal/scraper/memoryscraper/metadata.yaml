@@ -116,6 +116,18 @@ metrics:
       value_type: double
     attributes: [system.memory.linux.hugepages.state]
 
+  system.memory.linux.shared:
+    enabled: false
+    description: Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Only supported on Linux.
+    unit: By
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
+
   system.memory.page_size:
     enabled: false
     description: A constant value for the system's configured page size.

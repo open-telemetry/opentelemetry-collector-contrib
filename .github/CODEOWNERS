@@ -274,7 +274,7 @@ receiver/googlecloudpubsubpushreceiver/                          @open-telemetry
 receiver/googlecloudpubsubreceiver/                              @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/googlecloudspannerreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @KiranmayiB @nsj07
 receiver/haproxyreceiver/                                        @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
-receiver/hostmetricsreceiver/                                    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
+receiver/hostmetricsreceiver/                                    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk @rogercoll
 receiver/hostmetricsreceiver/internal/scraper/cpuscraper/        @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/hostmetricsreceiver/internal/scraper/diskscraper/       @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/ @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
