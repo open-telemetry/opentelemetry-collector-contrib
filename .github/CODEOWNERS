@@ -44,7 +44,6 @@ connector/slowsqlconnector/                                      @open-telemetry
 connector/spanmetricsconnector/                                  @open-telemetry/collector-contrib-approvers @portertech @Frapschen @iblancasa
 connector/sumconnector/                                          @open-telemetry/collector-contrib-approvers @greatestusername @shalper2 @crobert-1
 exporter/alertmanagerexporter/                                   @open-telemetry/collector-contrib-approvers @sokoide @mcube8
-exporter/alibabacloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
 exporter/awscloudwatchlogsexporter/                              @open-telemetry/collector-contrib-approvers @yaten2302
 exporter/awsemfexporter/                                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 exporter/awskinesisexporter/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
@@ -388,6 +387,7 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 
 # Start unmaintained components list
 
+exporter/alibabacloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers
 receiver/bigipreceiver/                                          @open-telemetry/collector-contrib-approvers
 receiver/carbonreceiver/                                         @open-telemetry/collector-contrib-approvers
 receiver/k8slogreceiver/                                         @open-telemetry/collector-contrib-approvers

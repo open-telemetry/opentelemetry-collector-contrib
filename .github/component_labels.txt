@@ -25,7 +25,6 @@ connector/slowsqlconnector connector/slowsql
 connector/spanmetricsconnector connector/spanmetrics
 connector/sumconnector connector/sum
 exporter/alertmanagerexporter exporter/alertmanager
-exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
 exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/awsemfexporter exporter/awsemf
 exporter/awskinesisexporter exporter/awskinesis
@@ -347,6 +346,7 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
+exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
 receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon
 receiver/k8slogreceiver receiver/k8slog
