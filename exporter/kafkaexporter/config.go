@@ -91,7 +91,7 @@ func (c *Config) Validate() error {
 	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
 		return errLogsPartitionExclusive
 	}
-	return kafka.ValidateProducerConfigOpts(c.ClientConfig, c.Producer)
+	return kafka.ValidateProducerConfigOpts(c.ClientConfig, c.Producer, c.TimeoutSettings.Timeout)
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {

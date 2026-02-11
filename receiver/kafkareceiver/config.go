@@ -188,7 +188,15 @@ func (c *Config) Validate() error {
 	if err := validateExcludeTopic("profiles", c.Profiles.Topics, c.Profiles.ExcludeTopics); err != nil {
 		return err
 	}
-	return kafka.ValidateConsumerConfigOpts(c.ClientConfig, c.ConsumerConfig)
+	for _, sig := range []TopicEncodingConfig{c.Logs, c.Metrics, c.Traces, c.Profiles} {
+		if len(sig.Topics) == 0 {
+			continue
+		}
+		if err := kafka.ValidateConsumerConfigOpts(c.ClientConfig, c.ConsumerConfig, sig.Topics, sig.ExcludeTopics); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // validateExcludeTopic checks that exclude_topic is only configured when topics uses regex pattern

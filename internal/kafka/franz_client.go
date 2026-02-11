@@ -68,30 +68,12 @@ func NewFranzConsumerGroup(
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
-	opts = append(opts, kgo.ConsumeTopics(topics...))
+	opts = append(opts, topicOpts(topics, excludeTopics)...)
 	opts = append(opts, consumerConfigOpts(consumerCfg)...)
 	opts, err := commonOpts(ctx, host, clientCfg, logger, opts...)
 	if err != nil {
 		return nil, err
 	}
-
-	// Check if any topic uses regex pattern
-	isRegex := false
-	for _, t := range topics {
-		// Similar to librdkafka, if the topic starts with `^`, it is a regex topic:
-		// https://github.com/confluentinc/librdkafka/blob/b871fdabab84b2ea1be3866a2ded4def7e31b006/src/rdkafka.h#L3899-L3938
-		if strings.HasPrefix(t, "^") {
-			isRegex = true
-			opts = append(opts, kgo.ConsumeRegex())
-			break
-		}
-	}
-
-	// Add exclude topics only when regex consumption is enabled
-	if len(excludeTopics) > 0 && isRegex {
-		opts = append(opts, kgo.ConsumeExcludeTopics(excludeTopics...))
-	}
-
 	return kgo.NewClient(opts...)
 }
 
@@ -375,6 +357,28 @@ func consumerConfigOpts(cfg configkafka.ConsumerConfig) []kgo.Opt {
 	return opts
 }
 
+// topicOpts builds kgo.Opt values for topic consumption, including
+// regex and exclude topic handling.
+func topicOpts(topics, excludeTopics []string) []kgo.Opt {
+	opts := []kgo.Opt{kgo.ConsumeTopics(topics...)}
+	// Check if any topic uses regex pattern.
+	// Similar to librdkafka, if the topic starts with `^`, it is a regex topic:
+	// https://github.com/confluentinc/librdkafka/blob/b871fdabab84b2ea1be3866a2ded4def7e31b006/src/rdkafka.h#L3899-L3938
+	isRegex := false
+	for _, t := range topics {
+		if strings.HasPrefix(t, "^") {
+			isRegex = true
+			opts = append(opts, kgo.ConsumeRegex())
+			break
+		}
+	}
+	// Add exclude topics only when regex consumption is enabled
+	if len(excludeTopics) > 0 && isRegex {
+		opts = append(opts, kgo.ConsumeExcludeTopics(excludeTopics...))
+	}
+	return opts
+}
+
 // ValidateClientConfigOpts validates the configkafka.ClientConfig by
 // converting config values to kgo options and calling kgo.ValidateOpts.
 func ValidateClientConfigOpts(cfg configkafka.ClientConfig) error {
@@ -384,17 +388,19 @@ func ValidateClientConfigOpts(cfg configkafka.ClientConfig) error {
 // ValidateProducerConfigOpts validates the configkafka.ClientConfig and
 // configkafka.ProducerConfig by converting config values to kgo options
 // and calling kgo.ValidateOpts.
-func ValidateProducerConfigOpts(clientCfg configkafka.ClientConfig, producerCfg configkafka.ProducerConfig) error {
+func ValidateProducerConfigOpts(clientCfg configkafka.ClientConfig, producerCfg configkafka.ProducerConfig, timeout time.Duration) error {
 	opts := clientConfigOpts(clientCfg)
 	opts = append(opts, producerConfigOpts(producerCfg)...)
+	opts = append(opts, kgo.ProduceRequestTimeout(timeout))
 	return kgo.ValidateOpts(opts...)
 }
 
 // ValidateConsumerConfigOpts validates the configkafka.ClientConfig and
 // configkafka.ConsumerConfig by converting config values to kgo options
 // and calling kgo.ValidateOpts.
-func ValidateConsumerConfigOpts(clientCfg configkafka.ClientConfig, consumerCfg configkafka.ConsumerConfig) error {
+func ValidateConsumerConfigOpts(clientCfg configkafka.ClientConfig, consumerCfg configkafka.ConsumerConfig, topics, excludeTopics []string) error {
 	opts := clientConfigOpts(clientCfg)
 	opts = append(opts, consumerConfigOpts(consumerCfg)...)
+	opts = append(opts, topicOpts(topics, excludeTopics)...)
 	return kgo.ValidateOpts(opts...)
 }
