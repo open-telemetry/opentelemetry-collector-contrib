@@ -247,6 +247,8 @@ See: https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appm
 
 Traces based on Azure Application Insights array of records from `AppRequests` & `AppDependencies` with the following fields.
 
+Basic mapping
+
 | Azure       | Open Telemetry                                        |
 |-------------|-------------------------------------------------------|
 | Time        | start_time(time_unix_nano(time))                      |
@@ -256,5 +258,7 @@ Traces based on Azure Application Insights array of records from `AppRequests` &
 | ParentId    | span.parentId                                         |
 | Id          | span.id                                               |
 | AppRoleName | service.name                                          |
+| Type        | `AppRequests` => SpanKind `Server`                    |
+|             | `AppDependencies` => SpanKind `Client`                |
 
 [storage extension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage
