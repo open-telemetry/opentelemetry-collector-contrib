@@ -234,6 +234,10 @@ gofmt:
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
+.PHONY: gomodernize
+gomodernize:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="modernize"
+
 .PHONY: gogovulncheck
 gogovulncheck:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="govulncheck"
