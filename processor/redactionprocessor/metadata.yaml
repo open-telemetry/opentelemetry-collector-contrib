@@ -1,4 +1,11 @@
+display_name: Redaction Processor
 type: redaction
+
+description: |
+  This processor deletes span, log, and metric datapoint attributes that don't match a list of allowed
+  attributes. It also masks attribute values that match a blocked value
+  list. Attributes that aren't on the allowed list are removed before any
+  value checks are done.
 
 status:
   class: processor
