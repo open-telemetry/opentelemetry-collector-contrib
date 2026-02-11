@@ -535,9 +535,15 @@ Examples:
 
 `aggregate_on_attributes(function, Optional[attributes])`
 
-The `aggregate_on_attributes` function aggregates all datapoints in the metric based on the supplied attributes. `function` is a case-sensitive string that represents the aggregation function and `attributes` is an optional list of attribute keys of type string to aggregate upon.
+The `aggregate_on_attributes` function aggregates all data points in the metric.
 
-`aggregate_on_attributes` function removes all attributes that are present in datapoints except the ones that are specified in the `attributes` parameter. If `attributes` parameter is not set, all attributes are removed from datapoints. Afterwards all datapoints are aggregated depending on the attributes left (none or the ones present in the list).
+`function` is a case-sensitive string that represents the aggregation function to apply. `attributes` is an optional list of datapoint attribute keys (strings) to aggregate upon.
+
+The optional `attributes` argument controls which datapoint attributes are kept before aggregation:
+
+- omitted (`aggregate_on_attributes(function)`): all existing data point attributes are kept. Aggregation only combines data points that already share the same full attribute set.
+- `[]` (empty list): all datapoint attributes are removed. Aggregation is performed across all data points in the metric.
+- `[...]` (list of attribute keys): only the specified data point attributes are kept. All other attributes are removed, and aggregation is performed by grouping on the remaining attributes.
 
 **NOTE:** This function is supported only in `metric` context.
 
@@ -563,6 +569,7 @@ Examples:
 
 - `aggregate_on_attributes("sum", ["attr1", "attr2"]) where metric.name == "system.memory.usage"`
 - `aggregate_on_attributes("max") where metric.name == "system.memory.usage"`
+- `aggregate_on_attributes("max", []) where metric.name == "system.memory.usage"`
 
 The `aggregate_on_attributes` function can also be used in conjunction with 
 [keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
