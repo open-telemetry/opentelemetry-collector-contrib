@@ -40,3 +40,7 @@ resource_attributes:
     description: The Kubernetes cluster name if running in an Oracle Container Engine for Kubernetes (OKE) cluster; unset otherwise.
     enabled: true
     type: string
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
