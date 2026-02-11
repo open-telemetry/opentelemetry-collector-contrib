@@ -190,7 +190,7 @@ func (c *Config) Validate() error {
 	}
 	// Validate franz-go options for each configured signal. Deprecated
 	// Topic/ExcludeTopic fields are already migrated by Unmarshal.
-	for _, sig := range []TopicEncodingConfig{c.Logs, c.Metrics, c.Traces, c.Profiles} {
+	for _, sig := range []*TopicEncodingConfig{&c.Logs, &c.Metrics, &c.Traces, &c.Profiles} {
 		if len(sig.Topics) == 0 {
 			continue
 		}
