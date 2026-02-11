@@ -152,10 +152,12 @@ func parseMessage(channel, message string) (string, map[string]any) {
 	}
 }
 
-// parse event data into a map[string]interface
+// parseEventData parses event data into a flat map.
+// Named Data elements become direct keys, anonymous Data elements use numbered keys (Data1, Data2, etc.).
 // see: https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-datafieldtype-complextype
 func parseEventData(eventData EventData) map[string]any {
-	outputMap := make(map[string]any, 3)
+	outputMap := make(map[string]any, len(eventData.Data)+2)
+
 	if eventData.Name != "" {
 		outputMap["name"] = eventData.Name
 	}
@@ -167,14 +169,18 @@ func parseEventData(eventData EventData) map[string]any {
 		return outputMap
 	}
 
-	dataMaps := make([]any, len(eventData.Data))
-	for i, data := range eventData.Data {
-		dataMaps[i] = map[string]any{
-			data.Name: data.Value,
+	anonymousCounter := 1
+	for _, data := range eventData.Data {
+		if data.Name != "" {
+			// Named data element - use the name as key
+			outputMap[data.Name] = data.Value
+		} else {
+			// Anonymous data element - use numbered key
+			key := fmt.Sprintf("Data%d", anonymousCounter)
+			outputMap[key] = data.Value
+			anonymousCounter++
 		}
 	}
-
-	outputMap["data"] = dataMaps
 
 	return outputMap
 }

@@ -161,8 +161,9 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	eventData := body["event_data"]
 	eventDataMap, ok := eventData.(map[string]any)
 	require.True(t, ok)
+	// Flat format: anonymous Data elements get numbered keys (Data1, Data2, etc.)
 	require.Equal(t, map[string]any{
-		"data": []any{map[string]any{"": "Test log"}},
+		"Data1": "Test log",
 	}, eventDataMap)
 
 	eventID := body["event_id"]
@@ -214,8 +215,9 @@ func TestReadWindowsEventLoggerWithQuery(t *testing.T) {
 	eventData := body["event_data"]
 	eventDataMap, ok := eventData.(map[string]any)
 	require.True(t, ok)
+	// Flat format: anonymous Data elements get numbered keys (Data1, Data2, etc.)
 	require.Equal(t, map[string]any{
-		"data": []any{map[string]any{"": "Test log"}},
+		"Data1": "Test log",
 	}, eventDataMap)
 
 	eventID := body["event_id"]

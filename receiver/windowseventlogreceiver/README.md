@@ -83,6 +83,11 @@ Output entry sample:
         "id": 10,
         "qualifiers": 0
     },
+    "event_data":
+    {
+        "ProcessId": "7924",
+        "Application": "app.exe"
+    },
     "keywords": "[Classic]",
     "level": "Information",
     "message": "Test log",
@@ -98,6 +103,10 @@ Output entry sample:
     "task": ""
 }
 ```
+
+The `event_data` field contains a flat map where:
+- Named `<Data>` elements become direct keys (e.g., `event_data.ProcessId`)
+- Anonymous `<Data>` elements (without a `Name` attribute) use numbered keys: `Data1`, `Data2`, etc.
 
 #### Remote Configuration
 

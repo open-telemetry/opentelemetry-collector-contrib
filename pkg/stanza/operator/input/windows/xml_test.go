@@ -93,10 +93,8 @@ func TestParseBody(t *testing.T) {
 		"opcode":      "rendered_opcode",
 		"keywords":    []string{"RenderedKeywords"},
 		"event_data": map[string]any{
-			"data": []any{
-				map[string]any{"1st_name": "value"},
-				map[string]any{"2nd_name": "another_value"},
-			},
+			"1st_name": "value",
+			"2nd_name": "another_value",
 		},
 		"version": uint8(0),
 	}
@@ -170,10 +168,8 @@ func TestParseBodySecurityExecution(t *testing.T) {
 			"user_id": "my-user-id",
 		},
 		"event_data": map[string]any{
-			"data": []any{
-				map[string]any{"name": "value"},
-				map[string]any{"another_name": "another_value"},
-			},
+			"name":         "value",
+			"another_name": "another_value",
 		},
 		"version": uint8(0),
 	}
@@ -263,10 +259,8 @@ func TestParseBodyFullExecution(t *testing.T) {
 			"user_id": "my-user-id",
 		},
 		"event_data": map[string]any{
-			"data": []any{
-				map[string]any{"name": "value"},
-				map[string]any{"another_name": "another_value"},
-			},
+			"name":         "value",
+			"another_name": "another_value",
 		},
 		"version": uint8(0),
 	}
@@ -332,10 +326,8 @@ func TestParseBodyCorrelation(t *testing.T) {
 		"opcode":      "rendered_opcode",
 		"keywords":    []string{"RenderedKeywords"},
 		"event_data": map[string]any{
-			"data": []any{
-				map[string]any{"1st_name": "value"},
-				map[string]any{"2nd_name": "another_value"},
-			},
+			"1st_name": "value",
+			"2nd_name": "another_value",
 		},
 		"correlation": map[string]any{
 			"activity_id":         "{11111111-1111-1111-1111-111111111111}",
@@ -395,10 +387,8 @@ func TestParseNoRendered(t *testing.T) {
 		"opcode":      "opcode",
 		"keywords":    []string{"keyword"},
 		"event_data": map[string]any{
-			"data": []any{
-				map[string]any{"name": "value"},
-				map[string]any{"another_name": "another_value"},
-			},
+			"name":         "value",
+			"another_name": "another_value",
 		},
 		"version": uint8(0),
 	}
@@ -458,10 +448,8 @@ func TestParseBodySecurity(t *testing.T) {
 		"opcode":      "rendered_opcode",
 		"keywords":    []string{"RenderedKeywords"},
 		"event_data": map[string]any{
-			"data": []any{
-				map[string]any{"name": "value"},
-				map[string]any{"another_name": "another_value"},
-			},
+			"name":         "value",
+			"another_name": "another_value",
 		},
 		"version": uint8(0),
 	}
@@ -473,35 +461,31 @@ func TestParseEventData(t *testing.T) {
 	xmlMap := &EventXML{
 		EventData: EventData{
 			Name:   "EVENT_DATA",
-			Data:   []Data{{Name: "name", Value: "value"}},
+			Data:   []Data{{Name: "field", Value: "value"}},
 			Binary: "2D20",
 		},
 	}
 
 	parsed := formattedBody(xmlMap)
 	expectedMap := map[string]any{
-		"name": "EVENT_DATA",
-		"data": []any{
-			map[string]any{"name": "value"},
-		},
+		"name":   "EVENT_DATA",
+		"field":  "value",
 		"binary": "2D20",
 	}
 	require.Equal(t, expectedMap, parsed["event_data"])
 
 	xmlMixed := &EventXML{
 		EventData: EventData{
-			Data: []Data{{Name: "name", Value: "value"}, {Value: "no_name"}},
+			Data: []Data{{Name: "named_field", Value: "value"}, {Value: "no_name"}},
 		},
 	}
 
 	parsed = formattedBody(xmlMixed)
-	expectedSlice := map[string]any{
-		"data": []any{
-			map[string]any{"name": "value"},
-			map[string]any{"": "no_name"},
-		},
+	expectedFlat := map[string]any{
+		"named_field": "value",
+		"Data1":       "no_name",
 	}
-	require.Equal(t, expectedSlice, parsed["event_data"])
+	require.Equal(t, expectedFlat, parsed["event_data"])
 }
 
 func TestInvalidUnmarshal(t *testing.T) {
@@ -872,4 +856,130 @@ func TestUnmarshalWithUserData(t *testing.T) {
 	}
 
 	require.Equal(t, xml, event)
+}
+
+func TestParseEventDataVariants(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    EventData
+		expected map[string]any
+	}{
+		{
+			name: "all named",
+			input: EventData{
+				Data: []Data{
+					{Name: "ProcessId", Value: "7924"},
+					{Name: "Application", Value: "app.exe"},
+				},
+			},
+			expected: map[string]any{
+				"ProcessId":   "7924",
+				"Application": "app.exe",
+			},
+		},
+		{
+			name: "all anonymous",
+			input: EventData{
+				Data: []Data{
+					{Value: "first"},
+					{Value: "second"},
+				},
+			},
+			expected: map[string]any{
+				"Data1": "first",
+				"Data2": "second",
+			},
+		},
+		{
+			name: "mixed named and anonymous",
+			input: EventData{
+				Data: []Data{
+					{Name: "Named1", Value: "value1"},
+					{Value: "anonymous1"},
+					{Name: "Named2", Value: "value2"},
+					{Value: "anonymous2"},
+				},
+			},
+			expected: map[string]any{
+				"Named1": "value1",
+				"Data1":  "anonymous1",
+				"Named2": "value2",
+				"Data2":  "anonymous2",
+			},
+		},
+		{
+			name: "with name and binary attributes",
+			input: EventData{
+				Name:   "EVENT_DATA",
+				Binary: "2D20",
+				Data: []Data{
+					{Name: "Field", Value: "value"},
+				},
+			},
+			expected: map[string]any{
+				"name":   "EVENT_DATA",
+				"binary": "2D20",
+				"Field":  "value",
+			},
+		},
+		{
+			name:     "empty event data",
+			input:    EventData{},
+			expected: map[string]any{},
+		},
+		{
+			name: "duplicate named keys - last wins",
+			input: EventData{
+				Data: []Data{
+					{Name: "Key", Value: "first"},
+					{Name: "Key", Value: "second"},
+				},
+			},
+			expected: map[string]any{
+				"Key": "second",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := parseEventData(tt.input)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestParseBodyWithAnonymousEventData(t *testing.T) {
+	xml := &EventXML{
+		EventID: EventID{
+			ID:         1,
+			Qualifiers: 2,
+		},
+		Provider: Provider{
+			Name: "provider",
+		},
+		TimeCreated: TimeCreated{
+			SystemTime: "2020-07-30T01:01:01.123456789Z",
+		},
+		Computer: "computer",
+		Channel:  "application",
+		RecordID: 1,
+		Level:    "Information",
+		Message:  "message",
+		Task:     "task",
+		Opcode:   "opcode",
+		Keywords: []string{"keyword"},
+		EventData: EventData{
+			Data:   []Data{{Value: "first_value"}, {Value: "second_value"}},
+			Binary: "2D20",
+		},
+		Version: 0,
+	}
+
+	body := formattedBody(xml)
+	eventData := body["event_data"].(map[string]any)
+
+	require.Equal(t, "first_value", eventData["Data1"])
+	require.Equal(t, "second_value", eventData["Data2"])
+	require.Equal(t, "2D20", eventData["binary"])
 }
