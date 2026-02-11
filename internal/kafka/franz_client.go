@@ -48,44 +48,12 @@ func NewFranzSyncProducer(
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
-	codec := compressionCodec(cfg.Compression)
-	switch cfg.CompressionParams.Level {
-	case 0, configcompression.DefaultCompressionLevel:
-	default:
-		codec = codec.WithLevel(int(cfg.CompressionParams.Level))
-	}
-	opts, err := commonOpts(ctx, host, clientCfg, logger, append(
-		opts,
-		kgo.ProduceRequestTimeout(timeout),
-		kgo.ProducerBatchCompression(codec),
-		// Use the UniformBytesPartitioner that is the default in franz-go with
-		// the legacy compatibility sarama hashing to avoid hashing to different
-		// partitions in case partitioning is enabled.
-		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
-		kgo.ProducerLinger(cfg.Linger),
-		kgo.ProducerBatchMaxBytes(int32(cfg.MaxMessageBytes)),
-		kgo.MaxBufferedRecords(cfg.FlushMaxMessages),
-	)...)
+	opts = append(opts, kgo.ProduceRequestTimeout(timeout))
+	opts = append(opts, producerConfigOpts(cfg)...)
+	opts, err := commonOpts(ctx, host, clientCfg, logger, opts...)
 	if err != nil {
 		return nil, err
 	}
-	// Configure required acks
-	switch cfg.RequiredAcks {
-	case configkafka.WaitForAll:
-		opts = append(opts, kgo.RequiredAcks(kgo.AllISRAcks()))
-	case configkafka.NoResponse:
-		// NOTE(marclop) only disable if acks != all.
-		opts = append(opts, kgo.DisableIdempotentWrite(), kgo.RequiredAcks(kgo.NoAck()))
-	default: // WaitForLocal
-		// NOTE(marclop) only disable if acks != all.
-		opts = append(opts, kgo.DisableIdempotentWrite(), kgo.RequiredAcks(kgo.LeaderAck()))
-	}
-
-	// Configure auto topic creation
-	if cfg.AllowAutoTopicCreation {
-		opts = append(opts, kgo.AllowAutoTopicCreation())
-	}
-
 	return kgo.NewClient(opts...)
 }
 
@@ -100,16 +68,9 @@ func NewFranzConsumerGroup(
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) (*kgo.Client, error) {
-	opts, err := commonOpts(ctx, host, clientCfg, logger, append([]kgo.Opt{
-		kgo.ConsumeTopics(topics...),
-		kgo.ConsumerGroup(consumerCfg.GroupID),
-		kgo.SessionTimeout(consumerCfg.SessionTimeout),
-		kgo.HeartbeatInterval(consumerCfg.HeartbeatInterval),
-		kgo.FetchMinBytes(consumerCfg.MinFetchSize),
-		kgo.FetchMaxBytes(consumerCfg.MaxFetchSize),
-		kgo.FetchMaxPartitionBytes(consumerCfg.MaxPartitionFetchSize),
-		kgo.FetchMaxWait(consumerCfg.MaxFetchWait),
-	}, opts...)...)
+	opts = append(opts, kgo.ConsumeTopics(topics...))
+	opts = append(opts, consumerConfigOpts(consumerCfg)...)
+	opts, err := commonOpts(ctx, host, clientCfg, logger, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -131,43 +92,6 @@ func NewFranzConsumerGroup(
 		opts = append(opts, kgo.ConsumeExcludeTopics(excludeTopics...))
 	}
 
-	interval := consumerCfg.AutoCommit.Interval
-	if !consumerCfg.AutoCommit.Enable {
-		// Set auto-commit interval to a very high value to "disable" it, but
-		// still allow using marks.
-		interval = time.Hour
-	}
-	// Configure auto-commit to use marks, this simplifies the committing
-	// logic and makes it more consistent with the Sarama client.
-	opts = append(opts, kgo.AutoCommitMarks(),
-		kgo.AutoCommitInterval(interval),
-	)
-
-	// Configure the offset to reset to if an exception is found (or no current
-	// partition offset is found.
-	switch consumerCfg.InitialOffset {
-	case configkafka.EarliestOffset:
-		opts = append(opts, kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()))
-	case configkafka.LatestOffset:
-		opts = append(opts, kgo.ConsumeResetOffset(kgo.NewOffset().AtEnd()))
-	}
-
-	// Configure group instance ID if provided
-	if consumerCfg.GroupInstanceID != "" {
-		opts = append(opts, kgo.InstanceID(consumerCfg.GroupInstanceID))
-	}
-
-	// Configure rebalance strategy
-	switch consumerCfg.GroupRebalanceStrategy {
-	case "range":
-		opts = append(opts, kgo.Balancers(kgo.RangeBalancer()))
-	case "roundrobin":
-		opts = append(opts, kgo.Balancers(kgo.RoundRobinBalancer()))
-	case "sticky":
-		opts = append(opts, kgo.Balancers(kgo.StickyBalancer()))
-	case "cooperative-sticky":
-		opts = append(opts, kgo.Balancers(kgo.CooperativeStickyBalancer()))
-	}
 	return kgo.NewClient(opts...)
 }
 
@@ -208,14 +132,8 @@ func commonOpts(
 	logger *zap.Logger,
 	opts ...kgo.Opt,
 ) ([]kgo.Opt, error) {
-	opts = append(opts,
-		kgo.WithLogger(kzap.New(logger.Named("franz"))),
-		kgo.SeedBrokers(clientCfg.Brokers...),
-		// Disable client metrics, since some brokers may falsely indicate
-		// that they support them when they don't, causing errors to be
-		// logged. We may want to make this configurable in the future.
-		kgo.DisableClientMetrics(),
-	)
+	opts = append(opts, clientConfigOpts(clientCfg)...)
+	opts = append(opts, kgo.WithLogger(kzap.New(logger.Named("franz"))))
 	tlsConfig := clientCfg.TLS
 	if tlsConfig == nil {
 		tlsConfig = clientCfg.Authentication.TLS
@@ -252,19 +170,7 @@ func commonOpts(
 		}
 		opts = append(opts, opt)
 	}
-	// Configure client ID
-	if clientCfg.ClientID != "" {
-		opts = append(opts, kgo.ClientID(clientCfg.ClientID))
-	}
-	// Configure client rack if provided
-	if clientCfg.RackID != "" {
-		opts = append(opts, kgo.Rack(clientCfg.RackID))
-	}
-	// Reuse existing metadata refresh interval for franz-go metadataMaxAge
-	if clientCfg.Metadata.RefreshInterval > 0 {
-		opts = append(opts, kgo.MetadataMaxAge(clientCfg.Metadata.RefreshInterval))
-	}
-	// Configure the min/max protocol version if provided
+	// Log protocol version if provided
 	if clientCfg.ProtocolVersion != "" {
 		keyVersions := make(map[string]any)
 		versions := kversion.FromString(clientCfg.ProtocolVersion)
@@ -277,7 +183,6 @@ func commonOpts(
 			zap.String("version", clientCfg.ProtocolVersion),
 			zap.Any("key_versions", keyVersions),
 		)
-		opts = append(opts, kgo.MinVersions(versions), kgo.MaxVersions(versions))
 	}
 	return opts, nil
 }
