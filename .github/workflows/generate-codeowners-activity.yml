@@ -1,6 +1,10 @@
 # This workflow generates a code owner activity report as a GitHub issue.
 # It measures whether code owners have reviewed/replied to at least 80% of
 # issues and PRs opened against each component (by component label).
+#
+# When testing from a fork PR: the default token cannot read the upstream repo.
+# Add a repo secret UPSTREAM_READ_TOKEN (PAT with "repo" read scope for
+# open-telemetry/opentelemetry-collector-contrib) so the workflow can fetch upstream data.
 
 name: 'Generate Code Owner Activity Report'
 on:
@@ -28,7 +32,8 @@ jobs:
     permissions:
       issues: write
     runs-on: ubuntu-24.04
-    if: ${{ github.repository_owner == 'open-telemetry' }}
+    # Run on upstream (schedule/manual) or on any PR so fork PRs can test; use UPSTREAM_READ_TOKEN when from a fork.
+    if: ${{ github.repository_owner == 'open-telemetry' || github.event_name == 'pull_request' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
@@ -37,6 +42,8 @@ jobs:
           # Dry run when manually requested, or when triggered by pull_request (test from a PR without merging to main)
           DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') || github.event_name == 'pull_request' && 'true' || '0' }}
         with:
+          # When running from a fork PR, use a PAT that can read upstream (add UPSTREAM_READ_TOKEN to your fork's repo secrets)
+          github-token: ${{ secrets.UPSTREAM_READ_TOKEN || github.token }}
           retries: 3
           script: |
             const script = require('.github/workflows/scripts/generate-codeowners-activity.js')

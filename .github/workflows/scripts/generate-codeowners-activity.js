@@ -10,8 +10,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const REPO_NAME = 'opentelemetry-collector-contrib';
 const REPO_OWNER = 'open-telemetry';
+const REPO_NAME = 'opentelemetry-collector-contrib';
 const RESPONSE_THRESHOLD_PCT = 80;
 
 function debug(msg) {
