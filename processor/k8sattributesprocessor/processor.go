@@ -464,8 +464,27 @@ func (op *kubernetesprocessor) GetResourceUuidUsingPodMoid(ctx context.Context, 
 
 	podMoidKey := podMoid.PodMoid()
 
-	resourceUuid = op.redisClient.GetUuidValueInString(ctx, podMoidKey)
-	op.logger.Debug("redis KV ", zap.Any("key", podMoidKey), zap.Any("value", resourceUuid))
+	// Check if replicaset is found
+	if _, rsFound := resource.Attributes().Get("k8s.replicaset.name"); rsFound {
+		// If replicaset is found but deployment is not found, fetch deployment with redis data
+		if _, deploymentFound := resource.Attributes().Get("k8s.deployment.name"); !deploymentFound {
+			op.logger.Debug("Fetching deployment name from redis for pod moid", zap.Any("key", podMoidKey))
+			redisData := op.redisClient.GetRedisDataWithDeployment(ctx, podMoidKey)
+			op.logger.Debug("Fetched Redis data for pod moid", zap.Any("redisData", redisData))
+			if redisData != nil && redisData.ResourceUuid != "" {
+				resourceUuid = redisData.ResourceUuid
+				if redisData.DeploymentName != "" {
+					op.logger.Debug("Fetched deployment name from redis for pod moid", zap.Any("deploymentName", redisData.DeploymentName))
+					resource.Attributes().PutStr("k8s.deployment.name", redisData.DeploymentName)
+				}
+				op.logger.Debug("redis KV ", zap.Any("key", podMoidKey), zap.Any("value", resourceUuid))
+			}
+		}
+	}
+	if resourceUuid == "" {
+		resourceUuid = op.redisClient.GetUuidValueInString(ctx, podMoidKey)
+		op.logger.Debug("redis KV ", zap.Any("key", podMoidKey), zap.Any("value", resourceUuid))
+	}
 	return
 }
 

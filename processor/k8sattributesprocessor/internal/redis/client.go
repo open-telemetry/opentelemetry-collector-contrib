@@ -154,3 +154,47 @@ func (c *Client) GetUuidValueInString(ctx context.Context, key string) string {
 	}
 	return ""
 }
+
+type RedisDataWithDeployment struct {
+	ResourceUuid   string `json:"resourceUuid,omitempty"`
+	ResourceHash   uint64 `json:"resourceHash,omitempty"`
+	DeploymentName string `json:"k8s.deployment.name,omitempty"`
+}
+
+func (c *Client) GetRedisDataWithDeployment(ctx context.Context, key string) *RedisDataWithDeployment {
+	logger := c.logger
+	// Query Redis if enabled
+	if c.Enabled {
+		val, err := c.GoClient.Get(ctx, key).Result()
+		if err == goredis.Nil {
+			logger.Debug("Key does not exist in Redis", zap.Any("key", key))
+			c.CacheObject.AddToSecondaryWithTTL(key, "", c.SecondaryCacheEvictionTime)
+			return nil
+		} else if err != nil {
+			logger.Error("Failed to fetch the key from Redis", zap.Error(err))
+			c.CacheObject.AddToSecondaryWithTTL(key, "", c.SecondaryCacheEvictionTime)
+			return nil
+		}
+
+		logger.Debug("Got value from Redis", zap.Any("key", key), zap.Any("value", val))
+
+		var redisData RedisDataWithDeployment
+		err = json.Unmarshal([]byte(val), &redisData)
+		if err != nil {
+			logger.Error("Could not unmarshal data", zap.Error(err))
+			return nil
+		}
+
+		value := redisData.ResourceUuid
+
+		if c.CacheObject != nil {
+			if value == "" {
+				c.CacheObject.AddToSecondaryWithTTL(key, "", c.SecondaryCacheEvictionTime)
+			} else {
+				c.CacheObject.AddToPrimaryWithTTL(key, value, c.PrimaryCacheEvictionTime)
+			}
+		}
+		return &redisData
+	}
+	return nil
+}
