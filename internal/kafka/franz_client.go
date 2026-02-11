@@ -357,3 +357,139 @@ func saramaHashFn(b []byte) uint32 {
 	h.Write(b)
 	return h.Sum32()
 }
+
+// clientConfigOpts builds kgo.Opt values from a ClientConfig that do not
+// require runtime context (TLS, authentication are skipped).
+func clientConfigOpts(cfg configkafka.ClientConfig) []kgo.Opt {
+	opts := []kgo.Opt{
+		kgo.SeedBrokers(cfg.Brokers...),
+		// Disable client metrics, since some brokers may falsely indicate
+		// that they support them when they don't, causing errors to be
+		// logged. We may want to make this configurable in the future.
+		kgo.DisableClientMetrics(),
+	}
+	// Configure client ID
+	if cfg.ClientID != "" {
+		opts = append(opts, kgo.ClientID(cfg.ClientID))
+	}
+	// Configure client rack if provided
+	if cfg.RackID != "" {
+		opts = append(opts, kgo.Rack(cfg.RackID))
+	}
+	// Reuse existing metadata refresh interval for franz-go metadataMaxAge
+	if cfg.Metadata.RefreshInterval > 0 {
+		opts = append(opts, kgo.MetadataMaxAge(cfg.Metadata.RefreshInterval))
+	}
+	// Configure the min/max protocol version if provided
+	if cfg.ProtocolVersion != "" {
+		versions := kversion.FromString(cfg.ProtocolVersion)
+		opts = append(opts, kgo.MinVersions(versions), kgo.MaxVersions(versions))
+	}
+	return opts
+}
+
+// producerConfigOpts builds kgo.Opt values from a ProducerConfig.
+func producerConfigOpts(cfg configkafka.ProducerConfig) []kgo.Opt {
+	codec := compressionCodec(cfg.Compression)
+	switch cfg.CompressionParams.Level {
+	case 0, configcompression.DefaultCompressionLevel:
+	default:
+		codec = codec.WithLevel(int(cfg.CompressionParams.Level))
+	}
+	opts := []kgo.Opt{
+		kgo.ProducerBatchCompression(codec),
+		// Use the UniformBytesPartitioner that is the default in franz-go with
+		// the legacy compatibility sarama hashing to avoid hashing to different
+		// partitions in case partitioning is enabled.
+		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
+		kgo.ProducerLinger(cfg.Linger),
+		kgo.ProducerBatchMaxBytes(int32(cfg.MaxMessageBytes)),
+		kgo.MaxBufferedRecords(cfg.FlushMaxMessages),
+	}
+	// Configure required acks
+	switch cfg.RequiredAcks {
+	case configkafka.WaitForAll:
+		opts = append(opts, kgo.RequiredAcks(kgo.AllISRAcks()))
+	case configkafka.NoResponse:
+		// NOTE(marclop) only disable if acks != all.
+		opts = append(opts, kgo.DisableIdempotentWrite(), kgo.RequiredAcks(kgo.NoAck()))
+	default: // WaitForLocal
+		// NOTE(marclop) only disable if acks != all.
+		opts = append(opts, kgo.DisableIdempotentWrite(), kgo.RequiredAcks(kgo.LeaderAck()))
+	}
+	// Configure auto topic creation
+	if cfg.AllowAutoTopicCreation {
+		opts = append(opts, kgo.AllowAutoTopicCreation())
+	}
+	return opts
+}
+
+// consumerConfigOpts builds kgo.Opt values from a ConsumerConfig.
+func consumerConfigOpts(cfg configkafka.ConsumerConfig) []kgo.Opt {
+	opts := []kgo.Opt{
+		kgo.ConsumerGroup(cfg.GroupID),
+		kgo.SessionTimeout(cfg.SessionTimeout),
+		kgo.HeartbeatInterval(cfg.HeartbeatInterval),
+		kgo.FetchMinBytes(cfg.MinFetchSize),
+		kgo.FetchMaxBytes(cfg.MaxFetchSize),
+		kgo.FetchMaxPartitionBytes(cfg.MaxPartitionFetchSize),
+		kgo.FetchMaxWait(cfg.MaxFetchWait),
+	}
+	// Configure rebalance strategy
+	switch cfg.GroupRebalanceStrategy {
+	case "range":
+		opts = append(opts, kgo.Balancers(kgo.RangeBalancer()))
+	case "roundrobin":
+		opts = append(opts, kgo.Balancers(kgo.RoundRobinBalancer()))
+	case "sticky":
+		opts = append(opts, kgo.Balancers(kgo.StickyBalancer()))
+	case "cooperative-sticky":
+		opts = append(opts, kgo.Balancers(kgo.CooperativeStickyBalancer()))
+	}
+	// Configure group instance ID if provided
+	if cfg.GroupInstanceID != "" {
+		opts = append(opts, kgo.InstanceID(cfg.GroupInstanceID))
+	}
+	// Configure the offset to reset to if an exception is found (or no current
+	// partition offset is found.
+	switch cfg.InitialOffset {
+	case configkafka.EarliestOffset:
+		opts = append(opts, kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()))
+	case configkafka.LatestOffset:
+		opts = append(opts, kgo.ConsumeResetOffset(kgo.NewOffset().AtEnd()))
+	}
+	interval := cfg.AutoCommit.Interval
+	if !cfg.AutoCommit.Enable {
+		// Set auto-commit interval to a very high value to "disable" it, but
+		// still allow using marks.
+		interval = time.Hour
+	}
+	// Configure auto-commit to use marks, this simplifies the committing
+	// logic and makes it more consistent with the Sarama client.
+	opts = append(opts, kgo.AutoCommitMarks(), kgo.AutoCommitInterval(interval))
+	return opts
+}
+
+// ValidateClientConfigOpts validates the configkafka.ClientConfig by
+// converting config values to kgo options and calling kgo.ValidateOpts.
+func ValidateClientConfigOpts(cfg configkafka.ClientConfig) error {
+	return kgo.ValidateOpts(clientConfigOpts(cfg)...)
+}
+
+// ValidateProducerConfigOpts validates the configkafka.ClientConfig and
+// configkafka.ProducerConfig by converting config values to kgo options
+// and calling kgo.ValidateOpts.
+func ValidateProducerConfigOpts(clientCfg configkafka.ClientConfig, producerCfg configkafka.ProducerConfig) error {
+	opts := clientConfigOpts(clientCfg)
+	opts = append(opts, producerConfigOpts(producerCfg)...)
+	return kgo.ValidateOpts(opts...)
+}
+
+// ValidateConsumerConfigOpts validates the configkafka.ClientConfig and
+// configkafka.ConsumerConfig by converting config values to kgo options
+// and calling kgo.ValidateOpts.
+func ValidateConsumerConfigOpts(clientCfg configkafka.ClientConfig, consumerCfg configkafka.ConsumerConfig) error {
+	opts := clientConfigOpts(clientCfg)
+	opts = append(opts, consumerConfigOpts(consumerCfg)...)
+	return kgo.ValidateOpts(opts...)
+}

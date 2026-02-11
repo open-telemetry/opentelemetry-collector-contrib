@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
@@ -187,7 +188,7 @@ func (c *Config) Validate() error {
 	if err := validateExcludeTopic("profiles", c.Profiles.Topics, c.Profiles.ExcludeTopics); err != nil {
 		return err
 	}
-	return nil
+	return kafka.ValidateConsumerConfigOpts(c.ClientConfig, c.ConsumerConfig)
 }
 
 // validateExcludeTopic checks that exclude_topic is only configured when topics uses regex pattern

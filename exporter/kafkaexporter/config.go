@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
@@ -86,11 +87,11 @@ type Config struct {
 	PartitionLogsByTraceID bool `mapstructure:"partition_logs_by_trace_id"`
 }
 
-func (c *Config) Validate() (err error) {
+func (c *Config) Validate() error {
 	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
 		return errLogsPartitionExclusive
 	}
-	return err
+	return kafka.ValidateProducerConfigOpts(c.ClientConfig, c.Producer)
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {

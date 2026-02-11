@@ -302,6 +302,8 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "valid config with regex and exclude_topic",
 			config: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
 				Logs: TopicEncodingConfig{
 					Topics:        []string{"^logs-.*"},
 					ExcludeTopics: []string{"^logs-test$"},
@@ -379,6 +381,8 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "valid config without exclude_topic",
 			config: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
 				Logs: TopicEncodingConfig{
 					Topics:   []string{"logs"},
 					Encoding: "otlp_proto",
