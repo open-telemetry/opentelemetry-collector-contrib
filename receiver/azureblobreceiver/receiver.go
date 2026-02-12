@@ -50,10 +50,12 @@ func (b *blobReceiver) Shutdown(ctx context.Context) error {
 
 func (b *blobReceiver) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {
 	b.nextLogsConsumer = nextLogsConsumer
+	b.blobEventHandler.setLogsDataConsumer(b)
 }
 
 func (b *blobReceiver) setNextTracesConsumer(nextTracesConsumer consumer.Traces) {
 	b.nextTracesConsumer = nextTracesConsumer
+	b.blobEventHandler.setTracesDataConsumer(b)
 }
 
 func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
@@ -112,9 +114,6 @@ func newReceiver(set receiver.Settings, eventHandler eventHandler) (component.Co
 		tracesUnmarshaler: &ptrace.JSONUnmarshaler{},
 		obsrecv:           obsrecv,
 	}
-
-	eventHandler.setLogsDataConsumer(blobReceiver)
-	eventHandler.setTracesDataConsumer(blobReceiver)
 
 	return blobReceiver, nil
 }
