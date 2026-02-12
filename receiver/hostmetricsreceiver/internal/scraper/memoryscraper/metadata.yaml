@@ -111,8 +111,7 @@ metrics:
     enabled: false
     description: Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Only supported on Linux.
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
