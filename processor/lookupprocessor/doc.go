@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate make mdatagen
+
 // Package lookupprocessor contains a processor that enriches telemetry data
 // by performing lookups from various sources and adding the results as attributes.
 //

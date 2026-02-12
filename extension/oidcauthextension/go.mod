@@ -1,9 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/coreos/go-oidc/v3 v3.17.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-jose/go-jose/v4 v4.1.3
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.51.1-0.20260205185216-81bc641f26c0

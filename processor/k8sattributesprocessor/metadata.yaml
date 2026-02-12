@@ -1,4 +1,8 @@
+display_name: Kubernetes Attributes Processor
 type: k8s_attributes
+
+description: |
+  The Kubernetes Attributes Processor allows adding k8s metadata to resource attributes for spans, metrics and logs.
 
 status:
   class: processor

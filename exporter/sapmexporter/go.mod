@@ -1,12 +1,12 @@
 // Deprecated: [v0.143.0] Use OTLP exporter instead
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/jaegertracing/jaeger-idl v0.6.0
-	github.com/klauspost/compress v1.18.3
+	github.com/klauspost/compress v1.18.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.145.0

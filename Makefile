@@ -234,6 +234,10 @@ gofmt:
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
+.PHONY: gomodernize
+gomodernize:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="modernize"
+
 .PHONY: gogovulncheck
 gogovulncheck:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="govulncheck"
@@ -585,7 +589,6 @@ otel-from-lib:
 .PHONY: build-examples
 build-examples:
 	cd examples/secure-tracing/certs && $(MAKE) clean && $(MAKE) all && docker compose -f ../docker-compose.yaml build
-	docker compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64

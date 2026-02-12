@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.7

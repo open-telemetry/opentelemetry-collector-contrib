@@ -1,4 +1,9 @@
+display_name: Log DeDuplication Processor
 type: logdedup
+
+description: |
+  The Log DeDuplication Processor is used to deduplicate logs by detecting identical logs over a range of time and
+  emitting a single log with the count of logs that were deduplicated.
 
 status:
   class: processor
