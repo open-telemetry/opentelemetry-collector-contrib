@@ -144,10 +144,6 @@ The following feature gates are available for this receiver:
 |--------|---------|--------------|------------|
 | Stable | `true`  | v0.129.0     | v0.144.0   |
 
-This feature gate controls which Azure Event Hubs client library is used by the receiver. When enabled (the default), the receiver uses the official [Azure SDK for Go](https://github.com/Azure/azure-sdk-for-go) `azeventhubs` library. This library provides improved performance, better error handling, and is the recommended choice.
-
-The feature gate is now stable and enabled by default. It will be removed in v0.144.0, after which the `azeventhubs` library will be the only supported option.
-
 ## Known Limitations
 
 Before using this receiver, be aware of the following limitations:
@@ -155,7 +151,6 @@ Before using this receiver, be aware of the following limitations:
 ### Checkpoint Persistence
 
 - Without a configured [storage extension], checkpoint state is stored only in memory. If the collector restarts, the receiver will resume from the latest offset, potentially missing messages or reprocessing already-consumed messages.
-- When using storage, ensure the storage directory is persistent across restarts.
 
 ## Format
 
