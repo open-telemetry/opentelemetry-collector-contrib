@@ -25,8 +25,7 @@ metrics:
     enabled: false
     description: An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -36,8 +35,7 @@ metrics:
     enabled: false
     description: The amount of dirty memory according to `/proc/meminfo`.
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -47,8 +45,7 @@ metrics:
     enabled: false
     description: Total bytes of memory available.
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -58,8 +55,7 @@ metrics:
     enabled: false
     description: Total number of hugepages available.
     unit: "{page}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -69,8 +65,7 @@ metrics:
     enabled: false
     description: System hugepage size in bytes.
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       aggregation_temporality: cumulative
@@ -80,8 +75,7 @@ metrics:
     enabled: false
     description: Number of reserved hugepages (hugepages for which a commitment to allocate has been made, but no allocation has yet been made). This is reported as a separate metric rather than a usage state because reserved pages are already counted in free pages - they represent a subset of free pages that cannot be used for non-reserved allocations.
     unit: "{page}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
 
@@ -89,8 +83,7 @@ metrics:
     enabled: false
     description: Number of surplus hugepages (overcommitted hugepages beyond the persistent pool). This is reported as a separate metric rather than a usage state because surplus pages can be in either used or free state, and including them would break the semantic convention that usage states must sum to the limit.
     unit: "{page}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
 
@@ -98,8 +91,7 @@ metrics:
     enabled: false
     description: Number of hugepages in use by state.
     unit: "{page}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -110,8 +102,7 @@ metrics:
     enabled: false
     description: Percentage of hugepages in use by state.
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: [system.memory.linux.hugepages.state]
@@ -120,8 +111,7 @@ metrics:
     enabled: false
     description: Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Only supported on Linux.
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -132,8 +122,7 @@ metrics:
     enabled: false
     description: A constant value for the system's configured page size.
     unit: By
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
       aggregation_temporality: cumulative
@@ -143,8 +132,7 @@ metrics:
     enabled: true
     description: Bytes of memory in use.
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -155,8 +143,7 @@ metrics:
     enabled: false
     description: Percentage of memory bytes in use.
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: [state]
