@@ -78,7 +78,7 @@ func TestScraper(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.host"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -131,7 +131,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.host"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
 		cfg.Metrics.PostgresqlWalDelay.Enabled = false
@@ -156,7 +156,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		expectedMetrics, err = golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.host"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -209,7 +209,7 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.host"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -262,7 +262,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 		fmt.Println(actualMetrics.ResourceMetrics())
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.host"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -316,7 +316,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.host"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -369,7 +369,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.host"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -397,7 +397,7 @@ func TestScraperExcludeDatabase(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.host"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -484,7 +484,7 @@ func TestScrapeQuerySample(t *testing.T) {
 	// golden.WriteLogs(t, expectedFile, actualLogs)
 	expectedLogs, err := golden.ReadLogs(expectedFile)
 	require.NoError(t, err)
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("service.instance.id"), plogtest.IgnoreResourceAttributeValue("service.name"), plogtest.IgnoreResourceAttributeValue("server.host"), plogtest.IgnoreResourceAttributeValue("server.port"), plogtest.IgnoreTimestamp())
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("service.instance.id"), plogtest.IgnoreResourceAttributeValue("service.name"), plogtest.IgnoreResourceAttributeValue("server.address"), plogtest.IgnoreResourceAttributeValue("server.port"), plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
 }
 
@@ -618,7 +618,7 @@ func TestScrapeTopQueries(t *testing.T) {
 	expectedLogs, err := golden.ReadLogs(expectedFile)
 	require.NoError(t, err)
 	// golden.WriteLogs(t, expectedFile, actualLogs)
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("service.instance.id"), plogtest.IgnoreResourceAttributeValue("service.name"), plogtest.IgnoreResourceAttributeValue("server.host"), plogtest.IgnoreResourceAttributeValue("server.port"), plogtest.IgnoreTimestamp())
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreResourceAttributeValue("service.instance.id"), plogtest.IgnoreResourceAttributeValue("service.name"), plogtest.IgnoreResourceAttributeValue("server.address"), plogtest.IgnoreResourceAttributeValue("server.port"), plogtest.IgnoreTimestamp())
 	assert.NoError(t, errs)
 
 	// Verify the cache has updated with latest counter
@@ -1254,9 +1254,9 @@ func TestSetupResourceBuilderUUID(t *testing.T) {
 			require.True(t, ok, "service.name attribute should be present")
 			assert.Equal(t, "postgresql", serviceName.Str())
 
-			// Verify server.host is set
-			serverHost, ok := res.Attributes().Get("server.host")
-			require.True(t, ok, "server.host attribute should be present")
+			// Verify server.address is set
+			serverHost, ok := res.Attributes().Get("server.address")
+			require.True(t, ok, "server.address attribute should be present")
 			assert.Equal(t, "localhost", serverHost.Str())
 
 			// Verify server.port is set
