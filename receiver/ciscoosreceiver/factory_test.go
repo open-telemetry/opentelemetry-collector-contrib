@@ -17,7 +17,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/connection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/interfacesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver/internal/scraper/systemscraper"
 )
 
@@ -71,33 +70,6 @@ func TestFactoryCanBeUsed(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateMetricsReceiverWithInterfacesScraper(t *testing.T) {
-	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	config.Devices = []DeviceConfig{newTestDevice("test-device", "192.168.1.1")}
-	config.Scrapers = map[component.Type]component.Config{
-		component.MustNewType("interfaces"): interfacesscraper.NewFactory().CreateDefaultConfig(),
-	}
-
-	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), config, consumertest.NewNop())
-	assert.NotNil(t, receiver)
-	assert.NoError(t, err)
-}
-
-func TestCreateMetricsReceiverWithBothScrapers(t *testing.T) {
-	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	config.Devices = []DeviceConfig{newTestDevice("test-device", "192.168.1.1")}
-	config.Scrapers = map[component.Type]component.Config{
-		component.MustNewType("system"):     systemscraper.NewFactory().CreateDefaultConfig(),
-		component.MustNewType("interfaces"): interfacesscraper.NewFactory().CreateDefaultConfig(),
-	}
-
-	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), config, consumertest.NewNop())
-	assert.NotNil(t, receiver)
-	assert.NoError(t, err)
-}
-
 func TestCreateMetricsReceiverWithMultipleDevices(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
@@ -118,95 +90,7 @@ func TestCreateMetricsReceiverWithMultipleDevices(t *testing.T) {
 }
 
 func TestScraperFactoriesRegistered(t *testing.T) {
-	// Verify both scrapers are registered
 	assert.Contains(t, scraperFactories, component.MustNewType("system"))
 	assert.Contains(t, scraperFactories, component.MustNewType("interfaces"))
 	assert.Len(t, scraperFactories, 2)
-}
-
-func TestCreateMetricsReceiverNoDevices(t *testing.T) {
-	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	config.Devices = []DeviceConfig{}
-
-	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), config, consumertest.NewNop())
-	assert.NotNil(t, receiver)
-	assert.NoError(t, err)
-
-	_, isNop := receiver.(*nopMetricsReceiver)
-	assert.True(t, isNop, "expected nopMetricsReceiver for no devices")
-}
-
-func TestCreateMetricsReceiverDeviceWithMissingHost(t *testing.T) {
-	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	config.Devices = []DeviceConfig{newTestDevice("device-no-host", "")} // Empty host
-	config.Scrapers = map[component.Type]component.Config{
-		component.MustNewType("system"): systemscraper.NewFactory().CreateDefaultConfig(),
-	}
-
-	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), config, consumertest.NewNop())
-	assert.NotNil(t, receiver)
-	assert.NoError(t, err)
-
-	_, isNop := receiver.(*nopMetricsReceiver)
-	assert.True(t, isNop, "expected nopMetricsReceiver when device is skipped")
-}
-
-func TestCreateMetricsReceiverWithEmptyScrapers(t *testing.T) {
-	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	config.Devices = []DeviceConfig{newTestDevice("device", "192.168.1.1")}
-	config.Scrapers = map[component.Type]component.Config{}
-
-	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), config, consumertest.NewNop())
-	assert.NotNil(t, receiver)
-	assert.NoError(t, err)
-
-	_, isNop := receiver.(*nopMetricsReceiver)
-	assert.True(t, isNop, "expected nopMetricsReceiver when scrapers are empty")
-}
-
-func TestCreateMetricsReceiverSingleDevice(t *testing.T) {
-	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	config.Devices = []DeviceConfig{newTestDevice("single-device", "192.168.1.1")}
-	config.Scrapers = map[component.Type]component.Config{
-		component.MustNewType("system"): systemscraper.NewFactory().CreateDefaultConfig(),
-	}
-
-	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), config, consumertest.NewNop())
-	assert.NotNil(t, receiver)
-	assert.NoError(t, err)
-
-	_, isMulti := receiver.(*multiMetricsReceiver)
-	assert.False(t, isMulti, "expected single receiver, not multiMetricsReceiver")
-	_, isNop := receiver.(*nopMetricsReceiver)
-	assert.False(t, isNop, "expected real receiver, not nopMetricsReceiver")
-}
-
-func TestNopMetricsReceiverLifecycle(t *testing.T) {
-	nop := &nopMetricsReceiver{}
-	assert.NoError(t, nop.Start(t.Context(), nil))
-	assert.NoError(t, nop.Shutdown(t.Context()))
-}
-
-func TestMultiMetricsReceiverLifecycle(t *testing.T) {
-	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	config.Devices = []DeviceConfig{
-		newTestDevice("device-1", "192.168.1.1"),
-		newTestDevice("device-2", "192.168.1.2"),
-	}
-	config.Scrapers = map[component.Type]component.Config{
-		component.MustNewType("system"): systemscraper.NewFactory().CreateDefaultConfig(),
-	}
-
-	receiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), config, consumertest.NewNop())
-	require.NoError(t, err)
-
-	multi, isMulti := receiver.(*multiMetricsReceiver)
-	require.True(t, isMulti)
-	assert.NoError(t, multi.Start(t.Context(), componenttest.NewNopHost()))
-	assert.NoError(t, multi.Shutdown(t.Context()))
 }

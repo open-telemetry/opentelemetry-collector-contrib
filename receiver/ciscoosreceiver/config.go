@@ -35,7 +35,6 @@ type Config struct {
 	// Devices is the list of Cisco devices to monitor.
 	Devices []DeviceConfig `mapstructure:"devices"`
 
-	// Scrapers is the scraper configuration with metric toggles.
 	Scrapers map[component.Type]component.Config `mapstructure:"-"`
 }
 
@@ -50,7 +49,6 @@ func (cfg *Config) Validate() error {
 
 	if len(cfg.Devices) == 0 {
 		err = multierr.Append(err, errors.New("must specify at least one device"))
-		return err
 	}
 
 	if len(cfg.Scrapers) == 0 {
@@ -75,79 +73,47 @@ func (cfg *Config) Validate() error {
 	return err
 }
 
-var allowedKeys = map[string]struct{}{
-	"collection_interval": {},
-	"initial_delay":       {},
-	"timeout":             {},
-	"devices":             {},
-	"scrapers":            {},
-}
-
+// Unmarshal a config.Parser into the config struct.
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
 		return nil
 	}
 
-	for key := range componentParser.ToStringMap() {
-		if _, ok := allowedKeys[key]; !ok {
-			return fmt.Errorf("unknown configuration key: %q", key)
-		}
-	}
-
-	cfg.Scrapers = map[component.Type]component.Config{}
-	if componentParser.IsSet("scrapers") {
-		scrapers, err := parseScrapersSection(componentParser, "scrapers")
-		if err != nil {
-			return fmt.Errorf("error parsing scrapers: %w", err)
-		}
-		cfg.Scrapers = scrapers
-	}
-
-	// WithIgnoreUnused() needed because "scrapers" has mapstructure:"-"
+	// load the non-dynamic config normally
 	if err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
 
-	return nil
-}
+	// dynamically load the individual scraper configs based on the key name
+	cfg.Scrapers = map[component.Type]component.Config{}
 
-func parseScrapersSection(parser *confmap.Conf, path string) (map[component.Type]component.Config, error) {
-	scrapersSection, err := parser.Sub(path)
+	scrapersSection, err := componentParser.Sub("scrapers")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	scrapers := map[component.Type]component.Config{}
 	for keyStr := range scrapersSection.ToStringMap() {
 		key, err := component.NewType(keyStr)
 		if err != nil {
-			return nil, fmt.Errorf("invalid scraper key name: %s", keyStr)
+			return fmt.Errorf("invalid scraper key name: %s", key)
 		}
 
 		factory, ok := scraperFactories[key]
 		if !ok {
-			return nil, fmt.Errorf("invalid scraper key: %s (available: %v)", key, getAvailableScraperTypes())
+			return fmt.Errorf("invalid scraper key: %s", key)
 		}
 
-		scraperCfg := factory.CreateDefaultConfig()
-		scraperSubSection, err := scrapersSection.Sub(keyStr)
+		scraperSection, err := scrapersSection.Sub(keyStr)
 		if err != nil {
-			return nil, fmt.Errorf("error getting scraper section for %q: %w", key, err)
+			return err
 		}
-		if err = scraperSubSection.Unmarshal(scraperCfg); err != nil {
-			return nil, fmt.Errorf("error reading settings for scraper type %q: %w", key, err)
+		scraperCfg := factory.CreateDefaultConfig()
+		if err = scraperSection.Unmarshal(scraperCfg); err != nil {
+			return fmt.Errorf("error reading settings for scraper type %q: %w", key, err)
 		}
 
-		scrapers[key] = scraperCfg
+		cfg.Scrapers[key] = scraperCfg
 	}
 
-	return scrapers, nil
-}
-
-func getAvailableScraperTypes() []string {
-	types := make([]string, 0, len(scraperFactories))
-	for key := range scraperFactories {
-		types = append(types, key.String())
-	}
-	return types
+	return nil
 }

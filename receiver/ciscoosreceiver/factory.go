@@ -90,15 +90,15 @@ func createMetricsReceiver(
 
 			freshCfg := factory.CreateDefaultConfig()
 
-			if sysCfg, ok := scraperCfg.(*systemscraper.Config); ok {
+			switch typedCfg := scraperCfg.(type) {
+			case *systemscraper.Config:
 				freshSysCfg := freshCfg.(*systemscraper.Config)
-				freshSysCfg.MetricsBuilderConfig = sysCfg.MetricsBuilderConfig
+				freshSysCfg.MetricsBuilderConfig = typedCfg.MetricsBuilderConfig
 				freshSysCfg.Device = connDevice
 				freshCfg = freshSysCfg
-			}
-			if intfCfg, ok := scraperCfg.(*interfacesscraper.Config); ok {
+			case *interfacesscraper.Config:
 				freshIntfCfg := freshCfg.(*interfacesscraper.Config)
-				freshIntfCfg.MetricsBuilderConfig = intfCfg.MetricsBuilderConfig
+				freshIntfCfg.MetricsBuilderConfig = typedCfg.MetricsBuilderConfig
 				freshIntfCfg.Device = connDevice
 				freshCfg = freshIntfCfg
 			}

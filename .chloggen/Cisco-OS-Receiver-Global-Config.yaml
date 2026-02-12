@@ -1,7 +1,7 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: bug_fix
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
 component: receiver/ciscoos
@@ -17,8 +17,6 @@ issues: [42647]
 # Use pipe (|) for multiline entries.
 subtext: |
   - Scrapers are configured globally and applied to all devices.
-  - Unknown configuration keys are now rejected to catch typos and mistakes.
-  - All metrics are enabled by default when a scraper is specified without explicit metric toggles.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
