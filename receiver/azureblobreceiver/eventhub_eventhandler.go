@@ -1,4 +1,7 @@
-package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
 	"context"
@@ -95,7 +98,7 @@ func (p *eventHubEventHandler) receiveEvents(
 
 		timeoutCtx, cancelCtx := context.WithTimeout(
 			ctx,
-			time.Second*time.Duration(p.maxPollEvents),
+			time.Second*time.Duration(p.pollRate),
 		)
 		events, err := pc.ReceiveEvents(timeoutCtx, p.maxPollEvents, &azeventhubs.ReceiveEventsOptions{})
 		cancelCtx()
