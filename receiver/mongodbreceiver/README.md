@@ -42,6 +42,9 @@ The following settings are optional:
   - For a sharded MongoDB deployment, please specify a list of the `mongos` hosts.
 - `username`: If authentication is required, the user can with `clusterMonitor` permissions can be provided here.
 - `password`: If authentication is required, the password can be provided here.
+- `auth_mechanism`: (optional) The authentication mechanism to use. Common values include `SCRAM-SHA-1`, `SCRAM-SHA-256`, `MONGODB-X509`, `GSSAPI`, `MONGODB-AWS`, etc. If not specified, MongoDB will use the default mechanism.
+- `auth_source`: (optional) The database name to use for authentication. If not specified, MongoDB will use the default authentication database (usually `admin`).
+- `auth_mechanism_properties`: (optional) A map of key-value pairs specifying additional properties for the authentication mechanism. For example, when using `GSSAPI` (Kerberos), you may need to set `SERVICE_NAME`. For `MONGODB-AWS`, you may need to set `AWS_SESSION_TOKEN` when using temporary AWS credentials.
 - `collection_interval`: (default = `1m`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `replica_set`: If the deployment of MongoDB is a replica set then this allows users to specify the replica set name which allows for autodiscovery of other nodes in the replica set.
@@ -66,6 +69,137 @@ receivers:
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+## Authentication
+
+The receiver supports several MongoDB [authentication mechanisms](https://www.mongodb.com/docs/drivers/go/current/fundamentals/auth/). The `auth_mechanism`, `auth_source`, and `auth_mechanism_properties` fields are passed directly to the MongoDB Go driver's [`options.Credential`](https://pkg.go.dev/go.mongodb.org/mongo-driver/v2/mongo/options#Credential) struct.
+
+### SCRAM (Default)
+
+[SCRAM-SHA-256](https://www.mongodb.com/docs/drivers/go/current/security/authentication/scram/) is the default authentication mechanism for MongoDB 4.0+. If `auth_mechanism` is not specified and `username`/`password` are provided, the driver will negotiate the strongest SCRAM mechanism supported by the server (SCRAM-SHA-256, falling back to SCRAM-SHA-1).
+
+```yaml
+receivers:
+  mongodb:
+    hosts:
+      - endpoint: localhost:27017
+    username: otel
+    password: ${env:MONGODB_PASSWORD}
+    collection_interval: 60s
+    initial_delay: 1s
+    tls:
+      insecure: true
+```
+
+To explicitly specify the mechanism:
+
+```yaml
+receivers:
+  mongodb:
+    hosts:
+      - endpoint: localhost:27017
+    username: otel
+    password: ${env:MONGODB_PASSWORD}
+    auth_mechanism: SCRAM-SHA-256
+    auth_source: admin
+    collection_interval: 60s
+    initial_delay: 1s
+    tls:
+      insecure: true
+```
+
+### X.509 Certificate Authentication
+
+[X.509 authentication](https://pkg.go.dev/go.mongodb.org/mongo-driver/v2/mongo#example-Connect-X509) uses TLS client certificates instead of username and password. The certificate's subject DN is used as the identity.
+
+```yaml
+receivers:
+  mongodb:
+    hosts:
+      - endpoint: localhost:27018
+    auth_mechanism: MONGODB-X509
+    auth_source: $external
+    collection_interval: 60s
+    initial_delay: 1s
+    tls:
+      ca_file: /path/to/ca.pem
+      cert_file: /path/to/client-cert.pem
+      key_file: /path/to/client-key.pem
+```
+
+The MongoDB Go driver typically uses a single combined PEM file (`tlsCertificateKeyFile`) containing both the certificate and private key. However, the receiver uses the OpenTelemetry Collector's standard [TLS configuration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md), which requires separate `cert_file` and `key_file` entries.
+
+If you have a combined PEM file, split it into separate files:
+
+```bash
+# Extract the certificate
+openssl x509 -in client.pem -out client-cert.pem
+
+# Extract the private key
+openssl pkey -in client.pem -out client-key.pem
+```
+
+### MONGODB-AWS (IAM Authentication)
+
+[MONGODB-AWS](https://www.mongodb.com/docs/drivers/go/current/security/authentication/aws-iam/) authenticates using AWS IAM credentials. This mechanism is available in MongoDB 4.4+ and requires server-side support (e.g., [MongoDB Atlas](https://www.mongodb.com/docs/atlas/security/aws-iam-authentication/) or [Percona Server for MongoDB](https://docs.percona.com/percona-server-for-mongodb/7.0/aws-iam.html)). It is not supported by the MongoDB Community Edition.
+
+Using explicit IAM credentials:
+
+```yaml
+receivers:
+  mongodb:
+    hosts:
+      - endpoint: mongodb-host:27017
+    username: ${env:AWS_ACCESS_KEY_ID}
+    password: ${env:AWS_SECRET_ACCESS_KEY}
+    auth_mechanism: MONGODB-AWS
+    auth_source: $external
+    auth_mechanism_properties:
+      AWS_SESSION_TOKEN: ${env:AWS_SESSION_TOKEN}
+    collection_interval: 60s
+    initial_delay: 1s
+    tls:
+      insecure: true
+```
+
+When running on AWS infrastructure (EC2, ECS, Lambda), the driver can automatically discover credentials from environment variables, the ECS task role endpoint, or the EC2 instance metadata endpoint. In that case, `username`, `password`, and `auth_mechanism_properties` can be omitted:
+
+```yaml
+receivers:
+  mongodb:
+    hosts:
+      - endpoint: mongodb-host:27017
+    auth_mechanism: MONGODB-AWS
+    auth_source: $external
+    collection_interval: 60s
+    initial_delay: 1s
+```
+
+### GSSAPI (Kerberos)
+
+[GSSAPI/Kerberos](https://www.mongodb.com/docs/drivers/go/current/security/authentication/kerberos/) is available for [MongoDB Enterprise](https://www.mongodb.com/docs/manual/tutorial/control-access-to-mongodb-with-kerberos-authentication/) deployments only. It is not supported by MongoDB Community Edition.
+
+Using this mechanism requires:
+- The collector to be compiled with the `gssapi` build tag and cgo support (`CGO_ENABLED=1`).
+- On Linux, the `libkrb5` library must be installed.
+
+> **Note:** The default `otelcontribcol` binary is built without the `gssapi` build tag and with `CGO_ENABLED=0`, so GSSAPI authentication will not work out of the box. You will need to [build a custom collector](https://opentelemetry.io/docs/collector/custom-collector/) with `CGO_ENABLED=1` and the `gssapi` build tag to use this mechanism.
+
+```yaml
+receivers:
+  mongodb:
+    hosts:
+      - endpoint: mongodb-host:27017
+    username: user@KERBEROS.REALM.COM
+    auth_mechanism: GSSAPI
+    auth_source: $external
+    auth_mechanism_properties:
+      SERVICE_NAME: mongodb
+    collection_interval: 60s
+    initial_delay: 1s
+```
+
+The default Kerberos service name is `mongodb`. Users can authenticate with an explicit password or by storing authentication keys in keytab files initialized with the `kinit` utility.
 
 ## Metrics
 

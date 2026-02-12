@@ -173,6 +173,7 @@ pkg/translator/splunk pkg/translator/splunk
 pkg/translator/zipkin pkg/translator/zipkin
 pkg/winperfcounters pkg/winperfcounters
 pkg/xk8stest pkg/xk8stest
+pkg/xstreamencoding pkg/xstreamencoding
 processor/attributesprocessor processor/attributes
 processor/coralogixprocessor processor/coralogix
 processor/cumulativetodeltaprocessor processor/cumulativetodelta

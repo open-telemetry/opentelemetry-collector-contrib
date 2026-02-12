@@ -273,8 +273,7 @@ metrics:
   mysql.buffer_pool.data_pages:
     enabled: true
     description: The number of data pages in the InnoDB buffer pool.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -284,8 +283,7 @@ metrics:
   mysql.buffer_pool.limit:
     enabled: true
     description: The configured size of the InnoDB buffer pool.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -295,8 +293,7 @@ metrics:
   mysql.buffer_pool.operations:
     enabled: true
     description: The number of operations on the InnoDB buffer pool.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -307,8 +304,7 @@ metrics:
   mysql.buffer_pool.page_flushes:
     enabled: true
     description: The number of requests to flush pages from the InnoDB buffer pool.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -318,8 +314,7 @@ metrics:
   mysql.buffer_pool.pages:
     enabled: true
     description: The number of pages in the InnoDB buffer pool.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -330,8 +325,7 @@ metrics:
   mysql.buffer_pool.usage:
     enabled: true
     description: The number of bytes in the InnoDB buffer pool.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -341,8 +335,7 @@ metrics:
   mysql.client.network.io:
     enabled: false
     description: The number of transmitted bytes between server and clients.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -353,8 +346,7 @@ metrics:
   mysql.commands:
     enabled: false
     description: The number of times each type of command has been executed.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -365,8 +357,7 @@ metrics:
   mysql.connection.count:
     enabled: false
     description: The number of connection attempts (successful or not) to the MySQL server.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -376,8 +367,7 @@ metrics:
   mysql.connection.errors:
     enabled: false
     description: Errors that occur during the client connection process.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -388,8 +378,7 @@ metrics:
   mysql.double_writes:
     enabled: true
     description: The number of writes to the InnoDB doublewrite buffer.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -400,8 +389,7 @@ metrics:
   mysql.handlers:
     enabled: true
     description: The number of requests to various MySQL handlers.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -412,8 +400,7 @@ metrics:
   mysql.index.io.wait.count:
     enabled: true
     description: The total count of I/O wait events for an index.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -423,8 +410,7 @@ metrics:
   mysql.index.io.wait.time:
     enabled: true
     description: The total time of I/O wait events for an index.
-    stability:
-      level: development
+    stability: development
     unit: ns
     sum:
       value_type: int
@@ -434,8 +420,7 @@ metrics:
   mysql.joins:
     enabled: false
     description: The number of joins that perform table scans.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -446,8 +431,7 @@ metrics:
   mysql.locks:
     enabled: true
     description: The number of MySQL locks.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -458,8 +442,7 @@ metrics:
   mysql.log_operations:
     enabled: true
     description: The number of InnoDB log operations.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -470,8 +453,7 @@ metrics:
   mysql.max_used_connections:
     enabled: false
     description: Maximum number of connections used simultaneously since the server started.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -482,8 +464,7 @@ metrics:
     enabled: true
     description: The number of mysqlx connections.
     extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -496,8 +477,7 @@ metrics:
     description: The number of worker threads available.
     unit: "1"
     extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       input_type: string
@@ -507,8 +487,7 @@ metrics:
   mysql.opened_resources:
     enabled: true
     description: The number of opened resources.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -519,8 +498,7 @@ metrics:
   mysql.operations:
     enabled: true
     description: The number of InnoDB operations.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -531,8 +509,7 @@ metrics:
   mysql.page_operations:
     enabled: true
     description: The number of InnoDB page operations.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -543,8 +520,7 @@ metrics:
   mysql.page_size:
     enabled: false
     description: InnoDB page size.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -555,8 +531,7 @@ metrics:
   mysql.prepared_statements:
     enabled: true
     description: The number of times each type of prepared statement command has been issued.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -567,8 +542,7 @@ metrics:
   mysql.query.client.count:
     enabled: false
     description: The number of statements executed by the server. This includes only statements sent to the server by clients.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -578,8 +552,7 @@ metrics:
   mysql.query.count:
     enabled: false
     description: The number of statements executed by the server.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -589,8 +562,7 @@ metrics:
   mysql.query.slow.count:
     enabled: false
     description: The number of slow queries.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -600,8 +572,7 @@ metrics:
   mysql.replica.sql_delay:
     enabled: false
     description: The number of seconds that the replica must lag the source.
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
@@ -611,8 +582,7 @@ metrics:
   mysql.replica.time_behind_source:
     enabled: false
     description: This field is an indication of how “late” the replica is.
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
@@ -622,8 +592,7 @@ metrics:
   mysql.row_locks:
     enabled: true
     description: The number of InnoDB row locks.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -634,8 +603,7 @@ metrics:
   mysql.row_operations:
     enabled: true
     description: The number of InnoDB row operations.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -646,8 +614,7 @@ metrics:
   mysql.sorts:
     enabled: true
     description: The number of MySQL sorts.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -658,8 +625,7 @@ metrics:
   mysql.statement_event.count:
     enabled: false
     description: Summary of current and recent statement events.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -669,8 +635,7 @@ metrics:
   mysql.statement_event.wait.time:
     enabled: false
     description: The total wait time of the summarized timed events.
-    stability:
-      level: development
+    stability: development
     unit: ns
     sum:
       value_type: int
@@ -680,8 +645,7 @@ metrics:
   mysql.table.average_row_length:
     enabled: false
     description: The average row length in bytes for a given table.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -691,8 +655,7 @@ metrics:
   mysql.table.io.wait.count:
     enabled: true
     description: The total count of I/O wait events for a table.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -702,8 +665,7 @@ metrics:
   mysql.table.io.wait.time:
     enabled: true
     description: The total time of I/O wait events for a table.
-    stability:
-      level: development
+    stability: development
     unit: ns
     sum:
       value_type: int
@@ -713,8 +675,7 @@ metrics:
   mysql.table.lock_wait.read.count:
     enabled: false
     description: The total table lock wait read events.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -724,8 +685,7 @@ metrics:
   mysql.table.lock_wait.read.time:
     enabled: false
     description: The total table lock wait read events times.
-    stability:
-      level: development
+    stability: development
     unit: ns
     sum:
       value_type: int
@@ -735,8 +695,7 @@ metrics:
   mysql.table.lock_wait.write.count:
     enabled: false
     description: The total table lock wait write events.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -746,8 +705,7 @@ metrics:
   mysql.table.lock_wait.write.time:
     enabled: false
     description: The total table lock wait write events times.
-    stability:
-      level: development
+    stability: development
     unit: ns
     sum:
       value_type: int
@@ -757,8 +715,7 @@ metrics:
   mysql.table.rows:
     enabled: false
     description: The number of rows for a given table.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -768,8 +725,7 @@ metrics:
   mysql.table.size:
     enabled: false
     description: The table size in bytes for a given table.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -779,8 +735,7 @@ metrics:
   mysql.table_open_cache:
     enabled: false
     description: The number of hits, misses or overflows for open tables cache lookups.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -791,8 +746,7 @@ metrics:
   mysql.threads:
     enabled: true
     description: The state of MySQL threads.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -803,8 +757,7 @@ metrics:
   mysql.tmp_resources:
     enabled: true
     description: The number of created temporary resources.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -815,8 +768,7 @@ metrics:
   mysql.uptime:
     enabled: true
     description: The number of seconds that the server has been up.
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
