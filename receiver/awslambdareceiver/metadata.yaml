@@ -1,3 +1,4 @@
+display_name: AWS Lambda Receiver
 type: awslambda
 
 status:
