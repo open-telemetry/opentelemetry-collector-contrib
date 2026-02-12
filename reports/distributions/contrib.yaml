@@ -171,6 +171,8 @@ components:
         - haproxy
         - hostmetrics
         - http_check
+        - host_metrics
+        - http_check
         - iis
         - influxdb
         - jaeger
