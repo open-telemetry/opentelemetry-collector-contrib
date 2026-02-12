@@ -191,21 +191,11 @@ reaggregate_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
-    postgresql.database.name:
-      enabled: true
-    postgresql.index.name:
-      enabled: true
-    postgresql.schema.name:
-      enabled: true
-    postgresql.table.name:
-      enabled: true
     server.address:
       enabled: true
     server.port:
       enabled: true
     service.instance.id:
-      enabled: true
-    service.name:
       enabled: true
 none_set:
   metrics:
@@ -298,48 +288,14 @@ none_set:
     db.server.top_query:
       enabled: false
   resource_attributes:
-    postgresql.database.name:
-      enabled: false
-    postgresql.index.name:
-      enabled: false
-    postgresql.schema.name:
-      enabled: false
-    postgresql.table.name:
-      enabled: false
     server.address:
       enabled: false
     server.port:
       enabled: false
     service.instance.id:
-      enabled: false
-    service.name:
       enabled: false
 filter_set_include:
   resource_attributes:
-    postgresql.database.name:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-      events_include:
-        - regexp: ".*"
-    postgresql.index.name:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-      events_include:
-        - regexp: ".*"
-    postgresql.schema.name:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-      events_include:
-        - regexp: ".*"
-    postgresql.table.name:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-      events_include:
-        - regexp: ".*"
     server.address:
       enabled: true
       metrics_include:
@@ -353,12 +309,6 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     service.instance.id:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-      events_include:
-        - regexp: ".*"
-    service.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -366,30 +316,6 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
-    postgresql.database.name:
-      enabled: true
-      metrics_exclude:
-        - strict: "postgresql.database.name-val"
-      events_exclude:
-        - strict: "postgresql.database.name-val"
-    postgresql.index.name:
-      enabled: true
-      metrics_exclude:
-        - strict: "postgresql.index.name-val"
-      events_exclude:
-        - strict: "postgresql.index.name-val"
-    postgresql.schema.name:
-      enabled: true
-      metrics_exclude:
-        - strict: "postgresql.schema.name-val"
-      events_exclude:
-        - strict: "postgresql.schema.name-val"
-    postgresql.table.name:
-      enabled: true
-      metrics_exclude:
-        - strict: "postgresql.table.name-val"
-      events_exclude:
-        - strict: "postgresql.table.name-val"
     server.address:
       enabled: true
       metrics_exclude:
@@ -408,9 +334,3 @@ filter_set_exclude:
         - strict: "service.instance.id-val"
       events_exclude:
         - strict: "service.instance.id-val"
-    service.name:
-      enabled: true
-      metrics_exclude:
-        - strict: "service.name-val"
-      events_exclude:
-        - strict: "service.name-val"

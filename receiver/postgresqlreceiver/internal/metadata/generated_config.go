@@ -1287,30 +1287,13 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for postgresql resource attributes.
 type ResourceAttributesConfig struct {
-	PostgresqlDatabaseName ResourceAttributeConfig `mapstructure:"postgresql.database.name"`
-	PostgresqlIndexName    ResourceAttributeConfig `mapstructure:"postgresql.index.name"`
-	PostgresqlSchemaName   ResourceAttributeConfig `mapstructure:"postgresql.schema.name"`
-	PostgresqlTableName    ResourceAttributeConfig `mapstructure:"postgresql.table.name"`
-	ServerAddress          ResourceAttributeConfig `mapstructure:"server.address"`
-	ServerPort             ResourceAttributeConfig `mapstructure:"server.port"`
-	ServiceInstanceID      ResourceAttributeConfig `mapstructure:"service.instance.id"`
-	ServiceName            ResourceAttributeConfig `mapstructure:"service.name"`
+	ServerAddress     ResourceAttributeConfig `mapstructure:"server.address"`
+	ServerPort        ResourceAttributeConfig `mapstructure:"server.port"`
+	ServiceInstanceID ResourceAttributeConfig `mapstructure:"service.instance.id"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		PostgresqlDatabaseName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		PostgresqlIndexName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		PostgresqlSchemaName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		PostgresqlTableName: ResourceAttributeConfig{
-			Enabled: true,
-		},
 		ServerAddress: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -1318,9 +1301,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ServiceInstanceID: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ServiceName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}
