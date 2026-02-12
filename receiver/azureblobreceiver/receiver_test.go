@@ -60,8 +60,8 @@ func getBlobReceiver(t *testing.T) (component.Component, error) {
 	set := receivertest.NewNopSettings(metadata.Type)
 
 	blobClient := newMockBlobClient()
-	blobEventHandler := getBlobEventHandler(t, blobClient)
+	blobEventHandler := getEventHubEventHandler(t, blobClient)
 
-	getBlobEventHandler(t, blobClient)
+	getEventHubEventHandler(t, blobClient)
 	return newReceiver(set, blobEventHandler)
 }
