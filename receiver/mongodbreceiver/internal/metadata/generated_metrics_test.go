@@ -79,14 +79,14 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbCollectionCountDataPoint(ts, 1, "db_namespace-val")
+			mb.RecordMongodbCollectionCountDataPoint(ts, 1, "db.namespace-val")
 
 			allMetricsCount++
 			mb.RecordMongodbCommandsRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbConnectionCountDataPoint(ts, 1, AttributeConnectionTypeActive, "db_namespace-val")
+			mb.RecordMongodbConnectionCountDataPoint(ts, 1, AttributeConnectionTypeActive, "db.namespace-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -98,7 +98,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbDataSizeDataPoint(ts, 1, "db_namespace-val")
+			mb.RecordMongodbDataSizeDataPoint(ts, 1, "db.namespace-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -109,11 +109,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbDocumentOperationCountDataPoint(ts, 1, AttributeOperationInsert, "db_namespace-val")
+			mb.RecordMongodbDocumentOperationCountDataPoint(ts, 1, AttributeOperationInsert, "db.namespace-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbExtentCountDataPoint(ts, 1, "db_namespace-val")
+			mb.RecordMongodbExtentCountDataPoint(ts, 1, "db.namespace-val")
 
 			allMetricsCount++
 			mb.RecordMongodbFlushesRateDataPoint(ts, 1)
@@ -130,34 +130,34 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbIndexAccessCountDataPoint(ts, 1, "collection-val", "db_namespace-val")
+			mb.RecordMongodbIndexAccessCountDataPoint(ts, 1, "collection-val", "db.namespace-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbIndexCountDataPoint(ts, 1, "db_namespace-val")
+			mb.RecordMongodbIndexCountDataPoint(ts, 1, "db.namespace-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbIndexSizeDataPoint(ts, 1, "db_namespace-val")
+			mb.RecordMongodbIndexSizeDataPoint(ts, 1, "db.namespace-val")
 
 			allMetricsCount++
 			mb.RecordMongodbInsertsRateDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordMongodbLockAcquireCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db_namespace-val")
+			mb.RecordMongodbLockAcquireCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db.namespace-val")
 
 			allMetricsCount++
-			mb.RecordMongodbLockAcquireTimeDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db_namespace-val")
+			mb.RecordMongodbLockAcquireTimeDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db.namespace-val")
 
 			allMetricsCount++
-			mb.RecordMongodbLockAcquireWaitCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db_namespace-val")
+			mb.RecordMongodbLockAcquireWaitCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db.namespace-val")
 
 			allMetricsCount++
-			mb.RecordMongodbLockDeadlockCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db_namespace-val")
+			mb.RecordMongodbLockDeadlockCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db.namespace-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbMemoryUsageDataPoint(ts, 1, AttributeMemoryTypeResident, "db_namespace-val")
+			mb.RecordMongodbMemoryUsageDataPoint(ts, 1, AttributeMemoryTypeResident, "db.namespace-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -173,7 +173,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbObjectCountDataPoint(ts, 1, "db_namespace-val")
+			mb.RecordMongodbObjectCountDataPoint(ts, 1, "db.namespace-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -219,7 +219,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbStorageSizeDataPoint(ts, 1, "db_namespace-val")
+			mb.RecordMongodbStorageSizeDataPoint(ts, 1, "db.namespace-val")
 
 			allMetricsCount++
 			mb.RecordMongodbUpdatesRateDataPoint(ts, 1)
@@ -317,7 +317,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.commands.rate":
 					assert.False(t, validatedMetrics["mongodb.commands.rate"], "Found a duplicate in the metrics slice: mongodb.commands.rate")
 					validatedMetrics["mongodb.commands.rate"] = true
@@ -349,7 +349,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "active", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.cursor.count":
 					assert.False(t, validatedMetrics["mongodb.cursor.count"], "Found a duplicate in the metrics slice: mongodb.cursor.count")
 					validatedMetrics["mongodb.cursor.count"] = true
@@ -394,7 +394,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.database.count":
 					assert.False(t, validatedMetrics["mongodb.database.count"], "Found a duplicate in the metrics slice: mongodb.database.count")
 					validatedMetrics["mongodb.database.count"] = true
@@ -440,7 +440,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "insert", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.extent.count":
 					assert.False(t, validatedMetrics["mongodb.extent.count"], "Found a duplicate in the metrics slice: mongodb.extent.count")
 					validatedMetrics["mongodb.extent.count"] = true
@@ -457,7 +457,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.flushes.rate":
 					assert.False(t, validatedMetrics["mongodb.flushes.rate"], "Found a duplicate in the metrics slice: mongodb.flushes.rate")
 					validatedMetrics["mongodb.flushes.rate"] = true
@@ -527,7 +527,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "collection-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.index.count":
 					assert.False(t, validatedMetrics["mongodb.index.count"], "Found a duplicate in the metrics slice: mongodb.index.count")
 					validatedMetrics["mongodb.index.count"] = true
@@ -544,7 +544,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.index.size":
 					assert.False(t, validatedMetrics["mongodb.index.size"], "Found a duplicate in the metrics slice: mongodb.index.size")
 					validatedMetrics["mongodb.index.size"] = true
@@ -561,7 +561,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.inserts.rate":
 					assert.False(t, validatedMetrics["mongodb.inserts.rate"], "Found a duplicate in the metrics slice: mongodb.inserts.rate")
 					validatedMetrics["mongodb.inserts.rate"] = true
@@ -596,7 +596,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "shared", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.lock.acquire.time":
 					assert.False(t, validatedMetrics["mongodb.lock.acquire.time"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.time")
 					validatedMetrics["mongodb.lock.acquire.time"] = true
@@ -619,7 +619,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "shared", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.lock.acquire.wait_count":
 					assert.False(t, validatedMetrics["mongodb.lock.acquire.wait_count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.wait_count")
 					validatedMetrics["mongodb.lock.acquire.wait_count"] = true
@@ -642,7 +642,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "shared", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.lock.deadlock.count":
 					assert.False(t, validatedMetrics["mongodb.lock.deadlock.count"], "Found a duplicate in the metrics slice: mongodb.lock.deadlock.count")
 					validatedMetrics["mongodb.lock.deadlock.count"] = true
@@ -665,7 +665,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "shared", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.memory.usage":
 					assert.False(t, validatedMetrics["mongodb.memory.usage"], "Found a duplicate in the metrics slice: mongodb.memory.usage")
 					validatedMetrics["mongodb.memory.usage"] = true
@@ -685,7 +685,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "resident", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.network.io.receive":
 					assert.False(t, validatedMetrics["mongodb.network.io.receive"], "Found a duplicate in the metrics slice: mongodb.network.io.receive")
 					validatedMetrics["mongodb.network.io.receive"] = true
@@ -744,7 +744,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.operation.count":
 					assert.False(t, validatedMetrics["mongodb.operation.count"], "Found a duplicate in the metrics slice: mongodb.operation.count")
 					validatedMetrics["mongodb.operation.count"] = true
@@ -939,7 +939,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db_namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
 				case "mongodb.updates.rate":
 					assert.False(t, validatedMetrics["mongodb.updates.rate"], "Found a duplicate in the metrics slice: mongodb.updates.rate")
 					validatedMetrics["mongodb.updates.rate"] = true

@@ -35,8 +35,7 @@ attributes:
       - active
       - available
       - current
-  db_namespace:
-    name_override: db.namespace
+  db.namespace:
     description: The name of a database.
     type: string
   lock_mode:
@@ -132,7 +131,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       monotonic: false
-    attributes: [db_namespace]
+    attributes: [db.namespace]
   mongodb.commands.rate:
     description: The number of commands executed per second.
     stability: development
@@ -151,7 +150,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-    attributes: [connection_type, db_namespace]
+    attributes: [connection_type, db.namespace]
   mongodb.cursor.count:
     description: The number of open cursors maintained for clients.
     stability: development
@@ -181,7 +180,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       monotonic: false
-    attributes: [db_namespace]
+    attributes: [db.namespace]
   mongodb.database.count:
     description: The number of existing databases.
     stability: development
@@ -210,7 +209,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-    attributes: [operation, db_namespace]
+    attributes: [operation, db.namespace]
   mongodb.extent.count:
     description: The number of extents.
     stability: development
@@ -220,7 +219,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       monotonic: false
-    attributes: [db_namespace]
+    attributes: [db.namespace]
   mongodb.flushes.rate:
     description: The number of flushes executed per second.
     stability: development
@@ -267,7 +266,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-    attributes: [collection, db_namespace]
+    attributes: [collection, db.namespace]
   mongodb.index.count:
     description: The number of indexes.
     stability: development
@@ -277,7 +276,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       monotonic: false
-    attributes: [db_namespace]
+    attributes: [db.namespace]
   mongodb.index.size:
     description: Sum of the space allocated to all indexes in the database, including free index space.
     stability: development
@@ -287,7 +286,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       monotonic: false
-    attributes: [db_namespace]
+    attributes: [db.namespace]
   mongodb.inserts.rate:
     description: The number of insertions executed per second.
     stability: development
@@ -306,7 +305,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
-    attributes: [lock_type, lock_mode, db_namespace]
+    attributes: [lock_type, lock_mode, db.namespace]
   mongodb.lock.acquire.time:
     description: Cumulative wait time for the lock acquisitions.
     stability: development
@@ -316,7 +315,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
-    attributes: [lock_type, lock_mode, db_namespace]
+    attributes: [lock_type, lock_mode, db.namespace]
   mongodb.lock.acquire.wait_count:
     description: Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.
     stability: development
@@ -326,7 +325,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
-    attributes: [lock_type, lock_mode, db_namespace]
+    attributes: [lock_type, lock_mode, db.namespace]
   mongodb.lock.deadlock.count:
     description: Number of times the lock acquisitions encountered deadlocks.
     stability: development
@@ -336,7 +335,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
-    attributes: [lock_type, lock_mode, db_namespace]
+    attributes: [lock_type, lock_mode, db.namespace]
   mongodb.memory.usage:
     description: The amount of memory used.
     stability: development
@@ -346,7 +345,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       monotonic: false
-    attributes: [memory_type, db_namespace]
+    attributes: [memory_type, db.namespace]
   mongodb.network.io.receive:
     description: The number of bytes received.
     stability: development
@@ -386,7 +385,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       monotonic: false
-    attributes: [db_namespace]
+    attributes: [db.namespace]
   mongodb.operation.count:
     description: The number of operations executed.
     stability: development
@@ -518,7 +517,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
       monotonic: true
-    attributes: [db_namespace]
+    attributes: [db.namespace]
   mongodb.updates.rate:
     description: The number of updates executed per second.
     stability: development
