@@ -98,8 +98,7 @@ The number of blocks read.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | source | The block read source type. | Str: ``heap_read``, ``heap_hit``, ``idx_read``, ``idx_hit``, ``toast_read``, ``toast_hit``, ``tidx_read``, ``tidx_hit`` | Recommended | - |
 | db.namespace | The name of the database. | Any Str | Recommended | - |
-| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
-| postgresql.table.name | The table name. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 
 ### postgresql.commits
 
@@ -158,8 +157,7 @@ The number of index scans on a table.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The name of the database. | Any Str | Recommended | - |
-| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
-| postgresql.table.name | The table name. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 | postgresql.index.name | The name of the index on a table. | Any Str | Recommended | - |
 
 ### postgresql.index.size
@@ -175,8 +173,7 @@ The size of the index on disk.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The name of the database. | Any Str | Recommended | - |
-| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
-| postgresql.table.name | The table name. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 | postgresql.index.name | The name of the index on a table. | Any Str | Recommended | - |
 
 ### postgresql.operations
@@ -193,8 +190,7 @@ The number of db row operations.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | operation | The database operation. | Str: ``ins``, ``upd``, ``del``, ``hot_upd`` | Recommended | - |
 | db.namespace | The name of the database. | Any Str | Recommended | - |
-| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
-| postgresql.table.name | The table name. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 
 ### postgresql.replication.data_delay
 
@@ -238,8 +234,7 @@ The number of rows in the database.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | state | The tuple (row) state. | Str: ``dead``, ``live`` | Recommended | - |
 | db.namespace | The name of the database. | Any Str | Recommended | - |
-| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
-| postgresql.table.name | The table name. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 
 ### postgresql.table.count
 
@@ -268,8 +263,7 @@ Disk space used by a table.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The name of the database. | Any Str | Recommended | - |
-| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
-| postgresql.table.name | The table name. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 
 ### postgresql.table.vacuum.count
 
@@ -284,8 +278,7 @@ Number of times a table has manually been vacuumed.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The name of the database. | Any Str | Recommended | - |
-| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
-| postgresql.table.name | The table name. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 
 ### postgresql.wal.age
 
@@ -396,7 +389,6 @@ The number of calls made to a function. Requires `track_functions=pl|all` in Pos
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | function | The name of the function. | Any Str | Recommended | - |
 | db.namespace | The name of the database. | Any Str | Recommended | - |
-| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
 
 ### postgresql.query.conflicts
 
@@ -425,8 +417,7 @@ The number of sequential scans.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The name of the database. | Any Str | Recommended | - |
-| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
-| postgresql.table.name | The table name. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
 
 ### postgresql.temp.io
 
@@ -637,6 +628,5 @@ This component has the following feature gates:
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `postgresqlreceiver.preciselagmetrics` | beta | Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831) |
 | `receiver.postgresql.connectionPool` | beta | Use of connection pooling | v0.96.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831) |
-| `receiver.postgresql.separateSchemaAttr` | alpha | Moves Schema Names into dedicated Attribute | v0.122.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

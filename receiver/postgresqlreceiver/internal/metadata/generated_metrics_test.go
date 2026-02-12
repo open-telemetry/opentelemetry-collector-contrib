@@ -151,9 +151,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBlocksReadDataPoint(ts, 1, AttributeSourceHeapRead, "db.namespace-val", "postgresql.schema.name-val", "postgresql.table.name-val")
+			mb.RecordPostgresqlBlocksReadDataPoint(ts, 1, AttributeSourceHeapRead, "db.namespace-val", "db.collection.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlBlocksReadDataPoint(ts, 3, AttributeSourceHeapHit, "db.namespace-val-2", "postgresql.schema.name-val-2", "postgresql.table.name-val-2")
+				mb.RecordPostgresqlBlocksReadDataPoint(ts, 3, AttributeSourceHeapHit, "db.namespace-val-2", "db.collection.name-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -187,27 +187,27 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordPostgresqlFunctionCallsDataPoint(ts, 1, "function-val", "db.namespace-val", "postgresql.schema.name-val")
+			mb.RecordPostgresqlFunctionCallsDataPoint(ts, 1, "function-val", "db.namespace-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlFunctionCallsDataPoint(ts, 3, "function-val-2", "db.namespace-val-2", "postgresql.schema.name-val-2")
+				mb.RecordPostgresqlFunctionCallsDataPoint(ts, 3, "function-val-2", "db.namespace-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlIndexScansDataPoint(ts, 1, "db.namespace-val", "postgresql.schema.name-val", "postgresql.table.name-val", "postgresql.index.name-val")
+			mb.RecordPostgresqlIndexScansDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val", "postgresql.index.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlIndexScansDataPoint(ts, 3, "db.namespace-val-2", "postgresql.schema.name-val-2", "postgresql.table.name-val-2", "postgresql.index.name-val-2")
+				mb.RecordPostgresqlIndexScansDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2", "postgresql.index.name-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlIndexSizeDataPoint(ts, 1, "db.namespace-val", "postgresql.schema.name-val", "postgresql.table.name-val", "postgresql.index.name-val")
+			mb.RecordPostgresqlIndexSizeDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val", "postgresql.index.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlIndexSizeDataPoint(ts, 3, "db.namespace-val-2", "postgresql.schema.name-val-2", "postgresql.table.name-val-2", "postgresql.index.name-val-2")
+				mb.RecordPostgresqlIndexSizeDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2", "postgresql.index.name-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlOperationsDataPoint(ts, 1, AttributeOperationIns, "db.namespace-val", "postgresql.schema.name-val", "postgresql.table.name-val")
+			mb.RecordPostgresqlOperationsDataPoint(ts, 1, AttributeOperationIns, "db.namespace-val", "db.collection.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlOperationsDataPoint(ts, 3, AttributeOperationUpd, "db.namespace-val-2", "postgresql.schema.name-val-2", "postgresql.table.name-val-2")
+				mb.RecordPostgresqlOperationsDataPoint(ts, 3, AttributeOperationUpd, "db.namespace-val-2", "db.collection.name-val-2")
 			}
 
 			allMetricsCount++
@@ -229,15 +229,15 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlRowsDataPoint(ts, 1, AttributeStateDead, "db.namespace-val", "postgresql.schema.name-val", "postgresql.table.name-val")
+			mb.RecordPostgresqlRowsDataPoint(ts, 1, AttributeStateDead, "db.namespace-val", "db.collection.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlRowsDataPoint(ts, 3, AttributeStateLive, "db.namespace-val-2", "postgresql.schema.name-val-2", "postgresql.table.name-val-2")
+				mb.RecordPostgresqlRowsDataPoint(ts, 3, AttributeStateLive, "db.namespace-val-2", "db.collection.name-val-2")
 			}
 
 			allMetricsCount++
-			mb.RecordPostgresqlSequentialScansDataPoint(ts, 1, "db.namespace-val", "postgresql.schema.name-val", "postgresql.table.name-val")
+			mb.RecordPostgresqlSequentialScansDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlSequentialScansDataPoint(ts, 3, "db.namespace-val-2", "postgresql.schema.name-val-2", "postgresql.table.name-val-2")
+				mb.RecordPostgresqlSequentialScansDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -247,15 +247,15 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlTableSizeDataPoint(ts, 1, "db.namespace-val", "postgresql.schema.name-val", "postgresql.table.name-val")
+			mb.RecordPostgresqlTableSizeDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlTableSizeDataPoint(ts, 3, "db.namespace-val-2", "postgresql.schema.name-val-2", "postgresql.table.name-val-2")
+				mb.RecordPostgresqlTableSizeDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
 			}
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlTableVacuumCountDataPoint(ts, 1, "db.namespace-val", "postgresql.schema.name-val", "postgresql.table.name-val")
+			mb.RecordPostgresqlTableVacuumCountDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlTableVacuumCountDataPoint(ts, 3, "db.namespace-val-2", "postgresql.schema.name-val-2", "postgresql.table.name-val-2")
+				mb.RecordPostgresqlTableVacuumCountDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
 			}
 
 			allMetricsCount++
@@ -696,12 +696,9 @@ func TestMetricsBuilder(t *testing.T) {
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						postgresqlSchemaNameAttrVal, ok := dp.Attributes().Get("postgresql.schema.name")
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
 						assert.True(t, ok)
-						assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
-						postgresqlTableNameAttrVal, ok := dp.Attributes().Get("postgresql.table.name")
-						assert.True(t, ok)
-						assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.blocks_read"], "Found a duplicate in the metrics slice: postgresql.blocks_read")
 						validatedMetrics["postgresql.blocks_read"] = true
@@ -729,9 +726,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.schema.name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.table.name")
+						_, ok = dp.Attributes().Get("db.collection.name")
 						assert.False(t, ok)
 					}
 				case "postgresql.commits":
@@ -963,9 +958,6 @@ func TestMetricsBuilder(t *testing.T) {
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						postgresqlSchemaNameAttrVal, ok := dp.Attributes().Get("postgresql.schema.name")
-						assert.True(t, ok)
-						assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.function.calls"], "Found a duplicate in the metrics slice: postgresql.function.calls")
 						validatedMetrics["postgresql.function.calls"] = true
@@ -993,8 +985,6 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.schema.name")
-						assert.False(t, ok)
 					}
 				case "postgresql.index.scans":
 					if tt.name != "reaggregate_set" {
@@ -1014,12 +1004,9 @@ func TestMetricsBuilder(t *testing.T) {
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						postgresqlSchemaNameAttrVal, ok := dp.Attributes().Get("postgresql.schema.name")
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
 						assert.True(t, ok)
-						assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
-						postgresqlTableNameAttrVal, ok := dp.Attributes().Get("postgresql.table.name")
-						assert.True(t, ok)
-						assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
 						postgresqlIndexNameAttrVal, ok := dp.Attributes().Get("postgresql.index.name")
 						assert.True(t, ok)
 						assert.Equal(t, "postgresql.index.name-val", postgresqlIndexNameAttrVal.Str())
@@ -1048,9 +1035,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.schema.name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.table.name")
+						_, ok = dp.Attributes().Get("db.collection.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("postgresql.index.name")
 						assert.False(t, ok)
@@ -1071,12 +1056,9 @@ func TestMetricsBuilder(t *testing.T) {
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						postgresqlSchemaNameAttrVal, ok := dp.Attributes().Get("postgresql.schema.name")
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
 						assert.True(t, ok)
-						assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
-						postgresqlTableNameAttrVal, ok := dp.Attributes().Get("postgresql.table.name")
-						assert.True(t, ok)
-						assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
 						postgresqlIndexNameAttrVal, ok := dp.Attributes().Get("postgresql.index.name")
 						assert.True(t, ok)
 						assert.Equal(t, "postgresql.index.name-val", postgresqlIndexNameAttrVal.Str())
@@ -1103,9 +1085,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.schema.name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.table.name")
+						_, ok = dp.Attributes().Get("db.collection.name")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("postgresql.index.name")
 						assert.False(t, ok)
@@ -1131,12 +1111,9 @@ func TestMetricsBuilder(t *testing.T) {
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						postgresqlSchemaNameAttrVal, ok := dp.Attributes().Get("postgresql.schema.name")
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
 						assert.True(t, ok)
-						assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
-						postgresqlTableNameAttrVal, ok := dp.Attributes().Get("postgresql.table.name")
-						assert.True(t, ok)
-						assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.operations"], "Found a duplicate in the metrics slice: postgresql.operations")
 						validatedMetrics["postgresql.operations"] = true
@@ -1164,9 +1141,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.schema.name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.table.name")
+						_, ok = dp.Attributes().Get("db.collection.name")
 						assert.False(t, ok)
 					}
 				case "postgresql.query.conflicts":
@@ -1318,12 +1293,9 @@ func TestMetricsBuilder(t *testing.T) {
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						postgresqlSchemaNameAttrVal, ok := dp.Attributes().Get("postgresql.schema.name")
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
 						assert.True(t, ok)
-						assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
-						postgresqlTableNameAttrVal, ok := dp.Attributes().Get("postgresql.table.name")
-						assert.True(t, ok)
-						assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.rows"], "Found a duplicate in the metrics slice: postgresql.rows")
 						validatedMetrics["postgresql.rows"] = true
@@ -1351,9 +1323,7 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.schema.name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.table.name")
+						_, ok = dp.Attributes().Get("db.collection.name")
 						assert.False(t, ok)
 					}
 				case "postgresql.sequential_scans":
@@ -1374,12 +1344,9 @@ func TestMetricsBuilder(t *testing.T) {
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						postgresqlSchemaNameAttrVal, ok := dp.Attributes().Get("postgresql.schema.name")
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
 						assert.True(t, ok)
-						assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
-						postgresqlTableNameAttrVal, ok := dp.Attributes().Get("postgresql.table.name")
-						assert.True(t, ok)
-						assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.sequential_scans"], "Found a duplicate in the metrics slice: postgresql.sequential_scans")
 						validatedMetrics["postgresql.sequential_scans"] = true
@@ -1405,9 +1372,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.schema.name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.table.name")
+						_, ok = dp.Attributes().Get("db.collection.name")
 						assert.False(t, ok)
 					}
 				case "postgresql.table.count":
@@ -1472,12 +1437,9 @@ func TestMetricsBuilder(t *testing.T) {
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						postgresqlSchemaNameAttrVal, ok := dp.Attributes().Get("postgresql.schema.name")
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
 						assert.True(t, ok)
-						assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
-						postgresqlTableNameAttrVal, ok := dp.Attributes().Get("postgresql.table.name")
-						assert.True(t, ok)
-						assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.table.size"], "Found a duplicate in the metrics slice: postgresql.table.size")
 						validatedMetrics["postgresql.table.size"] = true
@@ -1503,9 +1465,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.schema.name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.table.name")
+						_, ok = dp.Attributes().Get("db.collection.name")
 						assert.False(t, ok)
 					}
 				case "postgresql.table.vacuum.count":
@@ -1526,12 +1486,9 @@ func TestMetricsBuilder(t *testing.T) {
 						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 						assert.True(t, ok)
 						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
-						postgresqlSchemaNameAttrVal, ok := dp.Attributes().Get("postgresql.schema.name")
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
 						assert.True(t, ok)
-						assert.Equal(t, "postgresql.schema.name-val", postgresqlSchemaNameAttrVal.Str())
-						postgresqlTableNameAttrVal, ok := dp.Attributes().Get("postgresql.table.name")
-						assert.True(t, ok)
-						assert.Equal(t, "postgresql.table.name-val", postgresqlTableNameAttrVal.Str())
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.table.vacuum.count"], "Found a duplicate in the metrics slice: postgresql.table.vacuum.count")
 						validatedMetrics["postgresql.table.vacuum.count"] = true
@@ -1557,9 +1514,7 @@ func TestMetricsBuilder(t *testing.T) {
 						}
 						_, ok := dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.schema.name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("postgresql.table.name")
+						_, ok = dp.Attributes().Get("db.collection.name")
 						assert.False(t, ok)
 					}
 				case "postgresql.temp.io":

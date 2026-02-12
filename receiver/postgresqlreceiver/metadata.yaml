@@ -32,12 +32,6 @@ feature_gates:
     from_version: "v0.96.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
 
-  - id: receiver.postgresql.separateSchemaAttr
-    description: Moves Schema Names into dedicated Attribute
-    stage: alpha
-    from_version: "v0.122.0"
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559
-
 resource_attributes:
   server.address:
     description: The address of the PostgreSQL server.
@@ -87,6 +81,9 @@ attributes:
       - write
     name_override: type
     requirement_level: recommended
+  db.collection.name:
+    description: The name of the table within the database.
+    type: string
   db.namespace:
     description: The name of the database.
     type: string
@@ -185,9 +182,6 @@ attributes:
   postgresql.rows:
     description: Total number of rows retrieved or affected by the statement, reported in delta value.
     type: int
-  postgresql.schema.name:
-    description: The schema name.
-    type: string
   postgresql.shared_blks_dirtied:
     description: Total number of shared blocks dirtied by the statement, reported in delta value.
     type: int
@@ -202,9 +196,6 @@ attributes:
     type: int
   postgresql.state:
     description: Current overall state of this backend
-    type: string
-  postgresql.table.name:
-    description: The table name.
     type: string
   postgresql.temp_blks_read:
     description: Total number of temp blocks read by the statement, reported in delta value.
@@ -398,7 +389,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [source, db.namespace, postgresql.schema.name, postgresql.table.name]
+    attributes: [source, db.namespace, db.collection.name]
   postgresql.commits:
     enabled: true
     description: The number of commits.
@@ -462,7 +453,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [function, db.namespace, postgresql.schema.name]
+    attributes: [function, db.namespace]
   postgresql.index.scans:
     description: The number of index scans on a table.
     stability: development
@@ -472,7 +463,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: "{scans}"
-    attributes: [db.namespace, postgresql.schema.name, postgresql.table.name, postgresql.index.name]
+    attributes: [db.namespace, db.collection.name, postgresql.index.name]
   postgresql.index.size:
     description: The size of the index on disk.
     stability: development
@@ -480,7 +471,7 @@ metrics:
     gauge:
       value_type: int
     unit: "By"
-    attributes: [db.namespace, postgresql.schema.name, postgresql.table.name, postgresql.index.name]
+    attributes: [db.namespace, db.collection.name, postgresql.index.name]
   postgresql.operations:
     enabled: true
     description: The number of db row operations.
@@ -490,7 +481,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [operation, db.namespace, postgresql.schema.name, postgresql.table.name]
+    attributes: [operation, db.namespace, db.collection.name]
   postgresql.query.conflicts:
     enabled: false
     description: Number of queries canceled due to conflicts with recovery on this database. Conflicts only occur on standby servers; this metric will be zero on primary servers.
@@ -528,7 +519,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [state, db.namespace, postgresql.schema.name, postgresql.table.name]
+    attributes: [state, db.namespace, db.collection.name]
   postgresql.sequential_scans:
     enabled: false
     description: The number of sequential scans.
@@ -538,7 +529,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [db.namespace, postgresql.schema.name, postgresql.table.name]
+    attributes: [db.namespace, db.collection.name]
   postgresql.table.count:
     description: Number of user tables in a database.
     stability: development
@@ -558,7 +549,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: int
-    attributes: [db.namespace, postgresql.schema.name, postgresql.table.name]
+    attributes: [db.namespace, db.collection.name]
   postgresql.table.vacuum.count:
     description: Number of times a table has manually been vacuumed.
     stability: development
@@ -568,7 +559,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: int
-    attributes: [db.namespace, postgresql.schema.name, postgresql.table.name]
+    attributes: [db.namespace, db.collection.name]
   postgresql.temp.io:
     enabled: false
     description: Total amount of data written to temporary files by queries.

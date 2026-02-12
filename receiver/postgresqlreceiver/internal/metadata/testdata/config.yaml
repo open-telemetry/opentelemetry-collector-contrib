@@ -25,7 +25,7 @@ all_set:
       attributes: ["db.namespace"]
     postgresql.blocks_read:
       enabled: true
-      attributes: ["source","db.namespace","postgresql.schema.name","postgresql.table.name"]
+      attributes: ["source","db.namespace","db.collection.name"]
     postgresql.commits:
       enabled: true
       attributes: ["db.namespace"]
@@ -44,16 +44,16 @@ all_set:
       attributes: ["db.namespace"]
     postgresql.function.calls:
       enabled: true
-      attributes: ["function","db.namespace","postgresql.schema.name"]
+      attributes: ["function","db.namespace"]
     postgresql.index.scans:
       enabled: true
-      attributes: ["db.namespace","postgresql.schema.name","postgresql.table.name","postgresql.index.name"]
+      attributes: ["db.namespace","db.collection.name","postgresql.index.name"]
     postgresql.index.size:
       enabled: true
-      attributes: ["db.namespace","postgresql.schema.name","postgresql.table.name","postgresql.index.name"]
+      attributes: ["db.namespace","db.collection.name","postgresql.index.name"]
     postgresql.operations:
       enabled: true
-      attributes: ["operation","db.namespace","postgresql.schema.name","postgresql.table.name"]
+      attributes: ["operation","db.namespace","db.collection.name"]
     postgresql.query.conflicts:
       enabled: true
       attributes: ["postgresql.conflict.type"]
@@ -65,19 +65,19 @@ all_set:
       attributes: ["db.namespace"]
     postgresql.rows:
       enabled: true
-      attributes: ["state","db.namespace","postgresql.schema.name","postgresql.table.name"]
+      attributes: ["state","db.namespace","db.collection.name"]
     postgresql.sequential_scans:
       enabled: true
-      attributes: ["db.namespace","postgresql.schema.name","postgresql.table.name"]
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.table.count:
       enabled: true
       attributes: ["db.namespace"]
     postgresql.table.size:
       enabled: true
-      attributes: ["db.namespace","postgresql.schema.name","postgresql.table.name"]
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.table.vacuum.count:
       enabled: true
-      attributes: ["db.namespace","postgresql.schema.name","postgresql.table.name"]
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.temp.io:
       enabled: true
       attributes: ["db.namespace"]
@@ -273,7 +273,7 @@ none_set:
       attributes: ["db.namespace"]
     postgresql.blocks_read:
       enabled: false
-      attributes: ["source","db.namespace","postgresql.schema.name","postgresql.table.name"]
+      attributes: ["source","db.namespace","db.collection.name"]
     postgresql.commits:
       enabled: false
       attributes: ["db.namespace"]
@@ -292,16 +292,16 @@ none_set:
       attributes: ["db.namespace"]
     postgresql.function.calls:
       enabled: false
-      attributes: ["function","db.namespace","postgresql.schema.name"]
+      attributes: ["function","db.namespace"]
     postgresql.index.scans:
       enabled: false
-      attributes: ["db.namespace","postgresql.schema.name","postgresql.table.name","postgresql.index.name"]
+      attributes: ["db.namespace","db.collection.name","postgresql.index.name"]
     postgresql.index.size:
       enabled: false
-      attributes: ["db.namespace","postgresql.schema.name","postgresql.table.name","postgresql.index.name"]
+      attributes: ["db.namespace","db.collection.name","postgresql.index.name"]
     postgresql.operations:
       enabled: false
-      attributes: ["operation","db.namespace","postgresql.schema.name","postgresql.table.name"]
+      attributes: ["operation","db.namespace","db.collection.name"]
     postgresql.query.conflicts:
       enabled: false
       attributes: ["postgresql.conflict.type"]
@@ -313,19 +313,19 @@ none_set:
       attributes: ["db.namespace"]
     postgresql.rows:
       enabled: false
-      attributes: ["state","db.namespace","postgresql.schema.name","postgresql.table.name"]
+      attributes: ["state","db.namespace","db.collection.name"]
     postgresql.sequential_scans:
       enabled: false
-      attributes: ["db.namespace","postgresql.schema.name","postgresql.table.name"]
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.table.count:
       enabled: false
       attributes: ["db.namespace"]
     postgresql.table.size:
       enabled: false
-      attributes: ["db.namespace","postgresql.schema.name","postgresql.table.name"]
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.table.vacuum.count:
       enabled: false
-      attributes: ["db.namespace","postgresql.schema.name","postgresql.table.name"]
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.temp.io:
       enabled: false
       attributes: ["db.namespace"]

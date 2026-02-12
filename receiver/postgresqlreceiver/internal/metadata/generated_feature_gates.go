@@ -21,11 +21,3 @@ var ReceiverPostgresqlConnectionPoolFeatureGate = featuregate.GlobalRegistry().M
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831"),
 	featuregate.WithRegisterFromVersion("v0.96.0"),
 )
-
-var ReceiverPostgresqlSeparateSchemaAttrFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.postgresql.separateSchemaAttr",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Moves Schema Names into dedicated Attribute"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559"),
-	featuregate.WithRegisterFromVersion("v0.122.0"),
-)

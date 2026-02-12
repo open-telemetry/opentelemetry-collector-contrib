@@ -342,10 +342,9 @@ func (ms *PostgresqlBlksReadMetricConfig) Validate() error {
 type PostgresqlBlocksReadMetricAttributeKey string
 
 const (
-	PostgresqlBlocksReadMetricAttributeKeySource               PostgresqlBlocksReadMetricAttributeKey = "source"
-	PostgresqlBlocksReadMetricAttributeKeyDbNamespace          PostgresqlBlocksReadMetricAttributeKey = "db.namespace"
-	PostgresqlBlocksReadMetricAttributeKeyPostgresqlSchemaName PostgresqlBlocksReadMetricAttributeKey = "postgresql.schema.name"
-	PostgresqlBlocksReadMetricAttributeKeyPostgresqlTableName  PostgresqlBlocksReadMetricAttributeKey = "postgresql.table.name"
+	PostgresqlBlocksReadMetricAttributeKeySource           PostgresqlBlocksReadMetricAttributeKey = "source"
+	PostgresqlBlocksReadMetricAttributeKeyDbNamespace      PostgresqlBlocksReadMetricAttributeKey = "db.namespace"
+	PostgresqlBlocksReadMetricAttributeKeyDbCollectionName PostgresqlBlocksReadMetricAttributeKey = "db.collection.name"
 )
 
 // PostgresqlBlocksReadMetricConfig provides config for the postgresql.blocks_read metric.
@@ -374,9 +373,9 @@ func (ms *PostgresqlBlocksReadMetricConfig) Unmarshal(parser *confmap.Conf) erro
 func (ms *PostgresqlBlocksReadMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlBlocksReadMetricAttributeKeySource, PostgresqlBlocksReadMetricAttributeKeyDbNamespace, PostgresqlBlocksReadMetricAttributeKeyPostgresqlSchemaName, PostgresqlBlocksReadMetricAttributeKeyPostgresqlTableName:
+		case PostgresqlBlocksReadMetricAttributeKeySource, PostgresqlBlocksReadMetricAttributeKeyDbNamespace, PostgresqlBlocksReadMetricAttributeKeyDbCollectionName:
 		default:
-			return fmt.Errorf("metric postgresql.blocks_read doesn't have an attribute %v, valid attributes: [source, db.namespace, postgresql.schema.name, postgresql.table.name]", val)
+			return fmt.Errorf("metric postgresql.blocks_read doesn't have an attribute %v, valid attributes: [source, db.namespace, db.collection.name]", val)
 		}
 	}
 
@@ -627,9 +626,8 @@ func (ms *PostgresqlDeadlocksMetricConfig) Validate() error {
 type PostgresqlFunctionCallsMetricAttributeKey string
 
 const (
-	PostgresqlFunctionCallsMetricAttributeKeyFunction             PostgresqlFunctionCallsMetricAttributeKey = "function"
-	PostgresqlFunctionCallsMetricAttributeKeyDbNamespace          PostgresqlFunctionCallsMetricAttributeKey = "db.namespace"
-	PostgresqlFunctionCallsMetricAttributeKeyPostgresqlSchemaName PostgresqlFunctionCallsMetricAttributeKey = "postgresql.schema.name"
+	PostgresqlFunctionCallsMetricAttributeKeyFunction    PostgresqlFunctionCallsMetricAttributeKey = "function"
+	PostgresqlFunctionCallsMetricAttributeKeyDbNamespace PostgresqlFunctionCallsMetricAttributeKey = "db.namespace"
 )
 
 // PostgresqlFunctionCallsMetricConfig provides config for the postgresql.function.calls metric.
@@ -658,9 +656,9 @@ func (ms *PostgresqlFunctionCallsMetricConfig) Unmarshal(parser *confmap.Conf) e
 func (ms *PostgresqlFunctionCallsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlFunctionCallsMetricAttributeKeyFunction, PostgresqlFunctionCallsMetricAttributeKeyDbNamespace, PostgresqlFunctionCallsMetricAttributeKeyPostgresqlSchemaName:
+		case PostgresqlFunctionCallsMetricAttributeKeyFunction, PostgresqlFunctionCallsMetricAttributeKeyDbNamespace:
 		default:
-			return fmt.Errorf("metric postgresql.function.calls doesn't have an attribute %v, valid attributes: [function, db.namespace, postgresql.schema.name]", val)
+			return fmt.Errorf("metric postgresql.function.calls doesn't have an attribute %v, valid attributes: [function, db.namespace]", val)
 		}
 	}
 
@@ -677,10 +675,9 @@ func (ms *PostgresqlFunctionCallsMetricConfig) Validate() error {
 type PostgresqlIndexScansMetricAttributeKey string
 
 const (
-	PostgresqlIndexScansMetricAttributeKeyDbNamespace          PostgresqlIndexScansMetricAttributeKey = "db.namespace"
-	PostgresqlIndexScansMetricAttributeKeyPostgresqlSchemaName PostgresqlIndexScansMetricAttributeKey = "postgresql.schema.name"
-	PostgresqlIndexScansMetricAttributeKeyPostgresqlTableName  PostgresqlIndexScansMetricAttributeKey = "postgresql.table.name"
-	PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName  PostgresqlIndexScansMetricAttributeKey = "postgresql.index.name"
+	PostgresqlIndexScansMetricAttributeKeyDbNamespace         PostgresqlIndexScansMetricAttributeKey = "db.namespace"
+	PostgresqlIndexScansMetricAttributeKeyDbCollectionName    PostgresqlIndexScansMetricAttributeKey = "db.collection.name"
+	PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName PostgresqlIndexScansMetricAttributeKey = "postgresql.index.name"
 )
 
 // PostgresqlIndexScansMetricConfig provides config for the postgresql.index.scans metric.
@@ -709,9 +706,9 @@ func (ms *PostgresqlIndexScansMetricConfig) Unmarshal(parser *confmap.Conf) erro
 func (ms *PostgresqlIndexScansMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlIndexScansMetricAttributeKeyDbNamespace, PostgresqlIndexScansMetricAttributeKeyPostgresqlSchemaName, PostgresqlIndexScansMetricAttributeKeyPostgresqlTableName, PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName:
+		case PostgresqlIndexScansMetricAttributeKeyDbNamespace, PostgresqlIndexScansMetricAttributeKeyDbCollectionName, PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName:
 		default:
-			return fmt.Errorf("metric postgresql.index.scans doesn't have an attribute %v, valid attributes: [db.namespace, postgresql.schema.name, postgresql.table.name, postgresql.index.name]", val)
+			return fmt.Errorf("metric postgresql.index.scans doesn't have an attribute %v, valid attributes: [db.namespace, db.collection.name, postgresql.index.name]", val)
 		}
 	}
 
@@ -728,10 +725,9 @@ func (ms *PostgresqlIndexScansMetricConfig) Validate() error {
 type PostgresqlIndexSizeMetricAttributeKey string
 
 const (
-	PostgresqlIndexSizeMetricAttributeKeyDbNamespace          PostgresqlIndexSizeMetricAttributeKey = "db.namespace"
-	PostgresqlIndexSizeMetricAttributeKeyPostgresqlSchemaName PostgresqlIndexSizeMetricAttributeKey = "postgresql.schema.name"
-	PostgresqlIndexSizeMetricAttributeKeyPostgresqlTableName  PostgresqlIndexSizeMetricAttributeKey = "postgresql.table.name"
-	PostgresqlIndexSizeMetricAttributeKeyPostgresqlIndexName  PostgresqlIndexSizeMetricAttributeKey = "postgresql.index.name"
+	PostgresqlIndexSizeMetricAttributeKeyDbNamespace         PostgresqlIndexSizeMetricAttributeKey = "db.namespace"
+	PostgresqlIndexSizeMetricAttributeKeyDbCollectionName    PostgresqlIndexSizeMetricAttributeKey = "db.collection.name"
+	PostgresqlIndexSizeMetricAttributeKeyPostgresqlIndexName PostgresqlIndexSizeMetricAttributeKey = "postgresql.index.name"
 )
 
 // PostgresqlIndexSizeMetricConfig provides config for the postgresql.index.size metric.
@@ -760,9 +756,9 @@ func (ms *PostgresqlIndexSizeMetricConfig) Unmarshal(parser *confmap.Conf) error
 func (ms *PostgresqlIndexSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlIndexSizeMetricAttributeKeyDbNamespace, PostgresqlIndexSizeMetricAttributeKeyPostgresqlSchemaName, PostgresqlIndexSizeMetricAttributeKeyPostgresqlTableName, PostgresqlIndexSizeMetricAttributeKeyPostgresqlIndexName:
+		case PostgresqlIndexSizeMetricAttributeKeyDbNamespace, PostgresqlIndexSizeMetricAttributeKeyDbCollectionName, PostgresqlIndexSizeMetricAttributeKeyPostgresqlIndexName:
 		default:
-			return fmt.Errorf("metric postgresql.index.size doesn't have an attribute %v, valid attributes: [db.namespace, postgresql.schema.name, postgresql.table.name, postgresql.index.name]", val)
+			return fmt.Errorf("metric postgresql.index.size doesn't have an attribute %v, valid attributes: [db.namespace, db.collection.name, postgresql.index.name]", val)
 		}
 	}
 
@@ -779,10 +775,9 @@ func (ms *PostgresqlIndexSizeMetricConfig) Validate() error {
 type PostgresqlOperationsMetricAttributeKey string
 
 const (
-	PostgresqlOperationsMetricAttributeKeyOperation            PostgresqlOperationsMetricAttributeKey = "operation"
-	PostgresqlOperationsMetricAttributeKeyDbNamespace          PostgresqlOperationsMetricAttributeKey = "db.namespace"
-	PostgresqlOperationsMetricAttributeKeyPostgresqlSchemaName PostgresqlOperationsMetricAttributeKey = "postgresql.schema.name"
-	PostgresqlOperationsMetricAttributeKeyPostgresqlTableName  PostgresqlOperationsMetricAttributeKey = "postgresql.table.name"
+	PostgresqlOperationsMetricAttributeKeyOperation        PostgresqlOperationsMetricAttributeKey = "operation"
+	PostgresqlOperationsMetricAttributeKeyDbNamespace      PostgresqlOperationsMetricAttributeKey = "db.namespace"
+	PostgresqlOperationsMetricAttributeKeyDbCollectionName PostgresqlOperationsMetricAttributeKey = "db.collection.name"
 )
 
 // PostgresqlOperationsMetricConfig provides config for the postgresql.operations metric.
@@ -811,9 +806,9 @@ func (ms *PostgresqlOperationsMetricConfig) Unmarshal(parser *confmap.Conf) erro
 func (ms *PostgresqlOperationsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlOperationsMetricAttributeKeyOperation, PostgresqlOperationsMetricAttributeKeyDbNamespace, PostgresqlOperationsMetricAttributeKeyPostgresqlSchemaName, PostgresqlOperationsMetricAttributeKeyPostgresqlTableName:
+		case PostgresqlOperationsMetricAttributeKeyOperation, PostgresqlOperationsMetricAttributeKeyDbNamespace, PostgresqlOperationsMetricAttributeKeyDbCollectionName:
 		default:
-			return fmt.Errorf("metric postgresql.operations doesn't have an attribute %v, valid attributes: [operation, db.namespace, postgresql.schema.name, postgresql.table.name]", val)
+			return fmt.Errorf("metric postgresql.operations doesn't have an attribute %v, valid attributes: [operation, db.namespace, db.collection.name]", val)
 		}
 	}
 
@@ -974,10 +969,9 @@ func (ms *PostgresqlRollbacksMetricConfig) Validate() error {
 type PostgresqlRowsMetricAttributeKey string
 
 const (
-	PostgresqlRowsMetricAttributeKeyState                PostgresqlRowsMetricAttributeKey = "state"
-	PostgresqlRowsMetricAttributeKeyDbNamespace          PostgresqlRowsMetricAttributeKey = "db.namespace"
-	PostgresqlRowsMetricAttributeKeyPostgresqlSchemaName PostgresqlRowsMetricAttributeKey = "postgresql.schema.name"
-	PostgresqlRowsMetricAttributeKeyPostgresqlTableName  PostgresqlRowsMetricAttributeKey = "postgresql.table.name"
+	PostgresqlRowsMetricAttributeKeyState            PostgresqlRowsMetricAttributeKey = "state"
+	PostgresqlRowsMetricAttributeKeyDbNamespace      PostgresqlRowsMetricAttributeKey = "db.namespace"
+	PostgresqlRowsMetricAttributeKeyDbCollectionName PostgresqlRowsMetricAttributeKey = "db.collection.name"
 )
 
 // PostgresqlRowsMetricConfig provides config for the postgresql.rows metric.
@@ -1006,9 +1000,9 @@ func (ms *PostgresqlRowsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 func (ms *PostgresqlRowsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlRowsMetricAttributeKeyState, PostgresqlRowsMetricAttributeKeyDbNamespace, PostgresqlRowsMetricAttributeKeyPostgresqlSchemaName, PostgresqlRowsMetricAttributeKeyPostgresqlTableName:
+		case PostgresqlRowsMetricAttributeKeyState, PostgresqlRowsMetricAttributeKeyDbNamespace, PostgresqlRowsMetricAttributeKeyDbCollectionName:
 		default:
-			return fmt.Errorf("metric postgresql.rows doesn't have an attribute %v, valid attributes: [state, db.namespace, postgresql.schema.name, postgresql.table.name]", val)
+			return fmt.Errorf("metric postgresql.rows doesn't have an attribute %v, valid attributes: [state, db.namespace, db.collection.name]", val)
 		}
 	}
 
@@ -1025,9 +1019,8 @@ func (ms *PostgresqlRowsMetricConfig) Validate() error {
 type PostgresqlSequentialScansMetricAttributeKey string
 
 const (
-	PostgresqlSequentialScansMetricAttributeKeyDbNamespace          PostgresqlSequentialScansMetricAttributeKey = "db.namespace"
-	PostgresqlSequentialScansMetricAttributeKeyPostgresqlSchemaName PostgresqlSequentialScansMetricAttributeKey = "postgresql.schema.name"
-	PostgresqlSequentialScansMetricAttributeKeyPostgresqlTableName  PostgresqlSequentialScansMetricAttributeKey = "postgresql.table.name"
+	PostgresqlSequentialScansMetricAttributeKeyDbNamespace      PostgresqlSequentialScansMetricAttributeKey = "db.namespace"
+	PostgresqlSequentialScansMetricAttributeKeyDbCollectionName PostgresqlSequentialScansMetricAttributeKey = "db.collection.name"
 )
 
 // PostgresqlSequentialScansMetricConfig provides config for the postgresql.sequential_scans metric.
@@ -1056,9 +1049,9 @@ func (ms *PostgresqlSequentialScansMetricConfig) Unmarshal(parser *confmap.Conf)
 func (ms *PostgresqlSequentialScansMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlSequentialScansMetricAttributeKeyDbNamespace, PostgresqlSequentialScansMetricAttributeKeyPostgresqlSchemaName, PostgresqlSequentialScansMetricAttributeKeyPostgresqlTableName:
+		case PostgresqlSequentialScansMetricAttributeKeyDbNamespace, PostgresqlSequentialScansMetricAttributeKeyDbCollectionName:
 		default:
-			return fmt.Errorf("metric postgresql.sequential_scans doesn't have an attribute %v, valid attributes: [db.namespace, postgresql.schema.name, postgresql.table.name]", val)
+			return fmt.Errorf("metric postgresql.sequential_scans doesn't have an attribute %v, valid attributes: [db.namespace, db.collection.name]", val)
 		}
 	}
 
@@ -1123,9 +1116,8 @@ func (ms *PostgresqlTableCountMetricConfig) Validate() error {
 type PostgresqlTableSizeMetricAttributeKey string
 
 const (
-	PostgresqlTableSizeMetricAttributeKeyDbNamespace          PostgresqlTableSizeMetricAttributeKey = "db.namespace"
-	PostgresqlTableSizeMetricAttributeKeyPostgresqlSchemaName PostgresqlTableSizeMetricAttributeKey = "postgresql.schema.name"
-	PostgresqlTableSizeMetricAttributeKeyPostgresqlTableName  PostgresqlTableSizeMetricAttributeKey = "postgresql.table.name"
+	PostgresqlTableSizeMetricAttributeKeyDbNamespace      PostgresqlTableSizeMetricAttributeKey = "db.namespace"
+	PostgresqlTableSizeMetricAttributeKeyDbCollectionName PostgresqlTableSizeMetricAttributeKey = "db.collection.name"
 )
 
 // PostgresqlTableSizeMetricConfig provides config for the postgresql.table.size metric.
@@ -1154,9 +1146,9 @@ func (ms *PostgresqlTableSizeMetricConfig) Unmarshal(parser *confmap.Conf) error
 func (ms *PostgresqlTableSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlTableSizeMetricAttributeKeyDbNamespace, PostgresqlTableSizeMetricAttributeKeyPostgresqlSchemaName, PostgresqlTableSizeMetricAttributeKeyPostgresqlTableName:
+		case PostgresqlTableSizeMetricAttributeKeyDbNamespace, PostgresqlTableSizeMetricAttributeKeyDbCollectionName:
 		default:
-			return fmt.Errorf("metric postgresql.table.size doesn't have an attribute %v, valid attributes: [db.namespace, postgresql.schema.name, postgresql.table.name]", val)
+			return fmt.Errorf("metric postgresql.table.size doesn't have an attribute %v, valid attributes: [db.namespace, db.collection.name]", val)
 		}
 	}
 
@@ -1173,9 +1165,8 @@ func (ms *PostgresqlTableSizeMetricConfig) Validate() error {
 type PostgresqlTableVacuumCountMetricAttributeKey string
 
 const (
-	PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace          PostgresqlTableVacuumCountMetricAttributeKey = "db.namespace"
-	PostgresqlTableVacuumCountMetricAttributeKeyPostgresqlSchemaName PostgresqlTableVacuumCountMetricAttributeKey = "postgresql.schema.name"
-	PostgresqlTableVacuumCountMetricAttributeKeyPostgresqlTableName  PostgresqlTableVacuumCountMetricAttributeKey = "postgresql.table.name"
+	PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace      PostgresqlTableVacuumCountMetricAttributeKey = "db.namespace"
+	PostgresqlTableVacuumCountMetricAttributeKeyDbCollectionName PostgresqlTableVacuumCountMetricAttributeKey = "db.collection.name"
 )
 
 // PostgresqlTableVacuumCountMetricConfig provides config for the postgresql.table.vacuum.count metric.
@@ -1204,9 +1195,9 @@ func (ms *PostgresqlTableVacuumCountMetricConfig) Unmarshal(parser *confmap.Conf
 func (ms *PostgresqlTableVacuumCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace, PostgresqlTableVacuumCountMetricAttributeKeyPostgresqlSchemaName, PostgresqlTableVacuumCountMetricAttributeKeyPostgresqlTableName:
+		case PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace, PostgresqlTableVacuumCountMetricAttributeKeyDbCollectionName:
 		default:
-			return fmt.Errorf("metric postgresql.table.vacuum.count doesn't have an attribute %v, valid attributes: [db.namespace, postgresql.schema.name, postgresql.table.name]", val)
+			return fmt.Errorf("metric postgresql.table.vacuum.count doesn't have an attribute %v, valid attributes: [db.namespace, db.collection.name]", val)
 		}
 	}
 
@@ -1755,7 +1746,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlBlocksRead: PostgresqlBlocksReadMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlBlocksReadMetricAttributeKey{PostgresqlBlocksReadMetricAttributeKeySource, PostgresqlBlocksReadMetricAttributeKeyDbNamespace, PostgresqlBlocksReadMetricAttributeKeyPostgresqlSchemaName, PostgresqlBlocksReadMetricAttributeKeyPostgresqlTableName},
+			EnabledAttributes:   []PostgresqlBlocksReadMetricAttributeKey{PostgresqlBlocksReadMetricAttributeKeySource, PostgresqlBlocksReadMetricAttributeKeyDbNamespace, PostgresqlBlocksReadMetricAttributeKeyDbCollectionName},
 		},
 		PostgresqlCommits: PostgresqlCommitsMetricConfig{
 			Enabled:             true,
@@ -1786,22 +1777,22 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlFunctionCalls: PostgresqlFunctionCallsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlFunctionCallsMetricAttributeKey{PostgresqlFunctionCallsMetricAttributeKeyFunction, PostgresqlFunctionCallsMetricAttributeKeyDbNamespace, PostgresqlFunctionCallsMetricAttributeKeyPostgresqlSchemaName},
+			EnabledAttributes:   []PostgresqlFunctionCallsMetricAttributeKey{PostgresqlFunctionCallsMetricAttributeKeyFunction, PostgresqlFunctionCallsMetricAttributeKeyDbNamespace},
 		},
 		PostgresqlIndexScans: PostgresqlIndexScansMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlIndexScansMetricAttributeKey{PostgresqlIndexScansMetricAttributeKeyDbNamespace, PostgresqlIndexScansMetricAttributeKeyPostgresqlSchemaName, PostgresqlIndexScansMetricAttributeKeyPostgresqlTableName, PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName},
+			EnabledAttributes:   []PostgresqlIndexScansMetricAttributeKey{PostgresqlIndexScansMetricAttributeKeyDbNamespace, PostgresqlIndexScansMetricAttributeKeyDbCollectionName, PostgresqlIndexScansMetricAttributeKeyPostgresqlIndexName},
 		},
 		PostgresqlIndexSize: PostgresqlIndexSizeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []PostgresqlIndexSizeMetricAttributeKey{PostgresqlIndexSizeMetricAttributeKeyDbNamespace, PostgresqlIndexSizeMetricAttributeKeyPostgresqlSchemaName, PostgresqlIndexSizeMetricAttributeKeyPostgresqlTableName, PostgresqlIndexSizeMetricAttributeKeyPostgresqlIndexName},
+			EnabledAttributes:   []PostgresqlIndexSizeMetricAttributeKey{PostgresqlIndexSizeMetricAttributeKeyDbNamespace, PostgresqlIndexSizeMetricAttributeKeyDbCollectionName, PostgresqlIndexSizeMetricAttributeKeyPostgresqlIndexName},
 		},
 		PostgresqlOperations: PostgresqlOperationsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlOperationsMetricAttributeKey{PostgresqlOperationsMetricAttributeKeyOperation, PostgresqlOperationsMetricAttributeKeyDbNamespace, PostgresqlOperationsMetricAttributeKeyPostgresqlSchemaName, PostgresqlOperationsMetricAttributeKeyPostgresqlTableName},
+			EnabledAttributes:   []PostgresqlOperationsMetricAttributeKey{PostgresqlOperationsMetricAttributeKeyOperation, PostgresqlOperationsMetricAttributeKeyDbNamespace, PostgresqlOperationsMetricAttributeKeyDbCollectionName},
 		},
 		PostgresqlQueryConflicts: PostgresqlQueryConflictsMetricConfig{
 			Enabled:             false,
@@ -1821,12 +1812,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlRows: PostgresqlRowsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlRowsMetricAttributeKey{PostgresqlRowsMetricAttributeKeyState, PostgresqlRowsMetricAttributeKeyDbNamespace, PostgresqlRowsMetricAttributeKeyPostgresqlSchemaName, PostgresqlRowsMetricAttributeKeyPostgresqlTableName},
+			EnabledAttributes:   []PostgresqlRowsMetricAttributeKey{PostgresqlRowsMetricAttributeKeyState, PostgresqlRowsMetricAttributeKeyDbNamespace, PostgresqlRowsMetricAttributeKeyDbCollectionName},
 		},
 		PostgresqlSequentialScans: PostgresqlSequentialScansMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlSequentialScansMetricAttributeKey{PostgresqlSequentialScansMetricAttributeKeyDbNamespace, PostgresqlSequentialScansMetricAttributeKeyPostgresqlSchemaName, PostgresqlSequentialScansMetricAttributeKeyPostgresqlTableName},
+			EnabledAttributes:   []PostgresqlSequentialScansMetricAttributeKey{PostgresqlSequentialScansMetricAttributeKeyDbNamespace, PostgresqlSequentialScansMetricAttributeKeyDbCollectionName},
 		},
 		PostgresqlTableCount: PostgresqlTableCountMetricConfig{
 			Enabled:             true,
@@ -1836,12 +1827,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlTableSize: PostgresqlTableSizeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlTableSizeMetricAttributeKey{PostgresqlTableSizeMetricAttributeKeyDbNamespace, PostgresqlTableSizeMetricAttributeKeyPostgresqlSchemaName, PostgresqlTableSizeMetricAttributeKeyPostgresqlTableName},
+			EnabledAttributes:   []PostgresqlTableSizeMetricAttributeKey{PostgresqlTableSizeMetricAttributeKeyDbNamespace, PostgresqlTableSizeMetricAttributeKeyDbCollectionName},
 		},
 		PostgresqlTableVacuumCount: PostgresqlTableVacuumCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []PostgresqlTableVacuumCountMetricAttributeKey{PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace, PostgresqlTableVacuumCountMetricAttributeKeyPostgresqlSchemaName, PostgresqlTableVacuumCountMetricAttributeKeyPostgresqlTableName},
+			EnabledAttributes:   []PostgresqlTableVacuumCountMetricAttributeKey{PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace, PostgresqlTableVacuumCountMetricAttributeKeyDbCollectionName},
 		},
 		PostgresqlTempIo: PostgresqlTempIoMetricConfig{
 			Enabled:             false,
