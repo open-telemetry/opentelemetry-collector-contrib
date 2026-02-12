@@ -80,7 +80,7 @@ func TestScraper(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -133,7 +133,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
 		cfg.Metrics.PostgresqlWalDelay.Enabled = false
@@ -158,7 +158,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		expectedMetrics, err = golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -211,7 +211,7 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -263,8 +263,8 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		expectedFile := filepath.Join("testdata", "scraper", "multiple", file)
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
-		fmt.Println(actualMetrics.ResourceMetrics())
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -318,7 +318,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -371,7 +371,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -399,7 +399,7 @@ func TestScraperExcludeDatabase(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("service.name"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceAttributeValue("server.port"), pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	}
 
@@ -1352,101 +1352,34 @@ func TestSetupResourceBuilderUUID(t *testing.T) {
 		serviceInstanceID: "localhost:5432",
 	}
 
-	tests := []struct {
-		name     string
-		database string
-		schema   string
-		table    string
-		index    string
-	}{
-		{
-			name:     "instance level",
-			database: "",
-			schema:   "",
-			table:    "",
-			index:    "",
-		},
-		{
-			name:     "database level",
-			database: "mydb",
-			schema:   "",
-			table:    "",
-			index:    "",
-		},
-		{
-			name:     "table level with schema",
-			database: "mydb",
-			schema:   "public",
-			table:    "users",
-			index:    "",
-		},
-		{
-			name:     "index level with schema",
-			database: "mydb",
-			schema:   "public",
-			table:    "users",
-			index:    "idx_email",
-		},
-		{
-			name:     "function level (database + schema, no table)",
-			database: "mydb",
-			schema:   "public",
-			table:    "",
-			index:    "",
-		},
-	}
+	rb := scraper.mb.NewResourceBuilder()
+	scraper.setupResourceBuilder(rb)
+	res := rb.Emit()
 
-	// Track UUIDs to verify uniqueness
-	seenUUIDs := make(map[string]string)
+	// Verify server.address is set
+	serverHost, ok := res.Attributes().Get("server.address")
+	require.True(t, ok, "server.address attribute should be present")
+	assert.Equal(t, "localhost", serverHost.Str())
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			rb := scraper.mb.NewResourceBuilder()
-			scraper.setupResourceBuilder(rb, tt.database, tt.schema, tt.table, tt.index)
-			res := rb.Emit()
+	// Verify server.port is set
+	serverPort, ok := res.Attributes().Get("server.port")
+	require.True(t, ok, "server.port attribute should be present")
+	assert.Equal(t, int64(5432), serverPort.Int())
 
-			// Verify service.name is always "postgresql"
-			serviceName, ok := res.Attributes().Get("service.name")
-			require.True(t, ok, "service.name attribute should be present")
-			assert.Equal(t, "postgresql", serviceName.Str())
-
-			// Verify server.address is set
-			serverHost, ok := res.Attributes().Get("server.address")
-			require.True(t, ok, "server.address attribute should be present")
-			assert.Equal(t, "localhost", serverHost.Str())
-
-			// Verify server.port is set
-			serverPort, ok := res.Attributes().Get("server.port")
-			require.True(t, ok, "server.port attribute should be present")
-			assert.Equal(t, int64(5432), serverPort.Int())
-
-			// Verify service.instance.id is a valid UUID
-			instanceID, ok := res.Attributes().Get("service.instance.id")
-			require.True(t, ok, "service.instance.id attribute should be present")
-			_, err := uuid.Parse(instanceID.Str())
-			require.NoError(t, err, "service.instance.id should be a valid UUID")
-
-			// Verify UUID is unique per resource
-			key := tt.database + ":" + tt.schema + ":" + tt.table + ":" + tt.index
-			if existing, exists := seenUUIDs[instanceID.Str()]; exists && existing != key {
-				t.Errorf("UUID collision: %s used for both %s and %s", instanceID.Str(), existing, key)
-			}
-			seenUUIDs[instanceID.Str()] = key
-		})
-	}
+	// Verify service.instance.id is a valid UUID
+	instanceID, ok := res.Attributes().Get("service.instance.id")
+	require.True(t, ok, "service.instance.id attribute should be present")
+	_, err := uuid.Parse(instanceID.Str())
+	require.NoError(t, err, "service.instance.id should be a valid UUID")
 
 	// Verify determinism: same inputs produce same UUID
-	t.Run("deterministic UUID", func(t *testing.T) {
-		rb1 := scraper.mb.NewResourceBuilder()
-		scraper.setupResourceBuilder(rb1, "mydb", "public", "users", "")
-		res1 := rb1.Emit()
-		uuid1, _ := res1.Attributes().Get("service.instance.id")
+	rb2 := scraper.mb.NewResourceBuilder()
+	scraper.setupResourceBuilder(rb2)
+	res2 := rb2.Emit()
+	uuid2, _ := res2.Attributes().Get("service.instance.id")
+	assert.Equal(t, instanceID.Str(), uuid2.Str(), "same inputs should produce same UUID")
 
-		rb2 := scraper.mb.NewResourceBuilder()
-		scraper.setupResourceBuilder(rb2, "mydb", "public", "users", "")
-		res2 := rb2.Emit()
-		uuid2, _ := res2.Attributes().Get("service.instance.id")
-
-		assert.Equal(t, uuid1.Str(), uuid2.Str(), "same inputs should produce same UUID")
-	})
+	// Verify no service.name attribute (removed)
+	_, hasServiceName := res.Attributes().Get("service.name")
+	assert.False(t, hasServiceName, "service.name should not be present")
 }

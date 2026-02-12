@@ -20,6 +20,12 @@ The number of backends.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | false | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+
 ### postgresql.bgwriter.buffers.allocated
 
 Number of buffers allocated.
@@ -91,6 +97,9 @@ The number of blocks read.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | source | The block read source type. | Str: ``heap_read``, ``heap_hit``, ``idx_read``, ``idx_hit``, ``toast_read``, ``toast_hit``, ``tidx_read``, ``tidx_hit`` | Recommended | - |
+| db.namespace | The name of the database. | Any Str | Recommended | - |
+| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
+| postgresql.table.name | The table name. | Any Str | Recommended | - |
 
 ### postgresql.commits
 
@@ -99,6 +108,12 @@ The number of commits.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
 
 ### postgresql.connection.max
 
@@ -124,6 +139,12 @@ The database disk usage.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+
 ### postgresql.index.scans
 
 The number of index scans on a table.
@@ -132,6 +153,15 @@ The number of index scans on a table.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {scans} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+| postgresql.schema.name | The schema name. | Any Str | Recommended |
+| postgresql.table.name | The table name. | Any Str | Recommended |
+| postgresql.index.name | The name of the index on a table. | Any Str | Recommended |
+
 ### postgresql.index.size
 
 The size of the index on disk.
@@ -139,6 +169,15 @@ The size of the index on disk.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+| postgresql.schema.name | The schema name. | Any Str | Recommended |
+| postgresql.table.name | The table name. | Any Str | Recommended |
+| postgresql.index.name | The name of the index on a table. | Any Str | Recommended |
 
 ### postgresql.operations
 
@@ -153,6 +192,9 @@ The number of db row operations.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | operation | The database operation. | Str: ``ins``, ``upd``, ``del``, ``hot_upd`` | Recommended | - |
+| db.namespace | The name of the database. | Any Str | Recommended | - |
+| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
+| postgresql.table.name | The table name. | Any Str | Recommended | - |
 
 ### postgresql.replication.data_delay
 
@@ -176,6 +218,12 @@ The number of rollbacks.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+
 ### postgresql.rows
 
 The number of rows in the database.
@@ -189,6 +237,9 @@ The number of rows in the database.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | state | The tuple (row) state. | Str: ``dead``, ``live`` | Recommended | - |
+| db.namespace | The name of the database. | Any Str | Recommended | - |
+| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
+| postgresql.table.name | The table name. | Any Str | Recommended | - |
 
 ### postgresql.table.count
 
@@ -198,6 +249,12 @@ Number of user tables in a database.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {table} | Sum | Int | Cumulative | false | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+
 ### postgresql.table.size
 
 Disk space used by a table.
@@ -206,6 +263,14 @@ Disk space used by a table.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+| postgresql.schema.name | The schema name. | Any Str | Recommended |
+| postgresql.table.name | The table name. | Any Str | Recommended |
+
 ### postgresql.table.vacuum.count
 
 Number of times a table has manually been vacuumed.
@@ -213,6 +278,14 @@ Number of times a table has manually been vacuumed.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {vacuum} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+| postgresql.schema.name | The schema name. | Any Str | Recommended |
+| postgresql.table.name | The table name. | Any Str | Recommended |
 
 ### postgresql.wal.age
 
@@ -261,6 +334,12 @@ Number of times disk blocks were found already in the buffer cache.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {blks_hit} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+
 ### postgresql.blks_read
 
 Number of disk blocks read in this database.
@@ -268,6 +347,12 @@ Number of disk blocks read in this database.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {blks_read} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
 
 ### postgresql.database.locks
 
@@ -293,6 +378,12 @@ The number of deadlocks.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {deadlock} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+
 ### postgresql.function.calls
 
 The number of calls made to a function. Requires `track_functions=pl|all` in Postgres config.
@@ -306,6 +397,8 @@ The number of calls made to a function. Requires `track_functions=pl|all` in Pos
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | function | The name of the function. | Any Str | Recommended | - |
+| db.namespace | The name of the database. | Any Str | Recommended | - |
+| postgresql.schema.name | The schema name. | Any Str | Recommended | - |
 
 ### postgresql.sequential_scans
 
@@ -315,6 +408,14 @@ The number of sequential scans.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {sequential_scan} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+| postgresql.schema.name | The schema name. | Any Str | Recommended |
+| postgresql.table.name | The table name. | Any Str | Recommended |
+
 ### postgresql.temp.io
 
 Total amount of data written to temporary files by queries.
@@ -322,6 +423,12 @@ Total amount of data written to temporary files by queries.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
 
 ### postgresql.temp_files
 
@@ -331,6 +438,12 @@ The number of temp files.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {temp_file} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+
 ### postgresql.tup_deleted
 
 Number of rows deleted by queries in the database.
@@ -338,6 +451,12 @@ Number of rows deleted by queries in the database.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {tup_deleted} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
 
 ### postgresql.tup_fetched
 
@@ -347,6 +466,12 @@ Number of rows fetched by queries in the database.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {tup_fetched} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+
 ### postgresql.tup_inserted
 
 Number of rows inserted by queries in the database.
@@ -354,6 +479,12 @@ Number of rows inserted by queries in the database.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {tup_inserted} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
 
 ### postgresql.tup_returned
 
@@ -363,6 +494,12 @@ Number of rows returned by queries in the database.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {tup_returned} | Sum | Int | Cumulative | true | Development |
 
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
+
 ### postgresql.tup_updated
 
 Number of rows updated by queries in the database.
@@ -370,6 +507,12 @@ Number of rows updated by queries in the database.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {tup_updated} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| db.namespace | The name of the database. | Any Str | Recommended |
 
 ### postgresql.wal.delay
 
@@ -418,7 +561,7 @@ query sample
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``postgresql`` | - |
-| db.namespace | The namespace or schema of the database where the query is executed. | Any Str | - |
+| db.namespace | The name of the database. | Any Str | - |
 | db.query.text | The text of the database query being executed. | Any Str | - |
 | user.name | Name of the user logged into this backend. | Any Str | - |
 | postgresql.state | Current overall state of this backend | Any Str | - |
@@ -442,7 +585,7 @@ top query
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``postgresql`` | - |
-| db.namespace | The namespace or schema of the database where the query is executed. | Any Str | - |
+| db.namespace | The name of the database. | Any Str | - |
 | db.query.text | The text of the database query being executed. | Any Str | - |
 | postgresql.calls | Number of times the statement was executed, reported in delta value. | Any Int | - |
 | postgresql.rows | Total number of rows retrieved or affected by the statement, reported in delta value. | Any Int | - |
@@ -462,14 +605,9 @@ top query
 
 | Name | Description | Values | Enabled | Semantic Convention |
 | ---- | ----------- | ------ | ------- | ------------------- |
-| postgresql.database.name | The name of the database. | Any Str | true | - |
-| postgresql.index.name | The name of the index on a table. | Any Str | true | - |
-| postgresql.schema.name | The schema name. | Any Str | true | - |
-| postgresql.table.name | The table name. | Any Str | true | - |
 | server.address | The address of the PostgreSQL server. | Any Str | true | - |
 | server.port | The port number of the PostgreSQL server. | Any Int | true | - |
-| service.instance.id | A unique identifier of the PostgreSQL resource as a UUID v5, derived from host, port, database, schema, table, and index. | Any Str | true | - |
-| service.name | The database management system name (postgresql). | Any Str | true | - |
+| service.instance.id | A unique identifier of the PostgreSQL resource as a UUID v5, derived from server address and port. | Any Str | true | - |
 
 ## Feature Gates
 
