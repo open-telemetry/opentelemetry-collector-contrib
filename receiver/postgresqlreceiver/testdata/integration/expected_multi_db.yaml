@@ -158,15 +158,12 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: heap_hit
@@ -174,15 +171,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: heap_read
@@ -190,15 +184,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: idx_hit
@@ -206,15 +197,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: idx_read
@@ -222,15 +210,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: tidx_hit
@@ -238,15 +223,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: tidx_read
@@ -254,15 +236,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: toast_hit
@@ -270,15 +249,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: toast_read
@@ -286,15 +262,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: heap_hit
@@ -302,15 +275,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: heap_read
@@ -318,15 +288,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: idx_hit
@@ -334,15 +301,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: idx_read
@@ -350,15 +314,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: tidx_hit
@@ -366,15 +327,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: tidx_read
@@ -382,15 +340,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: toast_hit
@@ -398,15 +353,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                     - key: source
                       value:
                         stringValue: toast_read
@@ -414,15 +366,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: heap_hit
@@ -430,15 +379,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: heap_read
@@ -446,15 +392,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: idx_hit
@@ -462,15 +405,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: idx_read
@@ -478,15 +418,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: tidx_hit
@@ -494,15 +431,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: tidx_read
@@ -510,15 +444,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: toast_hit
@@ -526,15 +457,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: toast_read
@@ -542,15 +470,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: heap_hit
@@ -558,15 +483,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: heap_read
@@ -574,15 +496,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: idx_hit
@@ -590,15 +509,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: idx_read
@@ -606,15 +522,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: tidx_hit
@@ -622,15 +535,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: tidx_read
@@ -638,15 +548,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: toast_hit
@@ -654,15 +561,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                     - key: source
                       value:
                         stringValue: toast_read
@@ -826,98 +730,80 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
+                        stringValue: otel|public
                     - key: postgresql.index.name
                       value:
                         stringValue: table1_pkey
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: table1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
+                        stringValue: otel|public
                     - key: postgresql.index.name
                       value:
                         stringValue: table2_pkey
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: table2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: postgresql.index.name
                       value:
                         stringValue: otel2index
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: test2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: postgresql.index.name
                       value:
                         stringValue: otelindex
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: test1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: postgresql.index.name
                       value:
                         stringValue: test1_pkey
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: test1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: postgresql.index.name
                       value:
                         stringValue: test2_pkey
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: test2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -927,98 +813,80 @@ resourceMetrics:
               dataPoints:
                 - asInt: "8192"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
+                        stringValue: otel|public
                     - key: postgresql.index.name
                       value:
                         stringValue: table1_pkey
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: table1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "8192"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
+                        stringValue: otel|public
                     - key: postgresql.index.name
                       value:
                         stringValue: table2_pkey
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: table2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "16384"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: postgresql.index.name
                       value:
                         stringValue: otel2index
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: test2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "8192"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: postgresql.index.name
                       value:
                         stringValue: otelindex
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: test1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "8192"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: postgresql.index.name
                       value:
                         stringValue: test1_pkey
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: test1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "16384"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: postgresql.index.name
                       value:
                         stringValue: test2_pkey
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: test2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: postgresql.index.size
@@ -1030,258 +898,210 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
+                        stringValue: otel|public
                     - key: operation
                       value:
                         stringValue: del
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
+                        stringValue: otel|public
                     - key: operation
                       value:
                         stringValue: del
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
+                        stringValue: otel|public
                     - key: operation
                       value:
                         stringValue: hot_upd
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
+                        stringValue: otel|public
                     - key: operation
                       value:
                         stringValue: hot_upd
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
+                        stringValue: otel|public
                     - key: operation
                       value:
                         stringValue: ins
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
+                        stringValue: otel|public
                     - key: operation
                       value:
                         stringValue: ins
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
+                        stringValue: otel|public
                     - key: operation
                       value:
                         stringValue: upd
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
+                        stringValue: otel|public
                     - key: operation
                       value:
                         stringValue: upd
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: operation
                       value:
                         stringValue: del
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: operation
                       value:
                         stringValue: del
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: operation
                       value:
                         stringValue: hot_upd
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: operation
                       value:
                         stringValue: hot_upd
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: operation
                       value:
                         stringValue: ins
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: operation
                       value:
                         stringValue: ins
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: operation
                       value:
                         stringValue: upd
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
+                        stringValue: otel2|public
                     - key: operation
                       value:
                         stringValue: upd
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -1314,15 +1134,12 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                     - key: state
                       value:
                         stringValue: dead
@@ -1330,15 +1147,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                     - key: state
                       value:
                         stringValue: live
@@ -1346,15 +1160,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                     - key: state
                       value:
                         stringValue: dead
@@ -1362,15 +1173,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                     - key: state
                       value:
                         stringValue: live
@@ -1378,15 +1186,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                     - key: state
                       value:
                         stringValue: dead
@@ -1394,15 +1199,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                     - key: state
                       value:
                         stringValue: live
@@ -1410,15 +1212,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                     - key: state
                       value:
                         stringValue: dead
@@ -1426,15 +1225,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                     - key: state
                       value:
                         stringValue: live
@@ -1448,54 +1244,42 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "2"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -1527,54 +1311,42 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "8192"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -1585,54 +1357,42 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table1
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table1
+                        stringValue: otel|public
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: table2
                     - key: db.namespace
                       value:
-                        stringValue: otel
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.table2
+                        stringValue: otel|public
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test1
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test1
+                        stringValue: otel2|public
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
+                    - key: db.collection.name
+                      value:
+                        stringValue: test2
                     - key: db.namespace
                       value:
-                        stringValue: otel2
-                    - key: postgresql.schema.name
-                      value:
-                        stringValue: ""
-                    - key: postgresql.table.name
-                      value:
-                        stringValue: public.test2
+                        stringValue: otel2|public
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
