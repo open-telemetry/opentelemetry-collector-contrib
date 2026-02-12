@@ -1,3 +1,5 @@
+// Deprecated: This processor is deprecated and will be removed in a future release.
+// If you need help, please contact Datadog support: https://www.datadoghq.com/support/
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor
 
 go 1.25.0
@@ -18,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/processor/processorhelper v0.145.1-0.20260212054546-f0da990367b6
 	go.opentelemetry.io/collector/processor/processortest v0.145.1-0.20260212054546-f0da990367b6
 	go.opentelemetry.io/otel v1.40.0
+	go.uber.org/zap v1.27.1
 )
 
 require (
@@ -84,7 +87,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
