@@ -13,7 +13,6 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
-			rb.SetDatabase("database-val")
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
@@ -23,9 +22,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 4, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -33,12 +32,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
-			val, ok := res.Attributes().Get("database")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "database-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("server.address")
+			val, ok := res.Attributes().Get("server.address")
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "server.address-val", val.Str())

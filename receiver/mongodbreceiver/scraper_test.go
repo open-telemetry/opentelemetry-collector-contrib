@@ -42,37 +42,25 @@ func TestNewMongodbScraper(t *testing.T) {
 func TestGenerateInstanceID(t *testing.T) {
 	t.Run("deterministic", func(t *testing.T) {
 		// Same inputs should produce the same UUID
-		id1 := generateInstanceID("localhost", 27017, "mydb")
-		id2 := generateInstanceID("localhost", 27017, "mydb")
+		id1 := generateInstanceID("localhost", 27017)
+		id2 := generateInstanceID("localhost", 27017)
 		require.Equal(t, id1, id2, "same inputs should produce same UUID")
 	})
 
-	t.Run("unique for different databases", func(t *testing.T) {
-		id1 := generateInstanceID("localhost", 27017, "db1")
-		id2 := generateInstanceID("localhost", 27017, "db2")
-		require.NotEqual(t, id1, id2, "different databases should produce different UUIDs")
-	})
-
 	t.Run("unique for different ports", func(t *testing.T) {
-		id1 := generateInstanceID("localhost", 27017, "mydb")
-		id2 := generateInstanceID("localhost", 27018, "mydb")
+		id1 := generateInstanceID("localhost", 27017)
+		id2 := generateInstanceID("localhost", 27018)
 		require.NotEqual(t, id1, id2, "different ports should produce different UUIDs")
 	})
 
 	t.Run("unique for different hosts", func(t *testing.T) {
-		id1 := generateInstanceID("host1", 27017, "mydb")
-		id2 := generateInstanceID("host2", 27017, "mydb")
+		id1 := generateInstanceID("host1", 27017)
+		id2 := generateInstanceID("host2", 27017)
 		require.NotEqual(t, id1, id2, "different hosts should produce different UUIDs")
 	})
 
-	t.Run("server level vs database level", func(t *testing.T) {
-		serverLevel := generateInstanceID("localhost", 27017, "")
-		dbLevel := generateInstanceID("localhost", 27017, "mydb")
-		require.NotEqual(t, serverLevel, dbLevel, "server-level and database-level should produce different UUIDs")
-	})
-
 	t.Run("valid UUID v5 format", func(t *testing.T) {
-		id := generateInstanceID("localhost", 27017, "mydb")
+		id := generateInstanceID("localhost", 27017)
 		parsed, err := uuid.Parse(id)
 		require.NoError(t, err, "generated ID should be a valid UUID")
 		require.Equal(t, uuid.Version(5), parsed.Version(), "should be UUID v5")

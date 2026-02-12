@@ -21,13 +21,6 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetDatabase sets provided value as "database" attribute.
-func (rb *ResourceBuilder) SetDatabase(val string) {
-	if rb.config.Database.Enabled {
-		rb.res.Attributes().PutStr("database", val)
-	}
-}
-
 // SetServerAddress sets provided value as "server.address" attribute.
 func (rb *ResourceBuilder) SetServerAddress(val string) {
 	if rb.config.ServerAddress.Enabled {

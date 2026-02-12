@@ -41,14 +41,9 @@ var (
 		featuregate.WithRegisterToVersion("v0.104.0"))
 )
 
-// generateInstanceID generates a deterministic UUID v5 from server address, port, and optional database name.
-func generateInstanceID(serverAddress string, serverPort int64, database string) string {
-	var name string
-	if database == "" {
-		name = fmt.Sprintf("%s:%d", serverAddress, serverPort)
-	} else {
-		name = fmt.Sprintf("%s:%d:%s", serverAddress, serverPort, database)
-	}
+// generateInstanceID generates a deterministic UUID v5 from server address and port.
+func generateInstanceID(serverAddress string, serverPort int64) string {
+	name := fmt.Sprintf("%s:%d", serverAddress, serverPort)
 	return uuid.NewSHA1(otelNamespaceUUID, []byte(name)).String()
 }
 
@@ -183,31 +178,26 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	s.recordAdminStats(now, serverStatus, errs)
 	s.collectTopStats(ctx, now, errs)
 
-	rb := s.mb.NewResourceBuilder()
-	rb.SetServerAddress(serverAddress)
-	rb.SetServerPort(serverPort)
-	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort, ""))
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
-
 	// Collect metrics for each database
 	for _, dbName := range dbNames {
 		s.collectDatabase(ctx, now, dbName, errs)
 		collectionNames, err := s.client.ListCollectionNames(ctx, dbName)
 		if err != nil {
 			errs.AddPartial(1, fmt.Errorf("failed to fetch collection names: %w", err))
-			return
+			continue
 		}
 
 		for _, collectionName := range collectionNames {
 			s.collectIndexStats(ctx, now, dbName, collectionName, errs)
 		}
-
-		rb.SetServerAddress(serverAddress)
-		rb.SetServerPort(serverPort)
-		rb.SetDatabase(dbName)
-		rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort, dbName))
-		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
+
+	// Emit single resource for the server
+	rb := s.mb.NewResourceBuilder()
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
+	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timestamp, databaseName string, errs *scrapererror.ScrapeErrors) {
