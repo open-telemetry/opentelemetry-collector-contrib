@@ -37,7 +37,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
@@ -50,7 +50,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                     - key: type
@@ -60,7 +60,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "838857"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                     - key: type
@@ -70,7 +70,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "3"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                     - key: type
@@ -104,7 +104,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "3141"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
@@ -126,7 +126,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                     - key: operation
@@ -136,7 +136,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                     - key: operation
@@ -146,7 +146,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                     - key: operation
@@ -162,7 +162,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
@@ -188,7 +188,7 @@ resourceMetrics:
                     - key: collection
                       value:
                         stringValue: orders
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
@@ -198,7 +198,7 @@ resourceMetrics:
                     - key: collection
                       value:
                         stringValue: products
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
@@ -211,7 +211,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
@@ -224,7 +224,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "16384"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
@@ -237,7 +237,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "82837504"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                     - key: type
@@ -247,7 +247,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1141899264"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                     - key: type
@@ -290,7 +290,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "2"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                   startTimeUnixNano: "1000000"
@@ -418,7 +418,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "16384"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: fakedatabase
                   startTimeUnixNano: "1000000"

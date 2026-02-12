@@ -7,7 +7,7 @@ change_type: breaking
 component: receiver/mongodb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add service.instance.id resource attribute and move database from resource to metric attribute in MongoDB receiver
+note: Add service.instance.id resource attribute and move database from resource to db.namespace metric attribute in MongoDB receiver
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [45506]
@@ -17,7 +17,7 @@ issues: [45506]
 # Use pipe (|) for multiline entries.
 subtext: |
   The service.instance.id attribute is a deterministic UUID v5 derived from server address and port.
-  The database attribute has been moved from a resource attribute to a metric-level attribute on all per-database metrics.
+  The database attribute has been moved from a resource attribute to a metric-level attribute (db.namespace) on all per-database metrics, following OpenTelemetry semantic conventions.
   This produces a single resource per MongoDB server instead of one per database, fixing Prometheus batching compatibility.
 
 # If your change doesn't affect end users or the exported elements of any package,

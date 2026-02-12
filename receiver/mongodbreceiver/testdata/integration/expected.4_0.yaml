@@ -37,28 +37,28 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
@@ -71,7 +71,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                     - key: type
@@ -81,7 +81,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "838857"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                     - key: type
@@ -91,7 +91,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "3"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                     - key: type
@@ -101,7 +101,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                     - key: type
@@ -111,7 +111,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "838857"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                     - key: type
@@ -121,7 +121,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "3"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                     - key: type
@@ -131,7 +131,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "838857"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                     - key: type
@@ -141,7 +141,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "3"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                     - key: type
@@ -151,7 +151,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                     - key: type
@@ -161,7 +161,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                     - key: type
@@ -171,7 +171,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "838857"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                     - key: type
@@ -181,7 +181,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "3"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                     - key: type
@@ -215,28 +215,28 @@ resourceMetrics:
               dataPoints:
                 - asInt: "59"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1445"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
@@ -258,7 +258,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                     - key: operation
@@ -268,7 +268,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                     - key: operation
@@ -278,7 +278,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                     - key: operation
@@ -288,7 +288,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                     - key: operation
@@ -298,7 +298,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                     - key: operation
@@ -308,7 +308,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                     - key: operation
@@ -318,7 +318,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                     - key: operation
@@ -328,7 +328,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                     - key: operation
@@ -338,7 +338,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                     - key: operation
@@ -348,7 +348,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                     - key: operation
@@ -358,7 +358,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                     - key: operation
@@ -368,7 +368,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                     - key: operation
@@ -384,28 +384,28 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
@@ -428,7 +428,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                     - key: collection
@@ -438,7 +438,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                     - key: collection
@@ -448,7 +448,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                     - key: collection
@@ -464,28 +464,28 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "2"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
@@ -498,28 +498,28 @@ resourceMetrics:
               dataPoints:
                 - asInt: "4096"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "8192"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "4096"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "4096"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
@@ -532,7 +532,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1141899264"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                     - key: type
@@ -542,7 +542,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "82837504"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                     - key: type
@@ -552,7 +552,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "82837504"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                     - key: type
@@ -562,7 +562,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1141899264"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                     - key: type
@@ -572,7 +572,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "82837504"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                     - key: type
@@ -582,7 +582,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1141899264"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                     - key: type
@@ -592,7 +592,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "82837504"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                     - key: type
@@ -602,7 +602,7 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1141899264"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                     - key: type
@@ -645,28 +645,28 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "1"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "0"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
@@ -786,28 +786,28 @@ resourceMetrics:
               dataPoints:
                 - asInt: "4096"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: admin
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "4096"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: config
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "4096"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: local
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
                 - asInt: "4096"
                   attributes:
-                    - key: database
+                    - key: db.namespace
                       value:
                         stringValue: testdb
                   startTimeUnixNano: "1682363190502544000"
