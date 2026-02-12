@@ -145,6 +145,37 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
+	// Check if we need to iterate databases
+	if !s.requiresDatabaseIteration() {
+		s.logger.Debug("Skipping database iteration as all database-level metrics are disabled")
+
+		// Still collect admin-level server metrics
+		serverStatus, sErr := s.client.ServerStatus(ctx, "admin")
+		if sErr != nil {
+			errs.Add(fmt.Errorf("failed to fetch server status: %w", sErr))
+			return
+		}
+		serverAddress, serverPort, aErr := serverAddressAndPort(serverStatus)
+		if aErr != nil {
+			errs.Add(fmt.Errorf("failed to fetch server address and port: %w", aErr))
+			return
+		}
+
+		now := pcommon.NewTimestampFromTime(time.Now())
+
+		// Collect admin-level metrics (these don't require database iteration)
+		s.recordAdminStats(now, serverStatus, errs)
+		s.collectTopStats(ctx, now, errs)
+
+		rb := s.mb.NewResourceBuilder()
+		rb.SetServerAddress(serverAddress)
+		rb.SetServerPort(serverPort)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+
+		return // Skip database iteration
+	}
+
+	// Original code path - database metrics are enabled
 	dbNames, err := s.client.ListDatabaseNames(ctx, bson.D{})
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch database names: %w", err))
@@ -191,6 +222,39 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 		rb.SetDatabase(dbName)
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
+}
+
+// requiresDatabaseIteration checks if any metrics that require database iteration are enabled.
+// Returns true if we need to call ListDatabaseNames, DBStats, ListCollectionNames, or IndexStats.
+func (s *mongodbScraper) requiresDatabaseIteration() bool {
+	// Database-level metrics (require DBStats command)
+	if s.config.Metrics.MongodbCollectionCount.Enabled ||
+		s.config.Metrics.MongodbDataSize.Enabled ||
+		s.config.Metrics.MongodbExtentCount.Enabled ||
+		s.config.Metrics.MongodbIndexSize.Enabled ||
+		s.config.Metrics.MongodbIndexCount.Enabled ||
+		s.config.Metrics.MongodbObjectCount.Enabled ||
+		s.config.Metrics.MongodbStorageSize.Enabled {
+		return true
+	}
+
+	// Collection-level metrics (require ListCollectionNames + IndexStats commands)
+	if s.config.Metrics.MongodbIndexAccessCount.Enabled {
+		return true
+	}
+
+	// Per-database server metrics (require per-database ServerStatus command)
+	if s.config.Metrics.MongodbConnectionCount.Enabled ||
+		s.config.Metrics.MongodbDocumentOperationCount.Enabled ||
+		s.config.Metrics.MongodbMemoryUsage.Enabled ||
+		s.config.Metrics.MongodbLockAcquireCount.Enabled ||
+		s.config.Metrics.MongodbLockAcquireWaitCount.Enabled ||
+		s.config.Metrics.MongodbLockAcquireTime.Enabled ||
+		s.config.Metrics.MongodbLockDeadlockCount.Enabled {
+		return true
+	}
+
+	return false
 }
 
 func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timestamp, databaseName string, errs *scrapererror.ScrapeErrors) {

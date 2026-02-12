@@ -457,3 +457,166 @@ func TestServerAddressAndPort(t *testing.T) {
 		})
 	}
 }
+
+func TestRequiresDatabaseIteration(t *testing.T) {
+	testCases := []struct {
+		desc              string
+		setupConfig       func(*Config)
+		expectedIteration bool
+	}{
+		{
+			desc: "All database metrics disabled",
+			setupConfig: func(cfg *Config) {
+				// Disable all database-level metrics
+				cfg.Metrics.MongodbCollectionCount.Enabled = false
+				cfg.Metrics.MongodbDataSize.Enabled = false
+				cfg.Metrics.MongodbExtentCount.Enabled = false
+				cfg.Metrics.MongodbIndexSize.Enabled = false
+				cfg.Metrics.MongodbIndexCount.Enabled = false
+				cfg.Metrics.MongodbObjectCount.Enabled = false
+				cfg.Metrics.MongodbStorageSize.Enabled = false
+				// Disable collection-level metrics
+				cfg.Metrics.MongodbIndexAccessCount.Enabled = false
+				// Disable per-database server metrics
+				cfg.Metrics.MongodbConnectionCount.Enabled = false
+				cfg.Metrics.MongodbDocumentOperationCount.Enabled = false
+				cfg.Metrics.MongodbMemoryUsage.Enabled = false
+				cfg.Metrics.MongodbLockAcquireCount.Enabled = false
+				cfg.Metrics.MongodbLockAcquireWaitCount.Enabled = false
+				cfg.Metrics.MongodbLockAcquireTime.Enabled = false
+				cfg.Metrics.MongodbLockDeadlockCount.Enabled = false
+			},
+			expectedIteration: false,
+		},
+		{
+			desc: "One database metric enabled (collection count)",
+			setupConfig: func(cfg *Config) {
+				cfg.Metrics.MongodbCollectionCount.Enabled = true
+			},
+			expectedIteration: true,
+		},
+		{
+			desc: "One database metric enabled (data size)",
+			setupConfig: func(cfg *Config) {
+				cfg.Metrics.MongodbDataSize.Enabled = true
+			},
+			expectedIteration: true,
+		},
+		{
+			desc: "Collection metric enabled (index access count)",
+			setupConfig: func(cfg *Config) {
+				cfg.Metrics.MongodbIndexAccessCount.Enabled = true
+			},
+			expectedIteration: true,
+		},
+		{
+			desc: "Per-database server metric enabled (connection count)",
+			setupConfig: func(cfg *Config) {
+				cfg.Metrics.MongodbConnectionCount.Enabled = true
+			},
+			expectedIteration: true,
+		},
+		{
+			desc: "Per-database server metric enabled (lock acquire count)",
+			setupConfig: func(cfg *Config) {
+				cfg.Metrics.MongodbLockAcquireCount.Enabled = true
+			},
+			expectedIteration: true,
+		},
+		{
+			desc: "Only admin-level metrics enabled",
+			setupConfig: func(cfg *Config) {
+				// Disable all database-level metrics
+				cfg.Metrics.MongodbCollectionCount.Enabled = false
+				cfg.Metrics.MongodbDataSize.Enabled = false
+				cfg.Metrics.MongodbExtentCount.Enabled = false
+				cfg.Metrics.MongodbIndexSize.Enabled = false
+				cfg.Metrics.MongodbIndexCount.Enabled = false
+				cfg.Metrics.MongodbObjectCount.Enabled = false
+				cfg.Metrics.MongodbStorageSize.Enabled = false
+				cfg.Metrics.MongodbIndexAccessCount.Enabled = false
+				cfg.Metrics.MongodbConnectionCount.Enabled = false
+				cfg.Metrics.MongodbDocumentOperationCount.Enabled = false
+				cfg.Metrics.MongodbMemoryUsage.Enabled = false
+				cfg.Metrics.MongodbLockAcquireCount.Enabled = false
+				cfg.Metrics.MongodbLockAcquireWaitCount.Enabled = false
+				cfg.Metrics.MongodbLockAcquireTime.Enabled = false
+				cfg.Metrics.MongodbLockDeadlockCount.Enabled = false
+				// Enable admin-level metrics (should not require database iteration)
+				cfg.Metrics.MongodbCacheOperations.Enabled = true
+				cfg.Metrics.MongodbCursorCount.Enabled = true
+				cfg.Metrics.MongodbGlobalLockTime.Enabled = true
+			},
+			expectedIteration: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			tc.setupConfig(cfg)
+			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+
+			actual := scraper.requiresDatabaseIteration()
+			require.Equal(t, tc.expectedIteration, actual)
+		})
+	}
+}
+
+func TestCollectMetricsSkipsDatabaseIteration(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	// Disable all database-level metrics
+	cfg.Metrics.MongodbCollectionCount.Enabled = false
+	cfg.Metrics.MongodbDataSize.Enabled = false
+	cfg.Metrics.MongodbExtentCount.Enabled = false
+	cfg.Metrics.MongodbIndexSize.Enabled = false
+	cfg.Metrics.MongodbIndexCount.Enabled = false
+	cfg.Metrics.MongodbObjectCount.Enabled = false
+	cfg.Metrics.MongodbStorageSize.Enabled = false
+	cfg.Metrics.MongodbIndexAccessCount.Enabled = false
+	cfg.Metrics.MongodbConnectionCount.Enabled = false
+	cfg.Metrics.MongodbDocumentOperationCount.Enabled = false
+	cfg.Metrics.MongodbMemoryUsage.Enabled = false
+	cfg.Metrics.MongodbLockAcquireCount.Enabled = false
+	cfg.Metrics.MongodbLockAcquireWaitCount.Enabled = false
+	cfg.Metrics.MongodbLockAcquireTime.Enabled = false
+	cfg.Metrics.MongodbLockDeadlockCount.Enabled = false
+
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+
+	// Setup mock client
+	fc := &fakeClient{}
+	adminStatus, err := loadAdminStatusAsMap()
+	require.NoError(t, err)
+	topStats, err := loadTopAsMap()
+	require.NoError(t, err)
+
+	// Mock expectations - only admin-level commands should be called
+	fc.On("ServerStatus", mock.Anything, "admin").Return(adminStatus, nil)
+	fc.On("TopStats", mock.Anything).Return(topStats, nil)
+
+	// These should NOT be called when database iteration is skipped
+	fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Maybe().Return([]string{}, errors.New("should not be called"))
+	fc.On("DBStats", mock.Anything, mock.Anything).Maybe().Return(bson.M{}, errors.New("should not be called"))
+	fc.On("ListCollectionNames", mock.Anything, mock.Anything).Maybe().Return([]string{}, errors.New("should not be called"))
+	fc.On("IndexStats", mock.Anything, mock.Anything, mock.Anything).Maybe().Return([]bson.M{}, errors.New("should not be called"))
+
+	scraper.client = fc
+
+	errs := &scrapererror.ScrapeErrors{}
+	scraper.collectMetrics(t.Context(), errs)
+
+	// Verify no errors occurred
+	require.NoError(t, errs.Combine())
+
+	// Verify that only admin-level commands were called
+	fc.AssertCalled(t, "ServerStatus", mock.Anything, "admin")
+	fc.AssertCalled(t, "TopStats", mock.Anything)
+
+	// Verify that database-level commands were NOT called
+	fc.AssertNotCalled(t, "ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything)
+	fc.AssertNotCalled(t, "DBStats", mock.Anything, mock.Anything)
+	fc.AssertNotCalled(t, "ListCollectionNames", mock.Anything, mock.Anything)
+	fc.AssertNotCalled(t, "IndexStats", mock.Anything, mock.Anything, mock.Anything)
+}
