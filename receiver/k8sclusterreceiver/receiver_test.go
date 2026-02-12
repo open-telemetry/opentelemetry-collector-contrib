@@ -5,6 +5,7 @@ package k8sclusterreceiver
 
 import (
 	"context"
+	"os"
 	"slices"
 	"sync/atomic"
 	"testing"
@@ -30,6 +31,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
+
+func init() {
+	// Disable WatchListClient feature gate for tests as fake clientset doesn't support bookmark events
+	// See: https://github.com/kubernetes/kubernetes/issues/129408
+	os.Setenv("KUBE_FEATURE_WatchListClient", "false")
+}
 
 type nopHost struct {
 	component.Host

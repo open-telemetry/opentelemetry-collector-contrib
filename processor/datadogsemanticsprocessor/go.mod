@@ -1,3 +1,5 @@
+// Deprecated: This processor is deprecated and will be removed in a future release.
+// If you need help, please contact Datadog support: https://www.datadoghq.com/support/
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor
 
 go 1.25.0
@@ -7,17 +9,18 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.76.0-rc.4
 	github.com/DataDog/datadog-agent/pkg/trace/otel v0.76.0-rc.4
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.51.1-0.20260205185216-81bc641f26c0
-	go.opentelemetry.io/collector/component/componentstatus v0.145.1-0.20260205185216-81bc641f26c0
-	go.opentelemetry.io/collector/component/componenttest v0.145.1-0.20260205185216-81bc641f26c0
-	go.opentelemetry.io/collector/confmap v1.51.1-0.20260205185216-81bc641f26c0
-	go.opentelemetry.io/collector/consumer v1.51.1-0.20260205185216-81bc641f26c0
-	go.opentelemetry.io/collector/consumer/consumertest v0.145.1-0.20260205185216-81bc641f26c0
-	go.opentelemetry.io/collector/pdata v1.51.1-0.20260205185216-81bc641f26c0
-	go.opentelemetry.io/collector/processor v1.51.1-0.20260205185216-81bc641f26c0
-	go.opentelemetry.io/collector/processor/processorhelper v0.145.1-0.20260205185216-81bc641f26c0
-	go.opentelemetry.io/collector/processor/processortest v0.145.1-0.20260205185216-81bc641f26c0
+	go.opentelemetry.io/collector/component v1.51.1-0.20260212054546-f0da990367b6
+	go.opentelemetry.io/collector/component/componentstatus v0.145.1-0.20260212054546-f0da990367b6
+	go.opentelemetry.io/collector/component/componenttest v0.145.1-0.20260212054546-f0da990367b6
+	go.opentelemetry.io/collector/confmap v1.51.1-0.20260212054546-f0da990367b6
+	go.opentelemetry.io/collector/consumer v1.51.1-0.20260212054546-f0da990367b6
+	go.opentelemetry.io/collector/consumer/consumertest v0.145.1-0.20260212054546-f0da990367b6
+	go.opentelemetry.io/collector/pdata v1.51.1-0.20260212054546-f0da990367b6
+	go.opentelemetry.io/collector/processor v1.51.1-0.20260212054546-f0da990367b6
+	go.opentelemetry.io/collector/processor/processorhelper v0.145.1-0.20260212054546-f0da990367b6
+	go.opentelemetry.io/collector/processor/processortest v0.145.1-0.20260212054546-f0da990367b6
 	go.opentelemetry.io/otel v1.40.0
+	go.uber.org/zap v1.27.1
 )
 
 require (
@@ -71,20 +74,19 @@ require (
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.145.1-0.20260205185216-81bc641f26c0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260205185216-81bc641f26c0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.145.1-0.20260205185216-81bc641f26c0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.145.1-0.20260205185216-81bc641f26c0 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.145.1-0.20260205185216-81bc641f26c0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.51.1-0.20260205185216-81bc641f26c0 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.145.1-0.20260205185216-81bc641f26c0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.145.1-0.20260212054546-f0da990367b6 // indirect
+	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260212054546-f0da990367b6 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.145.1-0.20260212054546-f0da990367b6 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.145.1-0.20260212054546-f0da990367b6 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.145.1-0.20260212054546-f0da990367b6 // indirect
+	go.opentelemetry.io/collector/pipeline v1.51.1-0.20260212054546-f0da990367b6 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.145.1-0.20260212054546-f0da990367b6 // indirect
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.40.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
