@@ -27,3 +27,9 @@ ansi_control_sequences_single_resource:
   type: regex_replace
   regex_name: ansi_control_sequences
   field: resource.key
+on_error_drop:
+  type: regex_replace
+  field: body.key
+  regex: a
+  replace_with: b
+  on_error: drop

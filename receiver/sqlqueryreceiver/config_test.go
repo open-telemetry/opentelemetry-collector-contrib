@@ -189,6 +189,33 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "'database' or 'datasource' must be specified",
 		},
 		{
+			fname: "config-logs-initial-delay.yaml",
+			id:    component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				Config: sqlquery.Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 10 * time.Second,
+						InitialDelay:       5 * time.Second,
+					},
+					Driver:     "postgres",
+					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
+					Queries: []sqlquery.Query{
+						{
+							SQL:                "select * from test_logs where log_id > ?",
+							TrackingColumn:     "log_id",
+							TrackingStartValue: "10",
+							Logs: []sqlquery.LogsCfg{
+								{
+									BodyColumn:       "log_body",
+									AttributeColumns: []string{"log_attribute_1", "log_attribute_2"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			fname: "config-logs.yaml",
 			id:    component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{

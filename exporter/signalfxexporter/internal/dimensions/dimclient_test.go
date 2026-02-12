@@ -128,7 +128,7 @@ func TestDimensionClient(t *testing.T) {
 
 	t.Run("send dimension update with properties and tags", func(t *testing.T) {
 		server.reset()
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "host",
 			Value: "test-box",
 			Properties: map[string]*string{
@@ -161,7 +161,7 @@ func TestDimensionClient(t *testing.T) {
 
 	t.Run("same dimension with different values", func(t *testing.T) {
 		server.reset()
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "host",
 			Value: "test-box",
 			Properties: map[string]*string{
@@ -192,7 +192,7 @@ func TestDimensionClient(t *testing.T) {
 		client.dropTags = true
 		defer func() { client.dropTags = false }()
 
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "host",
 			Value: "test-box",
 			Properties: map[string]*string{
@@ -226,7 +226,7 @@ func TestDimensionClient(t *testing.T) {
 		server.respCode = http.StatusInternalServerError
 
 		// send a distinct prop/tag set for same dim with an error
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "AWSUniqueID",
 			Value: "abcd",
 			Properties: map[string]*string{
@@ -261,7 +261,7 @@ func TestDimensionClient(t *testing.T) {
 		server.respCode = http.StatusBadRequest
 
 		// send a distinct prop/tag set for same dim with an error
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "AWSUniqueID",
 			Value: "aslfkj",
 			Properties: map[string]*string{
@@ -283,7 +283,7 @@ func TestDimensionClient(t *testing.T) {
 		server.respCode = http.StatusNotFound
 
 		// send a distinct prop/tag set for same dim with an error
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "AWSUniqueID",
 			Value: "id404",
 			Properties: map[string]*string{
@@ -312,7 +312,7 @@ func TestDimensionClient(t *testing.T) {
 		server.reset()
 		server.respCode = http.StatusBadRequest
 
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "AWSUniqueID",
 			Value: "abcd",
 			Properties: map[string]*string{
@@ -344,7 +344,7 @@ func TestDimensionClient(t *testing.T) {
 		server.reset()
 		server.respCode = http.StatusBadRequest
 
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "AWSUniqueID",
 			Value: "abcd",
 			Properties: map[string]*string{
@@ -368,7 +368,7 @@ func TestDimensionClient(t *testing.T) {
 	t.Run("send successive quick updates to same dim", func(t *testing.T) {
 		server.reset()
 
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "AWSUniqueID",
 			Value: "abcd",
 			Properties: map[string]*string{
@@ -379,7 +379,7 @@ func TestDimensionClient(t *testing.T) {
 			},
 		}))
 
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "AWSUniqueID",
 			Value: "abcd",
 			Properties: map[string]*string{
@@ -391,7 +391,7 @@ func TestDimensionClient(t *testing.T) {
 			},
 		}))
 
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "AWSUniqueID",
 			Value: "abcd",
 			Properties: map[string]*string{
@@ -428,7 +428,7 @@ func TestFlappyUpdates(t *testing.T) {
 
 	// Do some flappy updates
 	for i := range 5 {
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "pod_uid",
 			Value: "abcd",
 			Properties: map[string]*string{
@@ -436,7 +436,7 @@ func TestFlappyUpdates(t *testing.T) {
 			},
 		}))
 
-		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 			Name:  "pod_uid",
 			Value: "efgh",
 			Properties: map[string]*string{
@@ -470,7 +470,7 @@ func TestInvalidUpdatesNotSent(t *testing.T) {
 	client, server := setupTestClientServer(t)
 	defer server.shutdown()
 	defer client.Shutdown()
-	require.NoError(t, client.acceptDimension(&DimensionUpdate{
+	require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 		Name:  "host",
 		Value: "",
 		Properties: map[string]*string{
@@ -483,7 +483,7 @@ func TestInvalidUpdatesNotSent(t *testing.T) {
 	}))
 	server.handleRequest()
 
-	require.NoError(t, client.acceptDimension(&DimensionUpdate{
+	require.NoError(t, client.AcceptDimension(&DimensionUpdate{
 		Name:  "",
 		Value: "asdf",
 		Properties: map[string]*string{

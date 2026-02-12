@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package macosunifiedloggingreceiver implements a receiver that uses the native
 // macOS `log` command to retrieve and parse unified logging data.

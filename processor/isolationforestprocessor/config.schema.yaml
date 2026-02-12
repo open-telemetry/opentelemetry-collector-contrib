@@ -1,0 +1,107 @@
+$defs:
+  adaptive_window_config:
+    description: AdaptiveWindowConfig configures automatic window size adjustment based on traffic patterns
+    type: object
+    properties:
+      adaptation_rate:
+        type: number
+        x-customType: float64
+      enabled:
+        description: Core configuration
+        type: boolean
+      max_window_size:
+        type: integer
+      memory_limit_mb:
+        type: integer
+      min_window_size:
+        type: integer
+      stability_check_interval:
+        type: string
+      velocity_threshold:
+        description: Optional parameters with defaults
+        type: number
+        x-customType: float64
+  feature_config:
+    type: object
+    properties:
+      logs:
+        type: array
+        items:
+          type: string
+      metrics:
+        type: array
+        items:
+          type: string
+      traces:
+        type: array
+        items:
+          type: string
+  model_config:
+    type: object
+    properties:
+      contamination_rate:
+        type: number
+        x-customType: float64
+      features:
+        type: array
+        items:
+          type: string
+      forest_size:
+        type: integer
+      name:
+        type: string
+      selector:
+        type: object
+        additionalProperties:
+          type: string
+      subsample_size:
+        type: integer
+      threshold:
+        type: number
+        x-customType: float64
+  performance_config:
+    type: object
+    properties:
+      batch_size:
+        type: integer
+      max_memory_mb:
+        type: integer
+      parallel_workers:
+        type: integer
+description: Config represents the configuration for the isolation forest processor.
+type: object
+properties:
+  adaptive_window:
+    description: Adaptive window sizing configuration
+    x-pointer: true
+    $ref: adaptive_window_config
+  classification_attribute:
+    type: string
+  contamination_rate:
+    type: number
+    x-customType: float64
+  features:
+    $ref: feature_config
+  forest_size:
+    type: integer
+  min_samples:
+    type: integer
+  mode:
+    type: string
+  models:
+    type: array
+    items:
+      $ref: model_config
+  performance:
+    $ref: performance_config
+  score_attribute:
+    type: string
+  subsample_size:
+    type: integer
+  threshold:
+    type: number
+    x-customType: float64
+  training_window:
+    type: string
+  update_frequency:
+    type: string

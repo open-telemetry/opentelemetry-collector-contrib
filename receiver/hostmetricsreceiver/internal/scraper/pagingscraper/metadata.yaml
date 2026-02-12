@@ -35,8 +35,7 @@ metrics:
     enabled: true
     description: The number of page faults.
     unit: "{faults}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -47,8 +46,7 @@ metrics:
     enabled: true
     description: The number of paging operations.
     unit: "{operations}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -58,8 +56,7 @@ metrics:
     enabled: true
     description: Swap (unix) or pagefile (windows) usage.
     unit: By
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -70,8 +67,7 @@ metrics:
     enabled: false
     description: Swap (unix) or pagefile (windows) utilization.
     unit: "1"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
     attributes: [device, state]

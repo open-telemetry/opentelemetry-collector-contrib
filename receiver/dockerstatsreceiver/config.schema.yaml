@@ -1,0 +1,16 @@
+type: object
+properties:
+  container_labels_to_metric_labels:
+    description: 'A mapping of container label names to MetricDescriptor label keys. The corresponding container label value will become the DataPoint label value for the mapped name.  E.g. `io.kubernetes.container.name: container_spec_name` would result in a MetricDescriptor label called `container_spec_name` whose Metric DataPoints have the value of the `io.kubernetes.container.name` container label.'
+    type: object
+    additionalProperties:
+      type: string
+  env_vars_to_metric_labels:
+    description: 'A mapping of container environment variable names to MetricDescriptor label keys.  The corresponding env var values become the DataPoint label value. E.g. `APP_VERSION: version` would result MetricDescriptors having a label key called `version` whose DataPoint label values are the value of the `APP_VERSION` environment variable configured for that particular container, if present.'
+    type: object
+    additionalProperties:
+      type: string
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker.config
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: ./internal/metadata.metrics_builder_config

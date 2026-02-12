@@ -26,7 +26,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: collector-build
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
@@ -96,6 +96,7 @@ jobs:
         k8s-version:
           - "v1.32.8"
           - "v1.34.0"
+          - "v1.35.0"
         component:
           - receiver/k8sclusterreceiver
           - processor/k8sattributesprocessor
@@ -106,7 +107,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: docker-build
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable

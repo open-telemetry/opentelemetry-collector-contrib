@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package countconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 
@@ -173,9 +173,9 @@ func createProfilesToMetrics(
 ) (xconnector.Profiles, error) {
 	c := cfg.(*Config)
 
-	metricDefs := make(map[string]metricDef[ottlprofile.TransformContext], len(c.Profiles))
+	metricDefs := make(map[string]metricDef[*ottlprofile.TransformContext], len(c.Profiles))
 	for name, info := range c.Profiles {
-		md := metricDef[ottlprofile.TransformContext]{
+		md := metricDef[*ottlprofile.TransformContext]{
 			desc:  info.Description,
 			attrs: info.Attributes,
 		}

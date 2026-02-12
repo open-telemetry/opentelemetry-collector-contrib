@@ -1,0 +1,76 @@
+type: object
+properties:
+  additional_jars:
+    description: 'Array of additional JARs to be added to the class path when launching the JMX Metric Gatherer JAR Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: array
+    items:
+      type: string
+  endpoint:
+    description: 'The Service URL or host:port for the target coerced to one of form: service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi. Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: string
+  jar_path:
+    description: 'The path for the JMX Metric Gatherer or JMX Scraper JAR (/opt/opentelemetry-java-contrib-jmx-metrics.jar by default). Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: string
+  jmx_configs:
+    description: 'Comma-separated list of paths to custom YAML metrics definition, mandatory when TargetSystem is not set. Supported by: jmx-scraper'
+    type: string
+  keystore_password:
+    description: 'The keystore password for SSL Supported by: jmx-scraper and jmx-metric-gatherer'
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  keystore_path:
+    description: 'The keystore path for SSL Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: string
+  keystore_type:
+    description: 'The keystore type for SSL Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: string
+  log_level:
+    description: 'Log level used by the JMX metric gatherer. Should be one of: `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"` Supported by: jmx-metric-gatherer'
+    type: string
+  otlp:
+    description: 'The OTLP exporter settings Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: object
+    properties:
+      endpoint:
+        description: The OTLP Receiver endpoint to send metrics to ("0.0.0.0:<random open port>" by default).
+        type: string
+      headers:
+        description: The headers to include in OTLP metric submission requests.
+        type: object
+        additionalProperties:
+          type: string
+    allOf:
+      - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+  password:
+    description: 'The JMX password Supported by: jmx-scraper and jmx-metric-gatherer'
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  realm:
+    description: 'The SASL/DIGEST-MD5 realm Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: string
+  remote_profile:
+    description: 'The JMX remote profile.  Should be one of: `"SASL/PLAIN"`, `"SASL/DIGEST-MD5"`, `"SASL/CRAM-MD5"`, `"TLS SASL/PLAIN"`, `"TLS SASL/DIGEST-MD5"`, or `"TLS SASL/CRAM-MD5"`, though no enforcement is applied. Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: string
+  resource_attributes:
+    description: 'Map of resource attributes used by the Java SDK Autoconfigure to set resource attributes Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: object
+    additionalProperties:
+      type: string
+  target_source:
+    description: 'The target source of metric definitions to use for the target system. Supported values are: auto, instrumentation and legacy. Supported by: jmx-scraper'
+    type: string
+  target_system:
+    description: 'Comma-separated list of systems to monitor Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: string
+  truststore_password:
+    description: 'The truststore password for SSL Supported by: jmx-scraper and jmx-metric-gatherer'
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  truststore_path:
+    description: 'The truststore path for SSL Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: string
+  truststore_type:
+    description: 'The truststore type for SSL Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: string
+  username:
+    description: 'The JMX username Supported by: jmx-scraper and jmx-metric-gatherer'
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

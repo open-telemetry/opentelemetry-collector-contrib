@@ -26,7 +26,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					WindowsServiceStatus: MetricConfig{Enabled: true},
+					WindowsServiceStatus: MetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"name", "startup_mode"},
+					},
 				},
 			},
 		},
@@ -34,7 +38,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					WindowsServiceStatus: MetricConfig{Enabled: false},
+					WindowsServiceStatus: MetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []string{"name", "startup_mode"},
+					},
 				},
 			},
 		},

@@ -59,6 +59,9 @@ const (
 
 	// OpenTelemetry attribute name for for "x-forwarded-host" HTTP Header value
 	attributeHTTPHeaderForwardedHost = "http.request.header.x-forwarded-host"
+
+	// OpenTelemetry attribute name for "Referer" HTTP Header value
+	attributeHTTPHeaderReferer = "http.request.header.referer"
 )
 
 // See https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appserviceapplogs

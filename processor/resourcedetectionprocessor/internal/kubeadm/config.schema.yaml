@@ -1,0 +1,6 @@
+type: object
+properties:
+  resource_attributes:
+    $ref: ./internal/metadata.resource_attributes_config
+allOf:
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig.api_config

@@ -1,0 +1,119 @@
+$defs:
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for splunkenterprise metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+  metrics_config:
+    description: MetricsConfig provides config for splunkenterprise metrics.
+    type: object
+    properties:
+      splunk.aggregation.queue.ratio:
+        $ref: metric_config
+      splunk.buckets.searchable.status:
+        $ref: metric_config
+      splunk.data.indexes.extended.bucket.count:
+        $ref: metric_config
+      splunk.data.indexes.extended.bucket.event.count:
+        $ref: metric_config
+      splunk.data.indexes.extended.bucket.hot.count:
+        $ref: metric_config
+      splunk.data.indexes.extended.bucket.warm.count:
+        $ref: metric_config
+      splunk.data.indexes.extended.event.count:
+        $ref: metric_config
+      splunk.data.indexes.extended.raw.size:
+        $ref: metric_config
+      splunk.data.indexes.extended.total.size:
+        $ref: metric_config
+      splunk.health:
+        $ref: metric_config
+      splunk.indexer.avg.rate:
+        $ref: metric_config
+      splunk.indexer.cpu.time:
+        $ref: metric_config
+      splunk.indexer.queue.ratio:
+        $ref: metric_config
+      splunk.indexer.raw.write.time:
+        $ref: metric_config
+      splunk.indexer.rollingrestart.status:
+        $ref: metric_config
+      splunk.indexer.throughput:
+        $ref: metric_config
+      splunk.indexes.avg.size:
+        $ref: metric_config
+      splunk.indexes.avg.usage:
+        $ref: metric_config
+      splunk.indexes.bucket.count:
+        $ref: metric_config
+      splunk.indexes.median.data.age:
+        $ref: metric_config
+      splunk.indexes.size:
+        $ref: metric_config
+      splunk.io.avg.iops:
+        $ref: metric_config
+      splunk.kvstore.backup.status:
+        $ref: metric_config
+      splunk.kvstore.replication.status:
+        $ref: metric_config
+      splunk.kvstore.status:
+        $ref: metric_config
+      splunk.license.expiration.seconds_remaining:
+        $ref: metric_config
+      splunk.license.index.usage:
+        $ref: metric_config
+      splunk.parse.queue.ratio:
+        $ref: metric_config
+      splunk.pipeline.set.count:
+        $ref: metric_config
+      splunk.scheduler.avg.execution.latency:
+        $ref: metric_config
+      splunk.scheduler.avg.run.time:
+        $ref: metric_config
+      splunk.scheduler.completion.ratio:
+        $ref: metric_config
+      splunk.search.duration:
+        $ref: metric_config
+      splunk.search.initiation:
+        $ref: metric_config
+      splunk.search.status:
+        $ref: metric_config
+      splunk.search.success:
+        $ref: metric_config
+      splunk.server.introspection.queues.current:
+        $ref: metric_config
+      splunk.server.introspection.queues.current.bytes:
+        $ref: metric_config
+      splunk.server.searchartifacts.adhoc:
+        $ref: metric_config
+      splunk.server.searchartifacts.adhoc.size:
+        $ref: metric_config
+      splunk.server.searchartifacts.completed:
+        $ref: metric_config
+      splunk.server.searchartifacts.completed.size:
+        $ref: metric_config
+      splunk.server.searchartifacts.incomplete:
+        $ref: metric_config
+      splunk.server.searchartifacts.incomplete.size:
+        $ref: metric_config
+      splunk.server.searchartifacts.invalid:
+        $ref: metric_config
+      splunk.server.searchartifacts.job.cache.count:
+        $ref: metric_config
+      splunk.server.searchartifacts.job.cache.size:
+        $ref: metric_config
+      splunk.server.searchartifacts.savedsearches:
+        $ref: metric_config
+      splunk.server.searchartifacts.scheduled:
+        $ref: metric_config
+      splunk.server.searchartifacts.scheduled.size:
+        $ref: metric_config
+      splunk.typing.queue.ratio:
+        $ref: metric_config
