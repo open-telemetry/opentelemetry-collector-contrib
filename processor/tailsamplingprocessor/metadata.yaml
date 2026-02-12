@@ -1,3 +1,4 @@
+display_name: Tail Sampling Processor
 type: tail_sampling
 
 status:

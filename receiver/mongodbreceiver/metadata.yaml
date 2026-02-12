@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [justinianvoss22, dyl10s]
+    active: [justinianvoss22, dyl10s, ishleenk17]
     seeking_new: true
 
 resource_attributes:

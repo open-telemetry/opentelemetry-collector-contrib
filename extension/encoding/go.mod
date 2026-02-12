@@ -1,8 +1,9 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding
 
-go 1.24.0
+go 1.25.0
 
 require (
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/extension v1.51.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/pdata v1.51.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/pdata/pprofile v0.145.1-0.20260205185216-81bc641f26c0
@@ -24,4 +25,5 @@ require (
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

@@ -101,15 +101,13 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("failed to bind to address %s: %w", s.httpConfig.NetAddr.Endpoint, err)
 	}
 
-	s.doneWg.Add(1)
-	go func() {
-		defer s.doneWg.Done()
+	s.doneWg.Go(func() {
 		defer s.doneOnce.Do(func() { close(s.doneCh) })
 
 		if err = s.httpServer.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewPermanentErrorEvent(err))
 		}
-	}()
+	})
 
 	return nil
 }

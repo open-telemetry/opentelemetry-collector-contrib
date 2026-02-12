@@ -1,11 +1,12 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.145.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.145.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding v0.145.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.51.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/component/componenttest v0.145.1-0.20260205185216-81bc641f26c0
@@ -14,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.145.1-0.20260205185216-81bc641f26c0
 	go.opentelemetry.io/collector/pdata v1.51.1-0.20260205185216-81bc641f26c0
 	go.uber.org/goleak v1.3.0
-	golang.org/x/text v0.31.0
+	golang.org/x/text v0.34.0
 )
 
 require (
@@ -61,3 +62,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding => ../../../pkg/xstreamencoding

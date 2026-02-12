@@ -7,7 +7,9 @@ status:
   distributions: [contrib, k8s]
   warnings: []
   codeowners:
-    active: [codeboten, VenuEmmadi]
+    active: [VenuEmmadi]
+    emeritus: [codeboten]
+    seeking_new: true
 
 resource_attributes:
 
