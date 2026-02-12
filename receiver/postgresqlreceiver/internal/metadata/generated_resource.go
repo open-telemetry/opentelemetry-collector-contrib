@@ -21,34 +21,6 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetPostgresqlDatabaseName sets provided value as "postgresql.database.name" attribute.
-func (rb *ResourceBuilder) SetPostgresqlDatabaseName(val string) {
-	if rb.config.PostgresqlDatabaseName.Enabled {
-		rb.res.Attributes().PutStr("postgresql.database.name", val)
-	}
-}
-
-// SetPostgresqlIndexName sets provided value as "postgresql.index.name" attribute.
-func (rb *ResourceBuilder) SetPostgresqlIndexName(val string) {
-	if rb.config.PostgresqlIndexName.Enabled {
-		rb.res.Attributes().PutStr("postgresql.index.name", val)
-	}
-}
-
-// SetPostgresqlSchemaName sets provided value as "postgresql.schema.name" attribute.
-func (rb *ResourceBuilder) SetPostgresqlSchemaName(val string) {
-	if rb.config.PostgresqlSchemaName.Enabled {
-		rb.res.Attributes().PutStr("postgresql.schema.name", val)
-	}
-}
-
-// SetPostgresqlTableName sets provided value as "postgresql.table.name" attribute.
-func (rb *ResourceBuilder) SetPostgresqlTableName(val string) {
-	if rb.config.PostgresqlTableName.Enabled {
-		rb.res.Attributes().PutStr("postgresql.table.name", val)
-	}
-}
-
 // SetServerAddress sets provided value as "server.address" attribute.
 func (rb *ResourceBuilder) SetServerAddress(val string) {
 	if rb.config.ServerAddress.Enabled {
@@ -67,13 +39,6 @@ func (rb *ResourceBuilder) SetServerPort(val int64) {
 func (rb *ResourceBuilder) SetServiceInstanceID(val string) {
 	if rb.config.ServiceInstanceID.Enabled {
 		rb.res.Attributes().PutStr("service.instance.id", val)
-	}
-}
-
-// SetServiceName sets provided value as "service.name" attribute.
-func (rb *ResourceBuilder) SetServiceName(val string) {
-	if rb.config.ServiceName.Enabled {
-		rb.res.Attributes().PutStr("service.name", val)
 	}
 }
 

@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -143,30 +142,6 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
-	if lbc.ResourceAttributes.PostgresqlDatabaseName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["postgresql.database.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlDatabaseName.EventsInclude)
-	}
-	if lbc.ResourceAttributes.PostgresqlDatabaseName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["postgresql.database.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlDatabaseName.EventsExclude)
-	}
-	if lbc.ResourceAttributes.PostgresqlIndexName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["postgresql.index.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlIndexName.EventsInclude)
-	}
-	if lbc.ResourceAttributes.PostgresqlIndexName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["postgresql.index.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlIndexName.EventsExclude)
-	}
-	if lbc.ResourceAttributes.PostgresqlSchemaName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["postgresql.schema.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlSchemaName.EventsInclude)
-	}
-	if lbc.ResourceAttributes.PostgresqlSchemaName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["postgresql.schema.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlSchemaName.EventsExclude)
-	}
-	if lbc.ResourceAttributes.PostgresqlTableName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["postgresql.table.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlTableName.EventsInclude)
-	}
-	if lbc.ResourceAttributes.PostgresqlTableName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["postgresql.table.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlTableName.EventsExclude)
-	}
 	if lbc.ResourceAttributes.ServerAddress.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsInclude)
 	}
@@ -184,12 +159,6 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 	}
 	if lbc.ResourceAttributes.ServiceInstanceID.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsExclude)
-	}
-	if lbc.ResourceAttributes.ServiceName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsInclude)
-	}
-	if lbc.ResourceAttributes.ServiceName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsExclude)
 	}
 
 	return lb
