@@ -59,16 +59,9 @@ The following allocatable resource types are available (see Node Allocatable in 
   - memory
   - ephemeral-storage
   - pods
-
-When enabled, this setting produces the following node-level metrics (one per selected type):
-
-| allocatable type | metric name                      | unit     | type  | value type |
-| ---------------- | -------------------------------- | -------- | ----- | ---------- |
-| cpu              | k8s.node.allocatable_cpu         | {cpu}    | Gauge | Double     |
-| memory           | k8s.node.allocatable_memory      | By       | Gauge | Double     |
-| ephemeral-storage| k8s.node.allocatable_ephemeral_storage | By | Gauge | Double     |
-| pods             | k8s.node.allocatable_pods        | {pod}    | Gauge | Int        |
-
+  Note that with the introduction of the [receiver.k8scluster.allocatableNamespace.enabled](#receiverk8sclusterallocatablenamespaceenabled) feature gate, the metrics for the allocatable resource types
+  (`k8s.node.allocatable.cpu`, `k8s.node.allocatable.ephemeral_storage`, `k8s.node.allocatable.memory`, `k8s.node.allocatable.pods`) are enabled/disabled via the metrics section, and are represented by up/down counters, rather than gauges.
+  To activate the feature flag, start the collector with `--feature-gates receiver.k8scluster.allocatableNamespace.enabled`.
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
 - `namespace` (deprecated, use `namespaces` instead): Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed.
@@ -92,6 +85,11 @@ Example:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+**Note** that with the introduction of the [receiver.k8scluster.EmitV1K8sConventions](#receiverk8sclusteremitv1k8sconventions) feature gate, the metrics for the allocatable resource types
+(`k8s.node.cpu.allocatable`, `k8s.node.ephemeral_storage.allocatable`, `k8s.node.memory.allocatable`, `k8s.node.pod.allocatable`) are enabled/disabled via the metrics section, and are represented by up/down counters, rather than gauges.
+To activate the feature flag, start the collector with `--feature-gates=+receiver.k8scluster.EmitV1K8sConventions`.
+To disable the old representation of the allocatable metrics (`k8s.node.allocatable_cpu`, `k8s.node.allocatable_ephemeral_storage`, `k8s.node.allocatable_memory`, `k8s.node.allocatable_pods`) enable the [receiver.k8scluster.DontEmitV0K8sConventions](#receiverk8sclusterdontemitvok8sconventions) feature gate with `--feature-gates=+receiver.k8scluster.DontEmitV0K8sConventions`
 
 ### k8s_leader_elector
 Provide name of the k8s leader elector extension defined in config. This allows multiple instances of k8s cluster
@@ -460,3 +458,30 @@ Add the following rules to your ClusterRole:
   - watch
 ```
 
+## Feature Gates
+
+### `receiver.k8scluster.EmitV1K8sConventions`
+
+The `receiver.k8scluster.EmitV1K8sConventions` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables V1 semantic conventions for the node allocatable metrics reported by the receiver.
+The feature gate is in `alpha` stage, which means it is disabled by default.
+
+When enabled, the V1 semantic conventions format of the node allocatable metrics are reported (if enabled via the metrics section):
+
+- `k8s.node.cpu.allocatable`
+- `k8s.node.ephemeral_storage.allocatable`
+- `k8s.node.memory.allocatable`
+- `k8s.node.pod.allocatable`
+
+### `receiver.k8scluster.DontEmitV0K8sConventions`
+
+The `receiver.k8scluster.DontEmitV0K8sConventions` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) disables V0 semantic conventions for the node allocatable metrics reported by the receiver.
+The feature gate is in `alpha` stage, which means it is disabled by default.
+
+When enabled, the old format of the node allocatable metrics are not reported:
+
+- `k8s.node.allocatable_cpu`
+- `k8s.node.allocatable_ephemeral_storage`
+- `k8s.node.allocatable_memory`
+- `k8s.node.allocatable_pods`
+
+See [documentation.md](./documentation.md#feature-gates) for the complete list of feature gates supported by this receiver.

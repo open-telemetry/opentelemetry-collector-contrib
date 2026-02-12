@@ -228,6 +228,38 @@ The current phase of namespaces (1 for active and 0 for terminating)
 | ---- | ----------- | ---------- | --------- |
 |  | Gauge | Int | Development |
 
+### k8s.node.cpu.allocatable
+
+Amount of cpu allocatable on the node
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {cpu} | Sum | Double | Unspecified | false | Development |
+
+### k8s.node.ephemeral_storage.allocatable
+
+Amount of ephemeral-storage allocatable on the node
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Unspecified | false | Development |
+
+### k8s.node.memory.allocatable
+
+Amount of memory allocatable on the node
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Unspecified | false | Development |
+
+### k8s.node.pod.allocatable
+
+Amount of pods allocatable on the node
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {pod} | Sum | Int | Unspecified | false | Development |
+
 ### k8s.pod.phase
 
 Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
@@ -490,3 +522,14 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true |
 | os.description | The os description used by Kubernetes Node. | Any Str | false |
 | os.type | The os type used by Kubernetes Node. | Any Str | false |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.k8scluster.DontEmitV0K8sConventions` | alpha | When enabled, V0 semantic conventions are disabled. | v0.146.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708) |
+| `receiver.k8scluster.EmitV1K8sConventions` | alpha | When enabled, V1 semantic conventions are enabled. | v0.146.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40708) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

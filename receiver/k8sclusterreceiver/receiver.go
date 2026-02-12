@@ -104,6 +104,10 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, kr.cancel = context.WithCancel(ctx)
 
+	if metadata.ReceiverK8sclusterDontEmitV0K8sConventionsFeatureGate.IsEnabled() && !metadata.ReceiverK8sclusterEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		return errors.New("cannot disable V0 semantic conventions without enabling V1 semantic conventions")
+	}
+
 	// if extension is defined start with k8s leader elector
 	if kr.config.K8sLeaderElector != nil {
 		kr.settings.Logger.Info("Starting k8sClusterReceiver with leader election")
