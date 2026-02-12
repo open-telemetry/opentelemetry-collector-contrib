@@ -1,4 +1,4 @@
-signaltometrics:
+signal_to_metrics:
   datapoints:
     - name: gauge.to.exphistogram
       description: An exponential histogram created from gauge values

@@ -274,9 +274,9 @@ func setResourceAttributes(rKey resourceKey, resource pcommon.Resource) {
 // if prepended by AWS/. Otherwise, it returns the CloudWatch namespace as the
 // service name with an empty service namespace
 func toServiceAttributes(namespace string) (serviceNamespace, serviceName string) {
-	index := strings.Index(namespace, namespaceDelimiter)
-	if index != -1 && strings.EqualFold(namespace[:index], conventions.CloudProviderAWS.Value.AsString()) {
-		return namespace[:index], namespace[index+1:]
+	before, after, ok := strings.Cut(namespace, namespaceDelimiter)
+	if ok && strings.EqualFold(before, conventions.CloudProviderAWS.Value.AsString()) {
+		return before, after
 	}
 	return "", namespace
 }
