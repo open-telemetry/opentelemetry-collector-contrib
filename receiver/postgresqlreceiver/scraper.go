@@ -182,7 +182,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
 	p.collectDatabaseLocks(ctx, now, listClient, &errs)
 
-	rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), "", "", "", "")
+	rb := p.setupResourceBuilder(p.mb.NewResourceBuilder())
 	return p.mb.Emit(metadata.WithResource(rb.Emit())), errs.combine()
 }
 
@@ -199,7 +199,7 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 
 	defer dbClient.Close()
 
-	rb := p.setupResourceBuilder(p.lb.NewResourceBuilder(), "", "", "", "")
+	rb := p.setupResourceBuilder(p.lb.NewResourceBuilder())
 	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
 }
 
@@ -212,7 +212,7 @@ func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery,
 		p.lastExecutionTimestamp = currentCollectionTime
 	}
 
-	rb := p.setupResourceBuilder(p.lb.NewResourceBuilder(), "", "", "", "")
+	rb := p.setupResourceBuilder(p.lb.NewResourceBuilder())
 	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
 }
 
@@ -478,26 +478,26 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 
 func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *dbRetrieval, numTables int64) {
 	dbName := databaseName(db)
-	p.mb.RecordPostgresqlTableCountDataPoint(now, numTables)
+	p.mb.RecordPostgresqlTableCountDataPoint(now, numTables, db)
 	if activeConnections, ok := r.activityMap[dbName]; ok {
-		p.mb.RecordPostgresqlBackendsDataPoint(now, activeConnections)
+		p.mb.RecordPostgresqlBackendsDataPoint(now, activeConnections, db)
 	}
 	if size, ok := r.dbSizeMap[dbName]; ok {
-		p.mb.RecordPostgresqlDbSizeDataPoint(now, size)
+		p.mb.RecordPostgresqlDbSizeDataPoint(now, size, db)
 	}
 	if stats, ok := r.dbStats[dbName]; ok {
-		p.mb.RecordPostgresqlCommitsDataPoint(now, stats.transactionCommitted)
-		p.mb.RecordPostgresqlRollbacksDataPoint(now, stats.transactionRollback)
-		p.mb.RecordPostgresqlDeadlocksDataPoint(now, stats.deadlocks)
-		p.mb.RecordPostgresqlTempFilesDataPoint(now, stats.tempFiles)
-		p.mb.RecordPostgresqlTempIoDataPoint(now, stats.tempIo)
-		p.mb.RecordPostgresqlTupUpdatedDataPoint(now, stats.tupUpdated)
-		p.mb.RecordPostgresqlTupReturnedDataPoint(now, stats.tupReturned)
-		p.mb.RecordPostgresqlTupFetchedDataPoint(now, stats.tupFetched)
-		p.mb.RecordPostgresqlTupInsertedDataPoint(now, stats.tupInserted)
-		p.mb.RecordPostgresqlTupDeletedDataPoint(now, stats.tupDeleted)
-		p.mb.RecordPostgresqlBlksHitDataPoint(now, stats.blksHit)
-		p.mb.RecordPostgresqlBlksReadDataPoint(now, stats.blksRead)
+		p.mb.RecordPostgresqlCommitsDataPoint(now, stats.transactionCommitted, db)
+		p.mb.RecordPostgresqlRollbacksDataPoint(now, stats.transactionRollback, db)
+		p.mb.RecordPostgresqlDeadlocksDataPoint(now, stats.deadlocks, db)
+		p.mb.RecordPostgresqlTempFilesDataPoint(now, stats.tempFiles, db)
+		p.mb.RecordPostgresqlTempIoDataPoint(now, stats.tempIo, db)
+		p.mb.RecordPostgresqlTupUpdatedDataPoint(now, stats.tupUpdated, db)
+		p.mb.RecordPostgresqlTupReturnedDataPoint(now, stats.tupReturned, db)
+		p.mb.RecordPostgresqlTupFetchedDataPoint(now, stats.tupFetched, db)
+		p.mb.RecordPostgresqlTupInsertedDataPoint(now, stats.tupInserted, db)
+		p.mb.RecordPostgresqlTupDeletedDataPoint(now, stats.tupDeleted, db)
+		p.mb.RecordPostgresqlBlksHitDataPoint(now, stats.blksHit, db)
+		p.mb.RecordPostgresqlBlksReadDataPoint(now, stats.blksRead, db)
 	}
 	if conflicts, ok := r.dbConflictStats[dbName]; ok {
 		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflTablespace, metadata.AttributePostgresqlConflictTypeTablespace)
@@ -506,8 +506,6 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflBufferpin, metadata.AttributePostgresqlConflictTypeBufferpin)
 		p.mb.RecordPostgresqlQueryConflictsDataPoint(now, conflicts.conflDeadlock, metadata.AttributePostgresqlConflictTypeDeadlock)
 	}
-	rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), db, "", "", "")
-	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
@@ -522,28 +520,6 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 	}
 
 	for tableKey, tm := range tableMetrics {
-		p.mb.RecordPostgresqlRowsDataPoint(now, tm.dead, metadata.AttributeStateDead)
-		p.mb.RecordPostgresqlRowsDataPoint(now, tm.live, metadata.AttributeStateLive)
-		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.inserts, metadata.AttributeOperationIns)
-		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.del, metadata.AttributeOperationDel)
-		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.upd, metadata.AttributeOperationUpd)
-		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.hotUpd, metadata.AttributeOperationHotUpd)
-		p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size)
-		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount)
-		p.mb.RecordPostgresqlSequentialScansDataPoint(now, tm.seqScans)
-
-		br, ok := blockReads[tableKey]
-		if ok {
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapRead, metadata.AttributeSourceHeapRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapHit, metadata.AttributeSourceHeapHit)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxRead, metadata.AttributeSourceIdxRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxHit, metadata.AttributeSourceIdxHit)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastHit, metadata.AttributeSourceToastHit)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastRead, metadata.AttributeSourceToastRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, metadata.AttributeSourceTidxRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, metadata.AttributeSourceTidxHit)
-		}
-
 		var schemaName string
 		var tableName string
 		if p.separateSchemaAttr {
@@ -553,8 +529,27 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 			tableName = fmt.Sprintf("%s.%s", tm.schema, tm.table)
 		}
 
-		rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), db, schemaName, tableName, "")
-		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		p.mb.RecordPostgresqlRowsDataPoint(now, tm.dead, metadata.AttributeStateDead, db, schemaName, tableName)
+		p.mb.RecordPostgresqlRowsDataPoint(now, tm.live, metadata.AttributeStateLive, db, schemaName, tableName)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.inserts, metadata.AttributeOperationIns, db, schemaName, tableName)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.del, metadata.AttributeOperationDel, db, schemaName, tableName)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.upd, metadata.AttributeOperationUpd, db, schemaName, tableName)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.hotUpd, metadata.AttributeOperationHotUpd, db, schemaName, tableName)
+		p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size, db, schemaName, tableName)
+		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount, db, schemaName, tableName)
+		p.mb.RecordPostgresqlSequentialScansDataPoint(now, tm.seqScans, db, schemaName, tableName)
+
+		br, ok := blockReads[tableKey]
+		if ok {
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapRead, metadata.AttributeSourceHeapRead, db, schemaName, tableName)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapHit, metadata.AttributeSourceHeapHit, db, schemaName, tableName)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxRead, metadata.AttributeSourceIdxRead, db, schemaName, tableName)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxHit, metadata.AttributeSourceIdxHit, db, schemaName, tableName)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastHit, metadata.AttributeSourceToastHit, db, schemaName, tableName)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastRead, metadata.AttributeSourceToastRead, db, schemaName, tableName)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, metadata.AttributeSourceTidxRead, db, schemaName, tableName)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, metadata.AttributeSourceTidxHit, db, schemaName, tableName)
+		}
 	}
 	return int64(len(tableMetrics))
 }
@@ -573,16 +568,13 @@ func (p *postgreSQLScraper) collectIndexes(
 	}
 
 	for _, stat := range idxStats {
-		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans)
-		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size)
-
 		var schemaName string
 		if p.separateSchemaAttr {
 			schemaName = stat.schema
 		}
 
-		rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), database, schemaName, stat.table, stat.index)
-		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans, database, schemaName, stat.table, stat.index)
+		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size, database, schemaName, stat.table, stat.index)
 	}
 }
 
@@ -600,15 +592,12 @@ func (p *postgreSQLScraper) collectFunctions(
 	}
 
 	for _, stat := range funcStats {
-		p.mb.RecordPostgresqlFunctionCallsDataPoint(now, stat.calls, stat.function)
-
 		var schemaName string
 		if p.separateSchemaAttr {
 			schemaName = stat.schema
 		}
-		rb := p.setupResourceBuilder(p.mb.NewResourceBuilder(), database, schemaName, "", "")
 
-		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		p.mb.RecordPostgresqlFunctionCallsDataPoint(now, stat.calls, stat.function, database, schemaName)
 	}
 }
 
@@ -811,7 +800,7 @@ func (*postgreSQLScraper) retrieveBackends(
 	r.Unlock()
 }
 
-func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder, database, schema, table, index string) *metadata.ResourceBuilder {
+func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
 	rb.SetServiceName(defaultServiceName)
 	rb.SetServiceNamespace("")
 
@@ -822,47 +811,11 @@ func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder, d
 		}
 	}
 
-	// Generate deterministic UUID v5 for service.instance.id based on resource identifiers.
-	// This ensures the triplet (service.namespace, service.name, service.instance.id) is unique per resource.
-	instanceID := p.generateInstanceID(database, schema, table, index)
+	// Generate deterministic UUID v5 for service.instance.id based on host:port only.
+	instanceID := uuid.NewSHA1(otelNamespaceUUID, []byte(p.serviceInstanceID)).String()
 	rb.SetServiceInstanceID(instanceID)
 
-	if database != "" {
-		rb.SetPostgresqlDatabaseName(database)
-	}
-	if schema != "" {
-		rb.SetPostgresqlSchemaName(schema)
-	}
-	if table != "" {
-		rb.SetPostgresqlTableName(table)
-	}
-	if index != "" {
-		rb.SetPostgresqlIndexName(index)
-	}
-
 	return rb
-}
-
-// generateInstanceID creates a deterministic UUID v5 from the resource identifiers.
-// The UUID is stable across restarts - same inputs always produce the same UUID.
-func (p *postgreSQLScraper) generateInstanceID(database, schema, table, index string) string {
-	// Build the name from non-empty components
-	var parts []string
-	parts = append(parts, p.serviceInstanceID) // Always include host:port
-	if database != "" {
-		parts = append(parts, database)
-	}
-	if schema != "" {
-		parts = append(parts, schema)
-	}
-	if table != "" {
-		parts = append(parts, table)
-	}
-	if index != "" {
-		parts = append(parts, index)
-	}
-	name := strings.Join(parts, "\x00")
-	return uuid.NewSHA1(otelNamespaceUUID, []byte(name)).String()
 }
 
 func getInstanceID(instanceString string, logger *zap.Logger) string {
@@ -873,7 +826,7 @@ func getInstanceID(instanceString string, logger *zap.Logger) string {
 		return fallback
 	}
 
-	if strings.EqualFold(host, "localhost") || net.ParseIP(host).IsLoopback() {
+	if parsedIP := net.ParseIP(host); strings.EqualFold(host, "localhost") || (parsedIP != nil && parsedIP.IsLoopback()) {
 		localhost, hostNameErr := os.Hostname()
 		if hostNameErr != nil {
 			logger.Warn("Failed getting localhost machine name to construct service.instance.id.")
