@@ -36,7 +36,7 @@ func NewPrometheusDataSender(host string, port int) testbed.MetricDataSender {
 func (pds *prometheusDataSender) Start() error {
 	factory := prometheusexporter.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusexporter.Config)
-	cfg.Endpoint = pds.GetEndpoint().String()
+	cfg.NetAddr.Endpoint = pds.GetEndpoint().String()
 	cfg.Namespace = pds.namespace
 	params := exportertest.NewNopSettings(factory.Type())
 	params.Logger = zap.L()

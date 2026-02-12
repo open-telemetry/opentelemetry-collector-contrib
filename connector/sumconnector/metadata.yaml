@@ -1,4 +1,5 @@
 type: sum
+display_name: Sum Connector
 
 status:
   class: connector

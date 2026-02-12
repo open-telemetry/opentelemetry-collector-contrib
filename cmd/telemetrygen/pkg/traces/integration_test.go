@@ -80,8 +80,9 @@ func startMockReceiver(t *testing.T) (*grpc.Server, string, *mockTracesReceiver)
 
 // TestTelemetrygenIntegration tests the actual behavior of the telemetrygen tool
 func TestTelemetrygenIntegration(t *testing.T) {
-	buildDir := "../../../telemetrygen"
+	// Create unique binary name to avoid conflicts between tests
 	binaryName := fmt.Sprintf("telemetrygen-test-%d", time.Now().UnixNano())
+	buildDir := "../../../telemetrygen"
 	buildCmd := exec.Command("go", "build", "-o", binaryName, ".")
 	buildCmd.Dir = buildDir
 	err := buildCmd.Run()
@@ -90,7 +91,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 	testBinaryPath := fmt.Sprintf("../../../telemetrygen/%s", binaryName)
 	defer os.Remove(testBinaryPath)
 
-	t.Run("RespectsTracesParameter", func(t *testing.T) {
+	t.Run("RespectsTracesParameterWithBatching", func(t *testing.T) {
 		server, endpoint, receiver := startMockReceiver(t)
 		defer func() {
 			server.Stop()
@@ -104,14 +105,14 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Add timeout to prevent hanging
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, testBinaryPath, "traces", "--traces", "3", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		cmd := exec.CommandContext(ctx, testBinaryPath, "traces", "--traces", "5", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch", "--batch-size", "2")
 
 		start := time.Now()
 		err := cmd.Run()
 		duration := time.Since(start)
 
-		assert.NoError(t, err, "telemetrygen should complete successfully with --traces parameter")
-		assert.Less(t, duration, 8*time.Second, "Should complete quickly without connection issues")
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching enabled")
+		assert.Less(t, duration, 10*time.Second, "Should complete quickly without connection issues")
 
 		// Wait for all traces to be processed
 		time.Sleep(500 * time.Millisecond)
@@ -132,7 +133,52 @@ func TestTelemetrygenIntegration(t *testing.T) {
 			}
 		}
 
-		assert.Len(t, traceIDs, 3, "Should have received exactly 3 unique traces")
+		assert.Len(t, traceIDs, 5, "Should have received exactly 5 unique traces with batching enabled")
+	})
+
+	t.Run("RespectsTracesParameterWithoutBatching", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			// Wait for server to fully stop and connections to close
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		// Reset receiver to ensure clean state
+		receiver.Reset()
+
+		// Add timeout to prevent hanging
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, testBinaryPath, "traces", "--traces", "4", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
+
+		start := time.Now()
+		err := cmd.Run()
+		duration := time.Since(start)
+
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching disabled")
+		assert.Less(t, duration, 10*time.Second, "Should complete quickly without connection issues")
+
+		// Wait for all traces to be processed
+		time.Sleep(500 * time.Millisecond)
+		traces := receiver.GetTraces()
+
+		// Count unique trace IDs across all received traces
+		traceIDs := make(map[string]bool)
+		for _, trace := range traces {
+			for i := 0; i < trace.ResourceSpans().Len(); i++ {
+				resourceSpan := trace.ResourceSpans().At(i)
+				for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
+					scopeSpan := resourceSpan.ScopeSpans().At(j)
+					for k := 0; k < scopeSpan.Spans().Len(); k++ {
+						span := scopeSpan.Spans().At(k)
+						traceIDs[span.TraceID().String()] = true
+					}
+				}
+			}
+		}
+
+		assert.Len(t, traceIDs, 4, "Should have received exactly 4 unique traces with batching disabled")
 	})
 
 	t.Run("DurationOverridesTraces", func(t *testing.T) {

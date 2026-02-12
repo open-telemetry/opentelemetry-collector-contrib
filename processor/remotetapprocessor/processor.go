@@ -52,19 +52,17 @@ func (w *wsprocessor) Start(ctx context.Context, host component.Host) error {
 	var ln net.Listener
 	ln, err = w.config.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", w.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", w.config.NetAddr.Endpoint, err)
 	}
 	w.server, err = w.config.ToServer(ctx, host.GetExtensions(), w.telemetrySettings, websocket.Server{Handler: w.handleConn})
 	if err != nil {
 		return err
 	}
-	w.shutdownWG.Add(1)
-	go func() {
-		defer w.shutdownWG.Done()
+	w.shutdownWG.Go(func() {
 		if errHTTP := w.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 	return nil
 }
 

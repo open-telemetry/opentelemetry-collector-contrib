@@ -67,7 +67,7 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","attrKey1":"abc","attrKey2":"def","data_stream":{"dataset":"generic","namespace":"default","type":"logs"},"error":{"stacktrace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
+			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","application":"myapp","attrKey1":"abc","attrKey2":"def","data_stream":{"dataset":"generic","namespace":"default","type":"logs"},"error":{"stacktrace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
 			actual := string(docs[0].Document)
 			assert.JSONEq(t, expected, actual)
 
@@ -225,7 +225,7 @@ func TestExporterLogs(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			assert.JSONEq(t,
-				`{"attr":{"key":"value"},"agent":{"name":"otlp"},"@timestamp":"1970-01-01T00:00:00.000000000Z"}`,
+				`{"attr":{"key":"value"},"@timestamp":"1970-01-01T00:00:00.000000000Z"}`,
 				string(docs[0].Document),
 			)
 			rec.Record(docs)
@@ -847,10 +847,10 @@ func TestExporterLogs(t *testing.T) {
 
 	t.Run("publish logs with dynamic id", func(t *testing.T) {
 		t.Parallel()
-		exampleDocID := "abc123"
+		exampleDocID := "example-doc-id-123"
 		tableTests := []struct {
 			name          string
-			expectedDocID string // "" means the _id will not be set
+			expectedDocID string // "" means the document ID will not be set
 			recordAttrs   map[string]any
 		}{
 			{
@@ -865,7 +865,7 @@ func TestExporterLogs(t *testing.T) {
 				},
 			},
 			{
-				name:          "record attributes",
+				name:          "valid document id attribute should set _id",
 				expectedDocID: exampleDocID,
 				recordAttrs: map[string]any{
 					elasticsearch.DocumentIDAttributeName: exampleDocID,
@@ -873,51 +873,39 @@ func TestExporterLogs(t *testing.T) {
 			},
 		}
 
-		cfgs := map[string]func(*Config){
-			"async": func(cfg *Config) {
-				cfg.QueueBatchConfig.Get().WaitForResult = false
-				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
-			},
-			"sync": func(cfg *Config) {
-				cfg.QueueBatchConfig.Get().WaitForResult = true
-				cfg.QueueBatchConfig.Get().BlockOnOverflow = false
-			},
-		}
 		for _, tt := range tableTests {
-			for cfgName, cfgFn := range cfgs {
-				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
-					t.Parallel()
-					rec := newBulkRecorder()
-					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-						rec.Record(docs)
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
 
-						if tt.expectedDocID == "" {
-							assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
-						} else {
-							assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
-						}
+					if tt.expectedDocID == "" {
+						assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+					} else {
+						assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+					}
 
-						// Ensure the document id attribute is removed from the final document.
-						assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
-						return itemsAllOK(docs)
-					})
-
-					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-						cfg.Mapping.Mode = "otel"
-						cfg.LogsDynamicID.Enabled = true
-						cfgFn(cfg)
-					})
-					logs := newLogsWithAttributes(
-						tt.recordAttrs,
-						map[string]any{},
-						map[string]any{},
-					)
-					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-					mustSendLogs(t, exporter, logs)
-
-					rec.WaitItems(1)
+					// Ensure the document id attribute is removed from the final document.
+					assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+					return itemsAllOK(docs)
 				})
-			}
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.LogsDynamicID.Enabled = true
+				})
+				logs := newLogsWithAttributes(
+					tt.recordAttrs,
+					map[string]any{
+						"elastic.mapping.mode": "otel",
+					},
+					map[string]any{},
+				)
+				logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+				mustSendLogs(t, exporter, logs)
+
+				rec.WaitItems(1)
+			})
 		}
 	})
 
@@ -1943,6 +1931,61 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("mapping hints excluded from grouping", func(t *testing.T) {
+		// Test that data points with different mapping hints are grouped together
+		// since elasticsearch.mapping.hints should be excluded from the hash.
+		for _, mode := range []string{"ecs", "otel"} {
+			t.Run(mode, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				testMetricsExporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = mode
+				})
+
+				metrics := pmetric.NewMetrics()
+				resource := metrics.ResourceMetrics().AppendEmpty()
+				scope := resource.ScopeMetrics().AppendEmpty()
+
+				// Metric with mapping hints
+				fooMetric := scope.Metrics().AppendEmpty()
+				fooMetric.SetName("metric.foo")
+				fooDp := fooMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				fooDp.SetDoubleValue(1.0)
+				hints := fooDp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintAggregateMetricDouble))
+
+				// Metric without mapping hints - should be grouped with the above
+				barMetric := scope.Metrics().AppendEmpty()
+				barMetric.SetName("metric.bar")
+				barDp := barMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				barDp.SetDoubleValue(2.0)
+
+				// Metric with different mapping hints - should still be grouped
+				bazMetric := scope.Metrics().AppendEmpty()
+				bazMetric.SetName("metric.baz")
+				bazDp := bazMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				bazDp.SetDoubleValue(3.0)
+				bazHints := bazDp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				bazHints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+
+				mustSendMetrics(t, testMetricsExporter, metrics)
+
+				rec.WaitItems(1)
+				assert.Len(t, rec.Items(), 1)
+				// Sanity check that all metrics are included in a single document
+				// ECS mode uses short names (foo, bar, baz), OTel mode uses full names (metric.foo, etc.)
+				doc := string(rec.Items()[0].Document)
+				assert.Contains(t, doc, "foo")
+				assert.Contains(t, doc, "bar")
+				assert.Contains(t, doc, "baz")
+			})
+		}
+	})
 }
 
 func mapToDistinct(m map[string]any) attribute.Distinct {
@@ -2307,6 +2350,192 @@ func TestExporterTraces(t *testing.T) {
 				}
 			})
 		}
+	})
+
+	t.Run("publish spans with dynamic id", func(t *testing.T) {
+		t.Parallel()
+		exampleDocID := "example-doc-id-123"
+		tableTests := []struct {
+			name          string
+			expectedDocID string // "" means the document ID will not be set
+			spanAttrs     map[string]any
+		}{
+			{
+				name:          "missing document id attribute should not set _id",
+				expectedDocID: "",
+			},
+			{
+				name:          "empty document id attribute should not set _id",
+				expectedDocID: "",
+				spanAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: "",
+				},
+			},
+			{
+				name:          "valid document id attribute should set _id",
+				expectedDocID: exampleDocID,
+				spanAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: exampleDocID,
+				},
+			},
+		}
+
+		for _, tt := range tableTests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+
+					if tt.expectedDocID == "" {
+						assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+					} else {
+						assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+					}
+
+					// Ensure the document id attribute is removed from the final document.
+					assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+					cfg.TracesDynamicID.Enabled = true
+				})
+				traces := newTracesWithAttributes(
+					tt.spanAttrs,
+					map[string]any{
+						"elastic.mapping.mode": "otel",
+					},
+					map[string]any{},
+				)
+				mustSendTraces(t, exporter, traces)
+
+				rec.WaitItems(1)
+			})
+		}
+	})
+
+	t.Run("publish span events with dynamic id", func(t *testing.T) {
+		t.Parallel()
+		exampleDocID := "span-event-doc-id-456"
+		tableTests := []struct {
+			name          string
+			expectedDocID string
+			eventAttrs    map[string]any
+		}{
+			{
+				name:          "missing document id attribute should not set _id",
+				expectedDocID: "",
+			},
+			{
+				name:          "empty document id attribute should not set _id",
+				expectedDocID: "",
+				eventAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: "",
+				},
+			},
+			{
+				name:          "span event attributes",
+				expectedDocID: exampleDocID,
+				eventAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: exampleDocID,
+				},
+			},
+		}
+
+		for _, tt := range tableTests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+					cfg.TracesDynamicID.Enabled = true
+				})
+				traces := newTracesWithAttributes(
+					map[string]any{},
+					map[string]any{
+						"elastic.mapping.mode": "otel",
+					},
+					map[string]any{},
+				)
+				spanEvent := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+				spanEvent.SetName("test_event")
+				fillAttributeMap(spanEvent.Attributes(), tt.eventAttrs)
+				mustSendTraces(t, exporter, traces)
+
+				// Wait for both span and span event
+				rec.WaitItems(2)
+
+				// Find the span event document
+				var spanEventDoc *itemRequest
+				for _, doc := range rec.Items() {
+					if result := gjson.GetBytes(doc.Document, "event_name"); result.Raw != "" {
+						spanEventDoc = &doc
+						break
+					}
+				}
+
+				require.NotNil(t, spanEventDoc, "span event document should be present")
+
+				if tt.expectedDocID == "" {
+					assert.NotContains(t, string(spanEventDoc.Action), "_id", "expected _id to not be set")
+				} else {
+					assert.Equal(t, tt.expectedDocID, actionJSONToID(t, spanEventDoc.Action), "expected _id to be set")
+				}
+
+				// Ensure the document id attribute is removed from the final document.
+				assert.NotContains(t, string(spanEventDoc.Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+			})
+		}
+	})
+
+	t.Run("publish with dynamic id in ecs mode", func(t *testing.T) {
+		t.Parallel()
+		// Test that spans respect dynamic document IDs in ECS mode,
+		// while span events are embedded (not separate documents)
+		exampleDocID := "ecs-span-doc-id-789"
+
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicID.Enabled = true
+		})
+
+		traces := newTracesWithAttributes(
+			map[string]any{
+				elasticsearch.DocumentIDAttributeName: exampleDocID,
+			},
+			map[string]any{
+				"elastic.mapping.mode": "ecs",
+			},
+			map[string]any{},
+		)
+
+		// Add a span event with its own document ID attribute (should be ignored in ECS mode)
+		spanEvent := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+		spanEvent.SetName("test_event_ecs")
+		spanEvent.Attributes().PutStr(elasticsearch.DocumentIDAttributeName, "should-be-ignored")
+
+		mustSendTraces(t, exporter, traces)
+
+		// In ECS mode, only the span document is created (span events are embedded)
+		rec.WaitItems(1)
+		docs := rec.Items()
+		require.Len(t, docs, 1, "should only have 1 document (span) in ECS mode")
+
+		// Verify the span document has the correct _id
+		assert.Equal(t, exampleDocID, actionJSONToID(t, docs[0].Action), "span should have dynamic _id")
+
+		// Verify the document ID attribute is removed from the span
+		assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "document id attribute should be removed")
 	})
 }
 

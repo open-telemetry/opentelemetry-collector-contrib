@@ -5,7 +5,9 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"sync"
 	"time"
@@ -20,6 +22,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+)
+
+const (
+	// maxUnreadableEntries limits the number of paths tracked in the unreadable map
+	// to prevent memory issues when many files have permission errors.
+	maxUnreadableEntries = 10000
 )
 
 type Manager struct {
@@ -39,11 +47,16 @@ type Manager struct {
 	pollsToArchive int
 
 	telemetryBuilder *metadata.TelemetryBuilder
+
+	unreadable map[string]struct{}
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
+
+	// initialize runtime-only tracking of unreadable paths
+	m.unreadable = make(map[string]struct{})
 
 	if _, err := m.fileMatcher.MatchFiles(); err != nil {
 		m.set.Logger.Warn("finding files", zap.Error(err))
@@ -94,9 +107,7 @@ func (m *Manager) Stop() error {
 // startPoller kicks off a goroutine that will poll the filesystem periodically,
 // checking if there are new files or new logs in the watched files
 func (m *Manager) startPoller(ctx context.Context) {
-	m.wg.Add(1)
-	go func() {
-		defer m.wg.Done()
+	m.wg.Go(func() {
 		globTicker := time.NewTicker(m.pollInterval)
 		defer globTicker.Stop()
 
@@ -109,7 +120,7 @@ func (m *Manager) startPoller(ctx context.Context) {
 
 			m.poll(ctx)
 		}
-	}()
+	})
 }
 
 // poll checks all the watched paths for new entries
@@ -175,16 +186,37 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, int64(0-m.tracker.EndConsume()))
 }
 
+// makeFingerprint opens `path` and computes a fingerprint for the file
+// and contains logic to only log file permission errors once per file per startup
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
 	// Normalize the path to handle Windows UNC paths correctly
 	normalizedPath, wasCorrupted := normalizePath(path)
 	if wasCorrupted {
 		m.set.Logger.Debug("Detected and repaired corrupted UNC path", zap.String("original_path", path), zap.String("normalized_path", normalizedPath))
 	}
-	file, err := os.Open(normalizedPath) // #nosec - operator must read in files defined by user
+	file, err := openFile(normalizedPath) // #nosec - operator must read in files defined by user
 	if err != nil {
-		m.set.Logger.Error("Failed to open file", zap.Error(err), zap.String("original_path", path), zap.String("normalized_path", normalizedPath))
+		// If a file is unreadable due to permissions error, store path in map and log error once (unless in debug mode)
+		if errors.Is(err, fs.ErrPermission) {
+			_, seen := m.unreadable[path]
+			if !seen {
+				// Limit map size to prevent unbounded growth
+				if len(m.unreadable) < maxUnreadableEntries {
+					m.unreadable[path] = struct{}{}
+				}
+				m.set.Logger.Error("Failed to open file - unreadable", zap.Error(err), zap.String("original_path", path), zap.String("normalized_path", normalizedPath))
+			}
+		} else {
+			// For non-permission errors, always log
+			m.set.Logger.Error("Failed to open file", zap.Error(err), zap.String("original_path", path), zap.String("normalized_path", normalizedPath))
+		}
 		return nil, nil
+	}
+
+	// Notify if previously unreadable file is now able to be read
+	if _, seen := m.unreadable[path]; seen {
+		m.set.Logger.Info("Previously unreadable file is now readable", zap.String("path", path))
+		delete(m.unreadable, path)
 	}
 
 	fp, err := m.readerFactory.NewFingerprint(file)

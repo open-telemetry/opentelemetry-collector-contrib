@@ -1,0 +1,19 @@
+$defs:
+  config:
+    type: object
+    properties:
+      api_version:
+        description: Docker client API version.
+        type: string
+      endpoint:
+        description: The URL of the docker server. Default is "unix:///var/run/docker.sock" on non-Windows and "npipe:////./pipe/docker_engine" on Windows
+        type: string
+      excluded_images:
+        description: A list of filters whose matching images are to be excluded. Supports literals, globs, and regex.
+        type: array
+        items:
+          type: string
+      timeout:
+        description: The maximum amount of time to wait for docker API responses. Default is 5s
+        type: string
+        format: duration

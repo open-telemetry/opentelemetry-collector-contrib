@@ -141,7 +141,7 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 	}
 
 	// Populate the list of components that are active in a pipeline
-	activeComponents, err := componentchecker.PopulateActiveComponents(e.configs.collector, moduleInfoJSON)
+	activeComponents, err := componentchecker.PopulateActiveComponents(e.logger, e.configs.collector, moduleInfoJSON)
 	if err != nil {
 		e.logger.Warn("Failed to populate active components list", zap.Error(err))
 	} else if activeComponents != nil {

@@ -42,7 +42,7 @@ func newTracesReceiver(
 	config *Config,
 	traceConsumer consumer.Traces,
 ) (*githubTracesReceiver, error) {
-	if config.WebHook.Endpoint == "" {
+	if config.WebHook.NetAddr.Endpoint == "" {
 		return nil, errMissingEndpoint
 	}
 
@@ -75,7 +75,7 @@ func newTracesReceiver(
 }
 
 func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host) error {
-	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.Endpoint, gtr.cfg.WebHook.Path)
+	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.NetAddr.Endpoint, gtr.cfg.WebHook.Path)
 	gtr.logger.Info("Starting GitHub WebHook receiving server", zap.String("endpoint", endpoint))
 
 	// noop if not nil. if start has not been called before these values should be nil.
@@ -106,14 +106,11 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 
 	gtr.logger.Info("Health check now listening at", zap.String("health_path", gtr.cfg.WebHook.HealthPath))
 
-	gtr.shutdownWG.Add(1)
-	go func() {
-		defer gtr.shutdownWG.Done()
-
+	gtr.shutdownWG.Go(func() {
 		if errHTTP := gtr.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 
 	return nil
 }

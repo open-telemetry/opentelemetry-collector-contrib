@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Name }}
+    spec:
+      serviceAccountName: {{ .Name }}-sa
+      initContainers:
+        - name: wait-for-metadata
+          image: curlimages/curl:8.6.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - >
+              until curl -sf http://{{ .Name }}-metadata.default.svc.cluster.local:8080/healthz;
+              do
+                sleep 1;
+              done
+      containers:
+        - name: otelcol
+          image: otelcontribcol:latest
+          imagePullPolicy: Never
+          env:
+            - name: GCE_METADATA_HOST
+              value: "{{ .Name }}-metadata.default.svc.cluster.local:8080"
+          args:
+            - "--config=/conf/relay"
+          ports:
+            - containerPort: 4317
+              name: otlp-grpc
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Name }}-config
+            items:
+              - key: relay
+                path: relay

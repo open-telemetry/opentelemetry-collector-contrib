@@ -72,8 +72,7 @@ attributes:
 metrics:
   bigip.node.availability:
     description: Availability of the node.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -81,8 +80,7 @@ metrics:
     enabled: true
   bigip.node.connection.count:
     description: Current number of connections to the node.
-    stability:
-      level: development
+    stability: development
     unit: "{connections}"
     sum:
       monotonic: false
@@ -91,8 +89,7 @@ metrics:
     enabled: true
   bigip.node.data.transmitted:
     description: Amount of data transmitted to and from the node.
-    stability:
-      level: development
+    stability: development
     unit: "By"
     sum:
       monotonic: true
@@ -102,8 +99,7 @@ metrics:
     enabled: true
   bigip.node.enabled:
     description: Enabled state of of the node.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -111,8 +107,7 @@ metrics:
     enabled: true
   bigip.node.packet.count:
     description: Number of packets transmitted to and from the node.
-    stability:
-      level: development
+    stability: development
     unit: "{packets}"
     sum:
       monotonic: true
@@ -122,8 +117,7 @@ metrics:
     enabled: true
   bigip.node.request.count:
     description: Number of requests to the node.
-    stability:
-      level: development
+    stability: development
     unit: "{requests}"
     sum:
       monotonic: true
@@ -132,8 +126,7 @@ metrics:
     enabled: true
   bigip.node.session.count:
     description: Current number of sessions for the node.
-    stability:
-      level: development
+    stability: development
     unit: "{sessions}"
     sum:
       monotonic: false
@@ -142,8 +135,7 @@ metrics:
     enabled: true
   bigip.pool.availability:
     description: Availability of the pool.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -151,8 +143,7 @@ metrics:
     enabled: true
   bigip.pool.connection.count:
     description: Current number of connections to the pool.
-    stability:
-      level: development
+    stability: development
     unit: "{connections}"
     sum:
       monotonic: false
@@ -161,8 +152,7 @@ metrics:
     enabled: true
   bigip.pool.data.transmitted:
     description: Amount of data transmitted to and from the pool.
-    stability:
-      level: development
+    stability: development
     unit: "By"
     sum:
       monotonic: true
@@ -172,8 +162,7 @@ metrics:
     enabled: true
   bigip.pool.enabled:
     description: Enabled state of of the pool.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -181,8 +170,7 @@ metrics:
     enabled: true
   bigip.pool.member.count:
     description: Total number of pool members.
-    stability:
-      level: development
+    stability: development
     unit: "{members}"
     sum:
       monotonic: false
@@ -192,8 +180,7 @@ metrics:
     enabled: true
   bigip.pool.packet.count:
     description: Number of packets transmitted to and from the pool.
-    stability:
-      level: development
+    stability: development
     unit: "{packets}"
     sum:
       monotonic: true
@@ -203,8 +190,7 @@ metrics:
     enabled: true
   bigip.pool.request.count:
     description: Number of requests to the pool.
-    stability:
-      level: development
+    stability: development
     unit: "{requests}"
     sum:
       monotonic: true
@@ -213,8 +199,7 @@ metrics:
     enabled: true
   bigip.pool_member.availability:
     description: Availability of the pool member.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -222,8 +207,7 @@ metrics:
     enabled: true
   bigip.pool_member.connection.count:
     description: Current number of connections to the pool member.
-    stability:
-      level: development
+    stability: development
     unit: "{connections}"
     sum:
       monotonic: false
@@ -232,8 +216,7 @@ metrics:
     enabled: true
   bigip.pool_member.data.transmitted:
     description: Amount of data transmitted to and from the pool member.
-    stability:
-      level: development
+    stability: development
     unit: "By"
     sum:
       monotonic: true
@@ -243,8 +226,7 @@ metrics:
     enabled: true
   bigip.pool_member.enabled:
     description: Enabled state of of the pool member.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -252,8 +234,7 @@ metrics:
     enabled: true
   bigip.pool_member.packet.count:
     description: Number of packets transmitted to and from the pool member.
-    stability:
-      level: development
+    stability: development
     unit: "{packets}"
     sum:
       monotonic: true
@@ -263,8 +244,7 @@ metrics:
     enabled: true
   bigip.pool_member.request.count:
     description: Number of requests to the pool member.
-    stability:
-      level: development
+    stability: development
     unit: "{requests}"
     sum:
       monotonic: true
@@ -273,8 +253,7 @@ metrics:
     enabled: true
   bigip.pool_member.session.count:
     description: Current number of sessions for the pool member.
-    stability:
-      level: development
+    stability: development
     unit: "{sessions}"
     sum:
       monotonic: false
@@ -283,8 +262,7 @@ metrics:
     enabled: true
   bigip.virtual_server.availability:
     description: Availability of the virtual server.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -292,8 +270,7 @@ metrics:
     enabled: true
   bigip.virtual_server.connection.count:
     description: Current number of connections to the virtual server.
-    stability:
-      level: development
+    stability: development
     unit: "{connections}"
     sum:
       monotonic: false
@@ -302,8 +279,7 @@ metrics:
     enabled: true
   bigip.virtual_server.data.transmitted:
     description: Amount of data transmitted to and from the virtual server.
-    stability:
-      level: development
+    stability: development
     unit: "By"
     sum:
       monotonic: true
@@ -313,8 +289,7 @@ metrics:
     enabled: true
   bigip.virtual_server.enabled:
     description: Enabled state of of the virtual server.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: int
@@ -322,8 +297,7 @@ metrics:
     enabled: true
   bigip.virtual_server.packet.count:
     description: Number of packets transmitted to and from the virtual server.
-    stability:
-      level: development
+    stability: development
     unit: "{packets}"
     sum:
       monotonic: true
@@ -333,8 +307,7 @@ metrics:
     enabled: true
   bigip.virtual_server.request.count:
     description: Number of requests to the virtual server.
-    stability:
-      level: development
+    stability: development
     unit: "{requests}"
     sum:
       monotonic: true

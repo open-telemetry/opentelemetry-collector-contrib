@@ -1,9 +1,0 @@
-rules:
-  # Only one Storage metric
-  - bean: org.apache.cassandra.metrics:type=Storage,name=TotalHints
-    mapping:
-      Count:
-        metric: cassandra.storage.total_hints.count
-        type: counter
-        unit: "{hint}"
-        desc: Number of hint messages written to this node since [re]start

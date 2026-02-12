@@ -1,0 +1,85 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/PEERINGTEST/PROVIDERS/MICROSOFT.NETWORK/APPLICATIONGATEWAYS/Application-Gateway-Name
+        - key: service.instance.id
+          value:
+            stringValue: ApplicationGatewayRole_IN_0
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: ApplicationGatewayFirewallLog
+              - key: azure.operation.name
+                value:
+                  stringValue: ApplicationGatewayFirewall
+              - key: client.address
+                value:
+                  stringValue: 203.0.113.147
+              - key: url.original
+                value:
+                  stringValue: /
+              - key: security_rule.category
+                value:
+                  stringValue: OWASP
+              - key: security_rule.version
+                value:
+                  stringValue: "3.0"
+              - key: security_rule.uuid
+                value:
+                  stringValue: "920350"
+              - key: security_rule.ruleset.name
+                value:
+                  stringValue: 920-PROTOCOL-ENFORCEMENT
+              - key: security_rule.action
+                value:
+                  stringValue: Matched
+              - key: azure.firewall.site
+                value:
+                  stringValue: Global
+              - key: azure.firewall.evaluation.details
+                value:
+                  kvlistValue:
+                    values:
+                      - key: message
+                        value:
+                          stringValue: Warning. Pattern match "^[\\d.:]+$" at REQUEST_HEADERS:Host ....
+                      - key: data
+                        value:
+                          stringValue: 127.0.0.1
+                      - key: file
+                        value:
+                          stringValue: rules/REQUEST-920-PROTOCOL-ENFORCEMENT.conf
+                      - key: line
+                        value:
+                          stringValue: "791"
+              - key: host.name
+                value:
+                  stringValue: 127.0.0.1
+              - key: azure.service.request.id
+                value:
+                  stringValue: "16861477007022634343"
+              - key: azure.firewall.policy.id
+                value:
+                  stringValue: /subscriptions/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/resourceGroups/PEERINGTEST/providers/Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/perListener
+              - key: azure.firewall.policy.scope.type
+                value:
+                  stringValue: Listener
+              - key: azure.firewall.policy.object.name
+                value:
+                  stringValue: httpListener1
+            body:
+              stringValue: Host header is a numeric IP address
+            timeUnixNano: "1490025129149449900"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

@@ -328,10 +328,7 @@ func (r *Reader) Validate() bool {
 	if err != nil {
 		return false
 	}
-	if refreshedFingerprint.StartsWith(r.Fingerprint) {
-		return true
-	}
-	return false
+	return refreshedFingerprint.StartsWith(r.Fingerprint)
 }
 
 func (r *Reader) GetFileName() string {

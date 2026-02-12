@@ -1,10 +1,12 @@
 type: googlecloudstorage
+display_name: Google Cloud Storage Exporter
 
 status:
   class: exporter
   distributions: [contrib]
   stability:
     alpha: [logs]
+    development: [traces]
   codeowners:
     active: [constanca-m, braydonk]
     seeking_new: true

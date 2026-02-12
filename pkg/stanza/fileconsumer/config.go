@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -41,20 +40,6 @@ const (
 	MaxLogSizeBehaviorSplit = "split"
 	// MaxLogSizeBehaviorTruncate truncates oversized log entries and drops the remainder.
 	MaxLogSizeBehaviorTruncate = "truncate"
-)
-
-var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
-	"filelog.allowFileDeletion",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
-)
-
-var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
-	"filelog.allowHeaderMetadataParsing",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, allows usage of the `header` setting."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198"),
 )
 
 // NewConfig creates a new input config with default values
@@ -237,8 +222,8 @@ func (c Config) validate() error {
 	}
 
 	if c.DeleteAfterRead {
-		if !allowFileDeletion.IsEnabled() {
-			return fmt.Errorf("'delete_after_read' requires feature gate '%s'", allowFileDeletion.ID())
+		if !metadata.FilelogAllowFileDeletionFeatureGate.IsEnabled() {
+			return fmt.Errorf("'delete_after_read' requires feature gate '%s'", metadata.FilelogAllowFileDeletionFeatureGate.ID())
 		}
 		if c.StartAt == "end" {
 			return errors.New("'delete_after_read' cannot be used with 'start_at: end'")
@@ -246,8 +231,8 @@ func (c Config) validate() error {
 	}
 
 	if c.Header != nil {
-		if !AllowHeaderMetadataParsing.IsEnabled() {
-			return fmt.Errorf("'header' requires feature gate '%s'", AllowHeaderMetadataParsing.ID())
+		if !metadata.FilelogAllowHeaderMetadataParsingFeatureGate.IsEnabled() {
+			return fmt.Errorf("'header' requires feature gate '%s'", metadata.FilelogAllowHeaderMetadataParsingFeatureGate.ID())
 		}
 		if c.StartAt == "end" {
 			return errors.New("'header' cannot be specified with 'start_at: end'")

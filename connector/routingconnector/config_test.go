@@ -375,6 +375,49 @@ func TestValidateConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "invalid action value",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Action:    "invalid",
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: "invalid routing action: if provided should be one of move/copy",
+		},
+		{
+			name: "valid action: copy",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Action:    "copy",
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "valid action: move",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Action:    "move",
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

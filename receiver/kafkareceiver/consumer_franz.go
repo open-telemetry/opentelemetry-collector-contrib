@@ -196,6 +196,7 @@ func (c *franzConsumer) Start(ctx context.Context, host component.Host) error {
 	// Create franz-go consumer client
 	client, err := kafka.NewFranzConsumerGroup(
 		ctx,
+		host,
 		c.config.ClientConfig,
 		c.config.ConsumerConfig,
 		c.topics,
@@ -484,11 +485,9 @@ func (c *franzConsumer) lost(ctx context.Context, _ *kgo.Client,
 				pc.cancelContext(errors.New(
 					"stopping processing: partition reassigned or lost",
 				))
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					pc.wait()
-				}()
+				})
 				c.telemetryBuilder.KafkaReceiverPartitionClose.Add(context.Background(), 1)
 			}
 		}

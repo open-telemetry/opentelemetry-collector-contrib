@@ -130,7 +130,7 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 			"debug": {
 				"verbosity": "detailed"
 			},
-			"otlphttp": {
+			"otlp_http": {
 				"endpoint": "http://localhost:4318"
 			}
 		},
@@ -139,12 +139,12 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 				"traces": {
 					"receivers": ["otlp"],
 					"processors": ["memory_limiter", "batch"],
-					"exporters": ["debug", "otlphttp"]
+					"exporters": ["debug", "otlp_http"]
 				},
 				"metrics": {
 					"receivers": ["otlp", "hostmetrics"],
 					"processors": ["memory_limiter", "batch"],
-					"exporters": ["debug", "otlphttp"]
+					"exporters": ["debug", "otlp_http"]
 				}
 			}
 		}
@@ -209,7 +209,7 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 			Configured: true,
 		},
 		{
-			Type:       "otlphttp",
+			Type:       "otlp_http",
 			Kind:       "exporter",
 			Gomod:      "go.opentelemetry.io/collector/exporter/otlphttpexporter",
 			Version:    "v0.127.0",
@@ -327,7 +327,7 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 	assert.Contains(t, testPayload.Metadata.FullComponents, fullComponents[2]) // batch processor
 	assert.Contains(t, testPayload.Metadata.FullComponents, fullComponents[3]) // memory_limiter processor
 	assert.Contains(t, testPayload.Metadata.FullComponents, fullComponents[4]) // debug exporter
-	assert.Contains(t, testPayload.Metadata.FullComponents, fullComponents[5]) // otlphttp exporter
+	assert.Contains(t, testPayload.Metadata.FullComponents, fullComponents[5]) // otlp_http exporter
 
 	// Test active components
 	assert.Len(t, testPayload.Metadata.ActiveComponents, 7)
