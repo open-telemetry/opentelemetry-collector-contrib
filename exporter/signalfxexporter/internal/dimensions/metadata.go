@@ -108,7 +108,8 @@ func (dc *DimensionClient) PushMetadata(metadata []*metadata.MetadataUpdate) err
 			return fmt.Errorf("dimensionUpdate %v is missing Name or value, cannot send", dimensionUpdate)
 		}
 
-		errs = multierr.Append(errs, dc.AcceptDimension(dimensionUpdate))
+		// Apply filters and deduplication, then queue
+		errs = multierr.Append(errs, dc.AcceptDimensionWithDedup(dimensionUpdate))
 	}
 
 	return errs

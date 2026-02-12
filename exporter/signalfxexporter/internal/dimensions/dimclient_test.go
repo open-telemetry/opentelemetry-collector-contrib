@@ -128,7 +128,7 @@ func TestDimensionClient(t *testing.T) {
 
 	t.Run("send dimension update with properties and tags", func(t *testing.T) {
 		server.reset()
-		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimensionWithDedup(&DimensionUpdate{
 			Name:  "host",
 			Value: "test-box",
 			Properties: map[string]*string{
@@ -161,7 +161,7 @@ func TestDimensionClient(t *testing.T) {
 
 	t.Run("same dimension with different values", func(t *testing.T) {
 		server.reset()
-		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimensionWithDedup(&DimensionUpdate{
 			Name:  "host",
 			Value: "test-box",
 			Properties: map[string]*string{
@@ -192,7 +192,7 @@ func TestDimensionClient(t *testing.T) {
 		client.dropTags = true
 		defer func() { client.dropTags = false }()
 
-		require.NoError(t, client.AcceptDimension(&DimensionUpdate{
+		require.NoError(t, client.AcceptDimensionWithDedup(&DimensionUpdate{
 			Name:  "host",
 			Value: "test-box",
 			Properties: map[string]*string{
@@ -503,4 +503,147 @@ func TestInvalidUpdatesNotSent(t *testing.T) {
 func newString(s string) *string {
 	out := s
 	return &out
+}
+
+func TestStatefulDeduplication(t *testing.T) {
+	ts := &testServer{
+		startCh:      make(chan struct{}),
+		finishCh:     make(chan struct{}),
+		respCode:     http.StatusOK,
+		requestCount: new(atomic.Int32),
+	}
+	ts.server = httptest.NewServer(ts)
+	defer ts.server.Close()
+
+	url, err := url.Parse(ts.server.URL)
+	require.NoError(t, err)
+
+	client := NewDimensionClient(DimensionClientOptions{
+		Token:                       "test",
+		APIURL:                      url,
+		Logger:                      zap.NewNop(),
+		SendDelay:                   1 * time.Millisecond,
+		MaxBuffered:                 10,
+		EnableStatefulDeduplication: true,
+	})
+	client.Start()
+	defer client.Shutdown()
+
+	propVal1 := "value1"
+	propVal2 := "value2"
+
+	// Send first update
+	dimUpdate1 := &DimensionUpdate{
+		Name:  "host",
+		Value: "test-host",
+		Properties: map[string]*string{
+			"prop1": &propVal1,
+		},
+		Tags: map[string]bool{
+			"tag1": true,
+		},
+	}
+
+	err = client.AcceptDimensionWithDedup(dimUpdate1)
+	require.NoError(t, err)
+
+	ts.handleRequest()
+
+	// Send identical update - should be deduplicated
+	dimUpdate2 := &DimensionUpdate{
+		Name:  "host",
+		Value: "test-host",
+		Properties: map[string]*string{
+			"prop1": &propVal1,
+		},
+		Tags: map[string]bool{
+			"tag1": true,
+		},
+	}
+
+	err = client.AcceptDimensionWithDedup(dimUpdate2)
+	require.NoError(t, err)
+
+	time.Sleep(10 * time.Millisecond)
+
+	require.EqualValues(t, 1, ts.requestCount.Load())
+	require.Len(t, ts.acceptedDims, 1)
+
+	// Send different update - should NOT be deduplicated
+	dimUpdate3 := &DimensionUpdate{
+		Name:  "host",
+		Value: "test-host",
+		Properties: map[string]*string{
+			"prop1": &propVal2,
+		},
+		Tags: map[string]bool{
+			"tag1": true,
+		},
+	}
+
+	err = client.AcceptDimensionWithDedup(dimUpdate3)
+	require.NoError(t, err)
+
+	ts.handleRequest()
+
+	require.EqualValues(t, 2, ts.requestCount.Load())
+	require.Len(t, ts.acceptedDims, 2)
+}
+
+func TestStatefulDeduplicationDisabled(t *testing.T) {
+	ts := &testServer{
+		startCh:      make(chan struct{}),
+		finishCh:     make(chan struct{}),
+		respCode:     http.StatusOK,
+		requestCount: new(atomic.Int32),
+	}
+	ts.server = httptest.NewServer(ts)
+	defer ts.server.Close()
+
+	url, err := url.Parse(ts.server.URL)
+	require.NoError(t, err)
+
+	client := NewDimensionClient(DimensionClientOptions{
+		Token:                       "test",
+		APIURL:                      url,
+		Logger:                      zap.NewNop(),
+		SendDelay:                   1 * time.Millisecond,
+		MaxBuffered:                 10,
+		EnableStatefulDeduplication: false,
+	})
+	client.Start()
+	defer client.Shutdown()
+
+	propVal := "value1"
+
+	// Send first update
+	dimUpdate1 := &DimensionUpdate{
+		Name:  "host",
+		Value: "test-host",
+		Properties: map[string]*string{
+			"prop1": &propVal,
+		},
+	}
+
+	err = client.AcceptDimension(dimUpdate1)
+	require.NoError(t, err)
+
+	ts.handleRequest()
+
+	// Send identical update - should NOT be deduplicated (feature disabled)
+	dimUpdate2 := &DimensionUpdate{
+		Name:  "host",
+		Value: "test-host",
+		Properties: map[string]*string{
+			"prop1": &propVal,
+		},
+	}
+
+	err = client.AcceptDimension(dimUpdate2)
+	require.NoError(t, err)
+
+	ts.handleRequest()
+
+	require.EqualValues(t, 2, ts.requestCount.Load())
+	require.Len(t, ts.acceptedDims, 2)
 }

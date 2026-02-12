@@ -155,23 +155,23 @@ func (se *signalfxExporter) startDimensionClient(ctx context.Context) error {
 
 	dimClient := dimensions.NewDimensionClient(
 		dimensions.DimensionClientOptions{
-			Token:        se.config.AccessToken,
-			APIURL:       apiURL,
-			APITLSConfig: apiTLSCfg,
-			LogUpdates:   se.config.LogDimensionUpdates,
-			Logger:       se.logger,
-			// Duration to wait between property updates.
-			SendDelay:               se.config.DimensionClient.SendDelay,
-			MaxBuffered:             se.config.DimensionClient.MaxBuffered,
-			NonAlphanumericDimChars: se.config.NonAlphanumericDimensionChars,
-			DefaultProperties:       se.config.DefaultProperties,
-			ExcludeProperties:       se.config.ExcludeProperties,
-			MaxConnsPerHost:         se.config.DimensionClient.MaxConnsPerHost,
-			MaxIdleConns:            se.config.DimensionClient.MaxIdleConns,
-			MaxIdleConnsPerHost:     se.config.DimensionClient.MaxIdleConnsPerHost,
-			IdleConnTimeout:         se.config.DimensionClient.IdleConnTimeout,
-			Timeout:                 se.config.DimensionClient.Timeout,
-			DropTags:                se.config.DimensionClient.DropTags,
+			Token:                       se.config.AccessToken,
+			APIURL:                      apiURL,
+			APITLSConfig:                apiTLSCfg,
+			LogUpdates:                  se.config.LogDimensionUpdates,
+			Logger:                      se.logger,
+			SendDelay:                   se.config.DimensionClient.SendDelay,
+			MaxBuffered:                 se.config.DimensionClient.MaxBuffered,
+			NonAlphanumericDimChars:     se.config.NonAlphanumericDimensionChars,
+			DefaultProperties:           se.config.DefaultProperties,
+			ExcludeProperties:           se.config.ExcludeProperties,
+			MaxConnsPerHost:             se.config.DimensionClient.MaxConnsPerHost,
+			MaxIdleConns:                se.config.DimensionClient.MaxIdleConns,
+			MaxIdleConnsPerHost:         se.config.DimensionClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:             se.config.DimensionClient.IdleConnTimeout,
+			Timeout:                     se.config.DimensionClient.Timeout,
+			DropTags:                    se.config.DimensionClient.DropTags,
+			EnableStatefulDeduplication: statefulDeduplicationFeatureGate.IsEnabled(),
 		})
 	dimClient.Start()
 	se.dimClient = dimClient
@@ -296,9 +296,10 @@ func (se *signalfxExporter) processEntityEvents(logs plog.LogRecordSlice) error 
 			continue
 		}
 
-		// Failure to accept dimension likely means exceeded buffer. Reject all further
-		// dimension updates for this export cycle.
-		if err := se.dimClient.AcceptDimension(dimUpdate); err != nil {
+		// Apply filters and deduplication, then queue
+		if err := se.dimClient.AcceptDimensionWithDedup(dimUpdate); err != nil {
+			// Failure to accept dimension likely means exceeded buffer. Reject all further
+			// dimension updates for this export cycle.
 			return fmt.Errorf("failed to accept dimension update: %w", err)
 		}
 	}

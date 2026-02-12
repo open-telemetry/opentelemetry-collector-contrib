@@ -43,6 +43,12 @@ var entityEventsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription("Process entity events from logs pipeline and convert to dimension property updates"),
 	featuregate.WithRegisterFromVersion("v0.145.0"))
 
+var statefulDeduplicationFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.signalfx.dimensionStatefulDeduplication",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Enable stateful deduplication for dimension updates to prevent sending duplicate property updates"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27890"))
+
 // NewFactory creates a factory for SignalFx exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(

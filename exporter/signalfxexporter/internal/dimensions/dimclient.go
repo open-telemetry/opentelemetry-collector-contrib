@@ -26,10 +26,33 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
+// hashCache stores dimension update hashes for deduplication.
+type hashCache struct {
+	sync.Mutex
+	hashes map[DimensionKey]uint64
+}
+
+func newHashCache() *hashCache {
+	return &hashCache{
+		hashes: make(map[DimensionKey]uint64),
+	}
+}
+
+// checkAndUpdate atomically checks if the stored hash matches and updates it.
+// Returns true if the hash matches the stored value, false otherwise.
+func (hc *hashCache) checkAndUpdate(key DimensionKey, hash uint64) bool {
+	hc.Lock()
+	defer hc.Unlock()
+
+	lastHash, exists := hc.hashes[key]
+	if exists && lastHash == hash {
+		return true
+	}
+	hc.hashes[key] = hash
+	return false
+}
+
 // DimensionClient sends updates to dimensions to the SignalFx API
-// This is a port of https://github.com/signalfx/signalfx-agent/blob/main/pkg/core/writer/dimensions/client.go
-// with the only major difference being deduplication of dimension
-// updates are currently not done by this port.
 type DimensionClient struct {
 	sync.RWMutex
 	cancel        context.CancelFunc
@@ -61,6 +84,9 @@ type DimensionClient struct {
 	ExcludeProperties []dpfilters.PropertyFilter
 	// dropTags specifies whether tags should be omitted or not. Default value is false.
 	dropTags bool
+	// lastSeenCache stores dimension update hashes for deduplication.
+	// If nil, deduplication is disabled.
+	lastSeenCache *hashCache
 }
 
 type queuedDimension struct {
@@ -87,6 +113,9 @@ type DimensionClientOptions struct {
 	IdleConnTimeout         time.Duration
 	Timeout                 time.Duration
 	DropTags                bool
+	// EnableStatefulDeduplication controls whether to track last sent state
+	// and skip sending updates when dimension properties haven't changed.
+	EnableStatefulDeduplication bool
 }
 
 // NewDimensionClient returns a new client
@@ -110,6 +139,11 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 	}
 	sender := NewReqSender(client, 20, map[string]string{"client": "dimension"})
 
+	var lastSeenCache *hashCache
+	if options.EnableStatefulDeduplication {
+		lastSeenCache = newHashCache()
+	}
+
 	return &DimensionClient{
 		Token:                   options.Token,
 		APIURL:                  options.APIURL,
@@ -125,6 +159,7 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 		DefaultProperties:       options.DefaultProperties,
 		ExcludeProperties:       options.ExcludeProperties,
 		dropTags:                options.DropTags,
+		lastSeenCache:           lastSeenCache,
 	}
 }
 
@@ -144,13 +179,27 @@ func (dc *DimensionClient) Shutdown() {
 	}
 }
 
-// AcceptDimension to be sent to the API.  This will return fairly quickly and
-// won't block. If the buffer is full, the dim update will be dropped.
-func (dc *DimensionClient) AcceptDimension(dimUpdate *DimensionUpdate) error {
-	if dimUpdate = dc.filterDimensionUpdate(dimUpdate); dimUpdate == nil {
+// AcceptDimensionWithDedup applies filtering and deduplication before queuing the dimension update.
+func (dc *DimensionClient) AcceptDimensionWithDedup(dimUpdate *DimensionUpdate) error {
+	dimUpdate = dc.filterDimensionUpdate(dimUpdate)
+	if dimUpdate == nil {
 		return nil
 	}
 
+	if dc.lastSeenCache != nil {
+		if dc.lastSeenCache.checkAndUpdate(dimUpdate.Key(), dimUpdate.Hash()) {
+			return nil
+		}
+	}
+
+	return dc.AcceptDimension(dimUpdate)
+}
+
+// AcceptDimension queues a dimension update to be sent to the API.
+// This will return fairly quickly and won't block.
+// If the buffer is full, the dim update will be dropped.
+// Note: This does NOT apply filtering or deduplication. Use AcceptDimensionWithDedup for that.
+func (dc *DimensionClient) AcceptDimension(dimUpdate *DimensionUpdate) error {
 	dc.Lock()
 	defer dc.Unlock()
 
