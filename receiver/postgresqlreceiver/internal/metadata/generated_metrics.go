@@ -859,7 +859,7 @@ func (m *metricPostgresqlBlocksRead) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlBlocksRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sourceAttributeValue string, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string) {
+func (m *metricPostgresqlBlocksRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sourceAttributeValue string, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -869,8 +869,7 @@ func (m *metricPostgresqlBlocksRead) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("source", sourceAttributeValue)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("postgresql.schema.name", postgresqlSchemaNameAttributeValue)
-	dp.Attributes().PutStr("postgresql.table.name", postgresqlTableNameAttributeValue)
+	dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1234,7 +1233,7 @@ func (m *metricPostgresqlFunctionCalls) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlFunctionCalls) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, functionAttributeValue string, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string) {
+func (m *metricPostgresqlFunctionCalls) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, functionAttributeValue string, dbNamespaceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1244,7 +1243,6 @@ func (m *metricPostgresqlFunctionCalls) recordDataPoint(start pcommon.Timestamp,
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("function", functionAttributeValue)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("postgresql.schema.name", postgresqlSchemaNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1290,7 +1288,7 @@ func (m *metricPostgresqlIndexScans) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlIndexScans) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string, postgresqlIndexNameAttributeValue string) {
+func (m *metricPostgresqlIndexScans) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string, postgresqlIndexNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1299,8 +1297,7 @@ func (m *metricPostgresqlIndexScans) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("postgresql.schema.name", postgresqlSchemaNameAttributeValue)
-	dp.Attributes().PutStr("postgresql.table.name", postgresqlTableNameAttributeValue)
+	dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
 	dp.Attributes().PutStr("postgresql.index.name", postgresqlIndexNameAttributeValue)
 }
 
@@ -1345,7 +1342,7 @@ func (m *metricPostgresqlIndexSize) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlIndexSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string, postgresqlIndexNameAttributeValue string) {
+func (m *metricPostgresqlIndexSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string, postgresqlIndexNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1354,8 +1351,7 @@ func (m *metricPostgresqlIndexSize) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("postgresql.schema.name", postgresqlSchemaNameAttributeValue)
-	dp.Attributes().PutStr("postgresql.table.name", postgresqlTableNameAttributeValue)
+	dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
 	dp.Attributes().PutStr("postgresql.index.name", postgresqlIndexNameAttributeValue)
 }
 
@@ -1402,7 +1398,7 @@ func (m *metricPostgresqlOperations) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string) {
+func (m *metricPostgresqlOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1412,8 +1408,7 @@ func (m *metricPostgresqlOperations) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("operation", operationAttributeValue)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("postgresql.schema.name", postgresqlSchemaNameAttributeValue)
-	dp.Attributes().PutStr("postgresql.table.name", postgresqlTableNameAttributeValue)
+	dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1565,7 +1560,7 @@ func (m *metricPostgresqlRows) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlRows) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string) {
+func (m *metricPostgresqlRows) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1575,8 +1570,7 @@ func (m *metricPostgresqlRows) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("state", stateAttributeValue)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("postgresql.schema.name", postgresqlSchemaNameAttributeValue)
-	dp.Attributes().PutStr("postgresql.table.name", postgresqlTableNameAttributeValue)
+	dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1622,7 +1616,7 @@ func (m *metricPostgresqlSequentialScans) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlSequentialScans) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string) {
+func (m *metricPostgresqlSequentialScans) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1631,8 +1625,7 @@ func (m *metricPostgresqlSequentialScans) recordDataPoint(start pcommon.Timestam
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("postgresql.schema.name", postgresqlSchemaNameAttributeValue)
-	dp.Attributes().PutStr("postgresql.table.name", postgresqlTableNameAttributeValue)
+	dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1732,7 +1725,7 @@ func (m *metricPostgresqlTableSize) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlTableSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string) {
+func (m *metricPostgresqlTableSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1741,8 +1734,7 @@ func (m *metricPostgresqlTableSize) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("postgresql.schema.name", postgresqlSchemaNameAttributeValue)
-	dp.Attributes().PutStr("postgresql.table.name", postgresqlTableNameAttributeValue)
+	dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1788,7 +1780,7 @@ func (m *metricPostgresqlTableVacuumCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlTableVacuumCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string) {
+func (m *metricPostgresqlTableVacuumCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1797,8 +1789,7 @@ func (m *metricPostgresqlTableVacuumCount) recordDataPoint(start pcommon.Timesta
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("postgresql.schema.name", postgresqlSchemaNameAttributeValue)
-	dp.Attributes().PutStr("postgresql.table.name", postgresqlTableNameAttributeValue)
+	dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2666,8 +2657,8 @@ func (mb *MetricsBuilder) RecordPostgresqlBlksReadDataPoint(ts pcommon.Timestamp
 }
 
 // RecordPostgresqlBlocksReadDataPoint adds a data point to postgresql.blocks_read metric.
-func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pcommon.Timestamp, val int64, sourceAttributeValue AttributeSource, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string) {
-	mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, val, sourceAttributeValue.String(), dbNamespaceAttributeValue, postgresqlSchemaNameAttributeValue, postgresqlTableNameAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pcommon.Timestamp, val int64, sourceAttributeValue AttributeSource, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, val, sourceAttributeValue.String(), dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
 }
 
 // RecordPostgresqlCommitsDataPoint adds a data point to postgresql.commits metric.
@@ -2701,23 +2692,23 @@ func (mb *MetricsBuilder) RecordPostgresqlDeadlocksDataPoint(ts pcommon.Timestam
 }
 
 // RecordPostgresqlFunctionCallsDataPoint adds a data point to postgresql.function.calls metric.
-func (mb *MetricsBuilder) RecordPostgresqlFunctionCallsDataPoint(ts pcommon.Timestamp, val int64, functionAttributeValue string, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string) {
-	mb.metricPostgresqlFunctionCalls.recordDataPoint(mb.startTime, ts, val, functionAttributeValue, dbNamespaceAttributeValue, postgresqlSchemaNameAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlFunctionCallsDataPoint(ts pcommon.Timestamp, val int64, functionAttributeValue string, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlFunctionCalls.recordDataPoint(mb.startTime, ts, val, functionAttributeValue, dbNamespaceAttributeValue)
 }
 
 // RecordPostgresqlIndexScansDataPoint adds a data point to postgresql.index.scans metric.
-func (mb *MetricsBuilder) RecordPostgresqlIndexScansDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string, postgresqlIndexNameAttributeValue string) {
-	mb.metricPostgresqlIndexScans.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, postgresqlSchemaNameAttributeValue, postgresqlTableNameAttributeValue, postgresqlIndexNameAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlIndexScansDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string, postgresqlIndexNameAttributeValue string) {
+	mb.metricPostgresqlIndexScans.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue, postgresqlIndexNameAttributeValue)
 }
 
 // RecordPostgresqlIndexSizeDataPoint adds a data point to postgresql.index.size metric.
-func (mb *MetricsBuilder) RecordPostgresqlIndexSizeDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string, postgresqlIndexNameAttributeValue string) {
-	mb.metricPostgresqlIndexSize.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, postgresqlSchemaNameAttributeValue, postgresqlTableNameAttributeValue, postgresqlIndexNameAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlIndexSizeDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string, postgresqlIndexNameAttributeValue string) {
+	mb.metricPostgresqlIndexSize.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue, postgresqlIndexNameAttributeValue)
 }
 
 // RecordPostgresqlOperationsDataPoint adds a data point to postgresql.operations metric.
-func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string) {
-	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String(), dbNamespaceAttributeValue, postgresqlSchemaNameAttributeValue, postgresqlTableNameAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String(), dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
 }
 
 // RecordPostgresqlReplicationDataDelayDataPoint adds a data point to postgresql.replication.data_delay metric.
@@ -2731,13 +2722,13 @@ func (mb *MetricsBuilder) RecordPostgresqlRollbacksDataPoint(ts pcommon.Timestam
 }
 
 // RecordPostgresqlRowsDataPoint adds a data point to postgresql.rows metric.
-func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string) {
-	mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String(), dbNamespaceAttributeValue, postgresqlSchemaNameAttributeValue, postgresqlTableNameAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String(), dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
 }
 
 // RecordPostgresqlSequentialScansDataPoint adds a data point to postgresql.sequential_scans metric.
-func (mb *MetricsBuilder) RecordPostgresqlSequentialScansDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string) {
-	mb.metricPostgresqlSequentialScans.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, postgresqlSchemaNameAttributeValue, postgresqlTableNameAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlSequentialScansDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlSequentialScans.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
 }
 
 // RecordPostgresqlTableCountDataPoint adds a data point to postgresql.table.count metric.
@@ -2746,13 +2737,13 @@ func (mb *MetricsBuilder) RecordPostgresqlTableCountDataPoint(ts pcommon.Timesta
 }
 
 // RecordPostgresqlTableSizeDataPoint adds a data point to postgresql.table.size metric.
-func (mb *MetricsBuilder) RecordPostgresqlTableSizeDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string) {
-	mb.metricPostgresqlTableSize.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, postgresqlSchemaNameAttributeValue, postgresqlTableNameAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlTableSizeDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlTableSize.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
 }
 
 // RecordPostgresqlTableVacuumCountDataPoint adds a data point to postgresql.table.vacuum.count metric.
-func (mb *MetricsBuilder) RecordPostgresqlTableVacuumCountDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, postgresqlSchemaNameAttributeValue string, postgresqlTableNameAttributeValue string) {
-	mb.metricPostgresqlTableVacuumCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, postgresqlSchemaNameAttributeValue, postgresqlTableNameAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlTableVacuumCountDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlTableVacuumCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
 }
 
 // RecordPostgresqlTempIoDataPoint adds a data point to postgresql.temp.io metric.

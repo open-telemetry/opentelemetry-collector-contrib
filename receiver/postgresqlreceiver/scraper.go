@@ -32,7 +32,6 @@ import (
 )
 
 const (
-	readmeURL                 = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
 	defaultPostgreSQLDatabase = "postgres"
 )
 
@@ -41,15 +40,13 @@ const (
 // See: https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/
 var otelNamespaceUUID = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
 type postgreSQLScraper struct {
-	logger        *zap.Logger
-	config        *Config
-	clientFactory postgreSQLClientFactory
-	mb            *metadata.MetricsBuilder
-	lb            *metadata.LogsBuilder
-	excludes      map[string]struct{}
-	cache         *lru.Cache[string, float64]
-	// if enabled, uses a separated attribute for the schema
-	separateSchemaAttr     bool
+	logger                 *zap.Logger
+	config                 *Config
+	clientFactory          postgreSQLClientFactory
+	mb                     *metadata.MetricsBuilder
+	lb                     *metadata.LogsBuilder
+	excludes               map[string]struct{}
+	cache                  *lru.Cache[string, float64]
 	queryPlanCache         *expirable.LRU[string, string]
 	newestQueryTimestamp   float64
 	serviceInstanceID      string
@@ -90,25 +87,16 @@ func newPostgreSQLScraper(
 	for _, db := range config.ExcludeDatabases {
 		excludes[db] = struct{}{}
 	}
-	separateSchemaAttr := metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate.IsEnabled()
-
-	if !separateSchemaAttr {
-		settings.Logger.Warn(
-			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate.ID(), readmeURL),
-		)
-	}
-
 	return &postgreSQLScraper{
-		logger:             settings.Logger,
-		config:             config,
-		clientFactory:      clientFactory,
-		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		lb:                 metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
-		excludes:           excludes,
-		cache:              cache,
-		queryPlanCache:     queryPlanCache,
-		separateSchemaAttr: separateSchemaAttr,
-		serviceInstanceID:  getInstanceID(config.Endpoint, settings.Logger),
+		logger:            settings.Logger,
+		config:            config,
+		clientFactory:     clientFactory,
+		mb:                metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		lb:                metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
+		excludes:          excludes,
+		cache:             cache,
+		queryPlanCache:    queryPlanCache,
+		serviceInstanceID: getInstanceID(config.Endpoint, settings.Logger),
 	}
 }
 
@@ -454,6 +442,13 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 	}
 }
 
+func formatNamespace(database, schema string) string {
+	if schema == "" {
+		return database
+	}
+	return database + "|" + schema
+}
+
 func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
 	blockReads, err := dbClient.getBlocksReadByTable(ctx, db)
 	if err != nil {
@@ -466,35 +461,28 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 	}
 
 	for tableKey, tm := range tableMetrics {
-		var schemaName string
-		var tableName string
-		if p.separateSchemaAttr {
-			schemaName = tm.schema
-			tableName = tm.table
-		} else {
-			tableName = fmt.Sprintf("%s.%s", tm.schema, tm.table)
-		}
+		namespace := formatNamespace(db, tm.schema)
 
-		p.mb.RecordPostgresqlRowsDataPoint(now, tm.dead, metadata.AttributeStateDead, db, schemaName, tableName)
-		p.mb.RecordPostgresqlRowsDataPoint(now, tm.live, metadata.AttributeStateLive, db, schemaName, tableName)
-		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.inserts, metadata.AttributeOperationIns, db, schemaName, tableName)
-		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.del, metadata.AttributeOperationDel, db, schemaName, tableName)
-		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.upd, metadata.AttributeOperationUpd, db, schemaName, tableName)
-		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.hotUpd, metadata.AttributeOperationHotUpd, db, schemaName, tableName)
-		p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size, db, schemaName, tableName)
-		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount, db, schemaName, tableName)
-		p.mb.RecordPostgresqlSequentialScansDataPoint(now, tm.seqScans, db, schemaName, tableName)
+		p.mb.RecordPostgresqlRowsDataPoint(now, tm.dead, metadata.AttributeStateDead, namespace, tm.table)
+		p.mb.RecordPostgresqlRowsDataPoint(now, tm.live, metadata.AttributeStateLive, namespace, tm.table)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.inserts, metadata.AttributeOperationIns, namespace, tm.table)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.del, metadata.AttributeOperationDel, namespace, tm.table)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.upd, metadata.AttributeOperationUpd, namespace, tm.table)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.hotUpd, metadata.AttributeOperationHotUpd, namespace, tm.table)
+		p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size, namespace, tm.table)
+		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount, namespace, tm.table)
+		p.mb.RecordPostgresqlSequentialScansDataPoint(now, tm.seqScans, namespace, tm.table)
 
 		br, ok := blockReads[tableKey]
 		if ok {
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapRead, metadata.AttributeSourceHeapRead, db, schemaName, tableName)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapHit, metadata.AttributeSourceHeapHit, db, schemaName, tableName)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxRead, metadata.AttributeSourceIdxRead, db, schemaName, tableName)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxHit, metadata.AttributeSourceIdxHit, db, schemaName, tableName)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastHit, metadata.AttributeSourceToastHit, db, schemaName, tableName)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastRead, metadata.AttributeSourceToastRead, db, schemaName, tableName)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, metadata.AttributeSourceTidxRead, db, schemaName, tableName)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, metadata.AttributeSourceTidxHit, db, schemaName, tableName)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapRead, metadata.AttributeSourceHeapRead, namespace, tm.table)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapHit, metadata.AttributeSourceHeapHit, namespace, tm.table)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxRead, metadata.AttributeSourceIdxRead, namespace, tm.table)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxHit, metadata.AttributeSourceIdxHit, namespace, tm.table)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastHit, metadata.AttributeSourceToastHit, namespace, tm.table)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastRead, metadata.AttributeSourceToastRead, namespace, tm.table)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, metadata.AttributeSourceTidxRead, namespace, tm.table)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, metadata.AttributeSourceTidxHit, namespace, tm.table)
 		}
 	}
 	return int64(len(tableMetrics))
@@ -514,13 +502,10 @@ func (p *postgreSQLScraper) collectIndexes(
 	}
 
 	for _, stat := range idxStats {
-		var schemaName string
-		if p.separateSchemaAttr {
-			schemaName = stat.schema
-		}
+		namespace := formatNamespace(database, stat.schema)
 
-		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans, database, schemaName, stat.table, stat.index)
-		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size, database, schemaName, stat.table, stat.index)
+		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans, namespace, stat.table, stat.index)
+		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size, namespace, stat.table, stat.index)
 	}
 }
 
@@ -538,12 +523,9 @@ func (p *postgreSQLScraper) collectFunctions(
 	}
 
 	for _, stat := range funcStats {
-		var schemaName string
-		if p.separateSchemaAttr {
-			schemaName = stat.schema
-		}
+		namespace := formatNamespace(database, stat.schema)
 
-		p.mb.RecordPostgresqlFunctionCallsDataPoint(now, stat.calls, stat.function, database, schemaName)
+		p.mb.RecordPostgresqlFunctionCallsDataPoint(now, stat.calls, stat.function, namespace)
 	}
 }
 
