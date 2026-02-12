@@ -38,7 +38,7 @@ The number of collections.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| database | The name of a database. | Any Str | Recommended |
+| db.namespace | The name of a database. | Any Str | Recommended |
 
 ### mongodb.connection.count
 
