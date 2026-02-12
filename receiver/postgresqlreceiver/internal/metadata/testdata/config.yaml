@@ -101,7 +101,7 @@ all_set:
       enabled: true
     postgresql.table.name:
       enabled: true
-    server.host:
+    server.address:
       enabled: true
     server.port:
       enabled: true
@@ -213,7 +213,7 @@ reaggregate_set:
       enabled: true
     postgresql.table.name:
       enabled: true
-    server.host:
+    server.address:
       enabled: true
     server.port:
       enabled: true
@@ -325,7 +325,7 @@ none_set:
       enabled: false
     postgresql.table.name:
       enabled: false
-    server.host:
+    server.address:
       enabled: false
     server.port:
       enabled: false
@@ -349,9 +349,9 @@ override_set:
     postgresql.table.name:
       enabled: true
       override_value: "override-postgresql.table.name"
-    server.host:
+    server.address:
       enabled: true
-      override_value: "override-server.host"
+      override_value: "override-server.address"
     server.port:
       enabled: true
       override_value: 123
@@ -390,7 +390,7 @@ filter_set_include:
         - regexp: ".*"
       events_include:
         - regexp: ".*"
-    server.host:
+    server.address:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -446,12 +446,12 @@ filter_set_exclude:
         - strict: "postgresql.table.name-val"
       events_exclude:
         - strict: "postgresql.table.name-val"
-    server.host:
+    server.address:
       enabled: true
       metrics_exclude:
-        - strict: "server.host-val"
+        - strict: "server.address-val"
       events_exclude:
-        - strict: "server.host-val"
+        - strict: "server.address-val"
     server.port:
       enabled: true
       metrics_exclude:

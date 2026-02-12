@@ -1447,8 +1447,8 @@ func (rac *PostgresqlTableNameResourceAttributeConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-// ServerHostResourceAttributeConfig provides config for the server.host resource attribute.
-type ServerHostResourceAttributeConfig struct {
+// ServerAddressResourceAttributeConfig provides config for the server.address resource attribute.
+type ServerAddressResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 	// OverrideValue allows users to override the value of this resource attribute.
 	OverrideValue *string `mapstructure:"override_value"`
@@ -1470,7 +1470,7 @@ type ServerHostResourceAttributeConfig struct {
 	enabledSetByUser bool
 }
 
-func (rac *ServerHostResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+func (rac *ServerAddressResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1628,7 +1628,7 @@ type ResourceAttributesConfig struct {
 	PostgresqlIndexName    PostgresqlIndexNameResourceAttributeConfig    `mapstructure:"postgresql.index.name"`
 	PostgresqlSchemaName   PostgresqlSchemaNameResourceAttributeConfig   `mapstructure:"postgresql.schema.name"`
 	PostgresqlTableName    PostgresqlTableNameResourceAttributeConfig    `mapstructure:"postgresql.table.name"`
-	ServerHost             ServerHostResourceAttributeConfig             `mapstructure:"server.host"`
+	ServerAddress          ServerAddressResourceAttributeConfig          `mapstructure:"server.address"`
 	ServerPort             ServerPortResourceAttributeConfig             `mapstructure:"server.port"`
 	ServiceInstanceID      ServiceInstanceIDResourceAttributeConfig      `mapstructure:"service.instance.id"`
 	ServiceName            ServiceNameResourceAttributeConfig            `mapstructure:"service.name"`
@@ -1649,7 +1649,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		PostgresqlTableName: PostgresqlTableNameResourceAttributeConfig{
 			Enabled: true,
 		},
-		ServerHost: ServerHostResourceAttributeConfig{
+		ServerAddress: ServerAddressResourceAttributeConfig{
 			Enabled: true,
 		},
 		ServerPort: ServerPortResourceAttributeConfig{
@@ -1683,8 +1683,8 @@ func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
 	if rac.PostgresqlTableName.Enabled && rac.PostgresqlTableName.OverrideValue != nil {
 		res.Attributes().PutStr("postgresql.table.name", *rac.PostgresqlTableName.OverrideValue)
 	}
-	if rac.ServerHost.Enabled && rac.ServerHost.OverrideValue != nil {
-		res.Attributes().PutStr("server.host", *rac.ServerHost.OverrideValue)
+	if rac.ServerAddress.Enabled && rac.ServerAddress.OverrideValue != nil {
+		res.Attributes().PutStr("server.address", *rac.ServerAddress.OverrideValue)
 	}
 	if rac.ServerPort.Enabled && rac.ServerPort.OverrideValue != nil {
 		res.Attributes().PutInt("server.port", *rac.ServerPort.OverrideValue)
