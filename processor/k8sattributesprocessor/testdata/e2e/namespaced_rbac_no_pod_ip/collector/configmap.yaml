@@ -56,7 +56,7 @@ data:
       otlp:
         protocols:
           grpc:
-            endpoint: ${env:MY_POD_IP}:4317
+            endpoint: '{{ joinHostPort "${env:MY_POD_IP}" "4317" }}'
     service:
       extensions:
       - health_check
