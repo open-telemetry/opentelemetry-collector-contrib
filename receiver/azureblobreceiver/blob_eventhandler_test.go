@@ -5,7 +5,6 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"bytes"
-	"context"
 	"testing"
 	"time"
 
@@ -41,7 +40,7 @@ func TestBlobEventHandler_RunAndClose(t *testing.T) {
 	blobClient := newMockBlobClient()
 	handler := getBlobEventHandler(t, blobClient)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := handler.run(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, handler.cancelFunc)
@@ -63,7 +62,7 @@ func TestBlobEventHandler_ProcessContainers(t *testing.T) {
 	handler.setLogsDataConsumer(logsConsumer)
 	handler.setTracesDataConsumer(tracesConsumer)
 
-	handler.processContainers(context.Background())
+	handler.processContainers(t.Context())
 
 	logsConsumer.AssertNumberOfCalls(t, "consumeLogsJSON", 2)
 	tracesConsumer.AssertNumberOfCalls(t, "consumeTracesJSON", 1)
@@ -74,7 +73,7 @@ func TestBlobEventHandler_ProcessContainersWithNoConsumers(t *testing.T) {
 	blobClient := newMockBlobClient()
 	handler := getBlobEventHandler(t, blobClient)
 
-	handler.processContainers(context.Background())
+	handler.processContainers(t.Context())
 
 	blobClient.AssertNotCalled(t, "listBlobs", mock.Anything, mock.Anything)
 }
