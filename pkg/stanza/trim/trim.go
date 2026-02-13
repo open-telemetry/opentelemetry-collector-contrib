@@ -89,52 +89,71 @@ func ToLength(splitFunc bufio.SplitFunc, maxLength int) bufio.SplitFunc {
 // returns only the truncated portion (up to maxLength) and advances past the entire
 // original content, effectively dropping the remainder.
 // The skipping parameter is a pointer to a bool that tracks whether we're currently
-// skipping the remainder of an oversized line. This allows the state to be persisted
+// skipping the remainder of an oversized entry. This allows the state to be persisted
 // across multiple reader recreations (e.g., between poll cycles).
 func ToLengthWithTruncate(splitFunc bufio.SplitFunc, maxLength int, skipping *bool) bufio.SplitFunc {
 	if maxLength <= 0 {
 		return splitFunc
 	}
 
+	// Use local state for lastDataLen tracking (not persisted across reader recreations)
+	lastDataLen := 0
+
 	return func(data []byte, atEOF bool) (int, []byte, error) {
-		// If we're in skip mode, look for the next newline to resume normal processing
+		dataLen := len(data)
+		defer func() { lastDataLen = dataLen }()
+
+		// If we're in skip mode, use splitFunc to find the next entry boundary.
+		// This is important for multiline patterns where entries can contain newlines.
 		if *skipping {
-			for i := range len(data) {
-				if data[i] == '\n' {
-					// Found the end of the oversized line, resume normal processing
-					*skipping = false
-					// Advance past the newline and continue
-					return i + 1, nil, nil
-				}
-			}
-			// No newline found yet
-			if atEOF {
-				// At EOF, done skipping
+			advance, token, err := splitFunc(data, atEOF)
+
+			if advance > 0 || token != nil || err != nil {
+				// splitFunc found a boundary or returned a token.
+				// This token is the remainder of the truncated entry - discard it.
 				*skipping = false
-				return len(data), nil, nil
+				return advance, nil, err
 			}
-			// Skip all data we have and request more
-			return len(data), nil, nil
+
+			// splitFunc needs more data but didn't return anything.
+			// If buffer appears to be at capacity, we must advance to avoid "token too long" error.
+			// Buffer is at capacity if: dataLen == maxLength (buffer limited to maxLength),
+			// OR dataLen == lastDataLen (buffer couldn't grow between calls).
+			if dataLen == maxLength || (dataLen > maxLength && dataLen == lastDataLen) {
+				// Buffer at capacity, skip all available data and stay in skip mode
+				return dataLen, nil, nil
+			}
+
+			// At EOF, done skipping
+			if atEOF {
+				*skipping = false
+				return dataLen, nil, nil
+			}
+
+			// Request more data, stay in skip mode
+			return 0, nil, nil
 		}
 
 		advance, token, err := splitFunc(data, atEOF)
 
-		if (advance == 0 && token == nil && err == nil) && len(data) >= maxLength {
-			// No token was found, but we have enough data.
-			// This means we have an oversized line that exceeds maxLength.
+		if (advance == 0 && token == nil && err == nil) && dataLen >= maxLength {
+			// No token was found (splitFunc needs more data to find entry boundary),
+			// but we have enough data to exceed maxLength.
 
-			// First check if newline is in the current buffer after maxLength
-			for i := maxLength; i < len(data); i++ {
-				if data[i] == '\n' {
-					// Found a newline, return truncated token and advance past the whole line including newline
-					return i + 1, data[:maxLength], nil
-				}
+			// Determine if we should truncate now or wait for more data.
+			// Truncate if:
+			// - dataLen == maxLength: buffer is exactly at max capacity (common case for limited buffers)
+			// - dataLen == lastDataLen: buffer couldn't grow between calls
+			// - atEOF: no more data coming
+			if dataLen == maxLength || dataLen == lastDataLen || atEOF {
+				// Buffer is at max capacity or EOF, truncate and enter skip mode.
+				*skipping = true
+				return maxLength, data[:maxLength], nil
 			}
 
-			// No newline found in current buffer
-			// Emit truncated token and enter skip mode
-			*skipping = true
-			return len(data), data[:maxLength], nil
+			// Buffer is larger than maxLength but might still grow.
+			// Let scanner try to read more data.
+			return 0, nil, nil
 		}
 		if len(token) > maxLength {
 			// A token was found but it is longer than the max length.

@@ -467,3 +467,93 @@ func TestToLengthWithTruncate_PositionalScanner(t *testing.T) {
 		})
 	}
 }
+
+// TestToLengthWithTruncate_MultilinePattern tests truncation with multiline patterns
+// where entries can contain newlines and are delimited by a custom pattern.
+// This addresses the concern raised in PR #45323 about hardcoded newline handling.
+func TestToLengthWithTruncate_MultilinePattern(t *testing.T) {
+	// Create a simple line start pattern split function that groups lines starting with ">"
+	lineStartSplitFunc := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if len(data) == 0 {
+			return 0, nil, nil
+		}
+
+		// Find the first ">" (start of current entry)
+		firstStart := bytes.IndexByte(data, '>')
+		if firstStart == -1 {
+			// No pattern found
+			if atEOF && len(data) > 0 {
+				return len(data), data, nil
+			}
+			return 0, nil, nil
+		}
+
+		// If there's content before the first ">", return it
+		if firstStart > 0 {
+			return firstStart, data[:firstStart], nil
+		}
+
+		// Find the second ">" (start of next entry)
+		secondStart := bytes.IndexByte(data[1:], '>')
+		if secondStart == -1 {
+			// No second pattern found
+			if atEOF {
+				// Return everything from first ">" to end (omit the ">")
+				return len(data), data[1:], nil
+			}
+			return 0, nil, nil
+		}
+
+		// Return from first ">" to second ">" (omit the leading ">")
+		return secondStart + 1, data[1 : secondStart+1], nil
+	}
+
+	testCases := []struct {
+		name           string
+		input          []byte
+		maxLength      int
+		expectedTokens []string
+	}{
+		{
+			name:           "MultilineWithinLimit",
+			input:          []byte(">first line\nline continued\n>second line\n"),
+			maxLength:      100,
+			expectedTokens: []string{"first line\nline continued\n", "second line\n"},
+		},
+		{
+			name:           "MultilineExceedsLimit",
+			input:          []byte(">first line\nline continued\nline continued more\n>second line\n"),
+			maxLength:      20,
+			expectedTokens: []string{"first line\nline cont", "second line\n"}, // first 20 chars of first entry
+		},
+		{
+			name:           "MultipleMultilineEntries",
+			input:          []byte(">entry1 line1\nentry1 line2\n>entry2 line1\nentry2 line2\n>entry3\n"),
+			maxLength:      100,
+			expectedTokens: []string{"entry1 line1\nentry1 line2\n", "entry2 line1\nentry2 line2\n", "entry3\n"},
+		},
+		{
+			name:           "AllEntriesExceedLimit",
+			input:          []byte(">very long entry one content\n>very long entry two content\n"),
+			maxLength:      10,
+			expectedTokens: []string{"very long ", "very long "},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			skipping := false
+			splitFunc := ToLengthWithTruncate(lineStartSplitFunc, tc.maxLength, &skipping)
+			scanner := bufio.NewScanner(bytes.NewReader(tc.input))
+			scanner.Split(splitFunc)
+
+			var tokens []string
+			for scanner.Scan() {
+				tokens = append(tokens, scanner.Text())
+			}
+
+			assert.NoError(t, scanner.Err())
+			assert.Equal(t, tc.expectedTokens, tokens, "Expected tokens to match")
+		})
+	}
+}
