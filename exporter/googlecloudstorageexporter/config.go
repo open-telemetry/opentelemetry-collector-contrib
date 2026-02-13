@@ -44,17 +44,16 @@ type bucketConfig struct {
 	// Partition configures the time-based partition format and file prefix.
 	Partition partitionConfig `mapstructure:"partition"`
 
-	// UseExisting skips bucket creation and uses an existing bucket.
-	// When set to true, the exporter assumes the bucket already exists
-	// and will not attempt to create it. This is useful when bucket
-	// creation is managed externally or the service account lacks
-	// bucket creation permissions.
-	UseExisting bool `mapstructure:"use_existing"`
-
-	// ReuseIfExists decides if the bucket should be used if it already
-	// exists. If it is set to false, an error will be thrown if the
-	// bucket already exists. Otherwise, the existent bucket will be
-	// used. This flag is ignored if UseExisting is true.
+	// ReuseIfExists controls whether to reuse an existing bucket or create a new one.
+	// When set to true:
+	//   - The exporter checks if the bucket exists (requires minimal permissions: storage.buckets.get)
+	//   - If the bucket exists, it will be used
+	//   - If the bucket does not exist, an error is returned
+	// When set to false:
+	//   - The exporter attempts to create the bucket
+	//   - If the bucket already exists, an error is returned
+	// This is useful when bucket creation is managed externally or the service account
+	// lacks bucket creation permissions but has object-level access.
 	ReuseIfExists bool `mapstructure:"reuse_if_exists"`
 
 	// Region where bucket will be created or where it exists. If it is left
