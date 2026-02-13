@@ -31,12 +31,14 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -744,4 +746,165 @@ func loadOTLPMetrics(t *testing.T, filename string) pmetric.Metrics {
 	require.NoError(t, err)
 
 	return otlpmetrics
+}
+
+func createTestMetricsWithRuntimeMetrics() pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	metricsArray := ilm.Metrics()
+
+	runtimeMetrics := []string{
+		"system.filesystem.utilization",
+		"process.runtime.go.goroutines",
+		"process.runtime.dotnet.exceptions.count",
+		"process.runtime.jvm.threads.count",
+	}
+
+	for _, metricName := range runtimeMetrics {
+		met := metricsArray.AppendEmpty()
+		met.SetName(metricName)
+		dps := met.SetEmptyGauge().DataPoints()
+		dp := dps.AppendEmpty()
+		dp.SetTimestamp(0)
+		dp.SetIntValue(42)
+	}
+
+	return md
+}
+
+func TestMetricRemapping(t *testing.T) {
+	tests := []struct {
+		newGate         bool
+		oldGate         bool
+		expectedMetrics []string
+	}{
+		{
+			newGate: false,
+			oldGate: false,
+			expectedMetrics: []string{
+				// Mapped system metrics
+				"system.disk.in_use",
+				"otel.system.filesystem.utilization",
+				// Mapped runtime metrics
+				"runtime.go.num_goroutine",
+				"otel.process.runtime.go.goroutines",
+				"runtime.dotnet.exceptions.count",
+				"otel.process.runtime.dotnet.exceptions.count",
+				"jvm.thread_count",
+				"otel.process.runtime.jvm.threads.count",
+				// One per lang
+				"otel.datadog_exporter.runtime_metrics.running",
+				"otel.datadog_exporter.runtime_metrics.running",
+				"otel.datadog_exporter.runtime_metrics.running",
+			},
+		},
+		{
+			newGate: true,
+			oldGate: false,
+			expectedMetrics: []string{
+				// Unmapped system metrics
+				"system.filesystem.utilization",
+				// Unmapped runtime metrics
+				"process.runtime.go.goroutines",
+				"process.runtime.dotnet.exceptions.count",
+				"process.runtime.jvm.threads.count",
+			},
+		},
+		{
+			newGate: false,
+			oldGate: true,
+			expectedMetrics: []string{
+				// Unmapped system metrics
+				"system.filesystem.utilization",
+				// Mapped runtime metrics
+				"runtime.go.num_goroutine",
+				"process.runtime.go.goroutines",
+				"runtime.dotnet.exceptions.count",
+				"process.runtime.dotnet.exceptions.count",
+				"jvm.thread_count",
+				"process.runtime.jvm.threads.count",
+				// One per lang
+				"otel.datadog_exporter.runtime_metrics.running",
+				"otel.datadog_exporter.runtime_metrics.running",
+				"otel.datadog_exporter.runtime_metrics.running",
+			},
+		},
+		{
+			newGate: true,
+			oldGate: true,
+			expectedMetrics: []string{
+				// Unmapped system metrics
+				"system.filesystem.utilization",
+				// Unmapped runtime metrics
+				"process.runtime.go.goroutines",
+				"process.runtime.dotnet.exceptions.count",
+				"process.runtime.jvm.threads.count",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("new=%v,old=%v", tt.newGate, tt.oldGate), func(t *testing.T) {
+			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV2Endpoint}
+			server := testutil.DatadogServerMock(seriesRecorder.HandlerFunc)
+			defer server.Close()
+
+			reg := featuregate.GlobalRegistry()
+			prevNewVal := featuregates.DisableMetricRemappingFeatureGate.IsEnabled()
+			prevOldVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
+			require.NoError(t, reg.Set(featuregates.DisableMetricRemappingFeatureGate.ID(), tt.newGate))
+			require.NoError(t, reg.Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), tt.oldGate))
+			defer func() {
+				require.NoError(t, reg.Set(featuregates.DisableMetricRemappingFeatureGate.ID(), prevNewVal))
+				require.NoError(t, reg.Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevOldVal))
+			}()
+
+			var once sync.Once
+			pusher := newTestPusher(t)
+			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
+			require.NoError(t, err)
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			acfg := traceconfig.New()
+			gatewayUsage := attributes.NewGatewayUsage()
+
+			// TODO: Update to test with serializer and legacy paths.
+			// Right now we only test the legacy path as the serializer exporter needs to be updated in a separate PR.
+			exp, err := newMetricsExporter(
+				t.Context(),
+				exportertest.NewNopSettings(metadata.Type),
+				newTestConfig(t, server.URL, []string{}, datadogconfig.HistogramModeDistributions),
+				acfg,
+				&once,
+				attributesTranslator,
+				&testutil.MockSourceProvider{},
+				reporter,
+				nil,
+				gatewayUsage,
+			)
+			require.NoError(t, err)
+
+			// Push metrics and validate output
+			if len(tt.expectedMetrics) > 0 {
+				exp.getPushTime = func() uint64 { return 0 }
+				testMetrics := createTestMetricsWithRuntimeMetrics()
+				err = exp.PushMetricsData(t.Context(), testMetrics)
+				require.NoError(t, err)
+
+				// Parse the series payload
+				reader, err := gzip.NewReader(bytes.NewBuffer(seriesRecorder.ByteBody))
+				require.NoError(t, err)
+				var payload map[string]any
+				require.NoError(t, json.NewDecoder(reader).Decode(&payload))
+
+				// Extract and validate metric names
+				actualMetrics := make([]string, 0, len(payload["series"].([]any)))
+				for _, s := range payload["series"].([]any) {
+					actualMetrics = append(actualMetrics, s.(map[string]any)["metric"].(string))
+				}
+				assert.ElementsMatch(t, tt.expectedMetrics, actualMetrics)
+			}
+		})
+	}
 }

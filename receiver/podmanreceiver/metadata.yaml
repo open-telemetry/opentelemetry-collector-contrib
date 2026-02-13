@@ -38,8 +38,7 @@ metrics:
     enabled: true
     description: "Number of bytes transferred from the disk by the container"
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
-    stability:
-      level: development
+    stability: development
     unit: "{operations}"
     sum:
       value_type: int
@@ -49,8 +48,7 @@ metrics:
     enabled: true
     description: "Number of bytes transferred to the disk by the container"
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
-    stability:
-      level: development
+    stability: development
     unit: "{operations}"
     sum:
       value_type: int
@@ -61,16 +59,14 @@ metrics:
   container.cpu.percent:
     enabled: true
     description: "Percent of CPU used by the container."
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: double
   container.cpu.usage.percpu:
     enabled: true
     description: "Total CPU time consumed per CPU-core."
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
@@ -81,8 +77,7 @@ metrics:
   container.cpu.usage.system:
     enabled: true
     description: "System CPU usage."
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
@@ -91,8 +86,7 @@ metrics:
   container.cpu.usage.total:
     enabled: true
     description: "Total CPU time consumed."
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
@@ -102,16 +96,14 @@ metrics:
   container.memory.percent:
     enabled: true
     description: "Percentage of memory used."
-    stability:
-      level: development
+    stability: development
     unit: "1"
     gauge:
       value_type: double
   container.memory.usage.limit:
     enabled: true
     description: "Memory limit of the container."
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -120,8 +112,7 @@ metrics:
   container.memory.usage.total:
     enabled: true
     description: "Memory usage of the container."
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -131,8 +122,7 @@ metrics:
   container.network.io.usage.rx_bytes:
     enabled: true
     description: "Bytes received by the container."
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -141,8 +131,7 @@ metrics:
   container.network.io.usage.tx_bytes:
     enabled: true
     description: "Bytes sent by the container."
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int

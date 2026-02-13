@@ -977,6 +977,10 @@ component_management:
     name: receiver_vcenter
     paths:
     - receiver/vcenterreceiver/**
+  - component_id: receiver_vcr
+    name: receiver_vcr
+    paths:
+    - receiver/vcrreceiver/**
   - component_id: receiver_wavefront
     name: receiver_wavefront
     paths:

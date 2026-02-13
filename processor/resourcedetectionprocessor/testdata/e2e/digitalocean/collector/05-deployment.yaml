@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Name }}
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Name }}
+    spec:
+      serviceAccountName: {{ .Name }}-sa
+      initContainers:
+        - name: metadata-server
+          image: python:3.13-alpine
+          imagePullPolicy: IfNotPresent
+          restartPolicy: Always
+          securityContext:
+            runAsUser: 0
+            capabilities:
+              drop:
+              - "ALL"
+              add:
+              - "NET_BIND_SERVICE"
+          command:
+            - python3
+            - /scripts/server.py
+          env:
+            - name: PORT
+              value: "80"
+          ports:
+            - containerPort: 80
+              name: metadata
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            failureThreshold: 10
+          volumeMounts:
+            - name: metadata-script
+              mountPath: /scripts
+        - name: setup-network
+          image: alpine:3.21
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache iptables
+              iptables -t nat -A OUTPUT -d 169.254.169.254 -p tcp --dport 80 -j DNAT --to-destination 127.0.0.1:80
+              echo "iptables rule added to redirect 169.254.169.254:80 -> 127.0.0.1:80"
+      containers:
+        - name: otelcol
+          image: otelcontribcol:latest
+          imagePullPolicy: Never
+          args:
+            - "--config=/conf/relay"
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Name }}-config
+            items:
+              - key: relay
+                path: relay
+        - name: metadata-script
+          configMap:
+            name: {{ .Name }}-metadata-config

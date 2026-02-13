@@ -1,0 +1,38 @@
+exporters:
+  otlp:
+    endpoint: host.docker.internal:4317
+    tls:
+      insecure: true
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+processors:
+  resourcedetection:
+    detectors: [docker]
+    timeout: 2s
+    override: false
+    docker:
+      resource_attributes:
+        container.name:
+          enabled: true
+        container.image.name:
+          enabled: true
+receivers:
+  hostmetrics:
+    collection_interval: 1s
+    scrapers:
+      cpu:
+service:
+  telemetry:
+    logs:
+      level: "debug"
+  extensions:
+    - health_check
+  pipelines:
+    metrics:
+      receivers:
+        - hostmetrics
+      processors:
+        - resourcedetection
+      exporters:
+        - otlp

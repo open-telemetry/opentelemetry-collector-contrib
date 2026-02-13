@@ -1,0 +1,496 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/PEERINGTEST/PROVIDERS/MICROSOFT.NETWORK/APPLICATIONGATEWAYS/Application-Gateway-Name
+        - key: service.instance.id
+          value:
+            stringValue: ApplicationGatewayRole_IN_0
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: ApplicationGatewayAccessLog
+              - key: azure.operation.name
+                value:
+                  stringValue: ApplicationGatewayAccess
+              - key: client.address
+                value:
+                  stringValue: 203.0.113.97
+              - key: client.port
+                value:
+                  intValue: "46886"
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.path
+                value:
+                  stringValue: /phpmyadmin/scripts/setup.php
+              - key: url.query
+                value:
+                  stringValue: X-AzureApplicationGateway-CACHE-HIT=0&SERVER-ROUTED=10.4.0.4&X-AzureApplicationGateway-LOG-ID=aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e&SERVER-STATUS=404
+              - key: http.response.status_code
+                value:
+                  intValue: "404"
+              - key: network.protocol.name
+                value:
+                  stringValue: http
+              - key: network.protocol.version
+                value:
+                  stringValue: "1.0"
+              - key: http.request.size
+                value:
+                  intValue: "65"
+              - key: http.response.size
+                value:
+                  intValue: "553"
+              - key: azure.request.duration
+                value:
+                  doubleValue: 205
+              - key: tls.enabled
+                value:
+                  stringValue: "off"
+              - key: host.name
+                value:
+                  stringValue: www.contoso.com
+              - key: http.request.header.host
+                value:
+                  stringValue: www.contoso.com
+            body: {}
+            timeUnixNano: "1493234858000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/PEERINGTEST/PROVIDERS/MICROSOFT.NETWORK/APPLICATIONGATEWAYS/Application-Gateway-Name
+        - key: service.instance.id
+          value:
+            stringValue: appgw_1
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: ApplicationGatewayAccessLog
+              - key: azure.operation.name
+                value:
+                  stringValue: ApplicationGatewayAccess
+              - key: client.address
+                value:
+                  stringValue: 203.0.113.97
+              - key: client.port
+                value:
+                  intValue: "46886"
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.path
+                value:
+                  stringValue: /phpmyadmin/scripts/setup.php
+              - key: http.response.status_code
+                value:
+                  intValue: "404"
+              - key: network.protocol.name
+                value:
+                  stringValue: http
+              - key: network.protocol.version
+                value:
+                  stringValue: "1.0"
+              - key: http.request.size
+                value:
+                  intValue: "65"
+              - key: http.response.size
+                value:
+                  intValue: "553"
+              - key: azure.request.duration
+                value:
+                  doubleValue: 205
+              - key: tls.enabled
+                value:
+                  stringValue: "off"
+              - key: host.name
+                value:
+                  stringValue: www.contoso.com
+              - key: server.address
+                value:
+                  stringValue: 104.41.114.59
+              - key: server.port
+                value:
+                  intValue: "80"
+              - key: azure.agw.backend.status_code
+                value:
+                  intValue: "200"
+              - key: azure.agw.backend.latency
+                value:
+                  doubleValue: 0.023
+            body: {}
+            timeUnixNano: "1493234858000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/MYSUBSCRIPTIONID/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.NETWORK/APPLICATIONGATEWAYS/MYV2-APPLICATIONGATEWAY
+        - key: service.instance.id
+          value:
+            stringValue: appgw_2
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: ApplicationGatewayAccessLog
+              - key: azure.operation.name
+                value:
+                  stringValue: ApplicationGatewayAccess
+              - key: azure.agw.listener.name
+                value:
+                  stringValue: HTTP-Listener
+              - key: azure.agw.rule.name
+                value:
+                  stringValue: Storage-Static-Rule
+              - key: azure.agw.backend.pool.name
+                value:
+                  stringValue: StaticStorageAccount
+              - key: azure.agw.backend.setting.name
+                value:
+                  stringValue: StorageStatic-HTTPS-Setting
+              - key: client.address
+                value:
+                  stringValue: 185.42.129.24
+              - key: client.port
+                value:
+                  intValue: "45057"
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.original
+                value:
+                  stringValue: /
+              - key: url.path
+                value:
+                  stringValue: /
+              - key: user_agent.original
+                value:
+                  stringValue: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36
+              - key: http.response.status_code
+                value:
+                  intValue: "200"
+              - key: network.protocol.name
+                value:
+                  stringValue: http
+              - key: network.protocol.version
+                value:
+                  stringValue: "1.1"
+              - key: http.request.size
+                value:
+                  intValue: "184"
+              - key: http.response.size
+                value:
+                  intValue: "466"
+              - key: azure.request.duration
+                value:
+                  doubleValue: 0.034
+              - key: tls.enabled
+                value:
+                  stringValue: "on"
+              - key: host.name
+                value:
+                  stringValue: 20.110.30.194
+              - key: http.request.header.host
+                value:
+                  stringValue: 20.110.30.194
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES256-GCM-SHA384
+              - key: tls.protocol.original
+                value:
+                  stringValue: TLSv1.2
+              - key: server.address
+                value:
+                  stringValue: 52.239.221.65
+              - key: server.port
+                value:
+                  intValue: "443"
+              - key: azure.agw.backend.status_code
+                value:
+                  intValue: "200"
+              - key: network.local.port
+                value:
+                  intValue: "21564"
+              - key: azure.agw.backend.latency
+                value:
+                  doubleValue: 0.028
+              - key: azure.agw.latency
+                value:
+                  doubleValue: 0
+              - key: azure.firewall.evaluation.duration
+                value:
+                  doubleValue: 0
+              - key: security_rule.ruleset.mode
+                value:
+                  stringValue: Detection
+              - key: azure.service.request.id
+                value:
+                  stringValue: 592d1649f75a8d480a3c4dc6a975309d
+            body: {}
+            timeUnixNano: "1634249831000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/MYSUBSCRIPTIONID/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.NETWORK/APPLICATIONGATEWAYS/MYV1-APPLICATIONGATEWAY
+        - key: service.instance.id
+          value:
+            stringValue: ApplicationGatewayRole_IN_0
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: ApplicationGatewayAccessLog
+              - key: azure.operation.name
+                value:
+                  stringValue: ApplicationGatewayAccess
+              - key: client.address
+                value:
+                  stringValue: 191.96.249.97
+              - key: client.port
+                value:
+                  intValue: "46886"
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.path
+                value:
+                  stringValue: /phpmyadmin/scripts/setup.php
+              - key: http.response.status_code
+                value:
+                  intValue: "404"
+              - key: network.protocol.name
+                value:
+                  stringValue: http
+              - key: network.protocol.version
+                value:
+                  stringValue: "1.0"
+              - key: http.request.size
+                value:
+                  intValue: "65"
+              - key: http.response.size
+                value:
+                  intValue: "553"
+              - key: azure.request.duration
+                value:
+                  doubleValue: 205
+              - key: tls.enabled
+                value:
+                  stringValue: "off"
+              - key: host.name
+                value:
+                  stringValue: www.contoso.com
+              - key: http.request.header.host
+                value:
+                  stringValue: www.contoso.com
+              - key: error.type
+                value:
+                  stringValue: ERRORINFO_UPSTREAM_NO_LIVE
+            body: {}
+            timeUnixNano: "1493234858000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/F7E1A56E-347B-4103-87C7-E775A3E11AC5/RESOURCEGROUPS/SWARAJRESOURCES/PROVIDERS/MICROSOFT.NETWORK/APPLICATIONGATEWAYS/SWARAJGWLOG
+        - key: service.instance.id
+          value:
+            stringValue: appgw_1
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: ApplicationGatewayAccessLog
+              - key: azure.operation.name
+                value:
+                  stringValue: ApplicationGatewayAccess
+              - key: azure.agw.listener.name
+                value:
+                  stringValue: "1"
+              - key: azure.agw.rule.name
+                value:
+                  stringValue: "1"
+              - key: azure.agw.backend.pool.name
+                value:
+                  stringValue: "1"
+              - key: azure.agw.backend.setting.name
+                value:
+                  stringValue: "1"
+              - key: client.address
+                value:
+                  stringValue: 167.220.238.80
+              - key: client.port
+                value:
+                  intValue: "34846"
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.original
+                value:
+                  stringValue: /search?q=books
+              - key: url.path
+                value:
+                  stringValue: /search
+              - key: url.query
+                value:
+                  stringValue: q=books
+              - key: user_agent.original
+                value:
+                  stringValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1823.37
+              - key: http.response.status_code
+                value:
+                  intValue: "301"
+              - key: network.protocol.name
+                value:
+                  stringValue: http
+              - key: network.protocol.version
+                value:
+                  stringValue: "1.1"
+              - key: http.request.size
+                value:
+                  intValue: "450"
+              - key: http.response.size
+                value:
+                  intValue: "1541"
+              - key: azure.request.duration
+                value:
+                  doubleValue: 0.013
+              - key: host.name
+                value:
+                  stringValue: 52.136.127.228
+              - key: http.request.header.host
+                value:
+                  stringValue: 52.136.127.228
+              - key: server.address
+                value:
+                  stringValue: 172.253.63.106
+              - key: server.port
+                value:
+                  intValue: "80"
+              - key: azure.agw.backend.status_code
+                value:
+                  intValue: "301"
+              - key: network.local.port
+                value:
+                  intValue: "58722"
+              - key: azure.agw.backend.latency
+                value:
+                  doubleValue: 0.016
+              - key: azure.agw.latency
+                value:
+                  doubleValue: 0
+              - key: azure.service.request.id
+                value:
+                  stringValue: ef22a78ea8c7367214aefc0f80d6d7f3
+              - key: error.type
+                value:
+                  stringValue: ERRORINFO_NO_ERROR
+            body: {}
+            timeUnixNano: "1686589119000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/MYSUBSCRIPTIONID/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.NETWORK/APPLICATIONGATEWAYS/INVALIDNUMBERSJSON
+        - key: service.instance.id
+          value:
+            stringValue: ApplicationGatewayRole_IN_0
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: ApplicationGatewayAccessLog
+              - key: azure.operation.name
+                value:
+                  stringValue: ApplicationGatewayAccess
+              - key: client.address
+                value:
+                  stringValue: 191.96.249.97
+              - key: client.port
+                value:
+                  intValue: "46886"
+              - key: http.response.status_code
+                value:
+                  intValue: "400"
+              - key: http.request.size
+                value:
+                  intValue: "0"
+              - key: http.response.size
+                value:
+                  intValue: "361"
+              - key: azure.request.duration
+                value:
+                  doubleValue: 0.097
+              - key: azure.agw.latency
+                value:
+                  doubleValue: 0.097
+              - key: azure.service.request.id
+                value:
+                  stringValue: bd7cdecf9580c7fb154644a703a694d6
+            body: {}
+            timeUnixNano: "1493234858000000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

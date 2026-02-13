@@ -135,8 +135,12 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	if err != nil {
 		return nil, err
 	}
-	// Copy attributes into existing map to avoid overwriting header attributes
-	maps.Copy(r.FileAttributes, attributes)
+	// Merge header attributes with file attributes by creating a new map
+	// to avoid data race when the original map is accessed concurrently
+	mergedAttributes := make(map[string]any, len(r.FileAttributes)+len(attributes))
+	maps.Copy(mergedAttributes, r.FileAttributes)
+	maps.Copy(mergedAttributes, attributes)
+	r.FileAttributes = mergedAttributes
 
 	return r, nil
 }

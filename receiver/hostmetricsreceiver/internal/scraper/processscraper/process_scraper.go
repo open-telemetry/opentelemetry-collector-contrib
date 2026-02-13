@@ -392,14 +392,58 @@ func (s *processScraper) scrapeAndAppendThreadsMetrics(ctx context.Context, now 
 	return nil
 }
 
+// NOTE: For now, this metric is only supported on Linux because
+// that's the only platform gopsutil will collect this value for.
+// The implementation makes the assumption that this remains the
+// case. If the metric will ever be supported on other platforms,
+// the implementation may end up needing to change or be separated
+// into individual platform implementations.
 func (s *processScraper) scrapeAndAppendContextSwitchMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
 	if !s.config.Metrics.ProcessContextSwitches.Enabled {
 		return nil
 	}
 
-	contextSwitches, err := handle.NumCtxSwitchesWithContext(ctx)
+	threadMap, err := handle.ThreadsWithContext(ctx)
 	if err != nil {
 		return err
+	}
+	contextSwitches := &process.NumCtxSwitchesStat{}
+
+	if len(threadMap) == 1 {
+		// If the task is single threaded, we can just read
+		// the context switch stat for the task we already have.
+		contextSwitches, err = handle.NumCtxSwitchesWithContext(ctx)
+		if err != nil {
+			return err
+		}
+	} else {
+		// The gopsutil method for enumerating processes on the system uses
+		// getdents(2). Calling this on procfs will only enumerate process IDs,
+		// and not the IDs of all their individual tasks. This is good and something
+		// we actually want. However, the NumCtxSwitchesWithThread method from gopsutil
+		// will read the context switches from /proc/[pid]/stat, which only has the context
+		// switches for the given ID, not a sum of the all the subtasks of the process.
+		//
+		// Thus if the task is multithreaded, we need to enumerate the tasks
+		// in the thread and treat them as separate gopsutil process.Process objects.
+		// This works because while the overall enumeration is done with getdents(2),
+		// calling NewProcess with each task ID directly reads /proc/[tid], which will
+		// allow us to separately read the context switches for each task of a process.
+		// The sum will be reported as the context switches for the "entire process".
+		errs := make([]error, 0, len(threadMap))
+		for tid := range threadMap {
+			thread := &process.Process{Pid: tid}
+			threadContextSwitches, err := thread.NumCtxSwitchesWithContext(ctx)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			contextSwitches.Involuntary += threadContextSwitches.Involuntary
+			contextSwitches.Voluntary += threadContextSwitches.Voluntary
+		}
+		if err := errors.Join(errs...); err != nil {
+			return err
+		}
 	}
 
 	s.mb.RecordProcessContextSwitchesDataPoint(now, contextSwitches.Involuntary, metadata.AttributeContextSwitchTypeInvoluntary)

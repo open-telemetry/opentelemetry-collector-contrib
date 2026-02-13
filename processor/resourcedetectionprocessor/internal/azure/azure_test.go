@@ -85,6 +85,69 @@ func TestDetectAzureAvailable(t *testing.T) {
 	assert.NotEqual(t, notExpected, res.Attributes().AsRaw())
 }
 
+func TestDetectEmptyComputerNameFallsBackToVMName(t *testing.T) {
+	mp := &azure.MockProvider{}
+	mp.On("Metadata").Return(&azure.ComputeMetadata{
+		Location:          "location",
+		Name:              "vm-name",
+		VMID:              "vmID",
+		VMSize:            "vmSize",
+		SubscriptionID:    "subscriptionID",
+		ResourceGroupName: "resourceGroup",
+		OSProfile: azure.OSProfile{
+			ComputerName: "",
+		},
+	}, nil)
+
+	detector := &Detector{
+		provider: mp,
+		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+	}
+	res, _, err := detector.Detect(t.Context())
+	require.NoError(t, err)
+	mp.AssertExpectations(t)
+
+	// host.name should fall back to compute.Name when computerName is empty
+	hostName, ok := res.Attributes().Get("host.name")
+	require.True(t, ok)
+	require.Equal(t, "vm-name", hostName.Str())
+}
+
+func TestDetectEmptyFieldsOmitted(t *testing.T) {
+	mp := &azure.MockProvider{}
+	mp.On("Metadata").Return(&azure.ComputeMetadata{
+		Location:          "location",
+		Name:              "vm-name",
+		VMID:              "vmID",
+		VMSize:            "vmSize",
+		SubscriptionID:    "subscriptionID",
+		ResourceGroupName: "resourceGroup",
+		VMScaleSetName:    "",
+		AvailabilityZone:  "",
+		OSProfile: azure.OSProfile{
+			ComputerName: "computerName",
+		},
+	}, nil)
+
+	cfg := metadata.DefaultResourceAttributesConfig()
+	cfg.CloudAvailabilityZone.Enabled = true
+
+	detector := &Detector{
+		provider: mp,
+		rb:       metadata.NewResourceBuilder(cfg),
+	}
+	res, _, err := detector.Detect(t.Context())
+	require.NoError(t, err)
+	mp.AssertExpectations(t)
+
+	// Empty VMScaleSetName and AvailabilityZone should not be set
+	_, hasScaleSet := res.Attributes().Get("azure.vm.scaleset.name")
+	require.False(t, hasScaleSet, "empty azure.vm.scaleset.name should not be set")
+
+	_, hasZone := res.Attributes().Get("cloud.availability_zone")
+	require.False(t, hasZone, "empty cloud.availability_zone should not be set")
+}
+
 func TestDetectError(t *testing.T) {
 	mp := &azure.MockProvider{}
 	mp.On("Metadata").Return(&azure.ComputeMetadata{}, errors.New("mock error"))

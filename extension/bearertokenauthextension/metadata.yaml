@@ -1,3 +1,4 @@
+display_name: Bearer Token Authenticator Extension
 type: bearertokenauth
 
 status:

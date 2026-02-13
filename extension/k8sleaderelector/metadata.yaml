@@ -1,4 +1,9 @@
+display_name: Kubernetes Leader Elector Extension
 type: k8s_leader_elector
+
+description: |
+  This extension enables OpenTelemetry components to run in HA mode across a Kubernetes cluster. The component that owns
+  the lease becomes the leader and becomes the active instance.
 
 status:
   class: extension

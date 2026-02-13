@@ -27,8 +27,8 @@ func LogFuncs() map[string]ottl.Factory[*ottllog.TransformContext] {
 	return commonFuncs[*ottllog.TransformContext]()
 }
 
-func ProfileFuncs() map[string]ottl.Factory[ottlprofile.TransformContext] {
-	return commonFuncs[ottlprofile.TransformContext]()
+func ProfileFuncs() map[string]ottl.Factory[*ottlprofile.TransformContext] {
+	return commonFuncs[*ottlprofile.TransformContext]()
 }
 
 func commonFuncs[K any]() map[string]ottl.Factory[K] {
