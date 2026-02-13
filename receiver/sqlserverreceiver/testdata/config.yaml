@@ -26,5 +26,7 @@ sqlserver/named:
   events:
     db.server.query_sample:
       enabled: true
+      collection_interval: 60s
     db.server.top_query:
       enabled: true
+      collection_interval: 120s

@@ -82,6 +82,12 @@ func (cfg *Config) Validate() error {
 	if cfg.TopQueryCollection.CollectionInterval < 0 {
 		return errors.New("`top_query_collection.collection_interval` must not be less than 0")
 	}
+	if cfg.Events.DbServerTopQuery.CollectionInterval < 0 {
+		return errors.New("`events.db.server.top_query.collection_interval` must not be less than 0")
+	}
+	if cfg.Events.DbServerQuerySample.CollectionInterval < 0 {
+		return errors.New("`events.db.server.query_sample.collection_interval` must not be less than 0")
+	}
 
 	cfg.isDirectDBConnectionEnabled, err = directDBConnectionEnabled(cfg)
 
@@ -110,7 +116,53 @@ func directDBConnectionEnabled(config *Config) (bool, error) {
 
 func (cfg *Config) EffectiveLookbackTime() time.Duration {
 	if cfg.LookbackTime == 0 {
-		return 2 * cfg.TopQueryCollection.CollectionInterval
+		return 2 * cfg.EffectiveTopQueryCollectionInterval()
 	}
 	return cfg.LookbackTime
+}
+
+// EffectiveTopQueryCollectionInterval returns the collection interval for db.server.top_query events.
+// Order of precedence: events.db.server.top_query.collection_interval if set and positive,
+// then top_query_collection.collection_interval, then global collection_interval.
+func (cfg *Config) EffectiveTopQueryCollectionInterval() time.Duration {
+	if cfg.Events.DbServerTopQuery.CollectionInterval > 0 {
+		return cfg.Events.DbServerTopQuery.CollectionInterval
+	}
+	if cfg.TopQueryCollection.CollectionInterval > 0 {
+		return cfg.TopQueryCollection.CollectionInterval
+	}
+	return cfg.ControllerConfig.CollectionInterval
+}
+
+// EffectiveQuerySampleCollectionInterval returns the collection interval for db.server.query_sample events.
+// Order of precedence: events.db.server.query_sample.collection_interval if set and positive,
+// then global collection_interval.
+func (cfg *Config) EffectiveQuerySampleCollectionInterval() time.Duration {
+	if cfg.Events.DbServerQuerySample.CollectionInterval > 0 {
+		return cfg.Events.DbServerQuerySample.CollectionInterval
+	}
+	return cfg.ControllerConfig.CollectionInterval
+}
+
+// EffectiveEventsCollectionInterval returns the interval at which the logs controller should tick.
+// It is the minimum of the effective collection intervals of all enabled log events (top_query, query_sample).
+// If no events are enabled, returns the global collection_interval.
+func (cfg *Config) EffectiveEventsCollectionInterval() time.Duration {
+	var min time.Duration
+	if cfg.Events.DbServerTopQuery.Enabled {
+		iv := cfg.EffectiveTopQueryCollectionInterval()
+		if min == 0 || iv < min {
+			min = iv
+		}
+	}
+	if cfg.Events.DbServerQuerySample.Enabled {
+		iv := cfg.EffectiveQuerySampleCollectionInterval()
+		if min == 0 || iv < min {
+			min = iv
+		}
+	}
+	if min == 0 {
+		return cfg.ControllerConfig.CollectionInterval
+	}
+	return min
 }

@@ -56,8 +56,10 @@ sqlserver:
   events:
     db.server.query_sample:
       enabled: true
+      collection_interval: 60s              # optional: override for this event (default: global)
     db.server.top_query:
       enabled: true
+      collection_interval: 120s            # optional: override for this event (default: top_query_collection.collection_interval)
   top_query_collection:                        # this collection exports the most expensive queries as logs
     lookback_time: 60s                         # which time window should we look for the top queries
     max_query_sample_count: 1000               # maximum number query we store in cache for top queries.
@@ -97,10 +99,13 @@ Top-Query collection specific options (only useful when top-query collection are
       - In this case, the default receiver scraper will still try to run in every 10 seconds.
       - However, the top queries collection will only run after 60 seconds have passed since the last collection.
     - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
-      - In this case, `top_query_collection.collection_internal` will make no effects to the collection
+      - In this case, `top_query_collection.collection_interval` will make no effects to the collection.
+  - Per-event override: `events.db.server.top_query.collection_interval` takes precedence over `top_query_collection.collection_interval`.
 
-Query sample collection related options (only useful when query sample is enabled)
+Query sample collection related options (only useful when query sample is enabled):
 - `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
+- `events.db.server.query_sample.collection_interval`: (optional) override for query sample events; when not set, global `collection_interval` is used.
+
 Example:
 
 ```yaml

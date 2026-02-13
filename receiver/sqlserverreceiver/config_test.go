@@ -119,6 +119,36 @@ func TestValidate(t *testing.T) {
 			},
 			expectedSuccess: false,
 		},
+		{
+			desc: "config with invalid events.db.server.top_query.collection_interval",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig: metadata.LogsBuilderConfig{
+					Events: metadata.EventsConfig{
+						DbServerTopQuery: metadata.EventConfig{
+							CollectionInterval: -1,
+						},
+					},
+				},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with invalid events.db.server.query_sample.collection_interval",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				LogsBuilderConfig: metadata.LogsBuilderConfig{
+					Events: metadata.EventsConfig{
+						DbServerQuerySample: metadata.EventConfig{
+							CollectionInterval: -1,
+						},
+					},
+				},
+			},
+			expectedSuccess: false,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -181,10 +211,12 @@ func TestLoadConfig(t *testing.T) {
 		expected.LogsBuilderConfig = metadata.LogsBuilderConfig{
 			Events: metadata.EventsConfig{
 				DbServerQuerySample: metadata.EventConfig{
-					Enabled: true,
+					Enabled:             true,
+					CollectionInterval: 60 * time.Second,
 				},
 				DbServerTopQuery: metadata.EventConfig{
-					Enabled: true,
+					Enabled:             true,
+					CollectionInterval: 120 * time.Second,
 				},
 			},
 			ResourceAttributes: metadata.ResourceAttributesConfig{
@@ -238,5 +270,38 @@ func TestLoadConfig(t *testing.T) {
 
 		config.LookbackTime = 60 * time.Second
 		assert.Equal(t, 60*time.Second, config.EffectiveLookbackTime(), "'EffectiveLookbackTime' should return the user provided 'LookbackTime' if any.")
+	})
+
+	t.Run("effectiveTopQueryCollectionInterval", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.ControllerConfig.CollectionInterval = 30 * time.Second
+		cfg.TopQueryCollection.CollectionInterval = time.Minute
+
+		assert.Equal(t, time.Minute, cfg.EffectiveTopQueryCollectionInterval())
+		cfg.Events.DbServerTopQuery.CollectionInterval = 120 * time.Second
+		assert.Equal(t, 120*time.Second, cfg.EffectiveTopQueryCollectionInterval())
+		cfg.Events.DbServerTopQuery.CollectionInterval = 0
+		cfg.TopQueryCollection.CollectionInterval = 0
+		assert.Equal(t, 30*time.Second, cfg.EffectiveTopQueryCollectionInterval())
+	})
+
+	t.Run("effectiveQuerySampleCollectionInterval", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.ControllerConfig.CollectionInterval = 30 * time.Second
+		assert.Equal(t, 30*time.Second, cfg.EffectiveQuerySampleCollectionInterval())
+		cfg.Events.DbServerQuerySample.CollectionInterval = 60 * time.Second
+		assert.Equal(t, 60*time.Second, cfg.EffectiveQuerySampleCollectionInterval())
+	})
+
+	t.Run("effectiveEventsCollectionInterval", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.ControllerConfig.CollectionInterval = 60 * time.Second
+		assert.Equal(t, 60*time.Second, cfg.EffectiveEventsCollectionInterval())
+		cfg.Events.DbServerTopQuery.Enabled = true
+		cfg.Events.DbServerTopQuery.CollectionInterval = 30 * time.Second
+		assert.Equal(t, 30*time.Second, cfg.EffectiveEventsCollectionInterval())
+		cfg.Events.DbServerQuerySample.Enabled = true
+		cfg.Events.DbServerQuerySample.CollectionInterval = 10 * time.Second
+		assert.Equal(t, 10*time.Second, cfg.EffectiveEventsCollectionInterval())
 	})
 }

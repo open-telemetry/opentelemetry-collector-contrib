@@ -49,22 +49,23 @@ var removeServerResourceAttributeFeatureGate = featuregate.GlobalRegistry().Must
 )
 
 type sqlServerScraperHelper struct {
-	id                     component.ID
-	config                 *Config
-	sqlQuery               string
-	instanceName           string
-	clientProviderFunc     sqlquery.ClientProviderFunc
-	dbProviderFunc         sqlquery.DbProviderFunc
-	logger                 *zap.Logger
-	telemetry              sqlquery.TelemetryConfig
-	client                 sqlquery.DbClient
-	db                     *sql.DB
-	mb                     *metadata.MetricsBuilder
-	lb                     *metadata.LogsBuilder
-	cache                  *lru.Cache[string, int64]
-	lastExecutionTimestamp time.Time
-	obfuscator             *obfuscator
-	serviceInstanceID      string
+	id                                component.ID
+	config                            *Config
+	sqlQuery                          string
+	instanceName                      string
+	clientProviderFunc                sqlquery.ClientProviderFunc
+	dbProviderFunc                    sqlquery.DbProviderFunc
+	logger                            *zap.Logger
+	telemetry                         sqlquery.TelemetryConfig
+	client                            sqlquery.DbClient
+	db                                *sql.DB
+	mb                                *metadata.MetricsBuilder
+	lb                                *metadata.LogsBuilder
+	cache                            *lru.Cache[string, int64]
+	lastExecutionTimestamp           time.Time
+	lastQuerySampleExecutionTimestamp time.Time
+	obfuscator                        *obfuscator
+	serviceInstanceID                 string
 }
 
 var (
@@ -148,12 +149,18 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	var resources pcommon.Resource
 	switch s.sqlQuery {
 	case getSQLServerQueryTextAndPlanQuery():
-		if int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(s.config.TopQueryCollection.CollectionInterval.Seconds()) {
+		interval := s.config.EffectiveTopQueryCollectionInterval()
+		if interval > 0 && int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(interval.Seconds()) {
 			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
 			return plog.NewLogs(), nil
 		}
 		resources, err = s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
 	case getSQLServerQuerySamplesQuery():
+		interval := s.config.EffectiveQuerySampleCollectionInterval()
+		if interval > 0 && int(math.Ceil(time.Since(s.lastQuerySampleExecutionTimestamp).Seconds())) < int(interval.Seconds()) {
+			s.logger.Debug("Skipping the collection of query samples because the current time has not yet exceeded the last execution time plus the specified collection interval")
+			return plog.NewLogs(), nil
+		}
 		resources, err = s.recordDatabaseSampleQuery(ctx)
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
@@ -928,6 +935,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const waitTimeMillisecond = "wait_time"
 	const waitType = "wait_type"
 	const writes = "writes"
+
+	s.lastQuerySampleExecutionTimestamp = time.Now()
 
 	rows, err := s.client.QueryRows(
 		ctx,

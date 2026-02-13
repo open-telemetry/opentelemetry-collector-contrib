@@ -56,8 +56,10 @@ func createLogsReceiver(
 		return nil, err
 	}
 
+	logsControllerCfg := cfg.ControllerConfig
+	logsControllerCfg.CollectionInterval = cfg.EffectiveEventsCollectionInterval()
 	return scraperhelper.NewLogsController(
-		&cfg.ControllerConfig,
+		&logsControllerCfg,
 		params,
 		logsConsumer,
 		opts...,
