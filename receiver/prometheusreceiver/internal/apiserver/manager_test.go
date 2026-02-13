@@ -7,6 +7,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,52 +23,98 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
-func newTestManager(t *testing.T, cfg *Config) *Manager {
-	t.Helper()
-
-	require.NotNil(t, cfg)
-
-	settings := receivertest.NewNopSettings(metadata.Type)
-	registry := prometheus.NewRegistry()
-	promCfg := &promconfig.Config{}
-
-	return NewManager(settings, cfg, promCfg, registry, registry, nil)
-}
-
-func TestNewManagerInitializesFields(t *testing.T) {
+func TestNewManager(t *testing.T) {
 	cfg := &Config{}
+	registry := prometheus.NewRegistry()
+	promCfg := &promconfig.Config{
+		ScrapeConfigs: []*promconfig.ScrapeConfig{
+			{JobName: "test-job"},
+		},
+	}
+	manager := NewManager(
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		promCfg,
+		registry,
+		registry,
+		nil,
+	)
 
-	manager := newTestManager(t, cfg)
-
+	assert.NotNil(t, manager)
 	assert.Equal(t, cfg, manager.cfg)
-	assert.NotNil(t, manager.promCfg)
+	assert.Equal(t, promCfg, manager.promCfg)
 	assert.NotNil(t, manager.shutdown)
 	assert.NotNil(t, manager.registry)
 	assert.NotNil(t, manager.registerer)
+	assert.NotNil(t, manager.cfgLock)
 }
 
-func TestNewManagerReturnsNilWithoutConfig(t *testing.T) {
-	settings := receivertest.NewNopSettings(metadata.Type)
+func TestNewManagerUsesProvidedConfigLock(t *testing.T) {
+	sharedLock := &sync.RWMutex{}
 	registry := prometheus.NewRegistry()
-	promCfg := &promconfig.Config{}
+	promCfg := &promconfig.Config{
+		ScrapeConfigs: []*promconfig.ScrapeConfig{
+			{JobName: "test-job"},
+		},
+	}
 
-	manager := NewManager(settings, nil, promCfg, registry, registry, nil)
+	manager := NewManager(
+		receivertest.NewNopSettings(metadata.Type),
+		&Config{},
+		promCfg,
+		registry,
+		registry,
+		sharedLock,
+	)
+
+	require.NotNil(t, manager)
+	assert.Same(t, sharedLock, manager.cfgLock)
+}
+
+func TestNewManagerNilConfig(t *testing.T) {
+	registry := prometheus.NewRegistry()
+
+	manager := NewManager(
+		receivertest.NewNopSettings(metadata.Type),
+		nil,
+		&promconfig.Config{},
+		registry,
+		registry,
+		nil,
+	)
 
 	require.Nil(t, manager)
 }
 
-func TestManagerApplyConfigAndGetConfig(t *testing.T) {
-	manager := newTestManager(t, &Config{})
-	newCfg := &promconfig.Config{
-		GlobalConfig: promconfig.DefaultGlobalConfig,
-	}
+func TestManagerApplyConfig(t *testing.T) {
+	registry := prometheus.NewRegistry()
+
+	manager := NewManager(
+		receivertest.NewNopSettings(metadata.Type),
+		nil,
+		&promconfig.Config{},
+		registry,
+		registry,
+		nil,
+	)
+
+	newCfg := &promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig}
 
 	require.NoError(t, manager.ApplyConfig(newCfg))
 	assert.Equal(t, newCfg, manager.GetConfig())
 }
 
-func TestManagerShutdownClosesChannelAndServer(t *testing.T) {
-	manager := newTestManager(t, &Config{})
+func TestManagerShutdown(t *testing.T) {
+	registry := prometheus.NewRegistry()
+
+	manager := NewManager(
+		receivertest.NewNopSettings(metadata.Type),
+		nil,
+		&promconfig.Config{},
+		registry,
+		registry,
+		nil,
+	)
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
@@ -81,6 +128,7 @@ func TestManagerShutdownClosesChannelAndServer(t *testing.T) {
 
 	manager.server = server
 
+	// Cancel test if shutdown takes too long
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 
@@ -99,17 +147,45 @@ func TestManagerShutdownClosesChannelAndServer(t *testing.T) {
 	}
 }
 
-func TestManagerStartInvalidEndpoint(t *testing.T) {
-	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Endpoint: "localhost", // missing port forces ToListener error
-			},
+func TestManagerStart(t *testing.T) {
+	tests := []struct {
+		name      string
+		manager   *Manager
+		expectErr string
+	}{
+		{
+			name:    "nil config no-op",
+			manager: &Manager{settings: receivertest.NewNopSettings(metadata.Type)},
+		},
+		{
+			name: "invalid endpoint",
+			manager: NewManager(
+				receivertest.NewNopSettings(metadata.Type),
+				&Config{
+					ServerConfig: confighttp.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Endpoint: "localhost"},
+					},
+				},
+				&promconfig.Config{},
+				prometheus.NewRegistry(),
+				prometheus.NewRegistry(),
+				nil,
+			),
+			expectErr: "failed to create listener",
 		},
 	}
 
-	manager := newTestManager(t, cfg)
-
-	err := manager.Start(t.Context(), componenttest.NewNopHost(), nil)
-	require.Error(t, err)
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.manager.Start(t.Context(), componenttest.NewNopHost(), nil)
+			if tt.expectErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.expectErr)
+		})
+	}
 }
