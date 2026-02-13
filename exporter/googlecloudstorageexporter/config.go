@@ -52,8 +52,7 @@ type bucketConfig struct {
 	// When set to false:
 	//   - The exporter attempts to create the bucket (requires storage.buckets.create at project level)
 	//   - If the bucket already exists, an error is returned
-	// Set to true when bucket creation is managed externally (e.g., Terraform) and the service account
-	// lacks project-level bucket creation permissions but has bucket-level permissions.
+	// Set to true when the service account lacks project-level bucket creation permissions but has bucket-level permissions.
 	ReuseIfExists bool `mapstructure:"reuse_if_exists"`
 
 	// Region where bucket will be created or where it exists. If it is left
