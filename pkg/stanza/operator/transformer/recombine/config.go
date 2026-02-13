@@ -65,10 +65,6 @@ type Config struct {
 
 // Build creates a new Transformer from a config
 func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
-	if c.IfExpr != "" {
-		set.Logger.Warn("The recombine operator does not support the 'if' field. Use a 'router' operator to conditionally route logs before the recombine operator.")
-	}
-
 	transformer, err := c.TransformerConfig.Build(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build transformer config: %w", err)

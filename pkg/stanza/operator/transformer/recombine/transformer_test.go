@@ -14,8 +14,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
@@ -1098,6 +1096,7 @@ func TestProcessBatchPreservesBatching(t *testing.T) {
 	fake.ExpectEntry(t, expect3)
 }
 
+
 func TestRecombineQuietModeProcess(t *testing.T) {
 	testCases := []struct {
 		name        string
@@ -1407,4 +1406,59 @@ func TestRecombineFlushSource(t *testing.T) {
 			require.Error(t, err, "flushSource errors should always be returned")
 		})
 	}
+func TestIfFieldSkipsNonMatchingEntries(t *testing.T) {
+	now := time.Now()
+	t1 := time.Date(2020, time.April, 11, 21, 34, 0o1, 0, time.UTC)
+
+	cfg := NewConfig()
+	cfg.CombineField = entry.NewBodyField()
+	cfg.IsLastEntry = "body == 'END'"
+	cfg.OutputIDs = []string{"fake"}
+	// Only recombine entries where body != "skip"
+	cfg.IfExpr = "body != 'skip'"
+
+	ctx := t.Context()
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
+	defer func() { require.NoError(t, op.Stop()) }()
+
+	fake := testutil.NewFakeOutput(t)
+	require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+	// Send: "line1" (matches if, goes to batch), "skip" (doesn't match if, passes through), "END" (matches if, flushes batch)
+	e1 := entry.New()
+	e1.ObservedTimestamp = now
+	e1.Timestamp = t1
+	e1.Body = "line1"
+
+	eSkip := entry.New()
+	eSkip.ObservedTimestamp = now
+	eSkip.Timestamp = t1
+	eSkip.Body = "skip"
+
+	eEnd := entry.New()
+	eEnd.ObservedTimestamp = now
+	eEnd.Timestamp = t1
+	eEnd.Body = "END"
+
+	require.NoError(t, op.Process(ctx, e1))
+	require.NoError(t, op.Process(ctx, eSkip))
+	require.NoError(t, op.Process(ctx, eEnd))
+
+	// "skip" should pass through immediately (unrecombined)
+	expectSkip := entry.New()
+	expectSkip.ObservedTimestamp = now
+	expectSkip.Timestamp = t1
+	expectSkip.Body = "skip"
+
+	// "line1" + "END" should be recombined
+	expectRecombined := entry.New()
+	expectRecombined.ObservedTimestamp = now
+	expectRecombined.Timestamp = t1
+	expectRecombined.Body = "line1\nEND"
+
+	fake.ExpectEntry(t, expectSkip)
+	fake.ExpectEntry(t, expectRecombined)
 }
