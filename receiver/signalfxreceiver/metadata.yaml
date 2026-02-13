@@ -3,7 +3,14 @@ type: signalfx
 status:
   class: receiver
   stability:
-    beta: [metrics, logs]
+    deprecated: [metrics, logs]
+  deprecation:
+    logs:
+      migration: "Use OTLP components instead"
+      date: "2026-02-13"
+    metrics:
+      migration: "Use OTLP components instead"
+      date: "2026-02-13"
   distributions: [contrib]
   codeowners:
     active: ["dmitryax"]
