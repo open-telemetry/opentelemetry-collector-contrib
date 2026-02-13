@@ -14,6 +14,74 @@ import (
 )
 
 // ------------------------------------------------------------
+// Activity Log Identity
+// ------------------------------------------------------------
+
+type azureIdentityActivity struct {
+	azureIdentityBase
+
+	Authorization *activityLogIdentityAuthorization `json:"authorization"`
+}
+
+func (r *azureIdentityActivity) PutIdentityAttributes(attrs pcommon.Map) {
+	r.azureIdentityBase.PutIdentityAttributes(attrs)
+
+	// Authorization
+	if r.Authorization != nil {
+		unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationScope, r.Authorization.Scope)
+		unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationAction, r.Authorization.Action)
+
+		if r.Authorization.Evidence != nil {
+			unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationEvidenceRole, r.Authorization.Evidence.Role)
+			unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationEvidenceRoleAssignmentScope, r.Authorization.Evidence.RoleAssignmentScope)
+			unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationEvidenceRoleAssignmentID, r.Authorization.Evidence.RoleAssignmentID)
+			unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationEvidenceRoleDefinitionID, r.Authorization.Evidence.RoleDefinitionID)
+			unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationEvidencePrincipalID, r.Authorization.Evidence.PrincipalID)
+			unmarshaler.AttrPutStrIf(attrs, attributeIdentityAuthorizationEvidencePrincipalType, r.Authorization.Evidence.PrincipalType)
+		}
+	}
+}
+
+// activityLogIdentityEvidence describes role assignment evidence in identity authorization
+type activityLogIdentityEvidence struct {
+	Role                string `json:"role"`
+	RoleAssignmentScope string `json:"roleAssignmentScope"`
+	RoleAssignmentID    string `json:"roleAssignmentId"`
+	RoleDefinitionID    string `json:"roleDefinitionId"`
+	PrincipalID         string `json:"principalId"`
+	PrincipalType       string `json:"principalType"`
+}
+
+// activityLogIdentityAuthorization describes identity authorization details
+type activityLogIdentityAuthorization struct {
+	Scope    string                       `json:"scope"`
+	Action   string                       `json:"action"`
+	Evidence *activityLogIdentityEvidence `json:"evidence"`
+}
+
+// activityLogRecordBase extends azureLogRecordBase with Activity Log identity parsing.
+// All activity log category structs embed this instead of azureLogRecordBase directly,
+// so they inherit the correct identity handling.
+//
+// The Identity field is parsed directly into activityLogIdentity during the
+// main JSON unmarshal step - no double parsing required.
+type activityLogRecordBase struct {
+	azureLogRecordBase
+
+	Identity *azureIdentityActivity `json:"identity"`
+}
+
+// PutCommonAttributes extends the base method by also extracting identity fields
+// specific to Activity Logs (authorization, JWT claims, etc.)
+func (r *activityLogRecordBase) PutCommonAttributes(attrs pcommon.Map, body pcommon.Value) {
+	r.azureLogRecordBase.PutCommonAttributes(attrs, body)
+
+	if r.Identity != nil {
+		r.Identity.PutIdentityAttributes(attrs)
+	}
+}
+
+// ------------------------------------------------------------
 // Activity Log - Administrative category
 // ------------------------------------------------------------
 
@@ -27,7 +95,7 @@ const (
 // azureAdministrativeLog represents an Administrative activity log
 // See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#administrative-category
 type azureAdministrativeLog struct {
-	azureLogRecordBase
+	activityLogRecordBase
 
 	Properties struct {
 		Entity    string `json:"entity"`
@@ -65,7 +133,7 @@ const (
 // azureAlertLog represents an Alert activity log
 // See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#alert-category
 type azureAlertLog struct {
-	azureLogRecordBase
+	activityLogRecordBase
 
 	Properties struct {
 		WebHookURI          string `json:"webHookUri"`
@@ -112,7 +180,7 @@ const (
 // azureAutoscaleLog represents an Autoscale activity log
 // See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#autoscale-category
 type azureAutoscaleLog struct {
-	azureLogRecordBase
+	activityLogRecordBase
 
 	Properties struct {
 		Description         string `json:"Description"`
@@ -148,7 +216,7 @@ const (
 // azureSecurityLog represents a Security activity log
 // See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#security-category
 type azureSecurityLog struct {
-	azureLogRecordBase
+	activityLogRecordBase
 
 	Properties struct {
 		AccountLogonID  string `json:"accountLogonId"`
@@ -231,7 +299,7 @@ type policyElement struct {
 // azurePolicyLog represents a Policy activity log
 // See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#policy-category
 type azurePolicyLog struct {
-	azureLogRecordBase
+	activityLogRecordBase
 
 	Properties struct {
 		IsComplianceCheck string `json:"isComplianceCheck"`
@@ -322,7 +390,7 @@ type impactedService struct {
 // azureServiceHealthLog represents a Service Health activity log
 // See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#service-health-category
 type azureServiceHealthLog struct {
-	azureLogRecordBase
+	activityLogRecordBase
 
 	Properties struct {
 		Title                  string `json:"title"`
@@ -419,7 +487,7 @@ const (
 // azureResourceHealthLog represents a Resource Health activity log
 // See: https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema#resource-health-category
 type azureResourceHealthLog struct {
-	azureLogRecordBase
+	activityLogRecordBase
 
 	Properties struct {
 		Title                string `json:"title"`

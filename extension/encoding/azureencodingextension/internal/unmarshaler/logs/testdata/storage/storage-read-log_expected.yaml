@@ -38,16 +38,6 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: requester
-                        value:
-                          kvlistValue:
-                            values:
-                              - key: tenantId
-                                value:
-                                  stringValue: 12345678-90ab-cdef-1234-567890abcdef
-                              - key: objectId
-                                value:
-                                  stringValue: abcdef12-3456-7890-abcd-ef1234567890
                       - key: type
                         value:
                           stringValue: DelegationSAS
@@ -60,30 +50,6 @@ resourceLogs:
                             values:
                               - kvlistValue:
                                   values:
-                                    - key: principals
-                                      value:
-                                        arrayValue:
-                                          values:
-                                            - kvlistValue:
-                                                values:
-                                                  - key: type
-                                                    value:
-                                                      stringValue: User
-                                                  - key: id
-                                                    value:
-                                                      stringValue: 7890abcd-ef12-3456-7890-abcd12345678
-                                    - key: denyAssignmentId
-                                      value:
-                                        stringValue: ""
-                                    - key: type
-                                      value:
-                                        stringValue: RBAC
-                                    - key: result
-                                      value:
-                                        stringValue: Denied
-                                    - key: reason
-                                      value:
-                                        stringValue: NoPolicy
                                     - key: action
                                       value:
                                         stringValue: Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read
@@ -93,6 +59,37 @@ resourceLogs:
                                     - key: roleDefinitionId
                                       value:
                                         stringValue: 12345678-90ab-cdef-1234-567890abcdef
+                                    - key: type
+                                      value:
+                                        stringValue: RBAC
+                                    - key: result
+                                      value:
+                                        stringValue: Denied
+                                    - key: reason
+                                      value:
+                                        stringValue: NoPolicy
+                                    - key: principals
+                                      value:
+                                        arrayValue:
+                                          values:
+                                            - kvlistValue:
+                                                values:
+                                                  - key: id
+                                                    value:
+                                                      stringValue: 7890abcd-ef12-3456-7890-abcd12345678
+                                                  - key: type
+                                                    value:
+                                                      stringValue: User
+                      - key: requester
+                        value:
+                          kvlistValue:
+                            values:
+                              - key: objectId
+                                value:
+                                  stringValue: abcdef12-3456-7890-abcd-ef1234567890
+                              - key: tenantId
+                                value:
+                                  stringValue: 12345678-90ab-cdef-1234-567890abcdef
               - key: http.response.status_code
                 value:
                   intValue: "500"

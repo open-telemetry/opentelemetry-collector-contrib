@@ -47,11 +47,19 @@ in OpenTelemetry Collector pipeline (for example, using `transformprocessor`) or
 
 ### Identity Field
 
-The `identity` field contains authorization and claims information. Rather than storing it as a nested structure,
-specific fields are extracted into flat, semantically meaningful attributes. Only known useful fields are extracted
-to minimize the risk of accidentally including sensitive data.
+The `identity` field has different structures across Azure log categories, so identity parsing is handled per-category:
 
-#### Authorization Fields
+- **Activity Logs**: Specific known fields are extracted into flat, semantically meaningful attributes (see below)
+- **Storage Logs**: Stored as a nested map under `azure.identity` (different structure with authorization as an array)
+- **Unknown/Generic categories**: Stored as a nested map under `azure.identity`
+
+Only known useful fields are extracted to minimize the risk of accidentally including sensitive data.
+
+#### Activity Log Identity
+
+Activity Logs contain caller identity information with JWT claims from Azure AD/Entra ID tokens and authorization details.
+
+##### Authorization Fields
 
 | Azure identity Field | OpenTelemetry | OpenTelemetry Scope |
 |---------------------|---------------|---------------------|
@@ -64,7 +72,7 @@ to minimize the risk of accidentally including sensitive data.
 | `identity.authorization.evidence.principalId` | `azure.identity.authorization.evidence.principal.id` | Log Attribute |
 | `identity.authorization.evidence.principalType` | `azure.identity.authorization.evidence.principal.type` | Log Attribute |
 
-#### Claims Fields
+##### Claims Fields
 
 Unix timestamps (`exp`, `nbf`, `iat`) are converted to RFC3339 format.
 
@@ -82,8 +90,16 @@ Unix timestamps (`exp`, `nbf`, `iat`) are converted to RFC3339 format.
 | `http://schemas.microsoft.com/claims/authnmethodsreferences` | `azure.identity.auth.methods.references` | Log Attribute |
 | `http://schemas.microsoft.com/identity/claims/identityprovider` | `azure.identity.provider` | Log Attribute |
 | `http://schemas.microsoft.com/identity/claims/objectidentifier` | `azure.identity.identifier.object` | Log Attribute |
-| `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier` | `user.name` | Log Attribute |
+| `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier` | `user.id` | Log Attribute |
 | `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress` | `user.email` | Log Attribute |
+
+#### Storage Log Identity
+
+Storage Logs have a different identity structure containing authorization decisions as an array, token information, and requester details. The entire identity object is stored as a nested map under `azure.identity`.
+
+#### Unknown/Generic Categories
+
+For log categories where the identity structure is not known, the entire identity object is stored as a nested map under `azure.identity` to preserve all data.
 
 ## Application Gateway
 

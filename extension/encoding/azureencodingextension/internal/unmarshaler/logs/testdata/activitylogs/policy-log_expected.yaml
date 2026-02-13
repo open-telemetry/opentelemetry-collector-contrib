@@ -37,6 +37,45 @@ resourceLogs:
               - key: azure.operation.duration
                 value:
                   intValue: "0"
+              - key: azure.identity.type
+                value:
+                  stringValue: user
+              - key: azure.identity.auth.methods.references
+                value:
+                  stringValue: pwd,mfa
+              - key: azure.identity.identifier.object
+                value:
+                  stringValue: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+              - key: user.id
+                value:
+                  stringValue: XxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxX
+              - key: azure.identity.issuer
+                value:
+                  stringValue: https://sts.windows.net/55555555-5555-5555-5555-555555555555/
+              - key: azure.identity.audience
+                value:
+                  stringValue: https://management.core.windows.net/
+              - key: azure.identity.application.id
+                value:
+                  stringValue: 66666666-6666-6666-6666-666666666666
+              - key: azure.identity.provider
+                value:
+                  stringValue: https://sts.windows.net/99999999-9999-9999-9999-999999999999/
+              - key: user.email
+                value:
+                  stringValue: john.doe@contoso.com
+              - key: azure.identity.scope
+                value:
+                  stringValue: user_impersonation
+              - key: azure.identity.created
+                value:
+                  stringValue: "2025-04-23T10:46:40Z"
+              - key: azure.identity.not_after
+                value:
+                  stringValue: "2025-04-23T11:51:58Z"
+              - key: azure.identity.not_before
+                value:
+                  stringValue: "2025-04-23T10:46:40Z"
               - key: azure.identity.authorization.scope
                 value:
                   stringValue: /subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/contoso-resources/providers/Microsoft.Web/sites/contoso-web-app
@@ -61,45 +100,6 @@ resourceLogs:
               - key: azure.identity.authorization.evidence.principal.type
                 value:
                   stringValue: User
-              - key: azure.identity.issuer
-                value:
-                  stringValue: https://sts.windows.net/55555555-5555-5555-5555-555555555555/
-              - key: azure.identity.audience
-                value:
-                  stringValue: https://management.core.windows.net/
-              - key: azure.identity.not_after
-                value:
-                  stringValue: "2025-04-23T11:51:58Z"
-              - key: azure.identity.not_before
-                value:
-                  stringValue: "2025-04-23T10:46:40Z"
-              - key: azure.identity.created
-                value:
-                  stringValue: "2025-04-23T10:46:40Z"
-              - key: azure.identity.scope
-                value:
-                  stringValue: user_impersonation
-              - key: azure.identity.type
-                value:
-                  stringValue: user
-              - key: azure.identity.application.id
-                value:
-                  stringValue: 66666666-6666-6666-6666-666666666666
-              - key: azure.identity.auth.methods.references
-                value:
-                  stringValue: pwd,mfa
-              - key: azure.identity.provider
-                value:
-                  stringValue: https://sts.windows.net/99999999-9999-9999-9999-999999999999/
-              - key: azure.identity.identifier.object
-                value:
-                  stringValue: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
-              - key: user.name
-                value:
-                  stringValue: XxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxX
-              - key: user.email
-                value:
-                  stringValue: john.doe@contoso.com
               - key: azure.policy.compliance_check
                 value:
                   boolValue: false
