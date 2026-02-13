@@ -19,4 +19,19 @@ type Cache interface {
 
 type DecisionMetadata struct {
 	PolicyName string
+
+	// Additional information for when a trace is too large.
+	TraceTooLarge bool
+	TraceSize     uint64
+	MaxTraceSize  uint64
+}
+
+type MetadataOption func(*DecisionMetadata)
+
+func WithTraceTooLarge(traceSize, maxTraceSize uint64) MetadataOption {
+	return func(m *DecisionMetadata) {
+		m.TraceTooLarge = true
+		m.TraceSize = traceSize
+		m.MaxTraceSize = maxTraceSize
+	}
 }

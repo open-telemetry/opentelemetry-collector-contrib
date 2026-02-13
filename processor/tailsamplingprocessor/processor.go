@@ -781,7 +781,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		actualData.finalDecision = samplingpolicy.NotSampled
 		// Since we are not in a normal decision flow when dropping large traces, also be sure to remove it from the batcher.
 		tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
-		tsp.releaseNotSampledTrace(id, "")
+		tsp.releaseNotSampledTrace(id, "", cache.WithTraceTooLarge(actualData.bytes, tsp.maxTraceSizeBytes))
 		return
 	}
 
@@ -874,8 +874,12 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 
 // releaseNotSampledTrace adds the trace ID to the cache of not sampled trace
 // IDs. If the trace ID is cached, it deletes the spans from the internal map.
-func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID, policyName string) {
-	tsp.nonSampledIDCache.Put(id, cache.DecisionMetadata{PolicyName: policyName})
+func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID, policyName string, metadataOpts ...cache.MetadataOption) {
+	metadata := cache.DecisionMetadata{PolicyName: policyName}
+	for _, opt := range metadataOpts {
+		opt(&metadata)
+	}
+	tsp.nonSampledIDCache.Put(id, metadata)
 	_, ok := tsp.nonSampledIDCache.Get(id)
 	if ok {
 		tsp.dropTrace(id, time.Now())

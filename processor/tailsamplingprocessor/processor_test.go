@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
@@ -1120,16 +1121,19 @@ func TestDropLargeTraces(t *testing.T) {
 	ss := largeTrace.ScopeSpans().AppendEmpty()
 	largeValue := strings.Repeat("bar", 1024)
 	sp := ss.Spans().AppendEmpty()
-	sp.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+	largeTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
+	sp.SetTraceID(largeTraceID)
 	sp.Attributes().PutStr("foo", largeValue)
 
 	// Small trace with just one attribute.
 	smallTrace := traces.ResourceSpans().AppendEmpty()
 	ss = smallTrace.ScopeSpans().AppendEmpty()
 	sp = ss.Spans().AppendEmpty()
-	sp.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 5}))
+	smallTraceID := pcommon.TraceID([16]byte{1, 2, 3, 5})
+	sp.SetTraceID(smallTraceID)
 	sp.Attributes().PutStr("foo", "short")
 
+	decisionCache := metadataCache{}
 	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(4),
@@ -1138,6 +1142,8 @@ func TestDropLargeTraces(t *testing.T) {
 		PolicyCfgs:              testPolicy,
 		Options: []Option{
 			withTestController(controller),
+			WithSampledDecisionCache(decisionCache),
+			WithNonSampledDecisionCache(decisionCache),
 		},
 	}
 	telem := setupTestTelemetry()
@@ -1165,7 +1171,7 @@ func TestDropLargeTraces(t *testing.T) {
 	controller.waitForTick()
 
 	largeOnly := ptrace.NewTraces()
-	// Create a another large trace as ConsumeTraces is not guaranteed to preserve the trace.
+	// Create another large trace as ConsumeTraces is not guaranteed to preserve the trace.
 	largeTrace = largeOnly.ResourceSpans().AppendEmpty()
 	ss = largeTrace.ScopeSpans().AppendEmpty()
 	sp = ss.Spans().AppendEmpty()
@@ -1217,6 +1223,24 @@ func TestDropLargeTraces(t *testing.T) {
 	}
 	tooLarge := telem.getMetric(expectedTooLarge.Name, md)
 	metricdatatest.AssertEqual(t, expectedTooLarge, tooLarge, metricdatatest.IgnoreTimestamp())
+
+	assert.Equal(t, cache.DecisionMetadata{PolicyName: "test-policy"}, decisionCache[smallTraceID])
+	largeCacheEntry := decisionCache[largeTraceID]
+	assert.Empty(t, largeCacheEntry.PolicyName)
+	assert.True(t, largeCacheEntry.TraceTooLarge)
+	assert.Greater(t, largeCacheEntry.TraceSize, uint64(1024))
+	assert.EqualValues(t, 1024, largeCacheEntry.MaxTraceSize)
+}
+
+type metadataCache map[pcommon.TraceID]cache.DecisionMetadata
+
+func (c metadataCache) Get(id pcommon.TraceID) (cache.DecisionMetadata, bool) {
+	result, ok := c[id]
+	return result, ok
+}
+
+func (c metadataCache) Put(id pcommon.TraceID, metadata cache.DecisionMetadata) {
+	c[id] = metadata
 }
 
 // TestDeleteQueueCleared verifies that all in memory traces are removed from
