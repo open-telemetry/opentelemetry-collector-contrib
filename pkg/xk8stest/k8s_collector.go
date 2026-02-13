@@ -6,6 +6,7 @@ package xk8stest // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"bytes"
 	"maps"
+	"net"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,7 +34,9 @@ func CreateCollectorObjects(t *testing.T, client *K8sClient, testID, manifestsDi
 	var podLabels map[string]any
 	createdObjs := make([]*unstructured.Unstructured, 0, len(manifestFiles))
 	for _, manifestFile := range manifestFiles {
-		tmpl := template.Must(template.New(manifestFile.Name()).ParseFiles(filepath.Join(manifestsDir, manifestFile.Name())))
+		tmpl := template.Must(template.New(manifestFile.Name()).
+			Funcs(template.FuncMap{"joinHostPort": net.JoinHostPort}).
+			ParseFiles(filepath.Join(manifestsDir, manifestFile.Name())))
 		manifest := &bytes.Buffer{}
 		defaultTemplateValues := map[string]string{
 			"Name":         "otelcol-" + testID,
