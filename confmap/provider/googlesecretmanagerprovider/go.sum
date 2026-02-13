@@ -70,10 +70,10 @@ github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
-go.opentelemetry.io/collector/confmap v1.51.1-0.20260205185216-81bc641f26c0 h1:SA1GIDv0iBsFMDVNevnHhTIPGANJG1Sl8lt5UtA8Og8=
-go.opentelemetry.io/collector/confmap v1.51.1-0.20260205185216-81bc641f26c0/go.mod h1:uWi4b9lHfvEC2poJ2I2vXwGUREVEQTcdUguOpfqdcHM=
-go.opentelemetry.io/collector/featuregate v1.51.1-0.20260205185216-81bc641f26c0 h1:fOXhfT2xKqNhfalTXaT/Wic9EBRK8+9ZH0y8phReQS4=
-go.opentelemetry.io/collector/featuregate v1.51.1-0.20260205185216-81bc641f26c0/go.mod h1:/1bclXgP91pISaEeNulRxzzmzMTm4I5Xih2SnI4HRSo=
+go.opentelemetry.io/collector/confmap v1.51.1-0.20260212054546-f0da990367b6 h1:QbLZ3S9gVWMY/a6hf6PIbgdbEbbz62v41E0zxLfxvNQ=
+go.opentelemetry.io/collector/confmap v1.51.1-0.20260212054546-f0da990367b6/go.mod h1:cd4MChjJ3GH0fjWI1dHm/aH93KIkmNKTm7J3laZrjwA=
+go.opentelemetry.io/collector/featuregate v1.51.1-0.20260212054546-f0da990367b6 h1:dBy+FadpVFkKZRA+xEFagroSMLmS5U02Y3oCNJpGFWs=
+go.opentelemetry.io/collector/featuregate v1.51.1-0.20260212054546-f0da990367b6/go.mod h1:PS7zY/zaCb28EqciePVwRHVhc3oKortTFXsi3I6ee4g=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 h1:q4XOmH/0opmeuJtPsbFNivyl7bCt7yRBbeEm2sC/XtQ=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0/go.mod h1:snMWehoOh2wsEwnvvwtDyFCxVeDAODenXHtn5vzrKjo=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 h1:F7Jx+6hwnZ41NSFTO5q4LYDtJRXBf2PD0rNBkeB/lus=
