@@ -71,7 +71,7 @@ func TestManagerShutdownClosesChannelAndServer(t *testing.T) {
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	server := &http.Server{}
+	server := &http.Server{ReadHeaderTimeout: time.Second}
 
 	done := make(chan struct{})
 	go func() {
@@ -81,7 +81,7 @@ func TestManagerShutdownClosesChannelAndServer(t *testing.T) {
 
 	manager.server = server
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 
 	require.NoError(t, manager.Shutdown(ctx))
@@ -110,6 +110,6 @@ func TestManagerStartInvalidEndpoint(t *testing.T) {
 
 	manager := newTestManager(t, cfg)
 
-	err := manager.Start(context.Background(), componenttest.NewNopHost(), nil)
+	err := manager.Start(t.Context(), componenttest.NewNopHost(), nil)
 	require.Error(t, err)
 }

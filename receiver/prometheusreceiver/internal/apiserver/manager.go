@@ -15,26 +15,25 @@ import (
 	"sync"
 	"time"
 
+	grafanaRegexp "github.com/grafana/regexp"
 	"github.com/mwitkow/go-conntrack"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/promslog"
 	"github.com/prometheus/common/route"
 	"github.com/prometheus/common/version"
+	toolkit_web "github.com/prometheus/exporter-toolkit/web"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/util/httputil"
 	"github.com/prometheus/prometheus/web"
+	api_v1 "github.com/prometheus/prometheus/web/api/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 	"golang.org/x/net/netutil"
-
-	grafanaRegexp "github.com/grafana/regexp"
-	toolkit_web "github.com/prometheus/exporter-toolkit/web"
-	api_v1 "github.com/prometheus/prometheus/web/api/v1"
 )
 
 // Use same settings as Prometheus web server

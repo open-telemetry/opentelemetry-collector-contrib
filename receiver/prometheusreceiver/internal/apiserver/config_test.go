@@ -17,6 +17,13 @@ func TestConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(Config{}))
 }
 
+func TestDefaultConfig(t *testing.T) {
+	cfg := DefaultConfig()
+
+	assert.Equal(t, confignet.TransportTypeTCP, cfg.ServerConfig.NetAddr.Transport)
+	assert.Equal(t, defaultEndpoint, cfg.ServerConfig.NetAddr.Endpoint)
+}
+
 func TestConfigApplyDefaultsSetsValues(t *testing.T) {
 	var cfg Config
 

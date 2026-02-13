@@ -16,17 +16,28 @@ type Config struct {
 	ServerConfig confighttp.ServerConfig `mapstructure:"server_config"`
 }
 
+// DefaultConfig returns the default configuration for the Prometheus API server.
+func DefaultConfig() Config {
+	serverConfig := confighttp.NewDefaultServerConfig()
+	serverConfig.NetAddr.Transport = confignet.TransportTypeTCP
+	serverConfig.NetAddr.Endpoint = defaultEndpoint
+
+	return Config{ServerConfig: serverConfig}
+}
+
 func (cfg *Config) ApplyDefaults() {
 	if cfg == nil {
 		return
 	}
 
+	defaultCfg := DefaultConfig()
+
 	if cfg.ServerConfig.NetAddr.Transport == "" {
-		cfg.ServerConfig.NetAddr.Transport = confignet.TransportTypeTCP
+		cfg.ServerConfig.NetAddr.Transport = defaultCfg.ServerConfig.NetAddr.Transport
 	}
 
 	if cfg.ServerConfig.NetAddr.Endpoint == "" {
-		cfg.ServerConfig.NetAddr.Endpoint = defaultEndpoint
+		cfg.ServerConfig.NetAddr.Endpoint = defaultCfg.ServerConfig.NetAddr.Endpoint
 	}
 }
 
