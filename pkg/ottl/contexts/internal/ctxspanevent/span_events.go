@@ -90,15 +90,10 @@ func accessSpanEventAttributes[K Context]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessSpanEventAttributesKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetSpanEvent().Attributes(), key)
-		},
-		Setter: func(ctx context.Context, tCtx K, val any) error {
-			return ctxutil.SetMapValue[K](ctx, tCtx, tCtx.GetSpanEvent().Attributes(), key, val)
-		},
-	}
+func accessSpanEventAttributesKey[K Context](key []ottl.Key[K]) ottl.GetSetter[K] {
+	return ctxutil.NewMapKeyGetSetter(key, func(tCtx K) pcommon.Map {
+		return tCtx.GetSpanEvent().Attributes()
+	})
 }
 
 func accessSpanEventDroppedAttributeCount[K Context]() ottl.StandardGetSetter[K] {

@@ -6,6 +6,8 @@ package ctxresource // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
@@ -41,15 +43,10 @@ func accessResourceAttributes[K Context]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessResourceAttributesKey[K Context](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetResource().Attributes(), keys)
-		},
-		Setter: func(ctx context.Context, tCtx K, val any) error {
-			return ctxutil.SetMapValue[K](ctx, tCtx, tCtx.GetResource().Attributes(), keys, val)
-		},
-	}
+func accessResourceAttributesKey[K Context](keys []ottl.Key[K]) ottl.GetSetter[K] {
+	return ctxutil.NewMapKeyGetSetter(keys, func(tCtx K) pcommon.Map {
+		return tCtx.GetResource().Attributes()
+	})
 }
 
 func accessResourceDroppedAttributesCount[K Context]() ottl.StandardGetSetter[K] {

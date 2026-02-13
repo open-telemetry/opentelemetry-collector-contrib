@@ -6,6 +6,7 @@ package ctxmetric // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -227,13 +228,8 @@ func accessMetadata[K Context]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessMetadataKey[K Context](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			return ctxutil.GetMapValue(ctx, tCtx, tCtx.GetMetric().Metadata(), keys)
-		},
-		Setter: func(ctx context.Context, tCtx K, val any) error {
-			return ctxutil.SetMapValue(ctx, tCtx, tCtx.GetMetric().Metadata(), keys, val)
-		},
-	}
+func accessMetadataKey[K Context](keys []ottl.Key[K]) ottl.GetSetter[K] {
+	return ctxutil.NewMapKeyGetSetter(keys, func(tCtx K) pcommon.Map {
+		return tCtx.GetMetric().Metadata()
+	})
 }

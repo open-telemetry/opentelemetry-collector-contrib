@@ -302,6 +302,20 @@ func (k *baseKey[K]) ExpressionGetter(_ context.Context, _ K) (Getter[K], error)
 	return k.g, nil
 }
 
+// GetLiteralKeyString is an optimization hook for parsed/compiled keys.
+// It returns a literal string key when the key is statically known, otherwise (nil, false).
+// Non-standard Key implementations may also return (nil, false).
+func GetLiteralKeyString[K any](key Key[K]) (*string, bool) {
+	if key == nil {
+		return nil, false
+	}
+	bk, ok := key.(*baseKey[K])
+	if !ok || bk.s == nil || bk.g != nil {
+		return nil, false
+	}
+	return bk.s, true
+}
+
 func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
 	g, err := p.pathParser(ip)
 	if err != nil {

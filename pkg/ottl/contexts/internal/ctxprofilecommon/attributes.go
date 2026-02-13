@@ -53,21 +53,35 @@ func AccessAttributes[K any](source attributeSource[K]) ottl.StandardGetSetter[K
 }
 
 func AccessAttributesKey[K any](key []ottl.Key[K], source attributeSource[K]) ottl.StandardGetSetter[K] {
+	mapGetSetter := ctxutil.NewMapKeyGetSetter(key, func(tCtx K) pcommon.Map {
+		dict, attributable := source(tCtx)
+		return pprofile.FromAttributeIndices(dict.AttributeTable(), attributable, dict)
+	})
+
+	var firstLiteralKey *string
+	if len(key) > 0 {
+		if literalKey, ok := ottl.GetLiteralKeyString(key[0]); ok {
+			firstLiteralKey = literalKey
+		}
+	}
+
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			dict, attributable := source(tCtx)
-			return ctxutil.GetMapValue[K](ctx, tCtx, pprofile.FromAttributeIndices(dict.AttributeTable(), attributable, dict), key)
+			return mapGetSetter.Get(ctx, tCtx)
 		},
 		Setter: func(ctx context.Context, tCtx K, val any) error {
-			newKey, err := ctxutil.GetMapKeyName(ctx, tCtx, key[0])
-			if err != nil {
-				return err
+			newKey := firstLiteralKey
+			if newKey == nil {
+				var err error
+				newKey, err = ctxutil.GetMapKeyName(ctx, tCtx, key[0])
+				if err != nil {
+					return err
+				}
 			}
 
 			dict, attributable := source(tCtx)
 			v := getAttributeValue(dict, attributable.AttributeIndices(), *newKey)
-			err = ctxutil.SetIndexableValue[K](ctx, tCtx, v, val, key[1:])
-			if err != nil {
+			if err := ctxutil.SetIndexableValue[K](ctx, tCtx, v, val, key[1:]); err != nil {
 				return err
 			}
 

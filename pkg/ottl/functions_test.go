@@ -2988,6 +2988,35 @@ func Test_baseKey_Int(t *testing.T) {
 	assert.Equal(t, int64(1), *i)
 }
 
+func Test_GetLiteralKeyString(t *testing.T) {
+	t.Run("literal string key", func(t *testing.T) {
+		literal := &baseKey[any]{s: ottltest.Strp("foo")}
+		got, ok := GetLiteralKeyString[any](literal)
+		require.True(t, ok)
+		require.NotNil(t, got)
+		assert.Equal(t, "foo", *got)
+	})
+
+	t.Run("dynamic key", func(t *testing.T) {
+		literal := &baseKey[any]{
+			s: ottltest.Strp("foo"),
+			g: &StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
+				return "bar", nil
+			}},
+		}
+		got, ok := GetLiteralKeyString[any](literal)
+		assert.False(t, ok)
+		assert.Nil(t, got)
+	})
+
+	t.Run("int key", func(t *testing.T) {
+		literal := &baseKey[any]{i: ottltest.Intp(1)}
+		got, ok := GetLiteralKeyString[any](literal)
+		assert.False(t, ok)
+		assert.Nil(t, got)
+	})
+}
+
 func Test_newKey(t *testing.T) {
 	ps, _ := NewParser[any](
 		defaultFunctionsForTests(),

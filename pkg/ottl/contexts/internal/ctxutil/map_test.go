@@ -444,3 +444,58 @@ func Test_GetMapKeyName(t *testing.T) {
 		})
 	}
 }
+
+func Test_NewMapKeyGetSetter(t *testing.T) {
+	t.Run("literal key get and set", func(t *testing.T) {
+		m := pcommon.NewMap()
+		m.PutStr("foo", "bar")
+		keys := []ottl.Key[any]{
+			&pathtest.Key[any]{S: ottltest.Strp("foo")},
+		}
+
+		getSetter := ctxutil.NewMapKeyGetSetter(keys, func(any) pcommon.Map { return m })
+
+		got, err := getSetter.Get(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, "bar", got)
+
+		err = getSetter.Set(t.Context(), nil, "baz")
+		require.NoError(t, err)
+		gotVal, ok := m.Get("foo")
+		require.True(t, ok)
+		assert.Equal(t, "baz", gotVal.Str())
+	})
+
+	t.Run("dynamic key get and set", func(t *testing.T) {
+		m := pcommon.NewMap()
+		m.PutStr("foo", "bar")
+		keys := []ottl.Key[any]{
+			&pathtest.Key[any]{
+				G: &ottl.StandardGetSetter[any]{
+					Getter: func(context.Context, any) (any, error) { return "foo", nil },
+				},
+			},
+		}
+
+		getSetter := ctxutil.NewMapKeyGetSetter(keys, func(any) pcommon.Map { return m })
+
+		got, err := getSetter.Get(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, "bar", got)
+
+		err = getSetter.Set(t.Context(), nil, "qux")
+		require.NoError(t, err)
+		gotVal, ok := m.Get("foo")
+		require.True(t, ok)
+		assert.Equal(t, "qux", gotVal.Str())
+	})
+
+	t.Run("empty keys returns error", func(t *testing.T) {
+		getSetter := ctxutil.NewMapKeyGetSetter(nil, func(any) pcommon.Map { return pcommon.NewMap() })
+
+		_, err := getSetter.Get(t.Context(), nil)
+		require.Error(t, err)
+		err = getSetter.Set(t.Context(), nil, "value")
+		require.Error(t, err)
+	})
+}

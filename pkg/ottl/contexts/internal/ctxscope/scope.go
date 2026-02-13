@@ -6,6 +6,8 @@ package ctxscope // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
@@ -46,15 +48,10 @@ func accessInstrumentationScopeAttributes[K Context]() ottl.StandardGetSetter[K]
 	}
 }
 
-func accessInstrumentationScopeAttributesKey[K Context](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetInstrumentationScope().Attributes(), keys)
-		},
-		Setter: func(ctx context.Context, tCtx K, val any) error {
-			return ctxutil.SetMapValue[K](ctx, tCtx, tCtx.GetInstrumentationScope().Attributes(), keys, val)
-		},
-	}
+func accessInstrumentationScopeAttributesKey[K Context](keys []ottl.Key[K]) ottl.GetSetter[K] {
+	return ctxutil.NewMapKeyGetSetter(keys, func(tCtx K) pcommon.Map {
+		return tCtx.GetInstrumentationScope().Attributes()
+	})
 }
 
 func accessInstrumentationScopeName[K Context]() ottl.StandardGetSetter[K] {

@@ -36,13 +36,8 @@ func accessCache[K any](cacheGetter Getter[K]) ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessCacheKey[K any](cacheGetter Getter[K], key []ottl.Key[K]) ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			return ctxutil.GetMapValue(ctx, tCtx, cacheGetter(tCtx), key)
-		},
-		Setter: func(ctx context.Context, tCtx K, val any) error {
-			return ctxutil.SetMapValue(ctx, tCtx, cacheGetter(tCtx), key, val)
-		},
-	}
+func accessCacheKey[K any](cacheGetter Getter[K], key []ottl.Key[K]) ottl.GetSetter[K] {
+	return ctxutil.NewMapKeyGetSetter(key, func(tCtx K) pcommon.Map {
+		return cacheGetter(tCtx)
+	})
 }

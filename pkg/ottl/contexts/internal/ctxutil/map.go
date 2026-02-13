@@ -11,11 +11,64 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
+type mapKeyGetSetter[K any] struct {
+	keys            []ottl.Key[K]
+	firstLiteralKey *string
+	mapGetter       func(K) pcommon.Map
+}
+
+// NewMapKeyGetSetter creates a map-backed accessor for keyed paths.
+// The first key literal status is resolved once at creation time.
+func NewMapKeyGetSetter[K any](keys []ottl.Key[K], mapGetter func(K) pcommon.Map) ottl.GetSetter[K] {
+	return &mapKeyGetSetter[K]{
+		keys:            keys,
+		firstLiteralKey: getFirstLiteralMapKey(keys),
+		mapGetter:       mapGetter,
+	}
+}
+
+func (m *mapKeyGetSetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
+	return getMapValue[K](ctx, tCtx, m.mapGetter(tCtx), m.keys, m.firstLiteralKey)
+}
+
+func (m *mapKeyGetSetter[K]) Set(ctx context.Context, tCtx K, val any) error {
+	return setMapValue[K](ctx, tCtx, m.mapGetter(tCtx), m.keys, m.firstLiteralKey, val)
+}
+
+func getFirstLiteralMapKey[K any](keys []ottl.Key[K]) *string {
+	if len(keys) == 0 {
+		return nil
+	}
+	literalKey, ok := ottl.GetLiteralKeyString(keys[0])
+	if !ok {
+		return nil
+	}
+	return literalKey
+}
+
 func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.Key[K]) (any, error) {
+	return getMapValue[K](ctx, tCtx, m, keys, getFirstLiteralMapKey(keys))
+}
+
+func getMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.Key[K], firstLiteralKey *string) (any, error) {
 	if len(keys) == 0 {
 		return nil, errors.New("cannot get map value without keys")
+	}
+
+	if firstLiteralKey != nil {
+		val, exists := m.Get(*firstLiteralKey)
+		if !exists {
+			return nil, nil
+		}
+
+		if len(keys) == 1 {
+			return ottlcommon.GetValue(val), nil
+		}
+
+		return getIndexableValue[K](ctx, tCtx, val, keys[1:])
 	}
 
 	s, err := GetMapKeyName(ctx, tCtx, keys[0])
@@ -32,8 +85,21 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 }
 
 func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.Key[K], val any) error {
+	return setMapValue[K](ctx, tCtx, m, keys, getFirstLiteralMapKey(keys), val)
+}
+
+func setMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.Key[K], firstLiteralKey *string, val any) error {
 	if len(keys) == 0 {
 		return errors.New("cannot set map value without keys")
+	}
+
+	if firstLiteralKey != nil {
+		currentValue, exists := m.Get(*firstLiteralKey)
+		if !exists {
+			currentValue = m.PutEmpty(*firstLiteralKey)
+		}
+
+		return SetIndexableValue[K](ctx, tCtx, currentValue, val, keys[1:])
 	}
 
 	s, err := GetMapKeyName(ctx, tCtx, keys[0])
@@ -49,6 +115,10 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 }
 
 func GetMapKeyName[K any](ctx context.Context, tCtx K, key ottl.Key[K]) (*string, error) {
+	if literalKey, ok := ottl.GetLiteralKeyString(key); ok {
+		return literalKey, nil
+	}
+
 	resolvedKey, err := key.String(ctx, tCtx)
 	if err != nil {
 		return nil, err

@@ -190,12 +190,16 @@ func accessBody[K Context]() ottl.StandardGetSetter[K] {
 }
 
 func accessBodyKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
+	mapGetSetter := ctxutil.NewMapKeyGetSetter(key, func(tCtx K) pcommon.Map {
+		return tCtx.GetLogRecord().Body().Map()
+	})
+
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			body := tCtx.GetLogRecord().Body()
 			switch body.Type() {
 			case pcommon.ValueTypeMap:
-				return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetLogRecord().Body().Map(), key)
+				return mapGetSetter.Get(ctx, tCtx)
 			case pcommon.ValueTypeSlice:
 				return ctxutil.GetSliceValue[K](ctx, tCtx, tCtx.GetLogRecord().Body().Slice(), key)
 			default:
@@ -206,7 +210,7 @@ func accessBodyKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
 			body := tCtx.GetLogRecord().Body()
 			switch body.Type() {
 			case pcommon.ValueTypeMap:
-				return ctxutil.SetMapValue[K](ctx, tCtx, tCtx.GetLogRecord().Body().Map(), key, val)
+				return mapGetSetter.Set(ctx, tCtx, val)
 			case pcommon.ValueTypeSlice:
 				return ctxutil.SetSliceValue[K](ctx, tCtx, tCtx.GetLogRecord().Body().Slice(), key, val)
 			default:
@@ -243,15 +247,10 @@ func accessAttributes[K Context]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessAttributesKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetLogRecord().Attributes(), key)
-		},
-		Setter: func(ctx context.Context, tCtx K, val any) error {
-			return ctxutil.SetMapValue[K](ctx, tCtx, tCtx.GetLogRecord().Attributes(), key, val)
-		},
-	}
+func accessAttributesKey[K Context](key []ottl.Key[K]) ottl.GetSetter[K] {
+	return ctxutil.NewMapKeyGetSetter(key, func(tCtx K) pcommon.Map {
+		return tCtx.GetLogRecord().Attributes()
+	})
 }
 
 func accessDroppedAttributesCount[K Context]() ottl.StandardGetSetter[K] {

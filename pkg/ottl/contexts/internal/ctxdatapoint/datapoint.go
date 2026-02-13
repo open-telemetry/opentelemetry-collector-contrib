@@ -117,35 +117,21 @@ func accessAttributes[K Context]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessAttributesKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			switch dp := tCtx.GetDataPoint().(type) {
-			case pmetric.NumberDataPoint:
-				return ctxutil.GetMapValue(ctx, tCtx, dp.Attributes(), key)
-			case pmetric.HistogramDataPoint:
-				return ctxutil.GetMapValue(ctx, tCtx, dp.Attributes(), key)
-			case pmetric.ExponentialHistogramDataPoint:
-				return ctxutil.GetMapValue(ctx, tCtx, dp.Attributes(), key)
-			case pmetric.SummaryDataPoint:
-				return ctxutil.GetMapValue(ctx, tCtx, dp.Attributes(), key)
-			}
-			return nil, nil
-		},
-		Setter: func(ctx context.Context, tCtx K, val any) error {
-			switch dp := tCtx.GetDataPoint().(type) {
-			case pmetric.NumberDataPoint:
-				return ctxutil.SetMapValue(ctx, tCtx, dp.Attributes(), key, val)
-			case pmetric.HistogramDataPoint:
-				return ctxutil.SetMapValue(ctx, tCtx, dp.Attributes(), key, val)
-			case pmetric.ExponentialHistogramDataPoint:
-				return ctxutil.SetMapValue(ctx, tCtx, dp.Attributes(), key, val)
-			case pmetric.SummaryDataPoint:
-				return ctxutil.SetMapValue(ctx, tCtx, dp.Attributes(), key, val)
-			}
-			return nil
-		},
-	}
+func accessAttributesKey[K Context](key []ottl.Key[K]) ottl.GetSetter[K] {
+	return ctxutil.NewMapKeyGetSetter(key, func(tCtx K) pcommon.Map {
+		switch dp := tCtx.GetDataPoint().(type) {
+		case pmetric.NumberDataPoint:
+			return dp.Attributes()
+		case pmetric.HistogramDataPoint:
+			return dp.Attributes()
+		case pmetric.ExponentialHistogramDataPoint:
+			return dp.Attributes()
+		case pmetric.SummaryDataPoint:
+			return dp.Attributes()
+		default:
+			return pcommon.NewMap()
+		}
+	})
 }
 
 func accessStartTimeUnixNano[K Context]() ottl.StandardGetSetter[K] {
