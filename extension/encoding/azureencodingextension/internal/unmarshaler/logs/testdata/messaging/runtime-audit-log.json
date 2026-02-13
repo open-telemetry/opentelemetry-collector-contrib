@@ -1,0 +1,27 @@
+{
+  "records": [
+    {
+      "Environment": "PROD",
+      "Region": "West India",
+      "ScaleUnit": "PROD-BM1-401",
+      "TaskName": "RuntimeAuditLogShoebox",
+      "ActivityId": "eb21994e-ecf5-4d41-86ad-74cc21488f6f",
+      "SubscriptionId": "XXXX-YYYY-ZZZZ",
+      "NamespaceName": "namespace",
+      "EntityType": "Queue",
+      "EntityName": "sbq",
+      "ActivityName": "SendMessage",
+      "ResourceId": "/SUBSCRIPTIONS/XXXX-YYYY-ZZZZ/RESOURCEGROUPS/TESTGROUP/PROVIDERS/MICROSOFT.SERVICEBUS/NAMESPACES/NAMESPACE",
+      "Status": "Success",
+      "Protocol": "AMQP",
+      "AuthType": "SAS",
+      "AuthId": "policy",
+      "NetworkType": "Public",
+      "ClientIp": "8.8.8.8",
+      "Count": 56,
+      "Properties": "{}",
+      "category": "RuntimeAuditLogs",
+      "eventTimestamp": "1/1/2021 8:40:06 PM +00:00"
+    }
+  ]
+}

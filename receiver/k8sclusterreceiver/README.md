@@ -152,6 +152,13 @@ this receiver is connected to a logs pipeline.
 See [opentelemetry-collector-contrib#23565](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23565)
 for the format of emitted log records. 
 
+## Compatibility
+
+### Kubernetes Versions
+
+This receiver is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L99)
+workflow. These tested versions represent the officially supported Kubernetes versions for this component.
+
 ## Example
 
 Here is an example deployment of the collector that sets up this receiver along with

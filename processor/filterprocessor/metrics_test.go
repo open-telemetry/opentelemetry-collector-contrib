@@ -4,6 +4,7 @@
 package filterprocessor
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -25,7 +26,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
@@ -791,9 +795,705 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_DefinedContext(t *testing.T) {
+	tests := []struct {
+		name              string
+		contextConditions []condition.ContextConditions
+		filterEverything  bool
+		want              func(md pmetric.Metrics)
+	}{
+		{
+			name: "resource: drop everything",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`schema_url == "test_schema_url"`}, Context: "resource"},
+			},
+			filterEverything: true,
+		},
+		{
+			name: "resource: drop by attribute",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`attributes["host.name"] == "localhost"`}, Context: "resource"},
+			},
+			filterEverything: true,
+		},
+		{
+			name: "scope: drop by attribute",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`attributes["lib"] == "awesomelib"`}, Context: "scope"},
+			},
+			want: func(_ pmetric.Metrics) {},
+		},
+		{
+			name: "scope: drop by name",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`name == "scope"`}, Context: "scope"},
+			},
+			filterEverything: true,
+		},
+		{
+			name: "metrics: drop everything",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`IsMatch(name, "operation.*")`}, Context: "metric"},
+			},
+			filterEverything: true,
+		},
+		{
+			name: "metrics: drop by name",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`name == "operationA"`}, Context: "metric"},
+			},
+			want: func(md pmetric.Metrics) {
+				rm := md.ResourceMetrics().At(0)
+				for i := 0; i < rm.ScopeMetrics().Len(); i++ {
+					rm.ScopeMetrics().At(i).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+						return metric.Name() == "operationA"
+					})
+				}
+			},
+		},
+		{
+			name: "metric: drop by enum",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`type == METRIC_DATA_TYPE_SUM`}, Context: "metric"},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeSum
+				})
+			},
+		},
+		{
+			name: "datapoint: drop by sum",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_SUM and value_double == 1.0`}, Context: "datapoint"},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().RemoveIf(func(point pmetric.NumberDataPoint) bool {
+					return point.DoubleValue() == 1.0
+				})
+			},
+		},
+		{
+			name: "datapoint: drop by gauge",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_GAUGE and value_double == 1.0`}, Context: "datapoint"},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Gauge().DataPoints().RemoveIf(func(point pmetric.NumberDataPoint) bool {
+					return point.DoubleValue() == 1.0
+				})
+			},
+		},
+		{
+			name: "datapoint: drop by histogram",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_HISTOGRAM and count == 1`}, Context: "datapoint"},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().RemoveIf(func(point pmetric.HistogramDataPoint) bool {
+					return point.Count() == 1
+				})
+			},
+		},
+		{
+			name: "datapoint: drop by exponential histogram",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM and count == 1`}, Context: "datapoint"},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().RemoveIf(func(point pmetric.ExponentialHistogramDataPoint) bool {
+					return point.Count() == 1
+				})
+			},
+		},
+		{
+			name: "datapoint: drop by summary",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_SUMMARY and sum == 43.21`}, Context: "datapoint"},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().RemoveIf(func(point pmetric.SummaryDataPoint) bool {
+					return point.Sum() == 43.21
+				})
+			},
+		},
+		{
+			name: "mixed conditions",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`attributes["unknown"] == "unknown"`}, Context: "resource"},
+				{Conditions: []string{`type == METRIC_DATA_TYPE_SUMMARY`}, Context: "metric"},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeSummary
+				})
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, _ := NewFactory().CreateDefaultConfig().(*Config)
+			cfg.MetricConditions = tt.contextConditions
+			processor, err := newFilterMetricProcessor(processortest.NewNopSettings(metadata.Type), cfg)
+			assert.NoError(t, err)
+
+			got, err := processor.processMetrics(t.Context(), constructMetrics())
+
+			if tt.filterEverything {
+				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
+			} else {
+				assert.NoError(t, err)
+				exTd := constructMetrics()
+				tt.want(exTd)
+				assert.Equal(t, exTd, got)
+			}
+		})
+	}
+}
+
+func Test_ProcessMetrics_InferredContext(t *testing.T) {
+	tests := []struct {
+		name              string
+		contextConditions []condition.ContextConditions
+		filterEverything  bool
+		want              func(md pmetric.Metrics)
+		input             func() pmetric.Metrics
+	}{
+		{
+			name: "resource: drop everything",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`resource.schema_url == "test_schema_url"`}},
+			},
+			filterEverything: true,
+			input:            constructMetrics,
+		},
+		{
+			name: "resource: drop by attribute",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`resource.attributes["host.name"] == "localhost"`}},
+			},
+			filterEverything: true,
+			input:            constructMetrics,
+		},
+		{
+			name: "scope: drop by attribute",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`scope.attributes["lib"] == "awesomelib"`}},
+			},
+			want:  func(_ pmetric.Metrics) {},
+			input: constructMetrics,
+		},
+		{
+			name: "scope: drop by name",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`scope.name == "scope"`}},
+			},
+			filterEverything: true,
+			input:            constructMetrics,
+		},
+		{
+			name: "metrics: drop by function",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`IsMatch(metric.name, "operation.*")`}},
+			},
+			filterEverything: true,
+			input:            constructMetrics,
+		},
+		{
+			name: "metrics: drop by name",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.name == "operationA"`}},
+			},
+			want: func(md pmetric.Metrics) {
+				rm := md.ResourceMetrics().At(0)
+				for i := 0; i < rm.ScopeMetrics().Len(); i++ {
+					rm.ScopeMetrics().At(i).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+						return metric.Name() == "operationA"
+					})
+				}
+			},
+			input: constructMetrics,
+		},
+		{
+			name: "metric: drop by enum",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_SUM`}},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeSum
+				})
+			},
+			input: constructMetrics,
+		},
+		{
+			name: "datapoint: drop by sum",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_SUM and datapoint.value_double == 1.0`}},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().RemoveIf(func(point pmetric.NumberDataPoint) bool {
+					return point.DoubleValue() == 1.0
+				})
+			},
+			input: constructMetrics,
+		},
+		{
+			name: "datapoint: drop by gauge",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_GAUGE and datapoint.value_double == 1.0`}},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Gauge().DataPoints().RemoveIf(func(point pmetric.NumberDataPoint) bool {
+					return point.DoubleValue() == 1.0
+				})
+			},
+			input: constructMetrics,
+		},
+		{
+			name: "datapoint: drop by histogram",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_HISTOGRAM and datapoint.count == 1`}},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().RemoveIf(func(point pmetric.HistogramDataPoint) bool {
+					return point.Count() == 1
+				})
+			},
+			input: constructMetrics,
+		},
+		{
+			name: "datapoint: drop by exponential histogram",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM and datapoint.count == 1`}},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().RemoveIf(func(point pmetric.ExponentialHistogramDataPoint) bool {
+					return point.Count() == 1
+				})
+			},
+			input: constructMetrics,
+		},
+		{
+			name: "datapoint: drop by summary",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.type == METRIC_DATA_TYPE_SUMMARY and datapoint.sum == 43.21`}},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().RemoveIf(func(point pmetric.SummaryDataPoint) bool {
+					return point.Sum() == 43.21
+				})
+			},
+			input: constructMetrics,
+		},
+		{
+			name: "mixed contexts",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{
+					`resource.attributes["unknown"] == "unknown"`,
+					`metric.type == METRIC_DATA_TYPE_SUMMARY`,
+				}},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeSummary
+				})
+			},
+			input: constructMetrics,
+		},
+		{
+			name: "zero-record lower-context: resource and datapoint with no datapoints",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{
+					`resource.attributes["host.name"] == "localhost"`,
+					`datapoint.value_double == 1.0`,
+				}},
+			},
+			filterEverything: true,
+			input:            constructMetricsWithEmptyDataPoints,
+		},
+		{
+			name: "group by context: conditions in same group are respected",
+			contextConditions: []condition.ContextConditions{
+				{Conditions: []string{
+					`metric.name == "operationB"`,
+					`metric.name == "operationC"`,
+					`datapoint.value_double == 1.0`,
+					`datapoint.value_double == 3.7`,
+				}},
+			},
+			filterEverything: true,
+			input:            constructMetricsWithMultipleMetrics,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, _ := NewFactory().CreateDefaultConfig().(*Config)
+			cfg.MetricConditions = tt.contextConditions
+			processor, err := newFilterMetricProcessor(processortest.NewNopSettings(metadata.Type), cfg)
+			assert.NoError(t, err)
+
+			got, err := processor.processMetrics(t.Context(), tt.input())
+
+			if tt.filterEverything {
+				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
+			} else {
+				assert.NoError(t, err)
+				exTd := tt.input()
+				tt.want(exTd)
+				assert.Equal(t, exTd, got)
+			}
+		})
+	}
+}
+
+func Test_ProcessMetrics_ErrorMode(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{
+			name: "resource",
+		},
+		{
+			name: "scope",
+		},
+		{
+			name: "metric",
+		},
+		{
+			name: "datapoint",
+		},
+	}
+
+	for _, errMode := range []ottl.ErrorMode{ottl.PropagateError, ottl.IgnoreError, ottl.SilentError} {
+		for _, tt := range tests {
+			t.Run(fmt.Sprintf("%s:%s", tt.name, errMode), func(t *testing.T) {
+				cfg, _ := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MetricConditions = []condition.ContextConditions{
+					{Conditions: []string{`ParseJSON("1")`}, Context: condition.ContextID(tt.name)},
+				}
+				cfg.ErrorMode = errMode
+				processor, err := newFilterMetricProcessor(processortest.NewNopSettings(metadata.Type), cfg)
+				assert.NoError(t, err)
+
+				_, err = processor.processMetrics(t.Context(), constructMetrics())
+
+				switch errMode {
+				case ottl.PropagateError:
+					assert.Error(t, err)
+				case ottl.IgnoreError, ottl.SilentError:
+					assert.NoError(t, err)
+				}
+			})
+		}
+	}
+}
+
+func Test_ProcessMetrics_ConditionsErrorMode(t *testing.T) {
+	tests := []struct {
+		name          string
+		errorMode     ottl.ErrorMode
+		conditions    []condition.ContextConditions
+		want          func(md pmetric.Metrics)
+		wantErrorWith string
+	}{
+		{
+			name:      "resource: conditions group with error mode",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("resource")},
+				{Conditions: []string{`not IsMatch(resource.attributes["host.name"], ".*")`}, Context: condition.ContextID("resource")},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+					v, _ := rm.Resource().Attributes().Get("host.name")
+					return v.AsString() == ""
+				})
+			},
+		},
+		{
+			name:      "resource: conditions group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("resource")},
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("true")`}, Context: condition.ContextID("resource")},
+			},
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+		},
+		{
+			name:      "resource: conditions group error mode with undefined context takes precedence",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{Conditions: []string{`resource.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError},
+			},
+			want: func(_ pmetric.Metrics) {},
+		},
+		{
+			name:      "scope: conditions group with error mode",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("scope")},
+				{Conditions: []string{`scope.schema_url == "test_schema_url"`}, Context: condition.ContextID("scope")},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
+					return sm.SchemaUrl() == "test_schema_url"
+				})
+			},
+		},
+		{
+			name:      "scope: conditions group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("scope")},
+				{Conditions: []string{`scope.attributes["pass"] == ParseJSON("true")`}, Context: condition.ContextID("scope")},
+			},
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+		},
+		{
+			name:      "metric: conditions group with error mode",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("metric")},
+				{Conditions: []string{`not IsMatch(metric.name, ".*")`}, Context: condition.ContextID("metric")},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Name() == ""
+				})
+			},
+		},
+		{
+			name:      "metric: conditions group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{Conditions: []string{`metric.name == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("metric")},
+				{Conditions: []string{`metric.name == ParseJSON("true")`}, Context: condition.ContextID("metric")},
+			},
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+		},
+		{
+			name:      "datapoint: conditions group with error mode",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{Conditions: []string{`datapoint.attributes["test"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("datapoint")},
+				{Conditions: []string{`datapoint.count == 1`}, Context: condition.ContextID("datapoint")},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().RemoveIf(func(point pmetric.HistogramDataPoint) bool {
+					return point.Count() == 1
+				})
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().RemoveIf(func(point pmetric.ExponentialHistogramDataPoint) bool {
+					return point.Count() == 1
+				})
+			},
+		},
+		{
+			name:      "datapoint: conditions group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{Conditions: []string{`datapoint.attributes["test"] == ParseJSON("1")`}, ErrorMode: ottl.IgnoreError, Context: condition.ContextID("datapoint")},
+				{Conditions: []string{`datapoint.attributes["test"] == ParseJSON("true")`}, Context: condition.ContextID("datapoint")},
+			},
+			wantErrorWith: "could not convert parsed value of type bool to JSON object",
+		},
+		{
+			name:      "flat style propagate error",
+			errorMode: ottl.PropagateError,
+			conditions: []condition.ContextConditions{
+				{
+					Conditions: []string{
+						`resource.attributes["pass"] == ParseJSON("1")`,
+						`not IsMatch(resource.attributes["host.name"], ".*")`,
+					},
+				},
+			},
+			wantErrorWith: "could not convert parsed value of type float64 to JSON object",
+		},
+		{
+			name:      "flat style ignore error",
+			errorMode: ottl.IgnoreError,
+			conditions: []condition.ContextConditions{
+				{
+					Conditions: []string{
+						`resource.attributes["pass"] == ParseJSON("1")`,
+						`not IsMatch(resource.attributes["host.name"], ".*")`,
+					},
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+					v, _ := rm.Resource().Attributes().Get("host.name")
+					return v.AsString() == ""
+				})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, _ := NewFactory().CreateDefaultConfig().(*Config)
+			cfg.MetricConditions = tt.conditions
+			cfg.ErrorMode = tt.errorMode
+
+			processor, err := newFilterMetricProcessor(processortest.NewNopSettings(metadata.Type), cfg)
+			assert.NoError(t, err)
+
+			got, err := processor.processMetrics(t.Context(), constructMetrics())
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+
+			assert.NoError(t, err)
+			exTd := constructMetrics()
+			tt.want(exTd)
+			assert.Equal(t, exTd, got)
+		})
+	}
+}
+
+type MetricFuncArguments[K any] struct{}
+
+func createMetricFunc[K any](ottl.FunctionContext, ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return func(context.Context, K) (any, error) {
+		return nil, nil
+	}, nil
+}
+
+func NewMetricFuncFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("TestMetricFunc", &MetricFuncArguments[K]{}, createMetricFunc[K])
+}
+
+func NewDataPointFuncFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("TestDataPointFunc", &MetricFuncArguments[K]{}, createMetricFunc[K])
+}
+
+func Test_Metrics_NonDefaultFunctions(t *testing.T) {
+	type testCase struct {
+		name               string
+		conditions         []condition.ContextConditions
+		wantErrorWith      string
+		metricFunctions    map[string]ottl.Factory[*ottlmetric.TransformContext]
+		dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
+	}
+
+	tests := []testCase{
+		{
+			name: "metric functions : condition with added metric func",
+			conditions: []condition.ContextConditions{
+				{
+					Context:    condition.ContextID("metric"),
+					Conditions: []string{`IsMatch(name, TestMetricFunc())`},
+				},
+			},
+			metricFunctions: map[string]ottl.Factory[*ottlmetric.TransformContext]{
+				"IsMatch":        defaultMetricFunctionsMap()["IsMatch"],
+				"TestMetricFunc": NewMetricFuncFactory[*ottlmetric.TransformContext](),
+			},
+			dataPointFunctions: defaultDataPointFunctionsMap(),
+		},
+		{
+			name: "metric functions : condition with missing metric func",
+			conditions: []condition.ContextConditions{
+				{
+					Context:    condition.ContextID("metric"),
+					Conditions: []string{`IsMatch(name, TestMetricFunc())`},
+				},
+			},
+			wantErrorWith:      `undefined function "TestMetricFunc"`,
+			metricFunctions:    defaultMetricFunctionsMap(),
+			dataPointFunctions: defaultDataPointFunctionsMap(),
+		},
+		{
+			name: "datapoint functions : condition with added data point func",
+			conditions: []condition.ContextConditions{
+				{
+					Context:    condition.ContextID("datapoint"),
+					Conditions: []string{`IsMatch(count, TestDataPointFunc())`},
+				},
+			},
+			metricFunctions: defaultMetricFunctionsMap(),
+			dataPointFunctions: map[string]ottl.Factory[*ottldatapoint.TransformContext]{
+				"IsMatch":           defaultDataPointFunctionsMap()["IsMatch"],
+				"TestDataPointFunc": NewDataPointFuncFactory[*ottldatapoint.TransformContext](),
+			},
+		},
+		{
+			name: "datapoint functions : condition with missing data point func",
+			conditions: []condition.ContextConditions{
+				{
+					Context:    condition.ContextID("datapoint"),
+					Conditions: []string{`IsMatch(count, TestDataPointFunc())`},
+				},
+			},
+			wantErrorWith:      `undefined function "TestDataPointFunc"`,
+			metricFunctions:    defaultMetricFunctionsMap(),
+			dataPointFunctions: defaultDataPointFunctionsMap(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, _ := NewFactory().CreateDefaultConfig().(*Config)
+			cfg.MetricConditions = tt.conditions
+			cfg.metricFunctions = tt.metricFunctions
+			cfg.dataPointFunctions = tt.dataPointFunctions
+
+			_, err := newFilterMetricProcessor(processortest.NewNopSettings(metadata.Type), cfg)
+
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func constructMetricsWithEmptyDataPoints() pmetric.Metrics {
+	td := pmetric.NewMetrics()
+	rm := td.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("host.name", "localhost")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("scope")
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("operationA")
+	m.SetEmptySum()
+	return td
+}
+
+func constructMetricsWithMultipleMetrics() pmetric.Metrics {
+	td := pmetric.NewMetrics()
+	rm0 := td.ResourceMetrics().AppendEmpty()
+	rm0.Resource().Attributes().PutStr("host.name", "localhost")
+	rm0s0 := rm0.ScopeMetrics().AppendEmpty()
+	rm0s0.Scope().SetName("scope")
+	rm0s0m0 := rm0s0.Metrics().AppendEmpty()
+	fillMetricOne(rm0s0m0)
+	fillMetricOne(rm0s0m0)
+	rm0s0m1 := rm0s0.Metrics().AppendEmpty()
+	fillMetricOne(rm0s0m1)
+	fillMetricOne(rm0s0m1)
+	rm0s0m2 := rm0s0.Metrics().AppendEmpty()
+	fillMetricTwo(rm0s0m2)
+	fillMetricTwo(rm0s0m2)
+	rm0s0m3 := rm0s0.Metrics().AppendEmpty()
+	fillMetricThree(rm0s0m3)
+	fillMetricThree(rm0s0m3)
+	return td
+}
+
 func constructMetrics() pmetric.Metrics {
 	td := pmetric.NewMetrics()
 	rm0 := td.ResourceMetrics().AppendEmpty()
+	rm0.SetSchemaUrl("test_schema_url")
 	rm0.Resource().Attributes().PutStr("host.name", "localhost")
 	rm0ils0 := rm0.ScopeMetrics().AppendEmpty()
 	rm0ils0.Scope().SetName("scope")
@@ -817,6 +1517,7 @@ func fillMetricOne(m pmetric.Metric) {
 	dataPoint0.Attributes().PutStr("attr2", "test2")
 	dataPoint0.Attributes().PutStr("attr3", "test3")
 	dataPoint0.Attributes().PutStr("flags", "A|B|C")
+	dataPoint0.Attributes().PutStr("total.string", "123456789")
 
 	dataPoint1 := m.Sum().DataPoints().AppendEmpty()
 	dataPoint1.SetStartTimestamp(dataPointStartTimestamp)
@@ -825,6 +1526,7 @@ func fillMetricOne(m pmetric.Metric) {
 	dataPoint1.Attributes().PutStr("attr2", "test2")
 	dataPoint1.Attributes().PutStr("attr3", "test3")
 	dataPoint1.Attributes().PutStr("flags", "A|B|C")
+	dataPoint1.Attributes().PutStr("total.string", "123456789")
 }
 
 func fillMetricTwo(m pmetric.Metric) {
@@ -838,7 +1540,9 @@ func fillMetricTwo(m pmetric.Metric) {
 	dataPoint0.Attributes().PutStr("attr2", "test2")
 	dataPoint0.Attributes().PutStr("attr3", "test3")
 	dataPoint0.Attributes().PutStr("flags", "C|D")
+	dataPoint0.Attributes().PutStr("total.string", "345678")
 	dataPoint0.SetCount(1)
+	dataPoint0.SetSum(5)
 
 	dataPoint1 := m.Histogram().DataPoints().AppendEmpty()
 	dataPoint1.SetStartTimestamp(dataPointStartTimestamp)
@@ -846,6 +1550,8 @@ func fillMetricTwo(m pmetric.Metric) {
 	dataPoint1.Attributes().PutStr("attr2", "test2")
 	dataPoint1.Attributes().PutStr("attr3", "test3")
 	dataPoint1.Attributes().PutStr("flags", "C|D")
+	dataPoint1.Attributes().PutStr("total.string", "345678")
+	dataPoint1.SetCount(3)
 }
 
 func fillMetricThree(m pmetric.Metric) {

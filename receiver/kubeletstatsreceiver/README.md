@@ -21,6 +21,13 @@ and sends it down the metric pipeline for further processing.
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
 
+## Compatibility
+
+### Kubernetes Versions
+
+This receiver is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L99)
+workflow. These tested versions represent the officially supported Kubernetes versions for this component.
+
 ## Configuration
 
 A kubelet runs on a kubernetes node and has an API server to which this
@@ -182,7 +189,10 @@ include the following:
 - `k8s.volume.type` - to collect volume type from the Pod spec exposed via `/pods` and have it as a label on volume metrics.
 If there's more information available from the endpoint than just volume type, those are synced as well depending on
 the available fields and the type of volume. For example, `aws.volume.id` would be synced from `awsElasticBlockStore`
-and `gcp.pd.name` is synced for `gcePersistentDisk`.
+and `gce.pd.name` is synced for `gcePersistentDisk`.
+
+> [!WARNING]
+> `gce.pd.name`, `aws.volume.id`, `glusterfs.path`, and `glusterfs.endpoints.name` resource attributes are all deprecated and will be removed soon.
 
 If you want to have `container.id` label added to your metrics, use `extra_metadata_labels` field to enable
 it, for example:
@@ -219,9 +229,16 @@ receivers:
       auth_type: serviceAccount
 ```
 
-If `k8s_api_config` set, the receiver will attempt to collect metadata from underlying storage resources for
+If `k8s_api_config` is set, the receiver will attempt to collect metadata from underlying storage resources for
 Persistent Volume Claims. For example, if a Pod is using a PVC backed by an EBS instance on AWS, the receiver
 would set the `k8s.volume.type` label to be `awsElasticBlockStore` rather than `persistentVolumeClaim`.
+
+> [!WARNING]
+> awsElasticBlockStore resource attribute `aws.volume.id` is deprecated and will be removed soon
+
+**Important**: When using `k8s_api_config`, the service account must have `get` permissions for
+`persistentvolumeclaims` and `persistentvolumes` resources. See [Role-based access control](#role-based-access-control)
+for the required RBAC configuration.
 
 ### Metric Groups
 
@@ -309,7 +326,9 @@ with detailed sample configurations in [testdata/config.yaml](./testdata/config.
 
 ### Role-based access control
 
-The Kubelet Stats Receiver needs `get` permissions on the `nodes/stats` resources. Additionally, when using `extra_metadata_labels` or any of the `{request|limit}_utilization` metrics the processor also needs `get` permissions for `nodes/proxy` resources.
+The Kubelet Stats Receiver needs `get` permissions on the `nodes/stats` resources. Additionally, when using `extra_metadata_labels` or any of the `{request|limit}_utilization` metrics the receiver also needs `get` permissions for `nodes/proxy` resources.
+
+When using `k8s_api_config` to collect detailed volume metadata from PersistentVolumeClaims (as described in [Collecting Additional Volume Metadata](#collecting-additional-volume-metadata)), the receiver also needs `get` permissions for `persistentvolumeclaims` and `persistentvolumes` resources.
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -325,5 +344,14 @@ rules:
   # are collecting the request/limit utilization metrics
   - apiGroups: [""]
     resources: ["nodes/proxy"]
+    verbs: ["get"]
+
+  # Only needed if you are using k8s_api_config to collect
+  # detailed volume metadata from PersistentVolumeClaims
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
     verbs: ["get"]
 ```

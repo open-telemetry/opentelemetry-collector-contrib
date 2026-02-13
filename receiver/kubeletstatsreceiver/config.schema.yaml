@@ -1,0 +1,35 @@
+$defs:
+  network_interfaces_enabler_config:
+    type: object
+    properties:
+      node:
+        type: boolean
+      pod:
+        type: boolean
+type: object
+properties:
+  collect_all_network_interfaces:
+    description: NetworkCollectAllInterfaces allows to enable collecting metrics from all network interfaces instead of default one Can be set separately for Pod and Node network metrics
+    $ref: network_interfaces_enabler_config
+  extra_metadata_labels:
+    description: ExtraMetadataLabels contains list of extra metadata that should be taken from /pods endpoint and put as extra labels on metrics resource. No additional metadata is fetched by default, so there are no extra calls to /pods endpoint. Supported values include container.id and k8s.volume.type.
+    type: array
+    items:
+      $ref: ./internal/kubelet.metadata_label
+  k8s_api_config:
+    description: Configuration of the Kubernetes API client.
+    x-pointer: true
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig.api_config
+  metric_groups:
+    description: MetricGroupsToCollect provides a list of metrics groups to collect metrics from. "container", "pod", "node" and "volume" are the only valid groups.
+    type: array
+    items:
+      $ref: ./internal/kubelet.metric_group
+  node:
+    description: 'NodeName is the node name to limit the discovery of nodes. For example, node name can be set using the downward API inside the collector pod spec as follows: env: - name: K8S_NODE_NAME valueFrom: fieldRef: fieldPath: spec.nodeName Then set this value to ${env:K8S_NODE_NAME} in the configuration.'
+    type: string
+allOf:
+  - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet.client_config
+  - $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config
+  - $ref: ./internal/metadata.metrics_builder_config

@@ -1,0 +1,101 @@
+$defs:
+  aws_cloud_map_resolver:
+    type: object
+    properties:
+      health_status:
+        x-customType: github.com/aws/aws-sdk-go-v2/service/servicediscovery/types.health_status_filter
+      interval:
+        type: string
+        format: duration
+      namespace:
+        type: string
+      port:
+        x-pointer: true
+        type: integer
+        x-customType: uint16
+      service_name:
+        type: string
+      timeout:
+        type: string
+        format: duration
+  dns_resolver:
+    description: DNSResolver defines the configuration for the DNS resolver
+    type: object
+    properties:
+      hostname:
+        type: string
+      interval:
+        type: string
+        format: duration
+      port:
+        type: string
+      timeout:
+        type: string
+        format: duration
+  k_8_s_svc_resolver:
+    description: K8sSvcResolver defines the configuration for the DNS resolver
+    type: object
+    properties:
+      ports:
+        type: array
+        items:
+          type: integer
+          x-customType: int32
+      return_hostnames:
+        type: boolean
+      service:
+        type: string
+      timeout:
+        type: string
+        format: duration
+  protocol:
+    description: Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
+    type: object
+    properties:
+      otlp:
+        $ref: go.opentelemetry.io/collector/exporter/otlpexporter.config
+  resolver_settings:
+    description: ResolverSettings defines the configurations for the backend resolver
+    type: object
+    properties:
+      aws_cloud_map:
+        x-optional: true
+        $ref: aws_cloud_map_resolver
+      dns:
+        x-optional: true
+        $ref: dns_resolver
+      k8s:
+        x-optional: true
+        $ref: k_8_s_svc_resolver
+      static:
+        x-optional: true
+        $ref: static_resolver
+  static_resolver:
+    description: StaticResolver defines the configuration for the resolver providing a fixed list of backends
+    type: object
+    properties:
+      hostnames:
+        type: array
+        items:
+          type: string
+description: Config defines configuration for the exporter.
+type: object
+properties:
+  protocol:
+    $ref: protocol
+  resolver:
+    $ref: resolver_settings
+  routing_attributes:
+    description: RoutingAttributes creates a composite routing key, based on several resource attributes of the application. Supports all attributes available (both resource and span), as well as the pseudo attributes "span.kind" and "span.name".
+    type: array
+    items:
+      type: string
+  routing_key:
+    description: RoutingKey is a single routing key value
+    type: string
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config

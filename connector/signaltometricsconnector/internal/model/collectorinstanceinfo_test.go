@@ -35,7 +35,7 @@ func TestCollectorInstanceInfo(t *testing.T) {
 			expected: func() pcommon.Map {
 				m := pcommon.NewMap()
 				m.PutStr(
-					"signaltometrics."+"service.instance.id",
+					"signal_to_metrics."+"service.instance.id",
 					"627cc493-f310-47de-96bd-71410b7dec09",
 				)
 				return m

@@ -1,0 +1,26 @@
+$defs:
+  logs_config:
+    type: object
+    properties:
+      attributes:
+        type: object
+        additionalProperties:
+          type: string
+      endpoint:
+        type: string
+      secret:
+        type: string
+      separator:
+        type: string
+      timestamp_field:
+        type: string
+      timestamp_format:
+        type: string
+      tls:
+        x-pointer: true
+        $ref: go.opentelemetry.io/collector/config/configtls.server_config
+description: Config holds all the parameters to start an HTTP server that can be sent logs from CloudFlare
+type: object
+properties:
+  logs:
+    $ref: logs_config

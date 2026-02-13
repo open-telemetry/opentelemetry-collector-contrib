@@ -234,6 +234,10 @@ gofmt:
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
+.PHONY: gomodernize
+gomodernize:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="modernize"
+
 .PHONY: gogovulncheck
 gogovulncheck:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="govulncheck"
@@ -398,8 +402,9 @@ gengithub: $(GITHUBGEN)
 gendistributions: $(GITHUBGEN)
 	$(GITHUBGEN) distributions
 
-gencodecov: $(CODECOVGEN)
-	$(CODECOVGEN) --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules **/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**
+.PHONY: gencodecov
+gencodecov:
+	cd $(SRC_ROOT)/cmd/codecovgen && go run . --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules '**/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**' --dir $(SRC_ROOT)
 
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
@@ -584,7 +589,6 @@ otel-from-lib:
 .PHONY: build-examples
 build-examples:
 	cd examples/secure-tracing/certs && $(MAKE) clean && $(MAKE) all && docker compose -f ../docker-compose.yaml build
-	docker compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64
@@ -699,13 +703,11 @@ clean:
 generate-gh-issue-templates:
 	$(GITHUBGEN) issue-templates
 
+SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -name "config.schema.yaml" -exec dirname {} \; | sort -u)
+
 .PHONY: generate-schemas
 generate-schemas:
-	./cmd/schemagen/run_schemagen_dir.sh ./receiver
-	./cmd/schemagen/run_schemagen_dir.sh -i datadogexporter ./exporter
-	./cmd/schemagen/run_schemagen_dir.sh ./processor
-	./cmd/schemagen/run_schemagen_dir.sh -i encoding,observer,opampcustommessages,storage ./extension
-	./cmd/schemagen/run_schemagen_dir.sh ./connector
+	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)
 
 .PHONY: checks
 checks:
@@ -720,5 +722,5 @@ checks:
 	$(MAKE) gendistributions
 	$(MAKE) -j4 generate
 	$(MAKE) multimod-verify
-	# $(MAKE) generate-schemas Uncomment when schema generation is complete
+	$(MAKE) generate-schemas
 	git diff --exit-code || (echo 'Some files need committing' && git status && exit 1)

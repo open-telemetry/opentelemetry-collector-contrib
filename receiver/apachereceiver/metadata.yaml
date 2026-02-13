@@ -69,8 +69,7 @@ attributes:
 metrics:
   apache.connections.async:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: The number of connections in different asynchronous states reported by Apache's server-status.
     unit: "{connections}"
     gauge:
@@ -79,8 +78,7 @@ metrics:
     attributes: [connection_state]
   apache.cpu.load:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Current load of the CPU.
     unit: "%"
     gauge:
@@ -89,8 +87,7 @@ metrics:
     attributes: []
   apache.cpu.time:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Jiffs used by processes of given category.
     unit: "{jiff}"
     sum:
@@ -101,8 +98,7 @@ metrics:
     attributes: [cpu_level, cpu_mode]
   apache.current_connections:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: The number of active connections currently attached to the HTTP server.
     unit: "{connections}"
     sum:
@@ -113,8 +109,7 @@ metrics:
     attributes: []
   apache.load.1:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: The average server load during the last minute.
     unit: "%"
     gauge:
@@ -123,8 +118,7 @@ metrics:
     attributes: []
   apache.load.15:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: The average server load during the last 15 minutes.
     unit: "%"
     gauge:
@@ -133,8 +127,7 @@ metrics:
     attributes: []
   apache.load.5:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: The average server load during the last 5 minutes.
     unit: "%"
     gauge:
@@ -143,8 +136,7 @@ metrics:
     attributes: []
   apache.request.time:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Total time spent on handling requests.
     unit: ms
     sum:
@@ -155,8 +147,7 @@ metrics:
     attributes: []
   apache.requests:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: The number of requests serviced by the HTTP server per second.
     unit: "{requests}"
     sum:
@@ -167,8 +158,7 @@ metrics:
     attributes: []
   apache.scoreboard:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: The number of workers in each state.
     extended_documentation: >-
       The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION)
@@ -182,8 +172,7 @@ metrics:
     attributes: [scoreboard_state]
   apache.traffic:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Total HTTP server traffic.
     unit: By
     sum:
@@ -193,8 +182,7 @@ metrics:
     attributes: []
   apache.uptime:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: The amount of time that the server has been running in seconds.
     unit: s
     sum:
@@ -205,8 +193,7 @@ metrics:
     attributes: []
   apache.workers:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: The number of workers currently attached to the HTTP server.
     unit: "{workers}"
     sum:

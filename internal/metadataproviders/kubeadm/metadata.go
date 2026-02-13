@@ -7,11 +7,17 @@ import (
 	"context"
 	"fmt"
 
+	"go.yaml.in/yaml/v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
+
+// clusterConfiguration represents the relevant fields from kubeadm's ClusterConfiguration
+type clusterConfiguration struct {
+	ClusterName string `yaml:"clusterName"`
+}
 
 type Provider interface {
 	// ClusterName returns the current K8S cluster name
@@ -53,7 +59,18 @@ func (k *kubeadmProvider) ClusterName(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to fetch ConfigMap with name %s and namespace %s from K8s API: %w", k.configMapName, k.kubeSystemNamespace, err)
 	}
 
-	k.cache.ClusterName = configmap.Data["clusterName"]
+	// kubeadm stores cluster configuration in the ClusterConfiguration key as YAML
+	clusterConfigYAML, ok := configmap.Data["ClusterConfiguration"]
+	if !ok {
+		return "", fmt.Errorf("ClusterConfiguration key not found in ConfigMap %s", k.configMapName)
+	}
+
+	var clusterConfig clusterConfiguration
+	if err := yaml.Unmarshal([]byte(clusterConfigYAML), &clusterConfig); err != nil {
+		return "", fmt.Errorf("failed to parse ClusterConfiguration YAML: %w", err)
+	}
+
+	k.cache.ClusterName = clusterConfig.ClusterName
 
 	return k.cache.ClusterName, nil
 }
