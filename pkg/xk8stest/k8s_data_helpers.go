@@ -6,6 +6,7 @@ package xk8stest // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -27,6 +28,13 @@ func HostEndpoint(t *testing.T) string {
 	defer cancel()
 	network, err := client.NetworkInspect(ctx, "kind", network2.InspectOptions{})
 	require.NoError(t, err)
+	// Prefer IPv4 gateway over IPv6 to ensure compatibility with IPv4-only clusters
+	for _, ipam := range network.IPAM.Config {
+		if ipam.Gateway != "" && !isIPv6(ipam.Gateway) {
+			return ipam.Gateway
+		}
+	}
+	// Fallback to any gateway if no IPv4 found
 	for _, ipam := range network.IPAM.Config {
 		if ipam.Gateway != "" {
 			return ipam.Gateway
@@ -34,6 +42,11 @@ func HostEndpoint(t *testing.T) string {
 	}
 	require.Fail(t, "failed to find host endpoint")
 	return ""
+}
+
+func isIPv6(addr string) bool {
+	// IPv6 addresses contain colons, IPv4 addresses do not
+	return strings.Contains(addr, ":")
 }
 
 func SelectorFromMap(labelMap map[string]any) labels.Selector {
