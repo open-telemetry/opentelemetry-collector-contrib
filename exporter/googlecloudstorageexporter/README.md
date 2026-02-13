@@ -25,7 +25,7 @@ This exporter writes received OpenTelemetry data to a cloud storage bucket.
 | `bucket.name`            | Name for the bucket storage.                                                                                                                                                                                             | Yes      |         |
 | `bucket.file_prefix`     | Prefix for the created filename. This prefix is applied after the partition path (if any).                                                                                                                               | No       | `logs`  |
 | `bucket.partition`       | Configuration for time-based partitioning. See below for details.                                                                                                                                                        | No       |         |
-| `bucket.reuse_if_exists` | Controls bucket creation behavior. If `true`, checks if bucket exists and uses it (requires `storage.buckets.get` permission on the bucket); fails if bucket doesn't exist. If `false`, attempts to create bucket; fails if bucket already exists (requires `storage.buckets.create` permission at project level). Useful when bucket is managed externally or service account only has bucket-level permissions. | No       | `false` |
+| `bucket.reuse_if_exists` | Controls bucket creation behavior. If `true`, checks if bucket exists and uses it (requires `storage.buckets.get` permission on the bucket); fails if bucket doesn't exist. If `false`, attempts to create bucket; fails if bucket already exists (requires `storage.buckets.create` permission at project level). Set to `true` when bucket is managed externally (Terraform, etc.) and service account lacks project-level creation permissions but has bucket-level permissions. | No       | `false` |
 | `bucket.region`          | Region where the bucket will be created or where it exists. If left empty, it will query the metadata endpoint. It requires the collector to be running in a Google Cloud environment.                                   | Yes      |         |
 | `bucket.compression`     | Compression algorithm used to compress data before uploading. Valid values are `gzip`, `zstd`, or no value set for no compression.                                                                                        | No       |         |
 
@@ -78,7 +78,7 @@ exporters:
 
 ### Using Externally Managed Bucket
 
-When the bucket is managed outside of the collector (e.g., via Terraform, CloudFormation) or the service account lacks bucket creation permissions:
+When bucket creation is managed externally (e.g., Terraform, CloudFormation) and the service account lacks project-level bucket creation permissions:
 
 ```yaml
 exporters:
@@ -91,4 +91,4 @@ exporters:
       file_prefix: collector-logs
 ```
 
-With `reuse_if_exists: true`, the exporter checks if the bucket exists using `storage.buckets.get` permission on that specific bucket (not project-level). If the bucket doesn't exist, the exporter will fail with an error. This allows the service account to have minimal bucket-level permissions without requiring project-level bucket creation permissions.
+With `reuse_if_exists: true`, the exporter checks if the bucket exists using `storage.buckets.get` permission on that specific bucket (not project-level). If the bucket doesn't exist, the exporter will fail with an error. This allows service accounts with only bucket-level permissions to work without requiring project-level bucket creation permissions.

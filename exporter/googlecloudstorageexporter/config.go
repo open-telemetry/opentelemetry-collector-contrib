@@ -46,14 +46,14 @@ type bucketConfig struct {
 
 	// ReuseIfExists controls whether to reuse an existing bucket or create a new one.
 	// When set to true:
-	//   - The exporter checks if the bucket exists (requires minimal permissions: storage.buckets.get)
+	//   - The exporter checks if the bucket exists (requires storage.buckets.get on the bucket)
 	//   - If the bucket exists, it will be used
 	//   - If the bucket does not exist, an error is returned
 	// When set to false:
-	//   - The exporter attempts to create the bucket
+	//   - The exporter attempts to create the bucket (requires storage.buckets.create at project level)
 	//   - If the bucket already exists, an error is returned
-	// This is useful when bucket creation is managed externally or the service account
-	// lacks bucket creation permissions but has object-level access.
+	// Set to true when bucket creation is managed externally (e.g., Terraform) and the service account
+	// lacks project-level bucket creation permissions but has bucket-level permissions.
 	ReuseIfExists bool `mapstructure:"reuse_if_exists"`
 
 	// Region where bucket will be created or where it exists. If it is left

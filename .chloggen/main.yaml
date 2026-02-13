@@ -18,7 +18,7 @@ issues: [45971]
 subtext: |
   Previously, `reuse_if_exists=true` would attempt bucket creation and fall back to reusing on conflict.
   Now, `reuse_if_exists=true` checks if bucket exists (via storage.buckets.get) and uses it, failing if it doesn't exist.
-  This allows service accounts with only bucket-level permissions to work without requiring project-level bucket creation permissions.
+  Set to true when bucket is managed externally (Terraform, etc.) and service account lacks project-level creation permissions.
   `reuse_if_exists=false` still attempts to create the bucket and fails if it already exists.
 
 # If your change doesn't affect end users or the exported elements of any package,
