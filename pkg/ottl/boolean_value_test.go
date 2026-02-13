@@ -215,6 +215,112 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 	}
 }
 
+func Test_newComparisonExpr_literalFastPaths(t *testing.T) {
+	p, _ := NewParser(
+		defaultFunctionsForTests(),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	tests := []struct {
+		name       string
+		comparison *comparison
+		assertType func(*testing.T, boolExpr[any])
+	}{
+		{
+			name:       "both literals fold to literal expression",
+			comparison: comparisonHelper("left", "right", "!="),
+			assertType: func(t *testing.T, expr boolExpr[any]) {
+				_, ok := expr.(*literalBoolExpr[any])
+				assert.True(t, ok)
+			},
+		},
+		{
+			name:       "literal on left uses left-literal comparison expression",
+			comparison: comparisonHelper("left", "NAME", "=="),
+			assertType: func(t *testing.T, expr boolExpr[any]) {
+				_, ok := expr.(*leftLiteralComparisonExpr[any])
+				assert.True(t, ok)
+			},
+		},
+		{
+			name:       "literal on right uses right-literal comparison expression",
+			comparison: comparisonHelper("NAME", "right", "=="),
+			assertType: func(t *testing.T, expr boolExpr[any]) {
+				_, ok := expr.(*rightLiteralComparisonExpr[any])
+				assert.True(t, ok)
+			},
+		},
+		{
+			name:       "dynamic both sides keeps regular comparison expression",
+			comparison: comparisonHelper("NAME", "NAME", "=="),
+			assertType: func(t *testing.T, expr boolExpr[any]) {
+				_, ok := expr.(*comparisonExpr[any])
+				assert.True(t, ok)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expr, err := p.newComparisonExpr(tt.comparison)
+			require.NoError(t, err)
+			tt.assertType(t, expr)
+		})
+	}
+}
+
+func Benchmark_newComparisonExpr_Eval(b *testing.B) {
+	p, _ := NewParser(
+		defaultFunctionsForTests(),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	tests := []struct {
+		name       string
+		comparison *comparison
+		item       any
+	}{
+		{
+			name:       "literal_left",
+			comparison: comparisonHelper("bear", "NAME", "=="),
+			item:       "bear",
+		},
+		{
+			name:       "literal_right",
+			comparison: comparisonHelper("NAME", "bear", "=="),
+			item:       "bear",
+		},
+		{
+			name:       "dynamic_both",
+			comparison: comparisonHelper("NAME", "NAME", "=="),
+			item:       "bear",
+		},
+	}
+
+	ctx := b.Context()
+	for _, tt := range tests {
+		expr, err := p.newComparisonExpr(tt.comparison)
+		require.NoError(b, err)
+
+		b.Run(tt.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				result, err := expr.Eval(ctx, tt.item)
+				if err != nil {
+					b.Fatalf("eval failed: %v", err)
+				}
+				if !result {
+					b.Fatalf("unexpected false result")
+				}
+			}
+		})
+	}
+}
+
 func True() (ExprFunc[any], error) {
 	return func(context.Context, any) (any, error) {
 		return true, nil

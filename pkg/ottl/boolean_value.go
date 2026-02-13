@@ -161,6 +161,10 @@ func (p *Parser[K]) newComparisonExpr(comparison *comparison) (boolExpr[K], erro
 		if rightVal, rightOk := GetLiteralValue(right); rightOk {
 			return newLiteralExpr[K](comparator.compare(leftVal, rightVal, comparison.Op)), nil
 		}
+		return &leftLiteralComparisonExpr[K]{left: leftVal, right: right, comparator: comparator, op: comparison.Op}, nil
+	}
+	if rightVal, rightOk := GetLiteralValue(right); rightOk {
+		return &rightLiteralComparisonExpr[K]{left: left, right: rightVal, comparator: comparator, op: comparison.Op}, nil
 	}
 
 	// The parser ensures that we'll never get an invalid comparison.Op, so we don't have to check that case.
@@ -185,6 +189,40 @@ func (e *comparisonExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 		return false, rightErr
 	}
 	return e.comparator.compare(a, b, e.op), nil
+}
+
+type leftLiteralComparisonExpr[K any] struct {
+	left       any
+	right      Getter[K]
+	comparator ValueComparator
+	op         compareOp
+}
+
+func (*leftLiteralComparisonExpr[K]) unexported() {}
+
+func (e *leftLiteralComparisonExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	b, rightErr := e.right.Get(ctx, tCtx)
+	if rightErr != nil {
+		return false, rightErr
+	}
+	return e.comparator.compare(e.left, b, e.op), nil
+}
+
+type rightLiteralComparisonExpr[K any] struct {
+	left       Getter[K]
+	right      any
+	comparator ValueComparator
+	op         compareOp
+}
+
+func (*rightLiteralComparisonExpr[K]) unexported() {}
+
+func (e *rightLiteralComparisonExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	a, leftErr := e.left.Get(ctx, tCtx)
+	if leftErr != nil {
+		return false, leftErr
+	}
+	return e.comparator.compare(a, e.right, e.op), nil
 }
 
 func (p *Parser[K]) newBoolExpr(expr *booleanExpression) (boolExpr[K], error) {
