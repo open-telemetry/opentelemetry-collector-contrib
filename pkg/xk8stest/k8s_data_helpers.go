@@ -5,8 +5,8 @@ package xk8stest // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"net"
 	"runtime"
-	"strings"
 	"testing"
 	"time"
 
@@ -28,25 +28,28 @@ func HostEndpoint(t *testing.T) string {
 	defer cancel()
 	network, err := client.NetworkInspect(ctx, "kind", network2.InspectOptions{})
 	require.NoError(t, err)
-	// Prefer IPv4 gateway over IPv6 to ensure compatibility with IPv4-only clusters
+
+	// Prefer IPv4 gateways, but fallback to IPv6 if no IPv4 gateway is found.
+	// IPv6 addresses are wrapped in brackets so that callers can safely append
+	// ":port" (e.g. [fc00:f853:ccd:e793::1]:4317).
+	var ipv6Fallback string
 	for _, ipam := range network.IPAM.Config {
-		if ipam.Gateway != "" && !isIPv6(ipam.Gateway) {
+		if ipam.Gateway == "" {
+			continue
+		}
+		ip := net.ParseIP(ipam.Gateway)
+		if ip != nil && ip.To4() != nil {
 			return ipam.Gateway
+		}
+		if ipv6Fallback == "" {
+			ipv6Fallback = "[" + ipam.Gateway + "]"
 		}
 	}
-	// Fallback to any gateway if no IPv4 found
-	for _, ipam := range network.IPAM.Config {
-		if ipam.Gateway != "" {
-			return ipam.Gateway
-		}
+	if ipv6Fallback != "" {
+		return ipv6Fallback
 	}
 	require.Fail(t, "failed to find host endpoint")
 	return ""
-}
-
-func isIPv6(addr string) bool {
-	// IPv6 addresses contain colons, IPv4 addresses do not
-	return strings.Contains(addr, ":")
 }
 
 func SelectorFromMap(labelMap map[string]any) labels.Selector {
