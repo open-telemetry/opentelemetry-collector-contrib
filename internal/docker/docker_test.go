@@ -227,3 +227,63 @@ func portableEndpoint(addr string) string {
 	}
 	return endpoint
 }
+
+func TestAPIVersionNegotiation(t *testing.T) {
+	listener, addr := testListener(t)
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+
+	config := &Config{
+		Endpoint:         portableEndpoint(addr),
+		Timeout:          50 * time.Millisecond,
+		DockerAPIVersion: "", // empty triggers auto-negotiation
+	}
+
+	observed, logs := observer.New(zapcore.DebugLevel)
+	cli, err := NewDockerClient(config, zap.New(observed))
+	assert.NotNil(t, cli)
+	assert.NoError(t, err)
+
+	found := false
+	for _, l := range logs.All() {
+		if strings.Contains(l.Message, "using automatic version negotiation") {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "Expected log message about automatic version negotiation")
+}
+
+func TestExplicitAPIVersion(t *testing.T) {
+	listener, addr := testListener(t)
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+
+	config := &Config{
+		Endpoint:         portableEndpoint(addr),
+		Timeout:          50 * time.Millisecond,
+		DockerAPIVersion: "1.44",
+	}
+
+	observed, logs := observer.New(zapcore.DebugLevel)
+	cli, err := NewDockerClient(config, zap.New(observed))
+	assert.NotNil(t, cli)
+	assert.NoError(t, err)
+
+	found := false
+	for _, l := range logs.All() {
+		if strings.Contains(l.Message, "Using explicitly configured Docker API version") {
+			found = true
+			assert.Equal(t, "1.44", l.ContextMap()["version"])
+			break
+		}
+	}
+	assert.True(t, found, "Expected log message about explicit API version")
+}
+
+func TestDefaultConfigUsesNegotiation(t *testing.T) {
+	config := NewDefaultConfig()
+	assert.Empty(t, config.DockerAPIVersion, "Default config should have empty DockerAPIVersion for auto-negotiation")
+}
