@@ -179,6 +179,7 @@ components:
     - pkg/translator/zipkin
     - pkg/winperfcounters
     - pkg/xk8stest
+    - pkg/xstreamencoding
     - processor/akamaidetector
     - processor/alibabaecsdetector
     - processor/attributes
@@ -330,6 +331,7 @@ components:
     - receiver/tlscheck
     - receiver/udplog
     - receiver/vcenter
+    - receiver/vcr
     - receiver/wavefront
     - receiver/webhookevent
     - receiver/windowseventlog

@@ -18,8 +18,7 @@ telemetry:
   metrics:
     exporter_requests_bytes:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Total size of requests (in bytes)
       unit: By
       sum:
@@ -27,8 +26,7 @@ telemetry:
         monotonic: true
     exporter_requests_duration:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Duration of HTTP requests (in milliseconds)
       unit: ms
       sum:
@@ -36,8 +34,7 @@ telemetry:
         monotonic: true
     exporter_requests_records:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Total size of requests (in number of records)
       unit: "{records}"
       sum:
@@ -45,8 +42,7 @@ telemetry:
         monotonic: true
     exporter_requests_sent:
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of requests
       unit: "1"
       sum:

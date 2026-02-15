@@ -14,7 +14,7 @@ The `syslog_parser` operator parses the string-type field selected by `parse_fro
 | `protocol`                           | required         | The protocol to parse the syslog messages as. Options are `rfc3164` and `rfc5424`. |
 | `location`                           | `UTC`            | The geographic location (timezone) to use when parsing the timestamp (Syslog RFC 3164 only). The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
 | `enable_octet_counting`              | `false`          | Wether or not to enable [RFC 6587](https://www.rfc-editor.org/rfc/rfc6587#section-3.4.1) Octet Counting on syslog parsing (Syslog RFC 5424 only).  |
-| `allow_skip_pri_header`              | `false`          | Allow parsing records without the PRI header. If this setting is enabled, messages without the PRI header will be successfully parsed. The `severity` and `severity_text` fields as well as the `priority` and `facility` attributes will not be set. If this setting is disabled (the default), messages without PRI header will throw an exception. To set this setting to `true`, the `enable_octet_counting` setting must be `false`.|
+| `allow_skip_pri_header`              | `false`          | Allow parsing records without the PRI header. If this setting is enabled, messages without the PRI header will be successfully parsed. The `severity` and `severity_text` fields as well as the `priority`, `facility`, and `facility_text` attributes will not be set. If this setting is disabled (the default), messages without PRI header will throw an exception. To set this setting to `true`, the `enable_octet_counting` setting must be `false`.|
 | `non_transparent_framing_trailer`    | `nil`            | The framing trailer, either `LF` or `NUL`, when using [RFC 6587](https://www.rfc-editor.org/rfc/rfc6587#section-3.4.2) Non-Transparent-Framing (Syslog RFC 5424 only). |
 | `timestamp`                          | `nil`            | An optional [timestamp](../types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator                                                                                               |
 | `severity`                           | `nil`            | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator                                                                                                  |
@@ -56,6 +56,7 @@ Configuration:
   "body": {
     "appname": "apache_server",
     "facility": 4,
+    "facility_text": "auth",
     "hostname": "1.2.3.4",
     "message": "test message",
     "msg_id": null,
