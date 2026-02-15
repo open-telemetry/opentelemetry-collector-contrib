@@ -25,6 +25,17 @@ azure_event_hub/auth:
     namespace: namespace.servicebus.windows.net
   auth: azureauth
 
+azure_event_hub/auth_required_missing_auth:
+  require_auth: true
+  connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+
+azure_event_hub/auth_required_with_auth:
+  require_auth: true
+  event_hub:
+    name: hubName
+    namespace: namespace.servicebus.windows.net
+  auth: azureauth
+
 azure_event_hub/auth_missing_event_hub_name:
   auth: azureauth
   event_hub:

@@ -31,6 +31,7 @@ type Config struct {
 	Offset                   string         `mapstructure:"offset"`
 	StorageID                *component.ID  `mapstructure:"storage"`
 	Auth                     *component.ID  `mapstructure:"auth"`
+	RequireAuth              bool           `mapstructure:"require_auth"`
 	Format                   string         `mapstructure:"format"`
 	ConsumerGroup            string         `mapstructure:"group"`
 	ApplySemanticConventions bool           `mapstructure:"apply_semantic_conventions"`
@@ -59,6 +60,10 @@ type TimeFormat struct {
 
 // Validate config
 func (config *Config) Validate() error {
+	if config.RequireAuth && config.Auth == nil {
+		return errors.New("auth is required when require_auth is enabled")
+	}
+
 	if config.Auth != nil {
 		if config.EventHub.Name == "" {
 			return errors.New("event_hub.name is required when using auth")

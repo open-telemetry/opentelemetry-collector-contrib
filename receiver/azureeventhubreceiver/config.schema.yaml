@@ -51,6 +51,8 @@ properties:
   poll_rate:
     description: azeventhub lib specific
     type: integer
+  require_auth:
+    type: boolean
   storage:
     x-pointer: true
     type: string

@@ -46,6 +46,21 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id:                  component.NewIDWithName(metadata.Type, "auth_required_missing_auth"),
+			expectedErrContains: "auth is required when require_auth is enabled",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "auth_required_with_auth"),
+			expected: &Config{
+				EventHub: EventHubConfig{
+					Name:      "hubName",
+					Namespace: "namespace.servicebus.windows.net",
+				},
+				Auth:        &authID,
+				RequireAuth: true,
+			},
+		},
+		{
 			id:                  component.NewIDWithName(metadata.Type, "missing_connection"),
 			expectedErrContains: "missing connection",
 		},
