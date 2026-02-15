@@ -45,6 +45,8 @@ type Manager struct {
 	// configUpdateCount tracks how many times the config has changed, for
 	// testing.
 	configUpdateCount *atomic.Int64
+	// configUpdated is signaled after each config update, for testing.
+	configUpdated chan struct{}
 }
 
 func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config) *Manager {
@@ -55,6 +57,7 @@ func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config) 
 		promCfg:              promCfg,
 		initialScrapeConfigs: promCfg.ScrapeConfigs,
 		configUpdateCount:    &atomic.Int64{},
+		configUpdated:        make(chan struct{}, 10),
 	}
 }
 
@@ -92,9 +95,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 	if err != nil {
 		return err
 	}
-	m.wg.Add(1)
-	go func() {
-		defer m.wg.Done()
+	m.wg.Go(func() {
 		targetAllocatorIntervalTicker := time.NewTicker(m.cfg.Interval)
 		for {
 			select {
@@ -111,7 +112,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 				return
 			}
 		}
-	}()
+	})
 	return nil
 }
 
@@ -195,6 +196,10 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 
 	if m.configUpdateCount != nil {
 		m.configUpdateCount.Add(1)
+		select {
+		case m.configUpdated <- struct{}{}:
+		default:
+		}
 	}
 	return hash, nil
 }

@@ -25,7 +25,6 @@ connector/slowsqlconnector connector/slowsql
 connector/spanmetricsconnector connector/spanmetrics
 connector/sumconnector connector/sum
 exporter/alertmanagerexporter exporter/alertmanager
-exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
 exporter/awscloudwatchlogsexporter exporter/awscloudwatchlogs
 exporter/awsemfexporter exporter/awsemf
 exporter/awskinesisexporter exporter/awskinesis
@@ -174,6 +173,7 @@ pkg/translator/splunk pkg/translator/splunk
 pkg/translator/zipkin pkg/translator/zipkin
 pkg/winperfcounters pkg/winperfcounters
 pkg/xk8stest pkg/xk8stest
+pkg/xstreamencoding pkg/xstreamencoding
 processor/attributesprocessor processor/attributes
 processor/coralogixprocessor processor/coralogix
 processor/cumulativetodeltaprocessor processor/cumulativetodelta
@@ -331,6 +331,7 @@ receiver/tcplogreceiver receiver/tcplog
 receiver/tlscheckreceiver receiver/tlscheck
 receiver/udplogreceiver receiver/udplog
 receiver/vcenterreceiver receiver/vcenter
+receiver/vcrreceiver receiver/vcr
 receiver/wavefrontreceiver receiver/wavefront
 receiver/webhookeventreceiver receiver/webhookevent
 receiver/windowseventlogreceiver receiver/windowseventlog
@@ -346,6 +347,7 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
+exporter/alibabacloudlogserviceexporter exporter/alibabacloudlogservice
 receiver/bigipreceiver receiver/bigip
 receiver/carbonreceiver receiver/carbon
 receiver/k8slogreceiver receiver/k8slog

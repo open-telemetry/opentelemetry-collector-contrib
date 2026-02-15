@@ -1,4 +1,9 @@
+display_name: Lookup Processor
 type: lookup
+
+description: |
+  The lookup processor enriches telemetry signals by performing external lookups to retrieve additional data. Currently
+  supports logs, with metrics and traces support planned.
 
 status:
   class: processor

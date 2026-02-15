@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -76,32 +75,29 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 	}
 
 	settings := receivertest.NewNopSettings(metadata.Type)
-	logsOverWarn := atomic.Int64{}
+	warnCh := make(chan struct{}, 1)
 	settings.Logger, err = zap.NewDevelopment(zap.Hooks(func(logentry zapcore.Entry) error {
 		if logentry.Level >= zapcore.WarnLevel {
-			logsOverWarn.Add(1)
+			select {
+			case warnCh <- struct{}{}:
+			default:
+			}
 		}
 		return nil
 	}))
 	require.NoError(t, err)
-	receiver, cms := newTestReceiverSettings(t, config, settings)
 
-	metricsCount := 0
-	require.Eventually(t, func() bool {
-		metrics := cms.AllMetrics()
-		// Scrape was a success and we got metrics.
-		if len(metrics) > 0 {
-			metricsCount = len(metrics)
-			return true
-		}
-		// There was a log line above WARN level.
-		if logsOverWarn.Load() > 0 {
-			return true
-		}
-		return false
-	}, 30*time.Second, 100*time.Millisecond, "Failed to scrape the metrics via target allocator")
+	cms := newSignalingSink(1)
+	receiver := newTestReceiverSettingsConsumer(t, config, settings, cms)
 
-	require.Zero(t, logsOverWarn.Load(), "There are log messages over the WARN level, see logs")
+	select {
+	case <-cms.done:
+		// Success - at least one scrape was consumed.
+	case <-warnCh:
+		t.Fatal("Unexpected log message at WARN level or above, see logs")
+	case <-time.After(30 * time.Second):
+		t.Fatal("Timed out waiting for metrics from target allocator")
+	}
 
 	require.NoError(t, promTestUtil.GatherAndCompare(receiver.registry, bytes.NewBufferString(fmt.Sprintf(`
 		# TYPE prometheus_target_scrape_pools_failed_total counter
@@ -109,7 +105,7 @@ func TestTargetAllocatorProvidesEmptyScrapeConfig(t *testing.T) {
 		prometheus_target_scrape_pools_failed_total{receiver="%s"} 0
 `, receiver.settings.ID)), "prometheus_target_scrape_pools_failed_total"), "Prometheus scrape manager reports failed scrape pools")
 
-	require.Positive(t, metricsCount, "No metrics were scraped even though successful")
+	require.NotEmpty(t, cms.AllMetrics(), "No metrics were scraped even though successful")
 }
 
 type mockTargetAllocator struct {

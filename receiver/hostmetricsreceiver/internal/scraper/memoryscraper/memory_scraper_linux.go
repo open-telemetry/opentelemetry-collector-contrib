@@ -37,6 +37,10 @@ func (s *memoryScraper) recordMemoryUsageMetric(now pcommon.Timestamp, memInfo *
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Sunreclaim), metadata.AttributeStateSlabUnreclaimable)
 }
 
+func (s *memoryScraper) recordMemoryLinuxSharedMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
+	s.mb.RecordSystemMemoryLinuxSharedDataPoint(now, int64(memInfo.Shared))
+}
+
 func (s *memoryScraper) recordMemoryUtilizationMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
 	// TODO: rely on memInfo.Used value once https://github.com/shirou/gopsutil/pull/1882 is released
 	// gopsutil formula: https://github.com/shirou/gopsutil/pull/1882/files#diff-5af8322731595fb792b48f3c38f31ddb24f596cf11a74a9c37b19734597baef6R321
@@ -95,5 +99,6 @@ func (s *memoryScraper) recordLinuxHugePagesMetrics(now pcommon.Timestamp, memIn
 func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
 	s.recordLinuxMemoryAvailableMetric(now, memInfo)
 	s.recordLinuxMemoryDirtyMetric(now, memInfo)
+	s.recordMemoryLinuxSharedMetric(now, memInfo)
 	s.recordLinuxHugePagesMetrics(now, memInfo)
 }
