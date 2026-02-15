@@ -101,21 +101,21 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scopeMetricsSlice.At(j).Scope(), settings, promName))
+					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, settings, promName))
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					if dataPoints.Len() == 0 {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scopeMetricsSlice.At(j).Scope(), metric, settings, promName))
+					errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scope, metric, settings, promName))
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, scopeMetricsSlice.At(j).Scope(), settings, promName))
+					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, scope, settings, promName))
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
 					if dataPoints.Len() == 0 {
@@ -125,7 +125,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 					errs = multierr.Append(errs, c.addExponentialHistogramDataPoints(
 						dataPoints,
 						resource,
-						scopeMetricsSlice.At(j).Scope(),
+						scope,
 						settings,
 						promName,
 					))
@@ -135,7 +135,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, scopeMetricsSlice.At(j).Scope(), settings, promName))
+					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, scope, settings, promName))
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}
