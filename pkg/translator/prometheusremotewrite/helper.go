@@ -126,6 +126,15 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope p
 		maxLabelCount += scope.Attributes().Len()
 	}
 
+	// Scope info
+	if scope.Name() != "" {
+		maxLabelCount++
+	}
+	if scope.Version() != "" {
+		maxLabelCount++
+	}
+	maxLabelCount += scope.Attributes().Len()
+
 	// map ensures no duplicate label name
 	l := make(map[string]string, maxLabelCount)
 

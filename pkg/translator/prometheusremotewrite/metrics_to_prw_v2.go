@@ -71,11 +71,11 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 		resourceMetrics := resourceMetricsSlice.At(i)
 		resource := resourceMetrics.Resource()
 		scopeMetricsSlice := resourceMetrics.ScopeMetrics()
-		// keep track of the most recent timestamp in the ResourceMetrics for
 		// use with the "target" info metric
 		var mostRecentTimestamp pcommon.Timestamp
 		for j := 0; j < scopeMetricsSlice.Len(); j++ {
-			metricSlice := scopeMetricsSlice.At(j).Metrics()
+			scopeMetrics := scopeMetricsSlice.At(j)
+			metricSlice := scopeMetrics.Metrics()
 
 			// TODO: decide if instrumentation library information should be exported as labels
 			for k := 0; k < metricSlice.Len(); k++ {
@@ -92,6 +92,8 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					errs = multierr.Append(errs, err)
 					continue
 				}
+
+				// Initialize metadata
 				m := metadata{
 					Type: otelMetricTypeToPromMetricTypeV2(metric),
 					Help: metric.Description(),

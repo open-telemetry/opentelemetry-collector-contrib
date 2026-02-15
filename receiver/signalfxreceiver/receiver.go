@@ -147,13 +147,11 @@ func (r *sfxReceiver) Start(ctx context.Context, host component.Host) error {
 	r.server.ReadHeaderTimeout = defaultServerTimeout
 	r.server.WriteTimeout = defaultServerTimeout
 
-	r.shutdownWG.Add(1)
-	go func() {
-		defer r.shutdownWG.Done()
+	r.shutdownWG.Go(func() {
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 	return nil
 }
 

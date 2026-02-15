@@ -72,7 +72,9 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 		// use with the "target" info metric
 		var mostRecentTimestamp pcommon.Timestamp
 		for j := 0; j < scopeMetricsSlice.Len(); j++ {
-			metricSlice := scopeMetricsSlice.At(j).Metrics()
+			scopeMetrics := scopeMetricsSlice.At(j)
+			metricSlice := scopeMetrics.Metrics()
+			scope := scopeMetrics.Scope()
 
 			// TODO: decide if instrumentation library information should be exported as labels
 			for k := 0; k < metricSlice.Len(); k++ {
