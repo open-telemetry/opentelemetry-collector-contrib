@@ -106,36 +106,36 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					if dataPoints.Len() == 0 {
 						break
 					}
-					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m))
+					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scopeMetricsSlice.At(j).Scope(), settings, promName, m))
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
 					if !metric.Sum().IsMonotonic() {
-						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName, m))
+						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scopeMetricsSlice.At(j).Scope(), settings, promName, m))
 					} else {
-						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName, m))
+						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scopeMetricsSlice.At(j).Scope(), metric, settings, promName, m))
 					}
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
-					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, settings, promName, m))
+					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, scopeMetricsSlice.At(j).Scope(), settings, promName, m))
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
 					errs = multierr.Append(errs, c.addExponentialHistogramDataPoints(
-						dataPoints, resource, settings, promName, m))
+						dataPoints, resource, scopeMetricsSlice.At(j).Scope(), settings, promName, m))
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
-					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, settings, promName, m))
+					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, scopeMetricsSlice.At(j).Scope(), settings, promName, m))
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}

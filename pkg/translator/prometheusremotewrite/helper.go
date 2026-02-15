@@ -98,8 +98,8 @@ var seps = []byte{'\xff'}
 // createAttributes creates a slice of Prometheus Labels with OTLP attributes and pairs of string values.
 // Unpaired string values are ignored. String pairs overwrite OTLP labels if collisions happen and
 // if logOnOverwrite is true, the overwrite is logged. Resulting label names are sanitized.
-func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externalLabels map[string]string,
-	ignoreAttrs []string, logOnOverwrite bool, labelNamer otlptranslator.LabelNamer, extras ...string,
+func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope pcommon.InstrumentationScope, externalLabels map[string]string,
+	ignoreAttrs []string, logOnOverwrite bool, labelNamer otlptranslator.LabelNamer, disableScopeInfo bool, extras ...string,
 ) ([]prompb.Label, error) {
 	resourceAttrs := resource.Attributes()
 	serviceName, haveServiceName := resourceAttrs.Get(string(conventions.ServiceNameKey))
@@ -114,6 +114,16 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 
 	if haveInstanceID {
 		maxLabelCount++
+	}
+	// Scope info
+	if !disableScopeInfo {
+		if scope.Name() != "" {
+			maxLabelCount++
+		}
+		if scope.Version() != "" {
+			maxLabelCount++
+		}
+		maxLabelCount += scope.Attributes().Len()
 	}
 
 	// map ensures no duplicate label name
@@ -143,6 +153,13 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 			}
 		} else {
 			l[finalKey] = label.Value
+			if logOnOverwrite {
+				// If the attribute is overwritten by a metric attribute, log it.
+				// This is only relevant for external labels.
+				if _, ok := externalLabels[label.Name]; ok {
+					log.Printf("label %s is overwritten. Check if Prometheus reserved labels are used.", label.Name)
+				}
+			}
 		}
 	}
 
@@ -165,6 +182,23 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 			continue
 		}
 		l[key] = value
+	}
+
+	if !disableScopeInfo {
+		if scope.Name() != "" {
+			l["otel_scope_name"] = scope.Name()
+		}
+		if scope.Version() != "" {
+			l["otel_scope_version"] = scope.Version()
+		}
+		scope.Attributes().Range(func(k string, v pcommon.Value) bool {
+			key, err := labelNamer.Build("otel_scope_" + k)
+			if err != nil {
+				return true
+			}
+			l[key] = v.AsString()
+			return true
+		})
 	}
 
 	for i := 0; i < len(extras); i += 2 {
@@ -210,87 +244,6 @@ func isValidAggregationTemporality(metric pmetric.Metric) bool {
 		return metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative
 	}
 	return false
-}
-
-func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, baseName string,
-) error {
-	var errs error
-	for x := 0; x < dataPoints.Len(); x++ {
-		pt := dataPoints.At(x)
-		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer)
-		if err != nil {
-			errs = multierr.Append(errs, err)
-			continue
-		}
-
-		// If the sum is unset, it indicates the _sum metric point should be
-		// omitted
-		if pt.HasSum() {
-			// treat sum as a sample in an individual TimeSeries
-			sum := &prompb.Sample{
-				Value:     pt.Sum(),
-				Timestamp: timestamp,
-			}
-			if pt.Flags().NoRecordedValue() {
-				sum.Value = math.Float64frombits(value.StaleNaN)
-			}
-
-			sumlabels := createLabels(baseName+sumStr, baseLabels)
-			c.addSample(sum, sumlabels)
-		}
-
-		// treat count as a sample in an individual TimeSeries
-		count := &prompb.Sample{
-			Value:     float64(pt.Count()),
-			Timestamp: timestamp,
-		}
-		if pt.Flags().NoRecordedValue() {
-			count.Value = math.Float64frombits(value.StaleNaN)
-		}
-
-		countlabels := createLabels(baseName+countStr, baseLabels)
-		c.addSample(count, countlabels)
-
-		// cumulative count for conversion to cumulative histogram
-		var cumulativeCount uint64
-
-		var bucketBounds []bucketBoundsData
-
-		// process each bound, based on histograms proto definition, # of buckets = # of explicit bounds + 1
-		for i := 0; i < pt.ExplicitBounds().Len() && i < pt.BucketCounts().Len(); i++ {
-			bound := pt.ExplicitBounds().At(i)
-			cumulativeCount += pt.BucketCounts().At(i)
-			bucket := &prompb.Sample{
-				Value:     float64(cumulativeCount),
-				Timestamp: timestamp,
-			}
-			if pt.Flags().NoRecordedValue() {
-				bucket.Value = math.Float64frombits(value.StaleNaN)
-			}
-			boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-			labels := createLabels(baseName+bucketStr, baseLabels, leStr, boundStr)
-			ts := c.addSample(bucket, labels)
-
-			bucketBounds = append(bucketBounds, bucketBoundsData{ts: ts, bound: bound})
-		}
-		// add le=+Inf bucket
-		infBucket := &prompb.Sample{
-			Timestamp: timestamp,
-		}
-		if pt.Flags().NoRecordedValue() {
-			infBucket.Value = math.Float64frombits(value.StaleNaN)
-		} else {
-			infBucket.Value = float64(pt.Count())
-		}
-		infLabels := createLabels(baseName+bucketStr, baseLabels, leStr, pInfStr)
-		ts := c.addSample(infBucket, infLabels)
-
-		bucketBounds = append(bucketBounds, bucketBoundsData{ts: ts, bound: math.Inf(1)})
-		c.addExemplars(pt, bucketBounds)
-	}
-	return errs
 }
 
 type exemplarType interface {
@@ -395,14 +348,14 @@ func mostRecentTimestampInMetric(metric pmetric.Metric) pcommon.Timestamp {
 	return ts
 }
 
-func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
+func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource, scope pcommon.InstrumentationScope,
 	settings Settings, baseName string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false, c.labelNamer)
+		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -531,7 +484,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		name = settings.Namespace + "_" + name
 	}
 
-	labels, err := createAttributes(resource, attributes, settings.ExternalLabels, identifyingAttrs, false, otlptranslator.LabelNamer{PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled()}, model.MetricNameLabel, name)
+	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, identifyingAttrs, false, otlptranslator.LabelNamer{PreserveMultipleUnderscores: !prometheustranslator.DropSanitizationGate.IsEnabled()}, settings.DisableScopeInfo, model.MetricNameLabel, name)
 	if err != nil {
 		return err
 	}
