@@ -138,7 +138,14 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 		span.Attributes().PutStr("AppRoleInstance", azureTrace.AppRoleInstance)
 		span.Attributes().PutStr("Type", azureTrace.Type)
 		span.Attributes().PutStr("SDKVersion", azureTrace.SDKVersion)
-		span.Attributes().PutBool("Success", azureTrace.Success)
+		switch azureTrace.Success {
+		case true:
+			span.Status().SetCode(ptrace.StatusCodeOk)
+		case false:
+			span.Status().SetCode(ptrace.StatusCodeError)
+		default:
+			span.Status().SetCode(ptrace.StatusCodeUnset)
+		}
 		span.Attributes().PutStr(string(conventions.UserAgentOriginalKey), azureTrace.Properties["Request-User-Agent"])
 
 		switch azureTrace.Type {
@@ -155,7 +162,7 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 			span.Attributes().PutStr(string(conventions.URLPathKey), hostpath)
 			span.Attributes().PutStr(string(conventions.URLSchemeKey), scheme)
 			span.Attributes().PutStr(string(conventions.ClientAddressKey), azureTrace.ClientIP)
-			span.Attributes().PutStr("client.city", azureTrace.ClientCity)
+			span.Attributes().PutStr("geo.locality.name", azureTrace.ClientCity)
 			span.Attributes().PutStr("client.type", azureTrace.ClientType)
 			span.Attributes().PutStr("client.state", azureTrace.ClientStateOrProvince)
 			span.Attributes().PutStr("client.country", azureTrace.ClientCountryOrRegion)
@@ -170,9 +177,9 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 
 			switch azureTrace.DependencyType {
 			case "Backend":
-				span.Attributes().PutStr("http.request.method", azureTrace.Properties["Backend Method"])
+				span.Attributes().PutStr(string(conventions.HTTPRequestMethodKey), azureTrace.Properties["Backend Method"])
 			case "HTTP":
-				span.Attributes().PutStr("http.request.method", azureTrace.Properties["HTTP Method"])
+				span.Attributes().PutStr(string(conventions.HTTPRequestMethodKey), azureTrace.Properties["HTTP Method"])
 			}
 
 			urlObj, _ := url.Parse(azureTrace.Target)
