@@ -51,7 +51,8 @@ type Config struct {
 	Logs       []MetricInfo `mapstructure:"logs"`
 	Profiles   []MetricInfo `mapstructure:"profiles"`
 	// ErrorMode determines how the connector reacts to errors that occur while processing an OTTL
-	// condition or statement.
+	// condition or statement during runtime data consumption. This setting does NOT affect errors
+	// during OTTL statement parsing at configuration time - those will always cause startup failures.
 	// Valid values are `propagate`, `ignore`, and `silent`.
 	// `propagate` means the connector returns the error up the pipeline. This will result in the
 	// payload being dropped from the collector.
