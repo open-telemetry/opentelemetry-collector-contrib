@@ -6,6 +6,7 @@ package kafkaexporter
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -128,7 +130,7 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 func TestTracesPusher_max_message_bytes_Kgo(t *testing.T) {
 	t.Run("WithLowSpanCount", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
-		config.Producer.MaxMessageBytes = 512
+		config.Producer.MaxMessageBytes = 10_000
 		exp, fakeCluster := newKgoMockTracesExporter(t, *config,
 			componenttest.NewNopHost(), config.Traces.Topic,
 		)
@@ -146,27 +148,83 @@ func TestTracesPusher_max_message_bytes_Kgo(t *testing.T) {
 	})
 
 	t.Run("WithHighSpanCount", func(t *testing.T) {
-		// GIVEN
-		config := createDefaultConfig().(*Config)
-		config.Producer.MaxMessageBytes = 512
-		exp, fakeCluster := newKgoMockTracesExporter(t, *config,
-			componenttest.NewNopHost(), config.Traces.Topic,
-		)
-		defer fakeCluster.Close()
+		// GIVEN a Kafka exporter with a small max message size and the full pipeline (sending_queue
+		// does batching so each batch fits; we use the factory so that path is exercised).
+		cluster, kcfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, defaultTracesTopic))
+		defer cluster.Close()
 
-		// WHEN
-		largeSpanCount := 10000
+		cfg := createDefaultConfig().(*Config)
+		cfg.Producer.MaxMessageBytes = 10_000
+		require.NoError(t, cfg.Unmarshal(confmap.NewFromStringMap(map[string]any{})))
+		cfg.ClientConfig = kcfg
+		cfg.Metadata.Full = false
+		cfg.QueueBatchConfig.GetOrInsertDefault().WaitForResult = true
+
+		factory := NewFactory()
+		exp, err := factory.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+		require.NoError(t, err)
+		require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+		t.Cleanup(func() { assert.NoError(t, exp.Shutdown(t.Context())) })
+
+		// WHEN we export a large number of spans that would exceed max message size as one payload.
+		largeSpanCount := 1_000
 		traces := coretestdata.GenerateTracesManySpansSameResource(largeSpanCount)
-		err := exp.exportData(t.Context(), traces)
-
-		// THEN
+		err = exp.ConsumeTraces(t.Context(), traces)
 		require.NoError(t, err)
 
-		records := fetchKgoRecordsAtLeast(t,
-			fakeCluster.ListenAddrs(), config.Traces.Topic, largeSpanCount,
+		// THEN the queue batches by size: we get multiple Kafka messages (each within the limit)
+		records := fetchKgoRecordsExhaust(t,
+			cluster.ListenAddrs(), cfg.Traces.Topic,
+			30*time.Second, 2*time.Second,
 		)
-		require.Len(t, records, largeSpanCount, "expected one message per span")
+		messageCount := len(records)
+		t.Logf("received %d messages from Kafka for %d spans (batched)", messageCount, largeSpanCount)
+		require.GreaterOrEqual(t, messageCount, 2, "expected multiple batches when span count is large")
+		require.Less(t, messageCount, largeSpanCount,
+			"expected fewer Kafka messages than spans because multiple spans can fit into one kf message")
+		maxMessageBytes := 10_000
+		for _, r := range records {
+			require.LessOrEqual(t, len(r.Value), maxMessageBytes,
+				"each Kafka message must be within producer.max_message_bytes")
+		}
 	})
+}
+
+func TestTracesExporter_SingleSpanExceedsBatchMaxSize(t *testing.T) {
+	// GIVEN: a Kafka cluster and exporter with default batch max_size, and a trace with one span
+	// whose serialized size exceeds that max_size
+	cluster, kcfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, defaultTracesTopic))
+	defer cluster.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	require.NoError(t, cfg.Unmarshal(confmap.NewFromStringMap(map[string]any{})))
+	cfg.ClientConfig = kcfg
+	cfg.Metadata.Full = false
+	cfg.QueueBatchConfig.GetOrInsertDefault().WaitForResult = true
+
+	factory := NewFactory()
+	exp, err := factory.CreateTraces(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { assert.NoError(t, exp.Shutdown(t.Context())) })
+
+	defaultBatchMaxSize := cfg.Producer.MaxMessageBytes - kafkaOverheadBytes
+	require.Greater(t, defaultBatchMaxSize, 0, "test assumes default batch max_size is positive")
+	bigPayload := strings.Repeat("x", defaultBatchMaxSize+1)
+
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	span := ss.Spans().AppendEmpty()
+	span.SetName("big_span")
+	span.Attributes().PutStr("big_attr", bigPayload)
+
+	// WHEN: ConsumeTraces is called with that trace
+	err = exp.ConsumeTraces(t.Context(), td)
+
+	// THEN: an error is returned (batch layer rejects the oversized span)
+	require.Error(t, err)
+	t.Logf("ConsumeTraces error (expected, single span exceeds batch max size): %v", err)
 }
 
 func TestTracesPusher_conf_err(t *testing.T) {
@@ -1059,6 +1117,42 @@ func fetchKgoRecordsAtLeast(tb testing.TB, brokers []string, topic string, minRe
 	}
 	if lastErr != nil && !errors.Is(lastErr, context.DeadlineExceeded) {
 		require.NoError(tb, lastErr, "error polling records")
+	}
+	return records
+}
+
+// fetchKgoRecordsExhaust consumes from the topic until no records are received for idleTimeout
+// or the context deadline is reached, and returns all records collected.
+func fetchKgoRecordsExhaust(tb testing.TB, brokers []string, topic string, totalTimeout, idleTimeout time.Duration) []*kgo.Record {
+	clientOpts := []kgo.Opt{
+		kgo.SeedBrokers(brokers...),
+		kgo.ConsumeTopics(topic),
+		kgo.ConsumerGroup("group-id" + topic),
+	}
+	consumerClient, err := kgo.NewClient(clientOpts...)
+	require.NoError(tb, err, "failed to create kgo consumer client")
+	defer consumerClient.Close()
+
+	var records []*kgo.Record
+	ctx, cancel := context.WithTimeout(tb.Context(), totalTimeout)
+	defer cancel()
+	idleDeadline := time.Now().Add(idleTimeout)
+	for ctx.Err() == nil {
+		fetches := consumerClient.PollRecords(ctx, 10000)
+		n := 0
+		fetches.EachRecord(func(r *kgo.Record) {
+			records = append(records, r)
+			n++
+		})
+		if fetches.Err() != nil && !errors.Is(fetches.Err(), context.DeadlineExceeded) {
+			require.NoError(tb, fetches.Err(), "error polling records")
+		}
+		if n > 0 {
+			idleDeadline = time.Now().Add(idleTimeout)
+		}
+		if time.Now().After(idleDeadline) {
+			break
+		}
 	}
 	return records
 }

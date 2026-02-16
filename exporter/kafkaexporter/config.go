@@ -5,6 +5,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -14,6 +15,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
+
+// kafkaOverheadBytes is the reserved bytes for Kafka message key and headers so that
+// batch max_size stays under producer max_message_bytes when the exporter adds keys/headers.
+const kafkaOverheadBytes = 256
 
 var _ component.Config = (*Config)(nil)
 
@@ -84,6 +89,10 @@ type Config struct {
 	// selection falls back to the Kafka client’s default strategy. Resource
 	// attributes are not used for the key when this option is enabled.
 	PartitionLogsByTraceID bool `mapstructure:"partition_logs_by_trace_id"`
+
+	// userSetSendingQueueBatch is set during Unmarshal when the user explicitly sets sending_queue::batch.
+	// The factory uses it to log a warning so users consider Kafka max_message_bytes.
+	userSetSendingQueueBatch bool
 }
 
 func (c *Config) Validate() (err error) {
@@ -132,6 +141,30 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 			c.Profiles.Encoding = c.Encoding
 		}
 	}
+
+	// We break up traces into smaller messages so they fit on kafka using sending_queue's batch mechanism.
+	// If a user has already set sending_queue::batch, we log warnings saying they may want to
+	// set it to what we recommend for the kafkaexporter to correctly break up traces that will
+	// fit into kafka messages.
+	// If a user has not set sending_queue::batch, we set it to what we recommend.
+	if conf.IsSet("sending_queue::batch") {
+		c.userSetSendingQueueBatch = true
+	} else {
+		queueConfig := c.QueueBatchConfig.GetOrInsertDefault()
+
+		// The batch mechanism sizes traces, but the kafkaexporter inevitably adds
+		// more bytes, which would increase the total kf message size.
+		batchMaxSize := c.Producer.MaxMessageBytes - kafkaOverheadBytes
+		if batchMaxSize > 0 {
+			queueConfig.Batch = configoptional.Some(exporterhelper.BatchConfig{
+				Sizer:        exporterhelper.RequestSizerTypeBytes,
+				MaxSize:      int64(batchMaxSize),
+				FlushTimeout: 200 * time.Millisecond,
+				MinSize:      0,
+			})
+		}
+	}
+
 	return conf.Unmarshal(c)
 }
 

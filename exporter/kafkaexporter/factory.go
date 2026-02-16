@@ -5,6 +5,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -14,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -36,6 +38,40 @@ const (
 	// partitioning logs by trace id is disabled by default
 	defaultPartitionLogsByTraceIDEnabled = false
 )
+
+// logSendingQueueBatchWarnings logs warnings when the user set sending_queue::batch
+// but the config may lead to MessageTooLarge errors: (1) batch sizer is not "bytes",
+// or (2) batch uses bytes sizer but max_size exceeds producer max_message_bytes minus overhead.
+func logSendingQueueBatchWarnings(cfg *Config, logger *zap.Logger) {
+	if !cfg.userSetSendingQueueBatch {
+		// User did not set sending_queue::batch. No possible conflicting settings
+		// to warn about.
+		return
+	}
+	if !cfg.QueueBatchConfig.HasValue() {
+		return
+	}
+	queueConfig := cfg.QueueBatchConfig.GetOrInsertDefault()
+	if !queueConfig.Batch.HasValue() {
+		return
+	}
+	batch := queueConfig.Batch.Get()
+	recommendedMaxSize := cfg.Producer.MaxMessageBytes - kafkaOverheadBytes
+
+	if batch.Sizer != exporterhelper.RequestSizerTypeBytes {
+		logger.Warn(
+			"sending_queue::batch was explicitly set; for Kafka, set batch::sizer to \"bytes\" so payloads sent stay within Kafka message size limits.",
+		)
+	}
+	if batch.Sizer == exporterhelper.RequestSizerTypeBytes && batch.MaxSize > 0 && int64(recommendedMaxSize) < batch.MaxSize {
+		logger.Warn(
+			fmt.Sprintf(
+				"sending_queue::batch was explicitly set with bytes sizer; set batch::max_size to at most producer.max_message_bytes minus key/header overhead (%d bytes) to avoid MessageTooLarge errors.",
+				recommendedMaxSize,
+			),
+		)
+	}
+}
 
 // NewFactory creates Kafka exporter factory.
 func NewFactory() exporter.Factory {
@@ -84,6 +120,7 @@ func createTracesExporter(
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
+	logSendingQueueBatchWarnings(&oCfg, set.Logger)
 	exp := newTracesExporter(oCfg, set)
 	return exporterhelper.NewTraces(
 		ctx,

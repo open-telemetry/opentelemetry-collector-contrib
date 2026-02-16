@@ -92,6 +92,8 @@ The following settings can be optionally configured:
   - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
   - `max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
 - `sending_queue`: see [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper/README.md) for the full set of available options.
+  If `sending_queue::batch` is not set, the exporter enables batching by default with the bytes sizer and `max_size` = `producer.max_message_bytes` minus a reserved overhead (for Kafka message key and headers), so that produced messages stay within Kafka's message size limits.
+  If you set `sending_queue::batch` explicitly, ensure `max_size` accounts for Kafka's `max_message_bytes` and key/header overhead to avoid `MessageTooLarge` errors.
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
   - `queue_size` (default = 1000): Maximum number of batches kept in memory before dropping data; ignored if `enabled` is `false`;

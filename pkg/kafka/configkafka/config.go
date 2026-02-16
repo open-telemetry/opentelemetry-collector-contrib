@@ -256,10 +256,10 @@ type ProducerConfig struct {
 
 func NewDefaultProducerConfig() ProducerConfig {
 	return ProducerConfig{
-		MaxMessageBytes:        1000000,
+		MaxMessageBytes:        1_000_000,
 		RequiredAcks:           WaitForLocal,
 		Compression:            "none",
-		FlushMaxMessages:       10000,
+		FlushMaxMessages:       10_000,
 		AllowAutoTopicCreation: true,
 		Linger:                 10 * time.Millisecond,
 	}

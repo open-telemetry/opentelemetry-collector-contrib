@@ -65,9 +65,6 @@ type pdataTracesMarshaler struct {
 // ptrace.Traces using the given ptrace.Marshaler. This can be used
 // with the standard OTLP marshalers in the ptrace package, or with
 // encoding extensions.
-//
-// We split each trace's spans into its own payload to reduce the size of the
-// payload and increase the chances it will fit a single kafka message.
 func NewPdataTracesMarshaler(m ptrace.Marshaler) TracesMarshaler {
 	return pdataTracesMarshaler{marshaler: m}
 }
