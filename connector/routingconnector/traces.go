@@ -62,14 +62,17 @@ func (*tracesConnector) Capabilities() consumer.Capabilities {
 func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	groups := make(map[consumer.Traces]ptrace.Traces)
 	matched := ptrace.NewTraces()
+	anyForkMatched := false
 	for i := 0; i < len(c.router.routeSlice) && td.ResourceSpans().Len() > 0; i++ {
 		var errs error
 		route := c.router.routeSlice[i]
+		routeMatched := false
 		switch route.statementContext {
 		case "request":
 			if route.requestCondition.matchRequest(ctx) {
+				routeMatched = true
 				switch route.action {
-				case Copy:
+				case Copy, Fork:
 					td.CopyTo(matched)
 				default:
 					// all traces are routed
@@ -78,7 +81,7 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 			}
 		case "", "resource":
 			switch route.action {
-			case Copy:
+			case Copy, Fork:
 				ptraceutil.CopyResourcesIf(td, matched,
 					func(rs ptrace.ResourceSpans) bool {
 						rtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
@@ -88,6 +91,9 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 						if err != nil {
 							errs = errors.Join(errs, err)
 							return false
+						}
+						if isMatch {
+							routeMatched = true
 						}
 						return isMatch
 					},
@@ -109,7 +115,7 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 			}
 		case "span":
 			switch route.action {
-			case Copy:
+			case Copy, Fork:
 				ptraceutil.CopySpansWithContextIf(td, matched,
 					func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, s ptrace.Span) bool {
 						mtx := ottlspan.NewTransformContextPtr(rs, ss, s)
@@ -119,6 +125,9 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 						if err != nil {
 							errs = errors.Join(errs, err)
 							return false
+						}
+						if isMatch {
+							routeMatched = true
 						}
 						return isMatch
 					},
@@ -142,10 +151,16 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 		if errs != nil && c.config.ErrorMode == ottl.PropagateError {
 			return errs
 		}
+		if routeMatched && route.action == Fork {
+			anyForkMatched = true
+		}
 		groupAllTraces(groups, route.consumer, matched)
 	}
 	// anything left wasn't matched by any route. Send to default consumer
-	groupAllTraces(groups, c.router.defaultConsumer, td)
+	// unless a fork route matched (fork excludes from default)
+	if !anyForkMatched {
+		groupAllTraces(groups, c.router.defaultConsumer, td)
+	}
 	var errs error
 	for consumer, group := range groups {
 		err := consumer.ConsumeTraces(ctx, group)

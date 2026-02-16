@@ -37,9 +37,10 @@ The following settings are available:
 - `table.context (optional, default: resource)`: the [OTTL Context] in which the statement will be evaluated. Currently, only `resource`, `span`, `metric`, `datapoint`, `log`, and `request` are supported.
 - `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. May not be used for `request` context.
 - `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. Required for `request` context.
-- `table.action (optional, default: move)`: determines what happens to the data when the routing condition is met. Valid values are `move` and `copy`.
+- `table.action (optional, default: move)`: determines what happens to the data when the routing condition is met. Valid values are `move`, `copy`, and `fork`.
   - `move`: Matched data is moved to the target pipeline(s) and removed from subsequent route evaluation. This is the default behavior.
   - `copy`: Matched data is copied to the target pipeline(s) but remains available for evaluation by subsequent routes. This allows the same data to be routed to multiple pipelines.
+  - `fork`: Similar to `copy`, matched data is evaluated against all routes and sent to all matching fork pipelines. However, unlike `copy`, if data matches one or more fork routes, it is excluded from the default pipeline.
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
 - `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `propagate`, `ignore` and `silent`. If `ignore` or `silent` is used and a statement's condition has an error then the payload will be routed to the default pipelines. When `silent` is used the error is not logged. If not supplied, `propagate` is used.
@@ -325,6 +326,55 @@ In this example:
 - Production traces are copied to the prod pipeline. Since `action: copy` is used, the traces remain available for subsequent evaluation.
 - High-latency spans (>1000ms) are then moved to the high-latency pipeline. A production trace with high latency will appear in both the prod and high-latency pipelines.
 - Remaining traces go to the default pipeline.
+
+Route logs to specific tenant pipelines, excluding matched logs from the default pipeline using `action: fork`:
+
+```yaml
+receivers:
+    otlp:
+
+exporters:
+  file/acme:
+    path: ./acme.log
+  file/globex:
+    path: ./globex.log
+  file/other:
+    path: ./other.log
+
+connectors:
+  routing:
+    default_pipelines: [logs/other]
+    table:
+      - context: resource
+        condition: attributes["tenant"] == "acme"
+        action: fork
+        pipelines: [logs/acme]
+      - context: resource
+        condition: attributes["tenant"] == "globex"
+        action: fork
+        pipelines: [logs/globex]
+
+service:
+  pipelines:
+    logs/in:
+      receivers: [otlp]
+      exporters: [routing]
+    logs/acme:
+      receivers: [routing]
+      exporters: [file/acme]
+    logs/globex:
+      receivers: [routing]
+      exporters: [file/globex]
+    logs/other:
+      receivers: [routing]
+      exporters: [file/other]
+```
+
+In this example:
+- Logs with tenant=acme are sent to logs/acme only (excluded from logs/other).
+- Logs with tenant=globex are sent to logs/globex only (excluded from logs/other).
+- Logs without a matching tenant go to logs/other.
+- This differs from `action: copy`, where all logs would also be sent to the default pipeline. With `action: fork`, matching any fork route excludes the data from the default pipeline.
 
 ## `match_once`
 

@@ -62,14 +62,17 @@ func (*logsConnector) Capabilities() consumer.Capabilities {
 func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	groups := make(map[consumer.Logs]plog.Logs)
 	matched := plog.NewLogs()
+	anyForkMatched := false
 	for i := 0; i < len(c.router.routeSlice) && ld.ResourceLogs().Len() > 0; i++ {
 		var errs error
 		route := c.router.routeSlice[i]
+		routeMatched := false
 		switch route.statementContext {
 		case "request":
 			if route.requestCondition.matchRequest(ctx) {
+				routeMatched = true
 				switch route.action {
-				case Copy:
+				case Copy, Fork:
 					ld.CopyTo(matched)
 				default:
 					// all logs are routed
@@ -78,7 +81,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			}
 		case "", "resource":
 			switch route.action {
-			case Copy:
+			case Copy, Fork:
 				plogutil.CopyResourcesIf(ld, matched,
 					func(rl plog.ResourceLogs) bool {
 						rtx := ottlresource.NewTransformContextPtr(rl.Resource(), rl)
@@ -88,6 +91,9 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 						if err != nil {
 							errs = errors.Join(errs, err)
 							return false
+						}
+						if isMatch {
+							routeMatched = true
 						}
 						return isMatch
 					},
@@ -109,7 +115,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			}
 		case "log":
 			switch route.action {
-			case Copy:
+			case Copy, Fork:
 				plogutil.CopyRecordsWithContextIf(ld, matched,
 					func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
 						ltx := ottllog.NewTransformContextPtr(rl, sl, lr)
@@ -119,6 +125,9 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 						if err != nil {
 							errs = errors.Join(errs, err)
 							return false
+						}
+						if isMatch {
+							routeMatched = true
 						}
 						return isMatch
 					},
@@ -142,10 +151,16 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		if errs != nil && c.config.ErrorMode == ottl.PropagateError {
 			return errs
 		}
+		if routeMatched && route.action == Fork {
+			anyForkMatched = true
+		}
 		groupAllLogs(groups, route.consumer, matched)
 	}
 	// anything left wasn't matched by any route. Send to default consumer
-	groupAllLogs(groups, c.router.defaultConsumer, ld)
+	// unless a fork route matched (fork excludes from default)
+	if !anyForkMatched {
+		groupAllLogs(groups, c.router.defaultConsumer, ld)
+	}
 	var errs error
 	for consumer, group := range groups {
 		err := consumer.ConsumeLogs(ctx, group)

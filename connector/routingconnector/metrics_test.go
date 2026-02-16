@@ -1325,3 +1325,256 @@ func TestMetricsCopyAndMoveConfig(t *testing.T) {
 		assert.Len(t, sink1.AllMetrics(), 1)
 	})
 }
+
+func TestMetricsForkAction(t *testing.T) {
+	metricsDefault := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+	metrics0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
+	metrics1 := pipeline.NewIDWithName(pipeline.SignalMetrics, "1")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{metricsDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `attributes["X-Tenant"] == "acme"`,
+				Pipelines: []pipeline.ID{metrics0},
+				Action:    Fork,
+			},
+			{
+				Condition: `attributes["X-Tenant"] == "globex"`,
+				Pipelines: []pipeline.ID{metrics1},
+				Action:    Fork,
+			},
+		},
+	}
+
+	var defaultSink, sink0, sink1 consumertest.MetricsSink
+
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+		metricsDefault: &defaultSink,
+		metrics0:       &sink0,
+		metrics1:       &sink1,
+	})
+
+	resetSinks := func() {
+		defaultSink.Reset()
+		sink0.Reset()
+		sink1.Reset()
+	}
+
+	factory := NewFactory()
+	conn, err := factory.CreateMetricsToMetrics(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Metrics),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+
+	t.Run("fork matched excludes from default", func(t *testing.T) {
+		resetSinks()
+
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("X-Tenant", "acme")
+		rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeMetrics(context.Background(), md))
+
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Empty(t, sink1.AllMetrics())
+		assert.Empty(t, defaultSink.AllMetrics())
+	})
+
+	t.Run("fork no match goes to default", func(t *testing.T) {
+		resetSinks()
+
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("X-Tenant", "other")
+		rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeMetrics(context.Background(), md))
+
+		assert.Empty(t, sink0.AllMetrics())
+		assert.Empty(t, sink1.AllMetrics())
+		assert.Len(t, defaultSink.AllMetrics(), 1)
+	})
+
+	t.Run("multiple fork routes both match", func(t *testing.T) {
+		resetSinks()
+
+		md := pmetric.NewMetrics()
+
+		rm1 := md.ResourceMetrics().AppendEmpty()
+		rm1.Resource().Attributes().PutStr("X-Tenant", "acme")
+		rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+
+		rm2 := md.ResourceMetrics().AppendEmpty()
+		rm2.Resource().Attributes().PutStr("X-Tenant", "globex")
+		rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeMetrics(context.Background(), md))
+
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Len(t, sink1.AllMetrics(), 1)
+		assert.Empty(t, defaultSink.AllMetrics())
+	})
+
+	t.Run("fork with metric context", func(t *testing.T) {
+		resetSinks()
+
+		cfgMetric := &Config{
+			DefaultPipelines: []pipeline.ID{metricsDefault},
+			Table: []RoutingTableItem{
+				{
+					Context:   "metric",
+					Condition: `name == "cpu.utilization"`,
+					Pipelines: []pipeline.ID{metrics0},
+					Action:    Fork,
+				},
+			},
+		}
+
+		routerMetric := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+			metricsDefault: &defaultSink,
+			metrics0:       &sink0,
+		})
+
+		factory := NewFactory()
+		connMetric, err := factory.CreateMetricsToMetrics(
+			t.Context(),
+			connectortest.NewNopSettings(metadata.Type),
+			cfgMetric,
+			routerMetric.(consumer.Metrics),
+		)
+
+		require.NoError(t, err)
+		require.NotNil(t, connMetric)
+		require.NoError(t, connMetric.Start(t.Context(), componenttest.NewNopHost()))
+
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		sm := rm.ScopeMetrics().AppendEmpty()
+
+		// Add CPU metric
+		m1 := sm.Metrics().AppendEmpty()
+		m1.SetName("cpu.utilization")
+
+		// Add memory metric
+		m2 := sm.Metrics().AppendEmpty()
+		m2.SetName("memory.usage")
+
+		require.NoError(t, connMetric.ConsumeMetrics(context.Background(), md))
+
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Empty(t, defaultSink.AllMetrics())
+	})
+
+	t.Run("fork with datapoint context", func(t *testing.T) {
+		resetSinks()
+
+		cfgDP := &Config{
+			DefaultPipelines: []pipeline.ID{metricsDefault},
+			Table: []RoutingTableItem{
+				{
+					Context:   "datapoint",
+					Condition: `attributes["critical"] == "true"`,
+					Pipelines: []pipeline.ID{metrics0},
+					Action:    Fork,
+				},
+			},
+		}
+
+		routerDP := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+			metricsDefault: &defaultSink,
+			metrics0:       &sink0,
+		})
+
+		factory := NewFactory()
+		connDP, err := factory.CreateMetricsToMetrics(
+			t.Context(),
+			connectortest.NewNopSettings(metadata.Type),
+			cfgDP,
+			routerDP.(consumer.Metrics),
+		)
+
+		require.NoError(t, err)
+		require.NotNil(t, connDP)
+		require.NoError(t, connDP.Start(t.Context(), componenttest.NewNopHost()))
+
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		sm := rm.ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("test.metric")
+		m.SetEmptyGauge()
+
+		// Add critical datapoint
+		dp1 := m.Gauge().DataPoints().AppendEmpty()
+		dp1.Attributes().PutStr("critical", "true")
+		dp1.SetIntValue(100)
+
+		// Add normal datapoint
+		dp2 := m.Gauge().DataPoints().AppendEmpty()
+		dp2.Attributes().PutStr("critical", "false")
+		dp2.SetIntValue(50)
+
+		require.NoError(t, connDP.ConsumeMetrics(context.Background(), md))
+
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Empty(t, defaultSink.AllMetrics())
+	})
+
+	t.Run("fork with copy mixed", func(t *testing.T) {
+		resetSinks()
+
+		cfgMixed := &Config{
+			DefaultPipelines: []pipeline.ID{metricsDefault},
+			Table: []RoutingTableItem{
+				{
+					Condition: `attributes["copy-me"] == "yes"`,
+					Pipelines: []pipeline.ID{metrics0},
+					Action:    Copy,
+				},
+				{
+					Condition: `attributes["fork-me"] == "yes"`,
+					Pipelines: []pipeline.ID{metrics1},
+					Action:    Fork,
+				},
+			},
+		}
+
+		routerMixed := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+			metricsDefault: &defaultSink,
+			metrics0:       &sink0,
+			metrics1:       &sink1,
+		})
+
+		factory := NewFactory()
+		connMixed, err := factory.CreateMetricsToMetrics(
+			t.Context(),
+			connectortest.NewNopSettings(metadata.Type),
+			cfgMixed,
+			routerMixed.(consumer.Metrics),
+		)
+
+		require.NoError(t, err)
+		require.NotNil(t, connMixed)
+		require.NoError(t, connMixed.Start(t.Context(), componenttest.NewNopHost()))
+
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("copy-me", "yes")
+		rm.Resource().Attributes().PutStr("fork-me", "yes")
+		rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+
+		require.NoError(t, connMixed.ConsumeMetrics(context.Background(), md))
+
+		assert.Len(t, sink0.AllMetrics(), 1)
+		assert.Len(t, sink1.AllMetrics(), 1)
+		assert.Empty(t, defaultSink.AllMetrics())
+	})
+}

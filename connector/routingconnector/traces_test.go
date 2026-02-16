@@ -1069,3 +1069,201 @@ func TestTracesCopyAndMoveConfig(t *testing.T) {
 		assert.Len(t, sink1.AllTraces(), 1)
 	})
 }
+
+func TestTracesForkAction(t *testing.T) {
+	tracesDefault := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
+	traces0 := pipeline.NewIDWithName(pipeline.SignalTraces, "0")
+	traces1 := pipeline.NewIDWithName(pipeline.SignalTraces, "1")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{tracesDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `attributes["X-Tenant"] == "acme"`,
+				Pipelines: []pipeline.ID{traces0},
+				Action:    Fork,
+			},
+			{
+				Condition: `attributes["X-Tenant"] == "globex"`,
+				Pipelines: []pipeline.ID{traces1},
+				Action:    Fork,
+			},
+		},
+	}
+
+	var defaultSink, sink0, sink1 consumertest.TracesSink
+
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+		tracesDefault: &defaultSink,
+		traces0:       &sink0,
+		traces1:       &sink1,
+	})
+
+	resetSinks := func() {
+		defaultSink.Reset()
+		sink0.Reset()
+		sink1.Reset()
+	}
+
+	factory := NewFactory()
+	conn, err := factory.CreateTracesToTraces(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Traces),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+
+	t.Run("fork matched excludes from default", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rs := tr.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("X-Tenant", "acme")
+		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Empty(t, sink1.AllTraces())
+		assert.Empty(t, defaultSink.AllTraces())
+	})
+
+	t.Run("fork no match goes to default", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+		rs := tr.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("X-Tenant", "other")
+		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+
+		assert.Empty(t, sink0.AllTraces())
+		assert.Empty(t, sink1.AllTraces())
+		assert.Len(t, defaultSink.AllTraces(), 1)
+	})
+
+	t.Run("multiple fork routes both match", func(t *testing.T) {
+		resetSinks()
+
+		tr := ptrace.NewTraces()
+
+		rs1 := tr.ResourceSpans().AppendEmpty()
+		rs1.Resource().Attributes().PutStr("X-Tenant", "acme")
+		rs1.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+		rs2 := tr.ResourceSpans().AppendEmpty()
+		rs2.Resource().Attributes().PutStr("X-Tenant", "globex")
+		rs2.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Len(t, sink1.AllTraces(), 1)
+		assert.Empty(t, defaultSink.AllTraces())
+	})
+
+	t.Run("fork with span context", func(t *testing.T) {
+		resetSinks()
+
+		cfgSpan := &Config{
+			DefaultPipelines: []pipeline.ID{tracesDefault},
+			Table: []RoutingTableItem{
+				{
+					Context:   "span",
+					Condition: `attributes["error"] == true`,
+					Pipelines: []pipeline.ID{traces0},
+					Action:    Fork,
+				},
+			},
+		}
+
+		routerSpan := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+			tracesDefault: &defaultSink,
+			traces0:       &sink0,
+		})
+
+		factory := NewFactory()
+		connSpan, err := factory.CreateTracesToTraces(
+			t.Context(),
+			connectortest.NewNopSettings(metadata.Type),
+			cfgSpan,
+			routerSpan.(consumer.Traces),
+		)
+
+		require.NoError(t, err)
+		require.NotNil(t, connSpan)
+		require.NoError(t, connSpan.Start(t.Context(), componenttest.NewNopHost()))
+
+		tr := ptrace.NewTraces()
+		rs := tr.ResourceSpans().AppendEmpty()
+		ss := rs.ScopeSpans().AppendEmpty()
+
+		// Add error span
+		s1 := ss.Spans().AppendEmpty()
+		s1.Attributes().PutBool("error", true)
+
+		// Add normal span
+		s2 := ss.Spans().AppendEmpty()
+		s2.Attributes().PutBool("error", false)
+
+		require.NoError(t, connSpan.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Empty(t, defaultSink.AllTraces())
+	})
+
+	t.Run("fork with copy mixed", func(t *testing.T) {
+		resetSinks()
+
+		cfgMixed := &Config{
+			DefaultPipelines: []pipeline.ID{tracesDefault},
+			Table: []RoutingTableItem{
+				{
+					Condition: `attributes["copy-me"] == "yes"`,
+					Pipelines: []pipeline.ID{traces0},
+					Action:    Copy,
+				},
+				{
+					Condition: `attributes["fork-me"] == "yes"`,
+					Pipelines: []pipeline.ID{traces1},
+					Action:    Fork,
+				},
+			},
+		}
+
+		routerMixed := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+			tracesDefault: &defaultSink,
+			traces0:       &sink0,
+			traces1:       &sink1,
+		})
+
+		factory := NewFactory()
+		connMixed, err := factory.CreateTracesToTraces(
+			t.Context(),
+			connectortest.NewNopSettings(metadata.Type),
+			cfgMixed,
+			routerMixed.(consumer.Traces),
+		)
+
+		require.NoError(t, err)
+		require.NotNil(t, connMixed)
+		require.NoError(t, connMixed.Start(t.Context(), componenttest.NewNopHost()))
+
+		tr := ptrace.NewTraces()
+		rs := tr.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("copy-me", "yes")
+		rs.Resource().Attributes().PutStr("fork-me", "yes")
+		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+		require.NoError(t, connMixed.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, sink0.AllTraces(), 1)
+		assert.Len(t, sink1.AllTraces(), 1)
+		assert.Empty(t, defaultSink.AllTraces())
+	})
+}

@@ -388,7 +388,7 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 			},
-			error: "invalid routing action: if provided should be one of move/copy",
+			error: "invalid routing action: if provided should be one of move/copy/fork",
 		},
 		{
 			name: "valid action: copy",

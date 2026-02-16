@@ -1093,6 +1093,319 @@ func TestLogsCopyAndMoveConfig(t *testing.T) {
 	})
 }
 
+func TestLogsForkAction(t *testing.T) {
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logs0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
+	logs1 := pipeline.NewIDWithName(pipeline.SignalLogs, "1")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{logsDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `attributes["X-Tenant"] == "acme"`,
+				Pipelines: []pipeline.ID{logs0},
+				Action:    Fork,
+			},
+			{
+				Condition: `attributes["X-Tenant"] == "globex"`,
+				Pipelines: []pipeline.ID{logs1},
+				Action:    Fork,
+			},
+		},
+	}
+
+	var defaultSink, sink0, sink1 consumertest.LogsSink
+
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+		logsDefault: &defaultSink,
+		logs0:       &sink0,
+		logs1:       &sink1,
+	})
+
+	resetSinks := func() {
+		defaultSink.Reset()
+		sink0.Reset()
+		sink1.Reset()
+	}
+
+	factory := NewFactory()
+	conn, err := factory.CreateLogsToLogs(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Logs),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, conn)
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+
+	t.Run("fork matched excludes from default", func(t *testing.T) {
+		resetSinks()
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("X-Tenant", "acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, sink0.AllLogs(), 1)
+		assert.Empty(t, sink1.AllLogs())
+		assert.Empty(t, defaultSink.AllLogs())
+	})
+
+	t.Run("fork no match goes to default", func(t *testing.T) {
+		resetSinks()
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("X-Tenant", "other")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+
+		assert.Empty(t, sink0.AllLogs())
+		assert.Empty(t, sink1.AllLogs())
+		assert.Len(t, defaultSink.AllLogs(), 1)
+	})
+
+	t.Run("multiple fork routes both match", func(t *testing.T) {
+		resetSinks()
+
+		// Send two logs, each matching a different fork route
+		l := plog.NewLogs()
+
+		rl1 := l.ResourceLogs().AppendEmpty()
+		rl1.Resource().Attributes().PutStr("X-Tenant", "acme")
+		rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		rl2 := l.ResourceLogs().AppendEmpty()
+		rl2.Resource().Attributes().PutStr("X-Tenant", "globex")
+		rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, sink0.AllLogs(), 1)
+		assert.Len(t, sink1.AllLogs(), 1)
+		assert.Empty(t, defaultSink.AllLogs())
+	})
+
+	t.Run("fork with log context", func(t *testing.T) {
+		resetSinks()
+
+		cfgLog := &Config{
+			DefaultPipelines: []pipeline.ID{logsDefault},
+			Table: []RoutingTableItem{
+				{
+					Context:   "log",
+					Condition: `severity_number >= SEVERITY_NUMBER_ERROR`,
+					Pipelines: []pipeline.ID{logs0},
+					Action:    Fork,
+				},
+			},
+		}
+
+		routerLog := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+			logsDefault: &defaultSink,
+			logs0:       &sink0,
+		})
+
+		factory := NewFactory()
+		connLog, err := factory.CreateLogsToLogs(
+			t.Context(),
+			connectortest.NewNopSettings(metadata.Type),
+			cfgLog,
+			routerLog.(consumer.Logs),
+		)
+
+		require.NoError(t, err)
+		require.NotNil(t, connLog)
+		require.NoError(t, connLog.Start(t.Context(), componenttest.NewNopHost()))
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		sl := rl.ScopeLogs().AppendEmpty()
+
+		// Add error log
+		lr1 := sl.LogRecords().AppendEmpty()
+		lr1.SetSeverityNumber(plog.SeverityNumberError)
+
+		// Add info log
+		lr2 := sl.LogRecords().AppendEmpty()
+		lr2.SetSeverityNumber(plog.SeverityNumberInfo)
+
+		require.NoError(t, connLog.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, sink0.AllLogs(), 1)
+		// Error log should be in sink0, info log should NOT be in default (fork matched)
+		assert.Empty(t, defaultSink.AllLogs())
+	})
+
+	t.Run("fork with copy mixed", func(t *testing.T) {
+		resetSinks()
+
+		cfgMixed := &Config{
+			DefaultPipelines: []pipeline.ID{logsDefault},
+			Table: []RoutingTableItem{
+				{
+					Condition: `attributes["copy-me"] == "yes"`,
+					Pipelines: []pipeline.ID{logs0},
+					Action:    Copy,
+				},
+				{
+					Condition: `attributes["fork-me"] == "yes"`,
+					Pipelines: []pipeline.ID{logs1},
+					Action:    Fork,
+				},
+			},
+		}
+
+		routerMixed := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+			logsDefault: &defaultSink,
+			logs0:       &sink0,
+			logs1:       &sink1,
+		})
+
+		factory := NewFactory()
+		connMixed, err := factory.CreateLogsToLogs(
+			t.Context(),
+			connectortest.NewNopSettings(metadata.Type),
+			cfgMixed,
+			routerMixed.(consumer.Logs),
+		)
+
+		require.NoError(t, err)
+		require.NotNil(t, connMixed)
+		require.NoError(t, connMixed.Start(t.Context(), componenttest.NewNopHost()))
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("copy-me", "yes")
+		rl.Resource().Attributes().PutStr("fork-me", "yes")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, connMixed.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, sink0.AllLogs(), 1) // Copy route
+		assert.Len(t, sink1.AllLogs(), 1) // Fork route
+		assert.Empty(t, defaultSink.AllLogs()) // Fork excludes from default
+	})
+}
+
+func TestMixedCopyAndForkActions(t *testing.T) {
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logsArchive := pipeline.NewIDWithName(pipeline.SignalLogs, "archive")
+	logsAcme := pipeline.NewIDWithName(pipeline.SignalLogs, "acme")
+
+	cfg := &Config{
+		DefaultPipelines: []pipeline.ID{logsDefault},
+		Table: []RoutingTableItem{
+			{
+				Condition: `attributes["archive"] == "yes"`,
+				Pipelines: []pipeline.ID{logsArchive},
+				Action:    Copy,
+			},
+			{
+				Condition: `attributes["tenant"] == "acme"`,
+				Pipelines: []pipeline.ID{logsAcme},
+				Action:    Fork,
+			},
+		},
+	}
+
+	var defaultSink, archiveSink, acmeSink consumertest.LogsSink
+
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+		logsDefault: &defaultSink,
+		logsArchive: &archiveSink,
+		logsAcme:    &acmeSink,
+	})
+
+	factory := NewFactory()
+	conn, err := factory.CreateLogsToLogs(
+		t.Context(),
+		connectortest.NewNopSettings(metadata.Type),
+		cfg,
+		router.(consumer.Logs),
+	)
+
+	require.NoError(t, err)
+	require.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
+
+	t.Run("copy + fork both match", func(t *testing.T) {
+		defaultSink.Reset()
+		archiveSink.Reset()
+		acmeSink.Reset()
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("archive", "yes")
+		rl.Resource().Attributes().PutStr("tenant", "acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, archiveSink.AllLogs(), 1, "should be in archive (copy)")
+		assert.Len(t, acmeSink.AllLogs(), 1, "should be in acme (fork)")
+		assert.Empty(t, defaultSink.AllLogs(), "should NOT be in default (fork matched)")
+	})
+
+	t.Run("copy only matches", func(t *testing.T) {
+		defaultSink.Reset()
+		archiveSink.Reset()
+		acmeSink.Reset()
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("archive", "yes")
+		rl.Resource().Attributes().PutStr("tenant", "other")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, archiveSink.AllLogs(), 1, "should be in archive (copy)")
+		assert.Empty(t, acmeSink.AllLogs(), "should NOT be in acme")
+		assert.Len(t, defaultSink.AllLogs(), 1, "SHOULD be in default (no fork matched)")
+	})
+
+	t.Run("fork only matches", func(t *testing.T) {
+		defaultSink.Reset()
+		archiveSink.Reset()
+		acmeSink.Reset()
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("archive", "no")
+		rl.Resource().Attributes().PutStr("tenant", "acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+
+		assert.Empty(t, archiveSink.AllLogs(), "should NOT be in archive")
+		assert.Len(t, acmeSink.AllLogs(), 1, "should be in acme (fork)")
+		assert.Empty(t, defaultSink.AllLogs(), "should NOT be in default (fork matched)")
+	})
+
+	t.Run("nothing matches", func(t *testing.T) {
+		defaultSink.Reset()
+		archiveSink.Reset()
+		acmeSink.Reset()
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("archive", "no")
+		rl.Resource().Attributes().PutStr("tenant", "other")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
+
+		assert.Empty(t, archiveSink.AllLogs(), "should NOT be in archive")
+		assert.Empty(t, acmeSink.AllLogs(), "should NOT be in acme")
+		assert.Len(t, defaultSink.AllLogs(), 1, "SHOULD be in default")
+	})
+}
+
 func setLogRecordMap(lr plog.LogRecord, key, value string) plog.LogRecord {
 	lr.Body().SetEmptyMap().PutStr(key, value)
 	return lr

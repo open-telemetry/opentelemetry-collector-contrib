@@ -63,14 +63,17 @@ func (*metricsConnector) Capabilities() consumer.Capabilities {
 func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	groups := make(map[consumer.Metrics]pmetric.Metrics)
 	matched := pmetric.NewMetrics()
+	anyForkMatched := false
 	for i := 0; i < len(c.router.routeSlice) && md.ResourceMetrics().Len() > 0; i++ {
 		var errs error
 		route := c.router.routeSlice[i]
+		routeMatched := false
 		switch route.statementContext {
 		case "request":
 			if route.requestCondition.matchRequest(ctx) {
+				routeMatched = true
 				switch route.action {
-				case Copy:
+				case Copy, Fork:
 					md.CopyTo(matched)
 				default:
 					// all metrics are routed
@@ -79,7 +82,7 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 			}
 		case "", "resource":
 			switch route.action {
-			case Copy:
+			case Copy, Fork:
 				pmetricutil.CopyResourcesIf(md, matched,
 					func(rs pmetric.ResourceMetrics) bool {
 						rtx := ottlresource.NewTransformContextPtr(rs.Resource(), rs)
@@ -89,6 +92,9 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 						if err != nil {
 							errs = errors.Join(errs, err)
 							return false
+						}
+						if isMatch {
+							routeMatched = true
 						}
 						return isMatch
 					},
@@ -110,7 +116,7 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 			}
 		case "metric":
 			switch route.action {
-			case Copy:
+			case Copy, Fork:
 				pmetricutil.CopyMetricsWithContextIf(md, matched,
 					func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) bool {
 						mtx := ottlmetric.NewTransformContextPtr(rm, sm, m)
@@ -120,6 +126,9 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 						if err != nil {
 							errs = errors.Join(errs, err)
 							return false
+						}
+						if isMatch {
+							routeMatched = true
 						}
 						return isMatch
 					},
@@ -141,7 +150,7 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 			}
 		case "datapoint":
 			switch route.action {
-			case Copy:
+			case Copy, Fork:
 				pmetricutil.CopyDataPointsWithContextIf(md, matched,
 					func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dp any) bool {
 						dptx := ottldatapoint.NewTransformContextPtr(rm, sm, m, dp)
@@ -151,6 +160,9 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 						if err != nil {
 							errs = errors.Join(errs, err)
 							return false
+						}
+						if isMatch {
+							routeMatched = true
 						}
 						return isMatch
 					},
@@ -174,10 +186,16 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 		if errs != nil && c.config.ErrorMode == ottl.PropagateError {
 			return errs
 		}
+		if routeMatched && route.action == Fork {
+			anyForkMatched = true
+		}
 		groupAllMetrics(groups, route.consumer, matched)
 	}
 	// anything left wasn't matched by any route. Send to default consumer
-	groupAllMetrics(groups, c.router.defaultConsumer, md)
+	// unless a fork route matched (fork excludes from default)
+	if !anyForkMatched {
+		groupAllMetrics(groups, c.router.defaultConsumer, md)
+	}
 	var errs error
 	for consumer, group := range groups {
 		err := consumer.ConsumeMetrics(ctx, group)

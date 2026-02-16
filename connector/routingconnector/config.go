@@ -17,6 +17,7 @@ type Action string
 const (
 	Copy Action = "copy"
 	Move Action = "move"
+	Fork Action = "fork"
 )
 
 var (
@@ -25,7 +26,7 @@ var (
 	errNoPipelines            = errors.New("invalid route: no pipelines defined")
 	errUnexpectedConsumer     = errors.New("expected consumer to be a connector router")
 	errNoTableItems           = errors.New("invalid routing table: the routing table is empty")
-	errUnexpectedAction       = errors.New("invalid routing action: if provided should be one of move/copy")
+	errUnexpectedAction       = errors.New("invalid routing action: if provided should be one of move/copy/fork")
 )
 
 // Config defines configuration for the Routing processor.
@@ -63,6 +64,8 @@ func (e *Action) UnmarshalText(text []byte) error {
 		*e = Copy
 	case string(Move):
 		*e = Move
+	case string(Fork):
+		*e = Fork
 	default:
 		return fmt.Errorf("invalid Action string: %s", str)
 	}
@@ -93,7 +96,7 @@ func (c *Config) Validate() error {
 		switch item.Action {
 		case "":
 			item.Action = Move // use move if empty.
-		case Copy, Move: // ok
+		case Copy, Move, Fork: // ok
 		default:
 			return errUnexpectedAction
 		}
