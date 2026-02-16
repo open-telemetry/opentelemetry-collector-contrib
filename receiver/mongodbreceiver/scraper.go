@@ -145,41 +145,18 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
-	// Check if we need to iterate databases
-	if !s.requiresDatabaseIteration() {
+	var dbNames []string
+	var err error
+
+	// Skip database iteration if no database-level metrics are enabled
+	if s.requiresDatabaseIteration() {
+		dbNames, err = s.client.ListDatabaseNames(ctx, bson.D{})
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf("failed to fetch database names: %w", err))
+			return
+		}
+	} else {
 		s.logger.Debug("Skipping database iteration as all database-level metrics are disabled")
-
-		// Still collect admin-level server metrics
-		serverStatus, sErr := s.client.ServerStatus(ctx, "admin")
-		if sErr != nil {
-			errs.Add(fmt.Errorf("failed to fetch server status: %w", sErr))
-			return
-		}
-		serverAddress, serverPort, aErr := serverAddressAndPort(serverStatus)
-		if aErr != nil {
-			errs.Add(fmt.Errorf("failed to fetch server address and port: %w", aErr))
-			return
-		}
-
-		now := pcommon.NewTimestampFromTime(time.Now())
-
-		// Collect admin-level metrics (these don't require database iteration)
-		s.recordAdminStats(now, serverStatus, errs)
-		s.collectTopStats(ctx, now, errs)
-
-		rb := s.mb.NewResourceBuilder()
-		rb.SetServerAddress(serverAddress)
-		rb.SetServerPort(serverPort)
-		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
-
-		return // Skip database iteration
-	}
-
-	// Original code path - database metrics are enabled
-	dbNames, err := s.client.ListDatabaseNames(ctx, bson.D{})
-	if err != nil {
-		errs.AddPartial(1, fmt.Errorf("failed to fetch database names: %w", err))
-		return
 	}
 
 	serverStatus, sErr := s.client.ServerStatus(ctx, "admin")
@@ -195,7 +172,9 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
+	if len(dbNames) > 0 {
+		s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
+	}
 	s.recordAdminStats(now, serverStatus, errs)
 	s.collectTopStats(ctx, now, errs)
 
