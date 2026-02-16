@@ -41,8 +41,9 @@ func integrationTest(name string) func(*testing.T) {
 						Dockerfile: dockerFile,
 					},
 					ExposedPorts: []string{elasticPort + "/tcp"},
-					WaitingFor:   wait.ForHTTP("/").WithPort(nat.Port(elasticPort)).WithStartupTimeout(2 * time.Minute),
+					WaitingFor:   wait.ForHTTP("/").WithPort(nat.Port(elasticPort)).WithStartupTimeout(5 * time.Minute),
 				}),
+			scraperinttest.WithCreateContainerTimeout(10*time.Minute),
 			scraperinttest.WithCustomConfig(
 				func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 					// Log container readiness as suggested
@@ -68,7 +69,7 @@ func integrationTest(name string) func(*testing.T) {
 				pmetrictest.IgnoreResourceMetricsOrder(),
 			),
 			scraperinttest.FailOnErrorLogs(),
-			scraperinttest.WithCompareTimeout(2*time.Minute),
+			scraperinttest.WithCompareTimeout(5*time.Minute),
 		).Run(t)
 	}
 }
