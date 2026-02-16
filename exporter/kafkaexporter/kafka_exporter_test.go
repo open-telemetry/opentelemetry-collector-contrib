@@ -173,7 +173,7 @@ func TestTracesPusher_max_message_bytes_Kgo(t *testing.T) {
 		require.NoError(t, err)
 
 		// THEN the queue batches by size: we get multiple Kafka messages (each within the limit)
-		records := fetchKgoRecordsExhaust(t,
+		records := fetchKgoRecordsForTime(t,
 			cluster.ListenAddrs(), cfg.Traces.Topic,
 			10*time.Second, 2*time.Second,
 		)
@@ -1087,9 +1087,9 @@ func fetchKgoRecordsAtMost(tb testing.TB, brokers []string, topic string, maxRec
 	return records
 }
 
-// fetchKgoRecordsExhaust consumes from the topic until no records are received for idleTimeout
+// fetchKgoRecordsForTime consumes from the topic until no records are received for idleTimeout.
 // or the context deadline is reached, and returns all records collected.
-func fetchKgoRecordsExhaust(tb testing.TB, brokers []string, topic string, totalTimeout, idleTimeout time.Duration) []*kgo.Record {
+func fetchKgoRecordsForTime(tb testing.TB, brokers []string, topic string, totalTimeout, idleTimeout time.Duration) []*kgo.Record {
 	clientOpts := []kgo.Opt{
 		kgo.SeedBrokers(brokers...),
 		kgo.ConsumeTopics(topic),
