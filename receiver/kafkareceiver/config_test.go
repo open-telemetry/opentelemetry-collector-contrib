@@ -277,11 +277,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "connection_idle_timeout"),
+			id: component.NewIDWithName(metadata.Type, "conn_idle_timeout"),
 			expected: &Config{
 				ClientConfig: func() configkafka.ClientConfig {
 					config := configkafka.NewDefaultClientConfig()
-					config.ConnectionIdleTimeout = 5 * time.Minute
+					config.ConnIdleTimeout = 5 * time.Minute
 					return config
 				}(),
 				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),

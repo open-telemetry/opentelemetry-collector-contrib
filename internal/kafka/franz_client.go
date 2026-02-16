@@ -265,8 +265,8 @@ func commonOpts(
 		opts = append(opts, kgo.MetadataMaxAge(clientCfg.Metadata.RefreshInterval))
 	}
 	// Configure connection idle timeout
-	if clientCfg.ConnectionIdleTimeout > 0 {
-		opts = append(opts, kgo.ConnIdleTimeout(clientCfg.ConnectionIdleTimeout))
+	if clientCfg.ConnIdleTimeout > 0 {
+		opts = append(opts, kgo.ConnIdleTimeout(clientCfg.ConnIdleTimeout))
 	}
 	// Configure the min/max protocol version if provided
 	if clientCfg.ProtocolVersion != "" {

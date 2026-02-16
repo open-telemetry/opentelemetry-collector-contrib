@@ -50,8 +50,8 @@ $defs:
       client_id:
         description: ClientID holds the client ID advertised to Kafka, which can be used for enforcing ACLs, throttling quotas, and more (default "otel-collector")
         type: string
-      connection_idle_timeout:
-        description: ConnectionIdleTimeout specifies the time after which idle connections are closed.
+      conn_idle_timeout:
+        description: ConnIdleTimeout specifies the time after which idle connections are closed.
         type: string
         format: duration
       metadata:

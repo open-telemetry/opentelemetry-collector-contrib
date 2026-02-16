@@ -77,17 +77,17 @@ type ClientConfig struct {
 	// NOTE: this is experimental and may be removed in a future release.
 	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
 
-	// ConnectionIdleTimeout specifies the time after which idle connections are closed.
-	ConnectionIdleTimeout time.Duration `mapstructure:"connection_idle_timeout"`
+	// ConnIdleTimeout specifies the time after which idle connections are closed.
+	ConnIdleTimeout time.Duration `mapstructure:"conn_idle_timeout"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		Brokers:               []string{"localhost:9092"},
-		ClientID:              "otel-collector",
-		Metadata:              NewDefaultMetadataConfig(),
-		UseLeaderEpoch:        true,
-		ConnectionIdleTimeout: 9 * time.Minute,
+		Brokers:         []string{"localhost:9092"},
+		ClientID:        "otel-collector",
+		Metadata:        NewDefaultMetadataConfig(),
+		UseLeaderEpoch:  true,
+		ConnIdleTimeout: 9 * time.Minute,
 	}
 }
 
@@ -100,8 +100,8 @@ func (c ClientConfig) Validate() error {
 			return fmt.Errorf("invalid protocol version: %w", err)
 		}
 	}
-	if c.ConnectionIdleTimeout <= 0 {
-		return fmt.Errorf("connection_idle_timeout (%s) must be positive", c.ConnectionIdleTimeout)
+	if c.ConnIdleTimeout <= 0 {
+		return fmt.Errorf("conn_idle_timeout (%s) must be positive", c.ConnIdleTimeout)
 	}
 	return nil
 }
