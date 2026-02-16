@@ -965,7 +965,7 @@ as tags.
 
 ### Kubernetes Versions
 
-This processor is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L98)
+This processor is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L99)
 workflow. These tested versions represent the officially supported Kubernetes versions for this component.
 
 ## Production Deployment Guide

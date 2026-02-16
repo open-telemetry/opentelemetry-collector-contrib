@@ -7,12 +7,12 @@ require (
 	github.com/containerd/cgroups/v3 v3.1.2
 	github.com/rdforte/gomaxecs v1.1.2
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.51.1-0.20260212054546-f0da990367b6
-	go.opentelemetry.io/collector/component/componenttest v0.145.1-0.20260212054546-f0da990367b6
-	go.opentelemetry.io/collector/confmap v1.51.1-0.20260212054546-f0da990367b6
-	go.opentelemetry.io/collector/confmap/xconfmap v0.145.1-0.20260212054546-f0da990367b6
-	go.opentelemetry.io/collector/extension v1.51.1-0.20260212054546-f0da990367b6
-	go.opentelemetry.io/collector/extension/extensiontest v0.145.1-0.20260212054546-f0da990367b6
+	go.opentelemetry.io/collector/component v1.51.1-0.20260212100729-5a059d1d6718
+	go.opentelemetry.io/collector/component/componenttest v0.145.1-0.20260212100729-5a059d1d6718
+	go.opentelemetry.io/collector/confmap v1.51.1-0.20260212100729-5a059d1d6718
+	go.opentelemetry.io/collector/confmap/xconfmap v0.145.1-0.20260212100729-5a059d1d6718
+	go.opentelemetry.io/collector/extension v1.51.1-0.20260212100729-5a059d1d6718
+	go.opentelemetry.io/collector/extension/extensiontest v0.145.1-0.20260212100729-5a059d1d6718
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
@@ -45,9 +45,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260212054546-f0da990367b6 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.145.1-0.20260212054546-f0da990367b6 // indirect
-	go.opentelemetry.io/collector/pdata v1.51.1-0.20260212054546-f0da990367b6 // indirect
+	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260212100729-5a059d1d6718 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.145.1-0.20260212100729-5a059d1d6718 // indirect
+	go.opentelemetry.io/collector/pdata v1.51.1-0.20260212100729-5a059d1d6718 // indirect
 	go.opentelemetry.io/otel v1.40.0 // indirect
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.40.0 // indirect
