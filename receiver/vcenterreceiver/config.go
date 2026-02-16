@@ -11,10 +11,17 @@ import (
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
+)
+
+var (
+	_ xconfmap.Validator  = (*Config)(nil)
+	_ confmap.Unmarshaler = (*Config)(nil)
 )
 
 // Config is the configuration of the receiver
@@ -25,6 +32,47 @@ type Config struct {
 	Endpoint                       string              `mapstructure:"endpoint"`
 	Username                       string              `mapstructure:"username"`
 	Password                       configopaque.String `mapstructure:"password"`
+	// Scrapers configures which metric groups are enabled. Nil means all groups enabled (backward compatible).
+	Scrapers map[ScraperGroup]ScraperConfig `mapstructure:"-"`
+}
+
+// Implements the Unmarshaler interface
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		return nil
+	}
+	if err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused()); err != nil {
+		return err
+	}
+
+	scrapersSection, err := componentParser.Sub("scrapers")
+	if err != nil || scrapersSection == nil {
+		return nil
+	}
+	scraperKeys := scrapersSection.ToStringMap()
+	if len(scraperKeys) == 0 {
+		return nil
+	}
+
+	cfg.Scrapers = make(map[ScraperGroup]ScraperConfig)
+	validGroups := validScraperGroupSet()
+
+	for keyStr := range scraperKeys {
+		group := ScraperGroup(keyStr)
+		if !validGroups[group] {
+			return fmt.Errorf("invalid scraper group %q", keyStr)
+		}
+		scraperSection, err := scrapersSection.Sub(keyStr)
+		if err != nil {
+			return err
+		}
+		scraperCfg := ScraperConfig{Enabled: true}
+		if err := scraperSection.Unmarshal(&scraperCfg); err != nil {
+			return fmt.Errorf("error reading settings for scraper group %q: %w", keyStr, err)
+		}
+		cfg.Scrapers[group] = scraperCfg
+	}
+	return nil
 }
 
 // Validate checks to see if the supplied config will work for the receiver

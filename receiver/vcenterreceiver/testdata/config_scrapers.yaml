@@ -1,0 +1,19 @@
+vcenter:
+  endpoint: https://vcenter.example.com
+  username: otelu
+  password: ${env:VCENTER_PASSWORD}
+  scrapers:
+    cluster:
+      enabled: true
+    datacenter:
+      enabled: true
+    datastore:
+      enabled: true
+    host:
+      enabled: true
+    resourcepool:
+      enabled: true
+    vm:
+      enabled: true
+    vsan:
+      enabled: false

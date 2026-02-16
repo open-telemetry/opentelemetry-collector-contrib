@@ -1,0 +1,9 @@
+vcenter:
+  endpoint: https://vcenter.example.com
+  username: otelu
+  password: ${env:VCENTER_PASSWORD}
+  scrapers:
+    cluster:
+      enabled: true
+    invalid_group:
+      enabled: true

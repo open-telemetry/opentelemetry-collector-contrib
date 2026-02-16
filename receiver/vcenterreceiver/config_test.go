@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -110,4 +111,35 @@ func TestLoadConfig(t *testing.T) {
 	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
 		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 	}
+}
+
+func TestLoadConfigWithScrapers(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_scrapers.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	vcenterCfg := cfg.(*Config)
+	require.NotNil(t, vcenterCfg.Scrapers)
+	require.Len(t, vcenterCfg.Scrapers, 7)
+	assert.True(t, vcenterCfg.Scrapers[ScraperGroupCluster].Enabled)
+	assert.True(t, vcenterCfg.Scrapers[ScraperGroupHost].Enabled)
+	assert.False(t, vcenterCfg.Scrapers[ScraperGroupVSAN].Enabled)
+}
+
+func TestUnmarshalInvalidScraperGroup(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_invalid_scraper.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	err = sub.Unmarshal(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid scraper group")
 }
