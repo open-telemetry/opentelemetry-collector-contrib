@@ -6,6 +6,7 @@ package mongodbreceiver
 import (
 	"errors"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -619,4 +620,80 @@ func TestCollectMetricsSkipsDatabaseIteration(t *testing.T) {
 	fc.AssertNotCalled(t, "DBStats", mock.Anything, mock.Anything)
 	fc.AssertNotCalled(t, "ListCollectionNames", mock.Anything, mock.Anything)
 	fc.AssertNotCalled(t, "IndexStats", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestAllMetricsCategorized(t *testing.T) {
+	// Metrics that require database iteration
+	databaseMetrics := map[string]bool{
+		"MongodbCollectionCount":        true,
+		"MongodbDataSize":               true,
+		"MongodbExtentCount":            true,
+		"MongodbIndexSize":              true,
+		"MongodbIndexCount":             true,
+		"MongodbObjectCount":            true,
+		"MongodbStorageSize":            true,
+		"MongodbIndexAccessCount":       true,
+		"MongodbConnectionCount":        true,
+		"MongodbDocumentOperationCount": true,
+		"MongodbMemoryUsage":            true,
+		"MongodbLockAcquireCount":       true,
+		"MongodbLockAcquireWaitCount":   true,
+		"MongodbLockAcquireTime":        true,
+		"MongodbLockDeadlockCount":      true,
+	}
+
+	// Admin/server-level metrics that don't require database iteration
+	serverMetrics := map[string]bool{
+		"MongodbActiveReads":         true,
+		"MongodbActiveWrites":        true,
+		"MongodbCacheOperations":     true,
+		"MongodbCommandsRate":        true,
+		"MongodbCursorCount":         true,
+		"MongodbCursorTimeoutCount":  true,
+		"MongodbDatabaseCount":       true,
+		"MongodbDeletesRate":         true,
+		"MongodbFlushesRate":         true,
+		"MongodbGetmoresRate":        true,
+		"MongodbGlobalLockTime":      true,
+		"MongodbHealth":              true,
+		"MongodbInsertsRate":         true,
+		"MongodbNetworkIoReceive":    true,
+		"MongodbNetworkIoTransmit":   true,
+		"MongodbNetworkRequestCount": true,
+		"MongodbOperationCount":      true,
+		"MongodbOperationLatencyTime": true,
+		"MongodbOperationReplCount":  true,
+		"MongodbOperationTime":       true,
+		"MongodbPageFaults":          true,
+		"MongodbQueriesRate":         true,
+		"MongodbReplCommandsPerSec":  true,
+		"MongodbReplDeletesPerSec":   true,
+		"MongodbReplGetmoresPerSec":  true,
+		"MongodbReplInsertsPerSec":   true,
+		"MongodbReplQueriesPerSec":   true,
+		"MongodbReplUpdatesPerSec":   true,
+		"MongodbSessionCount":        true,
+		"MongodbUpdatesRate":         true,
+		"MongodbUptime":              true,
+		"MongodbWtcacheBytesRead":    true,
+	}
+
+	cfg := createDefaultConfig().(*Config)
+	cfgType := reflect.TypeOf(cfg.Metrics)
+
+	for i := 0; i < cfgType.NumField(); i++ {
+		field := cfgType.Field(i)
+		metricName := field.Name
+
+		isDatabaseMetric := databaseMetrics[metricName]
+		isServerMetric := serverMetrics[metricName]
+
+		require.True(t, isDatabaseMetric || isServerMetric,
+			"Metric %s is not categorized as either database or server metric. "+
+				"Please add it to either databaseMetrics or serverMetrics map in TestAllMetricsCategorized, "+
+				"and ensure requiresDatabaseIteration() checks it if it's a database metric.", metricName)
+
+		require.False(t, isDatabaseMetric && isServerMetric,
+			"Metric %s is categorized as both database and server metric", metricName)
+	}
 }
