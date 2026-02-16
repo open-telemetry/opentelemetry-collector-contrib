@@ -1,0 +1,217 @@
+$defs:
+  attribute_k_8_s_container_status_reason:
+    description: AttributeK8sContainerStatusReason specifies the value k8s.container.status.reason attribute.
+    type: integer
+  attribute_k_8_s_container_status_state:
+    description: AttributeK8sContainerStatusState specifies the value k8s.container.status.state attribute.
+    type: integer
+  metric_config:
+    description: MetricConfig provides common config for a particular metric.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_builder_config:
+    description: MetricsBuilderConfig is a configuration for k8s_cluster metrics builder.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
+      resource_attributes:
+        $ref: resource_attributes_config
+  metrics_config:
+    description: MetricsConfig provides config for k8s_cluster metrics.
+    type: object
+    properties:
+      k8s.container.cpu_limit:
+        $ref: metric_config
+      k8s.container.cpu_request:
+        $ref: metric_config
+      k8s.container.ephemeralstorage_limit:
+        $ref: metric_config
+      k8s.container.ephemeralstorage_request:
+        $ref: metric_config
+      k8s.container.memory_limit:
+        $ref: metric_config
+      k8s.container.memory_request:
+        $ref: metric_config
+      k8s.container.ready:
+        $ref: metric_config
+      k8s.container.restarts:
+        $ref: metric_config
+      k8s.container.status.reason:
+        $ref: metric_config
+      k8s.container.status.state:
+        $ref: metric_config
+      k8s.container.storage_limit:
+        $ref: metric_config
+      k8s.container.storage_request:
+        $ref: metric_config
+      k8s.cronjob.active_jobs:
+        $ref: metric_config
+      k8s.daemonset.current_scheduled_nodes:
+        $ref: metric_config
+      k8s.daemonset.desired_scheduled_nodes:
+        $ref: metric_config
+      k8s.daemonset.misscheduled_nodes:
+        $ref: metric_config
+      k8s.daemonset.ready_nodes:
+        $ref: metric_config
+      k8s.deployment.available:
+        $ref: metric_config
+      k8s.deployment.desired:
+        $ref: metric_config
+      k8s.hpa.current_replicas:
+        $ref: metric_config
+      k8s.hpa.desired_replicas:
+        $ref: metric_config
+      k8s.hpa.max_replicas:
+        $ref: metric_config
+      k8s.hpa.min_replicas:
+        $ref: metric_config
+      k8s.job.active_pods:
+        $ref: metric_config
+      k8s.job.desired_successful_pods:
+        $ref: metric_config
+      k8s.job.failed_pods:
+        $ref: metric_config
+      k8s.job.max_parallel_pods:
+        $ref: metric_config
+      k8s.job.successful_pods:
+        $ref: metric_config
+      k8s.namespace.phase:
+        $ref: metric_config
+      k8s.node.condition:
+        $ref: metric_config
+      k8s.pod.phase:
+        $ref: metric_config
+      k8s.pod.status_reason:
+        $ref: metric_config
+      k8s.replicaset.available:
+        $ref: metric_config
+      k8s.replicaset.desired:
+        $ref: metric_config
+      k8s.replication_controller.available:
+        $ref: metric_config
+      k8s.replication_controller.desired:
+        $ref: metric_config
+      k8s.resource_quota.hard_limit:
+        $ref: metric_config
+      k8s.resource_quota.used:
+        $ref: metric_config
+      k8s.statefulset.current_pods:
+        $ref: metric_config
+      k8s.statefulset.desired_pods:
+        $ref: metric_config
+      k8s.statefulset.ready_pods:
+        $ref: metric_config
+      k8s.statefulset.updated_pods:
+        $ref: metric_config
+      openshift.appliedclusterquota.limit:
+        $ref: metric_config
+      openshift.appliedclusterquota.used:
+        $ref: metric_config
+      openshift.clusterquota.limit:
+        $ref: metric_config
+      openshift.clusterquota.used:
+        $ref: metric_config
+  resource_attribute_config:
+    description: ResourceAttributeConfig provides common config for a particular resource attribute.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      metrics_exclude:
+        description: 'Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+      metrics_include:
+        description: 'Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted.'
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/filter.config
+  resource_attributes_config:
+    description: ResourceAttributesConfig provides config for k8s_cluster resource attributes.
+    type: object
+    properties:
+      container.id:
+        $ref: resource_attribute_config
+      container.image.name:
+        $ref: resource_attribute_config
+      container.image.tag:
+        $ref: resource_attribute_config
+      container.runtime:
+        $ref: resource_attribute_config
+      container.runtime.version:
+        $ref: resource_attribute_config
+      k8s.container.name:
+        $ref: resource_attribute_config
+      k8s.container.status.last_terminated_reason:
+        $ref: resource_attribute_config
+      k8s.cronjob.name:
+        $ref: resource_attribute_config
+      k8s.cronjob.uid:
+        $ref: resource_attribute_config
+      k8s.daemonset.name:
+        $ref: resource_attribute_config
+      k8s.daemonset.uid:
+        $ref: resource_attribute_config
+      k8s.deployment.name:
+        $ref: resource_attribute_config
+      k8s.deployment.uid:
+        $ref: resource_attribute_config
+      k8s.hpa.name:
+        $ref: resource_attribute_config
+      k8s.hpa.scaletargetref.apiversion:
+        $ref: resource_attribute_config
+      k8s.hpa.scaletargetref.kind:
+        $ref: resource_attribute_config
+      k8s.hpa.scaletargetref.name:
+        $ref: resource_attribute_config
+      k8s.hpa.uid:
+        $ref: resource_attribute_config
+      k8s.job.name:
+        $ref: resource_attribute_config
+      k8s.job.uid:
+        $ref: resource_attribute_config
+      k8s.kubelet.version:
+        $ref: resource_attribute_config
+      k8s.namespace.name:
+        $ref: resource_attribute_config
+      k8s.namespace.uid:
+        $ref: resource_attribute_config
+      k8s.node.name:
+        $ref: resource_attribute_config
+      k8s.node.uid:
+        $ref: resource_attribute_config
+      k8s.pod.name:
+        $ref: resource_attribute_config
+      k8s.pod.qos_class:
+        $ref: resource_attribute_config
+      k8s.pod.uid:
+        $ref: resource_attribute_config
+      k8s.replicaset.name:
+        $ref: resource_attribute_config
+      k8s.replicaset.uid:
+        $ref: resource_attribute_config
+      k8s.replicationcontroller.name:
+        $ref: resource_attribute_config
+      k8s.replicationcontroller.uid:
+        $ref: resource_attribute_config
+      k8s.resourcequota.name:
+        $ref: resource_attribute_config
+      k8s.resourcequota.uid:
+        $ref: resource_attribute_config
+      k8s.statefulset.name:
+        $ref: resource_attribute_config
+      k8s.statefulset.uid:
+        $ref: resource_attribute_config
+      openshift.clusterquota.name:
+        $ref: resource_attribute_config
+      openshift.clusterquota.uid:
+        $ref: resource_attribute_config
+      os.description:
+        $ref: resource_attribute_config
+      os.type:
+        $ref: resource_attribute_config

@@ -1,0 +1,47 @@
+$defs:
+  admission_config:
+    type: object
+    properties:
+      request_limit_mib:
+        description: RequestLimitMiB limits the number of requests that are received by the stream based on uncompressed request size. Request size is used to control how much traffic we admit for processing.  When this field is zero, admission control is disabled.
+        type: integer
+        x-customType: uint64
+      waiting_limit_mib:
+        description: WaitingLimitMiB is the limit on the amount of data waiting to be consumed. This is a dimension of memory limiting to ensure waiters are not consuming an unexpectedly large amount of memory in the arrow receiver.
+        type: integer
+        x-customType: uint64
+  arrow_config:
+    description: ArrowConfig support configuring the Arrow receiver.
+    type: object
+    properties:
+      admission_limit_mib:
+        description: 'Deprecated: This field is no longer supported, use cfg.Admission.RequestLimitMiB instead.'
+        type: integer
+        x-customType: uint64
+      memory_limit_mib:
+        description: MemoryLimitMiB is the size of a shared memory region used by all Arrow streams, in MiB.  When too much load is passing through, they will see ResourceExhausted errors.
+        type: integer
+        x-customType: uint64
+      waiter_limit:
+        description: 'Deprecated: This field is no longer supported, use cfg.Admission.WaiterLimit instead.'
+        type: integer
+        x-customType: int64
+      zstd:
+        description: Zstd settings apply to OTel-Arrow use of gRPC specifically.
+        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd.decoder_config
+  protocols:
+    description: Protocols is the configuration for the supported protocols.
+    type: object
+    properties:
+      arrow:
+        $ref: arrow_config
+      grpc:
+        $ref: go.opentelemetry.io/collector/config/configgrpc.server_config
+description: Config defines configuration for OTel Arrow receiver.
+type: object
+properties:
+  admission:
+    description: Admission is the configuration for controlling amount of request memory entering the receiver.
+    $ref: admission_config
+allOf:
+  - $ref: protocols

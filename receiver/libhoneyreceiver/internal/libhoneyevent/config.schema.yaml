@@ -1,0 +1,45 @@
+$defs:
+  attributes_config:
+    description: AttributesConfig is used to map the fields from the LibhoneyEvent to PData formats
+    type: object
+    properties:
+      durationFields:
+        type: array
+        items:
+          type: string
+      error:
+        type: string
+      name:
+        type: string
+      parent_id:
+        type: string
+      span_id:
+        type: string
+      spankind:
+        type: string
+      trace_id:
+        type: string
+  field_map_config:
+    description: FieldMapConfig is used to map the fields from the LibhoneyEvent to PData formats
+    type: object
+    properties:
+      attributes:
+        $ref: attributes_config
+      resources:
+        $ref: resources_config
+      scopes:
+        $ref: scopes_config
+  resources_config:
+    description: ResourcesConfig is used to map the fields from the LibhoneyEvent to PData formats
+    type: object
+    properties:
+      service_name:
+        type: string
+  scopes_config:
+    description: ScopesConfig is used to map the fields from the LibhoneyEvent to PData formats
+    type: object
+    properties:
+      library_name:
+        type: string
+      library_version:
+        type: string

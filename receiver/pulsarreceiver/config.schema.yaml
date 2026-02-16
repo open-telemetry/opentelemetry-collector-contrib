@@ -1,0 +1,83 @@
+$defs:
+  athenz:
+    type: object
+    properties:
+      key_id:
+        type: string
+      principal_header:
+        type: string
+      private_key:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      provider_domain:
+        type: string
+      tenant_domain:
+        type: string
+      tenant_service:
+        type: string
+      zts_url:
+        type: string
+  authentication:
+    type: object
+    properties:
+      athenz:
+        x-optional: true
+        $ref: athenz
+      oauth2:
+        x-optional: true
+        $ref: o_auth_2
+      tls:
+        x-optional: true
+        $ref: tls
+      token:
+        x-optional: true
+        $ref: token
+  o_auth_2:
+    type: object
+    properties:
+      audience:
+        type: string
+      client_id:
+        type: string
+      issuer_url:
+        type: string
+      private_key:
+        type: string
+      scope:
+        type: string
+  tls:
+    type: object
+    properties:
+      cert_file:
+        type: string
+      key_file:
+        type: string
+  token:
+    type: object
+    properties:
+      token:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+type: object
+properties:
+  auth:
+    $ref: authentication
+  consumer_name:
+    description: Name specifies the consumer name.
+    type: string
+  encoding:
+    description: Encoding of the messages (default "otlp_proto")
+    type: string
+  endpoint:
+    description: Configure the service URL for the Pulsar service.
+    type: string
+  subscription:
+    description: The Subscription that receiver will be consuming messages from (default "otlp_subscription")
+    type: string
+  tls_allow_insecure_connection:
+    description: 'Configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)'
+    type: boolean
+  tls_trust_certs_file_path:
+    description: Set the path to the trusted TLS certificate file
+    type: string
+  topic:
+    description: The topic of pulsar to consume logs,metrics,traces. (default = "otlp_traces" for traces, "otlp_metrics" for metrics, "otlp_logs" for logs)
+    type: string

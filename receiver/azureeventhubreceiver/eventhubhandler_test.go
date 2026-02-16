@@ -35,7 +35,7 @@ func (mockHubWrapper) GetRuntimeInformation(context.Context) (*hubRuntimeInfo, e
 	}, nil
 }
 
-func (mockHubWrapper) Receive(ctx context.Context, _ string, _ hubHandler, _ bool) (listenerHandleWrapper, error) {
+func (mockHubWrapper) Receive(ctx context.Context, _ string, _ hubHandler, _ bool, _ *zap.Logger) (listenerHandleWrapper, error) {
 	return &mockListenerHandleWrapper{
 		ctx: ctx,
 	}, nil

@@ -10,8 +10,6 @@ require (
 	github.com/google/addlicense v1.2.0
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.144.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen v0.144.0
 	github.com/rhysd/actionlint v1.7.10
 	go.opentelemetry.io/build-tools/checkapi v0.29.0
 	go.opentelemetry.io/build-tools/checkfile v0.29.0
@@ -20,8 +18,8 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.29.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.29.0
 	go.opentelemetry.io/build-tools/multimod v0.29.0
-	go.opentelemetry.io/collector/cmd/builder v0.144.1-0.20260121161034-55399d4743af
-	go.opentelemetry.io/collector/cmd/mdatagen v0.144.1-0.20260121161034-55399d4743af
+	go.opentelemetry.io/collector/cmd/builder v0.145.1-0.20260205185216-81bc641f26c0
+	go.opentelemetry.io/collector/cmd/mdatagen v0.145.1-0.20260205185216-81bc641f26c0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.40.0
 	golang.org/x/vuln v1.1.4
@@ -103,7 +101,7 @@ require (
 	github.com/go-critic/go-critic v0.14.2 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
-	github.com/go-git/go-git/v5 v5.16.3 // indirect
+	github.com/go-git/go-git/v5 v5.16.5 // indirect
 	github.com/go-json-experiment/json v0.0.0-20250813233538-9b1f9ea2e11b // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
@@ -145,7 +143,6 @@ require (
 	github.com/hashicorp/go-version v1.8.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
-	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jgautheron/goconst v1.8.2 // indirect
@@ -168,7 +165,7 @@ require (
 	github.com/knadh/koanf/providers/env/v2 v2.0.0 // indirect
 	github.com/knadh/koanf/providers/file v1.2.1 // indirect
 	github.com/knadh/koanf/providers/fs v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.3.0 // indirect
+	github.com/knadh/koanf/v2 v2.3.2 // indirect
 	github.com/kulti/thelper v0.7.1 // indirect
 	github.com/kunwardeep/paralleltest v1.0.15 // indirect
 	github.com/lasiar/canonicalheader v1.1.2 // indirect
@@ -265,15 +262,15 @@ require (
 	go.augendre.info/arangolint v0.3.1 // indirect
 	go.augendre.info/fatcontext v0.9.0 // indirect
 	go.opentelemetry.io/build-tools v0.29.0 // indirect
-	go.opentelemetry.io/collector/component v1.50.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/collector/confmap v1.50.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.50.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/collector/featuregate v1.50.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/collector/filter v0.144.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/collector/pdata v1.50.1-0.20260121161034-55399d4743af // indirect
-	go.opentelemetry.io/otel v1.39.0 // indirect
-	go.opentelemetry.io/otel/metric v1.39.0 // indirect
-	go.opentelemetry.io/otel/trace v1.39.0 // indirect
+	go.opentelemetry.io/collector/component v1.51.1-0.20260205185216-81bc641f26c0 // indirect
+	go.opentelemetry.io/collector/confmap v1.51.1-0.20260205185216-81bc641f26c0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.51.1-0.20260205185216-81bc641f26c0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260205185216-81bc641f26c0 // indirect
+	go.opentelemetry.io/collector/filter v0.145.1-0.20260205185216-81bc641f26c0 // indirect
+	go.opentelemetry.io/collector/pdata v1.51.1-0.20260205185216-81bc641f26c0 // indirect
+	go.opentelemetry.io/otel v1.40.0 // indirect
+	go.opentelemetry.io/otel/metric v1.40.0 // indirect
+	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
@@ -302,7 +299,3 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen => ../../cmd/codecovgen
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/schemagen => ../../cmd/schemagen
