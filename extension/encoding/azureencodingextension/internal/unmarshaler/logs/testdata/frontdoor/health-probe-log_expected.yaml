@@ -1,0 +1,72 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/mySubscriptionID/RESOURCEGROUPS/myResourceGroup/PROVIDERS/MICROSOFT.CDN/PROFILES/MyProfile
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Cdn/Profiles/FrontDoorHealthProbeLog/Write
+              - key: azure.category
+                value:
+                  stringValue: FrontDoorHealthProbeLog
+              - key: azure.frontdoor.health_probe.id
+                value:
+                  stringValue: 9642AEA07BA64675A0A7AD214ACF746E
+              - key: azure.cdn.edge.name
+                value:
+                  stringValue: MAA
+              - key: http.request.method
+                value:
+                  stringValue: HEAD
+              - key: http.response.status_code
+                value:
+                  intValue: "400"
+              - key: url.full
+                value:
+                  stringValue: http://www.example.com:80/
+              - key: url.port
+                value:
+                  intValue: "80"
+              - key: url.scheme
+                value:
+                  stringValue: http
+              - key: url.domain
+                value:
+                  stringValue: www.example.com
+              - key: url.path
+                value:
+                  stringValue: /
+              - key: azure.frontdoor.health_probe.origin.name
+                value:
+                  stringValue: www.example.com
+              - key: azure.frontdoor.health_probe.origin.latency.total
+                value:
+                  intValue: "141"
+              - key: azure.frontdoor.health_probe.origin.latency.connection
+                value:
+                  intValue: "68"
+              - key: azure.frontdoor.health_probe.origin.latency.dns
+                value:
+                  intValue: "1814"
+              - key: server.address
+                value:
+                  stringValue: 0.0.0.0
+              - key: server.port
+                value:
+                  intValue: "12345"
+            body:
+              stringValue: OriginError
+            timeUnixNano: "1612250137364074800"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -35,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/metadata"
 )
 
@@ -366,10 +369,105 @@ func (g *fileLogGenerator) Stop() {
 }
 
 func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
-	id := receivertest.UniqueIDAttrVal(strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10))
+	seq := atomic.AddInt64(&g.sequenceNum, 1)
+	id := receivertest.UniqueIDAttrVal(strconv.FormatInt(seq, 10))
 	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id, //nolint:gocritic //sprintfQuotedString for JSON
 		receivertest.UniqueIDAttrName, id)
 	_, err := g.tmpFile.WriteString(logLine + "\n")
 	require.NoError(g.t, err)
+	// Sync periodically to ensure data is flushed to disk for the file reader.
+	// This is especially important on Windows where writes may not be visible
+	// to other file handles until flushed.
+	if seq%100 == 0 {
+		require.NoError(g.t, g.tmpFile.Sync())
+	}
 	return []receivertest.UniqueIDAttrVal{id}
+}
+
+// TestMultilineWithUTF16Encoding tests that multiline patterns work correctly with UTF-16LE encoding.
+// This is a regression test for https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39011
+func TestMultilineWithUTF16Encoding(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	fileName := filepath.Join(tempDir, "auditlog.txt")
+
+	// Create a UTF-16LE encoded file with fixed-length records (no newlines)
+	// Each record is 20 characters: "LOGSTART_01_content_"
+	records := []string{
+		"LOGSTART_01_content_",
+		"LOGSTART_02_content_",
+		"LOGSTART_03_content_",
+		"LOGSTART_04_content_",
+		"LOGSTART_05_content_",
+	}
+
+	// Write records in UTF-16LE encoding
+	testFile, err := os.Create(fileName)
+	require.NoError(t, err)
+
+	encoder := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewEncoder()
+	utf16Writer := transform.NewWriter(testFile, encoder)
+
+	for _, record := range records {
+		_, err = utf16Writer.Write([]byte(record))
+		require.NoError(t, err)
+	}
+	require.NoError(t, utf16Writer.Close())
+	require.NoError(t, testFile.Close())
+
+	// Configure filelog receiver with UTF-16LE encoding and multiline
+	cfg := &FileLogConfig{
+		BaseConfig: adapter.BaseConfig{},
+		InputConfig: func() file.Config {
+			c := file.NewConfig()
+			c.Include = []string{fileName}
+			c.StartAt = "beginning"
+			c.PollInterval = 10 * time.Millisecond
+			c.Encoding = "utf-16le"
+			c.SplitConfig = split.Config{
+				LineStartPattern: `LOGSTART_\d+_`,
+			}
+			c.FlushPeriod = 100 * time.Millisecond
+			return *c
+		}(),
+	}
+
+	f := NewFactory()
+	sink := new(consumertest.LogsSink)
+
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err, "failed to create receiver")
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
+
+	// We expect 5 log records since we have 5 records in the file
+	// The last record will be flushed after the flush period
+	require.Eventually(t, expectNLogs(sink, 5), 5*time.Second, 50*time.Millisecond,
+		"expected %d but got %d logs",
+		5, sink.LogRecordCount(),
+	)
+
+	// Verify each record was parsed correctly
+	allLogs := sink.AllLogs()
+	recordBodies := make([]string, 0, 5)
+	for _, logs := range allLogs {
+		for i := range logs.ResourceLogs().Len() {
+			rl := logs.ResourceLogs().At(i)
+			for j := range rl.ScopeLogs().Len() {
+				sl := rl.ScopeLogs().At(j)
+				for k := range sl.LogRecords().Len() {
+					lr := sl.LogRecords().At(k)
+					recordBodies = append(recordBodies, lr.Body().AsString())
+				}
+			}
+		}
+	}
+
+	require.Len(t, recordBodies, 5, "expected 5 log records")
+	for i, body := range recordBodies {
+		expectedPrefix := fmt.Sprintf("LOGSTART_%02d_", i+1)
+		assert.Contains(t, body, expectedPrefix, "record %d should contain expected prefix", i)
+	}
+
+	require.NoError(t, rcvr.Shutdown(t.Context()))
 }

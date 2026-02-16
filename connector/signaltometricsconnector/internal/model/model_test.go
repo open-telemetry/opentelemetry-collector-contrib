@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
@@ -42,7 +41,7 @@ func TestFilterResourceAttributes(t *testing.T) {
 				"key.3": int64(11),
 				"key.4": "val.4",
 				// Collector instance info will be added
-				"signaltometrics.service.instance.id": testServiceInstanceID,
+				"signal_to_metrics.service.instance.id": testServiceInstanceID,
 			},
 		},
 		{
@@ -75,12 +74,12 @@ func TestFilterResourceAttributes(t *testing.T) {
 				// Resource attributes with default values are added
 				"key.302": "anything",
 				// Collector instance info will be added
-				"signaltometrics.service.instance.id": testServiceInstanceID,
+				"signal_to_metrics.service.instance.id": testServiceInstanceID,
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			md := MetricDef[ottlspan.TransformContext]{
+			md := MetricDef[*ottlspan.TransformContext]{
 				IncludeResourceAttributes: tc.includeResourceAttributes,
 			}
 			inputResourceAttrsM := pcommon.NewMap()
@@ -149,7 +148,7 @@ func TestFilterAttributes(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			md := MetricDef[ottlspan.TransformContext]{
+			md := MetricDef[*ottlspan.TransformContext]{
 				Attributes: tc.attributes,
 			}
 			inputAttrM := pcommon.NewMap()
@@ -168,7 +167,7 @@ func testCollectorInstanceInfo(t *testing.T) CollectorInstanceInfo {
 	t.Helper()
 
 	set := componenttest.NewNopTelemetrySettings()
-	set.Resource.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), testServiceInstanceID)
+	set.Resource.Attributes().PutStr("service.instance.id", testServiceInstanceID)
 	return NewCollectorInstanceInfo(set)
 }
 

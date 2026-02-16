@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
@@ -70,12 +70,20 @@ func Start(cfg *Config) error {
 
 	var ssp sdktrace.SpanProcessor
 	if cfg.Batch {
-		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
+		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second), sdktrace.WithMaxExportBatchSize(cfg.BatchSize))
 		defer func() {
 			logger.Info("stop the batch span processor")
 
 			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
 				logger.Error("failed to stop the batch span processor", zap.Error(tempError))
+			}
+		}()
+	} else {
+		ssp = sdktrace.NewSimpleSpanProcessor(exp)
+		defer func() {
+			logger.Info("stop the simple span processor")
+			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
+				logger.Error("failed to stop the simple span processor", zap.Error(tempError))
 			}
 		}()
 	}
@@ -84,12 +92,10 @@ func Start(cfg *Config) error {
 	attributes = append(attributes, cfg.GetAttributes()...)
 
 	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
+		sdktrace.WithResource(resource.NewWithAttributes(conventions.SchemaURL, attributes...)),
 	)
 
-	if cfg.Batch {
-		tracerProvider.RegisterSpanProcessor(ssp)
-	}
+	tracerProvider.RegisterSpanProcessor(ssp)
 
 	otel.SetTracerProvider(tracerProvider)
 

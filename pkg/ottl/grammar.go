@@ -384,6 +384,7 @@ func (m *mathExprLiteral) accept(v grammarVisitor) {
 }
 
 type mathValue struct {
+	UnaryOp       *mathOp          `parser:"@OpAddSub?"`
 	Literal       *mathExprLiteral `parser:"( @@"`
 	SubExpression *mathExpression  `parser:"| '(' @@ ')' )"`
 }
@@ -501,8 +502,8 @@ type enumSymbol string
 func buildLexer() *lexer.StatefulDefinition {
 	return lexer.MustSimple([]lexer.SimpleRule{
 		{Name: `Bytes`, Pattern: `0x[a-fA-F0-9]+`},
-		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
-		{Name: `Int`, Pattern: `[-+]?\d+`},
+		{Name: `Float`, Pattern: `(\d+\.\d*|\d*\.\d+)([eE][-+]?\d+)?`},
+		{Name: `Int`, Pattern: `\d+`},
 		{Name: `String`, Pattern: `"(\\.|[^\\"])*"`},
 		{Name: `Nil`, Pattern: `\b(nil)\b`},
 		{Name: `OpNot`, Pattern: `\b(not)\b`},

@@ -36,12 +36,11 @@ func TestNewManager(t *testing.T) {
 		},
 	}
 
-	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, promCfg, true)
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, promCfg)
 
 	assert.NotNil(t, manager)
 	assert.Equal(t, cfg, manager.cfg)
 	assert.Equal(t, promCfg, manager.promCfg)
-	assert.True(t, manager.enableNativeHistograms)
 	assert.NotNil(t, manager.shutdown)
 	assert.NotNil(t, manager.configUpdateCount)
 	assert.Len(t, manager.initialScrapeConfigs, 1)
@@ -71,7 +70,7 @@ func TestManagerShutdown(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 
-	manager := NewManager(settings, cfg, promCfg, false)
+	manager := NewManager(settings, cfg, promCfg)
 
 	// Start the manager so the goroutine is running
 	ctx := t.Context()

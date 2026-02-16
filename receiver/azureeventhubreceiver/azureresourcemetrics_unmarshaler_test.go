@@ -6,7 +6,7 @@ package azureeventhubreceiver
 import (
 	"testing"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -56,7 +56,7 @@ var encodedMetrics = `{"records":[
 ]}`
 
 func TestAzureResourceMetricsUnmarshaler_UnmarshalMixedMetrics(t *testing.T) {
-	event := azureEvent{EventHubEvent: &eventhub.Event{Data: []byte(encodedMetrics)}}
+	event := azureEvent{AzEventData: &azeventhubs.ReceivedEventData{EventData: azeventhubs.EventData{Body: []byte(encodedMetrics)}}}
 	logger := zap.NewNop()
 	unmarshaler := newAzureResourceMetricsUnmarshaler(
 		component.BuildInfo{
@@ -74,7 +74,7 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalMixedMetrics(t *testing.T) {
 }
 
 func TestAzureResourceMetricsUnmarshaler_UnmarshalAppMetricsWithAttributes(t *testing.T) {
-	event := azureEvent{EventHubEvent: &eventhub.Event{Data: []byte(encodedMetrics)}}
+	event := azureEvent{AzEventData: &azeventhubs.ReceivedEventData{EventData: azeventhubs.EventData{Body: []byte(encodedMetrics)}}}
 	logger := zap.NewNop()
 	unmarshaler := newAzureResourceMetricsUnmarshaler(
 		component.BuildInfo{
@@ -118,7 +118,7 @@ func TestAzureResourceMetricsUnmarshaler_UnmarshalAppMetricsWithAttributes(t *te
 }
 
 func TestAzureResourceMetricsUnmarshaler_UnmarshalAggregatedAppMetrics(t *testing.T) {
-	event := azureEvent{EventHubEvent: &eventhub.Event{Data: []byte(encodedMetrics)}}
+	event := azureEvent{AzEventData: &azeventhubs.ReceivedEventData{EventData: azeventhubs.EventData{Body: []byte(encodedMetrics)}}}
 	logger := zap.NewNop()
 	unmarshaler := newAzureResourceMetricsUnmarshaler(
 		component.BuildInfo{

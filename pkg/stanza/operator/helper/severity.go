@@ -32,7 +32,7 @@ func (p *SeverityParser) Parse(ent *entry.Entry) error {
 
 	severity, sevText, err := p.Mapping.find(value)
 	if err != nil {
-		return errors.Wrap(err, "parse")
+		return fmt.Errorf("parse: %w", err)
 	}
 	if p.overwriteText && severity != entry.Default {
 		sevText = severity.String()

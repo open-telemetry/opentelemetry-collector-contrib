@@ -53,7 +53,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -67,6 +66,24 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSystemMemoryLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSystemMemoryLinuxHugepagesLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSystemMemoryLinuxHugepagesPageSizeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSystemMemoryLinuxHugepagesReservedDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSystemMemoryLinuxHugepagesSurplusDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSystemMemoryLinuxHugepagesUsageDataPoint(ts, 1, AttributeSystemMemoryLinuxHugepagesStateFree)
+
+			allMetricsCount++
+			mb.RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(ts, 1, AttributeSystemMemoryLinuxHugepagesStateFree)
 
 			allMetricsCount++
 			mb.RecordSystemMemoryPageSizeDataPoint(ts, 1)
@@ -142,6 +159,88 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.linux.hugepages.limit":
+					assert.False(t, validatedMetrics["system.memory.linux.hugepages.limit"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.limit")
+					validatedMetrics["system.memory.linux.hugepages.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of hugepages available.", ms.At(i).Description())
+					assert.Equal(t, "{page}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.linux.hugepages.page_size":
+					assert.False(t, validatedMetrics["system.memory.linux.hugepages.page_size"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.page_size")
+					validatedMetrics["system.memory.linux.hugepages.page_size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "System hugepage size in bytes.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.linux.hugepages.reserved":
+					assert.False(t, validatedMetrics["system.memory.linux.hugepages.reserved"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.reserved")
+					validatedMetrics["system.memory.linux.hugepages.reserved"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of reserved hugepages (hugepages for which a commitment to allocate has been made, but no allocation has yet been made). This is reported as a separate metric rather than a usage state because reserved pages are already counted in free pages - they represent a subset of free pages that cannot be used for non-reserved allocations.", ms.At(i).Description())
+					assert.Equal(t, "{page}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.linux.hugepages.surplus":
+					assert.False(t, validatedMetrics["system.memory.linux.hugepages.surplus"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.surplus")
+					validatedMetrics["system.memory.linux.hugepages.surplus"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of surplus hugepages (overcommitted hugepages beyond the persistent pool). This is reported as a separate metric rather than a usage state because surplus pages can be in either used or free state, and including them would break the semantic convention that usage states must sum to the limit.", ms.At(i).Description())
+					assert.Equal(t, "{page}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.linux.hugepages.usage":
+					assert.False(t, validatedMetrics["system.memory.linux.hugepages.usage"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.usage")
+					validatedMetrics["system.memory.linux.hugepages.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of hugepages in use by state.", ms.At(i).Description())
+					assert.Equal(t, "{page}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("system.memory.linux.hugepages.state")
+					assert.True(t, ok)
+					assert.Equal(t, "free", attrVal.Str())
+				case "system.memory.linux.hugepages.utilization":
+					assert.False(t, validatedMetrics["system.memory.linux.hugepages.utilization"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.utilization")
+					validatedMetrics["system.memory.linux.hugepages.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Percentage of hugepages in use by state.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("system.memory.linux.hugepages.state")
+					assert.True(t, ok)
+					assert.Equal(t, "free", attrVal.Str())
 				case "system.memory.page_size":
 					assert.False(t, validatedMetrics["system.memory.page_size"], "Found a duplicate in the metrics slice: system.memory.page_size")
 					validatedMetrics["system.memory.page_size"] = true

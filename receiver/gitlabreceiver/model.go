@@ -11,7 +11,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 const (
@@ -235,14 +235,14 @@ func (*glPipelineJob) setTimeStamps(span ptrace.Span, startTime, endTime string)
 
 func (j *glPipelineJob) setAttributes(attrs pcommon.Map) {
 	// Job
-	attrs.PutStr(string(semconv.CICDPipelineTaskNameKey), j.event.Name)
-	attrs.PutInt(string(semconv.CICDPipelineTaskRunIDKey), int64(j.event.ID))
-	attrs.PutStr(string(semconv.CICDPipelineTaskRunResultKey), j.event.Status)
-	attrs.PutStr(string(semconv.CICDPipelineTaskRunURLFullKey), j.jobURL)
+	attrs.PutStr(string(conventions.CICDPipelineTaskNameKey), j.event.Name)
+	attrs.PutInt(string(conventions.CICDPipelineTaskRunIDKey), int64(j.event.ID))
+	attrs.PutStr(string(conventions.CICDPipelineTaskRunResultKey), j.event.Status)
+	attrs.PutStr(string(conventions.CICDPipelineTaskRunURLFullKey), j.jobURL)
 
 	// Worker/Runner
-	attrs.PutInt(string(semconv.CICDWorkerIDKey), int64(j.event.Runner.ID))
-	attrs.PutStr(string(semconv.CICDWorkerNameKey), j.event.Runner.Description)
+	attrs.PutInt(string(conventions.CICDWorkerIDKey), int64(j.event.Runner.ID))
+	attrs.PutStr(string(conventions.CICDWorkerNameKey), j.event.Runner.Description)
 
 	// ---------- The following attributes are not part of semconv yet ----------
 

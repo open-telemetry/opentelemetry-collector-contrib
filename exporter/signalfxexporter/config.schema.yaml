@@ -1,0 +1,105 @@
+$defs:
+  dimension_client_config:
+    type: object
+    properties:
+      drop_tags:
+        type: boolean
+      idle_conn_timeout:
+        type: string
+        format: duration
+      max_buffered:
+        type: integer
+      max_conns_per_host:
+        type: integer
+      max_idle_conns:
+        type: integer
+      max_idle_conns_per_host:
+        type: integer
+      send_delay:
+        type: string
+        format: duration
+      timeout:
+        type: string
+        format: duration
+description: Config defines configuration for SignalFx exporter.
+type: object
+properties:
+  access_token:
+    description: AccessToken is the authentication token provided by SignalFx.
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
+  api_tls:
+    description: api_tls needs to be set if the exporter's APIURL is pointing to a httpforwarder extension with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
+    $ref: go.opentelemetry.io/collector/config/configtls.client_config
+  api_url:
+    description: APIURL is the destination to where SignalFx metadata will be sent. This value takes precedence over the value of Realm
+    type: string
+  correlation:
+    description: Correlation configuration for syncing traces service and environment to metrics.
+    x-pointer: true
+    $ref: ./internal/correlation.config
+  default_properties:
+    description: DefaultProperties defines a set of properties to be added to any dimension updates to the Splunk Observability backend. Any explicit property value takes precedence over those defaults.
+    type: object
+    additionalProperties:
+      type: string
+  delta_translation_ttl:
+    description: DeltaTranslationTTL specifies in seconds the max duration to keep the most recent datapoint for any `delta_metric` specified in TranslationRules. Default is 3600s.
+    type: integer
+    x-customType: int64
+  dimension_client:
+    description: Dimension update client configuration used for metadata updates.
+    $ref: dimension_client_config
+  disable_default_translation_rules:
+    type: boolean
+  drop_histogram_buckets:
+    description: Whether to drop histogram bucket metrics dispatched to Splunk Observability. Default value is set to false.
+    type: boolean
+  exclude_metrics:
+    description: ExcludeMetrics defines dpfilter.MetricFilters that will determine metrics to be excluded from sending to SignalFx backend. If translations enabled with TranslationRules options, the exclusion will be applied on translated metrics.
+    type: array
+    items:
+      $ref: ./internal/translation/dpfilters.metric_filter
+  exclude_properties:
+    description: ExcludeProperties defines dpfilter.PropertyFilters to prevent inclusion of properties to include with dimension updates to the SignalFx backend.
+    type: array
+    items:
+      $ref: ./internal/translation/dpfilters.property_filter
+  include_metrics:
+    description: IncludeMetrics defines dpfilter.MetricFilters to override exclusion any of metric. This option can be used to included metrics that are otherwise dropped by default. See ./translation/default_metrics.go for a list of metrics that are dropped by default.
+    type: array
+    items:
+      $ref: ./internal/translation/dpfilters.metric_filter
+  ingest_tls:
+    description: ingest_tls needs to be set if the exporter's IngestURL is pointing to a signalfx receiver with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
+    $ref: go.opentelemetry.io/collector/config/configtls.client_config
+  ingest_url:
+    description: 'IngestURL is the destination to where SignalFx metrics will be sent to, it is intended for tests and debugging. The value of Realm is ignored if the URL is specified. The exporter will automatically append the appropriate path: "/v2/datapoint" for metrics, and "/v2/event" for events.'
+    type: string
+  log_data_points:
+    description: Whether to log datapoints dispatched to Splunk Observability Cloud
+    type: boolean
+  log_dimension_updates:
+    description: Whether to log dimension updates being sent to SignalFx.
+    type: boolean
+  nonalphanumeric_dimension_chars:
+    description: NonAlphanumericDimensionChars is a list of allowable characters, in addition to alphanumeric ones, to be used in a dimension key.
+    type: string
+  realm:
+    description: Realm is the SignalFx realm where data is going to be sent to.
+    type: string
+  root_path:
+    description: RootPath is the host's root directory used when syncing metadata; applies to linux only.
+    type: string
+  send_otlp_histograms:
+    description: Whether to send histogram metrics in OTLP format to Splunk Observability. Default value is set to false.
+    type: boolean
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  sync_host_metadata:
+    description: 'SyncHostMetadata defines if the exporter should scrape host metadata and sends it as property updates to SignalFx backend. IMPORTANT: Host metadata synchronization relies on `resourcedetection` processor. If this option is enabled make sure that `resourcedetection` processor is enabled in the pipeline with one of the cloud provider detectors or environment variable detector setting a unique value to `host.name` attribute within your k8s cluster. Also keep override And keep `override=true` in resourcedetection config.'
+    type: boolean
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk.access_token_passthrough_config

@@ -51,7 +51,7 @@ func newReceiver(
 	if err != nil {
 		return nil, err
 	}
-	opt := scraperhelper.AddScraper(metadata.Type, s)
+	opt := scraperhelper.AddMetricsScraper(metadata.Type, s)
 
 	return scraperhelper.NewMetricsController(
 		&tlsCheckConfig.ControllerConfig,

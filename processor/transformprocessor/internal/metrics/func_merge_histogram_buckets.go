@@ -18,11 +18,11 @@ type mergeHistogramBucketsArguments struct {
 	Bound float64
 }
 
-func newMergeHistogramBucketsFactory() ottl.Factory[ottldatapoint.TransformContext] {
+func newMergeHistogramBucketsFactory() ottl.Factory[*ottldatapoint.TransformContext] {
 	return ottl.NewFactory("merge_histogram_buckets", &mergeHistogramBucketsArguments{}, createMergeHistogramBucketsFunction)
 }
 
-func createMergeHistogramBucketsFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+func createMergeHistogramBucketsFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottldatapoint.TransformContext], error) {
 	args, ok := oArgs.(*mergeHistogramBucketsArguments)
 	if !ok {
 		return nil, errors.New("mergeHistogramBucketsFactory args must be of type *mergeHistogramBucketsArguments")
@@ -31,8 +31,8 @@ func createMergeHistogramBucketsFunction(_ ottl.FunctionContext, oArgs ottl.Argu
 	return mergeHistogramBuckets(args.Bound)
 }
 
-func mergeHistogramBuckets(bound float64) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
-	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (any, error) {
+func mergeHistogramBuckets(bound float64) (ottl.ExprFunc[*ottldatapoint.TransformContext], error) {
+	return func(_ context.Context, tCtx *ottldatapoint.TransformContext) (any, error) {
 		dataPoint := tCtx.GetDataPoint()
 		if dataPoint == nil {
 			return nil, nil

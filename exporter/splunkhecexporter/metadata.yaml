@@ -1,4 +1,5 @@
 type: splunk_hec
+display_name: Splunk HTTP Event Collector (HEC) Exporter
 
 status:
   class: exporter

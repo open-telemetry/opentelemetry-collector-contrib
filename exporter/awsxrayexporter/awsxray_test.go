@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
@@ -173,22 +172,22 @@ func constructW3CFormatTraceSpanData(ispans ptrace.ScopeSpans) {
 func constructResource() pcommon.Resource {
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(string(conventionsv112.ServiceNameKey), "signup_aggregator")
-	attrs.PutStr(string(conventionsv112.ContainerNameKey), "signup_aggregator")
-	attrs.PutStr(string(conventionsv112.ContainerImageNameKey), "otel/signupaggregator")
-	attrs.PutStr(string(conventionsv112.ContainerImageTagKey), "v1")
-	attrs.PutStr(string(conventionsv112.CloudProviderKey), conventionsv112.CloudProviderAWS.Value.AsString())
-	attrs.PutStr(string(conventionsv112.CloudAccountIDKey), "999999998")
-	attrs.PutStr(string(conventionsv112.CloudRegionKey), "us-west-2")
-	attrs.PutStr(string(conventionsv112.CloudAvailabilityZoneKey), "us-west-1b")
+	attrs.PutStr("service.name", "signup_aggregator")
+	attrs.PutStr("container.name", "signup_aggregator")
+	attrs.PutStr("container.image.name", "otel/signupaggregator")
+	attrs.PutStr("container.image.tag", "v1")
+	attrs.PutStr("cloud.provider", "aws")
+	attrs.PutStr("cloud.account.id", "999999998")
+	attrs.PutStr("cloud.region", "us-west-2")
+	attrs.PutStr("cloud.availability_zone", "us-west-1b")
 	return resource
 }
 
 func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
-	attributes[string(conventionsv112.HTTPURLKey)] = "https://api.example.com/users/junit"
-	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.status_code"] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -213,10 +212,10 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 
 func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[string(conventionsv112.HTTPMethodKey)] = http.MethodGet
-	attributes[string(conventionsv112.HTTPURLKey)] = "https://api.example.com/users/junit"
-	attributes[string(conventionsv112.HTTPClientIPKey)] = "192.168.15.32"
-	attributes[string(conventionsv112.HTTPStatusCodeKey)] = 200
+	attributes["http.method"] = http.MethodGet
+	attributes["http.url"] = "https://api.example.com/users/junit"
+	attributes["http.client_ip"] = "192.168.15.32"
+	attributes["http.status_code"] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)

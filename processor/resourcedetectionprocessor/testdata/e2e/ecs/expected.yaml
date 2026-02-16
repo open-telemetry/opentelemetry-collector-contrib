@@ -1,0 +1,148 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: aws.ecs.cluster.arn
+          value:
+            stringValue: arn:aws:ecs:us-west-2:123456789012:cluster/test-ecs-cluster
+        - key: aws.ecs.launchtype
+          value:
+            stringValue: fargate
+        - key: aws.ecs.task.arn
+          value:
+            stringValue: arn:aws:ecs:us-west-2:123456789012:task/test-ecs-cluster/abcdef1234567890abcdef1234567890
+        - key: aws.ecs.task.family
+          value:
+            stringValue: test-task-family
+        - key: aws.ecs.task.id
+          value:
+            stringValue: abcdef1234567890abcdef1234567890
+        - key: aws.ecs.task.revision
+          value:
+            stringValue: "5"
+        - key: aws.log.group.arns
+          value:
+            arrayValue:
+              values:
+                - stringValue: arn:aws:logs:us-west-2:123456789012:log-group:application-logs
+        - key: aws.log.group.names
+          value:
+            arrayValue:
+              values:
+                - stringValue: application-logs
+        - key: aws.log.stream.arns
+          value:
+            arrayValue:
+              values:
+                - stringValue: arn:aws:logs:us-west-2:123456789012:log-group:application-logs:log-stream:ecs/application/abcdef1234567890
+        - key: aws.log.stream.names
+          value:
+            arrayValue:
+              values:
+                - stringValue: ecs/application/abcdef1234567890
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789012"
+        - key: cloud.availability_zone
+          value:
+            stringValue: us-west-2a
+        - key: cloud.platform
+          value:
+            stringValue: aws_ecs
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.region
+          value:
+            stringValue: us-west-2
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: Total seconds each logical CPU spent on each mode.
+            name: system.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: idle
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: interrupt
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: nice
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: softirq
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: steal
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: system
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1.0
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: cpu0
+                    - key: state
+                      value:
+                        stringValue: wait
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper

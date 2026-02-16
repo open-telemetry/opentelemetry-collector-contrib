@@ -2,23 +2,13 @@
 
 # yanggrpc
 
-## Resource Attributes
-
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cisco.device_type | Cisco device type (e.g., "IOS-XE", "NX-OS", "IOS-XR") | Any Str | true |
-| cisco.encoding_path | YANG model path for the telemetry data | Any Str | true |
-| cisco.node_id | Cisco device node identifier from telemetry message | Any Str | true |
-| cisco.subscription_id | Cisco telemetry subscription identifier | Any Str | true |
-| cisco.yang_module | Discovered YANG module name | Any Str | true |
-
 ## Internal Telemetry
 
 The following telemetry is emitted by this component.
 
 ### otelcol_yang_receiver_bytes_received
 
-Total bytes received from telemetry connections [Development]
+Total bytes received from telemetry connections
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -26,7 +16,7 @@ Total bytes received from telemetry connections [Development]
 
 ### otelcol_yang_receiver_connections_closed
 
-Number of gRPC connections closed [Development]
+Number of gRPC connections closed
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -34,7 +24,7 @@ Number of gRPC connections closed [Development]
 
 ### otelcol_yang_receiver_connections_opened
 
-Number of gRPC connections opened [Development]
+Number of gRPC connections opened
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -42,7 +32,7 @@ Number of gRPC connections opened [Development]
 
 ### otelcol_yang_receiver_grpc_errors
 
-Number of gRPC errors encountered [Development]
+Number of gRPC errors encountered
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -50,7 +40,7 @@ Number of gRPC errors encountered [Development]
 
 ### otelcol_yang_receiver_messages_dropped
 
-Number of telemetry messages dropped due to errors [Development]
+Number of telemetry messages dropped due to errors
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -58,7 +48,7 @@ Number of telemetry messages dropped due to errors [Development]
 
 ### otelcol_yang_receiver_messages_processed
 
-Number of telemetry messages successfully processed [Development]
+Number of telemetry messages successfully processed
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -66,7 +56,7 @@ Number of telemetry messages successfully processed [Development]
 
 ### otelcol_yang_receiver_messages_received
 
-Number of telemetry messages received [Development]
+Number of telemetry messages received
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -74,7 +64,7 @@ Number of telemetry messages received [Development]
 
 ### otelcol_yang_receiver_processing_duration
 
-Time spent processing telemetry messages [Development]
+Time spent processing telemetry messages
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -82,7 +72,7 @@ Time spent processing telemetry messages [Development]
 
 ### otelcol_yang_receiver_yang_modules_discovered
 
-Number of unique YANG modules discovered [Development]
+Number of unique YANG modules discovered
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

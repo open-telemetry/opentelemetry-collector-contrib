@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -24,6 +25,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -896,6 +899,9 @@ func generateIDsAndBatches(numIDs int) ([]pcommon.TraceID, []ptrace.Traces) {
 			span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 			span.SetTraceID(traceIDs[i])
 
+			if j != 0 {
+				span.SetParentSpanID(uInt64ToSpanID(uint64(spanID)))
+			}
 			spanID++
 			span.SetSpanID(uInt64ToSpanID(uint64(spanID)))
 			tds = append(tds, td)
@@ -937,6 +943,7 @@ type syncIDBatcher struct {
 	openBatch idbatcher.Batch
 	batchPipe chan idbatcher.Batch
 	stopped   bool
+	currentID uint64
 }
 
 var _ idbatcher.Batcher = (*syncIDBatcher)(nil)
@@ -946,16 +953,33 @@ func newSyncIDBatcher() idbatcher.Batcher {
 	batches <- nil
 	return &syncIDBatcher{
 		batchPipe: batches,
+		openBatch: idbatcher.Batch{},
 	}
 }
 
-func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) {
+func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) uint64 {
 	s.Lock()
+	defer s.Unlock()
 	if s.stopped {
 		panic("cannot add to stopped batcher!")
 	}
-	s.openBatch = append(s.openBatch, id)
-	s.Unlock()
+	s.openBatch[id] = struct{}{}
+	return s.currentID
+}
+
+// MoveToEarlierBatch is a noop for a sync batcher as there is only one pending batch.
+func (s *syncIDBatcher) MoveToEarlierBatch(_ pcommon.TraceID, currentBatch, _ uint64) uint64 {
+	s.Lock()
+	defer s.Unlock()
+	return currentBatch
+}
+
+func (s *syncIDBatcher) RemoveFromBatch(id pcommon.TraceID, batch uint64) {
+	s.Lock()
+	defer s.Unlock()
+	if batch == s.currentID {
+		delete(s.openBatch, id)
+	}
 }
 
 func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) {
@@ -964,12 +988,15 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 	firstBatch, ok := <-s.batchPipe
 	// When batchPipe is closed it means we have stopped and just need to return the openBatch as the last entries.
 	if !ok {
-		return s.openBatch, false
+		batch := s.openBatch
+		s.openBatch = nil
+		return batch, false
 	}
 	// Do not move the open batch to the channel if we are stopped. It will panic, we return it once the channel is closed instead.
 	if !s.stopped {
 		s.batchPipe <- s.openBatch
-		s.openBatch = nil
+		s.openBatch = idbatcher.Batch{}
+		s.currentID++
 	}
 	return firstBatch, true
 }
@@ -1084,6 +1111,209 @@ func TestNumericAttributeCases(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, decision, tt.description)
 		})
 	}
+}
+
+func TestDropLargeTraces(t *testing.T) {
+	controller := newTestTSPController()
+
+	traces := ptrace.NewTraces()
+	// Create a large trace (clearly more than 1024 bytes).
+	largeTrace := traces.ResourceSpans().AppendEmpty()
+	ss := largeTrace.ScopeSpans().AppendEmpty()
+	largeValue := strings.Repeat("bar", 1024)
+	sp := ss.Spans().AppendEmpty()
+	sp.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+	sp.Attributes().PutStr("foo", largeValue)
+
+	// Small trace with just one attribute.
+	smallTrace := traces.ResourceSpans().AppendEmpty()
+	ss = smallTrace.ScopeSpans().AppendEmpty()
+	sp = ss.Spans().AppendEmpty()
+	sp.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 5}))
+	sp.Attributes().PutStr("foo", "short")
+
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(4),
+		ExpectedNewTracesPerSec: 64,
+		MaximumTraceSizeBytes:   1024,
+		PolicyCfgs:              testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	processor, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = processor.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = processor.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	require.NoError(t, processor.ConsumeTraces(t.Context(), traces))
+	controller.waitForTick()
+	controller.waitForTick()
+
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Len(t, allSampledTraces, 1)
+
+	// Verify that the config can be changed without restarting the processor.
+	processor.(*tailSamplingSpanProcessor).SetMaximumTraceSizeBytes(1 << 20)
+	controller.waitForTick()
+
+	largeOnly := ptrace.NewTraces()
+	// Create a another large trace as ConsumeTraces is not guaranteed to preserve the trace.
+	largeTrace = largeOnly.ResourceSpans().AppendEmpty()
+	ss = largeTrace.ScopeSpans().AppendEmpty()
+	sp = ss.Spans().AppendEmpty()
+	sp.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 6}))
+	sp.Attributes().PutStr("foo", largeValue)
+
+	require.NoError(t, processor.ConsumeTraces(t.Context(), largeOnly))
+	controller.waitForTick()
+	controller.waitForTick()
+
+	allSampledTraces = nextConsumer.AllTraces()
+	// The sink will still contain the original trace.
+	assert.Len(t, allSampledTraces, 2)
+
+	// These traces should not count as dropped too early as we record a separate metric.
+	var md metricdata.ResourceMetrics
+	require.NoError(t, telem.reader.Collect(t.Context(), &md))
+
+	expectedTooEarly := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
+		Description: "Count of traces that needed to be dropped before the configured wait time [Development]",
+		Unit:        "{traces}",
+		Data: metricdata.Sum[int64]{
+			IsMonotonic: true,
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints: []metricdata.DataPoint[int64]{
+				{
+					Value: 0,
+				},
+			},
+		},
+	}
+	tooEarly := telem.getMetric(expectedTooEarly.Name, md)
+	metricdatatest.AssertEqual(t, expectedTooEarly, tooEarly, metricdatatest.IgnoreTimestamp())
+
+	expectedTooLarge := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_traces_dropped_too_large",
+		Description: "Count of traces that were dropped because they were too large [Development]",
+		Unit:        "{traces}",
+		Data: metricdata.Sum[int64]{
+			IsMonotonic: true,
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints: []metricdata.DataPoint[int64]{
+				{
+					Value: 1,
+				},
+			},
+		},
+	}
+	tooLarge := telem.getMetric(expectedTooLarge.Name, md)
+	metricdatatest.AssertEqual(t, expectedTooLarge, tooLarge, metricdatatest.IgnoreTimestamp())
+}
+
+// TestDeleteQueueCleared verifies that all in memory traces are removed from
+// both the idToTrace map as well as the deleteTraceQueue.
+func TestDeleteQueueCleared(t *testing.T) {
+	controller := newTestTSPController()
+
+	traceIDs, batches := generateIDsAndBatches(128)
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIDs)),
+		ExpectedNewTracesPerSec: 64,
+		// Use cache so that traces are cleared from memory.
+		DecisionCache: DecisionCacheConfig{
+			SampledCacheSize:    128,
+			NonSampledCacheSize: 128,
+		},
+		PolicyCfgs: testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = sp.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = sp.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	for _, batch := range batches {
+		require.NoError(t, sp.ConsumeTraces(t.Context(), batch))
+	}
+	controller.waitForTick()
+	controller.waitForTick()
+
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Len(t, allSampledTraces, 128)
+	// All traces should be flushed from the map.
+	assert.Empty(t, sp.(*tailSamplingSpanProcessor).idToTrace)
+	// All traces should be removed from the delete queue.
+	assert.Zero(t, sp.(*tailSamplingSpanProcessor).deleteTraceQueue.Len())
+}
+
+func TestRootReceivedBatcher(t *testing.T) {
+	traceIDs, batches := generateIDsAndBatches(128)
+	cfg := Config{
+		DecisionWait:            time.Minute,
+		NumTraces:               uint64(2 * len(traceIDs)),
+		ExpectedNewTracesPerSec: 64,
+		DecisionCache: DecisionCacheConfig{
+			SampledCacheSize:    128,
+			NonSampledCacheSize: 128,
+		},
+		PolicyCfgs: []PolicyCfg{
+			{sharedPolicyCfg: sharedPolicyCfg{
+				Name: "test-policy",
+				Type: Probabilistic,
+				ProbabilisticCfg: ProbabilisticCfg{
+					SamplingPercentage: 50,
+				},
+			}},
+		},
+		DecisionWaitAfterRootReceived: time.Second,
+		DropPendingTracesOnShutdown:   true,
+	}
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = sp.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = sp.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	for _, batch := range batches {
+		require.NoError(t, sp.ConsumeTraces(t.Context(), batch))
+	}
+	// Wait long enough that we pass the decision wait after a root is received,
+	// but no where near the base decision wait.
+	time.Sleep(2 * time.Second)
+
+	// Make sure about half of traces are sampled before a tick is called.
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Less(t, len(allSampledTraces), len(traceIDs)*6/10)
+	assert.Greater(t, len(allSampledTraces), len(traceIDs)*4/10)
 }
 
 func TestExtension(t *testing.T) {

@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -63,7 +64,10 @@ func Test_signalfxreceiver_New(t *testing.T) {
 			args: args{
 				config: Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:1234",
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  "localhost:1234",
+						},
 					},
 				},
 				nextConsumer: consumertest.NewNop(),
@@ -89,7 +93,7 @@ func Test_signalfxreceiver_New(t *testing.T) {
 func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = addr
+	cfg.NetAddr.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
 	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *cfg)
 	require.NoError(t, err)
@@ -178,7 +182,7 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 
 func Test_sfxReceiver_handleReq(t *testing.T) {
 	config := createDefaultConfig().(*Config)
-	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := time.Now().Unix() * 1e3
 	sFxMsg := buildSFxDatapointMsg(currentTime, 13, 3)
@@ -448,7 +452,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 
 func Test_sfxReceiver_handleEventReq(t *testing.T) {
 	config := (NewFactory()).CreateDefaultConfig().(*Config)
-	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.NetAddr.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := time.Now().Unix() * 1e3
 	sFxMsg := buildSFxEventMsg(currentTime, 3)
@@ -620,7 +624,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 func Test_sfxReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = addr
+	cfg.NetAddr.Endpoint = addr
 	cfg.TLS = configoptional.Some(configtls.ServerConfig{
 		Config: configtls.Config{
 			CertFile: "./testdata/server.crt",

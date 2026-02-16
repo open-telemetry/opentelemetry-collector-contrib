@@ -15,12 +15,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
@@ -46,7 +46,8 @@ func TestNewFranzSyncProducer_SASL(t *testing.T) {
 			Version:   1, // kfake only supports version 1
 		}
 		tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-		client, err := NewFranzSyncProducer(t.Context(), clientConfig,
+		client, err := NewFranzSyncProducer(
+			t.Context(), componenttest.NewNopHost(), clientConfig,
 			configkafka.NewDefaultProducerConfig(), time.Second, tl,
 		)
 		if err != nil {
@@ -125,7 +126,8 @@ func TestNewFranzSyncProducer_TLS(t *testing.T) {
 		observedLogs.TakeAll()       // drop existing logs
 		clientConfig := clientConfig // copy
 		clientConfig.TLS = cfg
-		client, err := NewFranzSyncProducer(t.Context(), clientConfig,
+		client, err := NewFranzSyncProducer(
+			t.Context(), componenttest.NewNopHost(), clientConfig,
 			configkafka.NewDefaultProducerConfig(), time.Second, logger,
 		)
 		if err != nil {
@@ -184,7 +186,10 @@ func TestNewFranzSyncProducerCompression(t *testing.T) {
 			prodCfg.Compression = compressionAlgo
 
 			tl := zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))
-			client, err := NewFranzSyncProducer(t.Context(), clientConfig, prodCfg, time.Second, tl)
+			client, err := NewFranzSyncProducer(
+				t.Context(), componenttest.NewNopHost(), clientConfig,
+				prodCfg, time.Second, tl,
+			)
 			require.NoError(t, err)
 			defer client.Close()
 
@@ -251,7 +256,10 @@ func TestNewFranzSyncProducerRequiredAcks(t *testing.T) {
 			prodCfg.RequiredAcks = ack
 
 			tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-			client, err := NewFranzSyncProducer(t.Context(), clientConfig, prodCfg, time.Second, tl)
+			client, err := NewFranzSyncProducer(
+				t.Context(), componenttest.NewNopHost(), clientConfig,
+				prodCfg, time.Second, tl,
+			)
 			require.NoError(t, err)
 			defer client.Close()
 
@@ -284,63 +292,6 @@ func acksToString(tb testing.TB, acks configkafka.RequiredAcks) string {
 	default:
 		tb.Fatalf("unknown RequiredAcks value: %v", acks)
 		return "" // Unreachable, but required.
-	}
-}
-
-// TODO(marclop): Remove this test once we completely remove Sarama so
-// we can get rid of the sarama dependency.
-func Test_saramaCompatHasher(t *testing.T) {
-	cases := []struct {
-		name       string
-		key        []byte
-		topic      string
-		partitions int32
-	}{
-		{"empty topic", []byte("key1"), "", 3},
-		{"single partition", []byte("key2"), "topic2", 1},
-		{"large partitions", []byte("key3"), "topic3", 100},
-		{"unicode key", []byte("ключ"), "topic4", 5},
-		{"unicode topic", []byte("key5"), "тема", 4},
-		{"zero partitions", []byte("key6"), "topic6", 1},
-		{"long key", []byte("thisisaverylongkeythatexceedstypicallengths"), "topic7", 8},
-		{"long topic", []byte("key8"), "averylongtopicnamethatexceedstypicallengths", 10},
-		{"special chars key", []byte("!@#$%^&*()_+"), "topic9", 7},
-		{"case sensitivity", []byte("Key11"), "Topic11", 11},
-		{"case sensitivity 2", []byte("key11"), "topic11", 11},
-		{"max int32 partitions", []byte("key12"), "topic12", 2147483647},
-		// Original cases for coverage
-		{"orig case 1", []byte("key1"), "topic1", 3},
-		{"orig case 2", []byte("key2"), "topic2", 5},
-		{"orig case 3", []byte("key3"), "topic3", 7},
-		{"orig case 4", []byte("key4"), "topic4", 2},
-		{"orig case 5", []byte("key5"), "topic5", 4},
-		{"orig case 6", []byte("key6"), "topic6", 6},
-		{"orig case 7", []byte("key7"), "topic7", 8},
-		{"orig case 8", []byte("key8"), "topic8", 10},
-		{"orig case 9", []byte("key9"), "topic9", 1},
-		{"orig case 10", []byte("key10"), "topic10", 9},
-		{"orig case 11", []byte("key11"), "topic11", 11},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			message := "test message"
-			// Sarama result
-			r, err := sarama.NewHashPartitioner(tc.topic).Partition(&sarama.ProducerMessage{
-				Topic: tc.topic,
-				Key:   sarama.ByteEncoder(tc.key),
-				Value: sarama.ByteEncoder(message),
-			}, tc.partitions)
-			require.NoError(t, err, "failed to hash partition")
-			saramaResult := int(r)
-
-			// Franz-go result
-			franzResult := newSaramaCompatPartitioner().ForTopic(tc.topic).Partition(&kgo.Record{
-				Topic: tc.topic,
-				Key:   tc.key,
-				Value: []byte(message),
-			}, int(tc.partitions))
-			assert.Equal(t, saramaResult, franzResult, "partitioning results do not match")
-		})
 	}
 }
 
@@ -483,7 +434,8 @@ func mustNewFranzConsumerGroup(t *testing.T,
 	// up and avoid waiting for too long.
 	minAge := 10 * time.Millisecond
 	opts = append(opts, kgo.MetadataMinAge(minAge), kgo.MetadataMaxAge(minAge*2))
-	client, err := NewFranzConsumerGroup(t.Context(), clientConfig, consumerConfig,
+	client, err := NewFranzConsumerGroup(
+		t.Context(), componenttest.NewNopHost(), clientConfig, consumerConfig,
 		topics, nil, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)), opts...,
 	)
 	require.NoError(t, err)
@@ -505,7 +457,8 @@ func TestFranzClient_MetadataRefreshInterval(t *testing.T) {
 			name: "producer",
 			setupClient: func(t *testing.T, clientConfig configkafka.ClientConfig, _ string, metadataMinAge time.Duration) {
 				tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
-				client, err := NewFranzSyncProducer(t.Context(), clientConfig,
+				client, err := NewFranzSyncProducer(
+					t.Context(), componenttest.NewNopHost(), clientConfig,
 					configkafka.NewDefaultProducerConfig(), time.Second, tl,
 					kgo.MetadataMinAge(metadataMinAge),
 				)
@@ -592,7 +545,7 @@ func TestFranzClient_ProtocolVersion(t *testing.T) {
 			})
 			t.Run("producer", func(t *testing.T) {
 				client, err := NewFranzSyncProducer(
-					t.Context(), clientConfig,
+					t.Context(), componenttest.NewNopHost(), clientConfig,
 					configkafka.NewDefaultProducerConfig(), time.Second, zap.NewNop(),
 				)
 				require.NoError(t, err)
@@ -609,12 +562,12 @@ func TestNewFranzClient_And_Admin(t *testing.T) {
 	tl := zaptest.NewLogger(t, zaptest.Level(zap.WarnLevel))
 
 	// Plain client
-	cl, err := NewFranzClient(t.Context(), clientCfg, tl)
+	cl, err := NewFranzClient(t.Context(), componenttest.NewNopHost(), clientCfg, tl)
 	require.NoError(t, err)
 	t.Cleanup(cl.Close)
 
 	// Admin from fresh client
-	ad, cl2, err := NewFranzClusterAdminClient(t.Context(), clientCfg, tl)
+	ad, cl2, err := NewFranzClusterAdminClient(t.Context(), componenttest.NewNopHost(), clientCfg, tl)
 	require.NoError(t, err)
 	t.Cleanup(func() { ad.Close(); cl2.Close() })
 

@@ -17,3 +17,59 @@ tests:
       top:
         # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
         - "go.opencensus.io/stats/view.(*worker).start"
+
+feature_gates:
+  - id: receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion
+    stage: alpha
+    description: >-
+      Enables the Prometheus created-timestamps-zero-injection feature.
+      Created timestamps are injected as 0-valued samples when appropriate.
+      This is disabled by default due to worse CPU performance with higher metric volumes.
+    from_version: v0.113.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40355
+
+  - id: receiver.prometheusreceiver.EnableNativeHistograms
+    stage: stable
+    description: >-
+      Converts scraped Prometheus native histograms into OpenTelemetry exponential histograms.
+      You still need to configure 'scrape_native_histograms: true' in your Prometheus scrape
+      config to actually scrape native histograms. For mixed histograms (both classic and native),
+      only the native histogram buckets are used.
+    from_version: v0.142.0
+    to_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/34473
+
+  - id: receiver.prometheusreceiver.EnableReportExtraScrapeMetrics
+    stage: alpha
+    description: >-
+      Enables reporting of extra Prometheus scrape metrics. This replaces the deprecated
+      'report_extra_scrape_metrics' configuration option.
+    from_version: v0.143.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44181
+
+  - id: receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig
+    stage: beta
+    description: >-
+      When enabled, the 'report_extra_scrape_metrics' configuration option is ignored,
+      and extra scrape metrics are controlled solely by the EnableReportExtraScrapeMetrics
+      feature gate. The intention is to have extra scrape metrics enabled all the time in the future.
+    from_version: v0.143.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44181
+
+  - id: receiver.prometheusreceiver.RemoveStartTimeAdjustment
+    stage: stable
+    description: >-
+      When enabled, the Prometheus receiver will leave the start time unset.
+      Use the metricstarttime processor instead if you need this functionality.
+    from_version: v0.121.0
+    to_version: v0.142.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36364
+
+  - id: receiver.prometheusreceiver.UseCreatedMetric
+    stage: deprecated
+    description: >-
+      When enabled, the Prometheus receiver will retrieve the start time for
+      Summary, Histogram and Sum metrics from _created metric.
+    from_version: v0.89.0
+    to_version: v0.141.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21909

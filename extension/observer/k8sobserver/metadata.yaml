@@ -1,3 +1,4 @@
+display_name: Kubernetes Observer Extension
 type: k8s_observer
 
 status:

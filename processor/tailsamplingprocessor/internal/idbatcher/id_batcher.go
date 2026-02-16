@@ -7,20 +7,17 @@ package idbatcher // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"errors"
+	"math"
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var (
-	// ErrInvalidNumBatches occurs when an invalid number of batches is specified.
-	ErrInvalidNumBatches = errors.New("invalid number of batches, it must be greater than zero")
-	// ErrInvalidBatchChannelSize occurs when an invalid batch channel size is specified.
-	ErrInvalidBatchChannelSize = errors.New("invalid batch channel size, it must be greater than zero")
-)
+// ErrInvalidNumBatches occurs when an invalid number of batches is specified.
+var ErrInvalidNumBatches = errors.New("invalid number of batches, it must be greater than zero")
 
-// Batch is the type of batches held by the Batcher.
-type Batch []pcommon.TraceID
+// Batch is the type of batches held by the Batcher. It uses a set in order to merge batches efficiently.
+type Batch map[pcommon.TraceID]struct{}
 
 // Batcher behaves like a pipeline of batches that has a fixed number of batches in the pipe
 // and a new batch being built outside of the pipe. Items can be concurrently added to the batch
@@ -33,13 +30,25 @@ type Batcher interface {
 	// of limiting the growth of the current batch if appropriate for its scenario. It can
 	// either call CloseCurrentAndTakeFirstBatch earlier or stop adding new items depending on what is
 	// required by the scenario.
-	AddToCurrentBatch(id pcommon.TraceID)
+	AddToCurrentBatch(id pcommon.TraceID) uint64
+
+	// MoveToEarlierBatch tries to move the trace from the current batch to a
+	// batch that is only a few batches from now. If the current batch will be
+	// processed before the proposed batch it will do nothing. Returns the
+	// batch that the trace will now be a part of (which may stay the same).
+	MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFromNow uint64) uint64
+
+	// RemoveFromBatch will remove the trace from the given batch.
+	// If the batch is not in the range of batches then it is a noop.
+	RemoveFromBatch(id pcommon.TraceID, batch uint64)
+
 	// CloseCurrentAndTakeFirstBatch takes the batch at the front of the pipe, and moves the current
 	// batch to the end of the pipe, creating a new batch to receive new items. This operation should
 	// be atomic.
 	// It returns the batch that was in front of the pipe and a boolean that if true indicates that
 	// there are more batches to be retrieved.
 	CloseCurrentAndTakeFirstBatch() (Batch, bool)
+
 	// Stop informs that no more items are going to be batched and the pipeline can be read until it
 	// is empty. After this method is called attempts to enqueue new items will panic.
 	Stop()
@@ -48,76 +57,95 @@ type Batcher interface {
 var _ Batcher = (*batcher)(nil)
 
 type batcher struct {
-	pendingIDs chan pcommon.TraceID // Channel for the ids to be added to the next batch.
-	batches    chan Batch           // Channel with already captured batches.
+	takeID  uint64
+	batches []Batch
 
-	// cbMutex protects the currentBatch storing ids.
-	cbMutex      sync.Mutex
+	// mux protects any batch storing/moving ids.
+	mux          sync.Mutex
 	currentBatch Batch
 
 	newBatchesInitialCapacity uint64
-	stopchan                  chan bool
+	lastBatchID               uint64
 	stopped                   bool
-	stopLock                  sync.RWMutex
 }
 
 // New creates a Batcher that will hold numBatches in its pipeline, having a channel with
 // batchChannelSize to receive new items. New batches will be created with capacity set to
 // newBatchesInitialCapacity.
-func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batcher, error) {
+func New(numBatches, newBatchesInitialCapacity uint64) (Batcher, error) {
 	if numBatches < 1 {
 		return nil, ErrInvalidNumBatches
 	}
-	if batchChannelSize < 1 {
-		return nil, ErrInvalidBatchChannelSize
-	}
-
-	batches := make(chan Batch, numBatches)
-	// First numBatches batches will be empty in order to simplify clients that are running
-	// CloseCurrentAndTakeFirstBatch on a timer and want to delay the processing of the first
-	// batch with actual data. This way there is no need for accounting on the client side and
-	// a single timer can be started immediately.
-	for range numBatches {
-		batches <- nil
+	if newBatchesInitialCapacity == 0 {
+		// Always allocate a small map rather than sending a size hint of 0.
+		// As the batcher runs it will allocate based on previous batch sizes.
+		newBatchesInitialCapacity = 10
 	}
 
 	batcher := &batcher{
-		pendingIDs:                make(chan pcommon.TraceID, batchChannelSize),
-		batches:                   batches,
-		currentBatch:              make(Batch, 0, newBatchesInitialCapacity),
+		batches:                   make([]Batch, numBatches),
+		currentBatch:              make(Batch, newBatchesInitialCapacity),
 		newBatchesInitialCapacity: newBatchesInitialCapacity,
-		stopchan:                  make(chan bool),
+		lastBatchID:               math.MaxUint64,
 	}
-
-	// Single goroutine that keeps filling the current batch, contention is expected only
-	// when the current batch is being switched.
-	go func() {
-		for id := range batcher.pendingIDs {
-			batcher.cbMutex.Lock()
-			batcher.currentBatch = append(batcher.currentBatch, id)
-			batcher.cbMutex.Unlock()
-		}
-		batcher.stopchan <- true
-	}()
 
 	return batcher, nil
 }
 
-func (b *batcher) AddToCurrentBatch(id pcommon.TraceID) {
-	b.pendingIDs <- id
+func (b *batcher) AddToCurrentBatch(id pcommon.TraceID) uint64 {
+	b.mux.Lock()
+	defer b.mux.Unlock()
+
+	b.currentBatch[id] = struct{}{}
+	return b.takeID + uint64(len(b.batches))
+}
+
+func (b *batcher) MoveToEarlierBatch(id pcommon.TraceID, currentBatch, batchesFromNow uint64) uint64 {
+	b.mux.Lock()
+	defer b.mux.Unlock()
+
+	proposedBatch := b.takeID + batchesFromNow
+	// Only move the batch if it is earlier.
+	if proposedBatch < currentBatch {
+		currentIdx := currentBatch % uint64(len(b.batches))
+		delete(b.batches[currentIdx], id)
+		proposedIdx := proposedBatch % uint64(len(b.batches))
+		if b.batches[proposedIdx] == nil {
+			b.batches[proposedIdx] = make(Batch, b.newBatchesInitialCapacity)
+		}
+		b.batches[proposedIdx][id] = struct{}{}
+		return proposedBatch
+	}
+	return currentBatch
+}
+
+func (b *batcher) RemoveFromBatch(id pcommon.TraceID, batch uint64) {
+	b.mux.Lock()
+	defer b.mux.Unlock()
+
+	currentBatchID := b.takeID + uint64(len(b.batches))
+	if batch == currentBatchID {
+		delete(b.currentBatch, id)
+	} else if batch >= b.takeID && batch < currentBatchID {
+		delete(b.batches[batch%uint64(len(b.batches))], id)
+	}
+	// Nothing to remove if we are outside of the batch range.
 }
 
 func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
-	if readBatch, ok := <-b.batches; ok {
-		b.stopLock.RLock()
+	b.mux.Lock()
+	defer b.mux.Unlock()
+
+	if b.takeID < b.lastBatchID {
+		takeIdx := b.takeID % uint64(len(b.batches))
+		readBatch := b.batches[takeIdx]
+
 		if !b.stopped {
-			nextBatch := make(Batch, 0, max(b.newBatchesInitialCapacity, uint64(len(readBatch))))
-			b.cbMutex.Lock()
-			b.batches <- b.currentBatch
+			nextBatch := make(Batch, max(b.newBatchesInitialCapacity, uint64(len(readBatch))))
+			b.batches[takeIdx] = b.currentBatch
 			b.currentBatch = nextBatch
-			b.cbMutex.Unlock()
 		}
-		b.stopLock.RUnlock()
+		b.takeID++
 		return readBatch, true
 	}
 
@@ -127,9 +155,9 @@ func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 }
 
 func (b *batcher) Stop() {
-	close(b.pendingIDs)
-	b.stopLock.Lock()
-	b.stopped = <-b.stopchan
-	b.stopLock.Unlock()
-	close(b.batches)
+	b.mux.Lock()
+	defer b.mux.Unlock()
+
+	b.stopped = true
+	b.lastBatchID = b.takeID + uint64(len(b.batches))
 }

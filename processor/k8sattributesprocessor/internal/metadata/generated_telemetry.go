@@ -6,10 +6,9 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -26,6 +25,7 @@ type TelemetryBuilder struct {
 	meter                        metric.Meter
 	mu                           sync.Mutex
 	registrations                []metric.Registration
+	OtelcolK8sPodAssociation     metric.Int64Counter
 	OtelsvcK8sDaemonsetAdded     metric.Int64Counter
 	OtelsvcK8sDaemonsetDeleted   metric.Int64Counter
 	OtelsvcK8sDaemonsetUpdated   metric.Int64Counter
@@ -83,6 +83,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.OtelcolK8sPodAssociation, err = builder.meter.Int64Counter(
+		"otelcol_otelcol.k8s.pod.association",
+		metric.WithDescription("Number of pod associations' evaluations [Development]"),
+		metric.WithUnit("{resources}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.OtelsvcK8sDaemonsetAdded, err = builder.meter.Int64Counter(
 		"otelcol_otelsvc_k8s_daemonset_added",
 		metric.WithDescription("Number of daemonset add events received [Development]"),

@@ -285,7 +285,7 @@ func Test_getLogKey(t *testing.T) {
 				)
 				expectedMulti := pdatautil.Hash64(
 					pdatautil.WithString(dedupValue),
-					pdatautil.WithString(dedupValue),
+					pdatautil.WithString(dedupValue), //nolint:gocritic // Intentional: testing multi-key deduplication with same value
 				)
 
 				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))

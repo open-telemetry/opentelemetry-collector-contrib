@@ -61,7 +61,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:     configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   queueCfg,
+		QueueSettings:   configoptional.Some(queueCfg),
 		ClientConfig: configgrpc.ClientConfig{
 			// Default to zstd compression
 			Compression: configcompression.TypeZstd,

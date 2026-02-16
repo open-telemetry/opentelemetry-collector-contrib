@@ -136,7 +136,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		cln, cerr := sr.config.CollectorHTTPSettings.ToListener(ctx)
 		if cerr != nil {
 			return fmt.Errorf("failed to bind to Collector address %q: %w",
-				sr.config.CollectorHTTPSettings.Endpoint, cerr)
+				sr.config.CollectorHTTPSettings.NetAddr.Endpoint, cerr)
 		}
 
 		nr := mux.NewRouter()

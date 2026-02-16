@@ -470,6 +470,29 @@ func TestTransformer(t *testing.T) {
 			},
 		},
 		{
+			"TestMaxBatchSizeUnlimited",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'end'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxBatchSize = 0 // unlimited
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "event1", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "event2", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "event3", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "event4", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "event5", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "end", map[string]string{attrs.LogFilePath: "file1"}),
+			},
+			[]*entry.Entry{
+				// All entries combined into one because MaxBatchSize=0 means unlimited
+				entryWithBodyAttr(t1, "event1\nevent2\nevent3\nevent4\nevent5\nend", map[string]string{attrs.LogFilePath: "file1"}),
+			},
+		},
+		{
 			"TestMaxLogSizeForLastEntry",
 			func() *Config {
 				cfg := NewConfig()
@@ -816,7 +839,7 @@ func BenchmarkRecombine(b *testing.B) {
 		for _, e := range entries {
 			require.NoError(b, op.ProcessBatch(b.Context(), []*entry.Entry{e}))
 		}
-		op.(*Transformer).flushAllSources(ctx)
+		op.(*Transformer).flushAllSources(ctx, op.(*Transformer).Write)
 	}
 	b.StopTimer()
 
@@ -857,7 +880,7 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 	for b.Loop() {
 		require.NoError(b, op.ProcessBatch(ctx, []*entry.Entry{start, next}))
 		require.NoError(b, op.ProcessBatch(ctx, []*entry.Entry{start, next}))
-		op.(*Transformer).flushAllSources(ctx)
+		op.(*Transformer).flushAllSources(ctx, op.(*Transformer).Write)
 	}
 	b.StopTimer()
 
@@ -1001,4 +1024,72 @@ func TestSourceBatchDelete(t *testing.T) {
 	require.Empty(t, recombine.batchMap)
 	fake.ExpectEntry(t, expect)
 	require.NoError(t, op.Stop())
+}
+
+func TestProcessBatchPreservesBatching(t *testing.T) {
+	t.Parallel()
+
+	cfg := NewConfig()
+	cfg.CombineField = entry.NewBodyField()
+	cfg.IsLastEntry = "body == 'END'"
+	cfg.SourceIdentifier = entry.NewAttributeField(attrs.LogFilePath)
+	cfg.OutputIDs = []string{"fake"}
+
+	op, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	fake := testutil.NewFakeOutput(t)
+	require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
+
+	// Create entries from 3 different sources
+	entry1_1 := entry.New()
+	entry1_1.Body = "line1"
+	entry1_1.AddAttribute(attrs.LogFilePath, "file1")
+
+	entry1_2 := entry.New()
+	entry1_2.Body = "END"
+	entry1_2.AddAttribute(attrs.LogFilePath, "file1")
+
+	entry2_1 := entry.New()
+	entry2_1.Body = "line1"
+	entry2_1.AddAttribute(attrs.LogFilePath, "file2")
+
+	entry2_2 := entry.New()
+	entry2_2.Body = "END"
+	entry2_2.AddAttribute(attrs.LogFilePath, "file2")
+
+	entry3_1 := entry.New()
+	entry3_1.Body = "line1"
+	entry3_1.AddAttribute(attrs.LogFilePath, "file3")
+
+	entry3_2 := entry.New()
+	entry3_2.Body = "END"
+	entry3_2.AddAttribute(attrs.LogFilePath, "file3")
+
+	// Process all entries in a single batch
+	allEntries := []*entry.Entry{entry1_1, entry1_2, entry2_1, entry2_2, entry3_1, entry3_2}
+	require.NoError(t, op.ProcessBatch(t.Context(), allEntries))
+
+	// Verify we got 3 combined entries with correct content
+	expect1 := entry.New()
+	expect1.ObservedTimestamp = entry1_1.ObservedTimestamp
+	expect1.Timestamp = entry1_1.Timestamp
+	expect1.AddAttribute(attrs.LogFilePath, "file1")
+	expect1.Body = "line1\nEND"
+
+	expect2 := entry.New()
+	expect2.ObservedTimestamp = entry2_1.ObservedTimestamp
+	expect2.Timestamp = entry2_1.Timestamp
+	expect2.AddAttribute(attrs.LogFilePath, "file2")
+	expect2.Body = "line1\nEND"
+
+	expect3 := entry.New()
+	expect3.ObservedTimestamp = entry3_1.ObservedTimestamp
+	expect3.Timestamp = entry3_1.Timestamp
+	expect3.AddAttribute(attrs.LogFilePath, "file3")
+	expect3.Body = "line1\nEND"
+
+	fake.ExpectEntry(t, expect1)
+	fake.ExpectEntry(t, expect2)
+	fake.ExpectEntry(t, expect3)
 }

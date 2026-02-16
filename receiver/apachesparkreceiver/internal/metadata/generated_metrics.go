@@ -586,6 +586,7 @@ func (m *metricSparkDriverBlockManagerDiskUsage) emit(metrics pmetric.MetricSlic
 
 func newMetricSparkDriverBlockManagerDiskUsage(cfg MetricConfig) metricSparkDriverBlockManagerDiskUsage {
 	m := metricSparkDriverBlockManagerDiskUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -640,6 +641,7 @@ func (m *metricSparkDriverBlockManagerMemoryUsage) emit(metrics pmetric.MetricSl
 
 func newMetricSparkDriverBlockManagerMemoryUsage(cfg MetricConfig) metricSparkDriverBlockManagerMemoryUsage {
 	m := metricSparkDriverBlockManagerMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -689,6 +691,7 @@ func (m *metricSparkDriverCodeGeneratorCompilationAverageTime) emit(metrics pmet
 
 func newMetricSparkDriverCodeGeneratorCompilationAverageTime(cfg MetricConfig) metricSparkDriverCodeGeneratorCompilationAverageTime {
 	m := metricSparkDriverCodeGeneratorCompilationAverageTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -740,6 +743,7 @@ func (m *metricSparkDriverCodeGeneratorCompilationCount) emit(metrics pmetric.Me
 
 func newMetricSparkDriverCodeGeneratorCompilationCount(cfg MetricConfig) metricSparkDriverCodeGeneratorCompilationCount {
 	m := metricSparkDriverCodeGeneratorCompilationCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -789,6 +793,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedClassAverageSize) emit(metrics p
 
 func newMetricSparkDriverCodeGeneratorGeneratedClassAverageSize(cfg MetricConfig) metricSparkDriverCodeGeneratorGeneratedClassAverageSize {
 	m := metricSparkDriverCodeGeneratorGeneratedClassAverageSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -840,6 +845,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedClassCount) emit(metrics pmetric
 
 func newMetricSparkDriverCodeGeneratorGeneratedClassCount(cfg MetricConfig) metricSparkDriverCodeGeneratorGeneratedClassCount {
 	m := metricSparkDriverCodeGeneratorGeneratedClassCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -889,6 +895,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedMethodAverageSize) emit(metrics 
 
 func newMetricSparkDriverCodeGeneratorGeneratedMethodAverageSize(cfg MetricConfig) metricSparkDriverCodeGeneratorGeneratedMethodAverageSize {
 	m := metricSparkDriverCodeGeneratorGeneratedMethodAverageSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -940,6 +947,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedMethodCount) emit(metrics pmetri
 
 func newMetricSparkDriverCodeGeneratorGeneratedMethodCount(cfg MetricConfig) metricSparkDriverCodeGeneratorGeneratedMethodCount {
 	m := metricSparkDriverCodeGeneratorGeneratedMethodCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -989,6 +997,7 @@ func (m *metricSparkDriverCodeGeneratorSourceCodeAverageSize) emit(metrics pmetr
 
 func newMetricSparkDriverCodeGeneratorSourceCodeAverageSize(cfg MetricConfig) metricSparkDriverCodeGeneratorSourceCodeAverageSize {
 	m := metricSparkDriverCodeGeneratorSourceCodeAverageSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1040,6 +1049,7 @@ func (m *metricSparkDriverCodeGeneratorSourceCodeOperations) emit(metrics pmetri
 
 func newMetricSparkDriverCodeGeneratorSourceCodeOperations(cfg MetricConfig) metricSparkDriverCodeGeneratorSourceCodeOperations {
 	m := metricSparkDriverCodeGeneratorSourceCodeOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1091,6 +1101,7 @@ func (m *metricSparkDriverDagSchedulerJobActive) emit(metrics pmetric.MetricSlic
 
 func newMetricSparkDriverDagSchedulerJobActive(cfg MetricConfig) metricSparkDriverDagSchedulerJobActive {
 	m := metricSparkDriverDagSchedulerJobActive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1142,6 +1153,7 @@ func (m *metricSparkDriverDagSchedulerJobCount) emit(metrics pmetric.MetricSlice
 
 func newMetricSparkDriverDagSchedulerJobCount(cfg MetricConfig) metricSparkDriverDagSchedulerJobCount {
 	m := metricSparkDriverDagSchedulerJobCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1195,6 +1207,7 @@ func (m *metricSparkDriverDagSchedulerStageCount) emit(metrics pmetric.MetricSli
 
 func newMetricSparkDriverDagSchedulerStageCount(cfg MetricConfig) metricSparkDriverDagSchedulerStageCount {
 	m := metricSparkDriverDagSchedulerStageCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1246,6 +1259,7 @@ func (m *metricSparkDriverDagSchedulerStageFailed) emit(metrics pmetric.MetricSl
 
 func newMetricSparkDriverDagSchedulerStageFailed(cfg MetricConfig) metricSparkDriverDagSchedulerStageFailed {
 	m := metricSparkDriverDagSchedulerStageFailed{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1299,6 +1313,7 @@ func (m *metricSparkDriverExecutorGcOperations) emit(metrics pmetric.MetricSlice
 
 func newMetricSparkDriverExecutorGcOperations(cfg MetricConfig) metricSparkDriverExecutorGcOperations {
 	m := metricSparkDriverExecutorGcOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1352,6 +1367,7 @@ func (m *metricSparkDriverExecutorGcTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkDriverExecutorGcTime(cfg MetricConfig) metricSparkDriverExecutorGcTime {
 	m := metricSparkDriverExecutorGcTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1405,6 +1421,7 @@ func (m *metricSparkDriverExecutorMemoryExecution) emit(metrics pmetric.MetricSl
 
 func newMetricSparkDriverExecutorMemoryExecution(cfg MetricConfig) metricSparkDriverExecutorMemoryExecution {
 	m := metricSparkDriverExecutorMemoryExecution{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1458,6 +1475,7 @@ func (m *metricSparkDriverExecutorMemoryJvm) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkDriverExecutorMemoryJvm(cfg MetricConfig) metricSparkDriverExecutorMemoryJvm {
 	m := metricSparkDriverExecutorMemoryJvm{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1511,6 +1529,7 @@ func (m *metricSparkDriverExecutorMemoryPool) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSparkDriverExecutorMemoryPool(cfg MetricConfig) metricSparkDriverExecutorMemoryPool {
 	m := metricSparkDriverExecutorMemoryPool{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1564,6 +1583,7 @@ func (m *metricSparkDriverExecutorMemoryStorage) emit(metrics pmetric.MetricSlic
 
 func newMetricSparkDriverExecutorMemoryStorage(cfg MetricConfig) metricSparkDriverExecutorMemoryStorage {
 	m := metricSparkDriverExecutorMemoryStorage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1615,6 +1635,7 @@ func (m *metricSparkDriverHiveExternalCatalogFileCacheHits) emit(metrics pmetric
 
 func newMetricSparkDriverHiveExternalCatalogFileCacheHits(cfg MetricConfig) metricSparkDriverHiveExternalCatalogFileCacheHits {
 	m := metricSparkDriverHiveExternalCatalogFileCacheHits{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1666,6 +1687,7 @@ func (m *metricSparkDriverHiveExternalCatalogFilesDiscovered) emit(metrics pmetr
 
 func newMetricSparkDriverHiveExternalCatalogFilesDiscovered(cfg MetricConfig) metricSparkDriverHiveExternalCatalogFilesDiscovered {
 	m := metricSparkDriverHiveExternalCatalogFilesDiscovered{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1717,6 +1739,7 @@ func (m *metricSparkDriverHiveExternalCatalogHiveClientCalls) emit(metrics pmetr
 
 func newMetricSparkDriverHiveExternalCatalogHiveClientCalls(cfg MetricConfig) metricSparkDriverHiveExternalCatalogHiveClientCalls {
 	m := metricSparkDriverHiveExternalCatalogHiveClientCalls{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1768,6 +1791,7 @@ func (m *metricSparkDriverHiveExternalCatalogParallelListingJobs) emit(metrics p
 
 func newMetricSparkDriverHiveExternalCatalogParallelListingJobs(cfg MetricConfig) metricSparkDriverHiveExternalCatalogParallelListingJobs {
 	m := metricSparkDriverHiveExternalCatalogParallelListingJobs{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1819,6 +1843,7 @@ func (m *metricSparkDriverHiveExternalCatalogPartitionsFetched) emit(metrics pme
 
 func newMetricSparkDriverHiveExternalCatalogPartitionsFetched(cfg MetricConfig) metricSparkDriverHiveExternalCatalogPartitionsFetched {
 	m := metricSparkDriverHiveExternalCatalogPartitionsFetched{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1870,6 +1895,7 @@ func (m *metricSparkDriverJvmCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkDriverJvmCPUTime(cfg MetricConfig) metricSparkDriverJvmCPUTime {
 	m := metricSparkDriverJvmCPUTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1921,6 +1947,7 @@ func (m *metricSparkDriverLiveListenerBusDropped) emit(metrics pmetric.MetricSli
 
 func newMetricSparkDriverLiveListenerBusDropped(cfg MetricConfig) metricSparkDriverLiveListenerBusDropped {
 	m := metricSparkDriverLiveListenerBusDropped{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1972,6 +1999,7 @@ func (m *metricSparkDriverLiveListenerBusPosted) emit(metrics pmetric.MetricSlic
 
 func newMetricSparkDriverLiveListenerBusPosted(cfg MetricConfig) metricSparkDriverLiveListenerBusPosted {
 	m := metricSparkDriverLiveListenerBusPosted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2021,6 +2049,7 @@ func (m *metricSparkDriverLiveListenerBusProcessingTimeAverage) emit(metrics pme
 
 func newMetricSparkDriverLiveListenerBusProcessingTimeAverage(cfg MetricConfig) metricSparkDriverLiveListenerBusProcessingTimeAverage {
 	m := metricSparkDriverLiveListenerBusProcessingTimeAverage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2072,6 +2101,7 @@ func (m *metricSparkDriverLiveListenerBusQueueSize) emit(metrics pmetric.MetricS
 
 func newMetricSparkDriverLiveListenerBusQueueSize(cfg MetricConfig) metricSparkDriverLiveListenerBusQueueSize {
 	m := metricSparkDriverLiveListenerBusQueueSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2123,6 +2153,7 @@ func (m *metricSparkExecutorDiskUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkExecutorDiskUsage(cfg MetricConfig) metricSparkExecutorDiskUsage {
 	m := metricSparkExecutorDiskUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2174,6 +2205,7 @@ func (m *metricSparkExecutorGcTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkExecutorGcTime(cfg MetricConfig) metricSparkExecutorGcTime {
 	m := metricSparkExecutorGcTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2225,6 +2257,7 @@ func (m *metricSparkExecutorInputSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkExecutorInputSize(cfg MetricConfig) metricSparkExecutorInputSize {
 	m := metricSparkExecutorInputSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2276,6 +2309,7 @@ func (m *metricSparkExecutorMemoryUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkExecutorMemoryUsage(cfg MetricConfig) metricSparkExecutorMemoryUsage {
 	m := metricSparkExecutorMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2329,6 +2363,7 @@ func (m *metricSparkExecutorShuffleIoSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkExecutorShuffleIoSize(cfg MetricConfig) metricSparkExecutorShuffleIoSize {
 	m := metricSparkExecutorShuffleIoSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2383,6 +2418,7 @@ func (m *metricSparkExecutorStorageMemoryUsage) emit(metrics pmetric.MetricSlice
 
 func newMetricSparkExecutorStorageMemoryUsage(cfg MetricConfig) metricSparkExecutorStorageMemoryUsage {
 	m := metricSparkExecutorStorageMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2434,6 +2470,7 @@ func (m *metricSparkExecutorTaskActive) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkExecutorTaskActive(cfg MetricConfig) metricSparkExecutorTaskActive {
 	m := metricSparkExecutorTaskActive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2485,6 +2522,7 @@ func (m *metricSparkExecutorTaskLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkExecutorTaskLimit(cfg MetricConfig) metricSparkExecutorTaskLimit {
 	m := metricSparkExecutorTaskLimit{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2538,6 +2576,7 @@ func (m *metricSparkExecutorTaskResult) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkExecutorTaskResult(cfg MetricConfig) metricSparkExecutorTaskResult {
 	m := metricSparkExecutorTaskResult{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2589,6 +2628,7 @@ func (m *metricSparkExecutorTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkExecutorTime(cfg MetricConfig) metricSparkExecutorTime {
 	m := metricSparkExecutorTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2640,6 +2680,7 @@ func (m *metricSparkJobStageActive) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkJobStageActive(cfg MetricConfig) metricSparkJobStageActive {
 	m := metricSparkJobStageActive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2693,6 +2734,7 @@ func (m *metricSparkJobStageResult) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkJobStageResult(cfg MetricConfig) metricSparkJobStageResult {
 	m := metricSparkJobStageResult{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2744,6 +2786,7 @@ func (m *metricSparkJobTaskActive) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkJobTaskActive(cfg MetricConfig) metricSparkJobTaskActive {
 	m := metricSparkJobTaskActive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2797,6 +2840,7 @@ func (m *metricSparkJobTaskResult) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkJobTaskResult(cfg MetricConfig) metricSparkJobTaskResult {
 	m := metricSparkJobTaskResult{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2848,6 +2892,7 @@ func (m *metricSparkStageDiskSpilled) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageDiskSpilled(cfg MetricConfig) metricSparkStageDiskSpilled {
 	m := metricSparkStageDiskSpilled{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2899,6 +2944,7 @@ func (m *metricSparkStageExecutorCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageExecutorCPUTime(cfg MetricConfig) metricSparkStageExecutorCPUTime {
 	m := metricSparkStageExecutorCPUTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2950,6 +2996,7 @@ func (m *metricSparkStageExecutorRunTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageExecutorRunTime(cfg MetricConfig) metricSparkStageExecutorRunTime {
 	m := metricSparkStageExecutorRunTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3003,6 +3050,7 @@ func (m *metricSparkStageIoRecords) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageIoRecords(cfg MetricConfig) metricSparkStageIoRecords {
 	m := metricSparkStageIoRecords{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3056,6 +3104,7 @@ func (m *metricSparkStageIoSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageIoSize(cfg MetricConfig) metricSparkStageIoSize {
 	m := metricSparkStageIoSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3107,6 +3156,7 @@ func (m *metricSparkStageJvmGcTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageJvmGcTime(cfg MetricConfig) metricSparkStageJvmGcTime {
 	m := metricSparkStageJvmGcTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3158,6 +3208,7 @@ func (m *metricSparkStageMemoryPeak) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageMemoryPeak(cfg MetricConfig) metricSparkStageMemoryPeak {
 	m := metricSparkStageMemoryPeak{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3209,6 +3260,7 @@ func (m *metricSparkStageMemorySpilled) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageMemorySpilled(cfg MetricConfig) metricSparkStageMemorySpilled {
 	m := metricSparkStageMemorySpilled{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3262,6 +3314,7 @@ func (m *metricSparkStageShuffleBlocksFetched) emit(metrics pmetric.MetricSlice)
 
 func newMetricSparkStageShuffleBlocksFetched(cfg MetricConfig) metricSparkStageShuffleBlocksFetched {
 	m := metricSparkStageShuffleBlocksFetched{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3313,6 +3366,7 @@ func (m *metricSparkStageShuffleFetchWaitTime) emit(metrics pmetric.MetricSlice)
 
 func newMetricSparkStageShuffleFetchWaitTime(cfg MetricConfig) metricSparkStageShuffleFetchWaitTime {
 	m := metricSparkStageShuffleFetchWaitTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3364,6 +3418,7 @@ func (m *metricSparkStageShuffleIoDisk) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageShuffleIoDisk(cfg MetricConfig) metricSparkStageShuffleIoDisk {
 	m := metricSparkStageShuffleIoDisk{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3417,6 +3472,7 @@ func (m *metricSparkStageShuffleIoReadSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageShuffleIoReadSize(cfg MetricConfig) metricSparkStageShuffleIoReadSize {
 	m := metricSparkStageShuffleIoReadSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3470,6 +3526,7 @@ func (m *metricSparkStageShuffleIoRecords) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageShuffleIoRecords(cfg MetricConfig) metricSparkStageShuffleIoRecords {
 	m := metricSparkStageShuffleIoRecords{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3521,6 +3578,7 @@ func (m *metricSparkStageShuffleIoWriteSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageShuffleIoWriteSize(cfg MetricConfig) metricSparkStageShuffleIoWriteSize {
 	m := metricSparkStageShuffleIoWriteSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3572,6 +3630,7 @@ func (m *metricSparkStageShuffleWriteTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageShuffleWriteTime(cfg MetricConfig) metricSparkStageShuffleWriteTime {
 	m := metricSparkStageShuffleWriteTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3628,6 +3687,7 @@ func (m *metricSparkStageStatus) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageStatus(cfg MetricConfig) metricSparkStageStatus {
 	m := metricSparkStageStatus{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3679,6 +3739,7 @@ func (m *metricSparkStageTaskActive) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageTaskActive(cfg MetricConfig) metricSparkStageTaskActive {
 	m := metricSparkStageTaskActive{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3732,6 +3793,7 @@ func (m *metricSparkStageTaskResult) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageTaskResult(cfg MetricConfig) metricSparkStageTaskResult {
 	m := metricSparkStageTaskResult{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3783,6 +3845,7 @@ func (m *metricSparkStageTaskResultSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageTaskResultSize(cfg MetricConfig) metricSparkStageTaskResultSize {
 	m := metricSparkStageTaskResultSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

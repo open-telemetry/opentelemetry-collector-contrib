@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -561,6 +562,61 @@ func TestGetEncoder(t *testing.T) {
 	}
 }
 
+func TestBuildLibhoneyEventFromMap_SamplerateTypes(t *testing.T) {
+	tests := []struct {
+		name               string
+		rawEvent           map[string]any
+		expectedSampleRate int
+	}{
+		{
+			name: "samplerate as int",
+			rawEvent: map[string]any{
+				"data":       map[string]any{"field1": "value1"},
+				"samplerate": int(10),
+			},
+			expectedSampleRate: 10,
+		},
+		{
+			name: "samplerate as int64",
+			rawEvent: map[string]any{
+				"data":       map[string]any{"field1": "value1"},
+				"samplerate": int64(10),
+			},
+			expectedSampleRate: 10,
+		},
+		{
+			name: "samplerate as uint64",
+			rawEvent: map[string]any{
+				"data":       map[string]any{"field1": "value1"},
+				"samplerate": uint64(10),
+			},
+			expectedSampleRate: 10,
+		},
+		{
+			name: "samplerate as float64",
+			rawEvent: map[string]any{
+				"data":       map[string]any{"field1": "value1"},
+				"samplerate": float64(10.0),
+			},
+			expectedSampleRate: 10,
+		},
+		{
+			name: "no samplerate defaults to 1",
+			rawEvent: map[string]any{
+				"data": map[string]any{"field1": "value1"},
+			},
+			expectedSampleRate: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			event := buildLibhoneyEventFromMap(tt.rawEvent)
+			assert.Equal(t, tt.expectedSampleRate, event.Samplerate)
+		})
+	}
+}
+
 func TestEncoder_RoundTrip(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -606,4 +662,123 @@ func TestEncoder_RoundTrip(t *testing.T) {
 			assert.Equal(t, responses, decoded)
 		})
 	}
+}
+
+func TestBuildLibhoneyEventFromMap_NativeTimeValue(t *testing.T) {
+	// When the msgpack library decodes a timestamp extension type (ext -1),
+	// it produces a time.Time VALUE (not *time.Time pointer) in map[string]any.
+	// This test validates that buildLibhoneyEventFromMap handles this correctly.
+	// This is the primary path for Refinery → libhoneyreceiver timestamp preservation.
+
+	expectedTime := time.Date(2026, 1, 30, 9, 36, 48, 0, time.UTC)
+
+	t.Run("time.Time value at top level", func(t *testing.T) {
+		rawEvent := map[string]any{
+			"data":       map[string]any{"field1": "value1"},
+			"time":       expectedTime, // time.Time value, as msgpack decodes it
+			"samplerate": int64(1),
+		}
+
+		event := buildLibhoneyEventFromMap(rawEvent)
+		require.NotNil(t, event.MsgPackTimestamp, "MsgPackTimestamp should be set from time.Time value")
+		assert.Equal(t, expectedTime, event.MsgPackTimestamp.UTC(),
+			"timestamp should match the original time.Time value")
+	})
+
+	t.Run("distinct time.Time values in batch produce distinct timestamps", func(t *testing.T) {
+		t1 := time.Date(2026, 1, 30, 9, 36, 48, 0, time.UTC)
+		t2 := time.Date(2026, 1, 30, 9, 36, 49, 0, time.UTC)
+		t3 := time.Date(2026, 1, 30, 9, 36, 51, 0, time.UTC)
+
+		rawEvents := []map[string]any{
+			{"data": map[string]any{"name": "span1"}, "time": t1, "samplerate": int64(1)},
+			{"data": map[string]any{"name": "span2"}, "time": t2, "samplerate": int64(1)},
+			{"data": map[string]any{"name": "span3"}, "time": t3, "samplerate": int64(1)},
+		}
+
+		events := make([]time.Time, len(rawEvents))
+		for i, raw := range rawEvents {
+			event := buildLibhoneyEventFromMap(raw)
+			require.NotNil(t, event.MsgPackTimestamp, "event %d should have timestamp", i)
+			events[i] = event.MsgPackTimestamp.UTC()
+		}
+
+		assert.NotEqual(t, events[0], events[1], "span 1 and 2 should have different timestamps")
+		assert.NotEqual(t, events[1], events[2], "span 2 and 3 should have different timestamps")
+		assert.Equal(t, time.Second, events[1].Sub(events[0]), "span 2 - span 1 should be 1s")
+		assert.Equal(t, 3*time.Second, events[2].Sub(events[0]), "span 3 - span 1 should be 3s")
+	})
+
+	t.Run("msgpack round-trip with native time.Time preserves timestamp", func(t *testing.T) {
+		// Simulate what Refinery actually sends: msgpack-encoded events with native time.Time
+		original := map[string]any{
+			"data": map[string]any{
+				"name":           "test-span",
+				"trace.trace_id": "854b46f148a643a2ed4075f240556292",
+				"trace.span_id":  "aaaaaaaaaaaaaaaa",
+				"duration_ms":    1000.0,
+				"service.name":   "demo-svc",
+			},
+			"time":       expectedTime,
+			"samplerate": int64(1),
+		}
+
+		// Encode to msgpack
+		var buf bytes.Buffer
+		enc := msgpack.NewEncoder(&buf)
+		err := enc.Encode(original)
+		require.NoError(t, err)
+
+		// Decode as single event (this is what the receiver does)
+		events, err := DecodeEvents("application/msgpack", buf.Bytes(), http.Header{})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+
+		event := events[0]
+		require.NotNil(t, event.MsgPackTimestamp)
+		assert.Equal(t, expectedTime, event.MsgPackTimestamp.UTC(),
+			"msgpack round-trip should preserve the original timestamp")
+	})
+
+	t.Run("msgpack batch round-trip preserves distinct timestamps", func(t *testing.T) {
+		t1 := time.Date(2026, 1, 30, 9, 36, 48, 0, time.UTC)
+		t2 := time.Date(2026, 1, 30, 9, 36, 49, 0, time.UTC)
+		t3 := time.Date(2026, 1, 30, 9, 36, 51, 0, time.UTC)
+
+		batch := []map[string]any{
+			{
+				"data":       map[string]any{"name": "span1", "trace.trace_id": "aaa", "trace.span_id": "111", "duration_ms": 1000.0},
+				"time":       t1,
+				"samplerate": int64(1),
+			},
+			{
+				"data":       map[string]any{"name": "span2", "trace.trace_id": "aaa", "trace.span_id": "222", "duration_ms": 2000.0},
+				"time":       t2,
+				"samplerate": int64(1),
+			},
+			{
+				"data":       map[string]any{"name": "span3", "trace.trace_id": "aaa", "trace.span_id": "333", "duration_ms": 1000.0},
+				"time":       t3,
+				"samplerate": int64(1),
+			},
+		}
+
+		// Encode as msgpack array
+		var buf bytes.Buffer
+		enc := msgpack.NewEncoder(&buf)
+		err := enc.Encode(batch)
+		require.NoError(t, err)
+
+		// Decode
+		events, err := DecodeEvents("application/msgpack", buf.Bytes(), http.Header{})
+		require.NoError(t, err)
+		require.Len(t, events, 3)
+
+		assert.Equal(t, t1, events[0].MsgPackTimestamp.UTC(), "span 1 time should be T")
+		assert.Equal(t, t2, events[1].MsgPackTimestamp.UTC(), "span 2 time should be T+1s")
+		assert.Equal(t, t3, events[2].MsgPackTimestamp.UTC(), "span 3 time should be T+3s")
+
+		assert.NotEqual(t, events[0].MsgPackTimestamp, events[1].MsgPackTimestamp,
+			"span 1 and 2 should have different timestamps")
+	})
 }

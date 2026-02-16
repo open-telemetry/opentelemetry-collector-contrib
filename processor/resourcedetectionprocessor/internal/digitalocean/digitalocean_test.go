@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -84,14 +83,14 @@ func TestDigitalOceanDetector_Detect_OK_JSON(t *testing.T) {
 
 	res, schemaURL, err := det.Detect(t.Context())
 	require.NoError(t, err)
-	require.Equal(t, conventions.SchemaURL, schemaURL)
+	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	attrs := res.Attributes().AsRaw()
 	want := map[string]any{
-		string(conventions.CloudProviderKey): "digitalocean",
-		string(conventions.HostIDKey):        "2756294",
-		string(conventions.HostNameKey):      "sample-droplet",
-		string(conventions.CloudRegionKey):   "nyc3",
+		"cloud.provider": "digitalocean",
+		"host.id":        "2756294",
+		"host.name":      "sample-droplet",
+		"cloud.region":   "nyc3",
 	}
 	assert.Equal(t, want, attrs)
 }

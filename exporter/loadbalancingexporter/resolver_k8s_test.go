@@ -257,6 +257,54 @@ func TestK8sResolve(t *testing.T) {
 	}
 }
 
+func TestK8sResolveWithServiceFQDN(t *testing.T) {
+	serviceName := "lb"
+	namespace := "custom"
+	serviceFQDN := fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, namespace)
+	port := int32(4317)
+	hostname := "pod-0"
+
+	endpointSlice := &discoveryv1.EndpointSlice{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"kubernetes.io/service-name": serviceName,
+			},
+		},
+		Endpoints: []discoveryv1.Endpoint{
+			{
+				Addresses: []string{"10.0.0.1"},
+				Hostname:  &hostname,
+			},
+		},
+	}
+
+	cl := fake.NewClientset(endpointSlice)
+	_, tb := getTelemetryAssets(t)
+	res, err := newK8sResolver(cl, zap.NewNop(), serviceFQDN, []int32{port}, defaultListWatchTimeout, true, tb)
+	require.NoError(t, err)
+	require.Equal(t, serviceName, res.svcName)
+	require.Equal(t, namespace, res.svcNs)
+
+	require.NoError(t, res.start(t.Context()))
+	t.Cleanup(func() {
+		require.NoError(t, res.shutdown(t.Context()))
+	})
+
+	expected := []string{fmt.Sprintf("%s.%s.%s:%d", hostname, serviceName, namespace, port)}
+
+	cErr := waitForCondition(t, 3*time.Second, 20*time.Millisecond, func(ctx context.Context) (bool, error) {
+		if _, err := res.resolve(ctx); err != nil {
+			return false, err
+		}
+		return slices.Equal(expected, res.Endpoints()), nil
+	})
+	if cErr != nil {
+		t.Fatalf("timed out waiting for resolver endpoints to match expected: %v", cErr)
+	}
+}
+
 // waitForCondition will poll the condition function until it returns true or times out.
 // Any errors returned from the condition are treated as test failures.
 func waitForCondition(t *testing.T, timeout, interval time.Duration, condition func(context.Context) (bool, error)) error {
@@ -314,6 +362,26 @@ func Test_newK8sResolver(t *testing.T) {
 			wantErr:       nil,
 			wantService:   "lb",
 			wantNamespace: "kube-public",
+		},
+		{
+			name: "reject service FQDN with unexpected labels",
+			args: args{
+				logger:  zap.NewNop(),
+				service: "lb.kube-public.foo.bar",
+				ports:   []int32{8080},
+			},
+			wantNil: true,
+			wantErr: errInvalidSvcFQDN,
+		},
+		{
+			name: "reject service FQDN without cluster domain",
+			args: args{
+				logger:  zap.NewNop(),
+				service: "lb.kube-public.svc",
+				ports:   []int32{8080},
+			},
+			wantNil: true,
+			wantErr: errInvalidSvcFQDN,
 		},
 	}
 	for _, tt := range tests {

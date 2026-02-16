@@ -8,7 +8,7 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fredaction%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fredaction) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fredaction%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fredaction) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_redaction)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_redaction&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@mx-psi](https://www.github.com/mx-psi), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@mx-psi](https://www.github.com/mx-psi), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@iblancasa](https://www.github.com/iblancasa) |
 | Emeritus      | [@leonsp-ai](https://www.github.com/leonsp-ai) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -73,6 +73,12 @@ processors:
     # Any keys in this list are allowed so they don't need to be in both lists.
     ignored_keys:
       - safe_attribute
+    # ignored_key_patterns is a list of regular expressions for ignoring keys.
+    # Keys matching any of these patterns are allowed to pass through without
+    # their values being checked or modified.
+    ignored_key_patterns:
+      - "^safe_.*"
+      - ".*_trusted$"
     # redact_all_types will check incoming fields for sensitive data based on their AsString() representation. This allows the processor to redact sensitive data from ints. This is useful for redacting credit card numbers
     redact_all_types: true
     # blocked_key_patterns is a list of blocked span attribute key patterns. Span attributes
@@ -108,6 +114,10 @@ processors:
       enabled: true
       # attributes is a list of attribute keys that contain URLs to be sanitized
       attributes: ["http.url", "url"]
+      # sanitize_span_name controls whether span names should be sanitized for URLs (default: true)
+      # When enabled, span names containing "/" will be sanitized to reduce cardinality
+      # Set to false to disable span name sanitization while keeping attribute sanitization active
+      sanitize_span_name: true
 ```
 
 Refer to [config.yaml](./testdata/config.yaml) for how to fit the configuration
@@ -115,7 +125,8 @@ into an OpenTelemetry Collector pipeline definition.
 
 Ignored attributes are processed first so they're always allowed and never
 blocked. This field should only be used where you know the data is always
-safe to send to the telemetry system.
+safe to send to the telemetry system. You can use either `ignored_keys` for
+exact key matches or `ignored_key_patterns` for regex-based pattern matching.
 
 Only span/log/datapoint attributes included on the list of allowed keys list are retained.
 If `allowed_keys` is empty, then no attributes are allowed. All
@@ -128,6 +139,25 @@ part of the value is not masked even if it matches the regular expression for a 
 If the value matches the regular expression for a blocked value only, the matching
 part of the value is masked with a fixed length of asterisks.
 
+### Precedence between `allowed_values` and `blocked_values`
+
+When both `allowed_values` and `blocked_values` are configured, `allowed_values` takes precedence.
+
+This means that if a value matches an entry in `allowed_values`, it will not be masked even if it also matches `blocked_values`. This behavior is intentional and allows operators to explicitly whitelist known-safe values while still blocking broader patterns.
+
+#### Example
+
+```yaml
+processors:
+  redaction:
+    blocked_values:
+      - "mycompany.com"
+    allowed_values:
+      - "support.mycompany.com"
+
+```
+
+
 `blocked_key_patterns` applies to the values of the keys matching one of the patterns.
 The value is then masked according to the configuration.
 
@@ -138,7 +168,15 @@ are `md5`, `sha1` and `sha3` (SHA-256).
 
 The `url_sanitizer` configuration enables sanitization of URLs in specified attributes by removing potentially sensitive information like UUIDs, timestamps, and other non-essential path segments. This is particularly useful for reducing cardinality in telemetry data while preserving the essential parts of URLs for troubleshooting.
 
-Additionally, URL sanitization automatically applies to span names for client and server span types that contain "/" characters. This helps reduce cardinality issues caused by high-variability URL paths in span names while preserving the essential routing information needed for observability.
+### Span Name Sanitization
+
+By default, when URL sanitization is enabled, span names for client and server span types that contain "/" characters are automatically sanitized. This helps reduce cardinality issues caused by high-variability URL paths in span names while preserving essential routing information.
+
+You can control this behavior using the `sanitize_span_name` option:
+- `true` (default): Span names will be sanitized along with attributes
+- `false`: Only attributes are sanitized, span names remain unchanged
+
+This option is available independently for both URL and database sanitization, allowing fine-grained control over which span names should be redacted.
 
 For example, if `notes` is on the list of allowed keys, then the `notes`
 attribute is retained. However, if there is a value such as a credit card
@@ -165,6 +203,10 @@ processors:
     
     # Database sanitization configuration
     db_sanitizer:
+      # sanitize_span_name controls whether span names should be sanitized for database queries (default: true)
+      # When enabled, span names will be obfuscated to remove sensitive query details
+      # Set to false to disable span name sanitization while keeping attribute sanitization active
+      sanitize_span_name: true
       sql:
         enabled: true
         attributes: ["db.statement", "db.query"]
@@ -191,5 +233,8 @@ The database sanitizer will:
 - Sanitize MongoDB queries and JSON payloads
 - Process only specified attributes if provided
 - Preserve query structure while removing sensitive data
+- Sanitize span names containing database queries (can be controlled with `sanitize_span_name`)
+
+By default, database query sanitization also applies to span names for client span types. You can disable this behavior by setting `sanitize_span_name: false` in the `db_sanitizer` configuration, which allows you to keep original database query span names while still sanitizing the query values in attributes.
 
 This provides an additional layer of protection when collecting telemetry that includes database operations.

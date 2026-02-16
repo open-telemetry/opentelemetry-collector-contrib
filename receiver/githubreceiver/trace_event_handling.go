@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v79/github"
+	"github.com/google/go-github/v81/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -68,13 +68,13 @@ func (gtr *githubTracesReceiver) handleWorkflowJob(e *github.WorkflowJobEvent, r
 		return ptrace.Traces{}, errors.New("failed to create parent span")
 	}
 
-	queueSpanID, err := gtr.createJobQueueSpan(r, e, traceID, parentID)
+	err = gtr.createJobQueueSpan(r, e, traceID, parentID)
 	if err != nil {
 		gtr.logger.Sugar().Error("failed to create job queue span", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create job queue span")
 	}
 
-	err = gtr.createStepSpans(r, e, traceID, queueSpanID)
+	err = gtr.createStepSpans(r, e, traceID, parentID)
 	if err != nil {
 		gtr.logger.Sugar().Error("failed to create step spans", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create step spans")
@@ -222,7 +222,7 @@ func (gtr *githubTracesReceiver) createParentSpan(
 	span.SetParentSpanID(parentSpanID)
 	span.SetSpanID(jobSpanID)
 	span.SetName(event.GetWorkflowJob().GetName())
-	span.SetKind(ptrace.SpanKindServer)
+	span.SetKind(ptrace.SpanKindInternal)
 
 	startTime, endTime := correctActionTimestamps(event.GetWorkflowJob().GetCreatedAt().Time, event.GetWorkflowJob().GetCompletedAt().Time)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
@@ -335,7 +335,7 @@ func (*githubTracesReceiver) createStepSpan(
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 	span.SetName(name)
-	span.SetKind(ptrace.SpanKindServer)
+	span.SetKind(ptrace.SpanKindInternal)
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
 
@@ -352,7 +352,7 @@ func (*githubTracesReceiver) createStepSpan(
 	span.SetSpanID(spanID)
 
 	attrs := span.Attributes()
-	attrs.PutStr(string(semconv.CICDPipelineTaskNameKey), name)
+	attrs.PutStr(string(conventions.CICDPipelineTaskNameKey), name)
 	attrs.PutStr(AttributeCICDPipelineTaskRunStatus, step.GetStatus())
 	startTime, endTime := correctActionTimestamps(step.GetStartedAt().Time, step.GetCompletedAt().Time)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
@@ -403,14 +403,14 @@ func (*githubTracesReceiver) createJobQueueSpan(
 	event *github.WorkflowJobEvent,
 	traceID pcommon.TraceID,
 	parentSpanID pcommon.SpanID,
-) (pcommon.SpanID, error) {
+) error {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 	jobName := event.GetWorkflowJob().GetName()
 	spanName := fmt.Sprintf("queue-%s", jobName)
 
 	span.SetName(spanName)
-	span.SetKind(ptrace.SpanKindServer)
+	span.SetKind(ptrace.SpanKindInternal)
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
 
@@ -418,7 +418,7 @@ func (*githubTracesReceiver) createJobQueueSpan(
 	runAttempt := int(event.GetWorkflowJob().GetRunAttempt())
 	spanID, err := newStepSpanID(runID, runAttempt, jobName, spanName, 1)
 	if err != nil {
-		return pcommon.SpanID{}, fmt.Errorf("failed to generate step span ID: %w", err)
+		return fmt.Errorf("failed to generate step span ID: %w", err)
 	}
 
 	span.SetSpanID(spanID)
@@ -432,5 +432,5 @@ func (*githubTracesReceiver) createJobQueueSpan(
 	attrs := span.Attributes()
 	attrs.PutDouble(AttributeCICDPipelineRunQueueDuration, float64(duration.Nanoseconds()))
 
-	return spanID, nil
+	return nil
 }

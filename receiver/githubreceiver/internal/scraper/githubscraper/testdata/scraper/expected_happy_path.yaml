@@ -7,7 +7,7 @@ resourceMetrics:
         - key: vcs.provider.name
           value:
             stringValue: github
-    schemaUrl: https://opentelemetry.io/schemas/1.37.0
+    schemaUrl: https://opentelemetry.io/schemas/1.38.0
     scopeMetrics:
       - metrics:
           - description: The number of changes (pull requests) in a repository, categorized by their state (either open or merged).

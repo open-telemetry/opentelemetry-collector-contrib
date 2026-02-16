@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -348,6 +349,71 @@ func TestAutodiscoverLimit(t *testing.T) {
 	grs, err := alertRcvr.discoverGroups(t.Context(), cfg.Logs.Groups.AutodiscoverConfig)
 	require.NoError(t, err)
 	require.Len(t, grs, cfg.Logs.Groups.AutodiscoverConfig.Limit)
+}
+
+func TestAutodiscoverAccountIdentifiers(t *testing.T) {
+	mc := &mockClient{}
+
+	testAccountID := "123456789012"
+
+	mc.On(
+		"DescribeLogGroups",
+		mock.Anything,
+		mock.MatchedBy(func(input *cloudwatchlogs.DescribeLogGroupsInput) bool {
+			// Ensure the request includes the expected account ID and that IncludeLinkedAccounts is enabled.
+			if input.IncludeLinkedAccounts == nil || !*input.IncludeLinkedAccounts {
+				return false
+			}
+			return slices.Contains(input.AccountIdentifiers, testAccountID)
+		}),
+		mock.Anything,
+	).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: []types.LogGroup{
+				{
+					LogGroupName: &testLogGroupName,
+				},
+			},
+			NextToken: nil,
+		}, nil)
+
+	// Otherwise, return no groups
+	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: []types.LogGroup{},
+			NextToken: nil,
+		}, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Limit:                 1,
+			AccountIdentifiers:    []string{testAccountID},
+			IncludeLinkedAccounts: aws.Bool(true),
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	alertRcvr := newLogsReceiver(cfg, receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, sink)
+	alertRcvr.client = mc
+
+	grs, err := alertRcvr.discoverGroups(t.Context(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	require.Len(t, grs, 1)
+	require.Equal(t, testLogGroupName, grs[0].groupName())
+	mc.AssertExpectations(t)
+
+	// Filtering by a different account ID does not return any groups
+	cfg.Logs.Groups.AutodiscoverConfig.AccountIdentifiers = []string{"987654321098"}
+	grs, err = alertRcvr.discoverGroups(t.Context(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	require.Empty(t, grs)
+	mc.AssertExpectations(t)
 }
 
 func TestShutdownCheckpointer(t *testing.T) {

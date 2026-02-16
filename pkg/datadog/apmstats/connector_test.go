@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -69,7 +68,7 @@ func TestTraceToTraceConnector(t *testing.T) {
 
 func createConnector(t *testing.T) (*traceToMetricConnector, *consumertest.MetricsSink) {
 	cfg := NewConnectorFactory(datadogComponentType, component.StabilityLevelBeta, component.StabilityLevelBeta, nil, nil, nil).CreateDefaultConfig().(*datadogconfig.ConnectorComponentConfig)
-	cfg.Traces.ResourceAttributesAsContainerTags = []string{string(semconv.CloudAvailabilityZoneKey), string(semconv.CloudRegionKey), "az"}
+	cfg.Traces.ResourceAttributesAsContainerTags = []string{"cloud.availability_zone", "cloud.region", "az"}
 	return createConnectorCfg(t, cfg)
 }
 
@@ -145,6 +144,7 @@ func fillSpanOne(span ptrace.Span) {
 	status.SetMessage("status-cancelled")
 }
 
+//nolint:staticcheck // SA1019: Using deprecated Translator type for StatsToMetrics functionality
 func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []byte) *otlpmetrics.Translator {
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithHistogramMode(otlpmetrics.HistogramModeDistributions),
@@ -159,6 +159,9 @@ func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []b
 
 	attributesTranslator, err := attributes.NewTranslator(set)
 	require.NoError(t, err)
+	// We use the deprecated NewTranslator because the new NewDefaultTranslator
+	// doesn't provide the StatsToMetrics method which is required for APM stats conversion.
+	//nolint:staticcheck // SA1019: Using deprecated NewTranslator for StatsToMetrics functionality
 	tr, err := otlpmetrics.NewTranslator(
 		set,
 		attributesTranslator,
@@ -299,7 +302,7 @@ func testMeasuredAndClientKind(t *testing.T, enableOperationAndResourceNameV2 bo
 	td := ptrace.NewTraces()
 	res := td.ResourceSpans().AppendEmpty().Resource()
 	res.Attributes().PutStr("service.name", "svc")
-	res.Attributes().PutStr(string(semconv.DeploymentEnvironmentNameKey), "my-env")
+	res.Attributes().PutStr("deployment.environment.name", "my-env")
 
 	ss := td.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans()
 	// Root span
@@ -433,8 +436,8 @@ func TestObfuscate(t *testing.T) {
 
 	td := ptrace.NewTraces()
 	res := td.ResourceSpans().AppendEmpty().Resource()
-	res.Attributes().PutStr(string(semconv.ServiceNameKey), "svc")
-	res.Attributes().PutStr(string(semconv.DeploymentEnvironmentNameKey), "my-env")
+	res.Attributes().PutStr("service.name", "svc")
+	res.Attributes().PutStr("deployment.environment.name", "my-env")
 
 	ss := td.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans()
 	s := ss.AppendEmpty()
@@ -442,9 +445,9 @@ func TestObfuscate(t *testing.T) {
 	s.SetKind(ptrace.SpanKindClient)
 	s.SetTraceID(testTraceID)
 	s.SetSpanID(testSpanID1)
-	s.Attributes().PutStr(string(semconv.DBSystemKey), semconv.DBSystemMySQL.Value.AsString())
-	s.Attributes().PutStr(string(semconv.DBOperationNameKey), "SELECT")
-	s.Attributes().PutStr(string(semconv.DBQueryTextKey), "SELECT username FROM users WHERE id = 123") // id value 123 should be obfuscated
+	s.Attributes().PutStr("db.system", "mysql")
+	s.Attributes().PutStr("db.operation.name", "SELECT")
+	s.Attributes().PutStr("db.query.text", "SELECT username FROM users WHERE id = 123") // id value 123 should be obfuscated
 
 	err = connector.ConsumeTraces(t.Context(), td)
 	require.NoError(t, err)

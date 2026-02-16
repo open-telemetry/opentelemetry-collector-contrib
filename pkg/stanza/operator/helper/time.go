@@ -70,23 +70,23 @@ func (t *TimeParser) Validate() error {
 	}
 
 	if t.Layout == "" && t.LayoutType != "native" {
-		return stanza_errors.NewError("missing required configuration parameter `layout`", "")
+		return errors.New("missing required configuration parameter `layout`")
 	}
 
 	switch t.LayoutType {
 	case NativeKey: // ok
 	case GotimeKey:
 		if err := timeutils.ValidateGotime(t.Layout); err != nil {
-			return stanza_errors.Wrap(err, "invalid gotime layout")
+			return fmt.Errorf("invalid gotime layout: %w", err)
 		}
 	case StrptimeKey:
 		if err := timeutils.ValidateStrptime(t.Layout); err != nil {
-			return stanza_errors.Wrap(err, "invalid strptime layout")
+			return fmt.Errorf("invalid strptime layout: %w", err)
 		}
 		var err error
 		t.Layout, err = timeutils.StrptimeToGotime(t.Layout)
 		if err != nil {
-			return stanza_errors.Wrap(err, "parse strptime layout")
+			return fmt.Errorf("parse strptime layout: %w", err)
 		}
 		t.LayoutType = GotimeKey
 	case EpochKey:
@@ -107,7 +107,7 @@ func (t *TimeParser) Validate() error {
 
 	if t.LayoutType == GotimeKey { // also covers StrptimeKey because it was remapped above
 		if err := t.setLocation(); err != nil {
-			return stanza_errors.Wrap(err, "invalid 'location'")
+			return fmt.Errorf("invalid 'location': %w", err)
 		}
 	}
 

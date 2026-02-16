@@ -36,8 +36,8 @@ attributes:
       - refreshing
 
 metrics:
-  systemd.unit.cpu.time:
-    description: Total CPU time spent by this unit.
+  systemd.service.cpu.time:
+    description: Total CPU time spent by this service.
     enabled: true
     stability:
       level: development
@@ -47,6 +47,21 @@ metrics:
       monotonic: true
     unit: us
     attributes: [cpu.mode]
+
+  systemd.service.restarts:
+    description: Number of automatic restarts for the service.
+    extended_documentation: |
+      This exposes services' `NRestarts` property as a metric. This only tracks
+      automatic service restarts (restarts when the process exits), and does
+      not include manual restarts (e.g. from `systemctl restart`).
+    enabled: false
+    stability:
+      level: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    unit: "{restarts}"
 
   systemd.unit.state:
     description: 1 if the check resulted in active_state matching the current state, otherwise 0.

@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_groupbyattrs_log_groups
 
-Distribution of groups extracted for logs [Development]
+Distribution of groups extracted for logs
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -16,7 +16,7 @@ Distribution of groups extracted for logs [Development]
 
 ### otelcol_processor_groupbyattrs_metric_groups
 
-Distribution of groups extracted for metrics [Development]
+Distribution of groups extracted for metrics
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -24,7 +24,7 @@ Distribution of groups extracted for metrics [Development]
 
 ### otelcol_processor_groupbyattrs_num_grouped_logs
 
-Number of logs that had attributes grouped [Development]
+Number of logs that had attributes grouped
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -32,7 +32,7 @@ Number of logs that had attributes grouped [Development]
 
 ### otelcol_processor_groupbyattrs_num_grouped_metrics
 
-Number of metrics that had attributes grouped [Development]
+Number of metrics that had attributes grouped
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -40,7 +40,7 @@ Number of metrics that had attributes grouped [Development]
 
 ### otelcol_processor_groupbyattrs_num_grouped_spans
 
-Number of spans that had attributes grouped [Development]
+Number of spans that had attributes grouped
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -48,7 +48,7 @@ Number of spans that had attributes grouped [Development]
 
 ### otelcol_processor_groupbyattrs_num_non_grouped_logs
 
-Number of logs that did not have attributes grouped [Development]
+Number of logs that did not have attributes grouped
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -56,7 +56,7 @@ Number of logs that did not have attributes grouped [Development]
 
 ### otelcol_processor_groupbyattrs_num_non_grouped_metrics
 
-Number of metrics that did not have attributes grouped [Development]
+Number of metrics that did not have attributes grouped
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -64,7 +64,7 @@ Number of metrics that did not have attributes grouped [Development]
 
 ### otelcol_processor_groupbyattrs_num_non_grouped_spans
 
-Number of spans that did not have attributes grouped [Development]
+Number of spans that did not have attributes grouped
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -72,7 +72,7 @@ Number of spans that did not have attributes grouped [Development]
 
 ### otelcol_processor_groupbyattrs_span_groups
 
-Distribution of groups extracted for spans [Development]
+Distribution of groups extracted for spans
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

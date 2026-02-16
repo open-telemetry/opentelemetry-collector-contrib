@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -10,6 +11,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 var MetricsInfo = metricsInfo{
@@ -163,9 +171,10 @@ type metricInfo struct {
 }
 
 type metricSnowflakeBillingCloudServiceTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.billing.cloud_service.total metric with initial data.
@@ -181,11 +190,41 @@ func (m *metricSnowflakeBillingCloudServiceTotal) recordDataPoint(start pcommon.
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "service_type") {
+		dp.Attributes().PutStr("service_type", serviceTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("service_type", serviceTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -198,6 +237,11 @@ func (m *metricSnowflakeBillingCloudServiceTotal) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeBillingCloudServiceTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -206,6 +250,7 @@ func (m *metricSnowflakeBillingCloudServiceTotal) emit(metrics pmetric.MetricSli
 
 func newMetricSnowflakeBillingCloudServiceTotal(cfg MetricConfig) metricSnowflakeBillingCloudServiceTotal {
 	m := metricSnowflakeBillingCloudServiceTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -214,9 +259,10 @@ func newMetricSnowflakeBillingCloudServiceTotal(cfg MetricConfig) metricSnowflak
 }
 
 type metricSnowflakeBillingTotalCreditTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.billing.total_credit.total metric with initial data.
@@ -232,11 +278,41 @@ func (m *metricSnowflakeBillingTotalCreditTotal) recordDataPoint(start pcommon.T
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "service_type") {
+		dp.Attributes().PutStr("service_type", serviceTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("service_type", serviceTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -249,6 +325,11 @@ func (m *metricSnowflakeBillingTotalCreditTotal) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeBillingTotalCreditTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -257,6 +338,7 @@ func (m *metricSnowflakeBillingTotalCreditTotal) emit(metrics pmetric.MetricSlic
 
 func newMetricSnowflakeBillingTotalCreditTotal(cfg MetricConfig) metricSnowflakeBillingTotalCreditTotal {
 	m := metricSnowflakeBillingTotalCreditTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -265,9 +347,10 @@ func newMetricSnowflakeBillingTotalCreditTotal(cfg MetricConfig) metricSnowflake
 }
 
 type metricSnowflakeBillingVirtualWarehouseTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.billing.virtual_warehouse.total metric with initial data.
@@ -283,11 +366,41 @@ func (m *metricSnowflakeBillingVirtualWarehouseTotal) recordDataPoint(start pcom
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "service_type") {
+		dp.Attributes().PutStr("service_type", serviceTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("service_type", serviceTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -300,6 +413,11 @@ func (m *metricSnowflakeBillingVirtualWarehouseTotal) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeBillingVirtualWarehouseTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -308,6 +426,7 @@ func (m *metricSnowflakeBillingVirtualWarehouseTotal) emit(metrics pmetric.Metri
 
 func newMetricSnowflakeBillingVirtualWarehouseTotal(cfg MetricConfig) metricSnowflakeBillingVirtualWarehouseTotal {
 	m := metricSnowflakeBillingVirtualWarehouseTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -316,9 +435,10 @@ func newMetricSnowflakeBillingVirtualWarehouseTotal(cfg MetricConfig) metricSnow
 }
 
 type metricSnowflakeBillingWarehouseCloudServiceTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.billing.warehouse.cloud_service.total metric with initial data.
@@ -334,11 +454,41 @@ func (m *metricSnowflakeBillingWarehouseCloudServiceTotal) recordDataPoint(start
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -351,6 +501,11 @@ func (m *metricSnowflakeBillingWarehouseCloudServiceTotal) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeBillingWarehouseCloudServiceTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -359,6 +514,7 @@ func (m *metricSnowflakeBillingWarehouseCloudServiceTotal) emit(metrics pmetric.
 
 func newMetricSnowflakeBillingWarehouseCloudServiceTotal(cfg MetricConfig) metricSnowflakeBillingWarehouseCloudServiceTotal {
 	m := metricSnowflakeBillingWarehouseCloudServiceTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -367,9 +523,10 @@ func newMetricSnowflakeBillingWarehouseCloudServiceTotal(cfg MetricConfig) metri
 }
 
 type metricSnowflakeBillingWarehouseTotalCreditTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.billing.warehouse.total_credit.total metric with initial data.
@@ -385,11 +542,41 @@ func (m *metricSnowflakeBillingWarehouseTotalCreditTotal) recordDataPoint(start 
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -402,6 +589,11 @@ func (m *metricSnowflakeBillingWarehouseTotalCreditTotal) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeBillingWarehouseTotalCreditTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -410,6 +602,7 @@ func (m *metricSnowflakeBillingWarehouseTotalCreditTotal) emit(metrics pmetric.M
 
 func newMetricSnowflakeBillingWarehouseTotalCreditTotal(cfg MetricConfig) metricSnowflakeBillingWarehouseTotalCreditTotal {
 	m := metricSnowflakeBillingWarehouseTotalCreditTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -418,9 +611,10 @@ func newMetricSnowflakeBillingWarehouseTotalCreditTotal(cfg MetricConfig) metric
 }
 
 type metricSnowflakeBillingWarehouseVirtualWarehouseTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.billing.warehouse.virtual_warehouse.total metric with initial data.
@@ -436,11 +630,41 @@ func (m *metricSnowflakeBillingWarehouseVirtualWarehouseTotal) recordDataPoint(s
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -453,6 +677,11 @@ func (m *metricSnowflakeBillingWarehouseVirtualWarehouseTotal) updateCapacity() 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeBillingWarehouseVirtualWarehouseTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -461,6 +690,7 @@ func (m *metricSnowflakeBillingWarehouseVirtualWarehouseTotal) emit(metrics pmet
 
 func newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(cfg MetricConfig) metricSnowflakeBillingWarehouseVirtualWarehouseTotal {
 	m := metricSnowflakeBillingWarehouseVirtualWarehouseTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -469,9 +699,10 @@ func newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(cfg MetricConfig) m
 }
 
 type metricSnowflakeDatabaseBytesScannedAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.database.bytes_scanned.avg metric with initial data.
@@ -487,17 +718,59 @@ func (m *metricSnowflakeDatabaseBytesScannedAvg) recordDataPoint(start pcommon.T
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -510,6 +783,11 @@ func (m *metricSnowflakeDatabaseBytesScannedAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeDatabaseBytesScannedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -518,6 +796,7 @@ func (m *metricSnowflakeDatabaseBytesScannedAvg) emit(metrics pmetric.MetricSlic
 
 func newMetricSnowflakeDatabaseBytesScannedAvg(cfg MetricConfig) metricSnowflakeDatabaseBytesScannedAvg {
 	m := metricSnowflakeDatabaseBytesScannedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -526,9 +805,10 @@ func newMetricSnowflakeDatabaseBytesScannedAvg(cfg MetricConfig) metricSnowflake
 }
 
 type metricSnowflakeDatabaseQueryCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.database.query.count metric with initial data.
@@ -544,17 +824,59 @@ func (m *metricSnowflakeDatabaseQueryCount) recordDataPoint(start pcommon.Timest
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -567,6 +889,11 @@ func (m *metricSnowflakeDatabaseQueryCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeDatabaseQueryCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -575,6 +902,7 @@ func (m *metricSnowflakeDatabaseQueryCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeDatabaseQueryCount(cfg MetricConfig) metricSnowflakeDatabaseQueryCount {
 	m := metricSnowflakeDatabaseQueryCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -583,9 +911,10 @@ func newMetricSnowflakeDatabaseQueryCount(cfg MetricConfig) metricSnowflakeDatab
 }
 
 type metricSnowflakeLoginsTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.logins.total metric with initial data.
@@ -601,13 +930,47 @@ func (m *metricSnowflakeLoginsTotal) recordDataPoint(start pcommon.Timestamp, ts
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "reported_client_type") {
+		dp.Attributes().PutStr("reported_client_type", reportedClientTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "is_success") {
+		dp.Attributes().PutStr("is_success", isSuccessAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("reported_client_type", reportedClientTypeAttributeValue)
-	dp.Attributes().PutStr("is_success", isSuccessAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -620,6 +983,11 @@ func (m *metricSnowflakeLoginsTotal) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeLoginsTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -628,6 +996,7 @@ func (m *metricSnowflakeLoginsTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeLoginsTotal(cfg MetricConfig) metricSnowflakeLoginsTotal {
 	m := metricSnowflakeLoginsTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -636,9 +1005,10 @@ func newMetricSnowflakeLoginsTotal(cfg MetricConfig) metricSnowflakeLoginsTotal 
 }
 
 type metricSnowflakePipeCreditsUsedTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.pipe.credits_used.total metric with initial data.
@@ -654,11 +1024,41 @@ func (m *metricSnowflakePipeCreditsUsedTotal) recordDataPoint(start pcommon.Time
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "pipe_name") {
+		dp.Attributes().PutStr("pipe_name", pipeNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("pipe_name", pipeNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -671,6 +1071,11 @@ func (m *metricSnowflakePipeCreditsUsedTotal) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakePipeCreditsUsedTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -679,6 +1084,7 @@ func (m *metricSnowflakePipeCreditsUsedTotal) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSnowflakePipeCreditsUsedTotal(cfg MetricConfig) metricSnowflakePipeCreditsUsedTotal {
 	m := metricSnowflakePipeCreditsUsedTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -687,9 +1093,10 @@ func newMetricSnowflakePipeCreditsUsedTotal(cfg MetricConfig) metricSnowflakePip
 }
 
 type metricSnowflakeQueryBlocked struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.blocked metric with initial data.
@@ -705,11 +1112,41 @@ func (m *metricSnowflakeQueryBlocked) recordDataPoint(start pcommon.Timestamp, t
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -722,6 +1159,11 @@ func (m *metricSnowflakeQueryBlocked) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryBlocked) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -730,6 +1172,7 @@ func (m *metricSnowflakeQueryBlocked) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeQueryBlocked(cfg MetricConfig) metricSnowflakeQueryBlocked {
 	m := metricSnowflakeQueryBlocked{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -738,9 +1181,10 @@ func newMetricSnowflakeQueryBlocked(cfg MetricConfig) metricSnowflakeQueryBlocke
 }
 
 type metricSnowflakeQueryBytesDeletedAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.bytes_deleted.avg metric with initial data.
@@ -756,17 +1200,59 @@ func (m *metricSnowflakeQueryBytesDeletedAvg) recordDataPoint(start pcommon.Time
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -779,6 +1265,11 @@ func (m *metricSnowflakeQueryBytesDeletedAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryBytesDeletedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -787,6 +1278,7 @@ func (m *metricSnowflakeQueryBytesDeletedAvg) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSnowflakeQueryBytesDeletedAvg(cfg MetricConfig) metricSnowflakeQueryBytesDeletedAvg {
 	m := metricSnowflakeQueryBytesDeletedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -795,9 +1287,10 @@ func newMetricSnowflakeQueryBytesDeletedAvg(cfg MetricConfig) metricSnowflakeQue
 }
 
 type metricSnowflakeQueryBytesSpilledLocalAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.bytes_spilled.local.avg metric with initial data.
@@ -813,17 +1306,59 @@ func (m *metricSnowflakeQueryBytesSpilledLocalAvg) recordDataPoint(start pcommon
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -836,6 +1371,11 @@ func (m *metricSnowflakeQueryBytesSpilledLocalAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryBytesSpilledLocalAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -844,6 +1384,7 @@ func (m *metricSnowflakeQueryBytesSpilledLocalAvg) emit(metrics pmetric.MetricSl
 
 func newMetricSnowflakeQueryBytesSpilledLocalAvg(cfg MetricConfig) metricSnowflakeQueryBytesSpilledLocalAvg {
 	m := metricSnowflakeQueryBytesSpilledLocalAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -852,9 +1393,10 @@ func newMetricSnowflakeQueryBytesSpilledLocalAvg(cfg MetricConfig) metricSnowfla
 }
 
 type metricSnowflakeQueryBytesSpilledRemoteAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.bytes_spilled.remote.avg metric with initial data.
@@ -870,17 +1412,59 @@ func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) recordDataPoint(start pcommo
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -893,6 +1477,11 @@ func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -901,6 +1490,7 @@ func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) emit(metrics pmetric.MetricS
 
 func newMetricSnowflakeQueryBytesSpilledRemoteAvg(cfg MetricConfig) metricSnowflakeQueryBytesSpilledRemoteAvg {
 	m := metricSnowflakeQueryBytesSpilledRemoteAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -909,9 +1499,10 @@ func newMetricSnowflakeQueryBytesSpilledRemoteAvg(cfg MetricConfig) metricSnowfl
 }
 
 type metricSnowflakeQueryBytesWrittenAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.bytes_written.avg metric with initial data.
@@ -927,17 +1518,59 @@ func (m *metricSnowflakeQueryBytesWrittenAvg) recordDataPoint(start pcommon.Time
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -950,6 +1583,11 @@ func (m *metricSnowflakeQueryBytesWrittenAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryBytesWrittenAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -958,6 +1596,7 @@ func (m *metricSnowflakeQueryBytesWrittenAvg) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSnowflakeQueryBytesWrittenAvg(cfg MetricConfig) metricSnowflakeQueryBytesWrittenAvg {
 	m := metricSnowflakeQueryBytesWrittenAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -966,9 +1605,10 @@ func newMetricSnowflakeQueryBytesWrittenAvg(cfg MetricConfig) metricSnowflakeQue
 }
 
 type metricSnowflakeQueryCompilationTimeAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.compilation_time.avg metric with initial data.
@@ -984,17 +1624,59 @@ func (m *metricSnowflakeQueryCompilationTimeAvg) recordDataPoint(start pcommon.T
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1007,6 +1689,11 @@ func (m *metricSnowflakeQueryCompilationTimeAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryCompilationTimeAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1015,6 +1702,7 @@ func (m *metricSnowflakeQueryCompilationTimeAvg) emit(metrics pmetric.MetricSlic
 
 func newMetricSnowflakeQueryCompilationTimeAvg(cfg MetricConfig) metricSnowflakeQueryCompilationTimeAvg {
 	m := metricSnowflakeQueryCompilationTimeAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1023,9 +1711,10 @@ func newMetricSnowflakeQueryCompilationTimeAvg(cfg MetricConfig) metricSnowflake
 }
 
 type metricSnowflakeQueryDataScannedCacheAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.data_scanned_cache.avg metric with initial data.
@@ -1041,17 +1730,59 @@ func (m *metricSnowflakeQueryDataScannedCacheAvg) recordDataPoint(start pcommon.
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1064,6 +1795,11 @@ func (m *metricSnowflakeQueryDataScannedCacheAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryDataScannedCacheAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1072,6 +1808,7 @@ func (m *metricSnowflakeQueryDataScannedCacheAvg) emit(metrics pmetric.MetricSli
 
 func newMetricSnowflakeQueryDataScannedCacheAvg(cfg MetricConfig) metricSnowflakeQueryDataScannedCacheAvg {
 	m := metricSnowflakeQueryDataScannedCacheAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1080,9 +1817,10 @@ func newMetricSnowflakeQueryDataScannedCacheAvg(cfg MetricConfig) metricSnowflak
 }
 
 type metricSnowflakeQueryExecuted struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.executed metric with initial data.
@@ -1098,11 +1836,41 @@ func (m *metricSnowflakeQueryExecuted) recordDataPoint(start pcommon.Timestamp, 
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1115,6 +1883,11 @@ func (m *metricSnowflakeQueryExecuted) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryExecuted) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1123,6 +1896,7 @@ func (m *metricSnowflakeQueryExecuted) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeQueryExecuted(cfg MetricConfig) metricSnowflakeQueryExecuted {
 	m := metricSnowflakeQueryExecuted{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1131,9 +1905,10 @@ func newMetricSnowflakeQueryExecuted(cfg MetricConfig) metricSnowflakeQueryExecu
 }
 
 type metricSnowflakeQueryExecutionTimeAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.execution_time.avg metric with initial data.
@@ -1149,17 +1924,59 @@ func (m *metricSnowflakeQueryExecutionTimeAvg) recordDataPoint(start pcommon.Tim
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1172,6 +1989,11 @@ func (m *metricSnowflakeQueryExecutionTimeAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryExecutionTimeAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1180,6 +2002,7 @@ func (m *metricSnowflakeQueryExecutionTimeAvg) emit(metrics pmetric.MetricSlice)
 
 func newMetricSnowflakeQueryExecutionTimeAvg(cfg MetricConfig) metricSnowflakeQueryExecutionTimeAvg {
 	m := metricSnowflakeQueryExecutionTimeAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1188,9 +2011,10 @@ func newMetricSnowflakeQueryExecutionTimeAvg(cfg MetricConfig) metricSnowflakeQu
 }
 
 type metricSnowflakeQueryPartitionsScannedAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.partitions_scanned.avg metric with initial data.
@@ -1206,17 +2030,59 @@ func (m *metricSnowflakeQueryPartitionsScannedAvg) recordDataPoint(start pcommon
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1229,6 +2095,11 @@ func (m *metricSnowflakeQueryPartitionsScannedAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryPartitionsScannedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1237,6 +2108,7 @@ func (m *metricSnowflakeQueryPartitionsScannedAvg) emit(metrics pmetric.MetricSl
 
 func newMetricSnowflakeQueryPartitionsScannedAvg(cfg MetricConfig) metricSnowflakeQueryPartitionsScannedAvg {
 	m := metricSnowflakeQueryPartitionsScannedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1245,9 +2117,10 @@ func newMetricSnowflakeQueryPartitionsScannedAvg(cfg MetricConfig) metricSnowfla
 }
 
 type metricSnowflakeQueryQueuedOverload struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.queued_overload metric with initial data.
@@ -1263,11 +2136,41 @@ func (m *metricSnowflakeQueryQueuedOverload) recordDataPoint(start pcommon.Times
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1280,6 +2183,11 @@ func (m *metricSnowflakeQueryQueuedOverload) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryQueuedOverload) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1288,6 +2196,7 @@ func (m *metricSnowflakeQueryQueuedOverload) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeQueryQueuedOverload(cfg MetricConfig) metricSnowflakeQueryQueuedOverload {
 	m := metricSnowflakeQueryQueuedOverload{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1296,9 +2205,10 @@ func newMetricSnowflakeQueryQueuedOverload(cfg MetricConfig) metricSnowflakeQuer
 }
 
 type metricSnowflakeQueryQueuedProvision struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.queued_provision metric with initial data.
@@ -1314,11 +2224,41 @@ func (m *metricSnowflakeQueryQueuedProvision) recordDataPoint(start pcommon.Time
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1331,6 +2271,11 @@ func (m *metricSnowflakeQueryQueuedProvision) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryQueuedProvision) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1339,6 +2284,7 @@ func (m *metricSnowflakeQueryQueuedProvision) emit(metrics pmetric.MetricSlice) 
 
 func newMetricSnowflakeQueryQueuedProvision(cfg MetricConfig) metricSnowflakeQueryQueuedProvision {
 	m := metricSnowflakeQueryQueuedProvision{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1347,9 +2293,10 @@ func newMetricSnowflakeQueryQueuedProvision(cfg MetricConfig) metricSnowflakeQue
 }
 
 type metricSnowflakeQueuedOverloadTimeAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.queued_overload_time.avg metric with initial data.
@@ -1365,17 +2312,59 @@ func (m *metricSnowflakeQueuedOverloadTimeAvg) recordDataPoint(start pcommon.Tim
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1388,6 +2377,11 @@ func (m *metricSnowflakeQueuedOverloadTimeAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueuedOverloadTimeAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1396,6 +2390,7 @@ func (m *metricSnowflakeQueuedOverloadTimeAvg) emit(metrics pmetric.MetricSlice)
 
 func newMetricSnowflakeQueuedOverloadTimeAvg(cfg MetricConfig) metricSnowflakeQueuedOverloadTimeAvg {
 	m := metricSnowflakeQueuedOverloadTimeAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1404,9 +2399,10 @@ func newMetricSnowflakeQueuedOverloadTimeAvg(cfg MetricConfig) metricSnowflakeQu
 }
 
 type metricSnowflakeQueuedProvisioningTimeAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.queued_provisioning_time.avg metric with initial data.
@@ -1422,17 +2418,59 @@ func (m *metricSnowflakeQueuedProvisioningTimeAvg) recordDataPoint(start pcommon
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1445,6 +2483,11 @@ func (m *metricSnowflakeQueuedProvisioningTimeAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueuedProvisioningTimeAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1453,6 +2496,7 @@ func (m *metricSnowflakeQueuedProvisioningTimeAvg) emit(metrics pmetric.MetricSl
 
 func newMetricSnowflakeQueuedProvisioningTimeAvg(cfg MetricConfig) metricSnowflakeQueuedProvisioningTimeAvg {
 	m := metricSnowflakeQueuedProvisioningTimeAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1461,9 +2505,10 @@ func newMetricSnowflakeQueuedProvisioningTimeAvg(cfg MetricConfig) metricSnowfla
 }
 
 type metricSnowflakeQueuedRepairTimeAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.queued_repair_time.avg metric with initial data.
@@ -1479,17 +2524,59 @@ func (m *metricSnowflakeQueuedRepairTimeAvg) recordDataPoint(start pcommon.Times
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1502,6 +2589,11 @@ func (m *metricSnowflakeQueuedRepairTimeAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueuedRepairTimeAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1510,6 +2602,7 @@ func (m *metricSnowflakeQueuedRepairTimeAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeQueuedRepairTimeAvg(cfg MetricConfig) metricSnowflakeQueuedRepairTimeAvg {
 	m := metricSnowflakeQueuedRepairTimeAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1518,9 +2611,10 @@ func newMetricSnowflakeQueuedRepairTimeAvg(cfg MetricConfig) metricSnowflakeQueu
 }
 
 type metricSnowflakeRowsDeletedAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.rows_deleted.avg metric with initial data.
@@ -1536,17 +2630,59 @@ func (m *metricSnowflakeRowsDeletedAvg) recordDataPoint(start pcommon.Timestamp,
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1559,6 +2695,11 @@ func (m *metricSnowflakeRowsDeletedAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeRowsDeletedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1567,6 +2708,7 @@ func (m *metricSnowflakeRowsDeletedAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeRowsDeletedAvg(cfg MetricConfig) metricSnowflakeRowsDeletedAvg {
 	m := metricSnowflakeRowsDeletedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1575,9 +2717,10 @@ func newMetricSnowflakeRowsDeletedAvg(cfg MetricConfig) metricSnowflakeRowsDelet
 }
 
 type metricSnowflakeRowsInsertedAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.rows_inserted.avg metric with initial data.
@@ -1593,17 +2736,59 @@ func (m *metricSnowflakeRowsInsertedAvg) recordDataPoint(start pcommon.Timestamp
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1616,6 +2801,11 @@ func (m *metricSnowflakeRowsInsertedAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeRowsInsertedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1624,6 +2814,7 @@ func (m *metricSnowflakeRowsInsertedAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeRowsInsertedAvg(cfg MetricConfig) metricSnowflakeRowsInsertedAvg {
 	m := metricSnowflakeRowsInsertedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1632,9 +2823,10 @@ func newMetricSnowflakeRowsInsertedAvg(cfg MetricConfig) metricSnowflakeRowsInse
 }
 
 type metricSnowflakeRowsProducedAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.rows_produced.avg metric with initial data.
@@ -1650,17 +2842,59 @@ func (m *metricSnowflakeRowsProducedAvg) recordDataPoint(start pcommon.Timestamp
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1673,6 +2907,11 @@ func (m *metricSnowflakeRowsProducedAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeRowsProducedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1681,6 +2920,7 @@ func (m *metricSnowflakeRowsProducedAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeRowsProducedAvg(cfg MetricConfig) metricSnowflakeRowsProducedAvg {
 	m := metricSnowflakeRowsProducedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1689,9 +2929,10 @@ func newMetricSnowflakeRowsProducedAvg(cfg MetricConfig) metricSnowflakeRowsProd
 }
 
 type metricSnowflakeRowsUnloadedAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.rows_unloaded.avg metric with initial data.
@@ -1707,17 +2948,59 @@ func (m *metricSnowflakeRowsUnloadedAvg) recordDataPoint(start pcommon.Timestamp
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1730,6 +3013,11 @@ func (m *metricSnowflakeRowsUnloadedAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeRowsUnloadedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1738,6 +3026,7 @@ func (m *metricSnowflakeRowsUnloadedAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeRowsUnloadedAvg(cfg MetricConfig) metricSnowflakeRowsUnloadedAvg {
 	m := metricSnowflakeRowsUnloadedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1746,9 +3035,10 @@ func newMetricSnowflakeRowsUnloadedAvg(cfg MetricConfig) metricSnowflakeRowsUnlo
 }
 
 type metricSnowflakeRowsUpdatedAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.rows_updated.avg metric with initial data.
@@ -1764,17 +3054,59 @@ func (m *metricSnowflakeRowsUpdatedAvg) recordDataPoint(start pcommon.Timestamp,
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1787,6 +3119,11 @@ func (m *metricSnowflakeRowsUpdatedAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeRowsUpdatedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1795,6 +3132,7 @@ func (m *metricSnowflakeRowsUpdatedAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeRowsUpdatedAvg(cfg MetricConfig) metricSnowflakeRowsUpdatedAvg {
 	m := metricSnowflakeRowsUpdatedAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1803,9 +3141,10 @@ func newMetricSnowflakeRowsUpdatedAvg(cfg MetricConfig) metricSnowflakeRowsUpdat
 }
 
 type metricSnowflakeSessionIDCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.session_id.count metric with initial data.
@@ -1821,11 +3160,41 @@ func (m *metricSnowflakeSessionIDCount) recordDataPoint(start pcommon.Timestamp,
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "user_name") {
+		dp.Attributes().PutStr("user_name", userNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("user_name", userNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1838,6 +3207,11 @@ func (m *metricSnowflakeSessionIDCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeSessionIDCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1846,6 +3220,7 @@ func (m *metricSnowflakeSessionIDCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeSessionIDCount(cfg MetricConfig) metricSnowflakeSessionIDCount {
 	m := metricSnowflakeSessionIDCount{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1854,9 +3229,10 @@ func newMetricSnowflakeSessionIDCount(cfg MetricConfig) metricSnowflakeSessionID
 }
 
 type metricSnowflakeStorageFailsafeBytesTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.storage.failsafe_bytes.total metric with initial data.
@@ -1871,10 +3247,38 @@ func (m *metricSnowflakeStorageFailsafeBytesTotal) recordDataPoint(start pcommon
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1887,6 +3291,11 @@ func (m *metricSnowflakeStorageFailsafeBytesTotal) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeStorageFailsafeBytesTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1895,6 +3304,7 @@ func (m *metricSnowflakeStorageFailsafeBytesTotal) emit(metrics pmetric.MetricSl
 
 func newMetricSnowflakeStorageFailsafeBytesTotal(cfg MetricConfig) metricSnowflakeStorageFailsafeBytesTotal {
 	m := metricSnowflakeStorageFailsafeBytesTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1903,9 +3313,10 @@ func newMetricSnowflakeStorageFailsafeBytesTotal(cfg MetricConfig) metricSnowfla
 }
 
 type metricSnowflakeStorageStageBytesTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.storage.stage_bytes.total metric with initial data.
@@ -1920,10 +3331,38 @@ func (m *metricSnowflakeStorageStageBytesTotal) recordDataPoint(start pcommon.Ti
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1936,6 +3375,11 @@ func (m *metricSnowflakeStorageStageBytesTotal) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeStorageStageBytesTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1944,6 +3388,7 @@ func (m *metricSnowflakeStorageStageBytesTotal) emit(metrics pmetric.MetricSlice
 
 func newMetricSnowflakeStorageStageBytesTotal(cfg MetricConfig) metricSnowflakeStorageStageBytesTotal {
 	m := metricSnowflakeStorageStageBytesTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1952,9 +3397,10 @@ func newMetricSnowflakeStorageStageBytesTotal(cfg MetricConfig) metricSnowflakeS
 }
 
 type metricSnowflakeStorageStorageBytesTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.storage.storage_bytes.total metric with initial data.
@@ -1969,10 +3415,38 @@ func (m *metricSnowflakeStorageStorageBytesTotal) recordDataPoint(start pcommon.
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1985,6 +3459,11 @@ func (m *metricSnowflakeStorageStorageBytesTotal) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeStorageStorageBytesTotal) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -1993,6 +3472,7 @@ func (m *metricSnowflakeStorageStorageBytesTotal) emit(metrics pmetric.MetricSli
 
 func newMetricSnowflakeStorageStorageBytesTotal(cfg MetricConfig) metricSnowflakeStorageStorageBytesTotal {
 	m := metricSnowflakeStorageStorageBytesTotal{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2001,9 +3481,10 @@ func newMetricSnowflakeStorageStorageBytesTotal(cfg MetricConfig) metricSnowflak
 }
 
 type metricSnowflakeTotalElapsedTimeAvg struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric // data buffer for generated metric.
+	config        MetricConfig   // metric config provided by user.
+	capacity      int            // max observed number of data points added to the metric.
+	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.total_elapsed_time.avg metric with initial data.
@@ -2019,17 +3500,59 @@ func (m *metricSnowflakeTotalElapsedTimeAvg) recordDataPoint(start pcommon.Times
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, "schema_name") {
+		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "execution_status") {
+		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "error_message") {
+		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "query_type") {
+		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_name") {
+		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "database_name") {
+		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, "warehouse_size") {
+		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2042,6 +3565,11 @@ func (m *metricSnowflakeTotalElapsedTimeAvg) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeTotalElapsedTimeAvg) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2050,6 +3578,7 @@ func (m *metricSnowflakeTotalElapsedTimeAvg) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSnowflakeTotalElapsedTimeAvg(cfg MetricConfig) metricSnowflakeTotalElapsedTimeAvg {
 	m := metricSnowflakeTotalElapsedTimeAvg{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

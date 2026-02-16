@@ -4,12 +4,14 @@
 package yanggrpcreceiver
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestSecurityConfig_Validation(t *testing.T) {
@@ -60,5 +62,26 @@ func TestSecurityConfig_Validation(t *testing.T) {
 				require.NoError(t, err)
 			}
 		})
+	}
+}
+
+func TestConfigs(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	for _, test := range []struct {
+		name string
+	}{
+		{
+			"yanggrpc/production",
+		},
+		{
+			"yanggrpc/default",
+		},
+	} {
+		c, err := cm.Sub(test.name)
+		require.NoError(t, err)
+		var cfg Config
+		require.NoError(t, c.Unmarshal(&cfg))
+		require.NoError(t, cfg.Validate())
 	}
 }

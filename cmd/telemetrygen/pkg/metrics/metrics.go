@@ -17,7 +17,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
@@ -59,7 +59,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 	}
 
 	wg := sync.WaitGroup{}
-	res := resource.NewWithAttributes(semconv.SchemaURL, c.GetAttributes()...)
+	res := resource.NewWithAttributes(conventions.SchemaURL, c.GetAttributes()...)
 
 	tb := newTimeBox(c.EnforceUniqueTimeseries, c.UniqueTimelimit)
 	defer tb.shutdown()
@@ -83,6 +83,10 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			logger:                 logger.With(zap.Int("worker", i)),
 			index:                  i,
 			clock:                  &realClock{},
+			batchSize:              c.BatchSize,
+			batch:                  c.Batch,
+			metricBuffer:           make([]metricdata.ResourceMetrics, 0),
+			bufferMutex:            sync.Mutex{},
 			loadSize:               c.LoadSize,
 			rand:                   rand.New(rand.NewPCG(uint64(time.Now().UnixNano()+int64(i)), 0)),
 			allowFailures:          c.AllowExportFailures,

@@ -38,7 +38,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
-    unit: "{error}"
+    unit: "{errors}"
     attributes: [tcpcheck.endpoint, error.code]
   tcpcheck.status:
     description: 1 if the TCP client successfully connected, otherwise 0.

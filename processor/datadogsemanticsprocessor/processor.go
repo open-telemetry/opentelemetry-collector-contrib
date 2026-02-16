@@ -11,11 +11,11 @@ import (
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
-	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
+	"github.com/DataDog/datadog-agent/pkg/trace/otel/traceutil"
 	"github.com/DataDog/datadog-agent/pkg/trace/transform"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.32.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 )
 
 func (tp *tracesProcessor) insertAttrIfMissingOrShouldOverride(sattr pcommon.Map, key string, value any) (err error) {
@@ -40,7 +40,7 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 		rattr := otelres.Attributes()
 		for j := 0; j < rspan.ScopeSpans().Len(); j++ {
 			serviceVersion := ""
-			if serviceVersionAttr, ok := otelres.Attributes().Get(string(semconv.ServiceVersionKey)); ok {
+			if serviceVersionAttr, ok := otelres.Attributes().Get(string(conventions.ServiceVersionKey)); ok {
 				serviceVersion = serviceVersionAttr.AsString()
 			}
 			err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.version", serviceVersion)
@@ -62,13 +62,13 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 			}
 
 			// Map VCS (version control system) attributes for source code integration at resource level
-			if vcsRevision, ok := rattr.Get(string(semconv.VCSRefHeadRevisionKey)); ok {
+			if vcsRevision, ok := rattr.Get(string(conventions.VCSRefHeadRevisionKey)); ok {
 				err = tp.insertAttrIfMissingOrShouldOverride(rattr, "git.commit.sha", vcsRevision.AsString())
 				if err != nil {
 					return ptrace.Traces{}, err
 				}
 			}
-			if vcsRepoURL, ok := rattr.Get(string(semconv.VCSRepositoryURLFullKey)); ok {
+			if vcsRepoURL, ok := rattr.Get(string(conventions.VCSRepositoryURLFullKey)); ok {
 				// Strip protocol from repository URL as required by Datadog
 				cleanURL := stripProtocolFromURL(vcsRepoURL.AsString())
 				err = tp.insertAttrIfMissingOrShouldOverride(rattr, "git.repository_url", cleanURL)
@@ -116,13 +116,13 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				}
 
 				// Map VCS (version control system) attributes for source code integration
-				if vcsRevision, ok := sattr.Get(string(semconv.VCSRefHeadRevisionKey)); ok {
+				if vcsRevision, ok := sattr.Get(string(conventions.VCSRefHeadRevisionKey)); ok {
 					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "git.commit.sha", vcsRevision.AsString())
 					if err != nil {
 						return ptrace.Traces{}, err
 					}
 				}
-				if vcsRepoURL, ok := sattr.Get(string(semconv.VCSRepositoryURLFullKey)); ok {
+				if vcsRepoURL, ok := sattr.Get(string(conventions.VCSRepositoryURLFullKey)); ok {
 					// Strip protocol from repository URL as required by Datadog
 					cleanURL := stripProtocolFromURL(vcsRepoURL.AsString())
 					err = tp.insertAttrIfMissingOrShouldOverride(sattr, "git.repository_url", cleanURL)
@@ -177,13 +177,13 @@ func status2Error(status ptrace.Status, events ptrace.SpanEventSlice, metaMap ma
 			continue
 		}
 		attrs := e.Attributes()
-		if v, ok := attrs.Get(string(semconv.ExceptionMessageKey)); ok {
+		if v, ok := attrs.Get(string(conventions.ExceptionMessageKey)); ok {
 			metaMap["error.msg"] = v.AsString()
 		}
-		if v, ok := attrs.Get(string(semconv.ExceptionTypeKey)); ok {
+		if v, ok := attrs.Get(string(conventions.ExceptionTypeKey)); ok {
 			metaMap["error.type"] = v.AsString()
 		}
-		if v, ok := attrs.Get(string(semconv.ExceptionStacktraceKey)); ok {
+		if v, ok := attrs.Get(string(conventions.ExceptionStacktraceKey)); ok {
 			metaMap["error.stack"] = v.AsString()
 		}
 	}

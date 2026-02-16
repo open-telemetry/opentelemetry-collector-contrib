@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
@@ -44,7 +44,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plo
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
-	resourceAttrs.PutStr(string(semconv.K8SNodeNameKey), ev.Source.Host)
+	resourceAttrs.PutStr(string(conventions.K8SNodeNameKey), ev.Source.Host)
 
 	// Attributes related to the object causing the event.
 	resourceAttrs.PutStr("k8s.object.kind", ev.InvolvedObject.Kind)
@@ -77,7 +77,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, version string) plo
 	attrs.PutStr("k8s.event.start_time", ev.CreationTimestamp.String())
 	attrs.PutStr("k8s.event.name", ev.Name)
 	attrs.PutStr("k8s.event.uid", string(ev.UID))
-	attrs.PutStr(string(semconv.K8SNamespaceNameKey), ev.InvolvedObject.Namespace)
+	attrs.PutStr(string(conventions.K8SNamespaceNameKey), ev.InvolvedObject.Namespace)
 
 	// "Count" field of k8s event will be '0' in case it is
 	// not present in the collected event from k8s.

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	k8s "k8s.io/client-go/kubernetes"
@@ -31,7 +32,7 @@ type k8seventsReceiver struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
 	obsrecv         *receiverhelper.ObsReport
-	wg              sync.WaitGroup
+	mu              sync.Mutex
 }
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
@@ -81,8 +82,13 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 
 		kr.settings.Logger.Info("registering the receiver in leader election")
 
+		// Register callbacks with the leader elector extension. These callbacks remain active
+		// for the lifetime of the receiver, allowing it to restart when leadership is regained.
 		elector.SetCallBackFuncs(
-			func(_ context.Context) {
+			func(ctx context.Context) {
+				cctx, cancel := context.WithCancel(ctx)
+				kr.cancel = cancel
+				kr.ctx = cctx
 				kr.settings.Logger.Info("Events Receiver started as leader")
 				if len(kr.config.Namespaces) == 0 {
 					kr.startWatch(corev1.NamespaceAll, k8sInterface)
@@ -92,12 +98,15 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 					}
 				}
 			},
-			// onStoppedLeading: stop watches, but DO NOT shut the whole receiver down
 			func() {
-				kr.settings.Logger.Info("no longer leader, stopping watches")
-				kr.stopWatches()
-			},
-		)
+				// Shutdown on leader loss. The receiver will restart if leadership is regained
+				// since the callbacks remain registered with the leader elector extension.
+				kr.settings.Logger.Info("no longer leader, stopping")
+				err := kr.Shutdown(context.Background())
+				if err != nil {
+					kr.settings.Logger.Error("shutdown receiver error:", zap.Error(err))
+				}
+			})
 		return nil
 	}
 
@@ -114,32 +123,17 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 }
 
 func (kr *k8seventsReceiver) Shutdown(context.Context) error {
-	// Stop informers and wait for them to exit.
-	kr.stopWatches()
-
 	if kr.cancel != nil {
 		kr.cancel()
-		kr.cancel = nil
 	}
-	return nil
-}
 
-// stopWatches closes all informer stop channels (idempotently) and waits for their goroutines to exit.
-func (kr *k8seventsReceiver) stopWatches() {
-	if len(kr.stopperChanList) == 0 {
-		return
+	kr.mu.Lock()
+	for _, stopperChan := range kr.stopperChanList {
+		close(stopperChan)
 	}
-	for _, ch := range kr.stopperChanList {
-		select {
-		case <-ch: // already closed
-		default:
-			close(ch)
-		}
-	}
-	// Wait for all controller.Run goroutines to finish.
-	kr.wg.Wait()
-	// Reset slice so we can start again on leadership regain.
 	kr.stopperChanList = nil
+	kr.mu.Unlock()
+	return nil
 }
 
 // Add the 'Event' handler and trigger the watch for a specific namespace.
@@ -147,7 +141,9 @@ func (kr *k8seventsReceiver) stopWatches() {
 // https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/client-go/tools/record/events_cache.go#L327
 func (kr *k8seventsReceiver) startWatch(ns string, client k8s.Interface) {
 	stopperChan := make(chan struct{})
+	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
+	kr.mu.Unlock()
 	kr.startWatchingNamespace(client, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
 			if ev, ok := obj.(*corev1.Event); ok {
@@ -174,7 +170,7 @@ func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 
 // startWatchingNamespace creates an informer and starts
 // watching a specific namespace for the events.
-func (kr *k8seventsReceiver) startWatchingNamespace(
+func (*k8seventsReceiver) startWatchingNamespace(
 	clientset k8s.Interface,
 	handlers cache.ResourceEventHandlerFuncs,
 	ns string,
@@ -188,11 +184,7 @@ func (kr *k8seventsReceiver) startWatchingNamespace(
 		ResyncPeriod:  0,
 		Handler:       handlers,
 	})
-	kr.wg.Add(1)
-	go func() {
-		defer kr.wg.Done()
-		controller.Run(stopper)
-	}()
+	go controller.Run(stopper)
 }
 
 // Allow events with eventTimestamp(EventTime/LastTimestamp/FirstTimestamp)

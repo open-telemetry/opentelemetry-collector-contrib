@@ -1,6 +1,6 @@
-name: New component proposal
-description: Suggest a new component for the project
-title: "New component: "
+name: Component donation
+description: Donate a component to the project
+title: "Component donation: "
 labels: ["Sponsor Needed", "needs triage"]
 body:
   - type: checkboxes
@@ -12,16 +12,24 @@ body:
           required: true
     validations:
       required: true
-  - type: textarea
+  - type: input
     attributes:
-      label: The purpose and use-cases of the new component
-      description: This information can be used later on to populate the README for the component. See an example overview [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver#overview).
+      label: Existing component implementation
+      description: Provide a URL for the existing repository where the component code is located.
     validations:
       required: true
   - type: textarea
     attributes:
+      label: Components covering similar use cases
+      description: Provide links to other components in this repository or outside of it that cover similar use cases. Leave blank if you do not know of other implementations.
+  - type: textarea
+    attributes:
+      label: The purpose and use-cases of the component
+      description: This information can be used later on to populate the README for the component. See an example overview [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver#overview).
+  - type: textarea
+    attributes:
       label: Example configuration for the component
-      description: This will be used later on when creating `config.go` and added to README as well. See this receiver as an [example](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/jaegerreceiver#getting-started).
+      description: See this receiver as an [example](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/jaegerreceiver#getting-started).
       placeholder: | # Empty Collector config
         ```yaml
         ```
@@ -30,21 +38,24 @@ body:
   - type: textarea
     attributes:
       label: Telemetry data types supported
-      description: Any combination of traces, metrics and/or logs is valid here.
+      description: Any combination of traces, metrics, logs and/or profiles is valid here.
     validations:
       required: true
   - type: input
     attributes:
-      label: Code Owner(s)
-      description: A code owner is responsible for supporting the component, including triaging issues, reviewing PRs, and submitting bug fixes.
-        Please list one or more members or aspiring members of the OpenTelemetry project who will serve as code owners.
-        Having a code owner is strongly recommended. However, you may use the issue to try to find a code owner for your component.
+      label: Code Owners
+      description: Code owners are responsible for supporting the component, including triaging issues, reviewing PRs, and submitting bug fixes.
+        Please list three or more OpenTelemetry members who will serve as code owners.
+        One of them must be an approver or maintainer in this repository (it can be the same person as the sponsor).
+        Having at least two code owners before opening the issue is strongly recommended. However, you may use the issue to try to find enough code owners for your component to meet the minimum required number of three.
+    validations:
+      required: true
   - type: input
     attributes:
       label: Sponsor (optional)
       description: "A sponsor is an approver who will be in charge of being the official reviewer of the code.
         Having a sponsor means that your use-case has been validated. If there are no sponsors yet for the component,
-        it's fine: use the issue as a means to try to find a sponsor for your component. If you are unable to find a sponsor, the component can still live in your own source repository and can be included in Collector distributions using the Collector builder."
+        it's fine: use the issue as a means to try to find a sponsor for your component. The sponsor must be from a different company than the issue author. If you are unable to find a sponsor, the component can still live in your own source repository and can be included in Collector distributions using the Collector builder."
   - type: textarea
     attributes:
       label: Additional context

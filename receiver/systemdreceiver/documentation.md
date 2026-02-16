@@ -12,9 +12,9 @@ metrics:
     enabled: false
 ```
 
-### systemd.unit.cpu.time
+### systemd.service.cpu.time
 
-Total CPU time spent by this unit.
+Total CPU time spent by this service.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -39,6 +39,29 @@ Total CPU time spent by this unit.
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | systemd.unit.active_state | The active state of the unit (https://www.freedesktop.org/software/systemd/man/latest/systemd.html#Units) | Str: ``active``, ``reloading``, ``inactive``, ``failed``, ``activating``, ``deactivating``, ``maintenance``, ``refreshing`` | Recommended |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### systemd.service.restarts
+
+Number of automatic restarts for the service.
+
+This exposes services' `NRestarts` property as a metric. This only tracks
+automatic service restarts (restarts when the process exits), and does
+not include manual restarts (e.g. from `systemctl restart`).
+
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {restarts} | Sum | Int | Cumulative | true | Development |
 
 ## Resource Attributes
 

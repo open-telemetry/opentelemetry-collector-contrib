@@ -17,8 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -209,7 +207,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	req1.Header.Set(header.TracerVersion, "1.2.3")
 	attrs1 := pcommon.NewMap()
 	upsertHeadersAttributes(req1, attrs1)
-	val, ok := attrs1.Get(string(semconv.TelemetrySDKVersionKey))
+	val, ok := attrs1.Get("telemetry.sdk.version")
 	assert.True(t, ok)
 	assert.Equal(t, "Datadog-1.2.3", val.Str())
 
@@ -218,7 +216,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	req2.Header.Set(header.Lang, ".NET")
 	attrs2 := pcommon.NewMap()
 	upsertHeadersAttributes(req2, attrs2)
-	val, ok = attrs2.Get(string(semconv.TelemetrySDKLanguageKey))
+	val, ok = attrs2.Get("telemetry.sdk.language")
 	assert.True(t, ok)
 	assert.Equal(t, "dotnet", val.Str())
 }
@@ -334,7 +332,7 @@ func TestToTracesServiceName(t *testing.T) {
 
 			traces, _ := ToTraces(zap.NewNop(), payload, req, nil)
 			for _, rs := range traces.ResourceSpans().All() {
-				actualServiceName, _ := rs.Resource().Attributes().Get(string(semconv.ServiceNameKey))
+				actualServiceName, _ := rs.Resource().Attributes().Get("service.name")
 				assert.Equal(t, tt.expectedServiceName, actualServiceName.AsString())
 				for _, ss := range rs.ScopeSpans().All() {
 					for _, span := range ss.Spans().All() {
@@ -346,57 +344,67 @@ func TestToTracesServiceName(t *testing.T) {
 	}
 }
 
-func TestProcessSpanByName(t *testing.T) {
+func TestToTraces(t *testing.T) {
 	cases := []struct {
-		name             string
-		expectedSpanName string
-		span             pb.Span
+		name                   string
+		ddSpan                 pb.Span
+		expectedSpanName       string
+		expectedSpanAttributes map[string]string
 	}{
 		{
 			"db-query-summary",
-			"select table",
 			pb.Span{
 				Name: "postgresql.query",
 				Meta: map[string]string{
-					"db.query.summary": "select table",
+					"db.query.summary": "select customers",
+					"db.statement":     "select * from customers",
 					"db.operation":     "select",
-					"db.instance":      "instance",
+					"db.instance":      "pg_customers",
+					"db.sql.table":     "customers",
 					"db.type":          "postgresql",
-					"db.namespace":     "namespace",
 					"peer.hostname":    "localhost",
 				},
+			},
+			"select customers",
+			map[string]string{
+				"db.query.summary":   "select customers",
+				"db.query.text":      "select * from customers",
+				"db.operation.name":  "select",
+				"db.collection.name": "customers",
+				"db.namespace":       "pg_customers",
 			},
 		},
 		{
 			"db-operation-instance",
-			"select instance",
 			pb.Span{
 				Name: "postgresql.query",
 				Meta: map[string]string{
 					"db.operation":  "select",
-					"db.instance":   "instance",
+					"db.instance":   "pg_customers",
 					"db.type":       "postgresql",
 					"db.namespace":  "namespace",
 					"peer.hostname": "localhost",
 				},
 			},
+			"select pg_customers",
+			map[string]string{},
 		},
 		{
 			"db-operation-namespace",
-			"select namespace",
 			pb.Span{
 				Name: "postgresql.query",
 				Meta: map[string]string{
 					"db.operation":  "select",
 					"db.type":       "postgresql",
-					"db.namespace":  "namespace",
+					"db.namespace":  "pg_customers",
 					"peer.hostname": "localhost",
 				},
 			},
+			"select pg_customers",
+			map[string]string{},
 		},
 		{
 			"db-operation-hostname",
-			"select localhost",
 			pb.Span{
 				Name: "postgresql.query",
 				Meta: map[string]string{
@@ -405,10 +413,11 @@ func TestProcessSpanByName(t *testing.T) {
 					"peer.hostname": "localhost",
 				},
 			},
+			"select localhost",
+			map[string]string{},
 		},
 		{
 			"db-operation",
-			"select",
 			pb.Span{
 				Name: "postgresql.query",
 				Meta: map[string]string{
@@ -416,10 +425,11 @@ func TestProcessSpanByName(t *testing.T) {
 					"db.type":      "postgresql",
 				},
 			},
+			"select",
+			map[string]string{},
 		},
 		{
 			"db-type",
-			"postgresql",
 			pb.Span{
 				Name: "postgresql.query",
 				Meta: map[string]string{
@@ -429,38 +439,72 @@ func TestProcessSpanByName(t *testing.T) {
 					"peer.hostname": "localhost",
 				},
 			},
+			"postgresql",
+			map[string]string{},
 		},
 		{
 			"db-redis",
-			"redis",
 			pb.Span{
 				Name: "redis.query",
 				Meta: map[string]string{
 					"db.type": "redis",
 				},
 			},
+			"redis",
+			map[string]string{},
 		},
 		{
 			"internal-spring-handler",
-			"ShippingController.shipOrder",
 			pb.Span{
 				Name:     "spring.handler",
 				Resource: "ShippingController.shipOrder",
 			},
+			"ShippingController.shipOrder",
+			map[string]string{},
+		},
+		{
+			"http-request-request-with-route",
+			pb.Span{
+				Name: "http.request",
+				Meta: map[string]string{
+					"http.method": "POST",
+					"http.route":  "/api/order",
+				},
+			},
+			"POST /api/order",
+			map[string]string{
+				"http.request.method": "POST",
+				"http.route":          "/api/order",
+			},
+		},
+		{
+			"web-request-request-withut-route",
+			pb.Span{
+				Name: "web.request",
+				Meta: map[string]string{
+					"http.method": "POST",
+				},
+			},
+			"POST",
+			map[string]string{
+				"http.request.method": "POST",
+			},
 		},
 		{
 			"http-servlet-request-no-route",
-			"POST",
 			pb.Span{
 				Name: "servlet.request",
 				Meta: map[string]string{
 					"http.method": "POST",
 				},
 			},
+			"POST",
+			map[string]string{
+				"http.request.method": "POST",
+			},
 		},
 		{
 			"http-servlet-request-with-route",
-			"POST /route",
 			pb.Span{
 				Name: "servlet.request",
 				Meta: map[string]string{
@@ -468,15 +512,170 @@ func TestProcessSpanByName(t *testing.T) {
 					"http.route":  "/route",
 				},
 			},
+			"POST /route",
+			map[string]string{
+				"http.request.method": "POST",
+				"http.route":          "/route",
+			},
+		},
+		{
+			"rpc.client-ok-with-method-and-service",
+			pb.Span{
+				Name: "grpc.client",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "/mydomain.MyDomainService/MyMethod",
+					"grpc.code":            "OK",
+					"rpc.system":           "grpc",
+				},
+				Error: 0,
+			},
+			"mydomain.MyDomainService/MyMethod",
+			map[string]string{
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "0",
+			},
+		},
+		{
+			"rpc.client-ok-dd-trace-java-style",
+			pb.Span{
+				Name:     "grpc.client",
+				Resource: "/mydomain.MyDomainService/MyMethod",
+				Meta: map[string]string{
+					"grpc.code": "OK",
+				},
+				Error: 0,
+			},
+			"mydomain.MyDomainService/MyMethod",
+			map[string]string{
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "0",
+				"rpc.system":           "grpc",
+			},
+		},
+		{
+			"rpc.client-error-with-method-and-service",
+			pb.Span{
+				Name: "grpc.client",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "/mydomain.MyDomainService/MyMethod",
+					"grpc.code":            "UNKNOWN",
+					"rpc.system":           "grpc",
+				},
+				Error: 2,
+			},
+			"mydomain.MyDomainService/MyMethod",
+			map[string]string{
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "2",
+			},
+		},
+		{
+			"rpc.client-ok-with-unexpected-full-method-format-missing-method",
+			pb.Span{
+				Name: "grpc.client",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "/mydomain.MyDomainService/",
+					"grpc.code":            "OK",
+					"rpc.system":           "grpc",
+				},
+				Error: 0,
+			},
+			"mydomain.MyDomainService",
+			map[string]string{
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.grpc.status_code": "0",
+			},
+		},
+		{
+			"rpc.client-ok-with-unexpected-full-method-format-missing-slash",
+			pb.Span{
+				Name: "grpc.client",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "mydomain.MyDomainService/MyMethod",
+					"grpc.code":            "OK",
+					"rpc.system":           "grpc",
+				},
+				Error: 0,
+			},
+			"mydomain.MyDomainService/MyMethod",
+			map[string]string{
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "0",
+			},
+		},
+		{
+			"rpc.server-ok-with-method-and-service",
+			pb.Span{
+				Name: "grpc.server",
+				Meta: map[string]string{
+					"rpc.grpc.full_method": "/mydomain.MyDomainService/MyMethod",
+					"grpc.code":            "OK",
+					"rpc.system":           "grpc",
+				},
+				Error: 0,
+			},
+			"mydomain.MyDomainService/MyMethod",
+			map[string]string{
+				"rpc.service":          "mydomain.MyDomainService",
+				"rpc.method":           "MyMethod",
+				"rpc.grpc.status_code": "0",
+			},
+		},
+		{
+			"aws-s3-headObject",
+			pb.Span{
+				Name: "aws.request",
+				Meta: map[string]string{
+					"aws.service":             "S3",
+					"aws.operation":           "headObject",
+					"aws.s3.bucket_name":      "my-bucket",
+					"aws.response.request_id": "1234567890",
+				},
+			},
+			"S3/headObject",
+			map[string]string{
+				"rpc.system":     "aws-api",
+				"rpc.service":    "S3",
+				"rpc.method":     "headObject",
+				"aws.s3.bucket":  "my-bucket",
+				"aws.request_id": "1234567890",
+			},
 		},
 	}
 
 	//nolint:govet
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			span := ptrace.NewSpan()
-			processSpanByName(&tt.span, &span)
-			assert.Equal(t, tt.expectedSpanName, span.Name())
+			payload := &pb.TracerPayload{
+				LanguageName:    "go",
+				LanguageVersion: "1.20",
+				TracerVersion:   "v1",
+				ContainerID:     "container-123",
+				Chunks: []*pb.TraceChunk{
+					{
+						Priority: 0,
+						Spans:    []*pb.Span{&tt.ddSpan},
+					},
+				},
+			}
+			logger, _ := zap.NewDevelopment()
+			traceIDCache, _ := lru.New[uint64, pcommon.TraceID](100)
+			req, _ := http.NewRequest(http.MethodPost, "/v0.5/traces", http.NoBody)
+
+			got, err := ToTraces(logger, payload, req, traceIDCache)
+			assert.NoError(t, err)
+			assert.Equal(t, 1, got.SpanCount())
+			gotSpan := got.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+			assert.Equal(t, tt.expectedSpanName, gotSpan.Name())
+			for k, want := range tt.expectedSpanAttributes {
+				val, ok := gotSpan.Attributes().Get(k)
+				assert.True(t, ok, "attribute %s missing", k)
+				assert.Equal(t, want, val.AsString(), "attribute %s value mismatch", k)
+			}
 		})
 	}
 }

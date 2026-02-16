@@ -736,7 +736,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 
 			baseCfg, err := promconfig.Load("", nil)
 			require.NoError(t, err)
-			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, baseCfg, false)
+			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, baseCfg)
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 			allocator.wg.Wait()
@@ -775,12 +775,16 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 						s.Labels["__meta_url"] = model.LabelValue(sdConfig.URL)
 						require.Equal(t, s.Labels, group.Labels)
 
-						// The manager may not be done processing the Refresh call by the
-						// time we check the value of the ScrapeConfig.
-						require.Eventually(t, func() bool {
-							v := manager.configUpdateCount.Load()
-							return v >= int64(len(tc.responses.responses["/scrape_configs"]))
-						}, 5*time.Second, 250*time.Millisecond)
+						// Wait for the manager to finish processing all config updates.
+						expected := int64(len(tc.responses.responses["/scrape_configs"]))
+						for manager.configUpdateCount.Load() < expected {
+							select {
+							case <-manager.configUpdated:
+							case <-time.After(5 * time.Second):
+								require.FailNowf(t, "timed out", "waiting for config update count to reach %d, got %d",
+									expected, manager.configUpdateCount.Load())
+							}
+						}
 
 						if s.MetricRelabelConfig != nil {
 							for _, sc := range manager.promCfg.ScrapeConfigs {
@@ -938,7 +942,7 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 	baseCfg, err := promconfig.Load("", nil)
 	require.NoError(t, err)
 	baseCfg.ScrapeConfigs = initialScrapeConfigs
-	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, baseCfg, false)
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, baseCfg)
 	require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 	allocator.wg.Wait()

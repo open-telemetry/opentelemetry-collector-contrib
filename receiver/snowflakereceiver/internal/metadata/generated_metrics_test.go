@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,134 +66,276 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["SnowflakeBillingCloudServiceTotal"] = mb.metricSnowflakeBillingCloudServiceTotal.config.AggregationStrategy
+			aggMap["SnowflakeBillingTotalCreditTotal"] = mb.metricSnowflakeBillingTotalCreditTotal.config.AggregationStrategy
+			aggMap["SnowflakeBillingVirtualWarehouseTotal"] = mb.metricSnowflakeBillingVirtualWarehouseTotal.config.AggregationStrategy
+			aggMap["SnowflakeBillingWarehouseCloudServiceTotal"] = mb.metricSnowflakeBillingWarehouseCloudServiceTotal.config.AggregationStrategy
+			aggMap["SnowflakeBillingWarehouseTotalCreditTotal"] = mb.metricSnowflakeBillingWarehouseTotalCreditTotal.config.AggregationStrategy
+			aggMap["SnowflakeBillingWarehouseVirtualWarehouseTotal"] = mb.metricSnowflakeBillingWarehouseVirtualWarehouseTotal.config.AggregationStrategy
+			aggMap["SnowflakeDatabaseBytesScannedAvg"] = mb.metricSnowflakeDatabaseBytesScannedAvg.config.AggregationStrategy
+			aggMap["SnowflakeDatabaseQueryCount"] = mb.metricSnowflakeDatabaseQueryCount.config.AggregationStrategy
+			aggMap["SnowflakeLoginsTotal"] = mb.metricSnowflakeLoginsTotal.config.AggregationStrategy
+			aggMap["SnowflakePipeCreditsUsedTotal"] = mb.metricSnowflakePipeCreditsUsedTotal.config.AggregationStrategy
+			aggMap["SnowflakeQueryBlocked"] = mb.metricSnowflakeQueryBlocked.config.AggregationStrategy
+			aggMap["SnowflakeQueryBytesDeletedAvg"] = mb.metricSnowflakeQueryBytesDeletedAvg.config.AggregationStrategy
+			aggMap["SnowflakeQueryBytesSpilledLocalAvg"] = mb.metricSnowflakeQueryBytesSpilledLocalAvg.config.AggregationStrategy
+			aggMap["SnowflakeQueryBytesSpilledRemoteAvg"] = mb.metricSnowflakeQueryBytesSpilledRemoteAvg.config.AggregationStrategy
+			aggMap["SnowflakeQueryBytesWrittenAvg"] = mb.metricSnowflakeQueryBytesWrittenAvg.config.AggregationStrategy
+			aggMap["SnowflakeQueryCompilationTimeAvg"] = mb.metricSnowflakeQueryCompilationTimeAvg.config.AggregationStrategy
+			aggMap["SnowflakeQueryDataScannedCacheAvg"] = mb.metricSnowflakeQueryDataScannedCacheAvg.config.AggregationStrategy
+			aggMap["SnowflakeQueryExecuted"] = mb.metricSnowflakeQueryExecuted.config.AggregationStrategy
+			aggMap["SnowflakeQueryExecutionTimeAvg"] = mb.metricSnowflakeQueryExecutionTimeAvg.config.AggregationStrategy
+			aggMap["SnowflakeQueryPartitionsScannedAvg"] = mb.metricSnowflakeQueryPartitionsScannedAvg.config.AggregationStrategy
+			aggMap["SnowflakeQueryQueuedOverload"] = mb.metricSnowflakeQueryQueuedOverload.config.AggregationStrategy
+			aggMap["SnowflakeQueryQueuedProvision"] = mb.metricSnowflakeQueryQueuedProvision.config.AggregationStrategy
+			aggMap["SnowflakeQueuedOverloadTimeAvg"] = mb.metricSnowflakeQueuedOverloadTimeAvg.config.AggregationStrategy
+			aggMap["SnowflakeQueuedProvisioningTimeAvg"] = mb.metricSnowflakeQueuedProvisioningTimeAvg.config.AggregationStrategy
+			aggMap["SnowflakeQueuedRepairTimeAvg"] = mb.metricSnowflakeQueuedRepairTimeAvg.config.AggregationStrategy
+			aggMap["SnowflakeRowsDeletedAvg"] = mb.metricSnowflakeRowsDeletedAvg.config.AggregationStrategy
+			aggMap["SnowflakeRowsInsertedAvg"] = mb.metricSnowflakeRowsInsertedAvg.config.AggregationStrategy
+			aggMap["SnowflakeRowsProducedAvg"] = mb.metricSnowflakeRowsProducedAvg.config.AggregationStrategy
+			aggMap["SnowflakeRowsUnloadedAvg"] = mb.metricSnowflakeRowsUnloadedAvg.config.AggregationStrategy
+			aggMap["SnowflakeRowsUpdatedAvg"] = mb.metricSnowflakeRowsUpdatedAvg.config.AggregationStrategy
+			aggMap["SnowflakeSessionIDCount"] = mb.metricSnowflakeSessionIDCount.config.AggregationStrategy
+			aggMap["SnowflakeStorageFailsafeBytesTotal"] = mb.metricSnowflakeStorageFailsafeBytesTotal.config.AggregationStrategy
+			aggMap["SnowflakeStorageStageBytesTotal"] = mb.metricSnowflakeStorageStageBytesTotal.config.AggregationStrategy
+			aggMap["SnowflakeStorageStorageBytesTotal"] = mb.metricSnowflakeStorageStorageBytesTotal.config.AggregationStrategy
+			aggMap["SnowflakeTotalElapsedTimeAvg"] = mb.metricSnowflakeTotalElapsedTimeAvg.config.AggregationStrategy
 
 			expectedWarnings := 0
-
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
 			allMetricsCount++
 			mb.RecordSnowflakeBillingCloudServiceTotalDataPoint(ts, 1, "service_type-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeBillingCloudServiceTotalDataPoint(ts, 3, "service_type-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeBillingTotalCreditTotalDataPoint(ts, 1, "service_type-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeBillingTotalCreditTotalDataPoint(ts, 3, "service_type-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(ts, 1, "service_type-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(ts, 3, "service_type-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint(ts, 1, "warehouse_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint(ts, 3, "warehouse_name-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint(ts, 1, "warehouse_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint(ts, 3, "warehouse_name-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts, 1, "warehouse_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts, 3, "warehouse_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeDatabaseQueryCountDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeDatabaseQueryCountDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeLoginsTotalDataPoint(ts, 1, "error_message-val", "reported_client_type-val", "is_success-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeLoginsTotalDataPoint(ts, 3, "error_message-val-2", "reported_client_type-val-2", "is_success-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts, 1, "pipe_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts, 3, "pipe_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBlockedDataPoint(ts, 1, "warehouse_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueryBlockedDataPoint(ts, 3, "warehouse_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryExecutedDataPoint(ts, 1, "warehouse_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueryExecutedDataPoint(ts, 3, "warehouse_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 1, "warehouse_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 3, "warehouse_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 1, "warehouse_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 3, "warehouse_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeRowsDeletedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeRowsDeletedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeRowsInsertedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeRowsInsertedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeRowsProducedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeRowsProducedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeRowsUnloadedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeRowsUnloadedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeRowsUpdatedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeRowsUpdatedAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeSessionIDCountDataPoint(ts, 1, "user_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeSessionIDCountDataPoint(ts, 3, "user_name-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeStorageStageBytesTotalDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeStorageStageBytesTotalDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeStorageStorageBytesTotalDataPoint(ts, 1)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeStorageStorageBytesTotalDataPoint(ts, 3)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 3, "schema_name-val-2", "execution_status-val-2", "error_message-val-2", "query_type-val-2", "warehouse_name-val-2", "database_name-val-2", "warehouse_size-val-2")
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetSnowflakeAccountName("snowflake.account.name-val")
@@ -214,869 +362,1970 @@ func TestMetricsBuilder(t *testing.T) {
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
 				case "snowflake.billing.cloud_service.total":
-					assert.False(t, validatedMetrics["snowflake.billing.cloud_service.total"], "Found a duplicate in the metrics slice: snowflake.billing.cloud_service.total")
-					validatedMetrics["snowflake.billing.cloud_service.total"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Reported total credits used in the cloud service over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "{credits}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("service_type")
-					assert.True(t, ok)
-					assert.Equal(t, "service_type-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.billing.cloud_service.total"], "Found a duplicate in the metrics slice: snowflake.billing.cloud_service.total")
+						validatedMetrics["snowflake.billing.cloud_service.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Reported total credits used in the cloud service over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("service_type")
+						assert.True(t, ok)
+						assert.Equal(t, "service_type-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.billing.cloud_service.total"], "Found a duplicate in the metrics slice: snowflake.billing.cloud_service.total")
+						validatedMetrics["snowflake.billing.cloud_service.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Reported total credits used in the cloud service over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.billing.cloud_service.total"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("service_type")
+						assert.False(t, ok)
+					}
 				case "snowflake.billing.total_credit.total":
-					assert.False(t, validatedMetrics["snowflake.billing.total_credit.total"], "Found a duplicate in the metrics slice: snowflake.billing.total_credit.total")
-					validatedMetrics["snowflake.billing.total_credit.total"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Reported total credits used across account over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "{credits}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("service_type")
-					assert.True(t, ok)
-					assert.Equal(t, "service_type-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.billing.total_credit.total"], "Found a duplicate in the metrics slice: snowflake.billing.total_credit.total")
+						validatedMetrics["snowflake.billing.total_credit.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Reported total credits used across account over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("service_type")
+						assert.True(t, ok)
+						assert.Equal(t, "service_type-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.billing.total_credit.total"], "Found a duplicate in the metrics slice: snowflake.billing.total_credit.total")
+						validatedMetrics["snowflake.billing.total_credit.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Reported total credits used across account over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.billing.total_credit.total"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("service_type")
+						assert.False(t, ok)
+					}
 				case "snowflake.billing.virtual_warehouse.total":
-					assert.False(t, validatedMetrics["snowflake.billing.virtual_warehouse.total"], "Found a duplicate in the metrics slice: snowflake.billing.virtual_warehouse.total")
-					validatedMetrics["snowflake.billing.virtual_warehouse.total"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Reported total credits used by virtual warehouse service over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "{credits}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("service_type")
-					assert.True(t, ok)
-					assert.Equal(t, "service_type-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.billing.virtual_warehouse.total"], "Found a duplicate in the metrics slice: snowflake.billing.virtual_warehouse.total")
+						validatedMetrics["snowflake.billing.virtual_warehouse.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Reported total credits used by virtual warehouse service over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("service_type")
+						assert.True(t, ok)
+						assert.Equal(t, "service_type-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.billing.virtual_warehouse.total"], "Found a duplicate in the metrics slice: snowflake.billing.virtual_warehouse.total")
+						validatedMetrics["snowflake.billing.virtual_warehouse.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Reported total credits used by virtual warehouse service over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.billing.virtual_warehouse.total"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("service_type")
+						assert.False(t, ok)
+					}
 				case "snowflake.billing.warehouse.cloud_service.total":
-					assert.False(t, validatedMetrics["snowflake.billing.warehouse.cloud_service.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.cloud_service.total")
-					validatedMetrics["snowflake.billing.warehouse.cloud_service.total"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Credits used across cloud service for given warehouse over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "{credits}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.billing.warehouse.cloud_service.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.cloud_service.total")
+						validatedMetrics["snowflake.billing.warehouse.cloud_service.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Credits used across cloud service for given warehouse over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.billing.warehouse.cloud_service.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.cloud_service.total")
+						validatedMetrics["snowflake.billing.warehouse.cloud_service.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Credits used across cloud service for given warehouse over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.billing.warehouse.cloud_service.total"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+					}
 				case "snowflake.billing.warehouse.total_credit.total":
-					assert.False(t, validatedMetrics["snowflake.billing.warehouse.total_credit.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.total_credit.total")
-					validatedMetrics["snowflake.billing.warehouse.total_credit.total"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Total credits used associated with given warehouse over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "{credits}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.billing.warehouse.total_credit.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.total_credit.total")
+						validatedMetrics["snowflake.billing.warehouse.total_credit.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Total credits used associated with given warehouse over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.billing.warehouse.total_credit.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.total_credit.total")
+						validatedMetrics["snowflake.billing.warehouse.total_credit.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Total credits used associated with given warehouse over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.billing.warehouse.total_credit.total"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+					}
 				case "snowflake.billing.warehouse.virtual_warehouse.total":
-					assert.False(t, validatedMetrics["snowflake.billing.warehouse.virtual_warehouse.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.virtual_warehouse.total")
-					validatedMetrics["snowflake.billing.warehouse.virtual_warehouse.total"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Total credits used by virtual warehouse service for given warehouse over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "{credits}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.billing.warehouse.virtual_warehouse.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.virtual_warehouse.total")
+						validatedMetrics["snowflake.billing.warehouse.virtual_warehouse.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Total credits used by virtual warehouse service for given warehouse over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.billing.warehouse.virtual_warehouse.total"], "Found a duplicate in the metrics slice: snowflake.billing.warehouse.virtual_warehouse.total")
+						validatedMetrics["snowflake.billing.warehouse.virtual_warehouse.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Total credits used by virtual warehouse service for given warehouse over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.billing.warehouse.virtual_warehouse.total"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+					}
 				case "snowflake.database.bytes_scanned.avg":
-					assert.False(t, validatedMetrics["snowflake.database.bytes_scanned.avg"], "Found a duplicate in the metrics slice: snowflake.database.bytes_scanned.avg")
-					validatedMetrics["snowflake.database.bytes_scanned.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average bytes scanned in a database over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.database.bytes_scanned.avg"], "Found a duplicate in the metrics slice: snowflake.database.bytes_scanned.avg")
+						validatedMetrics["snowflake.database.bytes_scanned.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average bytes scanned in a database over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.database.bytes_scanned.avg"], "Found a duplicate in the metrics slice: snowflake.database.bytes_scanned.avg")
+						validatedMetrics["snowflake.database.bytes_scanned.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average bytes scanned in a database over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.database.bytes_scanned.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.database.query.count":
-					assert.False(t, validatedMetrics["snowflake.database.query.count"], "Found a duplicate in the metrics slice: snowflake.database.query.count")
-					validatedMetrics["snowflake.database.query.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Total query count for database over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.database.query.count"], "Found a duplicate in the metrics slice: snowflake.database.query.count")
+						validatedMetrics["snowflake.database.query.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Total query count for database over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.database.query.count"], "Found a duplicate in the metrics slice: snowflake.database.query.count")
+						validatedMetrics["snowflake.database.query.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Total query count for database over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["snowflake.database.query.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.logins.total":
-					assert.False(t, validatedMetrics["snowflake.logins.total"], "Found a duplicate in the metrics slice: snowflake.logins.total")
-					validatedMetrics["snowflake.logins.total"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Total login attempts for account over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("reported_client_type")
-					assert.True(t, ok)
-					assert.Equal(t, "reported_client_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("is_success")
-					assert.True(t, ok)
-					assert.Equal(t, "is_success-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.logins.total"], "Found a duplicate in the metrics slice: snowflake.logins.total")
+						validatedMetrics["snowflake.logins.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Total login attempts for account over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("reported_client_type")
+						assert.True(t, ok)
+						assert.Equal(t, "reported_client_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("is_success")
+						assert.True(t, ok)
+						assert.Equal(t, "is_success-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.logins.total"], "Found a duplicate in the metrics slice: snowflake.logins.total")
+						validatedMetrics["snowflake.logins.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Total login attempts for account over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["snowflake.logins.total"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("reported_client_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("is_success")
+						assert.False(t, ok)
+					}
 				case "snowflake.pipe.credits_used.total":
-					assert.False(t, validatedMetrics["snowflake.pipe.credits_used.total"], "Found a duplicate in the metrics slice: snowflake.pipe.credits_used.total")
-					validatedMetrics["snowflake.pipe.credits_used.total"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Snow pipe credits contotaled over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "{credits}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("pipe_name")
-					assert.True(t, ok)
-					assert.Equal(t, "pipe_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.pipe.credits_used.total"], "Found a duplicate in the metrics slice: snowflake.pipe.credits_used.total")
+						validatedMetrics["snowflake.pipe.credits_used.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Snow pipe credits contotaled over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("pipe_name")
+						assert.True(t, ok)
+						assert.Equal(t, "pipe_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.pipe.credits_used.total"], "Found a duplicate in the metrics slice: snowflake.pipe.credits_used.total")
+						validatedMetrics["snowflake.pipe.credits_used.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Snow pipe credits contotaled over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{credits}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.pipe.credits_used.total"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("pipe_name")
+						assert.False(t, ok)
+					}
 				case "snowflake.query.blocked":
-					assert.False(t, validatedMetrics["snowflake.query.blocked"], "Found a duplicate in the metrics slice: snowflake.query.blocked")
-					validatedMetrics["snowflake.query.blocked"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Blocked query count for warehouse over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.query.blocked"], "Found a duplicate in the metrics slice: snowflake.query.blocked")
+						validatedMetrics["snowflake.query.blocked"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Blocked query count for warehouse over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.query.blocked"], "Found a duplicate in the metrics slice: snowflake.query.blocked")
+						validatedMetrics["snowflake.query.blocked"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Blocked query count for warehouse over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.query.blocked"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+					}
 				case "snowflake.query.bytes_deleted.avg":
-					assert.False(t, validatedMetrics["snowflake.query.bytes_deleted.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_deleted.avg")
-					validatedMetrics["snowflake.query.bytes_deleted.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average bytes deleted in database over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.query.bytes_deleted.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_deleted.avg")
+						validatedMetrics["snowflake.query.bytes_deleted.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average bytes deleted in database over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.query.bytes_deleted.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_deleted.avg")
+						validatedMetrics["snowflake.query.bytes_deleted.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average bytes deleted in database over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.query.bytes_deleted.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.query.bytes_spilled.local.avg":
-					assert.False(t, validatedMetrics["snowflake.query.bytes_spilled.local.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_spilled.local.avg")
-					validatedMetrics["snowflake.query.bytes_spilled.local.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.query.bytes_spilled.local.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_spilled.local.avg")
+						validatedMetrics["snowflake.query.bytes_spilled.local.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.query.bytes_spilled.local.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_spilled.local.avg")
+						validatedMetrics["snowflake.query.bytes_spilled.local.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.query.bytes_spilled.local.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.query.bytes_spilled.remote.avg":
-					assert.False(t, validatedMetrics["snowflake.query.bytes_spilled.remote.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_spilled.remote.avg")
-					validatedMetrics["snowflake.query.bytes_spilled.remote.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.query.bytes_spilled.remote.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_spilled.remote.avg")
+						validatedMetrics["snowflake.query.bytes_spilled.remote.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.query.bytes_spilled.remote.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_spilled.remote.avg")
+						validatedMetrics["snowflake.query.bytes_spilled.remote.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.query.bytes_spilled.remote.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.query.bytes_written.avg":
-					assert.False(t, validatedMetrics["snowflake.query.bytes_written.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_written.avg")
-					validatedMetrics["snowflake.query.bytes_written.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average bytes written by database over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.query.bytes_written.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_written.avg")
+						validatedMetrics["snowflake.query.bytes_written.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average bytes written by database over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.query.bytes_written.avg"], "Found a duplicate in the metrics slice: snowflake.query.bytes_written.avg")
+						validatedMetrics["snowflake.query.bytes_written.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average bytes written by database over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.query.bytes_written.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.query.compilation_time.avg":
-					assert.False(t, validatedMetrics["snowflake.query.compilation_time.avg"], "Found a duplicate in the metrics slice: snowflake.query.compilation_time.avg")
-					validatedMetrics["snowflake.query.compilation_time.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average time taken to compile query over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.query.compilation_time.avg"], "Found a duplicate in the metrics slice: snowflake.query.compilation_time.avg")
+						validatedMetrics["snowflake.query.compilation_time.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average time taken to compile query over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.query.compilation_time.avg"], "Found a duplicate in the metrics slice: snowflake.query.compilation_time.avg")
+						validatedMetrics["snowflake.query.compilation_time.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average time taken to compile query over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.query.compilation_time.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.query.data_scanned_cache.avg":
-					assert.False(t, validatedMetrics["snowflake.query.data_scanned_cache.avg"], "Found a duplicate in the metrics slice: snowflake.query.data_scanned_cache.avg")
-					validatedMetrics["snowflake.query.data_scanned_cache.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average percentage of data scanned from cache over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.query.data_scanned_cache.avg"], "Found a duplicate in the metrics slice: snowflake.query.data_scanned_cache.avg")
+						validatedMetrics["snowflake.query.data_scanned_cache.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average percentage of data scanned from cache over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.query.data_scanned_cache.avg"], "Found a duplicate in the metrics slice: snowflake.query.data_scanned_cache.avg")
+						validatedMetrics["snowflake.query.data_scanned_cache.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average percentage of data scanned from cache over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.query.data_scanned_cache.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.query.executed":
-					assert.False(t, validatedMetrics["snowflake.query.executed"], "Found a duplicate in the metrics slice: snowflake.query.executed")
-					validatedMetrics["snowflake.query.executed"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Executed query count for warehouse over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.query.executed"], "Found a duplicate in the metrics slice: snowflake.query.executed")
+						validatedMetrics["snowflake.query.executed"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Executed query count for warehouse over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.query.executed"], "Found a duplicate in the metrics slice: snowflake.query.executed")
+						validatedMetrics["snowflake.query.executed"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Executed query count for warehouse over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.query.executed"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+					}
 				case "snowflake.query.execution_time.avg":
-					assert.False(t, validatedMetrics["snowflake.query.execution_time.avg"], "Found a duplicate in the metrics slice: snowflake.query.execution_time.avg")
-					validatedMetrics["snowflake.query.execution_time.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average time spent executing queries in database over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.query.execution_time.avg"], "Found a duplicate in the metrics slice: snowflake.query.execution_time.avg")
+						validatedMetrics["snowflake.query.execution_time.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average time spent executing queries in database over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.query.execution_time.avg"], "Found a duplicate in the metrics slice: snowflake.query.execution_time.avg")
+						validatedMetrics["snowflake.query.execution_time.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average time spent executing queries in database over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.query.execution_time.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.query.partitions_scanned.avg":
-					assert.False(t, validatedMetrics["snowflake.query.partitions_scanned.avg"], "Found a duplicate in the metrics slice: snowflake.query.partitions_scanned.avg")
-					validatedMetrics["snowflake.query.partitions_scanned.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of partitions scanned during query so far over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.query.partitions_scanned.avg"], "Found a duplicate in the metrics slice: snowflake.query.partitions_scanned.avg")
+						validatedMetrics["snowflake.query.partitions_scanned.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of partitions scanned during query so far over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.query.partitions_scanned.avg"], "Found a duplicate in the metrics slice: snowflake.query.partitions_scanned.avg")
+						validatedMetrics["snowflake.query.partitions_scanned.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of partitions scanned during query so far over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.query.partitions_scanned.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.query.queued_overload":
-					assert.False(t, validatedMetrics["snowflake.query.queued_overload"], "Found a duplicate in the metrics slice: snowflake.query.queued_overload")
-					validatedMetrics["snowflake.query.queued_overload"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Overloaded query count for warehouse over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.query.queued_overload"], "Found a duplicate in the metrics slice: snowflake.query.queued_overload")
+						validatedMetrics["snowflake.query.queued_overload"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Overloaded query count for warehouse over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.query.queued_overload"], "Found a duplicate in the metrics slice: snowflake.query.queued_overload")
+						validatedMetrics["snowflake.query.queued_overload"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Overloaded query count for warehouse over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.query.queued_overload"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+					}
 				case "snowflake.query.queued_provision":
-					assert.False(t, validatedMetrics["snowflake.query.queued_provision"], "Found a duplicate in the metrics slice: snowflake.query.queued_provision")
-					validatedMetrics["snowflake.query.queued_provision"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of compute resources queued for provisioning over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.query.queued_provision"], "Found a duplicate in the metrics slice: snowflake.query.queued_provision")
+						validatedMetrics["snowflake.query.queued_provision"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of compute resources queued for provisioning over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.query.queued_provision"], "Found a duplicate in the metrics slice: snowflake.query.queued_provision")
+						validatedMetrics["snowflake.query.queued_provision"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of compute resources queued for provisioning over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.query.queued_provision"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+					}
 				case "snowflake.queued_overload_time.avg":
-					assert.False(t, validatedMetrics["snowflake.queued_overload_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_overload_time.avg")
-					validatedMetrics["snowflake.queued_overload_time.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average time spent in warehouse queue due to warehouse being overloaded over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.queued_overload_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_overload_time.avg")
+						validatedMetrics["snowflake.queued_overload_time.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average time spent in warehouse queue due to warehouse being overloaded over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.queued_overload_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_overload_time.avg")
+						validatedMetrics["snowflake.queued_overload_time.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average time spent in warehouse queue due to warehouse being overloaded over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.queued_overload_time.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.queued_provisioning_time.avg":
-					assert.False(t, validatedMetrics["snowflake.queued_provisioning_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_provisioning_time.avg")
-					validatedMetrics["snowflake.queued_provisioning_time.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average time spent in warehouse queue waiting for resources to provision over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.queued_provisioning_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_provisioning_time.avg")
+						validatedMetrics["snowflake.queued_provisioning_time.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average time spent in warehouse queue waiting for resources to provision over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.queued_provisioning_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_provisioning_time.avg")
+						validatedMetrics["snowflake.queued_provisioning_time.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average time spent in warehouse queue waiting for resources to provision over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.queued_provisioning_time.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.queued_repair_time.avg":
-					assert.False(t, validatedMetrics["snowflake.queued_repair_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_repair_time.avg")
-					validatedMetrics["snowflake.queued_repair_time.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average time spent in warehouse queue waiting for compute resources to be repaired over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.queued_repair_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_repair_time.avg")
+						validatedMetrics["snowflake.queued_repair_time.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average time spent in warehouse queue waiting for compute resources to be repaired over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.queued_repair_time.avg"], "Found a duplicate in the metrics slice: snowflake.queued_repair_time.avg")
+						validatedMetrics["snowflake.queued_repair_time.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average time spent in warehouse queue waiting for compute resources to be repaired over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.queued_repair_time.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.rows_deleted.avg":
-					assert.False(t, validatedMetrics["snowflake.rows_deleted.avg"], "Found a duplicate in the metrics slice: snowflake.rows_deleted.avg")
-					validatedMetrics["snowflake.rows_deleted.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of rows deleted from a table (or tables) over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "{rows}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.rows_deleted.avg"], "Found a duplicate in the metrics slice: snowflake.rows_deleted.avg")
+						validatedMetrics["snowflake.rows_deleted.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of rows deleted from a table (or tables) over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{rows}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.rows_deleted.avg"], "Found a duplicate in the metrics slice: snowflake.rows_deleted.avg")
+						validatedMetrics["snowflake.rows_deleted.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of rows deleted from a table (or tables) over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{rows}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.rows_deleted.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.rows_inserted.avg":
-					assert.False(t, validatedMetrics["snowflake.rows_inserted.avg"], "Found a duplicate in the metrics slice: snowflake.rows_inserted.avg")
-					validatedMetrics["snowflake.rows_inserted.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of rows inserted into a table (or tables) over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "{rows}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.rows_inserted.avg"], "Found a duplicate in the metrics slice: snowflake.rows_inserted.avg")
+						validatedMetrics["snowflake.rows_inserted.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of rows inserted into a table (or tables) over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{rows}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.rows_inserted.avg"], "Found a duplicate in the metrics slice: snowflake.rows_inserted.avg")
+						validatedMetrics["snowflake.rows_inserted.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of rows inserted into a table (or tables) over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{rows}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.rows_inserted.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.rows_produced.avg":
-					assert.False(t, validatedMetrics["snowflake.rows_produced.avg"], "Found a duplicate in the metrics slice: snowflake.rows_produced.avg")
-					validatedMetrics["snowflake.rows_produced.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average number of rows produced by statement over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "{rows}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.rows_produced.avg"], "Found a duplicate in the metrics slice: snowflake.rows_produced.avg")
+						validatedMetrics["snowflake.rows_produced.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average number of rows produced by statement over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{rows}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.rows_produced.avg"], "Found a duplicate in the metrics slice: snowflake.rows_produced.avg")
+						validatedMetrics["snowflake.rows_produced.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average number of rows produced by statement over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{rows}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.rows_produced.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.rows_unloaded.avg":
-					assert.False(t, validatedMetrics["snowflake.rows_unloaded.avg"], "Found a duplicate in the metrics slice: snowflake.rows_unloaded.avg")
-					validatedMetrics["snowflake.rows_unloaded.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average number of rows unloaded during data export over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "{rows}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.rows_unloaded.avg"], "Found a duplicate in the metrics slice: snowflake.rows_unloaded.avg")
+						validatedMetrics["snowflake.rows_unloaded.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average number of rows unloaded during data export over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{rows}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.rows_unloaded.avg"], "Found a duplicate in the metrics slice: snowflake.rows_unloaded.avg")
+						validatedMetrics["snowflake.rows_unloaded.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average number of rows unloaded during data export over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{rows}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.rows_unloaded.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.rows_updated.avg":
-					assert.False(t, validatedMetrics["snowflake.rows_updated.avg"], "Found a duplicate in the metrics slice: snowflake.rows_updated.avg")
-					validatedMetrics["snowflake.rows_updated.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average number of rows updated in a table over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "{rows}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.rows_updated.avg"], "Found a duplicate in the metrics slice: snowflake.rows_updated.avg")
+						validatedMetrics["snowflake.rows_updated.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average number of rows updated in a table over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{rows}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.rows_updated.avg"], "Found a duplicate in the metrics slice: snowflake.rows_updated.avg")
+						validatedMetrics["snowflake.rows_updated.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average number of rows updated in a table over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "{rows}", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.rows_updated.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				case "snowflake.session_id.count":
-					assert.False(t, validatedMetrics["snowflake.session_id.count"], "Found a duplicate in the metrics slice: snowflake.session_id.count")
-					validatedMetrics["snowflake.session_id.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Distinct session id's associated with snowflake username over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("user_name")
-					assert.True(t, ok)
-					assert.Equal(t, "user_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.session_id.count"], "Found a duplicate in the metrics slice: snowflake.session_id.count")
+						validatedMetrics["snowflake.session_id.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Distinct session id's associated with snowflake username over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("user_name")
+						assert.True(t, ok)
+						assert.Equal(t, "user_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.session_id.count"], "Found a duplicate in the metrics slice: snowflake.session_id.count")
+						validatedMetrics["snowflake.session_id.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Distinct session id's associated with snowflake username over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "1", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["snowflake.session_id.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("user_name")
+						assert.False(t, ok)
+					}
 				case "snowflake.storage.failsafe_bytes.total":
-					assert.False(t, validatedMetrics["snowflake.storage.failsafe_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.failsafe_bytes.total")
-					validatedMetrics["snowflake.storage.failsafe_bytes.total"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of bytes of data in Fail-safe.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.storage.failsafe_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.failsafe_bytes.total")
+						validatedMetrics["snowflake.storage.failsafe_bytes.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of bytes of data in Fail-safe.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["snowflake.storage.failsafe_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.failsafe_bytes.total")
+						validatedMetrics["snowflake.storage.failsafe_bytes.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of bytes of data in Fail-safe.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.storage.failsafe_bytes.total"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "snowflake.storage.stage_bytes.total":
-					assert.False(t, validatedMetrics["snowflake.storage.stage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.stage_bytes.total")
-					validatedMetrics["snowflake.storage.stage_bytes.total"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of bytes of stage storage used by files in all internal stages (named, table, user).", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.storage.stage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.stage_bytes.total")
+						validatedMetrics["snowflake.storage.stage_bytes.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of bytes of stage storage used by files in all internal stages (named, table, user).", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["snowflake.storage.stage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.stage_bytes.total")
+						validatedMetrics["snowflake.storage.stage_bytes.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of bytes of stage storage used by files in all internal stages (named, table, user).", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.storage.stage_bytes.total"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "snowflake.storage.storage_bytes.total":
-					assert.False(t, validatedMetrics["snowflake.storage.storage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.storage_bytes.total")
-					validatedMetrics["snowflake.storage.storage_bytes.total"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of bytes of table storage used, including bytes for data currently in Time Travel.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.storage.storage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.storage_bytes.total")
+						validatedMetrics["snowflake.storage.storage_bytes.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of bytes of table storage used, including bytes for data currently in Time Travel.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					} else {
+						assert.False(t, validatedMetrics["snowflake.storage.storage_bytes.total"], "Found a duplicate in the metrics slice: snowflake.storage.storage_bytes.total")
+						validatedMetrics["snowflake.storage.storage_bytes.total"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of bytes of table storage used, including bytes for data currently in Time Travel.", ms.At(i).Description())
+						assert.Equal(t, "By", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.storage.storage_bytes.total"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+					}
 				case "snowflake.total_elapsed_time.avg":
-					assert.False(t, validatedMetrics["snowflake.total_elapsed_time.avg"], "Found a duplicate in the metrics slice: snowflake.total_elapsed_time.avg")
-					validatedMetrics["snowflake.total_elapsed_time.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average elapsed time over the last 24 hour window.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema_name")
-					assert.True(t, ok)
-					assert.Equal(t, "schema_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("execution_status")
-					assert.True(t, ok)
-					assert.Equal(t, "execution_status-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error_message")
-					assert.True(t, ok)
-					assert.Equal(t, "error_message-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("query_type")
-					assert.True(t, ok)
-					assert.Equal(t, "query_type-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_name")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("database_name")
-					assert.True(t, ok)
-					assert.Equal(t, "database_name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("warehouse_size")
-					assert.True(t, ok)
-					assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["snowflake.total_elapsed_time.avg"], "Found a duplicate in the metrics slice: snowflake.total_elapsed_time.avg")
+						validatedMetrics["snowflake.total_elapsed_time.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average elapsed time over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("schema_name")
+						assert.True(t, ok)
+						assert.Equal(t, "schema_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("execution_status")
+						assert.True(t, ok)
+						assert.Equal(t, "execution_status-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("error_message")
+						assert.True(t, ok)
+						assert.Equal(t, "error_message-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("query_type")
+						assert.True(t, ok)
+						assert.Equal(t, "query_type-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_name")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("database_name")
+						assert.True(t, ok)
+						assert.Equal(t, "database_name-val", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("warehouse_size")
+						assert.True(t, ok)
+						assert.Equal(t, "warehouse_size-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["snowflake.total_elapsed_time.avg"], "Found a duplicate in the metrics slice: snowflake.total_elapsed_time.avg")
+						validatedMetrics["snowflake.total_elapsed_time.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+						assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+						assert.Equal(t, "Average elapsed time over the last 24 hour window.", ms.At(i).Description())
+						assert.Equal(t, "s", ms.At(i).Unit())
+						dp := ms.At(i).Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["snowflake.total_elapsed_time.avg"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("schema_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("execution_status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("error_message")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("query_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("database_name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("warehouse_size")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

@@ -16,7 +16,7 @@ func TestAzEventHubFeatureGateRegistration(t *testing.T) {
 	if azEventHubFeatureGate.ID() != azEventHubFeatureGateName {
 		t.Errorf("expected gate ID %q, got %q", azEventHubFeatureGateName, azEventHubFeatureGate.ID())
 	}
-	if azEventHubFeatureGate.Stage() != featuregate.StageBeta {
+	if azEventHubFeatureGate.Stage() != featuregate.StageStable {
 		t.Errorf("expected stage %q, got %q", featuregate.StageBeta, azEventHubFeatureGate.Stage())
 	}
 	expectedDesc := "When enabled, the Azure Event Hubs receiver will use the azeventhub library."

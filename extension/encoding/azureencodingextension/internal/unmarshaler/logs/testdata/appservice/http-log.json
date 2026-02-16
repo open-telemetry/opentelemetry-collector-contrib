@@ -1,0 +1,27 @@
+{
+  "records": [
+    {
+      "category": "AppServiceHTTPLogs",
+      "time": "2022-05-08T20:14:15.0000000",
+      "resourceId": "/SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.WEB/SITES/MY-DEMO-APP",
+      "properties": {
+        "UserAgent": "Mozilla\/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/101.0.4951.54 Safari\/537.36 Edg\/101.0.1210.39",
+        "Cookie": "--",
+        "ScStatus": "200",
+        "CsUsername": "-",
+        "Result": "Success",
+        "CsHost": "test-site.azurewebsites.net",
+        "CsMethod": "GET",
+        "CsBytes": "1635",
+        "CsUriQuery": "_=1652036313179",
+        "CIp": "123.45.67.89",
+        "SPort": "80",
+        "Referer": "-",
+        "CsUriStem": "\/api\/site\/wwwroot\/",
+        "TimeTaken": 19619,
+        "ScBytes": "494",
+        "ComputerName": "10-10-10-10"
+      }
+    }
+  ]
+}

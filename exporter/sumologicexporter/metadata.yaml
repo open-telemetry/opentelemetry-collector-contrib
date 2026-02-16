@@ -1,4 +1,5 @@
 type: sumologic
+display_name: Sumo Logic Exporter
 
 status:
   class: exporter
@@ -6,8 +7,8 @@ status:
     beta: [metrics, logs, traces]
   distributions: [contrib]
   codeowners:
-    active: [rnishtala-sumo, chan-tim-sumo, amdprophet]
-    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek, echlebek]
+    active: [rnishtala-sumo, pankaj101A, jagan2221]
+    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek, chan-tim-sumo, echlebek, amdprophet]
 
 # TODO: Update the exporter to pass the tests
 tests:

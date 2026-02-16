@@ -194,6 +194,7 @@ func (m *metricCouchdbAverageRequestTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricCouchdbAverageRequestTime(cfg MetricConfig) metricCouchdbAverageRequestTime {
 	m := metricCouchdbAverageRequestTime{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -245,6 +246,7 @@ func (m *metricCouchdbDatabaseOpen) emit(metrics pmetric.MetricSlice) {
 
 func newMetricCouchdbDatabaseOpen(cfg MetricConfig) metricCouchdbDatabaseOpen {
 	m := metricCouchdbDatabaseOpen{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -298,6 +300,7 @@ func (m *metricCouchdbDatabaseOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricCouchdbDatabaseOperations(cfg MetricConfig) metricCouchdbDatabaseOperations {
 	m := metricCouchdbDatabaseOperations{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -349,6 +352,7 @@ func (m *metricCouchdbFileDescriptorOpen) emit(metrics pmetric.MetricSlice) {
 
 func newMetricCouchdbFileDescriptorOpen(cfg MetricConfig) metricCouchdbFileDescriptorOpen {
 	m := metricCouchdbFileDescriptorOpen{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -400,6 +404,7 @@ func (m *metricCouchdbHttpdBulkRequests) emit(metrics pmetric.MetricSlice) {
 
 func newMetricCouchdbHttpdBulkRequests(cfg MetricConfig) metricCouchdbHttpdBulkRequests {
 	m := metricCouchdbHttpdBulkRequests{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -453,6 +458,7 @@ func (m *metricCouchdbHttpdRequests) emit(metrics pmetric.MetricSlice) {
 
 func newMetricCouchdbHttpdRequests(cfg MetricConfig) metricCouchdbHttpdRequests {
 	m := metricCouchdbHttpdRequests{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -506,6 +512,7 @@ func (m *metricCouchdbHttpdResponses) emit(metrics pmetric.MetricSlice) {
 
 func newMetricCouchdbHttpdResponses(cfg MetricConfig) metricCouchdbHttpdResponses {
 	m := metricCouchdbHttpdResponses{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -559,6 +566,7 @@ func (m *metricCouchdbHttpdViews) emit(metrics pmetric.MetricSlice) {
 
 func newMetricCouchdbHttpdViews(cfg MetricConfig) metricCouchdbHttpdViews {
 	m := metricCouchdbHttpdViews{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()

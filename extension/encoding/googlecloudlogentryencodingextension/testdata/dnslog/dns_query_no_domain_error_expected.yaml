@@ -1,0 +1,79 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: gcp.project
+          value:
+            stringValue: elastic-logstash
+        - key: cloud.resource_id
+          value:
+            stringValue: dns.googleapis.com%2Fdns_queries
+        - key: gcp.resource_type
+          value:
+            stringValue: dns_query
+        - key: gcp.label.location
+          value:
+            stringValue: europe-west1
+        - key: gcp.label.project_id
+          value:
+            stringValue: elastic-logstash
+        - key: gcp.label.target_type
+          value:
+            stringValue: external
+        - key: gcp.label.source_type
+          value:
+            stringValue: gce-vm
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log.record.uid
+                value:
+                  stringValue: 1l6ygnyf16t0em
+              - key: dns.question.name
+                value:
+                  stringValue: non-existent-domain-123456789.com.
+              - key: dns.question.type
+                value:
+                  stringValue: A
+              - key: dns.response_code
+                value:
+                  stringValue: NXDOMAIN
+              - key: gcp.dns.auth_answer
+                value:
+                  boolValue: false
+              - key: client.address
+                value:
+                  stringValue: 10.132.0.43
+              - key: gcp.dns.client.vpc.name
+                value:
+                  stringValue: default
+              - key: network.transport
+                value:
+                  stringValue: udp
+              - key: gcp.dns.server.latency
+                value:
+                  doubleValue: 12
+              - key: gcp.dns.dns64.translated
+                value:
+                  boolValue: false
+              - key: host.id
+                value:
+                  intValue: "2838092002611613700"
+              - key: host.name
+                value:
+                  stringValue: 228025391384.instance-20251126-211431
+              - key: gcp.project.id
+                value:
+                  stringValue: elastic-logstash
+              - key: cloud.availability_zone
+                value:
+                  stringValue: europe-west1-c
+            body: {}
+            observedTimeUnixNano: "1764251359595309514"
+            timeUnixNano: "1764251359154591570"
+            severityNumber: 10
+            severityText: NOTICE
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: gcp.dns-query
