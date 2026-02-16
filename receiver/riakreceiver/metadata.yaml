@@ -39,8 +39,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   riak.node.operation.count:
     description: The number of operations performed by the node.
     unit: "{operation}"
@@ -49,8 +48,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
     attributes: [request]
   riak.node.operation.time.mean:
     description: The mean time between request and response for operations performed by the node over the last minute.
@@ -58,8 +56,7 @@ metrics:
     gauge:
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
     attributes: [request]
   riak.node.read_repair.count:
     description: The number of read repairs performed by the node.
@@ -69,8 +66,7 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
   riak.vnode.index.operation.count:
     description: The number of index operations performed by vnodes on the node.
     unit: "{operation}"
@@ -80,8 +76,7 @@ metrics:
       value_type: int
     attributes: [operation]
     enabled: true
-    stability:
-      level: development
+    stability: development
   riak.vnode.operation.count:
     description: The number of operations performed by vnodes on the node.
     unit: "{operation}"
@@ -90,6 +85,5 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: true
-    stability:
-      level: development
+    stability: development
     attributes: [request]
