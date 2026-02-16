@@ -63,6 +63,9 @@ func (config *Config) Validate() error {
 	if config.RequireAuth && config.Auth == nil {
 		return errors.New("auth is required when require_auth is enabled")
 	}
+	if config.RequireAuth && config.Connection != "" {
+		return errors.New("connection must not be set when require_auth is enabled")
+	}
 
 	if config.Auth != nil {
 		if config.EventHub.Name == "" {

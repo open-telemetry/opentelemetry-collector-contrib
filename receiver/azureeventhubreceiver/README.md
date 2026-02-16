@@ -45,6 +45,15 @@ The ID of an authentication extension to use. This can be used to authenticate u
 managed identity, or service principal.
 When this field is set, `connection` is ignored and `event_hub` section is required.
 
+### require_auth (Optional)
+Enables strict auth-only mode.
+
+When set to `true`:
+- `auth` must be configured.
+- `connection` must not be set.
+
+This is useful for deployments that want to fail closed if auth extension wiring is missing.
+
 ### group (Optional)
 The Consumer Group to read from. If empty will default to the default Consumer Group $Default
 
@@ -127,6 +136,14 @@ receivers:
     auth: azureauth
     partition: foo
     group: bar
+
+  # Example with strict auth mode
+  azure_event_hub/auth_strict:
+    require_auth: true
+    event_hub:
+      name: hubName
+      namespace: namespace.servicebus.windows.net
+    auth: azureauth
 ```
 
 This component can persist its state using the [storage extension].

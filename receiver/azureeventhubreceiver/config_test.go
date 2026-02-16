@@ -50,6 +50,10 @@ func TestLoadConfig(t *testing.T) {
 			expectedErrContains: "auth is required when require_auth is enabled",
 		},
 		{
+			id:                  component.NewIDWithName(metadata.Type, "auth_required_missing_auth_with_connection"),
+			expectedErrContains: "auth is required when require_auth is enabled",
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "auth_required_with_auth"),
 			expected: &Config{
 				EventHub: EventHubConfig{
@@ -58,6 +62,17 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Auth:        &authID,
 				RequireAuth: true,
+			},
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "auth_required_with_auth_and_connection"),
+			expectedErrContains: "connection must not be set when require_auth is enabled",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "require_auth_disabled_with_connection"),
+			expected: &Config{
+				Connection: "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName",
+				RequireAuth: false,
 			},
 		},
 		{
