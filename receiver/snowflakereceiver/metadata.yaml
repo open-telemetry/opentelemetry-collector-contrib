@@ -8,6 +8,8 @@ status:
   codeowners:
     active: [dmitryax, shalper2]
 
+reaggregation_enabled: true
+
 # every meter will have these attributes
 resource_attributes:
   snowflake.account.name:
@@ -19,39 +21,51 @@ attributes:
   database_name:
     description: Name of database being queried (default is snowflake).
     type: string
+    requirement_level: recommended
   error_message:
     description: Error message reported by query if present.
     type: string
+    requirement_level: recommended
   execution_status:
     description: Execution status of query being reported.
     type: string
+    requirement_level: recommended
   is_success:
     description: Login status (success or failure).
     type: string
+    requirement_level: recommended
   pipe_name:
     description: Name of snowpipe.
     type: string
+    requirement_level: recommended
   query_type:
     description: Type of query performed.
     type: string
+    requirement_level: recommended
   reported_client_type:
     description: Client type used for attempt.
     type: string
+    requirement_level: recommended
   schema_name:
     description: Name of schema associated with query result.
     type: string
+    requirement_level: recommended
   service_type:
     description: Service type associated with metric query.
     type: string
+    requirement_level: recommended
   user_name:
     description: Username in query being reported.
     type: string
+    requirement_level: recommended
   warehouse_name:
     description: Name of warehouse in query being reported on.
     type: string
+    requirement_level: recommended
   warehouse_size:
     description: Size of warehouse being reported on.
     type: string
+    requirement_level: recommended
 
 # sql query associated with each group of metrics included
 metrics:

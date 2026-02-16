@@ -1,0 +1,40 @@
+$defs:
+  action:
+    type: string
+  routing_table_item:
+    description: RoutingTableItem specifies how data should be routed to the different pipelines
+    type: object
+    properties:
+      action:
+        description: Action indicates the type of operation we intend to do when the condition Matches for the corresponding context and data.
+        $ref: action
+      condition:
+        description: Condition is an OTTL condition used for making a routing decision. For the "request" context, 'Condition' is required and must be of the form 'request["<attribute>"] {== | !=} <value>'. For all other contexts, 'Statement' or 'Condition' must be provided, and must be a valid OTTL condition.
+        type: string
+      context:
+        description: One of "request", "resource", "log", "span", "metric", "datapoint". Optional. Default "resource".
+        type: string
+      pipelines:
+        description: Pipelines contains the list of pipelines to use when the value from the FromAttribute field matches this table item. When no pipelines are specified, the ones specified under DefaultPipelines are used, if any. The routing processor will fail upon the first failure from these pipelines. Optional.
+        type: array
+        items:
+          $ref: go.opentelemetry.io/collector/pipeline.id
+      statement:
+        description: Statement is an OTTL statement used for making a routing decision. 'Statement' is disallowed for the "request" context. For other contexts, 'Statement' or 'Condition' must be provided.
+        type: string
+description: Config defines configuration for the Routing processor.
+type: object
+properties:
+  default_pipelines:
+    description: DefaultPipelines contains the list of pipelines to use when a more specific record can't be found in the routing table. Optional.
+    type: array
+    items:
+      $ref: go.opentelemetry.io/collector/pipeline.id
+  error_mode:
+    description: ErrorMode determines how the processor reacts to errors that occur while processing an OTTL condition. Valid values are `ignore` and `propagate`. `ignore` means the processor ignores errors returned by conditions and continues on to the next condition. This is the recommended mode. If `ignore` is used and a statement's condition has an error then the payload will be routed to the default exporter. `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector. The default value is `propagate`.
+    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.error_mode
+  table:
+    description: Table contains the routing table for this processor. Required.
+    type: array
+    items:
+      $ref: routing_table_item

@@ -1,0 +1,32 @@
+$defs:
+  logs_config:
+    type: object
+    properties:
+      app_token:
+        description: App token is the token of Sematext Monitoring App to which you want to send the logs.
+        type: string
+  metrics_config:
+    type: object
+    properties:
+      app_token:
+        description: App token is the token of Sematext Monitoring App to which you want to send the metrics.
+        type: string
+      payload_max_bytes:
+        description: PayloadMaxBytes is the maximum number of line protocol bytes to POST in a single request.
+        type: integer
+      payload_max_lines:
+        description: PayloadMaxLines is the maximum number of line protocol lines to POST in a single request.
+        type: integer
+type: object
+properties:
+  region:
+    description: 'Region specifies the Sematext region the user is operating in Options: - EU - US'
+    type: string
+  sending_queue:
+    x-optional: true
+    $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
+  - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
+  - $ref: metrics_config
+  - $ref: logs_config

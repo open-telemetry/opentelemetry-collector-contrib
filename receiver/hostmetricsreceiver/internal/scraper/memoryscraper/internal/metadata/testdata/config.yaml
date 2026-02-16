@@ -7,6 +7,18 @@ all_set:
       enabled: true
     system.memory.limit:
       enabled: true
+    system.memory.linux.hugepages.limit:
+      enabled: true
+    system.memory.linux.hugepages.page_size:
+      enabled: true
+    system.memory.linux.hugepages.reserved:
+      enabled: true
+    system.memory.linux.hugepages.surplus:
+      enabled: true
+    system.memory.linux.hugepages.usage:
+      enabled: true
+    system.memory.linux.hugepages.utilization:
+      enabled: true
     system.memory.page_size:
       enabled: true
     system.memory.usage:
@@ -20,6 +32,18 @@ none_set:
     system.linux.memory.dirty:
       enabled: false
     system.memory.limit:
+      enabled: false
+    system.memory.linux.hugepages.limit:
+      enabled: false
+    system.memory.linux.hugepages.page_size:
+      enabled: false
+    system.memory.linux.hugepages.reserved:
+      enabled: false
+    system.memory.linux.hugepages.surplus:
+      enabled: false
+    system.memory.linux.hugepages.usage:
+      enabled: false
+    system.memory.linux.hugepages.utilization:
       enabled: false
     system.memory.page_size:
       enabled: false

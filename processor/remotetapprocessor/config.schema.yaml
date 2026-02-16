@@ -1,0 +1,8 @@
+type: object
+properties:
+  limit:
+    description: Limit is a float that indicates the maximum number of messages repeated through the websocket by this processor in messages per second. Defaults to 1.
+    type: number
+    x-customType: golang.org/x/time/rate.Limit
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.server_config

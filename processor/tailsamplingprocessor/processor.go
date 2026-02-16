@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"math"
 	"runtime"
 	"slices"
@@ -54,6 +53,7 @@ type traceData struct {
 	finalDecision samplingpolicy.Decision
 	policyName    string
 	deleteElement *list.Element
+	batchID       uint64
 }
 
 type tailSamplingSpanProcessor struct {
@@ -63,19 +63,18 @@ type tailSamplingSpanProcessor struct {
 	telemetry *metadata.TelemetryBuilder
 	logger    *zap.Logger
 
-	deleteTraceQueue    *list.List
-	nextConsumer        consumer.Traces
-	policies            []*policy
-	idToTrace           map[pcommon.TraceID]*traceData
-	tickerFrequency     time.Duration
-	decisionBatcher     idbatcher.Batcher
-	rootReceivedBatcher idbatcher.Batcher
-	sampledIDCache      cache.Cache
-	nonSampledIDCache   cache.Cache
-	recordPolicy        bool
-	sampleOnFirstMatch  bool
-	blockOnOverflow     bool
-	maxTraceSizeBytes   uint64
+	deleteTraceQueue   *list.List
+	nextConsumer       consumer.Traces
+	policies           []*policy
+	idToTrace          map[pcommon.TraceID]*traceData
+	tickerFrequency    time.Duration
+	decisionBatcher    idbatcher.Batcher
+	sampledIDCache     cache.Cache
+	nonSampledIDCache  cache.Cache
+	recordPolicy       bool
+	sampleOnFirstMatch bool
+	blockOnOverflow    bool
+	maxTraceSizeBytes  uint64
 
 	cfg  Config
 	host component.Host
@@ -167,20 +166,11 @@ func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Ho
 		// this will start a goroutine in the background, so we run it only if everything went
 		// well in creating the policies, and only when the processor starts.
 		numDecisionBatches := math.Max(1, tsp.cfg.DecisionWait.Seconds())
-		idBatcher, err := idbatcher.New(uint64(numDecisionBatches), tsp.cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
+		idBatcher, err := idbatcher.New(uint64(numDecisionBatches), tsp.cfg.ExpectedNewTracesPerSec)
 		if err != nil {
 			return err
 		}
 		tsp.decisionBatcher = idBatcher
-	}
-
-	if tsp.rootReceivedBatcher == nil && tsp.cfg.DecisionWaitAfterRootReceived > 0 {
-		numDecisionBatches := math.Max(1, tsp.cfg.DecisionWaitAfterRootReceived.Seconds())
-		idBatcher, err := idbatcher.New(uint64(numDecisionBatches), tsp.cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
-		if err != nil {
-			return err
-		}
-		tsp.rootReceivedBatcher = idBatcher
 	}
 
 	tsp.doneChan = make(chan struct{})
@@ -476,9 +466,6 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 		if !ok {
 			// Stop the batcher so that we can read all batches without creating new ones.
 			tsp.decisionBatcher.Stop()
-			if tsp.rootReceivedBatcher != nil {
-				tsp.rootReceivedBatcher.Stop()
-			}
 
 			// Do the best decision we can for any traces we have already ingested unless a user wants to drop them.
 			if !tsp.cfg.DropPendingTracesOnShutdown {
@@ -582,27 +569,12 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	globalTracesSampledByDecision := make(map[samplingpolicy.Decision]int64)
 
 	batch, hasMore := tsp.decisionBatcher.CloseCurrentAndTakeFirstBatch()
-	if tsp.rootReceivedBatcher != nil {
-		rootBatch, _ := tsp.rootReceivedBatcher.CloseCurrentAndTakeFirstBatch()
-		if batch == nil {
-			batch = rootBatch
-		} else {
-			maps.Copy(batch, rootBatch)
-		}
-	}
 	batchLen := len(batch)
 
 	for id := range batch {
 		trace, ok := tsp.idToTrace[id]
 		if !ok {
-			// Only increment the not found metric if the trace is not in the
-			// cache. If it is in the cache that means a decision was already
-			// made and the trace properly released. If using block on overflow
-			// we can avoid checking the cache as it is not possible to release
-			// a trace that is still in the batcher with that flow.
-			if !tsp.blockOnOverflow && !tsp.inCache(id) {
-				metrics.idNotFoundOnMapCount++
-			}
+			metrics.idNotFoundOnMapCount++
 			continue
 		}
 		// A decision was already made, no need to do it again. This happens
@@ -659,16 +631,6 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 		zap.Int64("policyEvaluationErrors", metrics.evaluateErrorCount),
 	)
 	return hasMore
-}
-
-// inCache returns if a trace id is in either cache, i.e. a decision has been made for it and it was released.
-func (tsp *tailSamplingSpanProcessor) inCache(id pcommon.TraceID) bool {
-	_, ok := tsp.nonSampledIDCache.Get(id)
-	if ok {
-		return true
-	}
-	_, ok = tsp.sampledIDCache.Get(id)
-	return ok
 }
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *samplingpolicy.TraceData, metrics *policyTickMetrics) (samplingpolicy.Decision, string) {
@@ -795,7 +757,7 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		tsp.idToTrace[id] = actualData
 
 		newTraceIDs++
-		tsp.decisionBatcher.AddToCurrentBatch(id)
+		actualData.batchID = tsp.decisionBatcher.AddToCurrentBatch(id)
 
 		if !tsp.blockOnOverflow {
 			actualData.deleteElement = tsp.deleteTraceQueue.PushBack(id)
@@ -803,8 +765,8 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 	} else {
 		actualData.SpanCount += spanCount
 	}
-	if containsRootSpan && tsp.rootReceivedBatcher != nil {
-		tsp.rootReceivedBatcher.AddToCurrentBatch(id)
+	if containsRootSpan && tsp.cfg.DecisionWaitAfterRootReceived > 0 {
+		tsp.decisionBatcher.MoveToEarlierBatch(id, actualData.batchID, uint64(tsp.cfg.DecisionWaitAfterRootReceived.Seconds()))
 	}
 
 	finalDecision := actualData.finalDecision
@@ -817,6 +779,8 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		actualData.bytes > tsp.maxTraceSizeBytes {
 		tsp.telemetry.ProcessorTailSamplingTracesDroppedTooLarge.Add(tsp.ctx, 1)
 		actualData.finalDecision = samplingpolicy.NotSampled
+		// Since we are not in a normal decision flow when dropping large traces, also be sure to remove it from the batcher.
+		tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
 		tsp.releaseNotSampledTrace(id, "")
 		return
 	}

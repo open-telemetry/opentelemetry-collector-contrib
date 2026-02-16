@@ -1,0 +1,27 @@
+$defs:
+  hec_to_otel_attrs:
+    description: HecToOtelAttrs defines the mapping of Splunk HEC metadata to attributes
+    type: object
+    properties:
+      host:
+        description: Host indicates the mapping of the host field to a specific unified model attribute.
+        type: string
+      index:
+        description: Index indicates the mapping of the index field to a specific unified model attribute.
+        type: string
+      source:
+        description: Source indicates the mapping of the source field to a specific unified model attribute.
+        type: string
+      sourcetype:
+        description: SourceType indicates the mapping of the sourcetype field to a specific unified model attribute.
+        type: string
+  otel_to_hec_fields:
+    description: OtelToHecFields defines the mapping of attributes to HEC fields
+    type: object
+    properties:
+      severity_number:
+        description: SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
+        type: string
+      severity_text:
+        description: SeverityText informs the exporter to map the severity text field to a specific HEC field.
+        type: string
