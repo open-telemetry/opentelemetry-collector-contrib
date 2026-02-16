@@ -8,7 +8,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/multierr"
 )
 
 var (
@@ -74,36 +73,11 @@ func NewPdataTracesMarshaler(m ptrace.Marshaler) TracesMarshaler {
 }
 
 func (p pdataTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]Message, error) {
-	resourceSpans := td.ResourceSpans()
-	var messages []Message
-	var errs error
-
-	for i := 0; i < resourceSpans.Len(); i++ {
-		rs := resourceSpans.At(i)
-		scopeSpans := rs.ScopeSpans()
-		for j := 0; j < scopeSpans.Len(); j++ {
-			ss := scopeSpans.At(j)
-			spans := ss.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				singleSpanTraces := ptrace.NewTraces()
-				newRS := singleSpanTraces.ResourceSpans().AppendEmpty()
-				rs.Resource().CopyTo(newRS.Resource())
-				newRS.SetSchemaUrl(rs.SchemaUrl())
-				newSS := newRS.ScopeSpans().AppendEmpty()
-				ss.Scope().CopyTo(newSS.Scope())
-				newSS.SetSchemaUrl(ss.SchemaUrl())
-				spans.At(k).CopyTo(newSS.Spans().AppendEmpty())
-
-				bts, err := p.marshaler.MarshalTraces(singleSpanTraces)
-				if err != nil {
-					errs = multierr.Append(errs, err)
-					continue
-				}
-				messages = append(messages, Message{Value: bts})
-			}
-		}
+	bts, err := p.marshaler.MarshalTraces(td)
+	if err != nil {
+		return nil, err
 	}
-	return messages, errs
+	return []Message{{Value: bts}}, nil
 }
 
 type pdataProfilesMarshaler struct {
