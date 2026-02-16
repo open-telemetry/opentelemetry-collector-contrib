@@ -182,6 +182,31 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.service.name:
+    description: The k8s service name.
+    type: string
+    enabled: true
+
+  k8s.service.publish_not_ready_addresses:
+    description: Whether the Service publishes not-ready endpoints.
+    type: bool
+    enabled: false
+
+  k8s.service.traffic_distribution:
+    description: The traffic distribution policy for the Service (e.g., PreferClose).
+    type: string
+    enabled: false
+
+  k8s.service.type:
+    description: The k8s service type.
+    type: string
+    enabled: true
+
+  k8s.service.uid:
+    description: The k8s service uid.
+    type: string
+    enabled: true
+
   k8s.statefulset.name:
     description: The k8s statefulset name.
     type: string
@@ -238,6 +263,23 @@ attributes:
       - waiting
   k8s.namespace.name:
     description: The k8s namespace name.
+    type: string
+  k8s.service.endpoint.address_type:
+    description: The address type of the endpoint.
+    type: string
+    enum:
+      - IPv4
+      - IPv6
+      - FQDN
+  k8s.service.endpoint.condition:
+    description: The condition of the service endpoint.
+    type: string
+    enum:
+      - ready
+      - serving
+      - terminating
+  k8s.service.endpoint.zone:
+    description: The zone of the service endpoint, typically corresponding to a failure domain.
     type: string
   resource:
     description: the name of the resource on which the quota is applied
@@ -524,6 +566,7 @@ metrics:
     stability: development
     gauge:
       value_type: int
+
   k8s.resource_quota.hard_limit:
     enabled: true
     description: The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
@@ -542,6 +585,26 @@ metrics:
       value_type: int
     attributes:
       - resource
+
+  k8s.service.endpoint.count:
+    enabled: false
+    description: The number of endpoints for a service, broken down by condition, address type, and zone.
+    unit: "{endpoint}"
+    stability: development
+    gauge:
+      value_type: int
+    attributes:
+      - k8s.service.endpoint.address_type
+      - k8s.service.endpoint.condition
+      - k8s.service.endpoint.zone
+
+  k8s.service.load_balancer.ingress.count:
+    enabled: false
+    description: The number of load balancer ingress points (external IPs/hostnames) assigned to the service.
+    unit: "{ingress}"
+    stability: development
+    gauge:
+      value_type: int
 
   k8s.statefulset.current_pods:
     enabled: true
