@@ -512,9 +512,11 @@ func BenchmarkClientDelete(b *testing.B) {
 		require.NoError(b, client.Set(ctx, key, testValue))
 	}
 
+	i := 0
 	for b.Loop() {
 		key := fmt.Sprintf("%s-%d", testKey, i)
 		require.NoError(b, client.Delete(ctx, key))
+		i++
 	}
 }
 
