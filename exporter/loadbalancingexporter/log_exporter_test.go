@@ -731,11 +731,9 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 				consumeCh <- struct{}{}
 				return
 			case <-ticker.C:
-				waitWG.Add(1)
-				go func() {
+				waitWG.Go(func() {
 					assert.NoError(t, p.ConsumeLogs(ctx, randomLogs()))
-					waitWG.Done()
-				}()
+				})
 			}
 		}
 	}(ctx)
