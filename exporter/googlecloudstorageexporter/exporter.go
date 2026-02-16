@@ -190,7 +190,11 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 		// Check if bucket exists without attempting to create it
 		_, err = bucketHandle.Attrs(ctx)
 		if err != nil {
-			return fmt.Errorf("bucket %q does not exist and reuse_if_exists is true (bucket must be created externally): %w", s.cfg.Bucket.Name, err)
+			if errors.Is(err, storage.ErrBucketNotExist) {
+				return fmt.Errorf("bucket %q does not exist and reuse_if_exists is true (bucket must be created externally): %w", s.cfg.Bucket.Name, err)
+			}
+			// Return error if it's a permission issue or network failure
+			return fmt.Errorf("failed to get bucket attributes: %w", err)
 		}
 		s.logger.Info("Using existing bucket", zap.String("bucket", s.cfg.Bucket.Name))
 	} else {
