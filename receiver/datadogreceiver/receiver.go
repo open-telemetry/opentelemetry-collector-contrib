@@ -4,6 +4,7 @@
 package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -135,6 +136,10 @@ func (ddr *datadogReceiver) getEndpoints() []endpoint {
 			{
 				Pattern: "/v0.6/stats",
 				Handler: ddr.handleStats,
+			},
+			{
+				Pattern: "/api/v0.2/stats",
+				Handler: ddr.handleStatsV2,
 			},
 		}...)
 	}
@@ -335,6 +340,76 @@ func (ddr *datadogReceiver) handleLogs(w http.ResponseWriter, req *http.Request)
 		"errors": []string{},
 	}
 	_ = json.NewEncoder(w).Encode(response)
+}
+
+// handleStatsV2 handles incoming stats payloads from datadog agent
+// Stats payloads are sent from the DataDog agent at /api/v0.2/stats
+func (ddr *datadogReceiver) handleStatsV2(w http.ResponseWriter, req *http.Request) {
+	obsCtx := ddr.tReceiver.StartMetricsOp(req.Context())
+	var err error
+	metricsCount := 0
+	defer func(metricsCount *int) {
+		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
+	}(&metricsCount)
+
+	// Get content encoding from header
+	contentEncoding := req.Header.Get("Content-Encoding")
+
+	// Create a reader that handles decompression if needed
+	reader, err := createDecompressingReader(req.Body, contentEncoding)
+	if err != nil {
+		ddr.params.Logger.Error("Error creating decompressing reader", zap.Error(err), zap.String("encoding", contentEncoding))
+		http.Error(w, "Error decompressing payload", http.StatusBadRequest)
+		return
+	}
+	defer reader.Close()
+
+	// Decode the StatsPayload (NOT ClientStatsPayload directly)
+	// The agent wraps ClientStatsPayload(s) inside a StatsPayload
+	statsPayload := &pb.StatsPayload{}
+	err = msgp.Decode(reader, statsPayload)
+	if err != nil {
+		ddr.params.Logger.Error("Error decoding pb.StatsPayload", zap.Error(err))
+		http.Error(w, "Error decoding pb.StatsPayload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the payload
+	if len(statsPayload.Stats) == 0 {
+		ddr.params.Logger.Warn("Received empty stats payload")
+		_, _ = w.Write([]byte("OK"))
+		return
+	}
+
+	// Process each ClientStatsPayload within the StatsPayload
+	// The agent may send multiple ClientStatsPayload entries in a single request
+	for _, clientStats := range statsPayload.Stats {
+		// Extract metadata from headers (fallback if not in payload)
+		lang := req.Header.Get(header.Lang)
+		tracerVersion := req.Header.Get(header.TracerVersion)
+
+		// Translate each client stats payload to metrics
+		metrics, translateErr := ddr.statsTranslator.TranslateStats(clientStats, lang, tracerVersion)
+		if translateErr != nil {
+			err = translateErr
+			ddr.params.Logger.Error("Error translating stats", zap.Error(err))
+			http.Error(w, "Error translating stats", http.StatusBadRequest)
+			return
+		}
+
+		metricsCount += metrics.DataPointCount()
+
+		// Send to metrics consumer
+		consumeErr := ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+		if consumeErr != nil {
+			err = consumeErr
+			ddr.params.Logger.Error("Metrics consumer errored out", zap.Error(err))
+			errorutil.HTTPError(w, err)
+			return
+		}
+	}
+
+	_, _ = w.Write([]byte("OK"))
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
@@ -623,5 +698,20 @@ func createIntakeReverseProxyDirector(site, key string) func(*http.Request) {
 		// but it appears as though the value of that field does not matter,
 		// at least when it comes to matching the actual `DD-API-KEY` we set in the header above.
 		// So, to avoid a bunch of extra expensive work in the collector, we don't touch the body.
+	}
+}
+
+// createDecompressingReader creates a reader that handles decompression based on the content encoding.
+// Supported encodings: gzip. Returns the original reader if encoding is empty or unsupported.
+func createDecompressingReader(body io.ReadCloser, contentEncoding string) (io.ReadCloser, error) {
+	switch contentEncoding {
+	case "gzip":
+		gzReader, err := gzip.NewReader(body)
+		if err != nil {
+			return nil, fmt.Errorf("error creating gzip reader: %w", err)
+		}
+		return gzReader, nil
+	default:
+		return body, nil
 	}
 }

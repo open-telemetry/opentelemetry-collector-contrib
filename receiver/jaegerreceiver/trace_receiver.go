@@ -342,13 +342,11 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 			zap.String("endpoint", httpConfig.NetAddr.Endpoint),
 		)
 
-		jr.goroutines.Add(1)
-		go func() {
-			defer jr.goroutines.Done()
+		jr.goroutines.Go(func() {
 			if errHTTP := jr.collectorServer.Serve(cln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 			}
-		}()
+		})
 	}
 
 	if jr.config.GRPC.HasValue() {
@@ -368,13 +366,11 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 
 		jr.settings.Logger.Info("Starting gRPC server for Jaeger Protobuf", zap.String("endpoint", grpcConfig.NetAddr.Endpoint))
 
-		jr.goroutines.Add(1)
-		go func() {
-			defer jr.goroutines.Done()
+		jr.goroutines.Go(func() {
 			if errGrpc := jr.grpc.Serve(ln); !errors.Is(errGrpc, grpc.ErrServerStopped) && errGrpc != nil {
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
 			}
-		}()
+		})
 	}
 
 	return nil

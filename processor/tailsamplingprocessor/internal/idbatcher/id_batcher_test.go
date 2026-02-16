@@ -57,9 +57,7 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 	}()
 	ticked := &atomic.Int64{}
 	received := &atomic.Int64{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for range ticker.C {
 			batch, more := batcher.CloseCurrentAndTakeFirstBatch()
 			ticked.Add(1)
@@ -68,7 +66,7 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 				return
 			}
 		}
-	}()
+	})
 
 	b.ReportAllocs()
 	b.ResetTimer()
