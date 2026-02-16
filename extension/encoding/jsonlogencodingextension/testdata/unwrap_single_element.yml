@@ -1,0 +1,14 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - body:
+              kvlistValue:
+                values:
+                  - key: level
+                    value:
+                      stringValue: info
+                  - key: message
+                    value:
+                      stringValue: only one
+        scope: {}

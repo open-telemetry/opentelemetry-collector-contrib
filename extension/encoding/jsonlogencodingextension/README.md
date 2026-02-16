@@ -13,10 +13,12 @@
 
 ## Configuration
 
-| Name       | Description                                                                           | Default |
-|------------|---------------------------------------------------------------------------------------|---------|
-| mode       | What mode of the JSON encoding extension you want                                     | body    |
-| array_mode | Set whether JSON payloads is extracted from an array(legacy mode). Accepts a boolean. | true    |
+| Name          | Description                                                                           | Default |
+|---------------|---------------------------------------------------------------------------------------|---------|
+| mode          | What mode of the JSON encoding extension you want                                     | body    |
+| array_mode    | Set whether JSON payloads is extracted from an array(legacy mode). Accepts a boolean. | true    |
+| unwrap        | JSONPath expression to extract individual records from a wrapper (unmarshal only).     |         |
+| unwrap_target | Body map key for storing raw JSON string per record. Requires `unwrap`.               |         |
 
 ### Mode
 
@@ -67,4 +69,366 @@ Configuration accepts a boolean.
   New line delimited JSON payload
   > {"key": "value"}\
   > {"key": "value"}
+
+### unwrap
+
+A JSONPath expression used to extract individual log records from a wrapper structure during unmarshaling. When set, `array_mode` is ignored for the unmarshal path. The marshal path is not affected by this option.
+
+This is useful when the input JSON contains records nested inside a wrapper object. For example, Azure Event Hub diagnostic logs arrive wrapped in a `{"records": [...]}` envelope.
+
+Common JSONPath expressions:
+
+- `$.records[*]` : Extract from `{"records": [{...}, {...}]}` (e.g., Azure Event Hub diagnostic logs)
+- `$[*]` : Extract from a bare JSON array `[{...}, {...}]` (e.g., Azure Blob Storage)
+- `$.data.items[*]` : Extract from a nested structure `{"data": {"items": [{...}]}}`
+
+When the input is not valid JSON (e.g., NDJSON with multiple objects separated by newlines), the extension falls back to splitting by newlines and treating each line as an individual record.
+
+### unwrap_target
+
+When `unwrap_target` is set, each extracted record is stored as a **raw JSON string** under the specified key in the body map, instead of being parsed into an OpenTelemetry map. This is useful when you want to forward log events without modifying or parsing their content.
+
+- `unwrap_target: "message"` : Body becomes `{"message": "{\"level\":\"info\",\"msg\":\"hello\"}"}`
+- `unwrap_target: "event"` : Body becomes `{"event": "{\"level\":\"info\",\"msg\":\"hello\"}"}`
+- `unwrap_target:` (empty, default) : JSON is fully parsed into an OpenTelemetry map (existing behavior)
+
+This option requires `unwrap` to be set.
+
+## Examples
+
+This section demonstrates how different configuration options affect the encoding and decoding of log events.
+
+### Example 1: Body Mode with Array Mode (Default)
+
+**Configuration:**
+```yaml
+extensions:
+  jsonlogencoding:
+    mode: body
+    array_mode: true
+```
+
+#### Unmarshal (JSON → OpenTelemetry Logs)
+
+**Input JSON:**
+```json
+[
+  {"level": "info", "message": "User logged in", "userId": 12345},
+  {"level": "error", "message": "Connection timeout", "duration": 5000}
+]
+```
+
+**Result:** Creates 2 OpenTelemetry log records
+- Log Record 1 body: `{"level": "info", "message": "User logged in", "userId": 12345}`
+- Log Record 2 body: `{"level": "error", "message": "Connection timeout", "duration": 5000}`
+
+#### Marshal (OpenTelemetry Logs → JSON)
+
+**Input:** 2 OpenTelemetry log records with bodies as shown above
+
+**Output JSON:**
+```json
+[
+  {"level": "info", "message": "User logged in", "userId": 12345},
+  {"level": "error", "message": "Connection timeout", "duration": 5000}
+]
+```
+
+**Result:** The logs are marshaled back into a JSON array with the same structure.
+
+### Example 2: Body Mode without Array Mode (Single Document)
+
+**Configuration:**
+```yaml
+extensions:
+  jsonlogencoding:
+    mode: body
+    array_mode: false
+```
+
+#### Unmarshal (JSON → OpenTelemetry Logs)
+
+**Input JSON:**
+```json
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "severity": "WARN",
+  "message": "High memory usage detected",
+  "metrics": {
+    "memory_used": 8192,
+    "memory_total": 16384
+  }
+}
+```
+
+**Result:** Creates 1 OpenTelemetry log record
+- Log Record 1 body: `{"timestamp": "2024-01-15T10:30:00Z", "severity": "WARN", "message": "High memory usage detected", "metrics": {"memory_used": 8192, "memory_total": 16384}}`
+
+#### Marshal (OpenTelemetry Logs → JSON)
+
+**Input:** 1 OpenTelemetry log record with body as shown above
+
+**Output JSON:**
+```json
+{"timestamp": "2024-01-15T10:30:00Z", "severity": "WARN", "message": "High memory usage detected", "metrics": {"memory_used": 8192, "memory_total": 16384}}
+```
+
+**Result:** The log is marshaled as a single JSON document (not wrapped in an array).
+
+### Example 3: Body Mode without Array Mode (NDJSON)
+
+**Configuration:**
+```yaml
+extensions:
+  jsonlogencoding:
+    mode: body
+    array_mode: false
+```
+
+#### Unmarshal (NDJSON → OpenTelemetry Logs)
+
+**Input NDJSON (newline-delimited JSON):**
+```json
+{"timestamp": "2024-01-15T10:30:00Z", "level": "INFO", "message": "Request received"}
+{"timestamp": "2024-01-15T10:30:01Z", "level": "INFO", "message": "Request processed"}
+{"timestamp": "2024-01-15T10:30:02Z", "level": "INFO", "message": "Response sent"}
+```
+
+**Result:** Creates 3 OpenTelemetry log records
+- Log Record 1 body: `{"timestamp": "2024-01-15T10:30:00Z", "level": "INFO", "message": "Request received"}`
+- Log Record 2 body: `{"timestamp": "2024-01-15T10:30:01Z", "level": "INFO", "message": "Request processed"}`
+- Log Record 3 body: `{"timestamp": "2024-01-15T10:30:02Z", "level": "INFO", "message": "Response sent"}`
+
+#### Marshal (OpenTelemetry Logs → NDJSON)
+
+**Input:** 3 OpenTelemetry log records with bodies as shown above
+
+**Output NDJSON:**
+```json
+{"timestamp": "2024-01-15T10:30:00Z", "level": "INFO", "message": "Request received"}
+{"timestamp": "2024-01-15T10:30:01Z", "level": "INFO", "message": "Request processed"}
+{"timestamp": "2024-01-15T10:30:02Z", "level": "INFO", "message": "Response sent"}
+```
+
+**Result:** Each log record is marshaled as a separate JSON document on its own line (NDJSON format).
+
+### Example 4: Body with Inline Attributes Mode
+
+**Configuration:**
+```yaml
+extensions:
+  jsonlogencoding:
+    mode: body_with_inline_attributes
+    array_mode: true
+```
+
+#### Marshal (OpenTelemetry Logs → JSON with Attributes)
+
+**Input OpenTelemetry Logs:**
+Logs with:
+- Resource attributes: `{"service.name": "web-api", "deployment.environment": "production"}`
+- Log Record 1:
+  - Body: `{"message": "API request", "path": "/users"}`
+  - Attributes: `{"http.method": "GET", "http.status_code": 200}`
+- Log Record 2:
+  - Body: `"Simple string log"`
+  - Attributes: `{}`
+
+**Output JSON:**
+```json
+[
+  {
+    "body": {
+      "message": "API request",
+      "path": "/users"
+    },
+    "logAttributes": {
+      "http.method": "GET",
+      "http.status_code": 200
+    },
+    "resourceAttributes": {
+      "service.name": "web-api",
+      "deployment.environment": "production"
+    }
+  },
+  {
+    "body": "Simple string log",
+    "resourceAttributes": {
+      "service.name": "web-api",
+      "deployment.environment": "production"
+    }
+  }
+]
+```
+
+**Result:** This mode embeds resource attributes and log attributes directly into the JSON output alongside the body, making it easier to export logs with full context in a single JSON structure. Note that log attributes are only included if they exist on the log record.
+
+#### Unmarshal (JSON with Attributes → OpenTelemetry Logs)
+
+**Input JSON:**
+```json
+[
+  {
+    "body": {
+      "message": "API request",
+      "path": "/users"
+    },
+    "logAttributes": {
+      "http.method": "GET",
+      "http.status_code": 200
+    },
+    "resourceAttributes": {
+      "service.name": "web-api",
+      "deployment.environment": "production"
+    }
+  }
+]
+```
+
+**Result:** Creates OpenTelemetry logs with:
+- Resource attributes populated from `resourceAttributes`
+- Log record body populated from `body`
+- Log record attributes populated from `logAttributes`
+
+### Comparison: Array Mode vs Non-Array Mode
+
+| Feature | `array_mode: true` | `array_mode: false` |
+|---------|-------------------|---------------------|
+| **Input Format** | Must be JSON array: `[{...}, {...}]` | Accepts single document `{...}` or NDJSON |
+| **Use Case** | Legacy compatibility, batch processing | Modern streaming logs, flexible input |
+| **Output Format** | Always JSON array | NDJSON (newline-delimited) |
+| **Performance** | Requires full array in memory | Can process line-by-line |
+
+### Example 5: Unwrap Azure Event Hub Messages
+
+**Configuration:**
+```yaml
+extensions:
+  jsonlogencoding:
+    mode: body
+    unwrap: "$.records[*]"
+```
+
+#### Unmarshal (Wrapped JSON → OpenTelemetry Logs)
+
+**Input JSON:**
+```json
+{
+  "records": [
+    {"time": "2024-01-15T10:30:00Z", "category": "Administrative", "operationName": "Create"},
+    {"time": "2024-01-15T10:30:01Z", "category": "Security", "operationName": "Login"}
+  ]
+}
+```
+
+**Result:** Creates 2 OpenTelemetry log records
+- Log Record 1 body: `{"time": "2024-01-15T10:30:00Z", "category": "Administrative", "operationName": "Create"}`
+- Log Record 2 body: `{"time": "2024-01-15T10:30:01Z", "category": "Security", "operationName": "Login"}`
+
+### Example 6: Unwrap with Nested JSONPath
+
+**Configuration:**
+```yaml
+extensions:
+  jsonlogencoding:
+    mode: body
+    unwrap: "$.data.items[*]"
+```
+
+#### Unmarshal (Nested JSON → OpenTelemetry Logs)
+
+**Input JSON:**
+```json
+{
+  "data": {
+    "items": [
+      {"id": 1, "type": "click"},
+      {"id": 2, "type": "view"}
+    ]
+  },
+  "metadata": {"source": "analytics"}
+}
+```
+
+**Result:** Creates 2 OpenTelemetry log records (metadata is discarded)
+- Log Record 1 body: `{"id": 1, "type": "click"}`
+- Log Record 2 body: `{"id": 2, "type": "view"}`
+
+### Example 7: Unwrap with NDJSON Fallback
+
+**Configuration:**
+```yaml
+extensions:
+  jsonlogencoding:
+    mode: body
+    unwrap: "$.records[*]"
+```
+
+When the input is not valid JSON (e.g., NDJSON), the extension falls back to splitting by newlines:
+
+**Input NDJSON:**
+```json
+{"level": "info", "message": "Request received"}
+{"level": "error", "message": "Connection timeout"}
+```
+
+**Result:** Creates 2 OpenTelemetry log records
+- Log Record 1 body: `{"level": "info", "message": "Request received"}`
+- Log Record 2 body: `{"level": "error", "message": "Connection timeout"}`
+
+### Example 8: Unwrap with unwrap_target (Raw JSON Passthrough)
+
+**Configuration:**
+```yaml
+extensions:
+  jsonlogencoding:
+    mode: body
+    unwrap: "$.records[*]"
+    unwrap_target: "message"
+```
+
+#### Unmarshal (Wrapped JSON → OpenTelemetry Logs with Raw Body)
+
+**Input JSON:**
+```json
+{
+  "records": [
+    {"time": "2024-01-15T10:30:00Z", "category": "Administrative", "operationName": "Create"},
+    {"time": "2024-01-15T10:30:01Z", "category": "Security", "operationName": "Login"}
+  ]
+}
+```
+
+**Result:** Creates 2 OpenTelemetry log records with raw JSON strings in the body:
+- Log Record 1 body: `{"message": "{\"time\": \"2024-01-15T10:30:00Z\", \"category\": \"Administrative\", \"operationName\": \"Create\"}"}`
+- Log Record 2 body: `{"message": "{\"time\": \"2024-01-15T10:30:01Z\", \"category\": \"Security\", \"operationName\": \"Login\"}"}`
+
+Note: Without `unwrap_target`, the JSON would be fully parsed into an OpenTelemetry map. With `unwrap_target: "message"`, the raw JSON is preserved as a string under the `message` key.
+
+### Common Use Cases
+
+**Use Case 1: Processing Application Logs from Files**
+- Configuration: `mode: body`, `array_mode: false`
+- Input: NDJSON log files (one JSON object per line)
+- Benefit: Efficiently process large log files without loading everything into memory
+
+**Use Case 2: Exporting Logs with Full Context**
+- Configuration: `mode: body_with_inline_attributes`, `array_mode: true`
+- Output: Complete log records with resource and log attributes embedded
+- Benefit: Easy to import into systems that expect flat JSON with all metadata
+
+**Use Case 3: API Ingestion with Batched Logs**
+- Configuration: `mode: body`, `array_mode: true`
+- Input: API responses containing arrays of log events
+- Benefit: Direct compatibility with JSON API responses
+
+**Use Case 4: Azure Event Hub Diagnostic Logs**
+- Configuration: `mode: body`, `unwrap: "$.records[*]"`
+- Input: Azure diagnostic logs wrapped in `{"records": [...]}`
+- Benefit: Automatically extracts individual records from Azure's wrapper format
+
+**Use Case 5: Raw Log Forwarding**
+- Configuration: `mode: body`, `unwrap: "$.records[*]"`, `unwrap_target: "message"`
+- Input: Azure diagnostic logs wrapped in `{"records": [...]}`
+- Benefit: Forwards raw JSON to a backend without parsing, preserving the original format
   

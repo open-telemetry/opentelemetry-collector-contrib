@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
@@ -99,6 +100,10 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	p := plog.NewLogs()
 	sl := p.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 
+	if e.config.Unwrap != "" {
+		return e.unmarshalLogsWithUnwrap(buf)
+	}
+
 	if e.config.ArrayMode {
 		// Default mode to handle arrays having backward compatibility
 		var jsonLogs []map[string]any
@@ -122,6 +127,43 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 			}
 
 			if err := sl.LogRecords().AppendEmpty().Body().SetEmptyMap().FromRaw(record); err != nil {
+				return p, err
+			}
+		}
+	}
+
+	return p, nil
+}
+
+func (e *jsonLogExtension) unmarshalLogsWithUnwrap(buf []byte) (plog.Logs, error) {
+	p := plog.NewLogs()
+
+	records, err := extractRecords(buf, e.config.Unwrap)
+	if err != nil {
+		return p, err
+	}
+
+	if len(records) == 0 {
+		return p, nil
+	}
+
+	sl := p.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	for _, record := range records {
+		lr := sl.LogRecords().AppendEmpty()
+		lr.SetObservedTimestamp(now)
+
+		if e.config.UnwrapTarget != "" {
+			// Store the raw JSON string under the configured field name
+			lr.Body().SetEmptyMap().PutStr(e.config.UnwrapTarget, string(record))
+		} else {
+			// Parse JSON into an OpenTelemetry map (default behavior)
+			var m map[string]any
+			if err := json.Unmarshal(record, &m); err != nil {
+				return p, fmt.Errorf("failed to unmarshal extracted record: %w", err)
+			}
+			if err := lr.Body().SetEmptyMap().FromRaw(m); err != nil {
 				return p, err
 			}
 		}

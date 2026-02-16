@@ -1,0 +1,11 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - body:
+              kvlistValue:
+                values:
+                  - key: event
+                    value:
+                      stringValue: '{"level": "info", "msg": "hello"}'
+        scope: {}

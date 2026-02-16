@@ -1,0 +1,17 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - body:
+              kvlistValue:
+                values:
+                  - key: message
+                    value:
+                      stringValue: '{"a":1}'
+          - body:
+              kvlistValue:
+                values:
+                  - key: message
+                    value:
+                      stringValue: '{"b":2}'
+        scope: {}

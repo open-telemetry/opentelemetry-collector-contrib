@@ -1,0 +1,14 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - body:
+              kvlistValue:
+                values:
+                  - key: type
+                    value:
+                      stringValue: click
+                  - key: page
+                    value:
+                      stringValue: /home
+        scope: {}
