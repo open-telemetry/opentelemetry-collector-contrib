@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-const elasticPort = "9200/tcp"
+const elasticPort = "9200"
 
 func TestIntegration(t *testing.T) {
 	t.Run("7.9.3", integrationTest("7_9_3"))
@@ -38,14 +38,17 @@ func integrationTest(name string) func(*testing.T) {
 					Context:    filepath.Join("testdata", "integration"),
 					Dockerfile: dockerFile,
 				},
-				ExposedPorts: []string{elasticPort},
-				WaitingFor:   wait.ForListeningPort(elasticPort).WithStartupTimeout(5 * time.Minute),
+				ExposedPorts: []string{elasticPort + "/tcp"},
+				WaitingFor:   wait.ForListeningPort(elasticPort + "/tcp").WithStartupTimeout(2 * time.Minute),
 			}),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = 2 * time.Second
-				rCfg.Endpoint = fmt.Sprintf("http://%s", net.JoinHostPort(ci.Host(t), ci.MappedPort(t, elasticPort)))
+				// Use net.JoinHostPort for proper IPv6 handling
+				// Use elasticPort (just "9200") for MappedPort, NOT "9200/tcp"
+				mappedPort := ci.MappedPort(t, elasticPort)
+				rCfg.Endpoint = fmt.Sprintf("http://%s", net.JoinHostPort(ci.Host(t), mappedPort))
 			}),
 		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", expectedFile)),
 		scraperinttest.WithCompareOptions(
