@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-const elasticPort = "9200"
+const elasticPort = "9200/tcp"
 
 func TestIntegration(t *testing.T) {
 	t.Run("7.9.3", integrationTest("7_9_3"))
