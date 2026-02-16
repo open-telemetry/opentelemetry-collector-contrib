@@ -49,34 +49,45 @@ const (
 	Fatal2
 	Fatal3
 	Fatal4
+
+	Emergency
+	Alert
+	Critical
+	Notice
+	Verbose
 )
 
 var sevText = map[Severity]string{
-	Default: "DEFAULT",
-	Trace:   "TRACE",
-	Trace2:  "TRACE2",
-	Trace3:  "TRACE3",
-	Trace4:  "TRACE4",
-	Debug:   "DEBUG",
-	Debug2:  "DEBUG2",
-	Debug3:  "DEBUG3",
-	Debug4:  "DEBUG4",
-	Info:    "INFO",
-	Info2:   "INFO2",
-	Info3:   "INFO3",
-	Info4:   "INFO4",
-	Warn:    "WARN",
-	Warn2:   "WARN2",
-	Warn3:   "WARN3",
-	Warn4:   "WARN4",
-	Error:   "ERROR",
-	Error2:  "ERROR2",
-	Error3:  "ERROR3",
-	Error4:  "ERROR4",
-	Fatal:   "FATAL",
-	Fatal2:  "FATAL2",
-	Fatal3:  "FATAL3",
-	Fatal4:  "FATAL4",
+	Default:   "DEFAULT",
+	Trace:     "TRACE",
+	Trace2:    "TRACE2",
+	Trace3:    "TRACE3",
+	Trace4:    "TRACE4",
+	Debug:     "DEBUG",
+	Debug2:    "DEBUG2",
+	Debug3:    "DEBUG3",
+	Debug4:    "DEBUG4",
+	Info:      "INFO",
+	Info2:     "INFO2",
+	Info3:     "INFO3",
+	Info4:     "INFO4",
+	Warn:      "WARN",
+	Warn2:     "WARN2",
+	Warn3:     "WARN3",
+	Warn4:     "WARN4",
+	Error:     "ERROR",
+	Error2:    "ERROR2",
+	Error3:    "ERROR3",
+	Error4:    "ERROR4",
+	Fatal:     "FATAL",
+	Fatal2:    "FATAL2",
+	Fatal3:    "FATAL3",
+	Fatal4:    "FATAL4",
+	Emergency: "EMERGENCY",
+	Alert:     "ALERT",
+	Critical:  "CRITICAL",
+	Notice:    "NOTICE",
+	Verbose:   "VERBOSE",
 }
 
 // ToString converts a severity to a string
