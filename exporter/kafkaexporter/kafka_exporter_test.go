@@ -175,7 +175,7 @@ func TestTracesPusher_max_message_bytes_Kgo(t *testing.T) {
 		// THEN the queue batches by size: we get multiple Kafka messages (each within the limit)
 		records := fetchKgoRecordsExhaust(t,
 			cluster.ListenAddrs(), cfg.Traces.Topic,
-			30*time.Second, 2*time.Second,
+			10*time.Second, 2*time.Second,
 		)
 		messageCount := len(records)
 		t.Logf("received %d messages from Kafka for %d spans (batched)", messageCount, largeSpanCount)
@@ -1084,40 +1084,6 @@ func fetchKgoRecordsAtMost(tb testing.TB, brokers []string, topic string, maxRec
 	fetches.EachRecord(func(r *kgo.Record) {
 		records = append(records, r)
 	})
-	return records
-}
-
-// fetchKgoRecordsAtLeast polls until it fetches at least minRecords or times out.
-func fetchKgoRecordsAtLeast(tb testing.TB, brokers []string, topic string, minRecords int) []*kgo.Record {
-	clientOpts := []kgo.Opt{
-		kgo.SeedBrokers(brokers...),
-		kgo.ConsumeTopics(topic),
-		kgo.ConsumerGroup("group-id" + topic),
-	}
-	consumerClient, err := kgo.NewClient(clientOpts...)
-	require.NoError(tb, err, "failed to create kgo consumer client")
-	defer consumerClient.Close()
-
-	var records []*kgo.Record
-	ctx, cancel := context.WithTimeout(tb.Context(), 10*time.Second)
-	defer cancel()
-	var lastErr error
-	for len(records) < minRecords && ctx.Err() == nil {
-		remaining := minRecords - len(records)
-		fetches := consumerClient.PollRecords(ctx, remaining)
-		fetches.EachRecord(func(r *kgo.Record) {
-			records = append(records, r)
-		})
-		if fetches.Err() != nil {
-			lastErr = fetches.Err()
-			if !errors.Is(lastErr, context.DeadlineExceeded) {
-				break
-			}
-		}
-	}
-	if lastErr != nil && !errors.Is(lastErr, context.DeadlineExceeded) {
-		require.NoError(tb, lastErr, "error polling records")
-	}
 	return records
 }
 
