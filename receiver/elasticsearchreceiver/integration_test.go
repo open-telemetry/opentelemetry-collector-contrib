@@ -32,6 +32,7 @@ func integrationTest(name string) func(*testing.T) {
 	dockerFile := fmt.Sprintf("Dockerfile.elasticsearch.%s", name)
 	expectedFile := fmt.Sprintf("expected.%s.yaml", name)
 	return func(t *testing.T) {
+		t.Parallel()
 		scraperinttest.NewIntegrationTest(
 			NewFactory(),
 			scraperinttest.WithContainerRequest(
