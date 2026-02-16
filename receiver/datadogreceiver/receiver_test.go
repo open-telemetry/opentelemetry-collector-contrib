@@ -5,6 +5,7 @@ package datadogreceiver
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -30,6 +31,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
 func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
@@ -268,7 +270,8 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 		"/intake",
 		"/intake/",
 		"/api/v1/distribution_points",
-		"/v0.6/stats"
+		"/v0.6/stats",
+		"/api/v0.2/stats"
 	],
 	"client_drop_p0s": false,
 	"span_meta_structs": false,
@@ -297,7 +300,8 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 		"/intake",
 		"/intake/",
 		"/api/v1/distribution_points",
-		"/v0.6/stats"
+		"/v0.6/stats",
+		"/api/v0.2/stats"
 	],
 	"client_drop_p0s": false,
 	"span_meta_structs": false,
@@ -757,6 +761,173 @@ func TestStats_EndToEnd(t *testing.T) {
 	}
 
 	assert.NoError(t, err)
+}
+
+func TestStatsV2_EndToEnd(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.NetAddr.Endpoint = "localhost:0" // Using a randomly assigned address
+	sink := new(consumertest.MetricsSink)
+
+	ctx := t.Context()
+
+	dd, err := newDataDogReceiver(
+		ctx,
+		cfg,
+		receivertest.NewNopSettings(metadata.Type),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+	dd.(*datadogReceiver).nextMetricsConsumer = sink
+
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, dd.Shutdown(t.Context()))
+	}()
+
+	// Create a StatsPayload with multiple ClientStatsPayload entries
+	statsPayload := pb.StatsPayload{
+		Stats: []*pb.ClientStatsPayload{
+			{
+				Hostname:         "host1",
+				Env:              "prod",
+				Version:          "v1.2",
+				Lang:             "go",
+				TracerVersion:    "v44",
+				RuntimeID:        "123jkl",
+				Sequence:         1,
+				AgentAggregation: "blah",
+				Service:          "mysql",
+				ContainerID:      "abcdef123456",
+				Tags:             []string{"a:b", "c:d"},
+				Stats: []*pb.ClientStatsBucket{
+					{
+						Start:    10,
+						Duration: 1,
+						Stats: []*pb.ClientGroupedStats{
+							{
+								Service:        "mysql",
+								Name:           "db.query",
+								Resource:       "SELECT * FROM users",
+								HTTPStatusCode: 200,
+								Type:           "sql",
+								DBType:         "postgresql",
+								Synthetics:     false,
+								Hits:           10,
+								Errors:         0,
+								Duration:       200,
+								OkSummary:      nil,
+								ErrorSummary:   nil,
+								TopLevelHits:   5,
+							},
+						},
+					},
+				},
+			},
+			{
+				Hostname:         "host2",
+				Env:              "staging",
+				Version:          "v1.3",
+				Lang:             "python",
+				TracerVersion:    "v2.1",
+				RuntimeID:        "456xyz",
+				Sequence:         2,
+				AgentAggregation: "blah",
+				Service:          "api",
+				ContainerID:      "xyz789",
+				Tags:             []string{"team:backend"},
+				Stats: []*pb.ClientStatsBucket{
+					{
+						Start:    20,
+						Duration: 2,
+						Stats: []*pb.ClientGroupedStats{
+							{
+								Service:        "api",
+								Name:           "http.request",
+								Resource:       "GET /users",
+								HTTPStatusCode: 200,
+								Type:           "web",
+								Synthetics:     false,
+								Hits:           15,
+								Errors:         1,
+								Duration:       150,
+								OkSummary:      nil,
+								ErrorSummary:   nil,
+								TopLevelHits:   10,
+							},
+						},
+					},
+				},
+			},
+		},
+		AgentHostname:  "agent-host",
+		AgentEnv:       "prod",
+		AgentVersion:   "7.40.0",
+		ClientComputed: true,
+	}
+
+	payload, err := statsPayload.MarshalMsg(nil)
+	assert.NoError(t, err)
+
+	// Compress the payload with gzip
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	_, err = gz.Write(payload)
+	require.NoError(t, err)
+	require.NoError(t, gz.Close())
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("http://%s/api/v0.2/stats", dd.(*datadogReceiver).address),
+		io.NopCloser(bytes.NewReader(buf.Bytes())),
+	)
+	require.NoError(t, err, "Must not error when creating request")
+	req.Header.Set(header.Lang, "go")
+	req.Header.Set(header.TracerVersion, "v1.50.0")
+	req.Header.Set("Content-Encoding", "gzip")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err, "Must not error performing request")
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
+	require.Equal(t, "OK", string(body), "Expected response to be 'OK', got %s", string(body))
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	mds := sink.AllMetrics()
+	// Should have 2 metrics (one for each ClientStatsPayload)
+	require.Len(t, mds, 2)
+
+	for i, got := range mds {
+		require.Equal(t, 1, got.ResourceMetrics().Len())
+		metrics := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+		assert.Equal(t, 1, metrics.Len())
+		metric := metrics.At(0)
+		assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+		assert.Equal(t, "dd.internal.stats.payload", metric.Name())
+		assert.Equal(t, 1, metric.Sum().DataPoints().Len())
+
+		if payload, ok := metric.Sum().DataPoints().At(0).Attributes().Get("dd.internal.stats.payload"); ok {
+			stats := &pb.StatsPayload{}
+			err = proto.Unmarshal(payload.Bytes().AsRaw(), stats)
+			assert.NoError(t, err)
+			assert.NotNil(t, stats)
+			assert.Len(t, stats.Stats, 1, "Each metric should contain one ClientStatsPayload")
+			assert.True(t, stats.ClientComputed)
+
+			// Verify the stats were processed correctly
+			clientStats := stats.Stats[0]
+			assert.NotEmpty(t, clientStats.Hostname)
+			assert.NotEmpty(t, clientStats.Service)
+
+			// Verify metrics were translated
+			if i == 0 {
+				assert.Equal(t, "host1", clientStats.Hostname)
+				assert.Equal(t, "mysql", clientStats.Service)
+			} else {
+				assert.Equal(t, "host2", clientStats.Hostname)
+				assert.Equal(t, "api", clientStats.Service)
+			}
+		}
+	}
 }
 
 func TestDatadogServices_EndToEnd(t *testing.T) {
