@@ -1,0 +1,10 @@
+change_type: enhancement
+component: processor/lookup
+note: Add lookup processor implementation and YAML source
+issues: [41816]
+
+subtext: |
+  Adds the core lookup processor implementation for enriching telemetry data using external lookups.
+  Includes YAML file source for loading lookup tables from local files.
+
+change_logs: [user]
