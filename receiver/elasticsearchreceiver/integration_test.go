@@ -39,7 +39,7 @@ func integrationTest(name string) func(*testing.T) {
 					Dockerfile: dockerFile,
 				},
 				ExposedPorts: []string{elasticPort},
-				WaitingFor:   wait.ForListeningPort(elasticPort).WithStartupTimeout(2 * time.Minute),
+				WaitingFor:   wait.ForListeningPort(elasticPort).WithStartupTimeout(5 * time.Minute),
 			}),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
