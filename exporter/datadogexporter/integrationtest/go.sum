@@ -75,8 +75,8 @@ github.com/DataDog/datadog-agent/pkg/api v0.77.0-devel.0.20260213154712-e02b9359
 github.com/DataDog/datadog-agent/pkg/api v0.77.0-devel.0.20260213154712-e02b9359151a/go.mod h1:lOP+5WrAUf0jKtW/aEgYg3x9OydGLd5jfqkFVH56Tko=
 github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.77.0-devel.0.20260213154712-e02b9359151a h1:MFV4rPHhzWg25st9q6Z/LkK43mJH3hpwrmBihhiU/XQ=
 github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.77.0-devel.0.20260213154712-e02b9359151a/go.mod h1:+17V5GxD4ZsMgqkeXuFhd59wzCZV24bQpC5LAZB0TH4=
-github.com/DataDog/datadog-agent/pkg/config/basic v0.0.0-20260212133403-ddb630015d5e h1:769LQKZxJ2KNS2EGK/7PvFY7bRGer/W/QTaIUqNLuMc=
-github.com/DataDog/datadog-agent/pkg/config/basic v0.0.0-20260212133403-ddb630015d5e/go.mod h1:s4edkEdxoAKTwsUAaBL3RPMBfcx8od2ACDpqxeugse0=
+github.com/DataDog/datadog-agent/pkg/config/basic v0.0.0-20260213154712-e02b9359151a h1:BckqLXD+GpyoQH6hwbVfEQKr69KnXS3MGy0a0My5Tjg=
+github.com/DataDog/datadog-agent/pkg/config/basic v0.0.0-20260213154712-e02b9359151a/go.mod h1:s4edkEdxoAKTwsUAaBL3RPMBfcx8od2ACDpqxeugse0=
 github.com/DataDog/datadog-agent/pkg/config/create v0.77.0-devel.0.20260213154712-e02b9359151a h1:V7xdWqjtUYEt5RRjYsVEJdCtQ6iHxEO5QhBKqs+dpBw=
 github.com/DataDog/datadog-agent/pkg/config/create v0.77.0-devel.0.20260213154712-e02b9359151a/go.mod h1:0HGNzCzlt9o5/U+JTgDIRVTD2+xk50X3YhY4zGIpCUs=
 github.com/DataDog/datadog-agent/pkg/config/env v0.77.0-devel.0.20260213154712-e02b9359151a h1:KsTqSrunOtpb0lKEPfsgkVFiSnPIgBQr9wtoV8xXbF0=
