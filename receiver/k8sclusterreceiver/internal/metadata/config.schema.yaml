@@ -5,6 +5,12 @@ $defs:
   attribute_k_8_s_container_status_state:
     description: AttributeK8sContainerStatusState specifies the value k8s.container.status.state attribute.
     type: integer
+  attribute_k_8_s_service_endpoint_address_type:
+    description: AttributeK8sServiceEndpointAddressType specifies the value k8s.service.endpoint.address_type attribute.
+    type: integer
+  attribute_k_8_s_service_endpoint_condition:
+    description: AttributeK8sServiceEndpointCondition specifies the value k8s.service.endpoint.condition attribute.
+    type: integer
   metric_config:
     description: MetricConfig provides common config for a particular metric.
     type: object
@@ -98,6 +104,10 @@ $defs:
       k8s.resource_quota.hard_limit:
         $ref: metric_config
       k8s.resource_quota.used:
+        $ref: metric_config
+      k8s.service.endpoint.count:
+        $ref: metric_config
+      k8s.service.load_balancer.ingress.count:
         $ref: metric_config
       k8s.statefulset.current_pods:
         $ref: metric_config
@@ -202,6 +212,16 @@ $defs:
       k8s.resourcequota.name:
         $ref: resource_attribute_config
       k8s.resourcequota.uid:
+        $ref: resource_attribute_config
+      k8s.service.name:
+        $ref: resource_attribute_config
+      k8s.service.publish_not_ready_addresses:
+        $ref: resource_attribute_config
+      k8s.service.traffic_distribution:
+        $ref: resource_attribute_config
+      k8s.service.type:
+        $ref: resource_attribute_config
+      k8s.service.uid:
         $ref: resource_attribute_config
       k8s.statefulset.name:
         $ref: resource_attribute_config

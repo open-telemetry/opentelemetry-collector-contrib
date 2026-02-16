@@ -122,8 +122,7 @@ metrics:
   aerospike.namespace.disk.available:
     enabled: true
     description: Minimum percentage of contiguous disk space free to the namespace across all devices
-    stability:
-      level: development
+    stability: development
     unit: "%"
     gauge:
       value_type: int
@@ -131,8 +130,7 @@ metrics:
   aerospike.namespace.geojson.region_query_cells:
     enabled: true
     description: Number of cell coverings for query region queried
-    stability:
-      level: development
+    stability: development
     unit: "{cells}"
     extended_documentation: Number of cell coverings for query region queried. Aerospike metric geo_region_query_cells.
     sum:
@@ -143,8 +141,7 @@ metrics:
   aerospike.namespace.geojson.region_query_false_positive:
     enabled: true
     description: Number of points outside the region.
-    stability:
-      level: development
+    stability: development
     unit: "{points}"
     extended_documentation: Total query result points is geo_region_query_points + geo_region_query_falsepos. Aerospike metric geo_region_query_falsepos.
     sum:
@@ -155,8 +152,7 @@ metrics:
   aerospike.namespace.geojson.region_query_points:
     enabled: true
     description: Number of points within the region.
-    stability:
-      level: development
+    stability: development
     unit: "{points}"
     extended_documentation: Total query result points is geo_region_query_points + geo_region_query_falsepos. Aerospike metric geo_region_query_points.
     sum:
@@ -167,8 +163,7 @@ metrics:
   aerospike.namespace.geojson.region_query_requests:
     enabled: true
     description: Number of geojson queries on the system since the uptime of the node.
-    stability:
-      level: development
+    stability: development
     unit: "{queries}"
     extended_documentation: Number of geojson queries on the system since the uptime of the node. Aerospike metric geo_region_query_reqs.
     sum:
@@ -179,8 +174,7 @@ metrics:
   aerospike.namespace.memory.free:
     enabled: true
     description: Percentage of the namespace's memory which is still free
-    stability:
-      level: development
+    stability: development
     extended_documentation: Aerospike metric memory_free_pct
     unit: "%"
     gauge:
@@ -189,8 +183,7 @@ metrics:
   aerospike.namespace.memory.usage:
     enabled: true
     description: Memory currently used by each component of the namespace
-    stability:
-      level: development
+    stability: development
     extended_documentation: Aggregate of Aerospike Metrics memory_used_data_bytes, memory_used_index_bytes, memory_used_set_index_bytes, memory_used_sindex_bytes
     unit: By
     attributes: [namespace_component]
@@ -202,8 +195,7 @@ metrics:
   aerospike.namespace.query.count:
     enabled: true
     description: Number of query operations performed on the namespace
-    stability:
-      level: development
+    stability: development
     unit: "{queries}"
     extended_documentation: Aggregate of Aerospike Metrics query_aggr_abort, query_aggr_complete, query_aggr_error, query_basic_abort, query_basic_complete, query_basic_error, query_ops_bg_abort, query_ops_bg_complete, query_ops_bg_error, query_udf_bg_abort, query_udf_bg_complete, query_udf_bg_error, pi_query_aggr_abort, pi_query_aggr_complete, pi_query_aggr_error, pi_query_long_basic_abort, pi_query_long_basic_complete, pi_query_long_basic_error, pi_query_ops_bg_abort, pi_query_ops_bg_basic_complete, pi_query_ops_bg_basic_error, pi_query_short_basic_timeout, pi_query_short_basic_complete, pi_query_short_basic_error, pi_query_udf_bg_abort, pi_query_udf_bg_complete, pi_query_udf_bg_error, si_query_aggr_abort, si_query_aggr_complete, si_query_aggr_error, si_query_long_basic_abort, si_query_long_basic_complete, si_query_long_basic_error, si_query_ops_bg_abort, si_query_ops_bg_basic_complete, si_query_ops_bg_basic_error, si_query_short_basic_timeout, si_query_short_basic_complete, si_query_short_basic_error, si_query_udf_bg_abort, si_query_udf_bg_complete, si_query_udf_bg_error
     attributes: [query_type, index_type, query_result]
@@ -215,8 +207,7 @@ metrics:
   aerospike.namespace.scan.count:
     enabled: true
     description: Number of scan operations performed on the namespace
-    stability:
-      level: development
+    stability: development
     unit: "{scans}"
     extended_documentation: Aggregate of Aerospike Metrics scan_aggr_abort, scan_aggr_complete, scan_aggr_error, scan_basic_abort, scan_basic_complete, scan_basic_error, scan_ops_bg_abort, scan_ops_bg_complete, scan_ops_bg_error, scan_udf_bg_abort, scan_udf_bg_complete, scan_udf_bg_error
     attributes: [scan_type, scan_result]
@@ -228,8 +219,7 @@ metrics:
   aerospike.namespace.transaction.count:
     enabled: true
     description: Number of transactions performed on the namespace
-    stability:
-      level: development
+    stability: development
     unit: "{transactions}"
     extended_documentation: Aggregate of Aerospike Metrics client_delete_error, client_delete_filtered_out, client_delete_not_found, client_delete_success, client_delete_timeout, client_read_error, client_read_filtered_out, client_read_not_found, client_read_success, client_read_timeout, client_udf_error, client_udf_filtered_out, client_udf_not_found, client_udf_success, client_udf_timeout, client_write_error, client_write_filtered_out, client_write_not_found, client_write_success, client_write_timeout
     attributes: [transaction_type, transaction_result]
@@ -241,8 +231,7 @@ metrics:
   aerospike.node.connection.count:
     enabled: true
     description: Number of connections opened and closed to the node
-    stability:
-      level: development
+    stability: development
     extended_documentation: Aggregate of Aerospike Metrics client_connections_closed, client_connections_opened, fabric_connections_closed, fabric_connections_opened, heartbeat_connections_closed, heartbeat_connections_opened
     unit: "{connections}"
     attributes: [connection_type, connection_op]
@@ -254,8 +243,7 @@ metrics:
   aerospike.node.connection.open:
     enabled: true
     description: Current number of open connections to the node
-    stability:
-      level: development
+    stability: development
     extended_documentation: Aggregate of Aerospike Metrics client_connections, fabric_connections, heartbeat_connections
     unit: "{connections}"
     attributes: [connection_type]
@@ -267,8 +255,7 @@ metrics:
   aerospike.node.memory.free:
     enabled: true
     description: Percentage of the node's memory which is still free
-    stability:
-      level: development
+    stability: development
     extended_documentation: Aerospike Metric system_free_mem_pct
     unit: "%"
     gauge:
@@ -277,8 +264,7 @@ metrics:
   aerospike.node.query.tracked:
     enabled: true
     description: Number of queries tracked by the system.
-    stability:
-      level: development
+    stability: development
     extended_documentation: Number of queries which ran more than query untracked_time (default 1 sec), Aerospike metric query_tracked
     unit: "{queries}"
     sum:
